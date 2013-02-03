@@ -1,0 +1,38 @@
+Name: Bead
+Version: 0.1
+License: BSD3
+Description: E-learning snap based server for special teaching purposes
+             Administrators can submit exercises and students can submit
+             solutions for the given exercises.
+Author: Andor Penzes <andor.penzes@gmail.com>
+Maintainer: andor.penzes@gmail.com
+Stability: Experimental
+Build-Type: Simple
+Cabal-Version: >= 1.2
+
+Flag SnapFrontend
+  Description: Include API for web frontend.
+  -- Cabal checks if the configuration is possible, first
+  -- with this flag set to True and if not it tries with False
+  Default: False
+
+Executable Bead
+  HS-Source-Dirs: src
+  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
+                 transformers
+
+  if flag(snapfrontend)
+    Main-is: SnapMain.hs
+    Build-Depends: snap, snap-core, snap-server, lens, blaze-html >= 0.5,
+                   snap-blaze, bytestring == 0.9.2.1, xmlhtml, text,
+                   MonadCatchIO-transformers, snap-blaze, blaze-html,
+                   blaze-markup
+  else
+    Main-is: Main.hs
+
+
+Executable Test
+  HS-Source-Dirs: src, test
+  Main-is: TestMain.hs
+  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
+                 transformers
