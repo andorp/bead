@@ -3,7 +3,7 @@ module Control.Monad.Transaction (
     module CME
   , Transaction
   , step
-  , step'
+  , stepEither
   , atomically
   ) where
 
@@ -15,10 +15,10 @@ import Control.Exception
 
 -- * Rollback action
 
-newtype Rollback m = Rollback (m ())
+newtype Rollback m = Rollback [m ()]
 
-run :: Rollback m -> m ()
-run (Rollback m) = m
+run :: (Monad m) => Rollback m -> m ()
+run (Rollback ms) = foldr1 (>>) ms
 
 -- * Transaction Monad
 
@@ -31,55 +31,55 @@ newtype Transaction e m a = Transaction {
               CME.MonadError e)
 
 runTransaction :: (CME.Error e, Monad m) => Transaction e m a -> m (Either e a, Rollback m)
-runTransaction = startStateFrom nullRevStep
-               . CME.runErrorT
-               . unTrans
+runTransaction
+  = startStateFrom emptyUndo
+  . CME.runErrorT
+  . unTrans
 
 startStateFrom :: (Monad m) => s -> CMS.StateT s m a -> m (a,s)
 startStateFrom = flip CMS.runStateT
 
 -- * Rollback operation
 
-nullRevStep :: (Monad m) => Rollback m
-nullRevStep = Rollback (return ())
+emptyUndo :: (Monad m) => Rollback m
+emptyUndo = Rollback [return ()]
 
-nextRevStep :: (Monad m) => m () -> Rollback m -> Rollback m
-nextRevStep s (Rollback m) = Rollback (s >> m)
+addUndo :: (Monad m) => m () -> Rollback m -> Rollback m
+addUndo s (Rollback m) = Rollback (s:m)
 
 -- * Transaction helpers
 
-eitherStep :: (CME.Error e ,Monad m) => Either e a -> TransCMES e m a
+eitherStep :: (CME.Error e, Monad m) => Either e a -> TransCMES e m a
 eitherStep (Left e)  = CME.throwError e
 eitherStep (Right v) = return v
 
-transStep :: (CME.Error e, Monad m) => CME.ErrorT e m a -> Transaction e m a
-transStep action = Transaction $ do
-  let me = CME.runErrorT action 
-  mex <- lift $ lift $ me
+transactionStep :: (CME.Error e, Monad m) => CME.ErrorT e m a -> Transaction e m a
+transactionStep m = Transaction $ do
+  mex <- lift . lift . CME.runErrorT $ m
   eitherStep mex
 
-transStep' :: (CME.Error e, Monad m) => m (Either e a) -> Transaction e m a 
-transStep' action = Transaction $ do
-  mex <- lift $ lift $ action
+transactionStepEither :: (CME.Error e, Monad m) => m (Either e a) -> Transaction e m a 
+transactionStepEither m = Transaction $ do
+  mex <- lift . lift $ m
   eitherStep mex
 
 -- * Transactional steps
 
 -- | A transactional step contains a step that can produce an error or calculate
---   a value and a reverse operation for that step. If an 'e' exception occurs
---   the reverse step will be executed.
-step' :: (CME.Error e, Monad m) => m (Either e a) -> m () -> Transaction e m a
-step' action reverse = do
-  CMS.modify (nextRevStep reverse)
-  transStep' action
+--   a value and a reverse operation for that step. If an @e@ exception occurs
+--   it will be undo
+stepEither :: (CME.Error e, Monad m) => m (Either e a) -> m () -> Transaction e m a
+stepEither m inverse = do
+  CMS.modify (addUndo inverse)
+  transactionStepEither m
 
 -- | A transactional step contains a step that can produce an error or calculate
---   a value and a reverse operation for that step. If an 'e' exception occurs
---   the reverse step will be executed.
+--   a value and a reverse operation for that step. If an @e@ exception occurs
+--   it will be undone.
 step :: (CME.Error e, Monad m) => CME.ErrorT e m a -> m () -> Transaction e m a
-step action reverse = do
-  CMS.modify (nextRevStep reverse)
-  transStep action
+step m inverse = do
+  CMS.modify (addUndo inverse)
+  transactionStep m
 
 -- * Run
 

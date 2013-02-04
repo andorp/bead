@@ -16,6 +16,10 @@ data Persist = Persist {
   
   -- Group Persistence
   , saveGroup   :: CourseKey -> Group -> IO (Erroneous GroupKey)
+  
+  -- Persistence initialization
+  , isPersistenceSetUp :: IO Bool
+  , initPersistence    :: IO ()
   }
 
 mockPersist :: Persist
@@ -29,5 +33,8 @@ mockPersist = Persist {
   , saveCourse = \_ -> return $ Right $ CourseKey "course_key"
   
   , saveGroup = \_ _ -> return $ Right $ GroupKey (CourseKey "course_key") "group_key"
+
+  , isPersistenceSetUp = return True
+  , initPersistence    = return ()
   }
 

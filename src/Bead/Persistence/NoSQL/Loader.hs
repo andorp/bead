@@ -15,6 +15,13 @@ type DirPath = FilePath
 
 -- * Type classes
 
+persistenceDirs :: [FilePath]
+persistenceDirs = [
+    "data"
+  , joinPath ["data", "user"]
+  , joinPath ["data", "course"]
+  ]
+
 class DirName d where
   dirName :: d -> DirPath
 

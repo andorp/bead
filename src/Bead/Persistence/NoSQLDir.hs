@@ -22,7 +22,18 @@ noSqlDirPersist = Persist {
   , saveCourse    = nSaveCourse    -- :: Course -> IO (Erroneous ())
 
   , saveGroup     = nSaveGroup     -- :: CourseKey -> Group -> IO (Erroneous GroupKey)
+  
+  , isPersistenceSetUp = nIsPersistenceSetUp
+  , initPersistence    = nInitPersistence
   }
+
+nIsPersistenceSetUp :: IO Bool
+nIsPersistenceSetUp = do
+  dirsExist <- mapM doesDirectoryExist persistenceDirs
+  return $ and dirsExist
+
+nInitPersistence :: IO ()
+nInitPersistence = mapM_ createDirectory persistenceDirs
 
 nSaveUser :: User -> Password -> IO (Erroneous ())
 nSaveUser usr pwd = do

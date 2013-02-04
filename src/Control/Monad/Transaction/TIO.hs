@@ -22,7 +22,7 @@ newtype UserException = UserException { msg :: Maybe String }
 -- * IO Step
   
 step :: IO a -> IO () -> TIO a
-step action reverse = T.step' (exceptionsOn action) reverse
+step action reverse = T.stepEither (exceptionsOn action) reverse
 
 -- * Tools
 
