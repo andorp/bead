@@ -53,9 +53,9 @@ index loggedIn = do
   H.p $ do
     "This is a simple demo page served using "
     H.a ! A.href "http://snapframework.com/docs/tutorials/heist" $ "Heist"
-    "and the "
+    " and the "
     H.a ! A.href "http://snapframework.com/" $ "Snap"
-    "web framework."
+    " web framework."
   case loggedIn of
     Nothing -> return ()
     Just h  -> H.p $ do
@@ -120,19 +120,19 @@ registrationForm postAction submitText = do
   H.form ! A.method "post" ! A.action postAction $ do
     H.table ! A.id "registration" $ do
       -- Fields
-      mapM_ field [ ("text","login")
-                  , ("password","password")
-                  , ("text","reg_email_address")
-                  , ("text","reg_family_name")
+      mapM_ field [ ("Login:", "text","login")
+                  , ("Password:", "password","password")
+                  , ("Email address:", "text","reg_email_address")
+                  , ("Family name:", "text","reg_family_name")
                   ]
       -- Submit button
       H.tr $ do
         H.td empty
         H.td $ H.input ! A.type_ "submit" ! A.value submitText
   where
-    field (t,n) = do
+    field (f,t,n) = do
       H.tr $ do
-        H.td "Login:"
+        H.td f
         H.td $ H.input ! A.type_ t ! A.name n ! A.size "20"
 
 openExam :: Html
