@@ -136,7 +136,9 @@ registrationForm postAction submitText = do
         H.td $ H.input ! A.type_ t ! A.name n ! A.size "20"
 
 openExam :: Html
-openExam = base "Open exam page is not defined" Nothing
+openExam = base "Submit exam page is not defined" Nothing
+  
+  -- base "Open exam page is not defined" Nothing
 
 submitExam :: Html
 submitExam = base "Submit exam page is not defined" Nothing
@@ -147,6 +149,17 @@ training = base "Training page is not defined" Nothing
 profile :: Html
 profile = base "Profile page is not defined" Nothing
 
+-- * Html building blocks
+
+exerciseTextArea :: Html -> AttributeValue -> AttributeValue -> Html
+exerciseTextArea exercise exerciseName postAction = do
+  H.form ! A.method "post" ! A.action postAction $ do
+    H.p $ exercise
+    H.textarea ! A.name exerciseName ! A.cols "20" ! A.rows "5" $ empty
+    H.input ! A.type_ "submit"
+
+-- * Blaze template
+    
 instance BlazeTemplate P.Page where
   template = t where
     t P.Login      = login

@@ -16,6 +16,7 @@ import qualified Control.Monad.Reader as CMR
 import Control.Monad.Trans
 import Control.Monad (join)
 import Prelude hiding (log)
+import Text.Printf (printf)
 
 data UserError = UserError String
 
@@ -56,12 +57,13 @@ login username password = do
   validUser    <- liftIO $ R.doesUserExist prst username password
   notLoggedIn  <- liftIO $ isUserLoggedIn usrContainer username
   case (validUser, notLoggedIn) of
-    (True, False) -> do
+    (Left e    ,     _) -> errorPage "Internal error occurred"
+    (Right True, False) -> do
       loadUserData username password P.Home
       s <- userState
       liftIO $ userLogsIn usrContainer username s
-    (True, True)  -> errorPage "The user is logged in somewhere else"
-    (False,_)     -> errorPage "Invalid user and password combination"
+    (Right True , True)  -> errorPage "The user is logged in somewhere else"
+    (Right False,    _)  -> errorPage "Invalid user and password combination"
 
 -- | The user logs out
 logout :: Username -> UserStory ()
@@ -93,7 +95,6 @@ changePassword old new new'
       persistence <- CMR.asks persist
       username    <- CMS.gets user
       liftIOE $ updatePwd persistence username old new
-      
 
 -- | The authorized user creates a new user
 createUser :: User -> Password -> UserStory ()
@@ -110,20 +111,33 @@ createUser newUser newPassword = do
 deleteUser :: Username -> UserStory ()
 deleteUser = undefined
 
+-- | The 'create' function is an abstract function
+--   for other creators like, createCourse and createExercise
+create
+  :: (PermissionObj o)
+  => (o -> k -> String)                 -- ^ Descriptor for the logger
+  -> (Persist -> o -> IO (Erroneous k)) -- ^ Saver function of the persistence
+  -> o                                  -- ^ The object to save
+  -> UserStory k
+create descriptor saver object = do
+  authorize P_Create (permissionObject object)
+
+  persistence <- CMR.asks persist
+  key         <- liftIOE $ saver persistence object
+  logger      <- CMR.asks logger
+  liftIO $ log logger INFO $ descriptor object key
+
+  return key
+
+
 -- | Creates a new course
 createCourse :: Course -> UserStory CourseKey
-createCourse course = do
-  authorize P_Create P_Course
-  persistence <- CMR.asks persist
-
-  key <- liftIOE $ saveCourse persistence course
-
-  logger     <- CMR.asks logger
-  liftIO $ log logger INFO $ join [
-      "Course is created: ", courseName course
-    , " (", show (courseCode course), ")"
-    ]
-  return key
+createCourse = create descriptor saveCourse
+  where
+    descriptor course _ =
+      printf "Course is created: %s (%s)"
+        (courseName course)
+        (show (courseCode course))
 
 -- | Logically deletes an existing cousrse
 deleteCourse :: CourseKey -> UserStory ()
@@ -149,8 +163,11 @@ deleteGroup = undefined
 updateGroup :: GroupKey -> Group -> UserStory ()
 updateGroup = undefined
 
+-- | Creates an exercise
 createExercise :: Exercise -> UserStory ExerciseKey
-createExercise = undefined
+createExercise = create descriptor saveExercise
+  where
+    descriptor _ key = printf "Exercise is created with id: " (str key)
 
 updateExercise :: ExerciseKey -> Exercise -> UserStory ()
 updateExercise = undefined
@@ -169,20 +186,24 @@ errorPage s = CME.throwError $ UserError s
 authorize :: Permission -> PermissionObject -> UserStory ()
 authorize permission pObject
   -- Only admin can open admin's page
-  | pObject == P_AdminPage && permission >= P_Open = do
+  | pObject == P_AdminPage && canOpen permission = do
       userRole <- CMS.gets role
       case userRole of
         E.Admin -> return ()
         _       -> errorPage "Admin authorization is required"
 
   -- Only Course Admin and Admin can create courses
-  | pObject == P_Course && permission >= P_Create = do
+  | pObject == P_Course   && canCreate permission = adminAuthorization
+  -- Only Course Admin and Admin can create exercises
+  | pObject == P_Exercise && canCreate permission = adminAuthorization
+
+  | otherwise = return ()
+  where
+    adminAuthorization = do
       userRole <- CMS.gets role
       case userRole >= E.CourseAdmin of
         False -> errorPage "Course Admin or Admin authorization is required"
         True  -> return ()
-
-  | otherwise = return ()
 
 -- | Checks if the user is authorized for a given operation
 isAuthorized :: Permission -> PermissionObject -> UserStory Bool
@@ -192,11 +213,15 @@ isAuthorized = undefined
 noOperation :: UserStory ()
 noOperation = return ()
 
--- | Log error message throw the log subsystem
+-- | Log error message through the log subsystem
 logErrorMessage :: String -> UserStory ()
-logErrorMessage msg = do
+logErrorMessage = logMessage ERROR
+
+-- | Log a message through the log subsystem
+logMessage :: LogLevel -> String -> UserStory ()
+logMessage lvl msg = do
   l <- CMR.asks logger
-  liftIO $ L.log l ERROR msg
+  liftIO $ L.log l lvl msg
 
 -- | Change user state, if the user state is logged in
 changeUserState :: (UserState -> UserState) -> UserStory ()

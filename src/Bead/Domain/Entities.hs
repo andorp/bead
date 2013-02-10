@@ -15,7 +15,7 @@ data Exercise = Exercise {
 data Test = Test {
     testDesc :: String
   } deriving (Eq, Show)
-  
+
 -- | Solution for one exercise
 data Solution = Solution {
     solution         :: String
@@ -42,7 +42,7 @@ newtype CourseCode = CourseCode String
 
 instance Str CourseCode where
   str (CourseCode s) = s
-  
+
 -- | A course represent a university course
 data Course = Course {
     courseCode :: CourseCode
@@ -57,7 +57,7 @@ data Group = Group {
   , groupDesc  :: String
   , groupUsers :: [Username]
   } deriving (Eq, Show)
-  
+
 -- | The type of the exam
 data ExamType
   = Submition
@@ -67,7 +67,7 @@ data ExamType
 
 newtype ExamInfo = ExamInfo (String, Date)
   deriving (Eq, Ord, Show)
-  
+
 -- | Workflows can happen to exams
 data Workflow
   = W_Created
@@ -91,14 +91,23 @@ instance Show Role where
   show Professor   = "Professor"
   show CourseAdmin = "Course Admin"
   show Admin       = "Admin"
-  
+
+-- * Permissions
+
 -- | Granted permission on a given operation
 data Permission
   = P_Open
   | P_Create
   | P_Modify
   | P_Delete
-  deriving (Show, Eq, Ord)
+  deriving (Show, Eq)
+
+canOpen, canCreate, canModify, canDelete :: Permission -> Bool
+
+canOpen   = flip elem [P_Open, P_Create, P_Modify, P_Delete]
+canCreate = flip elem [P_Create, P_Modify, P_Delete]
+canModify = flip elem [P_Modify, P_Delete]
+canDelete = flip elem [P_Delete]
 
 -- | Permissions are allowed on the following objects
 data PermissionObject
@@ -111,6 +120,10 @@ data PermissionObject
   | P_AdminPage
   | P_PlainPage
   deriving (Eq, Ord, Show)
+
+-- Permission Objects are dynamically associated with values
+class PermissionObj p where
+  permissionObject :: p -> PermissionObject
 
 data Authentication = Authentication
   deriving (Eq, Show)
@@ -143,10 +156,10 @@ class AsPassword p where
 
 newtype Email = Email String
   deriving (Eq, Ord)
-  
+
 instance Show Email where
   show (Email e) = e
-  
+
 -- | Only accept normally formated email values
 email :: String -> Erroneous Email
 email = Right . Email
@@ -170,15 +183,13 @@ newtype Stored key value = Stored (key, value)
 storedKey   (Stored (k,_)) = k
 storedValue (Stored (_,v)) = v
 
-{-
-data Persistence k v = Persistence {
-    select :: k -> IO v
-  , insert :: v -> IO (Stored k v)
-  , update :: k -> v -> IO ()
-  , delete :: k -> IO () -- Only logically deletes the record
-  , isDeleted :: k -> IO Bool
-  }
--}
+-- * PermObjs instance
+
+instance PermissionObj Course where
+  permissionObject _ = P_Course
+
+instance PermissionObj Exercise where
+  permissionObject _ = P_Exercise
 
 -- * Read instances
 

@@ -1,5 +1,13 @@
 module Main where
 
-import Test.UserStories.Keyword
+import Test.Framework (defaultMain)
 
-main = putStrLn "Testing..."
+-- Test cases
+
+import qualified Test.Unit.Persistence.TestNoSQLDir
+
+tests = [
+    Test.Unit.Persistence.TestNoSQLDir.tests
+  ]
+
+main = defaultMain tests

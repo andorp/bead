@@ -339,8 +339,8 @@ handlePage p = method GET (handleRenderPage p) <|> method POST (handleSubmitPage
            logMessage DEBUG $ "No POST handler found for " ++ show page
            handleLogout
          Just handlerUserAction -> do
-           -- userAction <- handerUserAction
-           let userAction = Profile -- .. TODO: calculate the user action
+           userAction <- handlerUserAction
+           -- let userAction = Profile -- .. TODO: calculate the user action
            ustate <- userState
            let story = userStoryFor ustate userAction
            with serviceContext $ loggedInUserStory story
@@ -353,6 +353,16 @@ handlePage p = method GET (handleRenderPage p) <|> method POST (handleSubmitPage
 renderPage :: P.Page -> Handler App b ()
 renderPage p = blaze $ template p
 
+renderOpenExam :: Handler App b ()
+renderOpenExam = do
+  let t = "This is your exercise"
+  blaze $ base (exerciseTextArea t "area" "/openexam") Nothing
+
+submitSolution :: Handler App b UserAction
+submitSolution = do
+  -- TODO: Get the necessary keys from the session
+  return $ SubmitSolution undefined "This is the solution"
+
 -- * Templating
 
 class (BlazeTemplate h) => AppHandler h where
@@ -363,8 +373,12 @@ instance AppHandler P.Page where
   handlerGET = h where
     j = Just
     h P.Login      = Nothing
+    h P.OpenExam   = j $ renderOpenExam
     h p            = j $ renderPage p
-  handlerPOST _ = Nothing
+  handlerPOST = h where
+    j = Just
+    h P.OpenExam  = j $ submitSolution
+    h _           = Nothing
 
 -- * Routing
 

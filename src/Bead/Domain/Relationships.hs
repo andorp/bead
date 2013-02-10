@@ -28,7 +28,7 @@ type ExamSolutions = (Exam, [UserSolutions])
 type StateTransition s = s -> [s]
 
 -- * Test runner
-  
+
 type TestRunner = Exercise -> Solution -> Test -> Evaulation
 
 type TestRunnerIO = Exercise -> Solution -> Test -> IO Evaulation
@@ -55,6 +55,11 @@ newtype CourseKey = CourseKey String
 
 data GroupKey = GroupKey CourseKey String
   deriving (Eq, Ord, Show)
+
+-- * Str instances
+
+instance Str ExerciseKey where
+  str (ExerciseKey s) = s
 
 -- * Authentication
 

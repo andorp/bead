@@ -3,23 +3,32 @@ module Bead.Persistence.NoSQL.Loader where
 import Bead.Domain.Types
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
+import Control.Monad.Transaction.TIO
 
 import Data.Char (ord)
 import System.FilePath (joinPath)
 import System.IO
-import System.Directory (doesFileExist)
+import System.IO.Temp (createTempDirectory, openTempFile)
+import System.Directory
 import Control.Exception as E
-import Control.Monad (join)
+import Control.Monad (join, when)
+import Control.Applicative ((<$>))
 
 type DirPath = FilePath
 
 -- * Type classes
 
+dataDir = "data"
+userDir = "user"
+courseDir   = "course"
+exerciseDir = "exercise"
+
 persistenceDirs :: [FilePath]
 persistenceDirs = [
-    "data"
-  , joinPath ["data", "user"]
-  , joinPath ["data", "course"]
+    dataDir
+  , joinPath [dataDir, userDir]
+  , joinPath [dataDir, courseDir]
+  , joinPath [dataDir, exerciseDir]
   ]
 
 class DirName d where
@@ -27,20 +36,22 @@ class DirName d where
 
 class FileName f where
   fileName :: f -> String
-  
+
 class KeyString k where
   keyString :: k -> String
-  
-class Load l where
-  load   :: DirPath -> IO (Erroneous l)
 
+-- | Loading data from file persistence
+class Load l where
+  load   :: DirPath -> TIO l
+
+-- | Saving data to file persistence
 class Save s where
-  save :: DirPath -> s -> IO (Erroneous ())
+  save :: DirPath -> s -> TIO ()
 
 -- * DirName and KeyString instances
 
 instance DirName Username where
-  dirName u = joinPath ["data", "user", ordEncode $ str u]
+  dirName u = joinPath [dataDir, userDir, ordEncode $ str u]
 
 instance DirName User where
   dirName = dirName . u_username
@@ -50,55 +61,70 @@ instance KeyString Course where
 
 instance KeyString CourseKey where
   keyString (CourseKey k) = k
-  
+
 instance DirName Course where
-  dirName c = joinPath ["data", "course", keyString c]
+  dirName c = joinPath [dataDir, courseDir, keyString c]
 
 instance DirName CourseKey where
-  dirName (CourseKey c) = joinPath ["data", "course", c]
+  dirName (CourseKey c) = joinPath [dataDir, courseDir, c]
+
+instance DirName ExerciseKey where
+  dirName (ExerciseKey c) = joinPath [dataDir, exerciseDir, c]
 
 instance KeyString Group where
   keyString = ordEncode . groupCode
-  
+
 instance DirName GroupKey where
-  dirName (GroupKey ck g) = joinPath ["data", "course", g]
-  
+  dirName (GroupKey ck g) = joinPath [dataDir, courseDir, g]
+
 instance FileName GroupKey where
   fileName (GroupKey ck g) = join ["group-", keyString ck, "-", g]
-  
+
 -- * Load and save aux functions
-  
-fileSave :: DirPath -> FilePath -> String -> IO (Erroneous ())
-fileSave d f s = 
-  catchSE
+
+fileSave :: DirPath -> FilePath -> String -> TIO ()
+fileSave d f s = step
     (do let fname = joinPath [d,f]
         handler <- openFile fname WriteMode
         hPutStr handler s
         hClose handler
-        return $ Right ())
-    (\ex -> return $ Left $ "Exception occured: " ++ show ex)
+        return ())
+    (do let fname = joinPath [d,f]
+        exists <- doesFileExist fname
+        when exists $ removeFile fname)
 
-fileLoad :: DirPath -> FilePath -> (String -> a) -> IO (Erroneous a)
-fileLoad d f l =
-  catchSE
+fileLoad :: DirPath -> FilePath -> (String -> a) -> TIO a
+fileLoad d f l = step
     (do let fname = joinPath [d,f]
         exist <- doesFileExist fname
-        case exist of
-          False -> return $ Left $ "No role file exist"
-          True -> do
-            catchSE
-              (readFile fname >>= return . Right . l)
-              (\innerEx -> return $ Left $ "Exception occured: " ++ show innerEx))
-    (\outerEx -> return $ Left $ "Exception occured: " ++ show outerEx)
+        l <$> readFile fname)
+    (return ())
 
-saveString :: DirPath -> FilePath -> String -> IO (Erroneous ())
+createDir :: FilePath -> TIO ()
+createDir d = step (createDirectory d) (removeDirectory d)
+
+createTmpDir :: FilePath -> String -> TIO FilePath
+createTmpDir f t = stepM (createTempDirectory f t) (return ()) removeDirectory
+
+openTmpFile :: FilePath -> String -> TIO (FilePath, Handle)
+openTmpFile f t = stepM
+  (openTempFile f t)
+  (return ())
+  (\(p,h) -> do
+    hClose h
+    removeFile p)
+
+removeDir :: FilePath -> TIO ()
+removeDir d = step (removeDirectory d) (createDirectory d)
+
+saveString :: DirPath -> FilePath -> String -> TIO ()
 saveString = fileSave
 
-loadString :: DirPath -> FilePath -> IO (Erroneous String)
+loadString :: DirPath -> FilePath -> TIO String
 loadString d f = fileLoad d f id
-    
+
 -- * Save instances
-    
+
 instance Save Role where
   save d r = fileSave d "role" (show r)
 
@@ -110,6 +136,9 @@ instance Save Email where
 
 instance Save CourseCode where
   save d (CourseCode s) = fileSave d "course_code" s
+
+instance Save Exercise where
+  save d e = fileSave d "exercise" (exercise e)
 
 -- * Load instances
 
@@ -124,6 +153,9 @@ instance Load Email where
 
 instance Load CourseCode where
   load d = fileLoad d "course_code" CourseCode
+
+instance Load Exercise where
+  load d = fileLoad d "exercise" Exercise
 
 -- * Dir Structures
 
@@ -148,8 +180,4 @@ ordEncode txt = concatMap code txt
     code :: Char -> String
     code = show . ord
 
--- * Tool
-
-catchSE :: IO a -> (SomeException -> IO a) -> IO a
-catchSE = E.catch
 

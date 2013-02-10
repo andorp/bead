@@ -4,11 +4,12 @@ module Control.Monad.Transaction (
   , Transaction
   , step
   , stepEither
+  , stepEitherM
   , atomically
   ) where
 
 import Control.Applicative
-import Control.Monad.Trans 
+import Control.Monad.Trans
 import qualified Control.Monad.State as CMS
 import qualified Control.Monad.Error as CME
 import Control.Exception
@@ -58,7 +59,7 @@ transactionStep m = Transaction $ do
   mex <- lift . lift . CME.runErrorT $ m
   eitherStep mex
 
-transactionStepEither :: (CME.Error e, Monad m) => m (Either e a) -> Transaction e m a 
+transactionStepEither :: (CME.Error e, Monad m) => m (Either e a) -> Transaction e m a
 transactionStepEither m = Transaction $ do
   mex <- lift . lift $ m
   eitherStep mex
@@ -72,6 +73,15 @@ stepEither :: (CME.Error e, Monad m) => m (Either e a) -> m () -> Transaction e 
 stepEither m inverse = do
   CMS.modify (addUndo inverse)
   transactionStepEither m
+
+-- | The inverse step of the transactional step, can be calculated when the
+--   operational step is done
+stepEitherM :: (CME.Error e, Monad m) => m (Either e a) -> m () -> (a -> m ()) -> Transaction e m a
+stepEitherM m inverseBefore inverseAfter = do
+  CMS.modify (addUndo inverseBefore)
+  x <- transactionStepEither m
+  CMS.modify (addUndo (inverseAfter x))
+  return x
 
 -- | A transactional step contains a step that can produce an error or calculate
 --   a value and a reverse operation for that step. If an @e@ exception occurs

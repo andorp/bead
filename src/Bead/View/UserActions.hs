@@ -2,10 +2,12 @@ module Bead.View.UserActions where
 
 import Bead.Domain.Entities
 import Bead.Domain.Types
+import Bead.Domain.Relationships
 import Bead.Controller.ServiceContext (UserState(..))
 
 import qualified Bead.Controller.UserStories as Story
 import qualified Bead.Controller.Pages as P
+import qualified Bead.Controller.Logging as L
 
 type Action = UserState -> IO UserAction
 
@@ -36,7 +38,7 @@ data UserAction
   | DeleteExercise String
 
   -- Solution
-  | SubmitSolution Encrypted String
+  | SubmitSolution ExerciseKey String
 
   -- Administration
   | CreateUser User Password
@@ -52,5 +54,5 @@ userStoryFor state (ChangePwd o n n') = Story.changePassword o n n'
 userStoryFor state (CreateUser u p)   = Story.createUser u p
 userStoryFor state (LogMessage m)     = Story.logErrorMessage m
 userStoryFor state (CreateCourse c)   = Story.createCourse c >> return ()
-userStoryFor _     _                  = Story.noOperation
+userStoryFor _     _                  = Story.logMessage L.DEBUG "No story was selected"
 -- etc ...

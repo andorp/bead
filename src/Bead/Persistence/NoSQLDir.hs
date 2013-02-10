@@ -7,22 +7,26 @@ import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.Persistence.Persist
 import Bead.Persistence.NoSQL.Loader
+import Control.Monad.Transaction.TIO
 
-import Control.Monad (join, mapM)
-import System.FilePath (joinPath)
+import Control.Monad (join, mapM, liftM)
+import Control.Exception (IOException, throwIO)
+import System.FilePath (joinPath, takeBaseName)
 import System.Directory (doesDirectoryExist, createDirectory)
 
 -- | Simple directory and file based NoSQL persistence implementation
 noSqlDirPersist = Persist {
     saveUser      = nSaveUser      -- :: User -> Password -> IO (Erroneous ())
-  , doesUserExist = nDoesUserExist -- :: Username -> Password -> IO Bool
+  , doesUserExist = nDoesUserExist -- :: Username -> Password -> IO (Erroneous Bool)
   , personalInfo  = nPersonalInfo  -- :: Username -> Password -> IO (Erroneous (Role, String))
   , updatePwd     = nUpdatePwd     -- :: Username -> Password -> Password -> IO (Erroneous ())
 
   , saveCourse    = nSaveCourse    -- :: Course -> IO (Erroneous ())
 
   , saveGroup     = nSaveGroup     -- :: CourseKey -> Group -> IO (Erroneous GroupKey)
-  
+
+  , saveExercise  = nSaveExercise  -- :: Exercise -> IO (Erroneous ExerciseKey)
+
   , isPersistenceSetUp = nIsPersistenceSetUp
   , initPersistence    = nInitPersistence
   }
@@ -36,86 +40,76 @@ nInitPersistence :: IO ()
 nInitPersistence = mapM_ createDirectory persistenceDirs
 
 nSaveUser :: User -> Password -> IO (Erroneous ())
-nSaveUser usr pwd = do
+nSaveUser usr pwd = runAtomically $ do
   userExist <- isThereAUser (u_username usr)
   case userExist of
-    True -> return $ Left $ "User already exists: " ++ show (u_username usr)
+    True -> throwEx $ userError $ "The user already exists: " ++ show (u_username usr)
     False -> do
       let ePwd = encodePwd pwd
           dirname = dirName usr
-      createDirectory dirname
-      e1 <- save dirname (u_username usr)
-      e2 <- save dirname (u_role usr)
-      e3 <- save dirname (u_email usr)
-      e4 <- saveName dirname (u_name usr)
-      e5 <- savePwd  dirname ePwd
-      return $ firstError [e1,e2,e3,e4,e5]
+      createDir dirname
+      save     dirname (u_username usr)
+      save     dirname (u_role     usr)
+      save     dirname (u_email    usr)
+      saveName dirname (u_name     usr)
+      savePwd  dirname (          ePwd)
 
-isThereAUser :: Username -> IO Bool
-isThereAUser uname = do
-   let dirname = dirName uname
-   exist <- doesDirectoryExist dirname
-   case exist of
-     False -> return False
-     True  -> isCorrectStructure dirname usersStructure
-      
-nDoesUserExist :: Username -> Password -> IO Bool
-nDoesUserExist uname pwd = do
+isThereAUser :: Username -> TIO Bool
+isThereAUser uname = hasNoRollback $ do
   let dirname = dirName uname
-      ePwd = encodePwd pwd
-  exist <- doesDirectoryExist $ dirname
+  exist <- doesDirectoryExist dirname
   case exist of
     False -> return False
-    True -> do
-      ex <- loadPwd dirname
-      case ex of
-        Left m -> return False
-        Right ePwd' -> do
-          putStrLn ePwd
-          putStrLn ePwd'
-          return (ePwd == ePwd')
+    True  -> isCorrectStructure dirname usersStructure
+
+nDoesUserExist :: Username -> Password -> IO (Erroneous Bool)
+nDoesUserExist u p = runAtomically $ tDoesUserExist u p
+
+tDoesUserExist :: Username -> Password -> TIO Bool
+tDoesUserExist uname pwd = do
+  let dirname = dirName uname
+      ePwd = encodePwd pwd
+  exists <- hasNoRollback . doesDirectoryExist $ dirname
+  case exists of
+    False -> return False
+    True  -> do
+      ePwd' <- loadPwd dirname
+      return (ePwd == ePwd')
 
 nPersonalInfo :: Username -> Password -> IO (Erroneous (Role, String))
-nPersonalInfo uname pwd = do
+nPersonalInfo uname pwd = runAtomically $ do
   userExist <- isThereAUser uname
   case userExist of
-    False -> return $ Left $ "User doesn't already exist: " ++ show uname
+    False -> throwEx . userError $ "User doesn't already exist: " ++ show uname
     True -> do
       let ePwd = encodePwd pwd
           dirname = dirName uname
-      rl <- load dirname
-      fn <- loadName dirname
-      case (rl,fn) of
-        (Right rl', Right fn') -> return $ Right (rl',fn')
-        _ -> return $ unsafeFirstError [forgetVal rl, forgetVal fn]
+      role       <- load dirname
+      familyName <- loadName dirname
+      return (role, familyName)
 
 nUpdatePwd :: Username -> Password -> Password -> IO (Erroneous ())
-nUpdatePwd uname oldPwd newPwd = do
-  userExist <- nDoesUserExist uname oldPwd
+nUpdatePwd uname oldPwd newPwd = runAtomically $ do
+  userExist <- tDoesUserExist uname oldPwd
   case userExist of
-    False -> return $ Left $ "Invalid user and/or password combination: " ++ show uname
+    False -> throwEx $ userError $ "Invalid user and/or password combination: " ++ show uname
     True -> do
       let ePwd = encodePwd oldPwd
           dirname = dirName uname
       oldEPwd <- loadPwd dirname
-      case oldEPwd of
-        Left e -> return $ Left e
-        Right oldEPwd' -> do
-          case ePwd == oldEPwd' of
-            False -> return $ Left $ "Invalid password"
-            True -> do
-              savePwd dirname (encodePwd newPwd)
-              return $ Right ()
+      case ePwd == oldEPwd of
+        False -> throwEx . userError $ "Invalid password"
+        True  -> savePwd dirname $ encodePwd newPwd
 
 nSaveCourse :: Course -> IO (Erroneous CourseKey)
-nSaveCourse c = do
+nSaveCourse c = runAtomically $ do
   let courseDir = dirName c
       courseKey = keyString c
   -- TODO: Check if file exists with a same name
-  exist <- doesDirectoryExist courseDir
+  exist <- hasNoRollback $ doesDirectoryExist courseDir
   case exist of
     -- ERROR: Course already exists on the disk
-    True -> return $ nError $ join [
+    True -> throwEx $ userError $ join [
                 "Course already exist: "
               , courseName c
               , " (", show $ courseCode c, ")"
@@ -124,49 +118,57 @@ nSaveCourse c = do
     False -> do
       -- TODO: Check errors creating dirs and files
       -- No space left, etc...
-      createDirectory courseDir
-      createDirectory $ joinPath [courseDir, "groups"]
-      createDirectory $ joinPath [courseDir, "exams"]
-      createDirectory $ joinPath [courseDir, "exams", "groups"]
-      e <- saveCourseDesc courseDir
-      return $ Right $ CourseKey courseKey
+      createDir courseDir
+      createDir $ joinPath [courseDir, "groups"]
+      createDir $ joinPath [courseDir, "exams"]
+      createDir $ joinPath [courseDir, "exams", "groups"]
+      saveCourseDesc courseDir
+      return . CourseKey $ courseKey
   where
-    saveCourseDesc :: FilePath -> IO (Erroneous ())
+    saveCourseDesc :: FilePath -> TIO ()
     saveCourseDesc courseDir = do
-      e0 <- save courseDir (courseCode c)
-      e1 <- saveDesc courseDir (courseDesc c)
-      e2 <- saveName courseDir (courseName c)
-      return $ firstError [e0,e1,e2]
+      save     courseDir (courseCode c)
+      saveDesc courseDir (courseDesc c)
+      saveName courseDir (courseName c)
 
-registerInGroup :: Username -> GroupKey -> IO (Erroneous ())
+registerInGroup :: Username -> GroupKey -> TIO ()
 registerInGroup uname gk = do
   let userDir = dirName uname
-  exist <- doesDirectoryExist userDir
+  exist <- hasNoRollback $ doesDirectoryExist userDir
   case exist of
-    False -> return $ nError $ join [show uname, " does not exist."]
-    True -> saveString userDir (fileName gk) "Registered"
+    False -> throwEx $ userError $ join [show uname, " does not exist."]
+    True  -> saveString userDir (fileName gk) "Registered"
 
 nSaveGroup :: CourseKey -> Group -> IO (Erroneous GroupKey)
-nSaveGroup ck g = do
+nSaveGroup ck g = runAtomically $ do
   let courseDir   = dirName ck
       groupKeyStr = keyString g
       groupDir    = joinPath [courseDir, "groups", groupKeyStr]
       groupKey    = GroupKey ck groupKeyStr
-  exist <- doesDirectoryExist groupDir
+  exist <- hasNoRollback $ doesDirectoryExist groupDir
   case exist of
-    True -> return $ nError $ join ["Group ",groupName g," is already stored"]
+    True -> throwEx $ userError $ join ["Group ",groupName g," is already stored"]
     False -> do
-      createDirectory groupDir
-      e <- saveGroupDesc groupDir groupKey
-      return $ Right groupKey
+      createDir     groupDir
+      saveGroupDesc groupDir groupKey
+      return groupKey
   where
-    saveGroupDesc :: FilePath -> GroupKey -> IO (Erroneous ())
+    saveGroupDesc :: FilePath -> GroupKey -> TIO ()
     saveGroupDesc groupDir gk = do
-      e0 <- saveName groupDir (groupName g)
-      e1 <- saveDesc groupDir (groupDesc g)
-      e2 <- saveString groupDir "users" $ unlines $ map str $ groupUsers g
-      es <- mapM (flip registerInGroup gk) $ groupUsers g
-      return $ firstError ([e0,e1,e2] ++ es)
+      saveName groupDir (groupName g)
+      saveDesc groupDir (groupDesc g)
+      saveString groupDir "users" $ unlines $ map str $ groupUsers g
+      mapM_ (flip registerInGroup gk) $ groupUsers g
+
+--  We define locally the transactional file creation steps, in further version
+-- this will be refactored to a common module
+
+nSaveExercise :: Exercise -> IO (Erroneous ExerciseKey)
+nSaveExercise exercise = runAtomically $ do
+  dirName <- createTmpDir (joinPath [dataDir, exerciseDir]) "ex"
+  let exerciseKey = takeBaseName dirName
+  save dirName exercise
+  return . ExerciseKey $ exerciseKey
 
 -- * Tools
 
@@ -184,3 +186,11 @@ loadDesc dirName = loadString dirName "description"
 
 savePwd dirName = saveString dirName "password"
 loadPwd dirName = loadString dirName "password"
+
+reason :: Either IOException a -> Either String a
+reason (Left e)  = Left $ show e
+reason (Right x) = Right x
+
+-- | Run a TIO transaction and convert the exception to a String message
+runAtomically :: TIO a -> IO (Erroneous a)
+runAtomically = liftM reason . atomically

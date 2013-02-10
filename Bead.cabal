@@ -19,7 +19,7 @@ Flag SnapFrontend
 Executable Bead
   HS-Source-Dirs: src
   Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
-                 transformers
+                 transformers, temporary
 
   if flag(snapfrontend)
     Main-is: SnapMain.hs
@@ -35,4 +35,4 @@ Executable Test
   HS-Source-Dirs: src, test
   Main-is: TestMain.hs
   Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
-                 transformers
+                 transformers, HUnit, test-framework, test-framework-hunit
