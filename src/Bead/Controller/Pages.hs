@@ -20,6 +20,7 @@ data Page
   | Evaulation
   | Training
   | Admin
+  | CreateExercise
   -- etc ...
   deriving (Eq, Enum, Show)
 
@@ -37,11 +38,9 @@ pageTransition s = nub $ p s ++ [Login, Error]
     p SubmitExam = [Home]
     p ClosedExam = [Evaulation]
     p Training   = [Group, Course, Home, Evaulation]
-    p Admin      = [Home]
-{-
-landingPage :: Page -> Page
-landingPage _ = Home
--}    
+    p Admin      = [Home, CreateExercise]
+    p CreateExercise = [Admin, Home]
+
 -- * Page building blocks
 
 data PageBlocks

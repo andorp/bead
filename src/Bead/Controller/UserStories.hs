@@ -88,7 +88,7 @@ changePage p = do
 -- | The user changes his/her password
 changePassword :: Password -> Password -> Password -> UserStory ()
 changePassword old new new'
-  | new /= new' = do 
+  | new /= new' = do
       logErrorMessage "Password does not match"
       errorPage "Password does not match"
   | otherwise = do
@@ -136,7 +136,7 @@ createCourse = create descriptor saveCourse
   where
     descriptor course _ =
       printf "Course is created: %s (%s)"
-        (courseName course)
+        (show (courseName course))
         (show (courseCode course))
 
 -- | Logically deletes an existing cousrse
@@ -167,7 +167,7 @@ updateGroup = undefined
 createExercise :: Exercise -> UserStory ExerciseKey
 createExercise = create descriptor saveExercise
   where
-    descriptor _ key = printf "Exercise is created with id: " (str key)
+    descriptor _ key = printf "Exercise is created with id: %s" (str key)
 
 updateExercise :: ExerciseKey -> Exercise -> UserStory ()
 updateExercise = undefined

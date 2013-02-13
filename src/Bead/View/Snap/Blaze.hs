@@ -4,66 +4,27 @@ module Bead.View.Snap.Blaze where
 import Control.Monad (mapM_)
 
 import Text.Blaze (textTag)
-import Text.Blaze.Html5 hiding (base, map, head)
+import Text.Blaze.Html5 hiding (base, map, head, menu)
 import qualified Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes hiding (title, rows, accept)
 import qualified Text.Blaze.Html5.Attributes as A
 
+import Bead.View.Snap.Pagelets
 import qualified Bead.Controller.Pages as P
 
 -- Definitions --
 
-class BlazeTemplate b where
-  template :: b -> Html
-
-base :: Html -> Maybe Html -> Html
-base content loggedInContent = docTypeHtml $ do
-  H.head $ title "Snap web server"
-  body $ do
-    H.div ! A.id "content" $ content
-    case loggedInContent of
-      Nothing -> return ()
-      Just inner  -> H.div $ do
-        H.div ! A.id "menu1" $ do
-          inner
-
-admin :: Html
-admin = base "Admin page is not defined" Nothing
-
-closedExam :: Html
-closedExam = base "Closed exam page is not defined" Nothing
-
-course :: Html
-course = base "Course page is not defined" Nothing
-
-errorPage :: Html
-errorPage = base "Error page is not defined" Nothing
-
-evaulation :: Html
-evaulation = base "Evaulation page is not defined" Nothing
-
-group :: Html
-group = base "Group page is not defined" Nothing
-
-home :: Html
-home = base "Home page is not definied" Nothing
-
 index :: Maybe Html -> Html
-index loggedIn = do
-  H.p $ do
-    "This is a simple demo page served using "
-    H.a ! A.href "http://snapframework.com/docs/tutorials/heist" $ "Heist"
-    " and the "
-    H.a ! A.href "http://snapframework.com/" $ "Snap"
-    " web framework."
-  case loggedIn of
-    Nothing -> return ()
-    Just h  -> H.p $ do
-      "Congrats! You're logged in as "
-      h
+index Nothing = do
+  H.p "User is not logged in"
 
-empty :: Html
-empty = return ()
+index (Just u) = do
+  H.div ! A.id "header" $
+    H.p $ do
+      "You are logged in as "
+      u
+  H.div ! A.id "menu" $
+    H.p $ menu
 
 userForm :: AttributeValue -> AttributeValue -> Html
 userForm act submitText = do
@@ -134,43 +95,3 @@ registrationForm postAction submitText = do
       H.tr $ do
         H.td f
         H.td $ H.input ! A.type_ t ! A.name n ! A.size "20"
-
-openExam :: Html
-openExam = base "Submit exam page is not defined" Nothing
-  
-  -- base "Open exam page is not defined" Nothing
-
-submitExam :: Html
-submitExam = base "Submit exam page is not defined" Nothing
-
-training :: Html
-training = base "Training page is not defined" Nothing
-
-profile :: Html
-profile = base "Profile page is not defined" Nothing
-
--- * Html building blocks
-
-exerciseTextArea :: Html -> AttributeValue -> AttributeValue -> Html
-exerciseTextArea exercise exerciseName postAction = do
-  H.form ! A.method "post" ! A.action postAction $ do
-    H.p $ exercise
-    H.textarea ! A.name exerciseName ! A.cols "20" ! A.rows "5" $ empty
-    H.input ! A.type_ "submit"
-
--- * Blaze template
-    
-instance BlazeTemplate P.Page where
-  template = t where
-    t P.Login      = login
-    t P.Home       = home
-    t P.Profile    = profile
-    t P.Course     = course
-    t P.Group      = group
-    t P.OpenExam   = openExam
-    t P.ClosedExam = closedExam
-    t P.Error      = errorPage
-    t P.SubmitExam = submitExam
-    t P.Evaulation = evaulation
-    t P.Training   = training
-    t P.Admin      = admin

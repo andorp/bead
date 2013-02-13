@@ -34,7 +34,7 @@ data UserAction
   | DeleteCourse Encrypted
 
   -- Exercise
-  | CreateExercise String
+  | CreateExercise Exercise
   | DeleteExercise String
 
   -- Solution
@@ -54,5 +54,6 @@ userStoryFor state (ChangePwd o n n') = Story.changePassword o n n'
 userStoryFor state (CreateUser u p)   = Story.createUser u p
 userStoryFor state (LogMessage m)     = Story.logErrorMessage m
 userStoryFor state (CreateCourse c)   = Story.createCourse c >> return ()
+userStoryFor state (CreateExercise e) = Story.createExercise e >> return ()
 userStoryFor _     _                  = Story.logMessage L.DEBUG "No story was selected"
 -- etc ...

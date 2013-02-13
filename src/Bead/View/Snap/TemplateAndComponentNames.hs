@@ -38,6 +38,14 @@ instance SnapFieldName RegistrationComp where
 registrationFamilyName   = RegFamilyName   "reg_family_name"
 registrationEmailAddress = RegEmailAddress "reg_email_address"
 
+newtype ExerciseForm
+  = ExerciseForm ByteString
+
+instance SnapFieldName ExerciseForm where
+  fieldName (ExerciseForm f) = f
+
+exerciseForm = ExerciseForm "exercise"
+
 -- * Template names
 
 newtype LoginTemp = LoginTemp ByteString

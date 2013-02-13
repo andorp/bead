@@ -14,18 +14,22 @@ import qualified Bead.Controller.UserStories as S
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.UserActions
 import Bead.View.Snap.Application
+import Bead.View.Snap.Session
 import Bead.View.Snap.Blaze hiding (index)
 import qualified Bead.View.Snap.Blaze as B (index)
 
+import Bead.View.Snap.Content hiding (BlazeTemplate, base, index, template)
+import Bead.View.Snap.Content.All
+
 -- Haskell imports
 
-import Data.String
+import Data.String (fromString)
 import Data.ByteString.Char8 hiding (index)
 import qualified Data.Text as T
 import Data.Maybe
 import qualified Data.List as L
 import Control.Monad (join)
-import Control.Arrow ((&&&))
+import Control.Arrow ((&&&), (>>>))
 import Control.Monad.Error (Error(..))
 import qualified Control.Monad.CatchIO as CMC
 import qualified Control.Exception as CE
@@ -33,7 +37,7 @@ import qualified Control.Exception as CE
 -- Snap and Blaze imports
 
 import Text.Blaze.Html (Html)
-import Snap
+import Snap hiding (get)
 import Snap.Blaze (blaze)
 import Snap.Snaplet.Auth as A
 import Snap.Snaplet.Session
@@ -50,7 +54,7 @@ routes = join
     , ("/new_user", with auth $ handleNewUser)
     ]
     -- Add all pages with template names and handlers
-  , (L.map (routeOf &&& handlePage) P.allPages)
+  , L.map (routeOf &&& ((id &&& content) >>> handlePage)) P.allPages
     -- Add static handlers
   , [ ("",          serveDirectory "static") ]
   ]
@@ -106,6 +110,7 @@ hLoggedInUser inside outside = do
               logMessage ERROR "hLoggedIn: user is not logged in persistence"
               outside
             True -> do
+              -- TODO: Authorize the user for the action
               inside
               mUserData <- liftIO $ users `userData` unameFromAuth
               case mUserData of
@@ -317,26 +322,28 @@ redirectToActPage = do
    * When a user submits information with a POST request, from the submitted information
    we calculate the appropiate user action and runs it
 -}
-handlePage :: P.Page -> Handler App App ()
-handlePage P.Login = handleLoginSubmit
-handlePage p = method GET (handleRenderPage p) <|> method POST (handleSubmitPage p)
+handlePage :: (P.Page, Content) -> Handler App App ()
+handlePage (P.Login, _) = handleLoginSubmit
+handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
   where
-    handleRenderPage page = hLoggedInUser
+    handleRenderPage :: Handler App App ()
+    handleRenderPage = hLoggedInUser
       -- Logged in user GET data
       (maybe
-         (do logMessage DEBUG $ "No GET handler found for " ++ show page
+         (do logMessage DEBUG $ "No GET handler found for " ++ show p
              handleLogout)
          id
-         (handlerGET page))
+         (get c))
       -- Not logged in user tries to get some data
       (do withTop sessionManager $ resetSession
           handleLogout)
 
-    handleSubmitPage page = hLoggedInUser
+    handleSubmitPage :: Handler App App ()
+    handleSubmitPage = hLoggedInUser
       -- Logged in user POSTs data
-      (case handlerPOST page of
+      (case post c of
          Nothing -> do
-           logMessage DEBUG $ "No POST handler found for " ++ show page
+           logMessage DEBUG $ "No POST handler found for " ++ show p
            handleLogout
          Just handlerUserAction -> do
            userAction <- handlerUserAction
@@ -350,176 +357,6 @@ handlePage p = method GET (handleRenderPage p) <|> method POST (handleSubmitPage
       (do withTop sessionManager $ resetSession
           handleLogout)
 
-renderPage :: P.Page -> Handler App b ()
-renderPage p = blaze $ template p
-
-renderOpenExam :: Handler App b ()
-renderOpenExam = do
-  let t = "This is your exercise"
-  blaze $ base (exerciseTextArea t "area" "/openexam") Nothing
-
-submitSolution :: Handler App b UserAction
-submitSolution = do
-  -- TODO: Get the necessary keys from the session
-  return $ SubmitSolution undefined "This is the solution"
-
--- * Templating
-
-class (BlazeTemplate h) => AppHandler h where
-  handlerGET  :: h -> Maybe (Handler App App ())
-  handlerPOST :: h -> Maybe (Handler App App UserAction)
-
-instance AppHandler P.Page where
-  handlerGET = h where
-    j = Just
-    h P.Login      = Nothing
-    h P.OpenExam   = j $ renderOpenExam
-    h p            = j $ renderPage p
-  handlerPOST = h where
-    j = Just
-    h P.OpenExam  = j $ submitSolution
-    h _           = Nothing
-
--- * Routing
-
-routeOf :: P.Page -> ByteString
-routeOf = r where
-  r P.Login      = "/login"
-  r P.Home       = "/home"
-  r P.Profile    = "/profile"
-  r P.Course     = "/course"
-  r P.Group      = "/group"
-  r P.OpenExam   = "/openexam"
-  r P.ClosedExam = "/closedexam"
-  r P.Error      = "/error"
-  r P.SubmitExam = "/submitexam"
-  r P.Evaulation = "/evaulation"
-  r P.Training   = "/training"
-  r P.Admin      = "/admin"
-  r _            = error "routeOf"
-
 -- TODO: Show some error
 errorPageHandler :: T.Text -> Handler App b ()
 errorPageHandler msg = blaze errorPage
-
--- * Session Management
-
-class SessionStore s where
-  sessionStore :: s -> [(T.Text, T.Text)]
-
-class SessionRestore s where
-  restoreFromSession :: [(T.Text, T.Text)] -> Maybe s
-
--- * Session Key and Values for Page
-
-pageSessionKey :: T.Text
-pageSessionKey = "Page"
-
-instance SessionStore P.Page where
-  sessionStore p = [(pageSessionKey, T.pack $ s p)] where
-    s P.Login      = "Login"
-    s P.Home       = "Home"
-    s P.Profile    = "Profile"
-    s P.Course     = "Course"
-    s P.Group      = "Group"
-    s P.OpenExam   = "OpenExam"
-    s P.ClosedExam = "ClosedExam"
-    s P.Error      = "Error"
-    s P.SubmitExam = "SubmitExam"
-    s P.Evaulation = "Evaulation"
-    s P.Training   = "Training"
-    s P.Admin      = "Admin"
-    s p = error $ "Undefined SessionStore value for the page: " ++ show p
-
-instance SessionRestore P.Page where
-  restoreFromSession kv = case L.lookup pageSessionKey kv of
-    Nothing           -> Nothing
-    Just "Login"      -> Just P.Login
-    Just "Home"       -> Just P.Home
-    Just "Profile"    -> Just P.Profile
-    Just "Course"     -> Just P.Course
-    Just "Group"      -> Just P.Group
-    Just "OpenExam"   -> Just P.OpenExam
-    Just "ClosedExam" -> Just P.ClosedExam
-    Just "Error"      -> Just P.Error
-    Just "SubmitExam" -> Just P.SubmitExam
-    Just "Evaulation" -> Just P.Evaulation
-    Just "Training"   -> Just P.Training
-    Just "Admin"      -> Just P.Admin
-
--- * Session Key Values for Username
-
-usernameSessionKey :: T.Text
-usernameSessionKey = "Username"
-
-instance SessionStore E.Username where
-  sessionStore (E.Username n) = [(usernameSessionKey, T.pack n)]
-
-instance SessionRestore E.Username where
-  restoreFromSession kv = case L.lookup usernameSessionKey kv of
-    Nothing -> Nothing
-    Just v -> Just $ E.Username $ T.unpack v
-
--- * Session handlers
-
-sessionVersionKey :: T.Text
-sessionVersionKey = "Version"
-
-sessionVersionValue :: T.Text
-sessionVersionValue = "1"
-
-newtype SessionVersion = SessionVersion T.Text
-  deriving (Eq)
-
-sessionVersion = SessionVersion sessionVersionValue
-
-instance SessionRestore SessionVersion where
-  restoreFromSession kv = case L.lookup sessionVersionKey kv of
-    Nothing -> Nothing
-    Just v -> Just . SessionVersion $ v
-
-setInSessionKeyValues :: [(T.Text, T.Text)] -> Handler App SessionManager ()
-setInSessionKeyValues = mapM_ (\(key,value) -> setInSession key value)
-
-fromSession :: (SessionRestore r) => T.Text -> Handler App SessionManager (Maybe r)
-fromSession key = do
-  v <- getFromSession key
-  return $ join $ fmap (restoreFromSession . (\v' -> [(key,v')])) v
-
-getSessionVersion :: Handler App SessionManager (Maybe SessionVersion)
-getSessionVersion = fromSession sessionVersionKey
-
-setSessionVersion :: Handler App SessionManager ()
-setSessionVersion = setInSessionKeyValues [(sessionVersionKey, sessionVersionValue)]
-
-usernameFromSession :: Handler App SessionManager (Maybe E.Username)
-usernameFromSession = fromSession usernameSessionKey
-
-setUsernameInSession :: Username -> Handler App SessionManager ()
-setUsernameInSession = setInSessionKeyValues . sessionStore
-
-actPageFromSession :: Handler App SessionManager (Maybe P.Page)
-actPageFromSession = fromSession pageSessionKey
-
-setActPageInSession :: P.Page -> Handler App SessionManager ()
-setActPageInSession = setInSessionKeyValues . sessionStore
-
--- * Username and UserState correspondence
-
-usernameFromAuthUser :: AuthUser -> Username
-usernameFromAuthUser = E.Username . (T.unpack) . A.userLogin
-
-passwordFromAuthUser :: AuthUser -> E.Password
-passwordFromAuthUser a = case userPassword a of
-  Just p  -> asPassword p
-  Nothing -> error "passwordFromAuthUser: No password was given"
-
-instance AsUsername ByteString where
-  asUsername = E.Username . unpack
-
-instance AsPassword ByteString where
-  asPassword = unpack
-
-instance AsPassword A.Password where
-  asPassword (A.ClearText t) = unpack t
-  asPassword (A.Encrypted e) = unpack e
