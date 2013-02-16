@@ -11,21 +11,21 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 createExercise :: Content
 createExercise = Content {
-    get   = Just (blaze exercisePage)
+    get   = Just exercisePage
   , post  = Just submitExercise
   }
 
 -- | POST request handler, tries to get the CreateExercise user action
 --   from the received request
-submitExercise :: Handler App App UserAction
+submitExercise :: POSTContentHandler
 submitExercise = do
   exerciseText <- getParam (fieldName exerciseForm)
   case exerciseText of
     Nothing -> return . LogMessage $ "No exercise form was found in the submitted form"
     Just t  -> return . CreateExercise . Exercise . unpack $ t
 
-exercisePage :: Html
-exercisePage = base e Nothing
+exercisePage :: GETContentHandler
+exercisePage = withUserState $ \s -> blaze $ withUserFrame s e Nothing
   where
     e = do
       H.form ! A.method "post" ! A.action "/create-exercise" $ do

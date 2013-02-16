@@ -5,6 +5,9 @@ module Bead.View.Snap.Content (
   , mkContent
   , blaze
   , routeOf
+  , withUserState
+  , GETContentHandler
+  , POSTContentHandler
   , module Snap
   , module Data.ByteString.Char8
 
@@ -24,6 +27,8 @@ import Bead.Domain.Entities
 import Bead.View.UserActions
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.Pagelets
+import Bead.View.Snap.RouteOf
+import Bead.View.Snap.HandlerUtils (withUserState)
 import Bead.View.Snap.TemplateAndComponentNames hiding (Username)
 
 
@@ -31,10 +36,13 @@ import Bead.View.Snap.TemplateAndComponentNames hiding (Username)
 -- a footer, and the content area. Every content area has its GET and POST handlers, its
 -- page type. The common Html templates can be found in the Pagelet module
 
+type GETContentHandler  = Handler App App ()
+type POSTContentHandler = Handler App App UserAction
+
 -- | Content Pages are rendered in content area.
 data Content = Content {
-    get   :: Maybe (Handler App App ())
-  , post  :: Maybe (Handler App App UserAction)
+    get   :: Maybe GETContentHandler
+  , post  :: Maybe POSTContentHandler
   }
 
 emptyContent :: Content
@@ -50,19 +58,3 @@ mkContent
   -> Content
 mkContent g p r = Content { get = g, post = p }
 
-routeOf :: P.Page -> ByteString
-routeOf = r where
-  r P.Login   = "/login"
-  r P.Home    = "/home"
-  r P.Profile = "/profile"
-  r P.Course  = "/course"
-  r P.Group   = "/group"
-  r P.OpenExam = "/open-exam"
-  r P.ClosedExam = "/closed-exam"
-  r P.Error      = "/error"
-  r P.SubmitExam = "/submit-exam"
-  r P.Evaulation = "/evaulation"
-  r P.Training   = "/training"
-  r P.Admin      = "/admin"
-  r P.CreateExercise = "/create-exercise"
-  r p = error $ "There is no route defined for the page: " ++ (show p)

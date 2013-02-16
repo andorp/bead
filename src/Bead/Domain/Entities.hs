@@ -115,6 +115,7 @@ data PermissionObject
   | P_Solution
   | P_Statistics
   | P_Password
+  | P_Professor
   | P_Course
   | P_CourseAdmin
   | P_AdminPage

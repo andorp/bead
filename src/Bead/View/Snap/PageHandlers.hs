@@ -5,6 +5,8 @@ module Bead.View.Snap.PageHandlers (
 
 -- Bead imports
 
+import Prelude hiding (id)
+import qualified Prelude as P
 import Bead.Domain.Types
 import Bead.Domain.Entities as E
 import Bead.Controller.ServiceContext hiding (serviceContext)
@@ -15,18 +17,17 @@ import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.UserActions
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
-import Bead.View.Snap.Blaze hiding (index)
-import qualified Bead.View.Snap.Blaze as B (index)
+import Bead.View.Snap.HandlerUtils
 
-import Bead.View.Snap.Content hiding (BlazeTemplate, base, index, template)
+import Bead.View.Snap.Login as L
+import Bead.View.Snap.Registration
+import Bead.View.Snap.Content hiding (BlazeTemplate, index, template)
 import Bead.View.Snap.Content.All
 
 -- Haskell imports
 
 import Data.String (fromString)
-import Data.ByteString.Char8 hiding (index)
 import qualified Data.Text as T
-import Data.Maybe
 import qualified Data.List as L
 import Control.Monad (join)
 import Control.Arrow ((&&&), (>>>))
@@ -36,13 +37,16 @@ import qualified Control.Exception as CE
 
 -- Snap and Blaze imports
 
-import Text.Blaze.Html (Html)
 import Snap hiding (get)
 import Snap.Blaze (blaze)
 import Snap.Snaplet.Auth as A
 import Snap.Snaplet.Session
 import Snap.Util.FileServe (serveDirectory)
 
+import Text.Blaze (textTag)
+import Text.Blaze.Html5 hiding (base, map, head, menu)
+import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A hiding (title, rows, accept, method)
 
 -- * Route table
 
@@ -50,11 +54,11 @@ routes :: [(ByteString, Handler App App ())]
 routes = join
   [ -- Add login handlers
     [ ("/",         index)
-    , ("/logout",   handleLogout)
-    , ("/new_user", with auth $ handleNewUser)
+    , ("/logout",   L.logout)
+    , ("/new_user", with auth $ registration)
     ]
     -- Add all pages with template names and handlers
-  , L.map (routeOf &&& ((id &&& content) >>> handlePage)) P.allPages
+  , L.map (routeOf &&& ((P.id &&& content) >>> handlePage)) P.allPages
     -- Add static handlers
   , [ ("",          serveDirectory "static") ]
   ]
@@ -63,11 +67,18 @@ routes = join
 
 index :: Handler App App ()
 index =
-  ifTop $ requireUser auth (with auth $ handleLogin Nothing) loggedIn
+  ifTop $ requireUser auth (with auth $ login Nothing) loggedIn
   where
     loggedIn = do
       acc <- with auth $ fmap (maybe "" userLogin) currentUser
-      blaze . B.index . Just . fromString . T.unpack $ acc
+      blaze . idx . Just . fromString . T.unpack $ acc
+
+    idx Nothing  = H.p "User is not logged in"
+    idx (Just u) = do
+      H.div ! A.id "header" $
+        H.p $ do
+          "You are logged in as "
+          u
 
 {- Logged In user combinator. It tries to authenticate the user with three methods.
    The first method authenticate it using Snap auth, the second method authenticates
@@ -161,158 +172,20 @@ loggedInUserStory story = do
         Nothing -> return . Left $ "Unauthenticated user"
         Just authUser -> liftM Right $ f context users authUser
 
-
--- * Login and logout handlers
-
-handleLogin :: Maybe T.Text -> Handler App (AuthManager App) ()
-handleLogin authError = blaze $ login
-
--- TODO: Handle multiple login attempts correctly
--- One user should just log in at once.
-handleLoginSubmit :: Handler App b ()
-handleLoginSubmit = do
-  withTop auth $ loginUser
-    (fieldName loginUsername)
-    (fieldName loginPassword)
-    Nothing (\_ -> handleLogin err) $ do
-      um <- currentUser
-      case um of
-        Nothing -> do
-          logMessage ERROR $ "User is not logged during login submittion process"
-          return ()
-        Just authUser -> do
-          context <- withTop serviceContext getServiceContext
-          let unameFromAuth = usernameFromAuthUser authUser
-              passwFromAuth = passwordFromAuthUser authUser
-          result <- liftIO $ S.runUserStory context UserNotLoggedIn (S.login unameFromAuth passwFromAuth)
-          case result of
-            Right (val,userState) -> initSessionValues (page userState) unameFromAuth
-            Left err -> do
-              logMessage ERROR $ "Error happened processing user story: " ++ show err
-              -- Service context authentication
-              liftIO $ (userContainer context) `userLogsOut` unameFromAuth
-              logout
-
-  withTop sessionManager $ commitSession
-  redirect "/"
-
-  where
-    err = Just . T.pack $ "Unknown user or password"
-
-    initSessionValues :: P.Page -> Username -> Handler App b ()
-    initSessionValues page username = do
-      withTop sessionManager $ do
-        setSessionVersion
-        setUsernameInSession username
-        setActPageInSession  page
-
-      withTop serviceContext $ do
-        logMessage DEBUG $ "Username is set in session to: " ++ show username
-        logMessage DEBUG $ "User's actual page is set in session to: " ++ show page
-
-handleLogout :: Handler App b ()
-handleLogout = do
-  um <- withTop auth $ currentUser
-  case um of
-
-    Nothing -> do
-      logMessage ERROR "There is no user logged in to log out."
-      redirect "/"
-
-    Just authUser -> do
-      let unameFromAuth = usernameFromAuthUser authUser
-      context <- withTop serviceContext $ getServiceContext
-      let users = userContainer context
-      -- Service context authentication
-      liftIO $ users `userLogsOut` unameFromAuth
-      withTop auth logout
-      redirect "/"
-
 -- * User registration handler
 
--- TODO: Create the appropiate form
-handleNewUser :: Handler App (AuthManager App) ()
-handleNewUser = method GET handleForm <|> method POST handleFormSubmit
-  where
-    handleForm = blaze $ newUser
-
-    -- Registers a user as a Student, the administrator can grant
-    -- better access to the user
-    handleFormSubmit = do
-      -- Register the user in the Snap auth module
-      registerUser
-        (fieldName loginUsername)
-        (fieldName loginPassword)
-      -- Register the user in the service context module
-      uname      <- getParam (fieldName loginUsername)
-      passwBS    <- getParam (fieldName loginPassword)
-      email      <- getParam (fieldName registrationEmailAddress)
-      familyname <- getParam (fieldName registrationFamilyName)
-      case (uname,email,familyname) of
-        (Just u,Just e, Just f) -> do
-          -- Create a user info for the service context and
-          -- read the created user info from the Snap auth service context
-          -- and run the registration user story in the service context
-          -- with a freshly created (and encrypted) user password
-          -- in the user context
-          let usr = User {
-                u_role = Student
-              , u_username = asUsername u
-              , u_email = Email . unpack $ e
-              , u_name = unpack f
-              }
-          context <- withTop serviceContext $ getServiceContext
-          createdUser <- withBackend $ \r -> liftIO $ lookupByLogin r (T.pack $ unpack u)
-          case createdUser of
-            Nothing -> withTop serviceContext . logMessage ERROR $
-                         "User was not created at the first stage"
-            Just u' -> do
-              result  <- liftIO $ S.runUserStory context UserNotLoggedIn
-                           (S.createUser usr (passwordFromAuthUser u'))
-              case result of
-                Left err -> withTop serviceContext . logMessage ERROR . show $ err
-                _        -> withTop serviceContext . logMessage INFO . show $
-                              "Everything went fine. The user is created."
-
-        _ -> withTop serviceContext . logMessage ERROR $
-               "Username, email, or family name was not provided by the form"
-      -- It does not matter what happens we redirects to the "/" page
-      redirect "/"
-
--- | The 'logMessage' logs a message at a given level using the service context logger
-logMessage :: LogLevel -> String -> Handler App b ()
-logMessage lvl msg = do
-  context <- withTop serviceContext $ getServiceContext
-  liftIO $ L.log (logger context) lvl msg
-
-userState :: Handler App b UserState
-userState = do
-  context   <- withTop serviceContext $ getServiceContext
-  mUsername <- withTop sessionManager $ usernameFromSession
-  case mUsername of
-    Nothing -> do
-      logMessage ERROR "User is not logged in the session"
-      error "User is not logged in the session"
-    Just user -> do
-      let users = userContainer context
-      userData <- liftIO $ users `userData` user
-      case userData of
-        Nothing -> do
-          logMessage ERROR "No data found for the user"
-          error "No data found for the user"
-        Just ud -> return ud
 
 -- | The 'redirectToActPage' redirects to the page if the user's state stored in the cookie
 --   and the service state are the same, otherwise it's raises an exception
 redirectToActPage :: Handler App b ()
 redirectToActPage = do
   pageInSession <- withTop sessionManager $ actPageFromSession
-  uState <- userState
-  case pageInSession == Just (page uState) of
-    False -> do
-      logMessage ERROR $ "Actual page data stored in session and in the server differ"
-      error $ "Actual page data stored in session and in the server differ"
-    True ->  redirect . routeOf . page $ uState
+  withUserState $ \uState -> 
+    case pageInSession == Just (page uState) of
+      False -> do
+        logMessage ERROR $ "Actual page data stored in session and in the server differ"
+        error $ "Actual page data stored in session and in the server differ"
+      True ->  redirect . routeOf . page $ uState
 
 {- When a user logs in the home page is shown for her. An universal handler
    is used. E.g "/home" -> handlePage P.Home.
@@ -323,7 +196,7 @@ redirectToActPage = do
    we calculate the appropiate user action and runs it
 -}
 handlePage :: (P.Page, Content) -> Handler App App ()
-handlePage (P.Login, _) = handleLoginSubmit
+handlePage (P.Login, _) = loginSubmit
 handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
   where
     handleRenderPage :: Handler App App ()
@@ -331,12 +204,12 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
       -- Logged in user GET data
       (maybe
          (do logMessage DEBUG $ "No GET handler found for " ++ show p
-             handleLogout)
-         id
+             L.logout)
+         P.id
          (get c))
       -- Not logged in user tries to get some data
       (do withTop sessionManager $ resetSession
-          handleLogout)
+          L.logout)
 
     handleSubmitPage :: Handler App App ()
     handleSubmitPage = hLoggedInUser
@@ -344,19 +217,15 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
       (case post c of
          Nothing -> do
            logMessage DEBUG $ "No POST handler found for " ++ show p
-           handleLogout
+           L.logout
          Just handlerUserAction -> do
            userAction <- handlerUserAction
            -- let userAction = Profile -- .. TODO: calculate the user action
-           ustate <- userState
-           let story = userStoryFor ustate userAction
-           with serviceContext $ loggedInUserStory story
-           with sessionManager $ (commitSession >> touchSession)
-           redirectToActPage)
+           withUserState $ \ustate -> do
+             let story = userStoryFor ustate userAction
+             with serviceContext $ loggedInUserStory story
+             with sessionManager $ (commitSession >> touchSession)
+             redirectToActPage)
       -- Not logged in user tires to post some data
       (do withTop sessionManager $ resetSession
-          handleLogout)
-
--- TODO: Show some error
-errorPageHandler :: T.Text -> Handler App b ()
-errorPageHandler msg = blaze errorPage
+          L.logout)

@@ -1,4 +1,10 @@
-module Bead.Controller.Pages where
+module Bead.Controller.Pages (
+    Page(..)
+  , allPages
+  , pageTransition
+  , allowedPages
+  , menuPages
+  ) where
 
 import qualified Bead.Domain.Entities      as E
 import qualified Bead.Domain.Relationships as R
@@ -41,17 +47,16 @@ pageTransition s = nub $ p s ++ [Login, Error]
     p Admin      = [Home, CreateExercise]
     p CreateExercise = [Admin, Home]
 
--- * Page building blocks
+regularPages = [Home, Profile, Course, Group, OpenExam, ClosedExam, Error, SubmitExam, Evaulation]
 
-data PageBlocks
-  = Logout
-  | Statictics
-  | Comment
-  | Exercise
-  | Solution
-  | ProfileBlock
-  | Username
-  -- etc ...
-  deriving (Eq, Show)
+allowedPages :: E.Role -> [Page]
+allowedPages E.Student     =                  regularPages
+allowedPages E.Professor   = CreateExercise : regularPages
+allowedPages E.CourseAdmin = CreateExercise : regularPages
+allowedPages E.Admin       = Admin          : regularPages
+allowedPages p = error $ "There is no pages defined for the " ++ show p
 
+-- TODO: Context sensitive menu
+menuPages :: E.Role -> Page -> [Page]
+menuPages r p = [Home, Profile]
 

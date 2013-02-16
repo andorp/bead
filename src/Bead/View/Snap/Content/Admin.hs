@@ -12,12 +12,12 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 admin :: Content
 admin = Content {
-    get   = Just (blaze adminPage)
+    get   = Just adminPage
   , post  = Nothing
   }
 
-adminPage :: Html
-adminPage = base a Nothing
+adminPage :: GETContentHandler
+adminPage = withUserState $ \s -> blaze $ withUserFrame s a Nothing
   where
     a = do
       H.p "Admin page"

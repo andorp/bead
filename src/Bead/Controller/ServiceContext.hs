@@ -6,11 +6,6 @@ import Bead.Persistence.Persist
 import Bead.Controller.Pages
 import Bead.Controller.Logging
 
-{-
-import Data.Set (Set)
-import qualified Data.Set as Set
--}
-
 import Data.Map (Map)
 import qualified Data.Map as Map
 
