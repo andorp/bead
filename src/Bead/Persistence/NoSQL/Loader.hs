@@ -23,6 +23,8 @@ userDir = "user"
 courseDir   = "course"
 exerciseDir = "exercise"
 
+dataExerciseDir = joinPath [dataDir, exerciseDir]
+
 persistenceDirs :: [FilePath]
 persistenceDirs = [
     dataDir
@@ -100,11 +102,19 @@ fileLoad d f l = step
         l <$> readFile fname)
     (return ())
 
+-- * Directories
+
 createDir :: FilePath -> TIO ()
 createDir d = step (createDirectory d) (removeDirectory d)
 
 createTmpDir :: FilePath -> String -> TIO FilePath
 createTmpDir f t = stepM (createTempDirectory f t) (return ()) removeDirectory
+
+removeDir :: FilePath -> TIO ()
+removeDir d = step (removeDirectory d) (createDirectory d)
+
+getDirContents :: FilePath -> TIO [FilePath]
+getDirContents f = hasNoRollback (getDirectoryContents f)
 
 openTmpFile :: FilePath -> String -> TIO (FilePath, Handle)
 openTmpFile f t = stepM
@@ -114,8 +124,6 @@ openTmpFile f t = stepM
     hClose h
     removeFile p)
 
-removeDir :: FilePath -> TIO ()
-removeDir d = step (removeDirectory d) (createDirectory d)
 
 saveString :: DirPath -> FilePath -> String -> TIO ()
 saveString = fileSave

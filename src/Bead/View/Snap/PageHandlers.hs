@@ -43,11 +43,6 @@ import Snap.Snaplet.Auth as A
 import Snap.Snaplet.Session
 import Snap.Util.FileServe (serveDirectory)
 
-import Text.Blaze (textTag)
-import Text.Blaze.Html5 hiding (base, map, head, menu)
-import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A hiding (title, rows, accept, method)
-
 -- * Route table
 
 routes :: [(ByteString, Handler App App ())]
@@ -67,18 +62,9 @@ routes = join
 
 index :: Handler App App ()
 index =
-  ifTop $ requireUser auth (with auth $ login Nothing) loggedIn
-  where
-    loggedIn = do
-      acc <- with auth $ fmap (maybe "" userLogin) currentUser
-      blaze . idx . Just . fromString . T.unpack $ acc
-
-    idx Nothing  = H.p "User is not logged in"
-    idx (Just u) = do
-      H.div ! A.id "header" $
-        H.p $ do
-          "You are logged in as "
-          u
+  ifTop $ requireUser auth
+            (with auth $ login Nothing)
+            (redirect (routeOf P.Home))
 
 {- Logged In user combinator. It tries to authenticate the user with three methods.
    The first method authenticate it using Snap auth, the second method authenticates
@@ -86,8 +72,8 @@ index =
    using the service context. There is an extra criteria for the user, it's session
    must be the same as the actual version, otherwise the authentication fails
 -}
-hLoggedInUser :: Handler App b () -> Handler App b () -> Handler App b ()
-hLoggedInUser inside outside = do
+userIsLoggedInFilter :: Handler App b () -> Handler App b () -> Handler App b ()
+userIsLoggedInFilter inside outside = do
   -- Login authentication
   um <- withTop auth $ currentUser
   sv <- withTop sessionManager $ getSessionVersion
@@ -138,43 +124,6 @@ hLoggedInUser inside outside = do
       logMessage ERROR $ "Exception occured, redirecting to error page. " ++ show e
       errorPageHandler $ T.append "Exception occured; " (T.pack . show $ e)
 
--- | Runs a user story for authenticated user
-loggedInUserStory :: S.UserStory a -> Handler App SnapletServiceContext (Either S.UserError a)
-loggedInUserStory story = do
-  result <- serviceContextAndUserData $ \context users authUser -> do
-      let unameFromAuth = usernameFromAuthUser authUser
-      ustate <- liftIO $ userData users unameFromAuth
-      case ustate of
-        Nothing -> return . Left . strMsg $ "The user was not authenticated: " ++ show unameFromAuth
-        Just state -> do
-          eResult <- liftIO $ S.runUserStory context state story
-          case eResult of
-            Left e -> return . Left $ e
-            Right (a,state') -> do
-              liftIO $ modifyUserData users unameFromAuth (const state')
-              saveActPage state'
-              return $ Right a
-  case result of
-    Left msg -> return . Left . strMsg . show $ msg
-    Right x -> return x
-
-  where
-    saveActPage state = withTop sessionManager $ setActPageInSession $ page state
-
-    serviceContextAndUserData
-      :: (ServiceContext -> UserContainer UserState -> AuthUser -> Handler App SnapletServiceContext a)
-      -> Handler App SnapletServiceContext (Either String a)
-    serviceContextAndUserData f = do
-      context <- getServiceContext
-      let users = userContainer context
-      um <- withTop auth $ currentUser
-      case um of
-        Nothing -> return . Left $ "Unauthenticated user"
-        Just authUser -> liftM Right $ f context users authUser
-
--- * User registration handler
-
-
 -- | The 'redirectToActPage' redirects to the page if the user's state stored in the cookie
 --   and the service state are the same, otherwise it's raises an exception
 redirectToActPage :: Handler App b ()
@@ -200,7 +149,7 @@ handlePage (P.Login, _) = loginSubmit
 handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
   where
     handleRenderPage :: Handler App App ()
-    handleRenderPage = hLoggedInUser
+    handleRenderPage = userIsLoggedInFilter
       -- Logged in user GET data
       (maybe
          (do logMessage DEBUG $ "No GET handler found for " ++ show p
@@ -212,7 +161,7 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
           L.logout)
 
     handleSubmitPage :: Handler App App ()
-    handleSubmitPage = hLoggedInUser
+    handleSubmitPage = userIsLoggedInFilter
       -- Logged in user POSTs data
       (case post c of
          Nothing -> do
@@ -222,8 +171,7 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
            userAction <- handlerUserAction
            -- let userAction = Profile -- .. TODO: calculate the user action
            withUserState $ \ustate -> do
-             let story = userStoryFor ustate userAction
-             with serviceContext $ loggedInUserStory story
+             runStory $ userStoryFor ustate userAction
              with sessionManager $ (commitSession >> touchSession)
              redirectToActPage)
       -- Not logged in user tires to post some data

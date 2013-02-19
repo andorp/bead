@@ -28,25 +28,3 @@ data Encryption e = Encryption {
   , decrypt :: Encrypted -> EncryptKey -> Erroneous e
   }
 
-
-liftE :: (Monad m, Error e) => m (Erroneous a) -> ErrorT e m a
-liftE em
-  = do x <- lift em
-       case x of
-         Left msg -> throwError $ strMsg msg
-         Right x' -> return x'
-
-firstError :: [Erroneous a] -> Erroneous a
-firstError ((Left msg):_) = Left msg
-firstError [Right x]    = Right x
-firstError (_:es) = firstError es
-
-unsafeFirstError :: [Erroneous a] -> Erroneous b
-unsafeFirstError ((Left msg):_) = Left msg
-unsafeFirstError [Right _]    = Right (error "unsafeFirstError: Right was found")
-unsafeFirstError (_:es) = unsafeFirstError es
-
-forgetVal :: Erroneous a -> Erroneous ()
-forgetVal (Left msg) = Left msg
-forgetVal (Right _)  = Right ()
-

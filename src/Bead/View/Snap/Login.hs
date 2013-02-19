@@ -114,12 +114,12 @@ userForm act submitText = do
       H.tr $ do
         H.td "Login:"
         H.td $ H.input ! A.type_ "text" ! A.name "login" ! A.size "20"
-    H.tr $ do
-      H.td "Password:"
-      H.td $ H.input ! A.type_ "password" ! A.name "password" ! A.size "20"
-    H.tr $ do
-      H.td $ return ()
-      H.td $ H.input ! A.type_ "submit" ! A.value submitText
+      H.tr $ do
+        H.td "Password:"
+        H.td $ H.input ! A.type_ "password" ! A.name "password" ! A.size "20"
+      H.tr $ do
+        H.td $ return ()
+        H.td $ H.input ! A.type_ "submit" ! A.value submitText
 
 loginError :: Html
 loginError = return ()

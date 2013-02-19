@@ -9,10 +9,10 @@ import Bead.Persistence.Persist
 import Bead.Persistence.NoSQL.Loader
 import Control.Monad.Transaction.TIO
 
-import Control.Monad (join, mapM, liftM)
+import Control.Monad (join, mapM, liftM, filterM)
 import Control.Exception (IOException, throwIO)
 import System.FilePath (joinPath, takeBaseName)
-import System.Directory (doesDirectoryExist, createDirectory)
+import System.Directory (doesFileExist, doesDirectoryExist, createDirectory)
 
 -- | Simple directory and file based NoSQL persistence implementation
 noSqlDirPersist = Persist {
@@ -25,7 +25,9 @@ noSqlDirPersist = Persist {
 
   , saveGroup     = nSaveGroup     -- :: CourseKey -> Group -> IO (Erroneous GroupKey)
 
+  , filterExercises = nFilterExercises -- :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey,Exercise)])
   , saveExercise  = nSaveExercise  -- :: Exercise -> IO (Erroneous ExerciseKey)
+  , loadExercise    = nLoadExercise  -- :: ExerciseKey -> IO (Erroneous Exercise)
 
   , isPersistenceSetUp = nIsPersistenceSetUp
   , initPersistence    = nInitPersistence
@@ -169,6 +171,43 @@ nSaveExercise exercise = runAtomically $ do
   let exerciseKey = takeBaseName dirName
   save dirName exercise
   return . ExerciseKey $ exerciseKey
+
+nFilterExercises :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey, Exercise)])
+nFilterExercises f = runAtomically $
+  (getDirContents dataExerciseDir) >>=
+  (addDataDirPath)                 >>=
+  (filterM isExerciseDir)          >>=
+  (mapM tLoadExercise)             >>=
+  (return . filter (uncurry f))
+    where
+      addDataDirPath =
+        return .
+        map (\f -> joinPath [dataExerciseDir, f]) .
+        filter (not . flip elem [".", ".."])
+
+exerciseDirPath :: ExerciseKey -> FilePath
+exerciseDirPath (ExerciseKey e) = joinPath [dataExerciseDir, e]
+
+isExerciseDir :: FilePath -> TIO Bool
+isExerciseDir f = hasNoRollback $ do
+  d <- doesDirectoryExist f
+  e <- doesFileExist $ joinPath [f,"exercise"]
+  return $ and [d,e]
+
+nLoadExercise :: ExerciseKey -> IO (Erroneous Exercise)
+nLoadExercise e = runAtomically $ do
+  let p = exerciseDirPath e
+  isEx <- isExerciseDir p
+  case isEx of
+    False -> throwEx $ userError $ join [str e, "exercise does not exist."]
+    True  -> liftM snd $ tLoadExercise p
+
+-- TODO: implement
+tLoadExercise :: FilePath -> TIO (ExerciseKey, Exercise)
+tLoadExercise dirName = do
+  let exerciseKey = takeBaseName dirName
+  e <- load dirName
+  return (ExerciseKey exerciseKey, e)
 
 -- * Tools
 

@@ -17,9 +17,7 @@ admin = Content {
   }
 
 adminPage :: GETContentHandler
-adminPage = withUserState $ \s -> blaze $ withUserFrame s a Nothing
-  where
-    a = do
+adminPage = withUserStateAndFrame . const $ do
       H.p "Admin page"
       mapM_ (\(link,text) -> (H.p $ H.a ! A.href link $ text)) $ [
           ("/logout", "Logout")

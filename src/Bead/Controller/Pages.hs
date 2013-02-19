@@ -15,11 +15,12 @@ import Data.List (nub)
 
 data Page
   = Login
+  | Logout
   | Home
   | Profile
   | Course
   | Group
-  | OpenExam
+  | Exercise
   | ClosedExam
   | Error
   | SubmitExam
@@ -33,21 +34,23 @@ data Page
 allPages :: [Page]
 allPages = [Login .. ]
 
-pageTransition s = nub $ p s ++ [Login, Error]
+pageTransition s = nub $ p s ++ [Login, Error, Logout]
   where
     p Login      = [Login, Error, Home]
-    p Home       = [Profile, Course, Group, OpenExam, ClosedExam, Evaulation, Training, Admin]
+    p Home       = [Profile, Course, Group, Exercise, ClosedExam, Evaulation, Training, Admin]
     p Profile    = [Home]
-    p Course     = [Group, OpenExam, ClosedExam]
-    p Group      = [OpenExam, ClosedExam]
-    p OpenExam   = [SubmitExam]
+    p Course     = [Group, Exercise, ClosedExam]
+    p Group      = [Exercise, ClosedExam]
+    p Exercise   = [SubmitExam]
     p SubmitExam = [Home]
     p ClosedExam = [Evaulation]
     p Training   = [Group, Course, Home, Evaulation]
     p Admin      = [Home, CreateExercise]
     p CreateExercise = [Admin, Home]
 
-regularPages = [Home, Profile, Course, Group, OpenExam, ClosedExam, Error, SubmitExam, Evaulation]
+regularPages = [Home, Profile, Course, Group, Exercise, ClosedExam, Error, SubmitExam, Evaulation]
+
+nonMenuPages = [Login, Error, Exercise]
 
 allowedPages :: E.Role -> [Page]
 allowedPages E.Student     =                  regularPages
@@ -56,7 +59,10 @@ allowedPages E.CourseAdmin = CreateExercise : regularPages
 allowedPages E.Admin       = Admin          : regularPages
 allowedPages p = error $ "There is no pages defined for the " ++ show p
 
--- TODO: Context sensitive menu
 menuPages :: E.Role -> Page -> [Page]
-menuPages r p = [Home, Profile]
-
+menuPages r p = filter allowedPage $ pageTransition p
+  where
+    allowedPage p' = and [
+        elem p' $ allowedPages r
+      , not $ elem p' nonMenuPages
+      ]

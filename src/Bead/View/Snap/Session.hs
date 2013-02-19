@@ -32,13 +32,15 @@ pageSessionKey :: T.Text
 pageSessionKey = "Page"
 
 instance SessionStore P.Page where
+  sessionStore P.Logout = []
   sessionStore p = [(pageSessionKey, T.pack $ s p)] where
     s P.Login      = "Login"
+    s P.Logout     = "Logout"
     s P.Home       = "Home"
     s P.Profile    = "Profile"
     s P.Course     = "Course"
     s P.Group      = "Group"
-    s P.OpenExam   = "OpenExam"
+    s P.Exercise   = "Exercise"
     s P.ClosedExam = "ClosedExam"
     s P.Error      = "Error"
     s P.SubmitExam = "SubmitExam"
@@ -56,7 +58,7 @@ instance SessionRestore P.Page where
     Just "Profile"    -> Just P.Profile
     Just "Course"     -> Just P.Course
     Just "Group"      -> Just P.Group
-    Just "OpenExam"   -> Just P.OpenExam
+    Just "Exercise"   -> Just P.Exercise
     Just "ClosedExam" -> Just P.ClosedExam
     Just "Error"      -> Just P.Error
     Just "SubmitExam" -> Just P.SubmitExam

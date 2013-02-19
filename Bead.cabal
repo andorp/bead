@@ -30,7 +30,6 @@ Executable Bead
   else
     Main-is: Main.hs
 
-
 Executable Test
   HS-Source-Dirs: src, test
   Main-is: TestMain.hs

@@ -17,5 +17,5 @@ newtype InvariantsM2 m a b = InvariantsM2 [a -> b -> m Bool]
 
 newtype UnitTests = UnitTests [(String,Bool)]
 
-newtype UnitTestsM = UnitTestsM [(String,m Bool)]
+newtype UnitTestsM m = UnitTestsM [(String,m Bool)]
 

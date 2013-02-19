@@ -5,9 +5,13 @@ module Bead.View.Snap.Content (
   , mkContent
   , blaze
   , routeOf
+  , runStory
   , withUserState
+  , withUserStateAndFrame
   , GETContentHandler
   , POSTContentHandler
+  , UserState(..)
+  , Html
   , module Snap
   , module Data.ByteString.Char8
 
@@ -20,17 +24,19 @@ module Bead.View.Snap.Content (
 
 import Snap hiding (empty, get, route)
 import Snap.Blaze (blaze)
-import Data.ByteString.Char8 hiding (span, empty)
+import Data.ByteString.Char8 hiding (span, empty, map)
 
 import Bead.Controller.Pages as P
+import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Domain.Entities
 import Bead.View.UserActions
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.RouteOf
-import Bead.View.Snap.HandlerUtils (withUserState)
+import Bead.View.Snap.HandlerUtils (withUserState, runStory)
 import Bead.View.Snap.TemplateAndComponentNames hiding (Username)
 
+import Text.Blaze.Html5 (Html)
 
 -- Pages have the following structure. A header, a context-sensitive menu,
 -- a footer, and the content area. Every content area has its GET and POST handlers, its
@@ -52,9 +58,11 @@ emptyContent = Content {
   }
 
 mkContent
-  :: Maybe (Handler App App ())
-  -> Maybe (Handler App App UserAction)
-  -> ByteString
+  :: Maybe GETContentHandler
+  -> Maybe POSTContentHandler
   -> Content
-mkContent g p r = Content { get = g, post = p }
+mkContent g p = Content { get = g, post = p }
+
+withUserStateAndFrame :: (UserState -> Html) -> Handler App App ()
+withUserStateAndFrame f = withUserState $ \state -> blaze $ withUserFrame state (f state) Nothing
 

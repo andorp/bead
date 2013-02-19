@@ -121,14 +121,9 @@ create
   -> UserStory k
 create descriptor saver object = do
   authorize P_Create (permissionObject object)
-
-  persistence <- CMR.asks persist
-  key         <- liftIOE $ saver persistence object
-  logger      <- CMR.asks logger
-  liftIO $ log logger INFO $ descriptor object key
-
+  key <- liftP (flip saver object)
+  logMessage INFO $ descriptor object key
   return key
-
 
 -- | Creates a new course
 createCourse :: Course -> UserStory CourseKey
@@ -168,6 +163,17 @@ createExercise :: Exercise -> UserStory ExerciseKey
 createExercise = create descriptor saveExercise
   where
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
+
+selectExercises :: (ExerciseKey -> Exercise -> Bool) -> UserStory [(ExerciseKey, Exercise)]
+selectExercises f = logAction INFO "Select Some Exercises" $ do
+  authorize P_Open P_Exercise
+  liftP $ flip filterExercises f
+
+-- | The 'loadExercise' loads an exercise from the persistence layer
+loadExercise :: ExerciseKey -> UserStory Exercise
+loadExercise k = logAction INFO ("Loading exercise: " ++ show k) $ do
+  authorize P_Open P_Exercise
+  liftP $ flip R.loadExercise k
 
 updateExercise :: ExerciseKey -> Exercise -> UserStory ()
 updateExercise = undefined
@@ -219,9 +225,9 @@ logErrorMessage = logMessage ERROR
 
 -- | Log a message through the log subsystem
 logMessage :: LogLevel -> String -> UserStory ()
-logMessage lvl msg = do
-  l <- CMR.asks logger
-  liftIO $ L.log l lvl msg
+logMessage level msg = do
+  user   <- CMS.gets (str . user)
+  CMR.asks logger >>= (\lgr -> (liftIO $ log lgr level $ join [user, ": ", msg]))
 
 -- | Change user state, if the user state is logged in
 changeUserState :: (UserState -> UserState) -> UserStory ()
@@ -267,3 +273,13 @@ liftIOE a = do
   case x of
     Left err -> CME.throwError $ strMsg err
     Right x  -> return x
+
+-- | The 'logAction' first logs the message after runs the given operation
+logAction :: LogLevel -> String -> UserStory a -> UserStory a
+logAction level msg s = do
+  logMessage level msg
+  s
+
+-- | Lifting a persistence action
+liftP :: (Persist -> IO (Erroneous a)) -> UserStory a
+liftP f = CMR.asks persist >>= (liftIOE . f)

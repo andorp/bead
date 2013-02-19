@@ -12,43 +12,46 @@ import qualified Bead.Controller.Pages as P
 -- * Type safe declarations
 
 class SnapFieldName f where
-  fieldName :: f -> ByteString
+  fieldName :: (IsString s) => f -> s
 
 -- * Component names
 
 data LoginComp
-  = Username ByteString
-  | Password ByteString
+  = Username String
+  | Password String
 
 instance SnapFieldName LoginComp where
-  fieldName (Username f) = f
-  fieldName (Password f) = f
+  fieldName (Username f) = fromString f
+  fieldName (Password f) = fromString f
 
 loginUsername = Username "login"
 loginPassword = Password "password"
 
 data RegistrationComp
-  = RegFamilyName ByteString
-  | RegEmailAddress ByteString
+  = RegFamilyName   String
+  | RegEmailAddress String
 
 instance SnapFieldName RegistrationComp where
-  fieldName (RegFamilyName f)   = f
-  fieldName (RegEmailAddress f) = f
+  fieldName (RegFamilyName f)   = fromString f
+  fieldName (RegEmailAddress f) = fromString f
 
 registrationFamilyName   = RegFamilyName   "reg_family_name"
 registrationEmailAddress = RegEmailAddress "reg_email_address"
 
-newtype ExerciseForm
-  = ExerciseForm ByteString
+data ExerciseForm
+  = ExerciseForm     String
+  | ExerciseKeyField String
 
 instance SnapFieldName ExerciseForm where
-  fieldName (ExerciseForm f) = f
+  fieldName (ExerciseForm f) = fromString f
+  fieldName (ExerciseKeyField e) = fromString e
 
 exerciseForm = ExerciseForm "exercise"
+exerciseKey  = ExerciseKeyField "exercise-key"
 
 -- * Template names
 
-newtype LoginTemp = LoginTemp ByteString
+newtype LoginTemp = LoginTemp String
   deriving (Eq)
 
 loginTemp = LoginTemp "login"

@@ -4,6 +4,7 @@ module Bead.View.Snap.Content.CreateExercise (
   ) where
 
 import Bead.View.Snap.Content
+import qualified Bead.Controller.Pages as P (Page(CreateExercise))
 
 import Text.Blaze.Html5 (Html,(!))
 import qualified Text.Blaze.Html5 as H
@@ -25,10 +26,8 @@ submitExercise = do
     Just t  -> return . CreateExercise . Exercise . unpack $ t
 
 exercisePage :: GETContentHandler
-exercisePage = withUserState $ \s -> blaze $ withUserFrame s e Nothing
-  where
-    e = do
-      H.form ! A.method "post" ! A.action "/create-exercise" $ do
+exercisePage = withUserStateAndFrame . const $ do
+      H.form ! A.method "post" ! A.action (routeOf P.CreateExercise) $ do
       H.p "Create a new exercise"
       H.textarea ! A.name "exercise" ! A.cols "20" ! A.rows "5" $ empty
       H.input ! A.type_ "submit"
