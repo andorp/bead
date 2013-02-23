@@ -62,7 +62,8 @@ withUserState h = do
   u <- userState
   h u
 
--- | Runs a user story for authenticated user
+-- | Runs a user story for authenticated user and saves the new user state
+--   into the service context
 runStory :: S.UserStory a -> Handler App b (Either S.UserError a)
 runStory story = withTop serviceContext $ do
   result <- serviceContextAndUserData $ \context users authUser -> do
@@ -83,7 +84,10 @@ runStory story = withTop serviceContext $ do
     Right x -> return x
 
   where
-    saveActPage state = withTop sessionManager $ setActPageInSession $ page state
+    saveActPage state = withTop sessionManager $ do
+      setActPageInSession $ page state
+      commitSession
+      touchSession
 
     serviceContextAndUserData
       :: (ServiceContext -> UserContainer UserState -> AuthUser -> Handler App SnapletServiceContext a)

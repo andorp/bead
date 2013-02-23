@@ -7,7 +7,7 @@ module Bead.Invariants where
 -- invariants and unit tests in a module to 'invariants'
 -- and 'unitTests'
 
-newtype Invariants a = Invariants [a -> Bool]
+newtype Invariants a = Invariants [(String,a -> Bool)]
 
 newtype Invariants2 a b = Invariants2 [a -> b -> Bool]
 

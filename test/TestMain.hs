@@ -10,6 +10,7 @@ import qualified Test.Unit.Invariants
 tests = [
     Test.Unit.Persistence.TestNoSQLDir.tests
   , Test.Unit.Invariants.routeOfTests
+  , Test.Unit.Invariants.pageTests
   ]
 
 main = defaultMain tests

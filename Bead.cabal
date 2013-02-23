@@ -34,4 +34,5 @@ Executable Test
   HS-Source-Dirs: src, test
   Main-is: TestMain.hs
   Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
-                 transformers, HUnit, test-framework, test-framework-hunit
+                 transformers, HUnit, test-framework, test-framework-hunit,
+                 test-framework-quickcheck2, QuickCheck

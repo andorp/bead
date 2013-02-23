@@ -1,4 +1,4 @@
-module Bead.Invariants.Generators where
+module Bead.Invariants.EntityGen where
 
 import Bead.Domain.Entities
 

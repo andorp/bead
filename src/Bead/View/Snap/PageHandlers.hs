@@ -17,7 +17,7 @@ import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.UserActions
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
-import Bead.View.Snap.HandlerUtils
+import Bead.View.Snap.HandlerUtils as HU
 
 import Bead.View.Snap.Login as L
 import Bead.View.Snap.Registration
@@ -26,6 +26,7 @@ import Bead.View.Snap.Content.All
 
 -- Haskell imports
 
+import Data.Maybe
 import Data.String (fromString)
 import qualified Data.Text as T
 import qualified Data.List as L
@@ -34,6 +35,8 @@ import Control.Arrow ((&&&), (>>>))
 import Control.Monad.Error (Error(..))
 import qualified Control.Monad.CatchIO as CMC
 import qualified Control.Exception as CE
+import Control.Monad.Trans (lift)
+import qualified Control.Monad.Error as CME
 
 -- Snap and Blaze imports
 
@@ -74,55 +77,69 @@ index =
 -}
 userIsLoggedInFilter :: Handler App b () -> Handler App b () -> Handler App b ()
 userIsLoggedInFilter inside outside = do
-  -- Login authentication
-  um <- withTop auth $ currentUser
-  sv <- withTop sessionManager $ getSessionVersion
-  case (um,sv == (Just sessionVersion)) of
-    (Nothing,_) -> do
-      logMessage ERROR "Unknown user from session"
-      outside
-    (_, False) -> do
-      logMessage ERROR "Invalid session version found"
-      outside
-    -- The user must be authenticated by the auth manager and also has to be the right session version
-    (Just authUser, True) -> do
-      -- Session cookie authentication
-      let unameFromAuth = usernameFromAuthUser authUser
-      unameFromSession <- withTop sessionManager $ usernameFromSession
-      pageFromSession  <- withTop sessionManager $ actPageFromSession
-      case (Just unameFromAuth) == unameFromSession of
-        False -> do
-          logMessage ERROR $ join [
-              "hLoggedIn: invalid username from session ", show unameFromAuth
-            , ", ", show unameFromSession
-            ]
-          outside
-        True -> do
-          context <- withTop serviceContext $ getServiceContext
-          let users = userContainer context
-          -- Service context authentication
-          isLoggedIn <- liftIO $ users `isUserLoggedIn` unameFromAuth
-          case isLoggedIn of
-            False -> do
-              logMessage ERROR "hLoggedIn: user is not logged in persistence"
-              outside
-            True -> do
-              -- TODO: Authorize the user for the action
-              inside
-              mUserData <- liftIO $ users `userData` unameFromAuth
-              case mUserData of
-                Nothing -> do
-                  logMessage ERROR $ "No user data was found for the user " ++ show unameFromAuth
-                  outside
-                Just ud ->
-                  CMC.catch
-                    (withTop sessionManager . setActPageInSession . page $ ud)
-                    someExceptionHandler
+  e <- CME.runErrorT loggedInFilter
+  case e of
+    Right () -> return ()
+    Left e' -> errorHappened e'
+
   where
+    errorHappened e = do
+      logMessage ERROR e
+      outside
+
     someExceptionHandler :: CE.SomeException -> Handler App b ()
     someExceptionHandler e = do
       logMessage ERROR $ "Exception occured, redirecting to error page. " ++ show e
       errorPageHandler $ T.append "Exception occured; " (T.pack . show $ e)
+
+    loggedInFilter = do
+      -- Authenticated user information
+      serverSideUser <- lift . withTop auth           $ currentUser
+      sessionVer     <- lift . withTop sessionManager $ getSessionVersion
+
+      -- Guards: invalid session version or invalid user
+      when (sessionVer /= (Just sessionVersion)) . CME.throwError $ "Invalid session version was found"
+      when (isNothing serverSideUser)            . CME.throwError $ "Unknown user from session"
+
+      -- Username and page from session
+      let unameFromAuth = usernameFromAuthUser . fromJust $ serverSideUser
+      usernameFromSession <- lift . withTop sessionManager $ usernameFromSession
+
+      -- Guard: invalid user in session
+      when (usernameFromSession /= (Just unameFromAuth)) . CME.throwError $ join [
+              "hLoggedIn: invalid username from session ", show unameFromAuth
+            , ", ", show usernameFromSession
+            ]
+
+      -- Guard: Is user logged in?
+      context <- lift . withTop serviceContext $ getServiceContext
+      let users = userContainer context
+      isLoggedIn <- lift (liftIO $ users `isUserLoggedIn` unameFromAuth)
+      unless (isLoggedIn) . CME.throwError $ "User is not logged in persistence"
+
+      -- Guard: User's actul page differs from the one that is stored on the server
+      pageFromSession <- lift . withTop sessionManager $ actPageFromSession
+      mUserData       <- lift . liftIO $ userData users unameFromAuth
+      when (isNothing mUserData) . CME.throwError $
+        "No user data was found for the user " ++ show unameFromAuth
+      when (Just (page (fromJust mUserData)) /= pageFromSession) . CME.throwError $ join [
+          "Page stored in session and in server differs: ",
+          show (page (fromJust mUserData)), " ",
+          show pageFromSession
+        ]
+
+      -- Correct user is logged in, run the handler and save the data
+      lift inside
+      mUserData <- lift (liftIO $ users `userData` unameFromAuth)
+
+      when (isNothing mUserData) . CME.throwError $
+        "No user data was found for the user " ++ show unameFromAuth
+
+      lift $ CMC.catch
+        (withTop sessionManager . setActPageInSession . page . fromJust $ mUserData)
+        someExceptionHandler
+
+
 
 -- | The 'redirectToActPage' redirects to the page if the user's state stored in the cookie
 --   and the service state are the same, otherwise it's raises an exception
@@ -148,32 +165,57 @@ handlePage :: (P.Page, Content) -> Handler App App ()
 handlePage (P.Login, _) = loginSubmit
 handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
   where
+    notAllowedPage = do
+      logMessage ERROR $ "Page transition is not allowed " ++ show p
+      L.logout
+
+    changePage h =
+      allowedPageByTransition p
+        (do { runStory $ S.changePage p; h })
+        notAllowedPage
+
     handleRenderPage :: Handler App App ()
     handleRenderPage = userIsLoggedInFilter
-      -- Logged in user GET data
+
+      -- If the GET handler is not found for the given page, the logout action is
+      -- required as the user tries to do some invalid operation.
       (maybe
-         (do logMessage DEBUG $ "No GET handler found for " ++ show p
-             L.logout)
-         P.id
+         -- GET handler is not found
+         ((logMessage DEBUG $ "No GET handler found for " ++ show p) >> L.logout)
+         -- GET handler is found
+         changePage
          (get c))
+
       -- Not logged in user tries to get some data
       (do withTop sessionManager $ resetSession
           L.logout)
 
     handleSubmitPage :: Handler App App ()
     handleSubmitPage = userIsLoggedInFilter
-      -- Logged in user POSTs data
+
+      -- If the POST handler is not found for the given page, logout action is
+      -- required as the user tries to do some invalid operation
       (case post c of
+         -- POST handler is not found
          Nothing -> do
            logMessage DEBUG $ "No POST handler found for " ++ show p
            L.logout
+         -- POST handler is found
          Just handlerUserAction -> do
            userAction <- handlerUserAction
-           -- let userAction = Profile -- .. TODO: calculate the user action
-           withUserState $ \ustate -> do
-             runStory $ userStoryFor ustate userAction
-             with sessionManager $ (commitSession >> touchSession)
-             redirectToActPage)
+           withUserState $ \ustate -> runStory $ do
+             userStoryFor ustate userAction
+             S.changePage (P.parentPage p)
+           with sessionManager $ (commitSession >> touchSession)
+           redirectToActPage)
+
       -- Not logged in user tires to post some data
       (do withTop sessionManager $ resetSession
           L.logout)
+
+allowedPageByTransition :: P.Page -> Handler App App a -> Handler App App a -> Handler App App a
+allowedPageByTransition p allowed restricted = withUserState $ \state ->
+  case P.reachable (page state) p of
+    False -> restricted
+    True  -> allowed
+
