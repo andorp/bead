@@ -9,5 +9,5 @@ import Test.Quick.EnumGen
 
 
 instance Arbitrary Page where
-  arbitrary = enumElements
+  arbitrary = enumGenerator
 

@@ -84,7 +84,7 @@ data Role
   | Professor
   | CourseAdmin
   | Admin
-  deriving (Read, Eq, Ord)
+  deriving (Read, Eq, Ord, Enum)
 
 instance Show Role where
   show Student     = "Student"
@@ -100,7 +100,7 @@ data Permission
   | P_Create
   | P_Modify
   | P_Delete
-  deriving (Show, Eq)
+  deriving (Show, Eq, Enum)
 
 canOpen, canCreate, canModify, canDelete :: Permission -> Bool
 
@@ -120,7 +120,7 @@ data PermissionObject
   | P_CourseAdmin
   | P_AdminPage
   | P_PlainPage
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Enum)
 
 -- Permission Objects are dynamically associated with values
 class PermissionObj p where

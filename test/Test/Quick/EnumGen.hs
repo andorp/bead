@@ -2,5 +2,5 @@ module Test.Quick.EnumGen where
 
 import Test.QuickCheck.Gen
 
-enumElements :: (Enum e) => Gen e
-enumElements = elements [(toEnum 0) .. ]
+enumGenerator :: (Enum e) => Gen e
+enumGenerator = elements [(toEnum 0) .. ]

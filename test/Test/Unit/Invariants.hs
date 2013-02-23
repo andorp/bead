@@ -1,6 +1,7 @@
 module Test.Unit.Invariants (
     routeOfTests
   , pageTests
+  , rolePermissionTests
   ) where
 
 -- * Bead imports
@@ -18,12 +19,13 @@ import Test.Framework.Providers.QuickCheck2
 -- * Generators
 
 import Test.Quick.PageGen
+import Test.Quick.RolePermissionGen
 
 -- * Unit tests and invariants import from Bead modules
 
 import qualified Bead.View.Snap.RouteOf as R (unitTests)
 import qualified Bead.Controller.Pages as P (invariants)
-
+import qualified Bead.Domain.RolePermission as RP (invariants)
 
 
 unitTestGroup :: String -> UnitTests -> Test
@@ -34,6 +36,11 @@ invariantsGroup :: (Show i, Arbitrary i) => String -> Invariants i -> Test
 invariantsGroup name (Invariants is) = testGroup name
   $ map (\(desc, prop) -> testProperty desc prop) is
 
+-- * Unit tests
+
 routeOfTests = unitTestGroup "Route Of" R.unitTests
 
 pageTests = invariantsGroup "Page invariants" P.invariants
+
+rolePermissionTests = invariantsGroup "Role permission invariants" RP.invariants
+

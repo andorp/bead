@@ -11,6 +11,7 @@ tests = [
     Test.Unit.Persistence.TestNoSQLDir.tests
   , Test.Unit.Invariants.routeOfTests
   , Test.Unit.Invariants.pageTests
+  , Test.Unit.Invariants.rolePermissionTests
   ]
 
 main = defaultMain tests
