@@ -22,10 +22,14 @@ noSqlDirPersist = Persist {
   , updatePwd     = nUpdatePwd     -- :: Username -> Password -> Password -> IO (Erroneous ())
 
   , saveCourse    = nSaveCourse    -- :: Course -> IO (Erroneous ())
+  , courseKeys    = nCourseKeys    -- :: IO (Erroneous [CourseKey])
+  , filterCourses = nFilterCourses -- :: (CourseKey -> Course -> Bool) -> IO (Erroneous [(CourseKey, Course)])
+  , loadCourse    = nLoadCourse    -- :: CourseKey -> IO (Erroneous Course)
 
   , saveGroup     = nSaveGroup     -- :: CourseKey -> Group -> IO (Erroneous GroupKey)
 
   , filterExercises = nFilterExercises -- :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey,Exercise)])
+  , exerciseKeys  = nExerciseKeys  -- :: IO (Erroneous [ExerciseKey])
   , saveExercise  = nSaveExercise  -- :: Exercise -> IO (Erroneous ExerciseKey)
   , loadExercise    = nLoadExercise  -- :: ExerciseKey -> IO (Erroneous Exercise)
 
@@ -82,7 +86,7 @@ nPersonalInfo :: Username -> Password -> IO (Erroneous (Role, String))
 nPersonalInfo uname pwd = runAtomically $ do
   userExist <- isThereAUser uname
   case userExist of
-    False -> throwEx . userError $ "User doesn't already exist: " ++ show uname
+    False -> throwEx . userError $ "User doesn't exist: " ++ show uname
     True -> do
       let ePwd = encodePwd pwd
           dirname = dirName uname
@@ -102,6 +106,32 @@ nUpdatePwd uname oldPwd newPwd = runAtomically $ do
       case ePwd == oldEPwd of
         False -> throwEx . userError $ "Invalid password"
         True  -> savePwd dirname $ encodePwd newPwd
+
+
+nLoadCourse :: CourseKey -> IO (Erroneous Course)
+nLoadCourse c = runAtomically $ do
+  let p = courseDirPath c
+  isC <- isCourseDir p
+  case isC of
+    False -> throwEx $ userError $ join [str c, " course does not exist."]
+    True  -> liftM snd $ tLoadCourse p
+  where
+    courseDirPath :: CourseKey -> FilePath
+    courseDirPath (CourseKey e) = joinPath [dataCourseDir, e]
+
+
+tLoadCourse :: FilePath -> TIO (CourseKey, Course)
+tLoadCourse dirName = do
+  let courseKey = takeBaseName dirName
+  code <- load dirName
+  desc <- loadString dirName "description"
+  name <- loadString dirName "name"
+  let c = Course {
+      courseCode = code
+    , courseDesc = desc
+    , courseName = name
+    }
+  return (CourseKey courseKey, c)
 
 nSaveCourse :: Course -> IO (Erroneous CourseKey)
 nSaveCourse c = runAtomically $ do
@@ -172,21 +202,27 @@ nSaveExercise exercise = runAtomically $ do
   save dirName exercise
   return . ExerciseKey $ exerciseKey
 
+addDataDirPath p =
+  return .
+    map (\f -> joinPath [p, f]) .
+    filter (not . flip elem [".", ".."])
+
+nExerciseKeys :: IO (Erroneous [ExerciseKey])
+nExerciseKeys = runAtomically $
+  (getDirContents dataExerciseDir) >>=
+  (addDataDirPath dataExerciseDir) >>=
+  (filterM isExerciseDir)          >>=
+  calcExerciseKeys
+    where
+      calcExerciseKeys = return . map (ExerciseKey . takeBaseName)
+
 nFilterExercises :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey, Exercise)])
 nFilterExercises f = runAtomically $
   (getDirContents dataExerciseDir) >>=
-  (addDataDirPath)                 >>=
+  (addDataDirPath dataExerciseDir) >>=
   (filterM isExerciseDir)          >>=
   (mapM tLoadExercise)             >>=
   (return . filter (uncurry f))
-    where
-      addDataDirPath =
-        return .
-        map (\f -> joinPath [dataExerciseDir, f]) .
-        filter (not . flip elem [".", ".."])
-
-exerciseDirPath :: ExerciseKey -> FilePath
-exerciseDirPath (ExerciseKey e) = joinPath [dataExerciseDir, e]
 
 isExerciseDir :: FilePath -> TIO Bool
 isExerciseDir f = hasNoRollback $ do
@@ -194,13 +230,18 @@ isExerciseDir f = hasNoRollback $ do
   e <- doesFileExist $ joinPath [f,"exercise"]
   return $ and [d,e]
 
+
 nLoadExercise :: ExerciseKey -> IO (Erroneous Exercise)
 nLoadExercise e = runAtomically $ do
   let p = exerciseDirPath e
   isEx <- isExerciseDir p
   case isEx of
-    False -> throwEx $ userError $ join [str e, "exercise does not exist."]
+    False -> throwEx $ userError $ join [str e, " exercise does not exist."]
     True  -> liftM snd $ tLoadExercise p
+  where
+    exerciseDirPath :: ExerciseKey -> FilePath
+    exerciseDirPath (ExerciseKey e) = joinPath [dataExerciseDir, e]
+
 
 -- TODO: implement
 tLoadExercise :: FilePath -> TIO (ExerciseKey, Exercise)
@@ -208,6 +249,28 @@ tLoadExercise dirName = do
   let exerciseKey = takeBaseName dirName
   e <- load dirName
   return (ExerciseKey exerciseKey, e)
+
+nCourseKeys :: IO (Erroneous [CourseKey])
+nCourseKeys = runAtomically $
+  (getDirContents dataCourseDir) >>=
+  (addDataDirPath dataCourseDir) >>=
+  (filterM isCourseDir)          >>=
+  calcCourseKeys
+    where
+      calcCourseKeys = return . map (CourseKey . takeBaseName)
+
+isCourseDir :: FilePath -> TIO Bool
+isCourseDir p = hasNoRollback $ isCorrectStructure p courseDirStructure
+
+nFilterCourses :: (CourseKey -> Course -> Bool) -> IO (Erroneous [(CourseKey, Course)])
+nFilterCourses f = runAtomically $
+  (getDirContents dataCourseDir) >>=
+  (addDataDirPath dataCourseDir) >>=
+  (filterM isCourseDir)          >>=
+  (mapM tLoadCourse)             >>=
+  (return . filter (uncurry f))
+
+
 
 -- * Tools
 

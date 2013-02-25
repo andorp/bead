@@ -23,7 +23,7 @@ import Test.Quick.RolePermissionGen
 
 -- * Unit tests and invariants import from Bead modules
 
-import qualified Bead.View.Snap.RouteOf as R (unitTests)
+import qualified Bead.View.Snap.RouteOf as R (invariants)
 import qualified Bead.Controller.Pages as P (invariants)
 import qualified Bead.Domain.RolePermission as RP (invariants)
 
@@ -38,7 +38,7 @@ invariantsGroup name (Invariants is) = testGroup name
 
 -- * Unit tests
 
-routeOfTests = unitTestGroup "Route Of" R.unitTests
+routeOfTests = invariantsGroup "Route Of" R.invariants
 
 pageTests = invariantsGroup "Page invariants" P.invariants
 

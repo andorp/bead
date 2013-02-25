@@ -24,13 +24,15 @@ courseDir   = "course"
 exerciseDir = "exercise"
 
 dataExerciseDir = joinPath [dataDir, exerciseDir]
+dataCourseDir   = joinPath [dataDir, courseDir]
+dataUserDir     = joinPath [dataDir, userDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
     dataDir
-  , joinPath [dataDir, userDir]
-  , joinPath [dataDir, courseDir]
-  , joinPath [dataDir, exerciseDir]
+  , dataUserDir
+  , dataCourseDir
+  , dataExerciseDir
   ]
 
 class DirName d where
@@ -167,18 +169,34 @@ instance Load Exercise where
 
 -- * Dir Structures
 
-newtype DirStructure = DirStructure [FilePath]
+data DirStructure = DirStructure {
+    directories :: [FilePath]
+  , files       :: [FilePath]
+  }
 
 isCorrectStructure :: DirPath -> DirStructure -> IO Bool
-isCorrectStructure dirname (DirStructure fs) = do
-  as <- mapM (doesFileExist . joinPath . f) fs
-  return $ and as
+isCorrectStructure dirname ds = do
+  d  <- doesDirectoryExist dirname
+  as <- mapM (doesDirectoryExist . joinPath . f) . directories $ ds
+  bs <- mapM (doesFileExist      . joinPath . f) . files       $ ds
+  return . and $ as ++ bs
   where
     f x = [dirname, x]
 
-usersStructure = DirStructure [
-    "email", "name", "password", "role", "username"
-  ]
+usersStructure = DirStructure {
+    files       = ["email", "name", "password", "role", "username"]
+  , directories = []
+  }
+
+exerciseDirStructure = DirStructure {
+    files       = ["exercise"]
+  , directories = []
+  }
+
+courseDirStructure = DirStructure {
+    files       = ["course_code", "description", "name"]
+  , directories = ["groups", "exams"]
+  }
 
 -- * Encoding
 

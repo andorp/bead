@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.RouteOf (
     routeOf
-  , unitTests
+  , invariants
   ) where
 
 import Data.String
-import Bead.Controller.Pages
+import Bead.Controller.Pages hiding (invariants)
 
-import Bead.Invariants (UnitTests(..))
+import Bead.Invariants (Invariants(..))
 
 routeOf :: (IsString s) => Page -> s
 routeOf = r where
@@ -27,7 +27,8 @@ routeOf = r where
   r CreateExercise = fromString "/create-exercise"
   r p = error $ "There is no route defined for the page: " ++ (show p)
 
-unitTests = UnitTests $ map (\p -> (routeOf' p, length (routeOf' p) > 0)) [Login .. ]
-  where
+invariants = Invariants [
+    ("RouteOf strings must not empty", \p -> length (routeOf' p) > 0)
+  ] where
     routeOf' :: Page -> String
     routeOf' = routeOf

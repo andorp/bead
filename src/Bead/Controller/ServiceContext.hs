@@ -25,26 +25,12 @@ data UserState
   , page :: Page
   , name :: String
   , role :: Role
-  , availablePages :: [Page]
-  , pageRenderData :: PageRenderData
   }
 
 -- | The actual page that corresponds to the user's state
 actualPage :: UserState -> Page
 actualPage UserNotLoggedIn = Login
 actualPage u               = page u
-
-data PageRenderData
-  = NoPageData
-  | HomePageData
-    { courses :: [Stored Encrypted CourseName]
-    , groups :: [Stored Encrypted GroupName]
-    , exams :: [Stored Encrypted ExamInfo]
-    }
-
-isHomePageData :: PageRenderData -> Bool
-isHomePageData (HomePageData {}) = True
-isHomePageData _                 = False
 
 data UserContainer a = UserContainer {
     isUserLoggedIn :: Username -> IO Bool
@@ -63,26 +49,6 @@ data ServiceContext = ServiceContext {
 serviceContext :: Persist -> UserContainer UserState -> Logger -> ServiceContext
 serviceContext = ServiceContext
 
-{-
-ioUserContainer :: IO UserContainer
-ioUserContainer = do
-  p <- Ref.newIORef Set.empty
-
-  let ioIsUserLoggedIn name = do
-        set <- Ref.readIORef p
-        return $ Set.member name set
-
-      ioUserLogsIn name = Ref.modifyIORef p $ Set.insert name
-
-      ioUserLogsOut name = Ref.modifyIORef p $ Set.delete name
-
-  return UserContainer {
-      isUserLoggedIn = ioIsUserLoggedIn
-    , userLogsIn     = ioUserLogsIn
-    , userLogsOut    = ioUserLogsOut
-    }
--}
-    
 ioUserContainer :: IO (UserContainer a)
 ioUserContainer = do
   v <- newMVar Map.empty

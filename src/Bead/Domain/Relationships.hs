@@ -61,6 +61,9 @@ data GroupKey = GroupKey CourseKey String
 instance Str ExerciseKey where
   str (ExerciseKey s) = s
 
+instance Str CourseKey where
+  str (CourseKey c) = c
+
 -- * Authentication
 
 authTable :: [(User, Permission, PermissionObject)] -> Authorization

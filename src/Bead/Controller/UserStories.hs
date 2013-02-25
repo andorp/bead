@@ -134,6 +134,16 @@ createCourse = create descriptor saveCourse
         (show (courseName course))
         (show (courseCode course))
 
+selectCourses :: (CourseKey -> Course -> Bool) -> UserStory [(CourseKey, Course)]
+selectCourses f = logAction INFO "Select Some Courses" $ do
+  authorize P_Open P_Course
+  liftP $ flip filterCourses f
+
+loadCourse :: CourseKey -> UserStory Course
+loadCourse k = logAction INFO ("Loading course: " ++ show k) $ do
+  authorize P_Open P_Course
+  liftP $ flip R.loadCourse k
+
 -- | Logically deletes an existing cousrse
 deleteCourse :: CourseKey -> UserStory ()
 deleteCourse = undefined
@@ -237,28 +247,16 @@ changeUserState f = do
     UserNotLoggedIn -> return ()
     state' -> CMS.put (f state')
 
-renderPageData :: Page -> UserStory ()
-renderPageData page = do
-  renderData <- pageData page
-  changeUserState $ \userState -> userState { pageRenderData = renderData }
-
-  where
-    pageData Home = return $ HomePageData [] [] []
-    pageData _    = return $ NoPageData
-
 loadUserData :: Username -> Password -> Page -> UserStory ()
-loadUserData uname pwd p =  do
+loadUserData uname pwd p = do
   persistence <- CMR.asks persist
   (userRole, userFamilyName) <- liftIOE $ personalInfo persistence uname pwd
-  CMS.put UserState { 
+  CMS.put UserState {
               user = uname
             , page = p
             , name = userFamilyName
             , role = userRole
-            , availablePages = []
-            , pageRenderData = NoPageData
             }
-  renderPageData p
 
 userState :: UserStory UserState
 userState = CMS.get
