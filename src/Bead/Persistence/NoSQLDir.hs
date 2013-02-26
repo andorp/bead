@@ -9,7 +9,7 @@ import Bead.Persistence.Persist
 import Bead.Persistence.NoSQL.Loader
 import Control.Monad.Transaction.TIO
 
-import Control.Monad (join, mapM, liftM, filterM)
+import Control.Monad (join, mapM, liftM, filterM, when, unless)
 import Control.Exception (IOException, throwIO)
 import System.FilePath (joinPath, takeBaseName)
 import System.Directory (doesFileExist, doesDirectoryExist, createDirectory)
@@ -112,56 +112,37 @@ nLoadCourse :: CourseKey -> IO (Erroneous Course)
 nLoadCourse c = runAtomically $ do
   let p = courseDirPath c
   isC <- isCourseDir p
-  case isC of
-    False -> throwEx $ userError $ join [str c, " course does not exist."]
-    True  -> liftM snd $ tLoadCourse p
+  -- GUARD: Course dir does not exist
+  unless isC . throwEx . userError . join $ [str c, " course does not exist."]
+  -- Course found
+  liftM snd $ tLoadCourse p
   where
     courseDirPath :: CourseKey -> FilePath
     courseDirPath (CourseKey e) = joinPath [dataCourseDir, e]
 
 
 tLoadCourse :: FilePath -> TIO (CourseKey, Course)
-tLoadCourse dirName = do
-  let courseKey = takeBaseName dirName
-  code <- load dirName
-  desc <- loadString dirName "description"
-  name <- loadString dirName "name"
-  let c = Course {
-      courseCode = code
-    , courseDesc = desc
-    , courseName = name
-    }
-  return (CourseKey courseKey, c)
+tLoadCourse d = do
+  let courseKey = takeBaseName d
+  course <- load d
+  return (CourseKey courseKey, course)
 
 nSaveCourse :: Course -> IO (Erroneous CourseKey)
 nSaveCourse c = runAtomically $ do
   let courseDir = dirName c
       courseKey = keyString c
-  -- TODO: Check if file exists with a same name
   exist <- hasNoRollback $ doesDirectoryExist courseDir
-  case exist of
-    -- ERROR: Course already exists on the disk
-    True -> throwEx $ userError $ join [
-                "Course already exist: "
-              , courseName c
-              , " (", show $ courseCode c, ")"
-              ]
-    -- New course
-    False -> do
-      -- TODO: Check errors creating dirs and files
-      -- No space left, etc...
-      createDir courseDir
-      createDir $ joinPath [courseDir, "groups"]
-      createDir $ joinPath [courseDir, "exams"]
-      createDir $ joinPath [courseDir, "exams", "groups"]
-      saveCourseDesc courseDir
-      return . CourseKey $ courseKey
-  where
-    saveCourseDesc :: FilePath -> TIO ()
-    saveCourseDesc courseDir = do
-      save     courseDir (courseCode c)
-      saveDesc courseDir (courseDesc c)
-      saveName courseDir (courseName c)
+  -- GUARD: Course already exists on the disk
+  when exist . throwEx . userError . join $ [
+      "Course already exist: "
+    , courseName c
+    , " (", show $ courseCode c, ")"
+    ]
+
+  -- New course
+  createDir courseDir
+  save courseDir c
+  return . CourseKey $ courseKey
 
 registerInGroup :: Username -> GroupKey -> TIO ()
 registerInGroup uname gk = do
@@ -279,15 +260,6 @@ nError = Left
 
 encodePwd :: String -> String
 encodePwd = ordEncode
-
-saveName dirName = saveString dirName "name"
-loadName dirName = loadString dirName "name"
-
-saveDesc dirName = saveString dirName "description"
-loadDesc dirName = loadString dirName "description"
-
-savePwd dirName = saveString dirName "password"
-loadPwd dirName = loadString dirName "password"
 
 reason :: Either IOException a -> Either String a
 reason (Left e)  = Left $ show e

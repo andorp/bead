@@ -150,6 +150,12 @@ instance Save CourseCode where
 instance Save Exercise where
   save d e = fileSave d "exercise" (exercise e)
 
+instance Save Course where
+  save d c = do createStructureDirs d courseDirStructure
+                save     d (courseCode c)
+                saveDesc d (courseDesc c)
+                saveName d (courseName c)
+
 -- * Load instances
 
 instance Load Role where
@@ -167,6 +173,16 @@ instance Load CourseCode where
 instance Load Exercise where
   load d = fileLoad d "exercise" Exercise
 
+instance Load Course where
+  load d = do code <- load     d
+              desc <- loadDesc d
+              name <- loadName d
+              return $ Course {
+                  courseCode = code
+                , courseDesc = desc
+                , courseName = name
+                }
+
 -- * Dir Structures
 
 data DirStructure = DirStructure {
@@ -182,6 +198,9 @@ isCorrectStructure dirname ds = do
   return . and $ as ++ bs
   where
     f x = [dirname, x]
+
+createStructureDirs :: DirPath -> DirStructure -> TIO ()
+createStructureDirs p = mapM_ (\x -> createDir (joinPath [p,x])) . directories
 
 usersStructure = DirStructure {
     files       = ["email", "name", "password", "role", "username"]
@@ -206,4 +225,12 @@ ordEncode txt = concatMap code txt
     code :: Char -> String
     code = show . ord
 
+saveName d = saveString d "name"
+loadName d = loadString d "name"
+
+saveDesc d = saveString d "description"
+loadDesc d = loadString d "description"
+
+savePwd d = saveString d "password"
+loadPwd d = loadString d "password"
 
