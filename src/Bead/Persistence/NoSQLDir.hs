@@ -43,7 +43,11 @@ nIsPersistenceSetUp = do
   return $ and dirsExist
 
 nInitPersistence :: IO ()
-nInitPersistence = mapM_ createDirectory persistenceDirs
+nInitPersistence = mapM_ createDirWhenDoesNotExist persistenceDirs
+  where
+    createDirWhenDoesNotExist d = do
+      existDir <- doesDirectoryExist d
+      unless existDir . createDirectory $ d
 
 nSaveUser :: User -> Password -> IO (Erroneous ())
 nSaveUser usr pwd = runAtomically $ do
