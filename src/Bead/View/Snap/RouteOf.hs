@@ -25,6 +25,7 @@ routeOf = r where
   r Training   = fromString "/training"
   r Admin      = fromString "/admin"
   r CreateExercise = fromString "/create-exercise"
+  r Courses        = fromString "/courses"
   r p = error $ "There is no route defined for the page: " ++ (show p)
 
 invariants = Invariants [

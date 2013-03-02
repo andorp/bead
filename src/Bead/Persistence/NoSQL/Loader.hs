@@ -10,6 +10,7 @@ import System.FilePath (joinPath)
 import System.IO
 import System.IO.Temp (createTempDirectory, openTempFile)
 import System.Directory
+import System.Posix.Files as Posix (createLink, removeLink)
 import Control.Exception as E
 import Control.Monad (join, when)
 import Control.Applicative ((<$>))
@@ -22,10 +23,12 @@ dataDir = "data"
 userDir = "user"
 courseDir   = "course"
 exerciseDir = "exercise"
+groupDir    = "group"
 
 dataExerciseDir = joinPath [dataDir, exerciseDir]
 dataCourseDir   = joinPath [dataDir, courseDir]
 dataUserDir     = joinPath [dataDir, userDir]
+dataGroupDir    = joinPath [dataDir, groupDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -33,6 +36,7 @@ persistenceDirs = [
   , dataUserDir
   , dataCourseDir
   , dataExerciseDir
+  , dataGroupDir
   ]
 
 class DirName d where
@@ -111,6 +115,9 @@ createDir d = step (createDirectory d) (removeDirectory d)
 
 createTmpDir :: FilePath -> String -> TIO FilePath
 createTmpDir f t = stepM (createTempDirectory f t) (return ()) removeDirectory
+
+createLink :: FilePath -> FilePath -> TIO ()
+createLink exist link = step (Posix.createLink exist link) (Posix.removeLink link)
 
 removeDir :: FilePath -> TIO ()
 removeDir d = step (removeDirectory d) (createDirectory d)

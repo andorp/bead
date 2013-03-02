@@ -11,11 +11,13 @@ import Text.Blaze.Html5.Attributes hiding (title, rows, accept)
 import qualified Text.Blaze.Html5.Attributes as A
 
 import Bead.Domain.Types (Str(..))
-import Bead.Domain.Relationships (ExerciseKey(..))
+import Bead.Domain.Relationships
 import qualified Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.TemplateAndComponentNames
+
+import Bead.Invariants (Invariants(..))
 
 -- Definitions --
 
@@ -55,6 +57,7 @@ linkText P.Logout     = fromString "Logout"
 linkText P.Home       = fromString "Home"
 linkText P.Profile    = fromString "Profile"
 linkText P.Course     = fromString "Course"
+linkText P.Courses    = fromString "Courses"
 linkText P.Group      = fromString "Group"
 linkText P.Exercise   = fromString "Exercise"
 linkText P.ClosedExam = fromString "Closed Exam"
@@ -91,3 +94,23 @@ pageHeader s = do
   H.span $ do { "Welcome "; fromString . str . user $ s ; "!"  }
   linkToPage P.Logout
   H.p $ "Header"
+
+courseKeys :: AttributeValue -> [CourseKey] -> Html
+courseKeys act cs = do
+  "Courses for the user"
+  mapM_ course cs where
+  course (CourseKey c) =
+    H.div ! A.id "course" $ do
+      H.form ! A.method "get" ! A.action act $ do
+        H.table ! A.id "course-table" $ do
+          H.tr $ do
+            H.td $ H.input ! A.type_ "hidden" ! A.name (fieldName courseKeyInfo) ! A.value (fromString c)
+            H.td $ H.input ! A.type_ "submit" ! A.value (fromString c)
+
+-- * Invariants
+
+invariants = Invariants [
+    ("Page link text must be defined: ", \p -> length (linkText' p) > 0)
+  ] where
+      linkText' :: P.Page -> String
+      linkText' = linkText

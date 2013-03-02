@@ -31,7 +31,7 @@ import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Domain.Entities
 import Bead.View.UserActions
 import Bead.View.Snap.Application (App)
-import Bead.View.Snap.Pagelets
+import Bead.View.Snap.Pagelets hiding (invariants)
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.HandlerUtils (withUserState, runStory)
 import Bead.View.Snap.TemplateAndComponentNames hiding (Username)

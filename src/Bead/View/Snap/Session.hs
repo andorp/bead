@@ -7,6 +7,8 @@ import Bead.Domain.Entities as E
 import qualified Bead.Controller.Pages as P
 import Bead.View.Snap.Application (App)
 
+import Bead.Invariants (Invariants(..))
+
 -- Haskell imports
 
 import Control.Monad (join)
@@ -32,13 +34,13 @@ pageSessionKey :: T.Text
 pageSessionKey = "Page"
 
 instance SessionStore P.Page where
-  sessionStore P.Logout = []
   sessionStore p = [(pageSessionKey, T.pack $ s p)] where
     s P.Login      = "Login"
     s P.Logout     = "Logout"
     s P.Home       = "Home"
     s P.Profile    = "Profile"
     s P.Course     = "Course"
+    s P.Courses    = "Courses"
     s P.Group      = "Group"
     s P.Exercise   = "Exercise"
     s P.ClosedExam = "ClosedExam"
@@ -48,15 +50,16 @@ instance SessionStore P.Page where
     s P.Training   = "Training"
     s P.Admin      = "Admin"
     s P.CreateExercise = "CreateExercise"
-    s p = error $ "Undefined SessionStore value for the page: " ++ show p
 
 instance SessionRestore P.Page where
   restoreFromSession kv = case L.lookup pageSessionKey kv of
     Nothing           -> Nothing
     Just "Login"      -> Just P.Login
+    Just "Logout"     -> Just P.Logout
     Just "Home"       -> Just P.Home
     Just "Profile"    -> Just P.Profile
     Just "Course"     -> Just P.Course
+    Just "Courses"    -> Just P.Courses
     Just "Group"      -> Just P.Group
     Just "Exercise"   -> Just P.Exercise
     Just "ClosedExam" -> Just P.ClosedExam
@@ -143,3 +146,17 @@ instance AsPassword ByteString where
 instance AsPassword A.Password where
   asPassword (A.ClearText t) = unpack t
   asPassword (A.Encrypted e) = unpack e
+
+-- * Invariants
+
+invariants :: Invariants P.Page
+invariants = Invariants [
+    ("Each page must have session store value defined", \p -> 
+        case (sessionStore p) of
+          [] -> False
+          [(key, val)] -> and [T.length key > 0, T.length val > 0])
+  , ("Each page description must be restorable from session cookie", \p ->
+        case (restoreFromSession (sessionStore p)) of
+          Nothing -> False
+          Just p' -> p == p')
+  ]

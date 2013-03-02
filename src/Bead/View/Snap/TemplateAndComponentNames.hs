@@ -49,6 +49,28 @@ instance SnapFieldName ExerciseForm where
 exerciseForm = ExerciseForm "exercise"
 exerciseKey  = ExerciseKeyField "exercise-key"
 
+data CoursesForm
+  = CoursesKey  String
+  | CoursesForm String
+
+instance SnapFieldName CoursesForm where
+  fieldName (CoursesForm f) = fromString f
+  fieldName (CoursesKey  f) = fromString f
+
+coursesForm = CoursesForm "courses"
+coursesKey  = CoursesKey "courses-key"
+
+data CourseFormInfo
+  = CourseKeyInfo  String
+  | CourseFormInfo String
+
+instance SnapFieldName CourseFormInfo where
+  fieldName (CourseKeyInfo  f) = fromString f
+  fieldName (CourseFormInfo f) = fromString f
+
+courseKeyInfo  = CourseKeyInfo  "course-key"
+courseFormInfo = CourseFormInfo "course"
+
 -- * Template names
 
 newtype LoginTemp = LoginTemp String

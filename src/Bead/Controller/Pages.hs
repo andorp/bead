@@ -24,6 +24,7 @@ data Page
   | Home
   | Profile
   | Course
+  | Courses
   | Group
   | Exercise
   | ClosedExam
@@ -44,19 +45,37 @@ pageTransition s = nub $ p s ++ [s, Login, Error, Logout]
     p Login      = [Home]
     p Logout     = []
     p Error      = []
-    p Home       = [ Profile, Course, Group, Exercise, ClosedExam, Evaulation
+    p Home       = [ Profile, Courses, Group, Exercise, ClosedExam, Evaulation
                    , Training, Admin, SubmitExam ]
     p CreateExercise = [Admin]
     p Admin          = [Home, CreateExercise]
+    p Courses    = [Home, Course]
+    p Course     = [Courses]
     p _          = [Home]
     p g = error $ "Unknown transition for page: " ++ show g
 
 reachable :: Page -> Page -> Bool
 reachable p q = elem q $ pageTransition p
 
-regularPages = [Home, Profile, Course, Group, Exercise, ClosedExam, Error, SubmitExam, Evaulation]
+regularPages = [
+    Home
+  , Profile
+  , Course
+  , Courses
+  , Group
+  , Exercise
+  , ClosedExam
+  , Error
+  , SubmitExam
+  , Evaulation
+  ]
 
-nonMenuPages = [Login, Error, Exercise]
+nonMenuPages = [
+    Login
+  , Error
+  , Exercise
+  , Course
+  ]
 
 allowedPages :: E.Role -> [Page]
 allowedPages E.Student     =                  regularPages
@@ -79,6 +98,8 @@ parentPage Login          = Login
 parentPage Error          = Error
 parentPage Logout         = Logout
 parentPage CreateExercise = Admin
+parentPage Courses        = Home
+parentPage Course         = Courses
 parentPage _              = Home
 
 -- * Invariants
