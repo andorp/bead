@@ -21,6 +21,7 @@ tests = testGroup "Persistence tests" [
     test_initialize_persistence
   , test_create_exercise
   , test_create_load_exercise
+  , test_create_group
   , clean_up
   ]
 
@@ -39,15 +40,21 @@ test_create_exercise = testCase "Save an exercise" $ do
     Left e -> error e
     Right k -> return ()
 
-test_create_load_exercise = testCase "" $ do
+test_create_load_exercise = testCase "Create and load exercise" $ do
   k <- liftE $ saveExercise persist (Exercise "This is an exercise")
   ks <- liftE $ filterExercises persist (\_ _ -> True)
   assertBool "Readed list of exercises was empty" (length ks > 0)
   assertBool "Written key was not in the list" (elem k (map fst ks))
 
+test_create_group = testCase "Create Course and Group" $ do
+  ck <- liftE $ saveCourse persist (Course (CourseCode "code") "name" "desc")
+  gk <- liftE $ saveGroup persist ck (Group (GroupCode "gcode") "gname" "gdesc")
+  return ()
+
 clean_up = testCase "Cleaning up" $ do
   -- We use background knowledge, to clean up
   removeDirectoryRecursive "data"
+  return ()
 
 -- * Tools
 

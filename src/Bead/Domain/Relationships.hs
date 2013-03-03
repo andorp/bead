@@ -53,7 +53,7 @@ newtype TestKey = TestKey String
 newtype CourseKey = CourseKey String
   deriving (Eq, Ord, Show)
 
-data GroupKey = GroupKey CourseKey String
+data GroupKey = GroupKey String
   deriving (Eq, Ord, Show)
 
 -- * Str instances
@@ -63,6 +63,9 @@ instance Str ExerciseKey where
 
 instance Str CourseKey where
   str (CourseKey c) = c
+
+instance Str GroupKey where
+  str (GroupKey g) = g
 
 -- * Authentication
 

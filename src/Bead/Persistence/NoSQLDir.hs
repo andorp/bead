@@ -122,7 +122,7 @@ nLoadCourse c = runAtomically $ do
   liftM snd $ tLoadCourse p
   where
     courseDirPath :: CourseKey -> FilePath
-    courseDirPath (CourseKey e) = joinPath [dataCourseDir, e]
+    courseDirPath (CourseKey e) = joinPath [courseDataDir, e]
 
 
 tLoadCourse :: FilePath -> TIO (CourseKey, Course)
@@ -148,41 +148,40 @@ nSaveCourse c = runAtomically $ do
   save courseDir c
   return . CourseKey $ courseKey
 
-registerInGroup :: Username -> GroupKey -> TIO ()
-registerInGroup uname gk = do
-  let userDir = dirName uname
-  exist <- hasNoRollback $ doesDirectoryExist userDir
-  case exist of
-    False -> throwEx $ userError $ join [show uname, " does not exist."]
-    True  -> saveString userDir (fileName gk) "Registered"
+class ForeignKey k where
+  referredPath :: k -> DirPath
+  baseName     :: k -> String
 
+foreignKey :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO ()
+foreignKey object linkto subdir =
+  createLink
+    (joinPath ["..", "..", "..", "..", (referredPath object)])
+    (joinPath [(referredPath linkto), subdir, baseName object])
+
+instance ForeignKey GroupKey where
+  referredPath (GroupKey g) = joinPath [groupDataDir, g]
+  baseName     (GroupKey g) = g
+
+instance ForeignKey CourseKey where
+  referredPath (CourseKey c) = joinPath [courseDataDir, c]
+  baseName     (CourseKey c) = c
+
+{- * One primitve value is stored in the file with the same name as the row.
+   * One combined value is stored in the given directory into many files. The name
+     of the directory is the primary key for the record.
+   * The foreign keys are the symlinks for the other row of the given combined object.
+-}
 nSaveGroup :: CourseKey -> Group -> IO (Erroneous GroupKey)
-nSaveGroup ck g = runAtomically $ do
-  let courseDir   = dirName ck
-      groupKeyStr = keyString g
-      groupDir    = joinPath [courseDir, "groups", groupKeyStr]
-      groupKey    = GroupKey ck groupKeyStr
-  exist <- hasNoRollback $ doesDirectoryExist groupDir
-  case exist of
-    True -> throwEx $ userError $ join ["Group ",groupName g," is already stored"]
-    False -> do
-      createDir     groupDir
-      saveGroupDesc groupDir groupKey
-      return groupKey
-  where
-    saveGroupDesc :: FilePath -> GroupKey -> TIO ()
-    saveGroupDesc groupDir gk = do
-      saveName groupDir (groupName g)
-      saveDesc groupDir (groupDesc g)
-      saveString groupDir "users" $ unlines $ map str $ groupUsers g
-      mapM_ (flip registerInGroup gk) $ groupUsers g
-
---  We define locally the transactional file creation steps, in further version
--- this will be refactored to a common module
+nSaveGroup ck group = runAtomically $ do
+  dirName <- createTmpDir groupDataDir "gr"
+  let groupKey = GroupKey . takeBaseName $ dirName
+  save dirName group
+  foreignKey groupKey ck "groups"
+  return groupKey
 
 nSaveExercise :: Exercise -> IO (Erroneous ExerciseKey)
 nSaveExercise exercise = runAtomically $ do
-  dirName <- createTmpDir (joinPath [dataDir, exerciseDir]) "ex"
+  dirName <- createTmpDir exerciseDataDir "ex"
   let exerciseKey = takeBaseName dirName
   save dirName exercise
   return . ExerciseKey $ exerciseKey
@@ -194,8 +193,8 @@ addDataDirPath p =
 
 nExerciseKeys :: IO (Erroneous [ExerciseKey])
 nExerciseKeys = runAtomically $
-  (getDirContents dataExerciseDir) >>=
-  (addDataDirPath dataExerciseDir) >>=
+  (getDirContents exerciseDataDir) >>=
+  (addDataDirPath exerciseDataDir) >>=
   (filterM isExerciseDir)          >>=
   calcExerciseKeys
     where
@@ -203,8 +202,8 @@ nExerciseKeys = runAtomically $
 
 nFilterExercises :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey, Exercise)])
 nFilterExercises f = runAtomically $
-  (getDirContents dataExerciseDir) >>=
-  (addDataDirPath dataExerciseDir) >>=
+  (getDirContents exerciseDataDir) >>=
+  (addDataDirPath exerciseDataDir) >>=
   (filterM isExerciseDir)          >>=
   (mapM tLoadExercise)             >>=
   (return . filter (uncurry f))
@@ -225,7 +224,7 @@ nLoadExercise e = runAtomically $ do
     True  -> liftM snd $ tLoadExercise p
   where
     exerciseDirPath :: ExerciseKey -> FilePath
-    exerciseDirPath (ExerciseKey e) = joinPath [dataExerciseDir, e]
+    exerciseDirPath (ExerciseKey e) = joinPath [exerciseDataDir, e]
 
 
 -- TODO: implement
@@ -237,8 +236,8 @@ tLoadExercise dirName = do
 
 nCourseKeys :: IO (Erroneous [CourseKey])
 nCourseKeys = runAtomically $
-  (getDirContents dataCourseDir) >>=
-  (addDataDirPath dataCourseDir) >>=
+  (getDirContents courseDataDir) >>=
+  (addDataDirPath courseDataDir) >>=
   (filterM isCourseDir)          >>=
   calcCourseKeys
     where
@@ -249,8 +248,8 @@ isCourseDir p = hasNoRollback $ isCorrectStructure p courseDirStructure
 
 nFilterCourses :: (CourseKey -> Course -> Bool) -> IO (Erroneous [(CourseKey, Course)])
 nFilterCourses f = runAtomically $
-  (getDirContents dataCourseDir) >>=
-  (addDataDirPath dataCourseDir) >>=
+  (getDirContents courseDataDir) >>=
+  (addDataDirPath courseDataDir) >>=
   (filterM isCourseDir)          >>=
   (mapM tLoadCourse)             >>=
   (return . filter (uncurry f))

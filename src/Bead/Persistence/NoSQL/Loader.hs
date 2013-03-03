@@ -10,7 +10,7 @@ import System.FilePath (joinPath)
 import System.IO
 import System.IO.Temp (createTempDirectory, openTempFile)
 import System.Directory
-import System.Posix.Files as Posix (createLink, removeLink)
+import System.Posix.Files (createSymbolicLink, removeLink)
 import Control.Exception as E
 import Control.Monad (join, when)
 import Control.Applicative ((<$>))
@@ -25,18 +25,18 @@ courseDir   = "course"
 exerciseDir = "exercise"
 groupDir    = "group"
 
-dataExerciseDir = joinPath [dataDir, exerciseDir]
-dataCourseDir   = joinPath [dataDir, courseDir]
-dataUserDir     = joinPath [dataDir, userDir]
-dataGroupDir    = joinPath [dataDir, groupDir]
+exerciseDataDir = joinPath [dataDir, exerciseDir]
+courseDataDir   = joinPath [dataDir, courseDir]
+userDataDir     = joinPath [dataDir, userDir]
+groupDataDir    = joinPath [dataDir, groupDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
     dataDir
-  , dataUserDir
-  , dataCourseDir
-  , dataExerciseDir
-  , dataGroupDir
+  , userDataDir
+  , courseDataDir
+  , exerciseDataDir
+  , groupDataDir
   ]
 
 class DirName d where
@@ -79,14 +79,8 @@ instance DirName CourseKey where
 instance DirName ExerciseKey where
   dirName (ExerciseKey c) = joinPath [dataDir, exerciseDir, c]
 
-instance KeyString Group where
-  keyString = ordEncode . groupCode
-
 instance DirName GroupKey where
-  dirName (GroupKey ck g) = joinPath [dataDir, courseDir, g]
-
-instance FileName GroupKey where
-  fileName (GroupKey ck g) = join ["group-", keyString ck, "-", g]
+  dirName (GroupKey g) = joinPath [exerciseDataDir, g]
 
 -- * Load and save aux functions
 
@@ -117,7 +111,7 @@ createTmpDir :: FilePath -> String -> TIO FilePath
 createTmpDir f t = stepM (createTempDirectory f t) (return ()) removeDirectory
 
 createLink :: FilePath -> FilePath -> TIO ()
-createLink exist link = step (Posix.createLink exist link) (Posix.removeLink link)
+createLink exist link = step (createSymbolicLink exist link) (removeLink link)
 
 removeDir :: FilePath -> TIO ()
 removeDir d = step (removeDirectory d) (createDirectory d)
@@ -154,6 +148,9 @@ instance Save Email where
 instance Save CourseCode where
   save d (CourseCode s) = fileSave d "course_code" s
 
+instance Save GroupCode where
+  save d (GroupCode g) = fileSave d "group_code" g
+
 instance Save Exercise where
   save d e = fileSave d "exercise" (exercise e)
 
@@ -162,6 +159,12 @@ instance Save Course where
                 save     d (courseCode c)
                 saveDesc d (courseDesc c)
                 saveName d (courseName c)
+
+instance Save Group where
+  save d g = do createStructureDirs d groupDirStructure
+                save     d (groupCode g)
+                saveDesc d (groupDesc g)
+                saveName d (groupName g)
 
 -- * Load instances
 
@@ -177,6 +180,9 @@ instance Load Email where
 instance Load CourseCode where
   load d = fileLoad d "course_code" CourseCode
 
+instance Load GroupCode where
+  load d = fileLoad d "group_code" GroupCode
+
 instance Load Exercise where
   load d = fileLoad d "exercise" Exercise
 
@@ -188,6 +194,16 @@ instance Load Course where
                   courseCode = code
                 , courseDesc = desc
                 , courseName = name
+                }
+
+instance Load Group where
+  load d = do code <- load     d
+              desc <- loadDesc d
+              name <- loadName d
+              return $ Group {
+                  groupCode = code
+                , groupDesc = desc
+                , groupName = name
                 }
 
 -- * Dir Structures
@@ -222,6 +238,11 @@ exerciseDirStructure = DirStructure {
 courseDirStructure = DirStructure {
     files       = ["course_code", "description", "name"]
   , directories = ["groups", "exams"]
+  }
+
+groupDirStructure = DirStructure {
+    files       = ["group_code", "description", "name"]
+  , directories = ["users"]
   }
 
 -- * Encoding

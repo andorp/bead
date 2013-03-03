@@ -44,7 +44,7 @@ mockPersist = Persist {
   , filterCourses = \_ -> return $ Right $ []
   , loadCourse = \_ -> return $ Right (Course {})
   
-  , saveGroup = \_ _ -> return $ Right $ GroupKey (CourseKey "course_key") "group_key"
+  , saveGroup = \_ _ -> return $ Right $ GroupKey "group_key"
   
   , saveExercise = \_ -> return $ Right $ ExerciseKey "exercise_key"
   , loadExercise = \_ -> return $ Right $ Exercise "exercise"

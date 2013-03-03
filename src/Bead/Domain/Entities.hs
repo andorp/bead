@@ -50,12 +50,17 @@ data Course = Course {
   , courseDesc :: String
   } deriving (Eq, Show)
 
+newtype GroupCode = GroupCode String
+  deriving (Eq, Ord, Show)
+
+instance Str GroupCode where
+  str (GroupCode g) = g
+
 -- | Groups are registered under the courses
 data Group = Group {
-    groupCode  :: String
+    groupCode  :: GroupCode
   , groupName  :: String
   , groupDesc  :: String
-  , groupUsers :: [Username]
   } deriving (Eq, Show)
 
 -- | The type of the exam
@@ -218,8 +223,7 @@ mockCourse = Course {
   }
 
 mockGroup = Group {
-    groupCode = "G010"
+    groupCode = GroupCode "G010"
   , groupName = "Esti"
   , groupDesc = "Group description"
-  , groupUsers = [Username "andor", Username "zsolt"]
   }
