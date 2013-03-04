@@ -4,6 +4,7 @@ module Bead.View.Snap.Content.Course (
 
 import Bead.View.Snap.Content
 import Bead.Controller.UserStories (loadCourse)
+import Bead.Controller.Pages as P (Page(Group))
 import Bead.Domain.Relationships (CourseKey(..))
 import Bead.Domain.Types (Str(..))
 
@@ -28,12 +29,13 @@ coursePage = withUserState $ \s -> do
       cs <- runStory . loadCourse . CourseKey . unpack $ key
       case cs of
         Left err -> error "Error happened: loading course"
-        Right cs' -> do
-          blaze $ withUserFrame s (courseForm cs') Nothing
+        Right (cs',gks) -> do
+          blaze $ withUserFrame s (courseForm cs' gks) Nothing
 
-courseForm :: Course -> Html
-courseForm c = do
+courseForm :: Course -> [GroupKey] -> Html
+courseForm c gks = do
   H.p $ fromString "Course code: " >> (fromString . str . courseCode $ c)
   H.p $ fromString "Course name: " >> (fromString . courseName $ c)
   H.p $ fromString "Course desc: " >> (fromString . courseDesc $ c)
+  groupKeys (routeOf P.Group) gks
 

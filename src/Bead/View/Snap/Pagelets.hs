@@ -59,6 +59,7 @@ linkText P.Profile    = fromString "Profile"
 linkText P.Course     = fromString "Course"
 linkText P.Courses    = fromString "Courses"
 linkText P.Group      = fromString "Group"
+linkText P.Groups     = fromString "Groups"
 linkText P.Exercise   = fromString "Exercise"
 linkText P.ClosedExam = fromString "Closed Exam"
 linkText P.Error      = fromString "Error"
@@ -77,16 +78,44 @@ navigationMenu s = do
   mapM_ (linkToPage) $ P.menuPages (role s) (page s)
   H.p $ "Menu"
 
-exerciseKeys :: AttributeValue -> [ExerciseKey] -> Html
-exerciseKeys act es = mapM_ exercise es where
-  exercise (ExerciseKey e) =
-    H.div ! A.id "exercise" $ do
-      "Exercises for the user"
+class ButtonText b where
+  buttonText :: b -> String
+
+class KeyString b where
+  keyString :: b -> String
+
+data KeyFormData = KeyFormData {
+    divId           :: AttributeValue
+  , headerText      :: Html
+  , tableId         :: AttributeValue
+  , hiddenFieldName :: AttributeValue
+  }
+
+keySelectionForm :: (ButtonText k, KeyString k) => KeyFormData -> AttributeValue -> [k] -> Html
+keySelectionForm formData act ks = mapM_ key ks where
+  key k =
+    H.div ! A.id (divId formData) $ do
+      (headerText formData)
       H.form ! A.method "get" ! A.action act $ do
-        H.table ! A.id "exercise-table" $ do
+        H.table ! A.id (tableId formData) $ do
           H.tr $ do
-            H.td $ H.input ! A.type_ "hidden" ! A.name (fieldName exerciseKey) ! A.value (fromString e)
-            H.td $ H.input ! A.type_ "submit" ! A.value (fromString e)
+            H.td $ H.input ! A.type_ "hidden" ! A.name (hiddenFieldName formData) ! A.value (fromString . keyString $ k)
+            H.td $ H.input ! A.type_ "submit" ! A.value (fromString . buttonText $ k)
+
+instance ButtonText ExerciseKey where
+  buttonText (ExerciseKey e) = e
+
+instance KeyString ExerciseKey where
+  keyString (ExerciseKey e) = e
+
+exerciseKeys :: AttributeValue -> [ExerciseKey] -> Html
+exerciseKeys act = keySelectionForm exerciseFormData act where
+  exerciseFormData = KeyFormData {
+      divId = "exercise"
+    , headerText = "Exercise for the user"
+    , tableId = "exercise-table"
+    , hiddenFieldName = fieldName exerciseKey
+    }
 
 pageHeader :: UserState -> Html
 pageHeader s = do
@@ -95,17 +124,35 @@ pageHeader s = do
   linkToPage P.Logout
   H.p $ "Header"
 
+instance ButtonText CourseKey where
+  buttonText (CourseKey e) = e
+
+instance KeyString CourseKey where
+  keyString (CourseKey e) = e
+
 courseKeys :: AttributeValue -> [CourseKey] -> Html
-courseKeys act cs = do
-  "Courses for the user"
-  mapM_ course cs where
-  course (CourseKey c) =
-    H.div ! A.id "course" $ do
-      H.form ! A.method "get" ! A.action act $ do
-        H.table ! A.id "course-table" $ do
-          H.tr $ do
-            H.td $ H.input ! A.type_ "hidden" ! A.name (fieldName courseKeyInfo) ! A.value (fromString c)
-            H.td $ H.input ! A.type_ "submit" ! A.value (fromString c)
+courseKeys act = keySelectionForm courseFormData act where
+  courseFormData = KeyFormData {
+      divId = "course"
+    , headerText = "Courses"
+    , tableId = "course-table"
+    , hiddenFieldName = fieldName courseKeyInfo
+    }
+
+instance ButtonText GroupKey where
+  buttonText (GroupKey g) = g
+
+instance KeyString GroupKey where
+  keyString (GroupKey g) = g
+
+groupKeys :: AttributeValue -> [GroupKey] -> Html
+groupKeys act = keySelectionForm groupFormData act where
+  groupFormData = KeyFormData {
+      divId = "group"
+    , headerText = "Groups"
+    , tableId = "group-table"
+    , hiddenFieldName = fieldName groupKeyName
+    }
 
 -- * Invariants
 

@@ -113,7 +113,7 @@ courseTest = testCase "Create Course" $ do
   (ks,state) <- runStory c adminUserState $ selectCourses (\_ _ -> True)
   assertUserState state adminUser
   assertBool "Create course key is not found" (elem k $ map fst ks)
-  (r',state) <- runStory c adminUserState $ U.loadCourse k
+  ((r',_),state) <- runStory c adminUserState $ U.loadCourse k
   assertUserState state adminUser
   assertBool "Loaded course differs from the created one" (r' == r)
   return ()

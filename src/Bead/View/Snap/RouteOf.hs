@@ -17,6 +17,7 @@ routeOf = r where
   r Profile    = fromString "/profile"
   r Course     = fromString "/course"
   r Group      = fromString "/group"
+  r Groups     = fromString "/groups"
   r Exercise   = fromString "/exercise"
   r ClosedExam = fromString "/closed-exam"
   r Error      = fromString "/error"

@@ -21,6 +21,7 @@ content P.Home           = home
 content P.Profile        = emptyContent
 content P.Course         = course
 content P.Group          = emptyContent
+content P.Groups         = emptyContent
 content P.Exercise       = exercise
 content P.ClosedExam     = emptyContent
 content P.Error          = emptyContent

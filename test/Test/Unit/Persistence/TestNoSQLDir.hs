@@ -49,7 +49,8 @@ test_create_load_exercise = testCase "Create and load exercise" $ do
 test_create_group = testCase "Create Course and Group" $ do
   ck <- liftE $ saveCourse persist (Course (CourseCode "code") "name" "desc")
   gk <- liftE $ saveGroup persist ck (Group (GroupCode "gcode") "gname" "gdesc")
-  return ()
+  gks <- liftE $ groupKeysOfCourse persist ck
+  assertBool "Registered group was not found in the group list" (elem gk gks)
 
 clean_up = testCase "Cleaning up" $ do
   -- We use background knowledge, to clean up

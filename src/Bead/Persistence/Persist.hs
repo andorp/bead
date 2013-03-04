@@ -16,9 +16,11 @@ data Persist = Persist {
   , courseKeys :: IO (Erroneous [CourseKey])
   , filterCourses :: (CourseKey -> Course -> Bool) -> IO (Erroneous [(CourseKey, Course)])
   , loadCourse :: CourseKey -> IO (Erroneous Course)
+  , groupKeysOfCourse :: CourseKey -> IO (Erroneous [GroupKey])
   
   -- Group Persistence
   , saveGroup   :: CourseKey -> Group -> IO (Erroneous GroupKey)
+  , loadGroup   :: GroupKey -> IO (Erroneous Group)
 
   -- Exersice Persistence
   , filterExercises :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey, Exercise)])
@@ -43,8 +45,10 @@ mockPersist = Persist {
   , courseKeys = return $ Right $ []
   , filterCourses = \_ -> return $ Right $ []
   , loadCourse = \_ -> return $ Right (Course {})
+  , groupKeysOfCourse = \_ -> return $ Right []
   
   , saveGroup = \_ _ -> return $ Right $ GroupKey "group_key"
+  , loadGroup = \_ -> return $ Right $ Group {}
   
   , saveExercise = \_ -> return $ Right $ ExerciseKey "exercise_key"
   , loadExercise = \_ -> return $ Right $ Exercise "exercise"

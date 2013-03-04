@@ -16,6 +16,7 @@ module Bead.View.Snap.Content (
   , module Data.ByteString.Char8
 
   , module Bead.Domain.Entities
+  , module Bead.Domain.Relationships
   , module Bead.View.UserActions
   , module Bead.View.Snap.Application
   , module Bead.View.Snap.Pagelets
@@ -29,6 +30,7 @@ import Data.ByteString.Char8 hiding (span, empty, map)
 import Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Domain.Entities
+import Bead.Domain.Relationships (GroupKey(..))
 import Bead.View.UserActions
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.Pagelets hiding (invariants)

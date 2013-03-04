@@ -42,6 +42,7 @@ instance SessionStore P.Page where
     s P.Course     = "Course"
     s P.Courses    = "Courses"
     s P.Group      = "Group"
+    s P.Groups     = "Groups"
     s P.Exercise   = "Exercise"
     s P.ClosedExam = "ClosedExam"
     s P.Error      = "Error"
@@ -61,6 +62,7 @@ instance SessionRestore P.Page where
     Just "Course"     -> Just P.Course
     Just "Courses"    -> Just P.Courses
     Just "Group"      -> Just P.Group
+    Just "Groups"     -> Just P.Groups
     Just "Exercise"   -> Just P.Exercise
     Just "ClosedExam" -> Just P.ClosedExam
     Just "Error"      -> Just P.Error

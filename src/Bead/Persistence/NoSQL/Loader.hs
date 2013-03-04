@@ -5,6 +5,8 @@ import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Control.Monad.Transaction.TIO
 
+import Control.Monad (liftM, filterM)
+
 import Data.Char (ord)
 import System.FilePath (joinPath)
 import System.IO
@@ -118,6 +120,19 @@ removeDir d = step (removeDirectory d) (createDirectory d)
 
 getDirContents :: FilePath -> TIO [FilePath]
 getDirContents f = hasNoRollback (getDirectoryContents f)
+
+filterDirContents :: (FilePath -> IO Bool) -> FilePath -> IO [FilePath]
+filterDirContents f p = do
+  content <- liftM (filter (\d -> not $ or [d == ".", d == ".."])) $ getDirectoryContents p
+  filterM f $ map jp content
+    where
+      jp x = joinPath [p, x]
+
+getSubDirectories :: FilePath -> TIO [FilePath]
+getSubDirectories = hasNoRollback . filterDirContents doesDirectoryExist
+
+getFilesInFolder :: FilePath -> TIO [FilePath]
+getFilesInFolder = hasNoRollback . filterDirContents doesFileExist
 
 openTmpFile :: FilePath -> String -> TIO (FilePath, Handle)
 openTmpFile f t = stepM

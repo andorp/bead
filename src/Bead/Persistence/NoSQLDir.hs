@@ -25,8 +25,10 @@ noSqlDirPersist = Persist {
   , courseKeys    = nCourseKeys    -- :: IO (Erroneous [CourseKey])
   , filterCourses = nFilterCourses -- :: (CourseKey -> Course -> Bool) -> IO (Erroneous [(CourseKey, Course)])
   , loadCourse    = nLoadCourse    -- :: CourseKey -> IO (Erroneous Course)
+  , groupKeysOfCourse = nGroupKeysOfCourse -- :: CourseKey -> IO (Erroneous [GroupKey])
 
   , saveGroup     = nSaveGroup     -- :: CourseKey -> Group -> IO (Erroneous GroupKey)
+  , loadGroup     = nLoadGroup     -- :: GroupKey -> IO (Erroneous Group)
 
   , filterExercises = nFilterExercises -- :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey,Exercise)])
   , exerciseKeys  = nExerciseKeys  -- :: IO (Erroneous [ExerciseKey])
@@ -111,6 +113,8 @@ nUpdatePwd uname oldPwd newPwd = runAtomically $ do
         False -> throwEx . userError $ "Invalid password"
         True  -> savePwd dirname $ encodePwd newPwd
 
+courseDirPath :: CourseKey -> FilePath
+courseDirPath (CourseKey c) = joinPath [courseDataDir, c]
 
 nLoadCourse :: CourseKey -> IO (Erroneous Course)
 nLoadCourse c = runAtomically $ do
@@ -120,16 +124,45 @@ nLoadCourse c = runAtomically $ do
   unless isC . throwEx . userError . join $ [str c, " course does not exist."]
   -- Course found
   liftM snd $ tLoadCourse p
-  where
-    courseDirPath :: CourseKey -> FilePath
-    courseDirPath (CourseKey e) = joinPath [courseDataDir, e]
-
 
 tLoadCourse :: FilePath -> TIO (CourseKey, Course)
-tLoadCourse d = do
-  let courseKey = takeBaseName d
-  course <- load d
-  return (CourseKey courseKey, course)
+tLoadCourse = tLoadPersistenceObject CourseKey
+
+nGroupKeysOfCourse :: CourseKey -> IO (Erroneous [GroupKey])
+nGroupKeysOfCourse c = runAtomically $ do
+  let p = courseDirPath c
+      g = joinPath [p, "groups"]
+  subdirs <- getSubDirectories g
+  return . map (GroupKey . takeBaseName) $ subdirs
+
+isCorrectDirStructure :: DirStructure -> FilePath -> TIO Bool
+isCorrectDirStructure d p = hasNoRollback $ isCorrectStructure p d
+
+isGroupDir :: FilePath -> TIO Bool
+isGroupDir = isCorrectDirStructure groupDirStructure
+
+nLoadGroup :: GroupKey -> IO (Erroneous Group)
+nLoadGroup g = runAtomically $ do
+  let p = groupDirPath g
+  isG <- isGroupDir p
+  -- GUARD: Group id does not exist
+  unless isG . throwEx . userError . join $ [str g, " group does not exist."]
+  liftM snd $ tLoadGroup p
+  where
+    groupDirPath :: GroupKey -> FilePath
+    groupDirPath (GroupKey g) = joinPath [groupDataDir, g]
+
+tLoadPersistenceObject :: (Load o)
+  => (String -> k) -- ^ Key constructor
+  -> FilePath      -- ^ Base path
+  -> TIO (k,o)     -- ^ Key and the loaded object
+tLoadPersistenceObject f d = do
+  let key = takeBaseName d
+  object <- load d
+  return (f key, object)
+
+tLoadGroup :: FilePath -> TIO (GroupKey, Group)
+tLoadGroup = tLoadPersistenceObject GroupKey
 
 nSaveCourse :: Course -> IO (Erroneous CourseKey)
 nSaveCourse c = runAtomically $ do
@@ -214,7 +247,6 @@ isExerciseDir f = hasNoRollback $ do
   e <- doesFileExist $ joinPath [f,"exercise"]
   return $ and [d,e]
 
-
 nLoadExercise :: ExerciseKey -> IO (Erroneous Exercise)
 nLoadExercise e = runAtomically $ do
   let p = exerciseDirPath e
@@ -244,7 +276,7 @@ nCourseKeys = runAtomically $
       calcCourseKeys = return . map (CourseKey . takeBaseName)
 
 isCourseDir :: FilePath -> TIO Bool
-isCourseDir p = hasNoRollback $ isCorrectStructure p courseDirStructure
+isCourseDir = isCorrectDirStructure courseDirStructure
 
 nFilterCourses :: (CourseKey -> Course -> Bool) -> IO (Erroneous [(CourseKey, Course)])
 nFilterCourses f = runAtomically $

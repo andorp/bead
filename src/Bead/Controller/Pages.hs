@@ -26,6 +26,7 @@ data Page
   | Course
   | Courses
   | Group
+  | Groups
   | Exercise
   | ClosedExam
   | Error
@@ -46,11 +47,13 @@ pageTransition s = nub $ p s ++ [s, Login, Error, Logout]
     p Logout     = []
     p Error      = []
     p Home       = [ Profile, Courses, Group, Exercise, ClosedExam, Evaulation
-                   , Training, Admin, SubmitExam ]
+                   , Training, Admin, SubmitExam, Groups ]
     p CreateExercise = [Admin]
     p Admin          = [Home, CreateExercise]
     p Courses    = [Home, Course]
     p Course     = [Courses]
+    p Groups     = [Home, Group]
+    p Group      = [Groups]
     p _          = [Home]
     p g = error $ "Unknown transition for page: " ++ show g
 
@@ -63,6 +66,7 @@ regularPages = [
   , Course
   , Courses
   , Group
+  , Groups
   , Exercise
   , ClosedExam
   , Error
@@ -70,18 +74,24 @@ regularPages = [
   , Evaulation
   ]
 
+adminPages = [
+    Admin
+  , Groups
+  ]
+
 nonMenuPages = [
     Login
   , Error
   , Exercise
   , Course
+  , Group
   ]
 
 allowedPages :: E.Role -> [Page]
 allowedPages E.Student     =                  regularPages
 allowedPages E.Professor   = CreateExercise : regularPages
 allowedPages E.CourseAdmin = CreateExercise : regularPages
-allowedPages E.Admin       = Admin          : regularPages
+allowedPages E.Admin       = adminPages    ++ regularPages
 allowedPages p = error $ "There is no pages defined for the " ++ show p
 
 menuPages :: E.Role -> Page -> [Page]
@@ -100,6 +110,8 @@ parentPage Logout         = Logout
 parentPage CreateExercise = Admin
 parentPage Courses        = Home
 parentPage Course         = Courses
+parentPage Groups         = Home
+parentPage Group          = Groups
 parentPage _              = Home
 
 -- * Invariants

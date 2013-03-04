@@ -139,10 +139,12 @@ selectCourses f = logAction INFO "Select Some Courses" $ do
   authorize P_Open P_Course
   liftP $ flip filterCourses f
 
-loadCourse :: CourseKey -> UserStory Course
+loadCourse :: CourseKey -> UserStory (Course,[GroupKey])
 loadCourse k = logAction INFO ("Loading course: " ++ show k) $ do
   authorize P_Open P_Course
-  liftP $ flip R.loadCourse k
+  c  <- liftP $ flip R.loadCourse k
+  ks <- liftP $ flip R.groupKeysOfCourse k
+  return (c,ks)
 
 -- | Logically deletes an existing cousrse
 deleteCourse :: CourseKey -> UserStory ()

@@ -71,6 +71,14 @@ instance SnapFieldName CourseFormInfo where
 courseKeyInfo  = CourseKeyInfo  "course-key"
 courseFormInfo = CourseFormInfo "course"
 
+newtype GroupKeyName
+  = GroupKeyName String
+
+instance SnapFieldName GroupKeyName where
+  fieldName (GroupKeyName f) = fromString f
+
+groupKeyName = GroupKeyName "group-key"
+
 -- * Template names
 
 newtype LoginTemp = LoginTemp String
