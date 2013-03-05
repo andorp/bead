@@ -22,16 +22,11 @@ exercise = Content {
   }
 
 showExercise :: GETContentHandler
-showExercise = withUserState $ \s -> do
-  mKey <- getParam (fieldName exerciseKey)
-  case mKey of
-    Nothing -> error "Bead.View.Snap.Content.Exercise.showExercise"
-    Just key -> do
-      ex <- runStory . loadExercise . ExerciseKey . unpack $ key
-      case ex of
-        Left err -> error "Error happened: loading exercise"
-        Right ex' -> do
-          blaze $ withUserFrame s (exerciseForm ex') Nothing
+showExercise = withUserStateE $ \s -> do
+  key <- getParamE . fieldName $ exerciseKey
+  ex  <- runStoryE . loadExercise . ExerciseKey . unpack $ key
+  lift $ blaze $ withUserFrame s (exerciseForm ex) Nothing
+  return ()
 
 exerciseForm :: Exercise -> Html
 exerciseForm e = do

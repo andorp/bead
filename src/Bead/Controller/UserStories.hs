@@ -20,6 +20,9 @@ import Text.Printf (printf)
 
 data UserError = UserError String
 
+userErrorMsg :: UserError -> String
+userErrorMsg (UserError msg) = msg
+
 instance Show UserError where
   show (UserError msg) = msg
 

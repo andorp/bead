@@ -18,15 +18,11 @@ home = Content {
   , post  = Nothing
   }
 
-homePage :: Handler App App ()
-homePage = withUserState $ \s -> do
-  eKeys <- runStory (selectExercises every)
-  case eKeys of
-    Left err -> error "Error happened: selecting exercises"
-    Right keys -> do
-      let es = exerciseKeys (routeOf P.Exercise) (map fst keys)
-      blaze $ withUserFrame s es Nothing
+homePage :: GETContentHandler
+homePage = withUserStateE $ \s -> do
+  keys <- runStoryE . selectExercises $ every
+  let es = exerciseKeys (routeOf P.Exercise) (map fst keys)
+  lift $ blaze $ withUserFrame s es Nothing
 
   where
     every _ _ = True
-

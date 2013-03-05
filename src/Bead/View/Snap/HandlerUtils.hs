@@ -2,8 +2,14 @@
 module Bead.View.Snap.HandlerUtils (
     logMessage
   , withUserState
+  , withUserStateE
   , errorPageHandler
-  , runStory -- For logged in user
+  , runStory  -- For logged in user
+  , runStoryE -- For logged in user
+  , getParamE
+  , HandlerError(..)
+  , GETHandlerError
+  , module Control.Monad.Error
   ) where
 
 -- Bead imports
@@ -20,7 +26,8 @@ import Bead.View.Snap.Session
 
 import qualified Data.Text as T
 import qualified Data.List as L
-import Control.Monad.Error (Error(..))
+import Control.Monad.Error
+import qualified Data.ByteString.Char8 as B
 
 -- Snap and Blaze imports
 
@@ -57,10 +64,36 @@ userState = do
 errorPageHandler :: T.Text -> Handler App b ()
 errorPageHandler msg = undefined -- blaze errorPage
 
+newtype GETHandlerError = GETHandlerError (Maybe String)
+  deriving (Show)
+
+instance Error GETHandlerError where
+  noMsg  = GETHandlerError Nothing
+  strMsg = GETHandlerError . Just
+
+type HandlerError a b c = ErrorT GETHandlerError (Handler a b) c
+
 withUserState :: (UserState -> Handler App b c) -> Handler App b c
-withUserState h = do
-  u <- userState
+withUserState h = userState >>= h
+
+withUserStateE :: (UserState -> HandlerError App b c) -> HandlerError App b c
+withUserStateE h = do
+  u <- lift userState
   h u
+
+getParamE :: B.ByteString -> HandlerError App b B.ByteString
+getParamE b = do
+  x <- lift . getParam $ b
+  case x of
+    Nothing -> throwError . strMsg . B.unpack $ b
+    Just y  -> return y
+
+runStoryE :: S.UserStory a -> HandlerError App b a
+runStoryE story = do
+  x <- lift . runStory $ story
+  case x of
+    Left e  -> throwError . strMsg . S.userErrorMsg $ e
+    Right y -> return y
 
 -- | Runs a user story for authenticated user and saves the new user state
 --   into the service context

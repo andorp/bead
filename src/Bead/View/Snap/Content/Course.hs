@@ -21,16 +21,10 @@ course = Content {
   }
 
 coursePage :: GETContentHandler
-coursePage = withUserState $ \s -> do
-  mKey <- getParam (fieldName courseKeyInfo)
-  case mKey of
-    Nothing -> error "Bead.View.Snap.Content.Course.coursePage"
-    Just key -> do
-      cs <- runStory . loadCourse . CourseKey . unpack $ key
-      case cs of
-        Left err -> error "Error happened: loading course"
-        Right (cs',gks) -> do
-          blaze $ withUserFrame s (courseForm cs' gks) Nothing
+coursePage = withUserStateE $ \s -> do
+  key <- getParamE (fieldName courseKeyInfo)
+  (course, groupKeys) <- runStoryE . loadCourse . CourseKey . unpack $ key
+  lift $ blaze $ withUserFrame s (courseForm course groupKeys) Nothing
 
 courseForm :: Course -> [GroupKey] -> Html
 courseForm c gks = do

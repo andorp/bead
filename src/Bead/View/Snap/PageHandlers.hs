@@ -153,6 +153,13 @@ redirectToActPage = do
         error $ "Actual page data stored in session and in the server differ"
       True ->  redirect . routeOf . page $ uState
 
+runGETError :: (GETHandlerError -> Handler App App ()) -> HandlerError App App () -> Handler App App ()
+runGETError onError m = do
+  x <- runErrorT m
+  case x of
+    Left e -> onError e
+    Right y -> return y
+
 {- When a user logs in the home page is shown for her. An universal handler
    is used. E.g "/home" -> handlePage P.Home.
    * If the user can navigate to the
@@ -184,7 +191,7 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
          ((logMessage DEBUG $ "No GET handler found for " ++ show p) >> L.logout)
          -- GET handler is found
          changePage
-         (get c))
+         ((runGETError (error . show)) <$> (get c)) )
 
       -- Not logged in user tries to get some data
       (do withTop sessionManager $ resetSession

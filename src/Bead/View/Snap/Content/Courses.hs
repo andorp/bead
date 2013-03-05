@@ -17,13 +17,9 @@ courses = Content {
   }
 
 coursesPage :: GETContentHandler
-coursesPage = withUserState $ \s -> do
-  eKeys <- runStory (selectCourses each)
-  case eKeys of
-    Left err -> error "Error happened: selecting courses"
-    Right keys -> do
-      let cs = courseKeys (routeOf P.Course) (map fst keys)
-      blaze $ withUserFrame s cs Nothing
-
+coursesPage = withUserStateE $ \s -> do
+  keys <- runStoryE (selectCourses each)
+  let cs = courseKeys (routeOf P.Course) (map fst keys)
+  lift $ blaze $ withUserFrame s cs Nothing
   where
     each _ _ = True
