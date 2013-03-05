@@ -1,1 +1,0 @@
-and.or@nano.stoyan32.1541
