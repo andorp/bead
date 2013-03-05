@@ -26,9 +26,12 @@ noSqlDirPersist = Persist {
   , filterCourses = nFilterCourses -- :: (CourseKey -> Course -> Bool) -> IO (Erroneous [(CourseKey, Course)])
   , loadCourse    = nLoadCourse    -- :: CourseKey -> IO (Erroneous Course)
   , groupKeysOfCourse = nGroupKeysOfCourse -- :: CourseKey -> IO (Erroneous [GroupKey])
+  , isUserInCourse = nIsUserInCourse -- :: Username -> CourseKey -> IO (Erroneous Bool)
 
   , saveGroup     = nSaveGroup     -- :: CourseKey -> Group -> IO (Erroneous GroupKey)
   , loadGroup     = nLoadGroup     -- :: GroupKey -> IO (Erroneous Group)
+  , isUserInGroup = nIsUserInGroup -- :: Username -> GroupKey -> IO (Erroneous Bool)
+  , subscribe     = nSubscribe     -- :: Username -> CourseKey -> GroupKey -> IO (Erroneous ())
 
   , filterExercises = nFilterExercises -- :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey,Exercise)])
   , exerciseKeys  = nExerciseKeys  -- :: IO (Erroneous [ExerciseKey])
@@ -152,6 +155,26 @@ nLoadGroup g = runAtomically $ do
     groupDirPath :: GroupKey -> FilePath
     groupDirPath (GroupKey g) = joinPath [groupDataDir, g]
 
+userIsLinkedInDir username key = runAtomically $
+  hasNoRollback . doesDirectoryExist . joinPath $
+    [referredPath key, "users", baseName username]
+
+nIsUserInGroup :: Username -> GroupKey -> IO (Erroneous Bool)
+nIsUserInGroup = userIsLinkedInDir
+
+nIsUserInCourse :: Username -> CourseKey -> IO (Erroneous Bool)
+nIsUserInCourse = userIsLinkedInDir
+
+nSubscribe :: Username -> CourseKey -> GroupKey -> IO (Erroneous ())
+nSubscribe username ck gk = runAtomically $ do
+  let pg = joinPath [referredPath gk, "users"]
+      pc = joinPath [referredPath ck, "users"]
+      b = baseName username
+  existsInGroup  <- hasNoRollback . doesDirectoryExist . joinPath $ [pg, b]
+  existsInCourse <- hasNoRollback . doesDirectoryExist . joinPath $ [pc, b]
+  unless existsInGroup  $ foreignKey username gk "users"
+  unless existsInCourse $ foreignKey username ck "users"
+
 tLoadPersistenceObject :: (Load o)
   => (String -> k) -- ^ Key constructor
   -> FilePath      -- ^ Base path
@@ -190,6 +213,10 @@ foreignKey object linkto subdir =
   createLink
     (joinPath ["..", "..", "..", "..", (referredPath object)])
     (joinPath [(referredPath linkto), subdir, baseName object])
+
+instance ForeignKey Username where
+  referredPath = dirName
+  baseName     = takeBaseName . dirName
 
 instance ForeignKey GroupKey where
   referredPath (GroupKey g) = joinPath [groupDataDir, g]

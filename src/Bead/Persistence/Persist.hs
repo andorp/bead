@@ -17,10 +17,13 @@ data Persist = Persist {
   , filterCourses :: (CourseKey -> Course -> Bool) -> IO (Erroneous [(CourseKey, Course)])
   , loadCourse :: CourseKey -> IO (Erroneous Course)
   , groupKeysOfCourse :: CourseKey -> IO (Erroneous [GroupKey])
+  , isUserInCourse :: Username -> CourseKey -> IO (Erroneous Bool)
   
   -- Group Persistence
   , saveGroup   :: CourseKey -> Group -> IO (Erroneous GroupKey)
   , loadGroup   :: GroupKey -> IO (Erroneous Group)
+  , isUserInGroup :: Username -> GroupKey -> IO (Erroneous Bool)
+  , subscribe :: Username -> CourseKey -> GroupKey -> IO (Erroneous ())
 
   -- Exersice Persistence
   , filterExercises :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey, Exercise)])
@@ -44,11 +47,14 @@ mockPersist = Persist {
   , saveCourse = \_ -> return $ Right $ CourseKey "course_key"
   , courseKeys = return $ Right $ []
   , filterCourses = \_ -> return $ Right $ []
-  , loadCourse = \_ -> return $ Right (Course {})
+  , loadCourse = \_ -> return $ Right $ Course undefined undefined undefined
   , groupKeysOfCourse = \_ -> return $ Right []
+  , isUserInCourse = \_ _ -> return $ Right False
   
   , saveGroup = \_ _ -> return $ Right $ GroupKey "group_key"
-  , loadGroup = \_ -> return $ Right $ Group {}
+  , loadGroup = \_ -> return $ Right $ Group undefined undefined undefined
+  , isUserInGroup = \_ _ -> return $ Right False
+  , subscribe = \_ _ _ -> return $ Right ()
   
   , saveExercise = \_ -> return $ Right $ ExerciseKey "exercise_key"
   , loadExercise = \_ -> return $ Right $ Exercise "exercise"

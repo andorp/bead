@@ -252,7 +252,7 @@ exerciseDirStructure = DirStructure {
 
 courseDirStructure = DirStructure {
     files       = ["course_code", "description", "name"]
-  , directories = ["groups", "exams"]
+  , directories = ["groups", "exams", "users"]
   }
 
 groupDirStructure = DirStructure {

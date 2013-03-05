@@ -9,10 +9,11 @@ import qualified Test.Unit.Persistence.TestNoSQLDir
 import qualified Test.Unit.Invariants
 import qualified Test.UserStories.TestStories
 
-tests = join
-   [ [ Test.Unit.Persistence.TestNoSQLDir.tests
-     , Test.UserStories.TestStories.tests ]
-   , Test.Unit.Invariants.tests
+tests = join [
+     Test.Unit.Invariants.tests
+   , [ Test.UserStories.TestStories.tests ,
+       Test.Unit.Persistence.TestNoSQLDir.tests
+     ]
    ]
 
 main = defaultMain tests
