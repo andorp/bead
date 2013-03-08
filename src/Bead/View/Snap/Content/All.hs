@@ -11,6 +11,7 @@ import Bead.View.Snap.Content.CreateExercise (createExercise)
 import Bead.View.Snap.Content.Exercise (exercise)
 import Bead.View.Snap.Content.Courses (courses)
 import Bead.View.Snap.Content.Course (course)
+import Bead.View.Snap.Content.Group (group)
 
 import Bead.Invariants (Invariants(..))
 
@@ -20,7 +21,7 @@ content P.Logout         = emptyContent
 content P.Home           = home
 content P.Profile        = emptyContent
 content P.Course         = course
-content P.Group          = emptyContent
+content P.Group          = group
 content P.Groups         = emptyContent
 content P.Exercise       = exercise
 content P.ClosedExam     = emptyContent

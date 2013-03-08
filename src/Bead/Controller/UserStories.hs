@@ -69,10 +69,11 @@ login username password = do
     (Right False,    _)  -> errorPage "Invalid user and password combination"
 
 -- | The user logs out
-logout :: Username -> UserStory ()
-logout username = do
+logout :: UserStory ()
+logout = do
+  state <- userState
   users <- CMR.asks userContainer
-  liftIO $ userLogsOut users username
+  liftIO $ userLogsOut users (user state)
   CMS.put UserNotLoggedIn
 
 -- | The user submits a solution for the given exercise
@@ -159,11 +160,23 @@ updateCourse = undefined
 
 -- | Adds a new group to the given course
 createGroup :: CourseKey -> Group -> UserStory GroupKey
-createGroup = undefined
+createGroup ck g = logAction INFO ("Creating group: " ++ show (groupCode g)) $ do
+  authorize P_Create P_Group
+  liftP $ \p -> R.saveGroup p ck g
+
+-- | Checks is the user is subscribed for the group
+isUserInGroup :: GroupKey -> UserStory Bool
+isUserInGroup gk = do
+  authorize P_Open P_Group
+  state <- userState
+  liftP $ \p -> R.isUserInGroup p (user state) gk
 
 -- | Regsiter the user as a group intendee
-registerInAGroup :: User -> GroupKey -> UserStory ()
-registerInAGroup = undefined
+subscribeToGroup :: CourseKey -> GroupKey -> UserStory ()
+subscribeToGroup ck gk = logAction INFO ("Subscribe to the group " ++ (show gk)) $ do
+  authorize P_Open P_Group
+  state <- userState
+  liftP $ \p -> R.subscribe p (user state) ck gk
 
 -- | Deletes logically the given course
 deleteGroup :: GroupKey -> UserStory ()

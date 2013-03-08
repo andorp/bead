@@ -237,6 +237,7 @@ nSaveGroup ck group = runAtomically $ do
   let groupKey = GroupKey . takeBaseName $ dirName
   save dirName group
   foreignKey groupKey ck "groups"
+  foreignKey ck groupKey "course"
   return groupKey
 
 nSaveExercise :: Exercise -> IO (Erroneous ExerciseKey)

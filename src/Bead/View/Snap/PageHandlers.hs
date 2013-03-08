@@ -153,12 +153,32 @@ redirectToActPage = do
         error $ "Actual page data stored in session and in the server differ"
       True ->  redirect . routeOf . page $ uState
 
-runGETError :: (GETHandlerError -> Handler App App ()) -> HandlerError App App () -> Handler App App ()
-runGETError onError m = do
+runGETHandler
+  :: (ContentHandlerError -> Handler App App ())
+  -> HandlerError App App ()
+  -> Handler App App ()
+runGETHandler onError m = do
   x <- runErrorT m
   case x of
     Left e -> onError e
     Right y -> return y
+
+runPOSTHandler
+  :: (ContentHandlerError -> Handler App App ())
+  -> P.Page
+  -> HandlerError App App UserAction
+  -> Handler App App ()
+runPOSTHandler onError p m = do
+  x <- runErrorT m
+  case x of
+    Left e -> onError e
+    Right userAction -> do
+      runStory $ do
+        userStoryFor userAction
+        S.changePage . P.parentPage $ p
+      with sessionManager $ (commitSession >> touchSession)
+      redirectToActPage
+
 
 {- When a user logs in the home page is shown for her. An universal handler
    is used. E.g "/home" -> handlePage P.Home.
@@ -172,8 +192,11 @@ handlePage :: (P.Page, Content) -> Handler App App ()
 handlePage (P.Login, _) = loginSubmit
 handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
   where
-    notAllowedPage = do
-      logMessage ERROR $ "Page transition is not allowed " ++ show p
+    notAllowedPage = withUserState $ \s -> do
+      logMessage ERROR . join $ [
+          "Page transition is not allowed "
+        , show (page s), " -> ", show p
+        ]
       L.logout
 
     changePage h =
@@ -191,7 +214,7 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
          ((logMessage DEBUG $ "No GET handler found for " ++ show p) >> L.logout)
          -- GET handler is found
          changePage
-         ((runGETError (error . show)) <$> (get c)) )
+         ((runGETHandler (error . show)) <$> (get c)) )
 
       -- Not logged in user tries to get some data
       (do withTop sessionManager $ resetSession
@@ -208,13 +231,8 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
            logMessage DEBUG $ "No POST handler found for " ++ show p
            L.logout
          -- POST handler is found
-         Just handlerUserAction -> do
-           userAction <- handlerUserAction
-           withUserState $ \ustate -> runStory $ do
-             userStoryFor ustate userAction
-             S.changePage (P.parentPage p)
-           with sessionManager $ (commitSession >> touchSession)
-           redirectToActPage)
+         Just handlerUserAction -> runPOSTHandler (error . show) p handlerUserAction
+      )
 
       -- Not logged in user tires to post some data
       (do withTop sessionManager $ resetSession

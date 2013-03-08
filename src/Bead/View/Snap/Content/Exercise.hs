@@ -1,4 +1,4 @@
-{-# LANGAUGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Content.Exercise (
     exercise
   ) where
@@ -30,7 +30,7 @@ showExercise = withUserStateE $ \s -> do
 
 exerciseForm :: Exercise -> Html
 exerciseForm e = do
-  H.p $ fromString "Exercise: "
+  H.p "Exercise: "
   fromString . C.exercise $ e
 
 submitSolution :: POSTContentHandler

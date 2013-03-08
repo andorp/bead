@@ -96,7 +96,7 @@ loginAndLogout = testCase "Login And Logout" $ do
   c <- context
   (_,state) <- runStory c UserNotLoggedIn $ login (Username "student") "user"
   assertUserState state student
-  (_,state) <- runStory c state $ logout (Username "student")
+  (_,state) <- runStory c state $ logout
   case state of
     UserState {} -> error "User is remained logged in"
     UserNotLoggedIn -> return ()

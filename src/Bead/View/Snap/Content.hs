@@ -28,7 +28,7 @@ module Bead.View.Snap.Content (
 
 import Snap hiding (empty, get, route)
 import Snap.Blaze (blaze)
-import Data.ByteString.Char8 hiding (span, empty, map)
+import Data.ByteString.Char8 hiding (span, empty, map, group)
 
 import Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
@@ -50,7 +50,7 @@ import Control.Monad.Error
 -- page type. The common Html templates can be found in the Pagelet module
 
 type GETContentHandler  = HandlerError App App ()
-type POSTContentHandler = Handler App App UserAction
+type POSTContentHandler = HandlerError App App UserAction
 
 -- | Content Pages are rendered in content area.
 data Content = Content {

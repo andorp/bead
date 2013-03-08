@@ -23,13 +23,14 @@ course = Content {
 coursePage :: GETContentHandler
 coursePage = withUserStateE $ \s -> do
   key <- getParamE (fieldName courseKeyInfo)
-  (course, groupKeys) <- runStoryE . loadCourse . CourseKey . unpack $ key
-  lift $ blaze $ withUserFrame s (courseForm course groupKeys) Nothing
+  let courseKey = CourseKey . unpack $ key
+  (course, groupKeys) <- runStoryE . loadCourse $ courseKey
+  lift $ blaze $ withUserFrame s (courseForm courseKey course groupKeys) Nothing
 
-courseForm :: Course -> [GroupKey] -> Html
-courseForm c gks = do
+courseForm :: CourseKey -> Course -> [GroupKey] -> Html
+courseForm ck c gks = do
   H.p $ fromString "Course code: " >> (fromString . str . courseCode $ c)
   H.p $ fromString "Course name: " >> (fromString . courseName $ c)
   H.p $ fromString "Course desc: " >> (fromString . courseDesc $ c)
-  groupKeys (routeOf P.Group) gks
+  groupKeys (routeOf P.Group) ck gks
 

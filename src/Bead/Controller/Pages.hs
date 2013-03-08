@@ -51,9 +51,9 @@ pageTransition s = nub $ p s ++ [s, Login, Error, Logout]
     p CreateExercise = [Admin]
     p Admin          = [Home, CreateExercise]
     p Courses    = [Home, Course]
-    p Course     = [Courses]
-    p Groups     = [Home, Group]
-    p Group      = [Groups]
+    p Course     = [Courses, Group]
+    p Groups     = [Home]
+    p Group      = [Courses]
     p _          = [Home]
     p g = error $ "Unknown transition for page: " ++ show g
 
@@ -66,7 +66,6 @@ regularPages = [
   , Course
   , Courses
   , Group
-  , Groups
   , Exercise
   , ClosedExam
   , Error
@@ -111,7 +110,7 @@ parentPage CreateExercise = Admin
 parentPage Courses        = Home
 parentPage Course         = Courses
 parentPage Groups         = Home
-parentPage Group          = Groups
+parentPage Group          = Course
 parentPage _              = Home
 
 -- * Invariants

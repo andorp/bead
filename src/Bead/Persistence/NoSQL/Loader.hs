@@ -257,7 +257,7 @@ courseDirStructure = DirStructure {
 
 groupDirStructure = DirStructure {
     files       = ["group_code", "description", "name"]
-  , directories = ["users"]
+  , directories = ["users", "course"]
   }
 
 -- * Encoding

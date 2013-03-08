@@ -28,6 +28,7 @@ data UserAction
   -- Group
   | CreateGroup String
   | DeleteGroup Encrypted
+  | SubscribeToGroup CourseKey GroupKey
 
   -- Cource
   | CreateCourse Course
@@ -46,14 +47,15 @@ data UserAction
   deriving (Eq)
 
 -- | UserStory correspondence to UserState and the given action
-userStoryFor :: UserState -> UserAction -> Story.UserStory ()
-userStoryFor state Logout             = Story.logout (user state)
-userStoryFor state Profile            = Story.changePage P.Profile
-userStoryFor state (ChangePage p)     = Story.changePage p
-userStoryFor state (ChangePwd o n n') = Story.changePassword o n n'
-userStoryFor state (CreateUser u p)   = Story.createUser u p
-userStoryFor state (LogMessage m)     = Story.logErrorMessage m
-userStoryFor state (CreateCourse c)   = Story.createCourse c >> return ()
-userStoryFor state (CreateExercise e) = Story.createExercise e >> return ()
-userStoryFor _     _                  = Story.logMessage L.DEBUG "No story was selected"
+userStoryFor :: UserAction -> Story.UserStory ()
+userStoryFor Logout             = Story.logout
+userStoryFor Profile            = Story.changePage P.Profile
+userStoryFor (ChangePage p)     = Story.changePage p
+userStoryFor (ChangePwd o n n') = Story.changePassword o n n'
+userStoryFor (CreateUser u p)   = Story.createUser u p
+userStoryFor (LogMessage m)     = Story.logErrorMessage m
+userStoryFor (CreateCourse c)   = Story.createCourse c >> return ()
+userStoryFor (CreateExercise e) = Story.createExercise e >> return ()
+userStoryFor (SubscribeToGroup c g) = Story.subscribeToGroup c g
+userStoryFor _                      = Story.logMessage L.DEBUG "No story was selected"
 -- etc ...

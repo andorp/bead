@@ -8,7 +8,7 @@ module Bead.View.Snap.HandlerUtils (
   , runStoryE -- For logged in user
   , getParamE
   , HandlerError(..)
-  , GETHandlerError
+  , ContentHandlerError
   , module Control.Monad.Error
   ) where
 
@@ -35,6 +35,17 @@ import Snap hiding (get)
 import Snap.Blaze (blaze)
 import Snap.Snaplet.Auth as A
 import Snap.Snaplet.Session
+
+
+
+newtype ContentHandlerError = ContentHandlerError (Maybe String)
+  deriving (Show)
+
+instance Error ContentHandlerError where
+  noMsg  = ContentHandlerError Nothing
+  strMsg = ContentHandlerError . Just
+
+type HandlerError a b c = ErrorT ContentHandlerError (Handler a b) c
 
 
 -- | The 'logMessage' logs a message at a given level using the service context logger
@@ -64,14 +75,6 @@ userState = do
 errorPageHandler :: T.Text -> Handler App b ()
 errorPageHandler msg = undefined -- blaze errorPage
 
-newtype GETHandlerError = GETHandlerError (Maybe String)
-  deriving (Show)
-
-instance Error GETHandlerError where
-  noMsg  = GETHandlerError Nothing
-  strMsg = GETHandlerError . Just
-
-type HandlerError a b c = ErrorT GETHandlerError (Handler a b) c
 
 withUserState :: (UserState -> Handler App b c) -> Handler App b c
 withUserState h = userState >>= h

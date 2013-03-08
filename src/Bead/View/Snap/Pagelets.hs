@@ -85,22 +85,37 @@ class KeyString b where
   keyString :: b -> String
 
 data KeyFormData = KeyFormData {
-    divId           :: AttributeValue
-  , headerText      :: Html
-  , tableId         :: AttributeValue
-  , hiddenFieldName :: AttributeValue
+    divId   :: AttributeValue
+  , divName :: Html
+  , tableId :: AttributeValue
+  , key     :: AttributeValue
+  , parent  :: Maybe (AttributeValue, AttributeValue)
   }
 
+hiddenGroupKeyInput :: GroupKey -> Html
+hiddenGroupKeyInput k =
+  H.input ! A.type_ "hidden" ! A.name (fieldName groupKeyName) ! A.value (fromString . keyString $ k)
+
+hiddenCourseKeyInput :: CourseKey -> Html
+hiddenCourseKeyInput k =
+  H.input ! A.type_ "hidden" ! A.name (fieldName courseKeyInfo) ! A.value (fromString . keyString $ k)
+
 keySelectionForm :: (ButtonText k, KeyString k) => KeyFormData -> AttributeValue -> [k] -> Html
-keySelectionForm formData act ks = mapM_ key ks where
-  key k =
+keySelectionForm formData act ks = mapM_ keyDivForm ks where
+  keyDivForm k =
+    let parentRef = parentReference (parent formData) in
     H.div ! A.id (divId formData) $ do
-      (headerText formData)
+      (divName formData)
+      parentReference (parent formData)
       H.form ! A.method "get" ! A.action act $ do
         H.table ! A.id (tableId formData) $ do
           H.tr $ do
-            H.td $ H.input ! A.type_ "hidden" ! A.name (hiddenFieldName formData) ! A.value (fromString . keyString $ k)
+            parentRef
+            H.td $ H.input ! A.type_ "hidden" ! A.name (key formData) ! A.value (fromString . keyString $ k)
             H.td $ H.input ! A.type_ "submit" ! A.value (fromString . buttonText $ k)
+
+  parentReference Nothing      = return ()
+  parentReference (Just (k,v)) = H.td $ H.input ! A.type_ "hidden" ! A.name k ! A.value v
 
 instance ButtonText ExerciseKey where
   buttonText (ExerciseKey e) = e
@@ -111,10 +126,11 @@ instance KeyString ExerciseKey where
 exerciseKeys :: AttributeValue -> [ExerciseKey] -> Html
 exerciseKeys act = keySelectionForm exerciseFormData act where
   exerciseFormData = KeyFormData {
-      divId = "exercise"
-    , headerText = "Exercise for the user"
+      divId   = "exercise"
+    , divName = "Exercise for the user"
     , tableId = "exercise-table"
-    , hiddenFieldName = fieldName exerciseKey
+    , key     = fieldName exerciseKey
+    , parent  = Nothing
     }
 
 pageHeader :: UserState -> Html
@@ -133,10 +149,11 @@ instance KeyString CourseKey where
 courseKeys :: AttributeValue -> [CourseKey] -> Html
 courseKeys act = keySelectionForm courseFormData act where
   courseFormData = KeyFormData {
-      divId = "course"
-    , headerText = "Courses"
+      divId   = "course"
+    , divName = "Courses"
     , tableId = "course-table"
-    , hiddenFieldName = fieldName courseKeyInfo
+    , key     = fieldName courseKeyInfo
+    , parent  = Nothing
     }
 
 instance ButtonText GroupKey where
@@ -145,13 +162,14 @@ instance ButtonText GroupKey where
 instance KeyString GroupKey where
   keyString (GroupKey g) = g
 
-groupKeys :: AttributeValue -> [GroupKey] -> Html
-groupKeys act = keySelectionForm groupFormData act where
+groupKeys :: AttributeValue -> CourseKey -> [GroupKey] -> Html
+groupKeys act ck = keySelectionForm groupFormData act where
   groupFormData = KeyFormData {
-      divId = "group"
-    , headerText = "Groups"
+      divId   = "group"
+    , divName = "Groups"
     , tableId = "group-table"
-    , hiddenFieldName = fieldName groupKeyName
+    , key     = fieldName groupKeyName
+    , parent  = Just (fieldName courseKeyInfo, fromString . keyString $ ck)
     }
 
 -- * Invariants
