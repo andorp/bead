@@ -24,9 +24,9 @@ createPage = withUserStateAndFrame . const $ do
     "Create a new course"
     H.table ! A.id "create-course" $ do
       mapM_ field [
-          ("Course Code", "course-code")
-        , ("Course Name", "course-name")
-        , ("Course Desc", "course-desc")
+          ("Course Code", fieldName courseCodeField)
+        , ("Course Name", fieldName courseNameField)
+        , ("Course Desc", fieldName courseDescField)
         ]
     H.input ! A.type_ "submit"
   where
@@ -38,9 +38,9 @@ createPage = withUserStateAndFrame . const $ do
 
 submitCourse :: POSTContentHandler
 submitCourse = do
-  courseCodeText <- getParamE "course-code" CourseCode "Course code is not found"
-  courseNameText <- getParamE "course-name" id "Course name is not found"
-  courseDescText <- getParamE "course-desc" id "Course description is not found"
+  courseCodeText <- getParamE (fieldName courseCodeField) CourseCode "Course code is not found"
+  courseNameText <- getParamE (fieldName courseNameField) id "Course name is not found"
+  courseDescText <- getParamE (fieldName courseDescField) id "Course description is not found"
   return . UA.CreateCourse $ Course {
       courseCode = courseCodeText
     , courseName = courseNameText

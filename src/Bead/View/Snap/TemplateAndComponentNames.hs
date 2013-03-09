@@ -63,13 +63,22 @@ coursesKey  = CoursesKey "courses-key"
 data CourseFormInfo
   = CourseKeyInfo  String
   | CourseFormInfo String
+  | CourseNameField String
+  | CourseCodeField String
+  | CourseDescField String
 
 instance SnapFieldName CourseFormInfo where
   fieldName (CourseKeyInfo  f) = fromString f
   fieldName (CourseFormInfo f) = fromString f
+  fieldName (CourseNameField f) = fromString f
+  fieldName (CourseCodeField f) = fromString f
+  fieldName (CourseDescField f) = fromString f
 
 courseKeyInfo  = CourseKeyInfo  "course-key"
 courseFormInfo = CourseFormInfo "course"
+courseCodeField = CourseCodeField "course-code"
+courseNameField = CourseNameField "course-name"
+courseDescField = CourseDescField "course-desc"
 
 newtype GroupKeyName
   = GroupKeyName String
