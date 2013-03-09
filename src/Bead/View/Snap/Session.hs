@@ -51,6 +51,7 @@ instance SessionStore P.Page where
     s P.Training   = "Training"
     s P.Admin      = "Admin"
     s P.CreateExercise = "CreateExercise"
+    s P.CreateCourse   = "CreateCourse"
 
 instance SessionRestore P.Page where
   restoreFromSession kv = case L.lookup pageSessionKey kv of
@@ -71,6 +72,7 @@ instance SessionRestore P.Page where
     Just "Training"   -> Just P.Training
     Just "Admin"      -> Just P.Admin
     Just "CreateExercise" -> Just P.CreateExercise
+    Just "CreateCourse"   -> Just P.CreateCourse
 
 -- * Session Key Values for Username
 

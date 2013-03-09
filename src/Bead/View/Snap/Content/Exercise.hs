@@ -23,8 +23,8 @@ exercise = Content {
 
 showExercise :: GETContentHandler
 showExercise = withUserStateE $ \s -> do
-  key <- getParamE . fieldName $ exerciseKey
-  ex  <- runStoryE . loadExercise . ExerciseKey . unpack $ key
+  key <- getParamE (fieldName exerciseKey) ExerciseKey "Exercise key is not found"
+  ex  <- runStoryE . loadExercise $ key
   lift $ blaze $ withUserFrame s (exerciseForm ex) Nothing
   return ()
 
@@ -32,7 +32,3 @@ exerciseForm :: Exercise -> Html
 exerciseForm e = do
   H.p "Exercise: "
   fromString . C.exercise $ e
-
-submitSolution :: POSTContentHandler
-submitSolution = do
-  return undefined

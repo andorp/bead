@@ -35,6 +35,7 @@ data Page
   | Training
   | Admin
   | CreateExercise
+  | CreateCourse
   -- etc ...
   deriving (Eq, Enum, Show)
 
@@ -49,7 +50,8 @@ pageTransition s = nub $ p s ++ [s, Login, Error, Logout]
     p Home       = [ Profile, Courses, Group, Exercise, ClosedExam, Evaulation
                    , Training, Admin, SubmitExam, Groups ]
     p CreateExercise = [Admin]
-    p Admin          = [Home, CreateExercise]
+    p CreateCourse   = [Admin]
+    p Admin          = [Home, CreateExercise, CreateCourse]
     p Courses    = [Home, Course]
     p Course     = [Courses, Group]
     p Groups     = [Home]
@@ -76,6 +78,7 @@ regularPages = [
 adminPages = [
     Admin
   , Groups
+  , CreateCourse
   ]
 
 nonMenuPages = [
@@ -107,6 +110,7 @@ parentPage Login          = Login
 parentPage Error          = Error
 parentPage Logout         = Logout
 parentPage CreateExercise = Admin
+parentPage CreateCourse   = Admin
 parentPage Courses        = Home
 parentPage Course         = Courses
 parentPage Groups         = Home

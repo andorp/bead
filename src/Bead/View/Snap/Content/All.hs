@@ -8,6 +8,7 @@ import Bead.View.Snap.Content hiding (exercise)
 import Bead.View.Snap.Content.Home (home)
 import Bead.View.Snap.Content.Admin (admin)
 import Bead.View.Snap.Content.CreateExercise (createExercise)
+import Bead.View.Snap.Content.CreateCourse (createCourse)
 import Bead.View.Snap.Content.Exercise (exercise)
 import Bead.View.Snap.Content.Courses (courses)
 import Bead.View.Snap.Content.Course (course)
@@ -31,6 +32,7 @@ content P.Evaulation     = emptyContent
 content P.Training       = emptyContent
 content P.Admin          = admin
 content P.CreateExercise = createExercise
+content P.CreateCourse   = createCourse
 content P.Courses        = courses
 
 invariants = Invariants [

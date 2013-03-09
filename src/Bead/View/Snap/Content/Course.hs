@@ -22,8 +22,7 @@ course = Content {
 
 coursePage :: GETContentHandler
 coursePage = withUserStateE $ \s -> do
-  key <- getParamE (fieldName courseKeyInfo)
-  let courseKey = CourseKey . unpack $ key
+  courseKey <- getParamE (fieldName courseKeyInfo) CourseKey "Course key is not found"
   (course, groupKeys) <- runStoryE . loadCourse $ courseKey
   lift $ blaze $ withUserFrame s (courseForm courseKey course groupKeys) Nothing
 

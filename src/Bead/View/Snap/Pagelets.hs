@@ -67,6 +67,7 @@ linkText P.SubmitExam = fromString "Submit Exam"
 linkText P.Evaulation = fromString "Evaulation"
 linkText P.Training   = fromString "Training"
 linkText P.CreateExercise = fromString "Create Exercise"
+linkText P.CreateCourse   = fromString "Create Course"
 linkText P.Admin      = fromString "Admin"
 
 linkToPage :: P.Page -> Html

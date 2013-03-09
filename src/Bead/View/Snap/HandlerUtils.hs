@@ -84,12 +84,12 @@ withUserStateE h = do
   u <- lift userState
   h u
 
-getParamE :: B.ByteString -> HandlerError App b B.ByteString
-getParamE b = do
-  x <- lift . getParam $ b
+getParamE :: String -> (String -> a) -> String -> HandlerError App b a
+getParamE p f msg = do
+  x <- lift . getParam . B.pack $ p
   case x of
-    Nothing -> throwError . strMsg . B.unpack $ b
-    Just y  -> return y
+    Nothing -> throwError . strMsg $ msg
+    Just y  -> return . f . B.unpack $ y
 
 runStoryE :: S.UserStory a -> HandlerError App b a
 runStoryE story = do

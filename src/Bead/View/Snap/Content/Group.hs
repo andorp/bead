@@ -23,15 +23,15 @@ group = Content {
 
 groupPageHandler :: GETContentHandler
 groupPageHandler = withUserStateE $ \s -> do
-  cKey <- liftM (CourseKey . fromString . unpack) $ getParamE (fieldName courseKeyInfo)
-  gKey <- liftM (GroupKey . fromString . unpack)  $ getParamE (fieldName groupKeyName)
+  cKey <- getParamE (fieldName courseKeyInfo) CourseKey "Course key is not found"
+  gKey <- getParamE (fieldName groupKeyName)  GroupKey  "Group key is not found"
   isSubscribed <- runStoryE . isUserInGroup $ gKey
   lift $ blaze $ withUserFrame s (groupPage isSubscribed cKey gKey) Nothing
 
 subscriptionHandler :: POSTContentHandler
 subscriptionHandler = do
-  gKey <- liftM (GroupKey . fromString . unpack) $ getParamE (fieldName groupKeyName)
-  cKey <- liftM (CourseKey . fromString . unpack) $ getParamE (fieldName courseKeyInfo)
+  gKey <- getParamE (fieldName groupKeyName)  GroupKey  "Group key is not found"
+  cKey <- getParamE (fieldName courseKeyInfo) CourseKey "Course key is not found"
   isSubscribed <- runStoryE . isUserInGroup $ gKey
   when isSubscribed . throwError . strMsg $ "User is already subscribed"
   return $ SubscribeToGroup cKey gKey
