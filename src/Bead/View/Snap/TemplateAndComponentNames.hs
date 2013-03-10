@@ -17,62 +17,54 @@ class SnapFieldName f where
 -- * Component names
 
 data LoginComp
-  = Username String
-  | Password String
+  = Username { lcFieldName :: String }
+  | Password { lcFieldName :: String }
 
 instance SnapFieldName LoginComp where
-  fieldName (Username f) = fromString f
-  fieldName (Password f) = fromString f
+  fieldName = fromString . lcFieldName
 
 loginUsername = Username "login"
 loginPassword = Password "password"
 
 data RegistrationComp
-  = RegFamilyName   String
-  | RegEmailAddress String
+  = RegFamilyName   { rFieldName :: String }
+  | RegEmailAddress { rFieldName :: String }
 
 instance SnapFieldName RegistrationComp where
-  fieldName (RegFamilyName f)   = fromString f
-  fieldName (RegEmailAddress f) = fromString f
+  fieldName = fromString . rFieldName
 
 registrationFamilyName   = RegFamilyName   "reg_family_name"
 registrationEmailAddress = RegEmailAddress "reg_email_address"
 
 data ExerciseForm
-  = ExerciseForm     String
-  | ExerciseKeyField String
+  = ExerciseForm     { eFieldName :: String }
+  | ExerciseKeyField { eFieldName :: String }
 
 instance SnapFieldName ExerciseForm where
-  fieldName (ExerciseForm f) = fromString f
-  fieldName (ExerciseKeyField e) = fromString e
+  fieldName = fromString . eFieldName
 
 exerciseForm = ExerciseForm "exercise"
 exerciseKey  = ExerciseKeyField "exercise-key"
 
 data CoursesForm
-  = CoursesKey  String
-  | CoursesForm String
+  = CoursesKey  { csFieldName :: String }
+  | CoursesForm { csFieldName :: String }
 
 instance SnapFieldName CoursesForm where
-  fieldName (CoursesForm f) = fromString f
-  fieldName (CoursesKey  f) = fromString f
+  fieldName = fromString . csFieldName
 
 coursesForm = CoursesForm "courses"
 coursesKey  = CoursesKey "courses-key"
 
 data CourseFormInfo
-  = CourseKeyInfo  String
-  | CourseFormInfo String
-  | CourseNameField String
-  | CourseCodeField String
-  | CourseDescField String
+  = CourseKeyInfo   { cFieldName :: String }
+  | CourseFormInfo  { cFieldName :: String }
+  | CourseNameField { cFieldName :: String }
+  | CourseCodeField { cFieldName :: String }
+  | CourseDescField { cFieldName :: String }
 
 instance SnapFieldName CourseFormInfo where
-  fieldName (CourseKeyInfo  f) = fromString f
-  fieldName (CourseFormInfo f) = fromString f
-  fieldName (CourseNameField f) = fromString f
-  fieldName (CourseCodeField f) = fromString f
-  fieldName (CourseDescField f) = fromString f
+  fieldName = fromString . cFieldName
 
 courseKeyInfo  = CourseKeyInfo  "course-key"
 courseFormInfo = CourseFormInfo "course"
@@ -81,12 +73,24 @@ courseNameField = CourseNameField "course-name"
 courseDescField = CourseDescField "course-desc"
 
 newtype GroupKeyName
-  = GroupKeyName String
+  = GroupKeyName { gkFieldName :: String }
 
 instance SnapFieldName GroupKeyName where
-  fieldName (GroupKeyName f) = fromString f
+  fieldName = fromString . gkFieldName
 
 groupKeyName = GroupKeyName "group-key"
+
+data GroupField
+  = GroupCodeField { gFieldName :: String }
+  | GroupDescField { gFieldName :: String }
+  | GroupNameField { gFieldName :: String }
+
+instance SnapFieldName GroupField where
+  fieldName = fromString . gFieldName
+
+groupCodeField = GroupCodeField "group-code"
+groupNameField = GroupNameField "group-name"
+groupDescField = GroupDescField "group-desc"
 
 -- * Template names
 

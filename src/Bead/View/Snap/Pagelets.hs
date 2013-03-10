@@ -68,6 +68,7 @@ linkText P.Evaulation = fromString "Evaulation"
 linkText P.Training   = fromString "Training"
 linkText P.CreateExercise = fromString "Create Exercise"
 linkText P.CreateCourse   = fromString "Create Course"
+linkText P.CreateGroup    = fromString "Create Group"
 linkText P.Admin      = fromString "Admin"
 
 linkToPage :: P.Page -> Html
@@ -87,10 +88,10 @@ class KeyString b where
 
 data KeyFormData = KeyFormData {
     divId   :: AttributeValue
-  , divName :: Html
   , tableId :: AttributeValue
   , key     :: AttributeValue
   , parent  :: Maybe (AttributeValue, AttributeValue)
+  , formTitle :: Html
   }
 
 hiddenGroupKeyInput :: GroupKey -> Html
@@ -102,11 +103,13 @@ hiddenCourseKeyInput k =
   H.input ! A.type_ "hidden" ! A.name (fieldName courseKeyInfo) ! A.value (fromString . keyString $ k)
 
 keySelectionForm :: (ButtonText k, KeyString k) => KeyFormData -> AttributeValue -> [k] -> Html
-keySelectionForm formData act ks = mapM_ keyDivForm ks where
+keySelectionForm formData act ks = do
+    (formTitle formData)
+    mapM_ keyDivForm ks
+  where
   keyDivForm k =
     let parentRef = parentReference (parent formData) in
     H.div ! A.id (divId formData) $ do
-      (divName formData)
       parentReference (parent formData)
       H.form ! A.method "get" ! A.action act $ do
         H.table ! A.id (tableId formData) $ do
@@ -128,10 +131,10 @@ exerciseKeys :: AttributeValue -> [ExerciseKey] -> Html
 exerciseKeys act = keySelectionForm exerciseFormData act where
   exerciseFormData = KeyFormData {
       divId   = "exercise"
-    , divName = "Exercise for the user"
     , tableId = "exercise-table"
     , key     = fieldName exerciseKey
     , parent  = Nothing
+    , formTitle = "Exercises for the user"
     }
 
 pageHeader :: UserState -> Html
@@ -151,10 +154,10 @@ courseKeys :: AttributeValue -> [CourseKey] -> Html
 courseKeys act = keySelectionForm courseFormData act where
   courseFormData = KeyFormData {
       divId   = "course"
-    , divName = "Courses"
     , tableId = "course-table"
     , key     = fieldName courseKeyInfo
     , parent  = Nothing
+    , formTitle = "Courses"
     }
 
 instance ButtonText GroupKey where
@@ -167,10 +170,10 @@ groupKeys :: AttributeValue -> CourseKey -> [GroupKey] -> Html
 groupKeys act ck = keySelectionForm groupFormData act where
   groupFormData = KeyFormData {
       divId   = "group"
-    , divName = "Groups"
     , tableId = "group-table"
     , key     = fieldName groupKeyName
     , parent  = Just (fieldName courseKeyInfo, fromString . keyString $ ck)
+    , formTitle = "Groups"
     }
 
 -- * Invariants

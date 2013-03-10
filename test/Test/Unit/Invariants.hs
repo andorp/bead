@@ -22,7 +22,7 @@ import Test.Quick.RolePermissionGen
 -- * Unit tests and invariants import from Bead modules
 
 import qualified Bead.View.Snap.RouteOf as R (invariants)
-import qualified Bead.Controller.Pages as P (invariants)
+import qualified Bead.Controller.Pages as P (invariants, unitTests)
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.View.Snap.Content.All as VA (invariants)
 import qualified Bead.View.Snap.Pagelets as VP (invariants)
@@ -46,6 +46,7 @@ tests = [
   , invariantsGroup "Content handler definitions" VA.invariants
   , invariantsGroup "Pages need to have link text" VP.invariants
   , invariantsGroup "Page Session Cookie values" VS.invariants
+  , unitTestGroup   "Page unit tests" P.unitTests
   ]
 
 

@@ -26,7 +26,7 @@ data UserAction
   | ChangePwd Password Password Password
 
   -- Group
-  | CreateGroup String
+  | CreateGroup CourseKey Group
   | DeleteGroup Encrypted
   | SubscribeToGroup CourseKey GroupKey
 
@@ -55,6 +55,7 @@ userStoryFor (ChangePwd o n n') = Story.changePassword o n n'
 userStoryFor (CreateUser u p)   = Story.createUser u p
 userStoryFor (LogMessage m)     = Story.logErrorMessage m
 userStoryFor (CreateCourse c)   = Story.createCourse c >> return ()
+userStoryFor (CreateGroup ck g) = Story.createGroup ck g >> return ()
 userStoryFor (CreateExercise e) = Story.createExercise e >> return ()
 userStoryFor (SubscribeToGroup c g) = Story.subscribeToGroup c g
 userStoryFor _                      = Story.logMessage L.DEBUG "No story was selected"

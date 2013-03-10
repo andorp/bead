@@ -34,6 +34,7 @@ subscriptionHandler = do
   cKey <- getParamE (fieldName courseKeyInfo) CourseKey "Course key is not found"
   isSubscribed <- runStoryE . isUserInGroup $ gKey
   when isSubscribed . throwError . strMsg $ "User is already subscribed"
+  setReqParamInSession . requestParam $ cKey
   return $ SubscribeToGroup cKey gKey
 
 groupPage :: Bool -> CourseKey -> GroupKey -> Html
@@ -51,7 +52,7 @@ newToGroup ck gk = do
   "User is new to the group"
   H.br
   "Do you want to subscribe?"
-  H.form ! A.method "post" ! A.action (fromString . routeOf $ Group) $ do
+  H.form ! A.method "post" ! A.action (routeOf Group) $ do
     H.table ! A.id "yesOrNo" $ do
       H.tr $ do
         H.td $ hiddenGroupKeyInput  gk

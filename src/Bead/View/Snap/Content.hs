@@ -5,7 +5,10 @@ module Bead.View.Snap.Content (
   , mkContent
   , blaze
   , getParamE
+  , setInSessionE
+  , setReqParamInSession
   , routeOf
+  , routeWithParams
   , runStory
   , runStoryE
   , withUserState
@@ -14,6 +17,8 @@ module Bead.View.Snap.Content (
   , GETContentHandler
   , POSTContentHandler
   , UserState(..)
+  , ReqParam(..)
+  , RequestParam(..)
   , Html
   , module Snap
   , module Data.ByteString.Char8
@@ -32,13 +37,14 @@ import Data.ByteString.Char8 hiding (span, empty, map, group)
 
 import Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
-import Bead.Domain.Entities
-import Bead.Domain.Relationships (GroupKey(..))
+import Bead.Domain.Entities hiding (ExamType(..))
+import Bead.Domain.Relationships
 import Bead.View.UserActions
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.Pagelets hiding (invariants)
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.HandlerUtils
+import Bead.View.Snap.RequestParams
 import Bead.View.Snap.TemplateAndComponentNames hiding (Username)
 
 import Text.Blaze.Html5 (Html)

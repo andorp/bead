@@ -7,6 +7,7 @@ module Bead.Controller.Pages (
   , menuPages
   , reachable
   , invariants
+  , unitTests
   ) where
 
 import qualified Bead.Domain.Entities      as E
@@ -14,7 +15,10 @@ import qualified Bead.Domain.Relationships as R
 
 import Data.List (nub)
 
-import Bead.Invariants (Invariants(..))
+import Data.Set (Set(..))
+import qualified Data.Set as Set
+
+import Bead.Invariants (Invariants(..), UnitTests(..))
 
 -- * Page types and necessary data
 
@@ -36,8 +40,9 @@ data Page
   | Admin
   | CreateExercise
   | CreateCourse
+  | CreateGroup
   -- etc ...
-  deriving (Eq, Enum, Show)
+  deriving (Eq, Ord, Enum, Show)
 
 allPages :: [Page]
 allPages = [Login .. ]
@@ -51,9 +56,10 @@ pageTransition s = nub $ p s ++ [s, Login, Error, Logout]
                    , Training, Admin, SubmitExam, Groups ]
     p CreateExercise = [Admin]
     p CreateCourse   = [Admin]
+    p CreateGroup    = [Course]
     p Admin          = [Home, CreateExercise, CreateCourse]
     p Courses    = [Home, Course]
-    p Course     = [Courses, Group]
+    p Course     = [Courses, Group, CreateGroup]
     p Groups     = [Home]
     p Group      = [Courses]
     p _          = [Home]
@@ -73,20 +79,25 @@ regularPages = [
   , Error
   , SubmitExam
   , Evaulation
+  , Training
   ]
 
 adminPages = [
     Admin
   , Groups
   , CreateCourse
+  , CreateExercise
+  , CreateGroup
   ]
 
 nonMenuPages = [
     Login
+  , Logout
   , Error
   , Exercise
   , Course
   , Group
+  , CreateGroup
   ]
 
 allowedPages :: E.Role -> [Page]
@@ -111,6 +122,7 @@ parentPage Error          = Error
 parentPage Logout         = Logout
 parentPage CreateExercise = Admin
 parentPage CreateCourse   = Admin
+parentPage CreateGroup    = Course
 parentPage Courses        = Home
 parentPage Course         = Courses
 parentPage Groups         = Home
@@ -123,4 +135,9 @@ invariants = Invariants [
     -- For each page the following property is hold:
     -- Every parent page of a page has a transition to the given page
     ("Parent page relation", \p -> elem p $ pageTransition $ parentPage p)
+  ]
+
+unitTests = UnitTests [
+    ("Regular, Admin and NonMenu pages should cover all pages",
+     Set.fromList (regularPages ++ adminPages ++ nonMenuPages) == Set.fromList allPages)
   ]

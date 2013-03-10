@@ -7,6 +7,8 @@ module Bead.View.Snap.HandlerUtils (
   , runStory  -- For logged in user
   , runStoryE -- For logged in user
   , getParamE
+  , setInSessionE
+  , setReqParamInSession
   , HandlerError(..)
   , ContentHandlerError
   , module Control.Monad.Error
@@ -20,10 +22,12 @@ import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.UserStories as S
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
+import Bead.View.Snap.RouteOf (ReqParam(..))
 
 
 -- Haskell imports
 
+import Data.String (IsString(..))
 import qualified Data.Text as T
 import qualified Data.List as L
 import Control.Monad.Error
@@ -84,12 +88,28 @@ withUserStateE h = do
   u <- lift userState
   h u
 
+-- | If the 'getParamE' found the parameter in the session manager, purges
+--   from the session
 getParamE :: String -> (String -> a) -> String -> HandlerError App b a
 getParamE p f msg = do
   x <- lift . getParam . B.pack $ p
-  case x of
-    Nothing -> throwError . strMsg $ msg
-    Just y  -> return . f . B.unpack $ y
+  y <- lift . withTop sessionManager . getFromSession . fromString $ p
+  case (x,y) of
+    (Just _, Just _)  -> error "Parameter were defined both in request parameter and cookie"
+    (Nothing,Nothing) -> throwError . strMsg $ msg
+    (Just x',Nothing) -> return . f . B.unpack $ x'
+    (Nothing,Just y') -> do
+      lift . withTop sessionManager $ do
+        deleteFromSession . fromString $ p
+        commitSession
+      return . f . T.unpack $ y'
+
+setReqParamInSession :: ReqParam -> HandlerError App b ()
+setReqParamInSession (ReqParam (k,v)) = setInSessionE k v
+
+setInSessionE :: String -> String -> HandlerError App b ()
+setInSessionE k v
+  = lift . withTop sessionManager $ setInSession (T.pack k) (T.pack v)
 
 runStoryE :: S.UserStory a -> HandlerError App b a
 runStoryE story = do
