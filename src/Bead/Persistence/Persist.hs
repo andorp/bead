@@ -10,6 +10,7 @@ data Persist = Persist {
   , doesUserExist :: Username -> Password -> IO (Erroneous Bool)
   , personalInfo  :: Username -> Password -> IO (Erroneous (Role, String))
   , updatePwd     :: Username -> Password -> Password -> IO (Erroneous ())
+  , filterUsers   :: (User -> Bool) -> IO (Erroneous [User])
 
   -- Course Persistence
   , saveCourse  :: Course -> IO (Erroneous CourseKey)
@@ -43,6 +44,7 @@ mockPersist = Persist {
   , doesUserExist = \_ _ -> return $ Right $ True
   , personalInfo  = \_ _ -> return $ Right (Admin, "Ulien Mokk")
   , updatePwd     = \_ _ _ -> return $ Right ()
+  , filterUsers   = \_ -> return $ Right []
 
   , saveCourse = \_ -> return $ Right $ CourseKey "course_key"
   , courseKeys = return $ Right $ []

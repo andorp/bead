@@ -181,6 +181,13 @@ instance Save Group where
                 saveDesc d (groupDesc g)
                 saveName d (groupName g)
 
+instance Save User where
+  save d u = do createStructureDirs d userDirStructure
+                save     d (u_role u)
+                save     d (u_username u)
+                save     d (u_email u)
+                saveName d (u_name  u)
+
 -- * Load instances
 
 instance Load Role where
@@ -221,6 +228,19 @@ instance Load Group where
                 , groupName = name
                 }
 
+instance Load User where
+  load d = do
+    role  <- load d
+    uname <- load d
+    email <- load d
+    name  <- loadName d
+    return $ User {
+        u_role = role
+      , u_username = uname
+      , u_email = email
+      , u_name = name
+      }
+
 -- * Dir Structures
 
 data DirStructure = DirStructure {
@@ -240,7 +260,7 @@ isCorrectStructure dirname ds = do
 createStructureDirs :: DirPath -> DirStructure -> TIO ()
 createStructureDirs p = mapM_ (\x -> createDir (joinPath [p,x])) . directories
 
-usersStructure = DirStructure {
+userDirStructure = DirStructure {
     files       = ["email", "name", "password", "role", "username"]
   , directories = []
   }

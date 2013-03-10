@@ -57,6 +57,8 @@ test_create_user = testCase "Create user" $ do
       }
       password = "password"
   liftE $ saveUser persist user password
+  us <- liftE $ filterUsers persist (const True)
+  assertBool "The filter did not find the user" (length us > 0)
 
 test_create_group_user = testCase "Create Course and Group with a user" $ do
   let username = Username "ursula"

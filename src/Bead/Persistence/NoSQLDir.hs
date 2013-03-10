@@ -20,6 +20,7 @@ noSqlDirPersist = Persist {
   , doesUserExist = nDoesUserExist -- :: Username -> Password -> IO (Erroneous Bool)
   , personalInfo  = nPersonalInfo  -- :: Username -> Password -> IO (Erroneous (Role, String))
   , updatePwd     = nUpdatePwd     -- :: Username -> Password -> Password -> IO (Erroneous ())
+  , filterUsers   = nFilterUsers   -- :: (User -> Bool) -> IO (Erroneous [User])
 
   , saveCourse    = nSaveCourse    -- :: Course -> IO (Erroneous ())
   , courseKeys    = nCourseKeys    -- :: IO (Erroneous [CourseKey])
@@ -63,11 +64,8 @@ nSaveUser usr pwd = runAtomically $ do
       let ePwd = encodePwd pwd
           dirname = dirName usr
       createDir dirname
-      save     dirname (u_username usr)
-      save     dirname (u_role     usr)
-      save     dirname (u_email    usr)
-      saveName dirname (u_name     usr)
-      savePwd  dirname (          ePwd)
+      save    dirname usr
+      savePwd dirname ePwd
 
 isThereAUser :: Username -> TIO Bool
 isThereAUser uname = hasNoRollback $ do
@@ -75,7 +73,7 @@ isThereAUser uname = hasNoRollback $ do
   exist <- doesDirectoryExist dirname
   case exist of
     False -> return False
-    True  -> isCorrectStructure dirname usersStructure
+    True  -> isCorrectStructure dirname userDirStructure
 
 nDoesUserExist :: Username -> Password -> IO (Erroneous Bool)
 nDoesUserExist u p = runAtomically $ tDoesUserExist u p
@@ -102,6 +100,15 @@ nPersonalInfo uname pwd = runAtomically $ do
       role       <- load dirname
       familyName <- loadName dirname
       return (role, familyName)
+
+isUserDir :: FilePath -> TIO Bool
+isUserDir = isCorrectDirStructure userDirStructure
+
+nFilterUsers :: (User -> Bool) -> IO (Erroneous [User])
+nFilterUsers f = runAtomically $
+  (selectValidDirsFrom userDataDir isUserDir) >>=
+  (mapM load)                                 >>=
+  (return . filter f)
 
 nUpdatePwd :: Username -> Password -> Password -> IO (Erroneous ())
 nUpdatePwd uname oldPwd newPwd = runAtomically $ do
@@ -252,20 +259,19 @@ addDataDirPath p =
     map (\f -> joinPath [p, f]) .
     filter (not . flip elem [".", ".."])
 
+selectValidDirsFrom :: FilePath -> (FilePath -> TIO Bool) -> TIO [FilePath]
+selectValidDirsFrom dir isValidDir = getSubDirectories dir >>= filterM isValidDir
+
 nExerciseKeys :: IO (Erroneous [ExerciseKey])
 nExerciseKeys = runAtomically $
-  (getDirContents exerciseDataDir) >>=
-  (addDataDirPath exerciseDataDir) >>=
-  (filterM isExerciseDir)          >>=
+  (selectValidDirsFrom exerciseDataDir isExerciseDir) >>=
   calcExerciseKeys
     where
       calcExerciseKeys = return . map (ExerciseKey . takeBaseName)
 
 nFilterExercises :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey, Exercise)])
 nFilterExercises f = runAtomically $
-  (getDirContents exerciseDataDir) >>=
-  (addDataDirPath exerciseDataDir) >>=
-  (filterM isExerciseDir)          >>=
+  (selectValidDirsFrom exerciseDataDir isExerciseDir) >>=
   (mapM tLoadExercise)             >>=
   (return . filter (uncurry f))
 
@@ -296,9 +302,7 @@ tLoadExercise dirName = do
 
 nCourseKeys :: IO (Erroneous [CourseKey])
 nCourseKeys = runAtomically $
-  (getDirContents courseDataDir) >>=
-  (addDataDirPath courseDataDir) >>=
-  (filterM isCourseDir)          >>=
+  (selectValidDirsFrom courseDataDir isCourseDir) >>=
   calcCourseKeys
     where
       calcCourseKeys = return . map (CourseKey . takeBaseName)
@@ -308,9 +312,7 @@ isCourseDir = isCorrectDirStructure courseDirStructure
 
 nFilterCourses :: (CourseKey -> Course -> Bool) -> IO (Erroneous [(CourseKey, Course)])
 nFilterCourses f = runAtomically $
-  (getDirContents courseDataDir) >>=
-  (addDataDirPath courseDataDir) >>=
-  (filterM isCourseDir)          >>=
+  (selectValidDirsFrom courseDataDir isCourseDir) >>=
   (mapM tLoadCourse)             >>=
   (return . filter (uncurry f))
 
