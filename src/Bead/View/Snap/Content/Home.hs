@@ -13,10 +13,7 @@ import Bead.View.Snap.Content
 import Bead.View.Snap.HandlerUtils
 
 home :: Content
-home = Content {
-    get   = Just homePage
-  , post  = Nothing
-  }
+home = getContentHandler homePage
 
 homePage :: GETContentHandler
 homePage = withUserStateE $ \s -> do

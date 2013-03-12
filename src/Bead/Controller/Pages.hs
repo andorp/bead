@@ -4,6 +4,7 @@ module Bead.Controller.Pages (
   , pageTransition
   , parentPage
   , allowedPages
+  , contentPages
   , menuPages
   , reachable
   , invariants
@@ -13,10 +14,10 @@ module Bead.Controller.Pages (
 import qualified Bead.Domain.Entities      as E
 import qualified Bead.Domain.Relationships as R
 
-import Data.List (nub)
+import Data.List ((\\),nub)
 
 import Data.Set (Set(..))
-import qualified Data.Set as Set
+import qualified Data.Set as Set hiding ((\\))
 
 import Bead.Invariants (Invariants(..), UnitTests(..))
 
@@ -27,6 +28,8 @@ data Page
   | Logout
   | Home
   | Profile
+  | Users
+  | UserDetails
   | Course
   | Courses
   | Group
@@ -47,17 +50,22 @@ data Page
 allPages :: [Page]
 allPages = [Login .. ]
 
-pageTransition s = nub $ p s ++ [s, Login, Error, Logout]
+contentPages :: [Page]
+contentPages = allPages \\ [Error]
+
+pageTransition Logout = [Login, Logout]
+pageTransition Login = [Login, Home]
+pageTransition s = nub $ p s ++ [s, Error, Logout]
   where
-    p Login      = [Home]
     p Logout     = []
     p Error      = []
     p Home       = [ Profile, Courses, Group, Exercise, ClosedExam, Evaulation
-                   , Training, Admin, SubmitExam, Groups ]
+                   , Training, Admin, SubmitExam, Groups, Users ]
     p CreateExercise = [Admin]
     p CreateCourse   = [Admin]
     p CreateGroup    = [Course]
     p Admin          = [Home, CreateExercise, CreateCourse]
+    p Users      = [Home, UserDetails]
     p Courses    = [Home, Course]
     p Course     = [Courses, Group, CreateGroup]
     p Groups     = [Home]
@@ -88,6 +96,8 @@ adminPages = [
   , CreateCourse
   , CreateExercise
   , CreateGroup
+  , Users
+  , UserDetails
   ]
 
 nonMenuPages = [
@@ -98,6 +108,7 @@ nonMenuPages = [
   , Course
   , Group
   , CreateGroup
+  , UserDetails
   ]
 
 allowedPages :: E.Role -> [Page]
@@ -127,6 +138,8 @@ parentPage Courses        = Home
 parentPage Course         = Courses
 parentPage Groups         = Home
 parentPage Group          = Course
+parentPage Users          = Home
+parentPage UserDetails    = Users
 parentPage _              = Home
 
 -- * Invariants

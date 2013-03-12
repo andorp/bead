@@ -121,6 +121,7 @@ data PermissionObject
   | P_Statistics
   | P_Password
   | P_Professor
+  | P_User
   | P_Course
   | P_Group
   | P_CourseAdmin

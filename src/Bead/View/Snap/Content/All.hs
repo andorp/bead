@@ -14,6 +14,8 @@ import Bead.View.Snap.Content.Exercise (exercise)
 import Bead.View.Snap.Content.Courses (courses)
 import Bead.View.Snap.Content.Course (course)
 import Bead.View.Snap.Content.Group (group)
+import Bead.View.Snap.Content.Users (users)
+import Bead.View.Snap.Content.UserDetails (userDetails)
 
 import Bead.Invariants (Invariants(..))
 
@@ -32,6 +34,8 @@ content P.SubmitExam     = emptyContent
 content P.Evaulation     = emptyContent
 content P.Training       = emptyContent
 content P.Admin          = admin
+content P.Users          = users
+content P.UserDetails    = emptyContent
 content P.CreateExercise = createExercise
 content P.CreateCourse   = createCourse
 content P.CreateGroup    = createGroup

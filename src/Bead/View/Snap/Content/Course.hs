@@ -18,10 +18,7 @@ import Data.ByteString.Char8
 import Data.String
 
 course :: Content
-course = Content {
-    get  = Just coursePage
-  , post = Nothing
-  }
+course = getContentHandler coursePage
 
 coursePage :: GETContentHandler
 coursePage = withUserStateE $ \s -> do

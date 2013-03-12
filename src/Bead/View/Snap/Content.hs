@@ -2,6 +2,8 @@
 module Bead.View.Snap.Content (
     Content(..)
   , emptyContent
+  , getContentHandler
+  , getPostContentHandler
   , mkContent
   , blaze
   , getParamE
@@ -45,7 +47,7 @@ import Bead.View.Snap.Pagelets hiding (invariants)
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.RequestParams
-import Bead.View.Snap.TemplateAndComponentNames hiding (Username)
+import Bead.View.Snap.TemplateAndComponentNames
 
 import Text.Blaze.Html5 (Html)
 
@@ -69,6 +71,9 @@ emptyContent = Content {
     get   = Nothing
   , post  = Nothing
   }
+
+getContentHandler     g   = emptyContent { get = Just g }
+getPostContentHandler g p = emptyContent { get = Just g, post = Just p }
 
 mkContent
   :: Maybe GETContentHandler

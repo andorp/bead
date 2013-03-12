@@ -16,10 +16,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 group :: Content
-group = Content {
-    get  = Just groupPageHandler
-  , post = Just subscriptionHandler
-  }
+group = getPostContentHandler groupPageHandler subscriptionHandler
 
 groupPageHandler :: GETContentHandler
 groupPageHandler = withUserStateE $ \s -> do

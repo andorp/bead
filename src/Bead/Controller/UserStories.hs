@@ -108,6 +108,12 @@ createUser newUser newPassword = do
   logger      <- CMR.asks logger
   liftIO $ log logger INFO $ "User is created: " ++ show (u_username newUser)
 
+-- | Selecting users that satisfy the given criteria
+selectUsers :: (User -> Bool) -> UserStory [User]
+selectUsers f = logAction INFO "Select some users" $ do
+  authorize P_Open P_User
+  liftP $ flip R.filterUsers f
+  
 -- | The authorized user logically deletes the given user
 --   QUESTION: What to do if the deleted user are logged in when the deletion does happen?
 --   ANSWER: During his active session he can made authorized changes, after logging out

@@ -27,6 +27,7 @@ import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.View.Snap.Content.All as VA (invariants)
 import qualified Bead.View.Snap.Pagelets as VP (invariants)
 import qualified Bead.View.Snap.Session as VS (invariants)
+import qualified Bead.View.Snap.TemplateAndComponentNames as TC (unitTests)
 
 
 unitTestGroup :: String -> UnitTests -> Test
@@ -47,6 +48,7 @@ tests = [
   , invariantsGroup "Pages need to have link text" VP.invariants
   , invariantsGroup "Page Session Cookie values" VS.invariants
   , unitTestGroup   "Page unit tests" P.unitTests
+  , unitTestGroup   "Template and components" TC.unitTests
   ]
 
 

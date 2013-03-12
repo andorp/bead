@@ -13,10 +13,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 createCourse :: Content
-createCourse = Content {
-    get  = Just createPage
-  , post = Just submitCourse
-  }
+createCourse = getPostContentHandler createPage submitCourse
 
 createPage :: GETContentHandler
 createPage = withUserStateAndFrame . const $ do

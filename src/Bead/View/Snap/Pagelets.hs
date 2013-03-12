@@ -11,6 +11,7 @@ import Text.Blaze.Html5.Attributes hiding (title, rows, accept)
 import qualified Text.Blaze.Html5.Attributes as A
 
 import Bead.Domain.Types (Str(..))
+import Bead.Domain.Entities (Username(..))
 import Bead.Domain.Relationships
 import qualified Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
@@ -66,6 +67,8 @@ linkText P.Error      = fromString "Error"
 linkText P.SubmitExam = fromString "Submit Exam"
 linkText P.Evaulation = fromString "Evaulation"
 linkText P.Training   = fromString "Training"
+linkText P.Users      = fromString "Users"
+linkText P.UserDetails = fromString "UserDetails"
 linkText P.CreateExercise = fromString "Create Exercise"
 linkText P.CreateCourse   = fromString "Create Course"
 linkText P.CreateGroup    = fromString "Create Group"
@@ -174,6 +177,22 @@ groupKeys act ck = keySelectionForm groupFormData act where
     , key     = fieldName groupKeyName
     , parent  = Just (fieldName courseKeyInfo, fromString . keyString $ ck)
     , formTitle = "Groups"
+    }
+
+instance ButtonText Username where
+  buttonText (Username n) = n
+
+instance KeyString Username where
+  keyString (Username n) = n
+
+userKeys :: AttributeValue -> [Username] -> Html
+userKeys act = keySelectionForm userFormData act where
+  userFormData = KeyFormData {
+      divId   = "users"
+    , tableId = "users"
+    , key     = fieldName usernameField
+    , parent  = Nothing
+    , formTitle = "Users"
     }
 
 -- * Invariants

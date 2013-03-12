@@ -16,10 +16,7 @@ import Data.String
 
 
 exercise :: Content
-exercise = Content {
-    get  = Just showExercise
-  , post = Nothing
-  }
+exercise = getContentHandler showExercise
 
 showExercise :: GETContentHandler
 showExercise = withUserStateE $ \s -> do

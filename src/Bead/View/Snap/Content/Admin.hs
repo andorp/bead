@@ -11,10 +11,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 admin :: Content
-admin = Content {
-    get   = Just adminPage
-  , post  = Nothing
-  }
+admin = getContentHandler adminPage
 
 adminPage :: GETContentHandler
 adminPage = withUserStateAndFrame . const $ do

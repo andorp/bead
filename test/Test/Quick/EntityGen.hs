@@ -1,4 +1,4 @@
-module Bead.Invariants.EntityGen where
+module Test.Quick.EntityGen where
 
 import Bead.Domain.Entities
 

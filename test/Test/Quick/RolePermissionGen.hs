@@ -8,7 +8,6 @@ import Test.QuickCheck.Arbitrary
 import Test.Quick.EnumGen
 
 
-
 instance Arbitrary Role where
   arbitrary = enumGenerator
 

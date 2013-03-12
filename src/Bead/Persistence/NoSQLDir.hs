@@ -254,11 +254,6 @@ nSaveExercise exercise = runAtomically $ do
   save dirName exercise
   return . ExerciseKey $ exerciseKey
 
-addDataDirPath p =
-  return .
-    map (\f -> joinPath [p, f]) .
-    filter (not . flip elem [".", ".."])
-
 selectValidDirsFrom :: FilePath -> (FilePath -> TIO Bool) -> TIO [FilePath]
 selectValidDirsFrom dir isValidDir = getSubDirectories dir >>= filterM isValidDir
 
@@ -292,8 +287,6 @@ nLoadExercise e = runAtomically $ do
     exerciseDirPath :: ExerciseKey -> FilePath
     exerciseDirPath (ExerciseKey e) = joinPath [exerciseDataDir, e]
 
-
--- TODO: implement
 tLoadExercise :: FilePath -> TIO (ExerciseKey, Exercise)
 tLoadExercise dirName = do
   let exerciseKey = takeBaseName dirName

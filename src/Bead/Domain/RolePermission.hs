@@ -33,7 +33,7 @@ professor P_Delete o = elem o [P_Exercise]
 -- * Course Admin
 
 courseAdmin P_Open   o = elem o
-  [ P_Exercise, P_Solution, P_Statistics, P_Course, P_CourseAdmin, P_PlainPage ]
+  [ P_Exercise, P_Solution, P_Statistics, P_Course, P_CourseAdmin, P_PlainPage, P_User ]
 courseAdmin P_Create o = elem o [P_Exercise, P_CourseAdmin, P_Professor ]
 courseAdmin P_Modify o = elem o [P_Exercise, P_Password, P_CourseAdmin, P_Professor ]
 courseAdmin P_Delete o = elem o [P_Exercise, P_Professor]

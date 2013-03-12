@@ -11,10 +11,7 @@ import Bead.View.Snap.Content
 import Bead.View.Snap.HandlerUtils
 
 courses :: Content
-courses = Content {
-    get  = Just coursesPage
-  , post = Nothing
-  }
+courses = getContentHandler coursesPage
 
 coursesPage :: GETContentHandler
 coursesPage = withUserStateE $ \s -> do

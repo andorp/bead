@@ -12,10 +12,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 createGroup :: Content
-createGroup = Content {
-    get  = Just createGroupHandler
-  , post = Just submitGroup
-  }
+createGroup = getPostContentHandler createGroupHandler submitGroup
 
 createGroupHandler :: GETContentHandler
 createGroupHandler = withUserStateE $ \s -> do

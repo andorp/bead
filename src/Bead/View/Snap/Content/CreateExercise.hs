@@ -11,10 +11,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 createExercise :: Content
-createExercise = Content {
-    get   = Just exercisePage
-  , post  = Just submitExercise
-  }
+createExercise = getPostContentHandler exercisePage submitExercise
 
 -- | POST request handler, tries to get the CreateExercise user action
 --   from the received request

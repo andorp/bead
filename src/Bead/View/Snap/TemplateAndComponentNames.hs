@@ -1,13 +1,17 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ExistentialQuantification #-}
 module Bead.View.Snap.TemplateAndComponentNames where
 
 -- This module contains information about templates and
 -- fields in the type safe manner.
 
+-- Haskell imports
 import Data.String
-import Data.ByteString.Char8
-
 import qualified Bead.Controller.Pages as P
+
+-- Test imports
+import Bead.Invariants (UnitTests(..))
+import Data.Set (Set)
+import qualified Data.Set as Set
 
 -- * Type safe declarations
 
@@ -17,14 +21,14 @@ class SnapFieldName f where
 -- * Component names
 
 data LoginComp
-  = Username { lcFieldName :: String }
-  | Password { lcFieldName :: String }
+  = UsernameField { lcFieldName :: String }
+  | PasswordField { lcFieldName :: String }
 
 instance SnapFieldName LoginComp where
   fieldName = fromString . lcFieldName
 
-loginUsername = Username "login"
-loginPassword = Password "password"
+loginUsername = UsernameField "login"
+loginPassword = PasswordField "password"
 
 data RegistrationComp
   = RegFamilyName   { rFieldName :: String }
@@ -92,6 +96,14 @@ groupCodeField = GroupCodeField "group-code"
 groupNameField = GroupNameField "group-name"
 groupDescField = GroupDescField "group-desc"
 
+data UsernameField
+  = UsernameFiel { uFieldName :: String }
+
+instance SnapFieldName UsernameField where
+  fieldName = fromString . uFieldName
+
+usernameField = UsernameField "username"
+
 -- * Template names
 
 newtype LoginTemp = LoginTemp String
@@ -99,3 +111,23 @@ newtype LoginTemp = LoginTemp String
 
 loginTemp = LoginTemp "login"
 
+-- * Unit tests
+
+data SFN = forall n . SnapFieldName n => SFN n
+
+instance SnapFieldName SFN where
+  fieldName (SFN n) = fieldName n
+
+fieldList :: [String]
+fieldList = map fieldName $
+  [ SFN loginUsername,  SFN loginPassword,   SFN registrationFamilyName, SFN registrationEmailAddress
+  , SFN exerciseForm,   SFN exerciseKey,     SFN coursesForm,            SFN coursesKey
+  , SFN courseFormInfo, SFN courseCodeField, SFN courseNameField,        SFN courseDescField
+  , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
+  , SFN usernameField,  SFN courseKeyInfo
+  ]
+
+unitTests = UnitTests [
+    ( "Field names must be unique"
+      , ((Set.size . Set.fromList $ fieldList) == (length fieldList)) )
+  ]
