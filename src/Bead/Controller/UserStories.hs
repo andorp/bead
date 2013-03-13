@@ -114,6 +114,11 @@ selectUsers f = logAction INFO "Select some users" $ do
   authorize P_Open P_User
   liftP $ flip R.filterUsers f
   
+loadUser :: Username -> UserStory User
+loadUser u = logAction INFO "Loading user information" $ do
+  authorize P_Open P_User
+  liftP $ flip R.loadUser u
+
 -- | The authorized user logically deletes the given user
 --   QUESTION: What to do if the deleted user are logged in when the deletion does happen?
 --   ANSWER: During his active session he can made authorized changes, after logging out

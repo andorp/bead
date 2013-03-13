@@ -49,9 +49,10 @@ test_create_load_exercise = testCase "Create and load exercise" $ do
   assertBool "Written key was not in the list" (elem k (map fst ks))
 
 test_create_user = testCase "Create user" $ do
+  let uname = Username "ursula"
   let user = User {
         u_role     = Student
-      , u_username = Username "ursula"
+      , u_username = uname
       , u_email    = Email "ursula@gmail.com"
       , u_name     = "Ursula"
       }
@@ -59,6 +60,12 @@ test_create_user = testCase "Create user" $ do
   liftE $ saveUser persist user password
   us <- liftE $ filterUsers persist (const True)
   assertBool "The filter did not find the user" (length us > 0)
+  user1 <- liftE $ loadUser persist uname
+  assertBool "Loading the registered user has failed" (user1 == user)
+  let user2 = user { u_role = Admin }
+  liftE $ updateUser persist uname user2
+  user3 <- liftE $ loadUser persist uname
+  assertBool "Updating and loading user has failed" (user3 == user2)
 
 test_create_group_user = testCase "Create Course and Group with a user" $ do
   let username = Username "ursula"

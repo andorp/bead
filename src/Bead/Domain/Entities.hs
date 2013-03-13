@@ -91,6 +91,8 @@ data Role
   | Admin
   deriving (Read, Eq, Ord, Enum)
 
+roles = [Student, Professor, CourseAdmin, Admin]
+
 instance Show Role where
   show Student     = "Student"
   show Professor   = "Professor"
@@ -167,6 +169,9 @@ newtype Email = Email String
 
 instance Show Email where
   show (Email e) = e
+
+instance Str Email where
+  str (Email e) = e
 
 -- | Only accept normally formated email values
 email :: String -> Erroneous Email

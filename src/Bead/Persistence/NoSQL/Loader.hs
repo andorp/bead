@@ -5,6 +5,7 @@ import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Control.Monad.Transaction.TIO
 
+import Control.DeepSeq (deepseq)
 import Control.Monad (liftM, filterM)
 
 import Data.Char (ord)
@@ -15,7 +16,6 @@ import System.Directory
 import System.Posix.Files (createSymbolicLink, removeLink)
 import Control.Exception as E
 import Control.Monad (join, when)
-import Control.Applicative ((<$>))
 
 type DirPath = FilePath
 
@@ -57,6 +57,9 @@ class Load l where
 -- | Saving data to file persistence
 class Save s where
   save :: DirPath -> s -> TIO ()
+
+class Update s where
+  update :: DirPath -> s -> TIO ()
 
 -- * DirName and KeyString instances
 
@@ -101,8 +104,31 @@ fileLoad :: DirPath -> FilePath -> (String -> a) -> TIO a
 fileLoad d f l = step
     (do let fname = joinPath [d,f]
         exist <- doesFileExist fname
-        l <$> readFile fname)
+        h <- openFile fname ReadMode
+        s <- hGetContents h
+        s `deepseq` hClose h
+        return . l $ s)
     (return ())
+
+fileUpdate :: DirPath -> FilePath -> String -> TIO ()
+fileUpdate d f c = do
+  stepM action before after
+  return ()
+    where
+      before = return ()
+
+      action = do
+        let fname = joinPath [d,f]
+        h <- openFile fname ReadMode
+        s <- hGetContents h
+        s `deepseq` hClose h
+        writeFile fname c
+        return s
+
+      after original = do
+        let fname = joinPath [d,f]
+        writeFile fname original
+        return ()
 
 -- * Directories
 
@@ -148,6 +174,9 @@ saveString = fileSave
 
 loadString :: DirPath -> FilePath -> TIO String
 loadString d f = fileLoad d f id
+
+updateString :: DirPath -> FilePath -> String -> TIO ()
+updateString d f c = fileUpdate d f c
 
 -- * Save instances
 
@@ -241,6 +270,24 @@ instance Load User where
       , u_name = name
       }
 
+-- * Update instances
+
+instance Update Role where
+  update d r = fileUpdate d "role" (show r)
+
+instance Update Username where
+  update d (Username s) = fileUpdate d "username" s
+
+instance Update Email where
+  update d (Email e) = fileUpdate d "email" e
+
+instance Update User where
+  update d u = do
+    update d (u_username u)
+    update d (u_role     u)
+    update d (u_email    u)
+    updateName d (u_name u)
+
 -- * Dir Structures
 
 data DirStructure = DirStructure {
@@ -290,6 +337,7 @@ ordEncode txt = concatMap code txt
 
 saveName d = saveString d "name"
 loadName d = loadString d "name"
+updateName d = updateString d "name"
 
 saveDesc d = saveString d "description"
 loadDesc d = loadString d "description"

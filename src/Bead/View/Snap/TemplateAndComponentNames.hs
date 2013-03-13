@@ -96,13 +96,19 @@ groupCodeField = GroupCodeField "group-code"
 groupNameField = GroupNameField "group-name"
 groupDescField = GroupDescField "group-desc"
 
-data UsernameField
-  = UsernameFiel { uFieldName :: String }
+data UserField
+  = UserField  { uFieldName :: String }
+  | UserEmailField { uFieldName :: String }
+  | UserRoleField  { uFieldName :: String }
+  | UserFamilyNameField { uFieldName :: String }
 
-instance SnapFieldName UsernameField where
+instance SnapFieldName UserField where
   fieldName = fromString . uFieldName
 
-usernameField = UsernameField "username"
+usernameField  = UserField "username"
+userEmailField = UserEmailField "useremail"
+userRoleField  = UserRoleField "userrole"
+userFamilyNameField = UserFamilyNameField "userfamilyname"
 
 -- * Template names
 
@@ -124,7 +130,8 @@ fieldList = map fieldName $
   , SFN exerciseForm,   SFN exerciseKey,     SFN coursesForm,            SFN coursesKey
   , SFN courseFormInfo, SFN courseCodeField, SFN courseNameField,        SFN courseDescField
   , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
-  , SFN usernameField,  SFN courseKeyInfo
+  , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField
+  , SFN userRoleField
   ]
 
 unitTests = UnitTests [

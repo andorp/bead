@@ -21,6 +21,8 @@ noSqlDirPersist = Persist {
   , personalInfo  = nPersonalInfo  -- :: Username -> Password -> IO (Erroneous (Role, String))
   , updatePwd     = nUpdatePwd     -- :: Username -> Password -> Password -> IO (Erroneous ())
   , filterUsers   = nFilterUsers   -- :: (User -> Bool) -> IO (Erroneous [User])
+  , loadUser      = nLoadUser      -- :: Username -> IO (Erroneous User)
+  , updateUser    = nUpdateUser    -- :: Username -> User -> IO (Erroneous ())
 
   , saveCourse    = nSaveCourse    -- :: Course -> IO (Erroneous ())
   , courseKeys    = nCourseKeys    -- :: IO (Erroneous [CourseKey])
@@ -109,6 +111,12 @@ nFilterUsers f = runAtomically $
   (selectValidDirsFrom userDataDir isUserDir) >>=
   (mapM load)                                 >>=
   (return . filter f)
+
+nLoadUser :: Username -> IO (Erroneous User)
+nLoadUser = runAtomically . load . dirName
+
+nUpdateUser :: Username -> User -> IO (Erroneous ())
+nUpdateUser uname user = runAtomically $ update (dirName uname) user
 
 nUpdatePwd :: Username -> Password -> Password -> IO (Erroneous ())
 nUpdatePwd uname oldPwd newPwd = runAtomically $ do

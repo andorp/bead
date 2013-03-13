@@ -11,7 +11,7 @@ import Text.Blaze.Html5.Attributes hiding (title, rows, accept)
 import qualified Text.Blaze.Html5.Attributes as A
 
 import Bead.Domain.Types (Str(..))
-import Bead.Domain.Entities (Username(..))
+import Bead.Domain.Entities (Username(..), Role(..))
 import Bead.Domain.Relationships
 import qualified Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
@@ -194,6 +194,22 @@ userKeys act = keySelectionForm userFormData act where
     , parent  = Nothing
     , formTitle = "Users"
     }
+    
+class Selection t where
+  selectionValue :: (IsString s) => t -> s
+  selectionText  :: (IsString s) => t -> s
+
+selection :: (Eq s, Selection s) => AttributeValue -> s -> [s] -> Html
+selection name s = (H.select ! A.name name ! A.multiple "false") . mapM_ opt
+  where
+    -- TODO
+    opt s'
+      | s == s'   = (H.option ! A.value (selectionValue s')) $ (selectionText s')
+      | otherwise = (H.option ! A.value (selectionValue s')) $ (selectionText s')
+
+instance Selection Role where
+  selectionValue = fromString . show
+  selectionText  = fromString . show
 
 -- * Invariants
 
