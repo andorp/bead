@@ -17,6 +17,6 @@ coursesPage :: GETContentHandler
 coursesPage = withUserStateE $ \s -> do
   keys <- runStoryE (selectCourses each)
   let cs = courseKeys (routeOf P.Course) (map fst keys)
-  lift $ blaze $ withUserFrame s cs Nothing
+  blaze $ withUserFrame s cs Nothing
   where
     each _ _ = True

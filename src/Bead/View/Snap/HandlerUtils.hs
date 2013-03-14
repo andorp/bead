@@ -155,4 +155,3 @@ runStory story = withTop serviceContext $ do
       case um of
         Nothing -> return . Left $ "Unauthenticated user"
         Just authUser -> liftM Right $ f context users authUser
-

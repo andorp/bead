@@ -28,16 +28,11 @@ userDataChange = undefined
 
 userDetailForm :: User -> Html
 userDetailForm u = do
-  H.form ! A.method "post" ! A.action (routeOf P.UserDetails) $ do
-    H.table ! A.id "user-detail-table" $ do
-      H.tr $ do
-        H.td $ "User's role"
-        H.td $ selection (fieldName userRoleField) (u_role u) roles
-      H.tr $ do
-        H.td $ "User's email"
-        H.td $ H.input ! A.type_ "text" ! A.name (fieldName userEmailField) ! A.value (fromString . str . u_email $ u) ! A.size "20"
-      H.tr $ do
-        H.td $ "User's familyname"
-        H.td $ H.input ! A.type_ "text" ! A.name (fieldName userFamilyNameField) ! A.value (fromString . u_name $ u) ! A.size "20"
-      H.tr $ do
-        H.td $ H.input ! A.type_ "submit" ! A.value "Save changes"
+  postForm (routeOf P.UserDetails) $ do
+    table "user-detail-table" $ do
+      tableLine "User's role"  $ selection (fieldName userRoleField) $ mapM_ roleOptions roles
+      tableLine "User's email" $ textInput (fieldName userEmailField) 20 (defaultValue . str . u_email $ u)
+      tableLine "User's familyname" $ textInput (fieldName userFamilyNameField) 20 (defaultValue . u_name $ u)
+    submitButton "Save changes"
+  where
+    roleOptions r = option (show r) (show r) (u_role u == r)

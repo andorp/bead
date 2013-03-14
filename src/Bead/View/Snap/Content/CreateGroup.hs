@@ -16,36 +16,21 @@ createGroup = getPostContentHandler createGroupHandler submitGroup
 
 createGroupHandler :: GETContentHandler
 createGroupHandler = withUserStateE $ \s -> do
-  ck <- getParamE (fieldName courseKeyInfo) CourseKey "Course key is not found"
-  lift $ blaze $ withUserFrame s (createGroupHtml ck) Nothing
+  ck <- getValue
+  blaze $ withUserFrame s (createGroupHtml ck) Nothing
 
 createGroupHtml :: CourseKey -> Html
 createGroupHtml ck = do
-  H.form ! A.method "post" ! A.action (routeWithParams P.CreateGroup [requestParam ck]) $ do
+  postForm (routeOf P.CreateGroup) $ do
     "Create a new group"
-    H.table ! A.id "create-group" $ do
-      mapM_ field [
-          ("Group Code", fieldName groupCodeField)
-        , ("Group Name", fieldName groupNameField)
-        , ("Group Desc", fieldName groupDescField)
-        ]
-    H.input ! A.type_ "submit"
-  where
-    field (text, name) = do
-      H.tr $ do
-        H.td text
-        H.td $ H.textarea ! A.name name ! A.cols "10" ! A.rows "1" $ empty
+    inputPagelet emptyGroup
+    hiddenInput (fieldName courseKeyInfo) (keyString ck)
+    submitButton "Create Group"
 
 submitGroup :: POSTContentHandler
 submitGroup = do
-  courseKey <- getParamE (fieldName courseKeyInfo) CourseKey "Course key is not found"
-  groupCodeText <- getParamE (fieldName groupCodeField) GroupCode "Group code is not found"
-  groupNameText <- getParamE (fieldName groupNameField) id "Group name is not found"
-  groupDescText <- getParamE (fieldName groupDescField) id "Group description is not found"
+  courseKey <- getValue
+  group     <- getValue
   setReqParamInSession . requestParam $ courseKey
-  return . UA.CreateGroup courseKey $ Group {
-      groupCode = groupCodeText
-    , groupName = groupNameText
-    , groupDesc = groupDescText
-    }
+  return $ UA.CreateGroup courseKey group
 

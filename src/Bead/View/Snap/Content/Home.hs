@@ -19,6 +19,6 @@ homePage :: GETContentHandler
 homePage = withUserStateE $ \s -> do
   keys <- runStoryE . selectExercises $ every
   let es = exerciseKeys (routeOf P.Exercise) (map fst keys)
-  lift $ blaze $ withUserFrame s es Nothing
+  blaze $ withUserFrame s es Nothing
   where
     every _ _ = True

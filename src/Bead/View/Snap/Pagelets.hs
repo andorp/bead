@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Pagelets where
 
+import Data.Maybe (isJust, fromJust)
 import Data.String (IsString(..), fromString)
 import Control.Monad (mapM_)
 
-import Text.Blaze (textTag)
-import Text.Blaze.Html5 hiding (base, map, head, menu)
+import Text.Blaze (ToMarkup(..), textTag)
+import Text.Blaze.Html5 (Html, AttributeValue(..), (!))
 import qualified Text.Blaze.Html5 as H
-import Text.Blaze.Html5.Attributes hiding (title, rows, accept)
 import qualified Text.Blaze.Html5.Attributes as A
 
 import Bead.Domain.Types (Str(..))
@@ -26,15 +26,15 @@ class BlazeTemplate b where
   template :: b -> Html
 
 withTitleAndHead :: Html -> Html
-withTitleAndHead content = docTypeHtml $ do
-  H.head $ title "Snap web server"
-  body $ do
+withTitleAndHead content = H.docTypeHtml $ do
+  H.head $ H.title "Snap web server"
+  H.body $ do
     H.div ! A.id "content" $ content
 
 withUserFrame :: UserState -> Html -> Maybe Html -> Html
-withUserFrame s content loggedInContent = docTypeHtml $ do
-  H.head $ title "Snap web server"
-  body $ do
+withUserFrame s content loggedInContent = H.docTypeHtml $ do
+  H.head $ H.title "Snap web server"
+  H.body $ do
     H.div ! A.id "header" $ pageHeader s
     H.div ! A.id "menu" $ navigationMenu s
     H.div ! A.id "content" $ do
@@ -45,6 +45,60 @@ withUserFrame s content loggedInContent = docTypeHtml $ do
       Just inner  -> H.div $ do
         H.div ! A.id "menu1" $ do
           inner
+
+-- * Basic building blocks
+
+defaultValue :: a -> Maybe a
+defaultValue = Just
+
+hasNoDefaultValue :: Maybe a
+hasNoDefaultValue = Nothing
+
+withDefaultValue Nothing  h = h
+withDefaultValue (Just v) h = h ! A.value (fromString v)
+
+infix |>
+
+(|>) :: a -> (a -> b) -> b
+x |> f = f x
+
+textInput :: String -> Int -> Maybe String -> Html
+textInput name size value =
+  (H.input ! A.type_ "text" ! A.name (fromString name)) |> (withDefaultValue value)
+
+textAreaInput :: String -> Int -> Int -> Maybe String -> Html
+textAreaInput name cols rows value =
+  (H.input ! A.type_ "textarea"
+           ! A.name (fromString name)
+           ! A.cols (fromString . show $ cols)
+           ! A.rows (fromString . show $ rows))
+  |>
+  (withDefaultValue value)
+
+hiddenInput :: String -> String -> Html
+hiddenInput name value =
+  H.input ! A.type_ "hidden"
+          ! A.name (fromString name)
+          ! A.value (fromString value)
+
+submitButton :: String -> Html
+submitButton t = H.input ! A.type_ "submit" ! A.value (fromString t)
+
+postForm :: String -> Html -> Html
+postForm action = H.form ! A.method "post" ! A.action (fromString action)
+
+getForm :: String -> Html -> Html
+getForm action = H.form ! A.method "get" ! A.action (fromString action)
+
+table :: String -> Html -> Html
+table i = H.table ! A.id (fromString i)
+
+tableLine :: String -> Html -> Html
+tableLine title field = H.tr $ do
+  H.td (fromString title)
+  H.td field
+
+-- * 
 
 empty :: Html
 empty = return ()
@@ -90,39 +144,36 @@ class KeyString b where
   keyString :: b -> String
 
 data KeyFormData = KeyFormData {
-    divId   :: AttributeValue
-  , tableId :: AttributeValue
-  , key     :: AttributeValue
-  , parent  :: Maybe (AttributeValue, AttributeValue)
-  , formTitle :: Html
+    divId   :: String
+  , tableId :: String
+  , key     :: String
+  , parent  :: Maybe (String, String)
+  , title   :: Html
   }
 
 hiddenGroupKeyInput :: GroupKey -> Html
-hiddenGroupKeyInput k =
-  H.input ! A.type_ "hidden" ! A.name (fieldName groupKeyName) ! A.value (fromString . keyString $ k)
+hiddenGroupKeyInput k = hiddenInput (fieldName groupKeyName) (keyString k)
 
 hiddenCourseKeyInput :: CourseKey -> Html
-hiddenCourseKeyInput k =
-  H.input ! A.type_ "hidden" ! A.name (fieldName courseKeyInfo) ! A.value (fromString . keyString $ k)
+hiddenCourseKeyInput k = hiddenInput (fieldName courseKeyInfo) (keyString k)
 
-keySelectionForm :: (ButtonText k, KeyString k) => KeyFormData -> AttributeValue -> [k] -> Html
+keySelectionForm :: (ButtonText k, KeyString k) => KeyFormData -> String -> [k] -> Html
 keySelectionForm formData act ks = do
-    (formTitle formData)
+    (title formData)
     mapM_ keyDivForm ks
   where
   keyDivForm k =
     let parentRef = parentReference (parent formData) in
-    H.div ! A.id (divId formData) $ do
-      parentReference (parent formData)
-      H.form ! A.method "get" ! A.action act $ do
-        H.table ! A.id (tableId formData) $ do
+    H.div ! A.id (fromString . divId $ formData) $ do
+      getForm act $ do
+        table (tableId formData) $
           H.tr $ do
             parentRef
-            H.td $ H.input ! A.type_ "hidden" ! A.name (key formData) ! A.value (fromString . keyString $ k)
-            H.td $ H.input ! A.type_ "submit" ! A.value (fromString . buttonText $ k)
+            H.td $ hiddenInput (key formData) (keyString k)
+            H.td $ submitButton (buttonText k)
 
   parentReference Nothing      = return ()
-  parentReference (Just (k,v)) = H.td $ H.input ! A.type_ "hidden" ! A.name k ! A.value v
+  parentReference (Just (k,v)) = H.td $ hiddenInput k v
 
 instance ButtonText ExerciseKey where
   buttonText (ExerciseKey e) = e
@@ -130,14 +181,14 @@ instance ButtonText ExerciseKey where
 instance KeyString ExerciseKey where
   keyString (ExerciseKey e) = e
 
-exerciseKeys :: AttributeValue -> [ExerciseKey] -> Html
+exerciseKeys :: String -> [ExerciseKey] -> Html
 exerciseKeys act = keySelectionForm exerciseFormData act where
   exerciseFormData = KeyFormData {
       divId   = "exercise"
     , tableId = "exercise-table"
     , key     = fieldName exerciseKey
     , parent  = Nothing
-    , formTitle = "Exercises for the user"
+    , title   = "Exercises for the user"
     }
 
 pageHeader :: UserState -> Html
@@ -153,14 +204,14 @@ instance ButtonText CourseKey where
 instance KeyString CourseKey where
   keyString (CourseKey e) = e
 
-courseKeys :: AttributeValue -> [CourseKey] -> Html
+courseKeys :: String -> [CourseKey] -> Html
 courseKeys act = keySelectionForm courseFormData act where
   courseFormData = KeyFormData {
       divId   = "course"
     , tableId = "course-table"
     , key     = fieldName courseKeyInfo
     , parent  = Nothing
-    , formTitle = "Courses"
+    , title   = "Courses"
     }
 
 instance ButtonText GroupKey where
@@ -169,14 +220,14 @@ instance ButtonText GroupKey where
 instance KeyString GroupKey where
   keyString (GroupKey g) = g
 
-groupKeys :: AttributeValue -> CourseKey -> [GroupKey] -> Html
+groupKeys :: String -> CourseKey -> [GroupKey] -> Html
 groupKeys act ck = keySelectionForm groupFormData act where
   groupFormData = KeyFormData {
       divId   = "group"
     , tableId = "group-table"
     , key     = fieldName groupKeyName
-    , parent  = Just (fieldName courseKeyInfo, fromString . keyString $ ck)
-    , formTitle = "Groups"
+    , parent  = Just (fieldName courseKeyInfo, keyString ck)
+    , title   = "Groups"
     }
 
 instance ButtonText Username where
@@ -185,31 +236,22 @@ instance ButtonText Username where
 instance KeyString Username where
   keyString (Username n) = n
 
-userKeys :: AttributeValue -> [Username] -> Html
+userKeys :: String -> [Username] -> Html
 userKeys act = keySelectionForm userFormData act where
   userFormData = KeyFormData {
       divId   = "users"
     , tableId = "users"
     , key     = fieldName usernameField
     , parent  = Nothing
-    , formTitle = "Users"
+    , title   = "Users"
     }
-    
-class Selection t where
-  selectionValue :: (IsString s) => t -> s
-  selectionText  :: (IsString s) => t -> s
 
-selection :: (Eq s, Selection s) => AttributeValue -> s -> [s] -> Html
-selection name s = (H.select ! A.name name ! A.multiple "false") . mapM_ opt
-  where
-    -- TODO
-    opt s'
-      | s == s'   = (H.option ! A.value (selectionValue s')) $ (selectionText s')
-      | otherwise = (H.option ! A.value (selectionValue s')) $ (selectionText s')
+option :: String -> String -> Bool -> Html
+option value text False = H.option ! A.value (fromString value)                 $ fromString text
+option value text True  = H.option ! A.value (fromString value) ! A.selected "" $ fromString text
 
-instance Selection Role where
-  selectionValue = fromString . show
-  selectionText  = fromString . show
+selection :: String -> Html -> Html
+selection name = H.select ! A.name (fromString name) ! A.multiple "false"
 
 -- * Invariants
 

@@ -17,29 +17,12 @@ createCourse = getPostContentHandler createPage submitCourse
 
 createPage :: GETContentHandler
 createPage = withUserStateAndFrame . const $ do
-  H.form ! A.method "post" ! A.action (routeOf P.CreateCourse) $ do
+  postForm (routeOf P.CreateCourse) $ do
     "Create a new course"
-    H.table ! A.id "create-course" $ do
-      mapM_ field [
-          ("Course Code", fieldName courseCodeField)
-        , ("Course Name", fieldName courseNameField)
-        , ("Course Desc", fieldName courseDescField)
-        ]
-    H.input ! A.type_ "submit"
-  where
-    field (text, name) = do
-      H.tr $ do
-        H.td text
-        H.td $ H.textarea ! A.name name ! A.cols "10" ! A.rows "1" $ empty
-
+    inputPagelet emptyCourse
+    submitButton "Create Course"
 
 submitCourse :: POSTContentHandler
 submitCourse = do
-  courseCodeText <- getParamE (fieldName courseCodeField) CourseCode "Course code is not found"
-  courseNameText <- getParamE (fieldName courseNameField) id "Course name is not found"
-  courseDescText <- getParamE (fieldName courseDescField) id "Course description is not found"
-  return . UA.CreateCourse $ Course {
-      courseCode = courseCodeText
-    , courseName = courseNameText
-    , courseDesc = courseDescText
-    }
+  course <- getValue
+  return . UA.CreateCourse $ course

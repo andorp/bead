@@ -30,6 +30,7 @@ module Bead.View.Snap.Content (
   , module Bead.View.UserActions
   , module Bead.View.Snap.Application
   , module Bead.View.Snap.Pagelets
+  , module Bead.View.Snap.InputHandlers
   , module Bead.View.Snap.TemplateAndComponentNames
   ) where
 
@@ -47,8 +48,8 @@ import Bead.View.Snap.Pagelets hiding (invariants)
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.RequestParams
+import Bead.View.Snap.InputHandlers
 import Bead.View.Snap.TemplateAndComponentNames
-
 import Text.Blaze.Html5 (Html)
 
 import Control.Monad.Error

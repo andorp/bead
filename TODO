@@ -1,4 +1,12 @@
+Terminology:
+  # - Requested
+  # / In progress
+  # + Done
+  # * Well tested
+
 - Encrypted GET parameters
 - Encrypted route parameters
 - Page dependent cookie key values, when we change page we should remove
   the unallowed keys from the session
+/ Simple HTML DSL (Creating some primities)
+

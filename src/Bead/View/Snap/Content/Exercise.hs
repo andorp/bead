@@ -22,8 +22,7 @@ showExercise :: GETContentHandler
 showExercise = withUserStateE $ \s -> do
   key <- getParamE (fieldName exerciseKey) ExerciseKey "Exercise key is not found"
   ex  <- runStoryE . loadExercise $ key
-  lift $ blaze $ withUserFrame s (exerciseForm ex) Nothing
-  return ()
+  blaze $ withUserFrame s (exerciseForm ex) Nothing
 
 exerciseForm :: Exercise -> Html
 exerciseForm e = do

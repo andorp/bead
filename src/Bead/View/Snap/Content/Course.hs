@@ -22,9 +22,9 @@ course = getContentHandler coursePage
 
 coursePage :: GETContentHandler
 coursePage = withUserStateE $ \s -> do
-  courseKey <- getParamE (fieldName courseKeyInfo) CourseKey "Course key is not found"
+  courseKey <- getValue
   (course, groupKeys) <- runStoryE . loadCourse $ courseKey
-  lift $ blaze $ withUserFrame s (courseForm s courseKey course groupKeys) Nothing
+  blaze $ withUserFrame s (courseForm s courseKey course groupKeys) Nothing
 
 courseForm :: UserState -> CourseKey -> Course -> [GroupKey] -> Html
 courseForm s ck c gks = do
@@ -40,11 +40,9 @@ createGroup s ck = case permission (role s) P_Create P_Group of
   True  -> canCreateGroup ck
 
 canCreateGroup :: CourseKey -> Html
-canCreateGroup ck = do
-  H.form ! A.method "get" ! A.action (routeWithParams P.CreateGroup [requestParam ck]) $ do
-    H.table ! A.id "create-group-table" $ do
-      H.tr $ do
-        H.td $ H.input ! A.type_ "hidden" ! A.name (fieldName courseKeyInfo) ! A.value (fromString . keyString $ ck)
-        H.td $ H.input ! A.type_ "submit" ! A.value "Create Group"
+canCreateGroup ck =
+  getForm (routeOf P.CreateGroup) $ do
+    hiddenInput (fieldName courseKeyInfo) (keyString ck)
+    submitButton "Create Group"
 
 
