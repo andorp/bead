@@ -182,6 +182,13 @@ isUserInGroup gk = do
   state <- userState
   liftP $ \p -> R.isUserInGroup p (user state) gk
 
+-- | Checks if the user is subscribed for the course
+isUserInCourse :: CourseKey -> UserStory Bool
+isUserInCourse ck = do
+  authorize P_Open P_Course
+  state <- userState
+  liftP $ \p -> R.isUserInCourse p (user state) ck
+
 -- | Regsiter the user as a group intendee
 subscribeToGroup :: CourseKey -> GroupKey -> UserStory ()
 subscribeToGroup ck gk = logAction INFO ("Subscribe to the group " ++ (show gk)) $ do

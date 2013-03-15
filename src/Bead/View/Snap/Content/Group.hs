@@ -7,7 +7,7 @@ import Control.Monad.Error (Error(..), throwError)
 
 import Bead.View.Snap.Content hiding (Group(..))
 import Bead.Controller.Pages (Page(Group))
-import Bead.Controller.UserStories (isUserInGroup)
+import Bead.Controller.UserStories (isUserInGroup, isUserInCourse)
 import Bead.Domain.Relationships (CourseKey(..))
 import Data.String
 
@@ -22,8 +22,8 @@ groupPageHandler :: GETContentHandler
 groupPageHandler = withUserStateE $ \s -> do
   cKey <- getValue
   gKey <- getValue
-  isSubscribed <- runStoryE . isUserInGroup $ gKey
-  blaze $ withUserFrame s (groupPage isSubscribed cKey gKey) Nothing
+  isInCourse <- runStoryE . isUserInCourse $ cKey
+  blaze $ withUserFrame s (groupPage isInCourse cKey gKey) Nothing
 
 subscriptionHandler :: POSTContentHandler
 subscriptionHandler = do
