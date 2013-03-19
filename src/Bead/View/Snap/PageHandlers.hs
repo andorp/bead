@@ -124,8 +124,8 @@ userIsLoggedInFilter inside outside = do
         "No user data was found for the user " ++ show unameFromAuth
       when (Just (page (fromJust mUserData)) /= pageFromSession) . CME.throwError $ join [
           "Page stored in session and in server differs: ",
-          show (page (fromJust mUserData)), " ",
-          show pageFromSession
+          "Server Side:", show (page (fromJust mUserData)), " <=> ",
+          "Client Side:", show pageFromSession
         ]
 
       -- Correct user is logged in, run the handler and save the data

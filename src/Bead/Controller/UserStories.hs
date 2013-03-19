@@ -108,6 +108,10 @@ createUser newUser newPassword = do
   logger      <- CMR.asks logger
   liftIO $ log logger INFO $ "User is created: " ++ show (u_username newUser)
 
+updateUser :: User -> UserStory ()
+updateUser u = logAction INFO ("Updating user:" ++ (str . u_username $ u)) $ do
+  liftP $ flip R.updateUser u
+
 -- | Selecting users that satisfy the given criteria
 selectUsers :: (User -> Bool) -> UserStory [User]
 selectUsers f = logAction INFO "Select some users" $ do

@@ -15,7 +15,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 import Data.String (fromString)
 
 userDetails :: Content
-userDetails = getContentHandler userDetailPage
+userDetails = getPostContentHandler userDetailPage userDataChange
 
 userDetailPage :: GETContentHandler
 userDetailPage = withUserStateE $ \s -> do
@@ -24,15 +24,12 @@ userDetailPage = withUserStateE $ \s -> do
   blaze $ withUserFrame s (userDetailForm user) Nothing
 
 userDataChange :: POSTContentHandler
-userDataChange = undefined
+userDataChange = do
+  user <- getValue
+  return $ UpdateUser user
 
 userDetailForm :: User -> Html
 userDetailForm u = do
   postForm (routeOf P.UserDetails) $ do
-    table "user-detail-table" $ do
-      tableLine "User's role"  $ selection (fieldName userRoleField) $ mapM_ roleOptions roles
-      tableLine "User's email" $ textInput (fieldName userEmailField) 20 (defaultValue . str . u_email $ u)
-      tableLine "User's familyname" $ textInput (fieldName userFamilyNameField) 20 (defaultValue . u_name $ u)
+    inputPagelet . defaultValue $ u
     submitButton "Save changes"
-  where
-    roleOptions r = option (show r) (show r) (u_role u == r)

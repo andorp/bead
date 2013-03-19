@@ -25,7 +25,7 @@ data UserState
   , page :: Page
   , name :: String
   , role :: Role
-  }
+  } deriving (Show)
 
 -- | The actual page that corresponds to the user's state
 actualPage :: UserState -> Page

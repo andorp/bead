@@ -157,6 +157,13 @@ instance AsPassword A.Password where
   asPassword (A.ClearText t) = unpack t
   asPassword (A.Encrypted e) = unpack e
 
+-- * Debugging
+
+sessionCookies :: Handler App SessionManager String
+sessionCookies = do
+  as <- sessionToList
+  return . join . join . L.map (\(k,v) -> ["(KEY: ",T.unpack k,",","VALUE: ",T.unpack v,")"]) $ as
+
 -- * Invariants
 
 invariants :: Invariants P.Page

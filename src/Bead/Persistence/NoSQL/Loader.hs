@@ -9,6 +9,7 @@ import Control.DeepSeq (deepseq)
 import Control.Monad (liftM, filterM)
 
 import Data.Char (ord)
+import Data.Maybe (maybe)
 import System.FilePath (joinPath)
 import System.IO
 import System.IO.Temp (createTempDirectory, openTempFile)
@@ -220,7 +221,7 @@ instance Save User where
 -- * Load instances
 
 instance Load Role where
-  load d = fileLoad d "role" read
+  load d = fileLoad d "role" (maybe (error "Role parsing was failed") id . parseRole)
 
 instance Load Username where
   load d = fileLoad d "username" username

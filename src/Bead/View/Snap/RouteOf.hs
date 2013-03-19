@@ -51,7 +51,7 @@ routeWithParams p rs = fromString . join $
   [routeOf p, "?"] ++ (intersperse "&" (map queryStringParam rs))
 
 invariants = Invariants [
-    ("RouteOf strings must not empty", \p -> length (routeOf' p) > 0)
+    ("RouteOf strings must not be empty", \p -> length (routeOf' p) > 0)
   ] where
     routeOf' :: Page -> String
     routeOf' = routeOf

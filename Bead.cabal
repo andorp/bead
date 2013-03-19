@@ -26,8 +26,10 @@ Executable Test
                  transformers, HUnit, test-framework, test-framework-hunit,
                  test-framework-quickcheck2, QuickCheck, unix, deepseq
 
-Executable Selenium
-  Main-is: SeleniumMain.hs
+Executable WebDriver
+  Main-is: WebDriverMain.hs
   HS-Source-Dirs: src, test
   Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
-                 transformers, selenium, network
+                 transformers, network >= 2.4.1.0 , webdriver
+
+

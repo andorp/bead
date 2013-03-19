@@ -1,5 +1,7 @@
 module Bead.View.Snap.InputHandlers where
 
+import Data.Maybe (maybe, isJust, fromJust)
+
 import Bead.Domain.Types (Str(..))
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
@@ -66,3 +68,45 @@ instance InputPagelet Course where
     tableLine "Course Code" $ textInput (fieldName courseCodeField) 10 (fmap (str . courseCode) c)
     tableLine "Course Name" $ textInput (fieldName courseNameField) 10 (fmap courseName c)
     tableLine "Course Desc" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
+
+emptyRole :: Maybe Role
+emptyRole = Nothing
+
+instance InputPagelet Role where
+  inputPagelet q = selection (fieldName userRoleField) $ mapM_ (roleOptions q) roles
+    where
+      roleOptions Nothing   r = option (show r) (show r) False
+      roleOptions (Just q') r = option (show r) (show r) (q' == r)
+
+instance GetValueHandler Role where
+  getValue = getParamE (fieldName userRoleField) id "Role is not defined" >>= createRole where
+
+    createRole :: String -> HandlerError App App Role
+    createRole s = do
+      case parseRole s of
+        Just r  -> return r
+        Nothing -> throwError . strMsg $ "Role was not parseable"
+
+
+emptyUser :: Maybe User
+emptyUser = Nothing
+
+instance GetValueHandler User where
+  getValue = do
+    role     <- getValue
+    username <- getParamE (fieldName usernameField) Username "Username is not found"
+    email    <- getParamE (fieldName userEmailField) Email   "Email is not found"
+    fname    <- getParamE (fieldName userFamilyNameField) id   "Full name is not found"
+    return $ User {
+        u_role = role
+      , u_username = username
+      , u_email = email
+      , u_name = fname
+      }
+
+instance InputPagelet User where
+  inputPagelet u = table "user-detail-table" $ do
+    tableLine "User's role'"    $ inputPagelet (fmap u_role u)
+    tableLine "User's email"    $ textInput (fieldName userEmailField)      20 (fmap (str . u_email) u)
+    tableLine "User's fullname" $ textInput (fieldName userFamilyNameField) 20 (fmap u_name u)
+    when (isJust u) . hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username . fromJust $ u

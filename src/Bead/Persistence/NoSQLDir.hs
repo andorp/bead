@@ -115,8 +115,8 @@ nFilterUsers f = runAtomically $
 nLoadUser :: Username -> IO (Erroneous User)
 nLoadUser = runAtomically . load . dirName
 
-nUpdateUser :: Username -> User -> IO (Erroneous ())
-nUpdateUser uname user = runAtomically $ update (dirName uname) user
+nUpdateUser :: User -> IO (Erroneous ())
+nUpdateUser user = runAtomically $ update (dirName . u_username $ user) user
 
 nUpdatePwd :: Username -> Password -> Password -> IO (Erroneous ())
 nUpdatePwd uname oldPwd newPwd = runAtomically $ do

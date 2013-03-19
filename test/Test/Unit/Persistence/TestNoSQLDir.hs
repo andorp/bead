@@ -62,8 +62,8 @@ test_create_user = testCase "Create user" $ do
   assertBool "The filter did not find the user" (length us > 0)
   user1 <- liftE $ loadUser persist uname
   assertBool "Loading the registered user has failed" (user1 == user)
-  let user2 = user { u_role = Admin }
-  liftE $ updateUser persist uname user2
+  let user2 = user { u_role = CourseAdmin }
+  liftE $ updateUser persist user2
   user3 <- liftE $ loadUser persist uname
   assertBool "Updating and loading user has failed" (user3 == user2)
 

@@ -6,6 +6,7 @@ module Bead.View.Snap.TemplateAndComponentNames where
 
 -- Haskell imports
 import Data.String
+import Control.Monad (join)
 import qualified Bead.Controller.Pages as P
 
 -- Test imports
@@ -18,6 +19,11 @@ import qualified Data.Set as Set
 class SnapFieldName f where
   fieldName :: (IsString s) => f -> s
 
+newtype SubmitButton = SubmitButton { sbFieldName :: String }
+
+instance SnapFieldName SubmitButton where
+  fieldName = fromString . sbFieldName
+
 -- * Component names
 
 data LoginComp
@@ -29,6 +35,7 @@ instance SnapFieldName LoginComp where
 
 loginUsername = UsernameField "login"
 loginPassword = PasswordField "password"
+loginSubmitBtn = SubmitButton  "login-submit"
 
 data RegistrationComp
   = RegFamilyName   { rFieldName :: String }
@@ -110,6 +117,31 @@ userEmailField = UserEmailField "useremail"
 userRoleField  = UserRoleField "userrole"
 userFamilyNameField = UserFamilyNameField "userfamilyname"
 
+menuId :: P.Page -> String
+menuId P.Login          = "link-login"
+menuId P.Logout         = "link-logout"
+menuId P.Home           = "link-home"
+menuId P.Profile        = "link-profile"
+menuId P.Users          = "link-users"
+menuId P.UserDetails    = "link-userdetails"
+menuId P.Course         = "link-course"
+menuId P.Courses        = "link-courses"
+menuId P.Group          = "link-group"
+menuId P.Groups         = "link-groups"
+menuId P.Exercise       = "link-exercise"
+menuId P.ClosedExam     = "link-closedexam"
+menuId P.Error          = "link-error"
+menuId P.SubmitExam     = "link-submitexam"
+menuId P.Evaulation     = "link-evaulation"
+menuId P.Training       = "link-training"
+menuId P.Admin          = "link-admin"
+menuId P.CreateExercise = "link-create-exercise"
+menuId P.CreateCourse   = "link-create-course"
+menuId P.CreateGroup    = "link-create-group"
+
+instance SnapFieldName P.Page where
+  fieldName = fromString . menuId
+
 -- * Template names
 
 newtype LoginTemp = LoginTemp String
@@ -125,13 +157,14 @@ instance SnapFieldName SFN where
   fieldName (SFN n) = fieldName n
 
 fieldList :: [String]
-fieldList = map fieldName $
+fieldList = map fieldName $ join [
   [ SFN loginUsername,  SFN loginPassword,   SFN registrationFamilyName, SFN registrationEmailAddress
   , SFN exerciseForm,   SFN exerciseKey,     SFN coursesForm,            SFN coursesKey
   , SFN courseFormInfo, SFN courseCodeField, SFN courseNameField,        SFN courseDescField
   , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
   , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField
-  , SFN userRoleField
+  , SFN userRoleField,  SFN loginSubmitBtn
+  ], (map SFN P.allPages)
   ]
 
 unitTests = UnitTests [

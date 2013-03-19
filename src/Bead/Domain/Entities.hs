@@ -1,6 +1,7 @@
 module Bead.Domain.Entities where
 
 import Bead.Domain.Types
+import Bead.Invariants (Invariants(..))
 
 import Data.Char (toLower)
 
@@ -89,9 +90,16 @@ data Role
   | Professor
   | CourseAdmin
   | Admin
-  deriving (Read, Eq, Ord, Enum)
+  deriving (Eq, Ord, Enum)
 
 roles = [Student, Professor, CourseAdmin, Admin]
+
+parseRole :: String -> Maybe Role
+parseRole "Student"      = Just Student
+parseRole "Professor"    = Just Professor
+parseRole "Course Admin" = Just CourseAdmin
+parseRole "Admin"        = Just Admin
+parseRole _              = Nothing
 
 instance Show Role where
   show Student     = "Student"
@@ -234,3 +242,11 @@ mockGroup = Group {
   , groupName = "Esti"
   , groupDesc = "Group description"
   }
+
+-- * Invariants
+
+roleInvariants = Invariants [
+    ( "Showing roles must generate string parseable by parseRole",
+      \r -> ((Just r) ==) . parseRole . show $ r
+    )
+  ]

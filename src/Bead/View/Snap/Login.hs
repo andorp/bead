@@ -113,13 +113,19 @@ userForm act submitText = do
     H.table ! A.id "info" $ do
       H.tr $ do
         H.td "Login:"
-        H.td $ H.input ! A.type_ "text" ! A.name "login" ! A.size "20"
+        H.td $ H.input ! A.type_ "text"
+                       ! A.name (fieldName loginUsername)
+                       ! A.id   (fieldName loginUsername)
+                       ! A.size "20"
       H.tr $ do
         H.td "Password:"
-        H.td $ H.input ! A.type_ "password" ! A.name "password" ! A.size "20"
+        H.td $ H.input ! A.type_ "password"
+                       ! A.name (fieldName loginPassword)
+                       ! A.id   (fieldName loginPassword)
+                       ! A.size "20"
       H.tr $ do
         H.td $ return ()
-        H.td $ H.input ! A.type_ "submit" ! A.value submitText
+        H.td $ H.input ! A.type_ "submit" ! A.id (fieldName loginSubmitBtn) ! A.value submitText
 
 loginError :: Html
 loginError = return ()

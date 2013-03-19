@@ -43,10 +43,11 @@ data UserAction
 
   -- Administration
   | CreateUser User Password
+  | UpdateUser User
   -- etc
   deriving (Eq)
 
--- | UserStory correspondence to UserState and the given action
+-- | UserStory correspondence to the given action
 userStoryFor :: UserAction -> Story.UserStory ()
 userStoryFor Logout             = Story.logout
 userStoryFor Profile            = Story.changePage P.Profile
@@ -57,6 +58,7 @@ userStoryFor (LogMessage m)     = Story.logErrorMessage m
 userStoryFor (CreateCourse c)   = Story.createCourse c >> return ()
 userStoryFor (CreateGroup ck g) = Story.createGroup ck g >> return ()
 userStoryFor (CreateExercise e) = Story.createExercise e >> return ()
+userStoryFor (UpdateUser u)     = Story.updateUser u
 userStoryFor (SubscribeToGroup c g) = Story.subscribeToGroup c g
 userStoryFor _                      = Story.logMessage L.DEBUG "No story was selected"
 -- etc ...

@@ -98,7 +98,8 @@ tableLine title field = H.tr $ do
   H.td (fromString title)
   H.td field
 
--- * 
+hiddenTableLine :: Html -> Html
+hiddenTableLine = H.tr . H.td
 
 empty :: Html
 empty = return ()
@@ -129,7 +130,7 @@ linkText P.CreateGroup    = fromString "Create Group"
 linkText P.Admin      = fromString "Admin"
 
 linkToPage :: P.Page -> Html
-linkToPage g = H.p $ H.a ! A.href (routeOf g) $ linkText g
+linkToPage g = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ linkText g
 
 navigationMenu :: UserState -> Html
 navigationMenu s = do
