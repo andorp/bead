@@ -3,7 +3,7 @@ module Bead.View.Snap.Pagelets where
 
 import Data.Maybe (isJust, fromJust)
 import Data.String (IsString(..), fromString)
-import Control.Monad (mapM_)
+import Control.Monad (join, mapM_)
 
 import Text.Blaze (ToMarkup(..), textTag)
 import Text.Blaze.Html5 (Html, AttributeValue(..), (!))
@@ -11,7 +11,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 import Bead.Domain.Types (Str(..))
-import Bead.Domain.Entities (Username(..), Role(..))
+import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import qualified Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
@@ -62,6 +62,8 @@ infix |>
 (|>) :: a -> (a -> b) -> b
 x |> f = f x
 
+-- * Input fields
+
 textInput :: String -> Int -> Maybe String -> Html
 textInput name size value =
   (H.input ! A.type_ "text" ! A.name (fromString name)) |> (withDefaultValue value)
@@ -84,11 +86,15 @@ hiddenInput name value =
 submitButton :: String -> Html
 submitButton t = H.input ! A.type_ "submit" ! A.value (fromString t)
 
+-- * Form
+
 postForm :: String -> Html -> Html
 postForm action = H.form ! A.method "post" ! A.action (fromString action)
 
 getForm :: String -> Html -> Html
 getForm action = H.form ! A.method "get" ! A.action (fromString action)
+
+-- * Table
 
 table :: String -> Html -> Html
 table i = H.table ! A.id (fromString i)
@@ -112,25 +118,26 @@ linkText P.Login      = fromString "Login"
 linkText P.Logout     = fromString "Logout"
 linkText P.Home       = fromString "Home"
 linkText P.Profile    = fromString "Profile"
-linkText P.Course     = fromString "Course"
-linkText P.Courses    = fromString "Courses"
-linkText P.Group      = fromString "Group"
-linkText P.Groups     = fromString "Groups"
-linkText P.Exercise   = fromString "Exercise"
-linkText P.ClosedExam = fromString "Closed Exam"
 linkText P.Error      = fromString "Error"
-linkText P.SubmitExam = fromString "Submit Exam"
-linkText P.Evaulation = fromString "Evaulation"
-linkText P.Training   = fromString "Training"
-linkText P.Users      = fromString "Users"
-linkText P.UserDetails = fromString "UserDetails"
-linkText P.CreateExercise = fromString "Create Exercise"
-linkText P.CreateCourse   = fromString "Create Course"
-linkText P.CreateGroup    = fromString "Create Group"
-linkText P.Admin      = fromString "Admin"
+linkText P.CourseAdmin = fromString "CourseAdmin"
+linkText P.Submission  = fromString "Submission"
+linkText P.Administration  = fromString "Administration"
+linkText P.Evaulation      = fromString "Evaulation"
+linkText P.EvaulationTable = fromString "Evaulation"
+linkText P.CourseRegistration = fromString "Register For A Course"
+linkText P.CreateCourse       = fromString "Create A course"
+linkText P.UserDetails = fromString "User's Detail"
+linkText P.AssignCourseAdmin = fromString "Add admin to the course"
+linkText P.CreateGroup = fromString "Create a Group"
+linkText P.AssignProfessor = fromString "Add professor to the group"
+linkText P.NewGroupAssignment  = fromString "Create a New Group Assignment"
+linkText P.NewCourseAssignment = fromString "Create a New Course Assignment"
 
 linkToPage :: P.Page -> Html
 linkToPage g = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ linkText g
+
+linkToPageWithText :: P.Page -> String -> Html
+linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString t
 
 navigationMenu :: UserState -> Html
 navigationMenu s = do
@@ -176,20 +183,20 @@ keySelectionForm formData act ks = do
   parentReference Nothing      = return ()
   parentReference (Just (k,v)) = H.td $ hiddenInput k v
 
-instance ButtonText ExerciseKey where
-  buttonText (ExerciseKey e) = e
+instance ButtonText AssignmentKey where
+  buttonText (AssignmentKey e) = e
 
-instance KeyString ExerciseKey where
-  keyString (ExerciseKey e) = e
+instance KeyString AssignmentKey where
+  keyString (AssignmentKey e) = e
 
-exerciseKeys :: String -> [ExerciseKey] -> Html
+exerciseKeys :: String -> [AssignmentKey] -> Html
 exerciseKeys act = keySelectionForm exerciseFormData act where
   exerciseFormData = KeyFormData {
-      divId   = "exercise"
-    , tableId = "exercise-table"
+      divId   = "assignment"
+    , tableId = "assignment-table"
     , key     = fieldName exerciseKey
     , parent  = Nothing
-    , title   = "Exercises for the user"
+    , title   = "Assignments for the user"
     }
 
 pageHeader :: UserState -> Html
@@ -247,12 +254,60 @@ userKeys act = keySelectionForm userFormData act where
     , title   = "Users"
     }
 
+-- * Picklist
+
 option :: String -> String -> Bool -> Html
 option value text False = H.option ! A.value (fromString value)                 $ fromString text
 option value text True  = H.option ! A.value (fromString value) ! A.selected "" $ fromString text
 
 selection :: String -> Html -> Html
 selection name = H.select ! A.name (fromString name) ! A.multiple "false"
+
+class SelectionValue v where
+  selectionValue :: v -> String
+
+class SelectionText t where
+  selectionText :: t -> String
+
+instance (SelectionValue v, SelectionText t) => SelectionValue (v,t) where
+  selectionValue (v,_) = selectionValue v
+
+instance (SelectionValue v, SelectionText t) => SelectionText (v,t) where
+  selectionText (_,t) = selectionText t
+
+valueTextSelection :: (SelectionValue s, SelectionText s) => String -> [s] -> Html
+valueTextSelection name = selection name . mapM_ option'
+  where
+    option' s = option (selectionValue s) (selectionText s) False
+
+enumSelection :: (Enum e, SelectionValue e, SelectionText e) => String -> e -> Html
+enumSelection name start = valueTextSelection name [start .. ]
+
+-- SelectionValue and SelectionText instances
+
+instance SelectionValue CourseKey where
+  selectionValue (CourseKey k) = k
+
+instance SelectionText Course where
+  selectionText = courseName
+
+instance SelectionValue User where
+  selectionValue = str . u_username
+
+instance SelectionText User where
+  selectionText u = join [str . u_username $ u, " - ", u_name u]
+
+instance SelectionText Group where
+  selectionText = groupName
+
+instance SelectionValue GroupKey where
+  selectionValue (GroupKey k) = k
+
+instance SelectionText AssignmentType where
+  selectionText = show
+
+instance SelectionValue AssignmentType where
+  selectionValue = show
 
 -- * Invariants
 

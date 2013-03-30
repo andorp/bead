@@ -57,7 +57,7 @@ login :: Username -> Password -> UserStory ()
 login username password = do
   prst         <- CMR.asks persist
   usrContainer <- CMR.asks userContainer
-  validUser    <- liftIO $ R.doesUserExist prst username password
+  validUser    <- liftIO $ R.canUserLogin prst username password
   notLoggedIn  <- liftIO $ isUserLoggedIn usrContainer username
   case (validUser, notLoggedIn) of
     (Left e    ,     _) -> errorPage "Internal error occurred"
@@ -76,9 +76,10 @@ logout = do
   liftIO $ userLogsOut users (user state)
   CMS.put UserNotLoggedIn
 
--- | The user submits a solution for the given exercise
-submitSolution :: Stored ExerciseKey Exercise -> Solution -> UserStory SolutionKey
-submitSolution = undefined
+doesUserExist :: Username -> UserStory Bool
+doesUserExist u = logAction INFO ("Searches after user: " ++ show u) $ do
+  authorize P_Open P_User
+  liftP $ flip R.doesUserExist u
 
 -- | The user navigates to the next page
 changePage :: P.Page -> UserStory ()
@@ -86,8 +87,8 @@ changePage p = do
   authorize P_Open (pageAsPermObj p)
   changeUserState $ \userState -> userState { page = p }
   where
-    pageAsPermObj P.Admin = P_AdminPage
-    pageAsPermObj _       = P_PlainPage
+    pageAsPermObj P.Administration = P_AdminPage
+    pageAsPermObj _                = P_PlainPage
 
 -- | The user changes his/her password
 changePassword :: Password -> Password -> Password -> UserStory ()
@@ -130,6 +131,16 @@ loadUser u = logAction INFO "Loading user information" $ do
 deleteUser :: Username -> UserStory ()
 deleteUser = undefined
 
+administratedCourses :: UserStory [(CourseKey, Course)]
+administratedCourses = logAction INFO "Selecting adminstrated courses" $ do
+  u <- CMS.gets user
+  liftP $ flip R.administratedCourses u
+
+administratedGroups :: UserStory [(GroupKey, Group)]
+administratedGroups = logAction INFO "Selection administrated groups" $ do
+  u <- CMS.gets user
+  liftP $ flip R.administratedGroups u
+
 -- | The 'create' function is an abstract function
 --   for other creators like, createCourse and createExercise
 create
@@ -149,9 +160,8 @@ createCourse :: Course -> UserStory CourseKey
 createCourse = create descriptor saveCourse
   where
     descriptor course _ =
-      printf "Course is created: %s (%s)"
+      printf "Course is created: %s"
         (show (courseName course))
-        (show (courseCode course))
 
 selectCourses :: (CourseKey -> Course -> Bool) -> UserStory [(CourseKey, Course)]
 selectCourses f = logAction INFO "Select Some Courses" $ do
@@ -165,6 +175,18 @@ loadCourse k = logAction INFO ("Loading course: " ++ show k) $ do
   ks <- liftP $ flip R.groupKeysOfCourse k
   return (c,ks)
 
+createCourseAdmin :: Username -> CourseKey -> UserStory ()
+createCourseAdmin u ck = logAction INFO "Set user to course admin" $ do
+  authorize P_Create P_CourseAdmin
+  authorize P_Open   P_User
+  liftP $ \p -> R.createCourseAdmin p u ck
+
+createGroupProfessor :: Username -> GroupKey -> UserStory ()
+createGroupProfessor u gk = logAction INFO "Set user as a professor of a group" $ do
+  authorize P_Create P_Professor
+  authorize P_Open   P_User
+  liftP $ \p -> R.createGroupProfessor p u gk
+
 -- | Logically deletes an existing cousrse
 deleteCourse :: CourseKey -> UserStory ()
 deleteCourse = undefined
@@ -175,9 +197,14 @@ updateCourse = undefined
 
 -- | Adds a new group to the given course
 createGroup :: CourseKey -> Group -> UserStory GroupKey
-createGroup ck g = logAction INFO ("Creating group: " ++ show (groupCode g)) $ do
+createGroup ck g = logAction INFO ("Creating group: " ++ show (groupName g)) $ do
   authorize P_Create P_Group
   liftP $ \p -> R.saveGroup p ck g
+
+loadGroup :: GroupKey -> UserStory Group
+loadGroup gk = logAction INFO ("Loading group: " ++ show gk) $ do
+  authorize P_Open P_Group
+  liftP $ flip R.loadGroup gk
 
 -- | Checks is the user is subscribed for the group
 isUserInGroup :: GroupKey -> UserStory Bool
@@ -209,30 +236,37 @@ updateGroup :: GroupKey -> Group -> UserStory ()
 updateGroup = undefined
 
 -- | Creates an exercise
-createExercise :: Exercise -> UserStory ExerciseKey
+createExercise :: Assignment -> UserStory AssignmentKey
 createExercise = create descriptor saveExercise
   where
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
 
-selectExercises :: (ExerciseKey -> Exercise -> Bool) -> UserStory [(ExerciseKey, Exercise)]
+createGroupAssignment :: GroupKey -> Assignment -> UserStory AssignmentKey
+createGroupAssignment gk = create descriptor (\p -> saveGroupAssignment p gk)
+  where
+    descriptor _ key = printf "Exercise is created with id: %s" (str key)
+
+createCourseAssignment :: CourseKey -> Assignment -> UserStory AssignmentKey
+createCourseAssignment ck = create descriptor (\p -> saveCourseAssignment p ck)
+  where
+    descriptor _ key = printf "Exercise is created with id: %s" (str key)
+    
+    
+selectExercises :: (AssignmentKey -> Assignment -> Bool) -> UserStory [(AssignmentKey, Assignment)]
 selectExercises f = logAction INFO "Select Some Exercises" $ do
-  authorize P_Open P_Exercise
+  authorize P_Open P_Assignment
   liftP $ flip filterExercises f
 
 -- | The 'loadExercise' loads an exercise from the persistence layer
-loadExercise :: ExerciseKey -> UserStory Exercise
+loadExercise :: AssignmentKey -> UserStory Assignment
 loadExercise k = logAction INFO ("Loading exercise: " ++ show k) $ do
-  authorize P_Open P_Exercise
+  authorize P_Open P_Assignment
   liftP $ flip R.loadExercise k
 
-updateExercise :: ExerciseKey -> Exercise -> UserStory ()
-updateExercise = undefined
-
-deleteExercise :: ExerciseKey -> UserStory ()
-deleteExercise = undefined
-
 errorPage :: String -> UserStory ()
-errorPage s = CME.throwError $ UserError s
+errorPage s = do
+  liftIO . print $ s
+  CME.throwError $ UserError s
 
 -- * Low level user story functionality
 
@@ -251,10 +285,16 @@ authorize permission pObject
   -- Only Course Admin and Admin can create courses
   | pObject == P_Course   && canCreate permission = adminAuthorization
   -- Only Course Admin and Admin can create exercises
-  | pObject == P_Exercise && canCreate permission = adminAuthorization
+  | pObject == P_Assignment && canCreate permission = groupAdminAuthorization
 
   | otherwise = return ()
   where
+    groupAdminAuthorization = do
+      userRole <- CMS.gets role
+      case userRole >= E.Professor of
+        False -> errorPage "Group Admin or greater authorization is required"
+        True -> return ()
+
     adminAuthorization = do
       userRole <- CMS.gets role
       case userRole >= E.CourseAdmin of

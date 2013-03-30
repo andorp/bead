@@ -7,35 +7,9 @@ import Bead.Domain.Entities
 
 type RolePermissions = [(Role,[(Permission, PermissionObject)])]
 
-data Exam = Exam {
-    e_type      :: ExamType
-  , e_course    :: Course
-  , e_group     :: Group
-  , e_postDate  :: Date
-  , e_exercises :: [(Stored ExerciseKey Exercise, [Stored TestKey Test], [Stored CommentKey Comment])]
-  , e_comments  :: [Stored CommentKey Comment]
-  }
-
-data UserSolutions = UserSolutions {
-    us_exercise  ::  Stored ExerciseKey Exercise
-  , us_user      ::  Stored UserKey User
-  , us_comments  :: [Stored CommentKey Comment]
-  , us_solutions :: [Stored SolutionKey Solution]
-  }
-
-type ExamSolutions = (Exam, [UserSolutions])
-
-type StateTransition s = s -> [s]
-
--- * Test runner
-
-type TestRunner = Exercise -> Solution -> Test -> Evaulation
-
-type TestRunnerIO = Exercise -> Solution -> Test -> IO Evaulation
-
 -- * Entity keys
 
-newtype ExerciseKey = ExerciseKey String
+newtype AssignmentKey = AssignmentKey String
   deriving (Eq, Ord, Show)
 
 newtype UserKey = UserKey String
@@ -58,8 +32,8 @@ data GroupKey = GroupKey String
 
 -- * Str instances
 
-instance Str ExerciseKey where
-  str (ExerciseKey s) = s
+instance Str AssignmentKey where
+  str (AssignmentKey s) = s
 
 instance Str CourseKey where
   str (CourseKey c) = c
@@ -67,8 +41,4 @@ instance Str CourseKey where
 instance Str GroupKey where
   str (GroupKey g) = g
 
--- * Authentication
-
-authTable :: [(User, Permission, PermissionObject)] -> Authorization
-authTable = undefined
 

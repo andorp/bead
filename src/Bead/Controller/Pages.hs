@@ -15,6 +15,7 @@ import qualified Bead.Domain.Entities      as E
 import qualified Bead.Domain.Relationships as R
 
 import Data.List ((\\),nub)
+import Control.Monad (join)
 
 import Data.Set (Set(..))
 import qualified Data.Set as Set hiding ((\\))
@@ -28,22 +29,22 @@ data Page
   | Logout
   | Home
   | Profile
-  | Users
-  | UserDetails
-  | Course
-  | Courses
-  | Group
-  | Groups
-  | Exercise
-  | ClosedExam
   | Error
-  | SubmitExam
+  | Administration
+  | CourseAdmin
+  | EvaulationTable
   | Evaulation
-  | Training
-  | Admin
-  | CreateExercise
+  | NewGroupAssignment
+  | NewCourseAssignment
+  | Submission
+  | CourseRegistration
+  | UserDetails
+  
+  -- Only Post handlers
   | CreateCourse
   | CreateGroup
+  | AssignCourseAdmin
+  | AssignProfessor
   -- etc ...
   deriving (Eq, Ord, Enum, Show)
 
@@ -55,24 +56,26 @@ contentPages = allPages \\ [Error]
 
 pageTransition Logout = [Login, Logout]
 pageTransition Login = [Login, Home]
-pageTransition s = nub $ p s ++ [s, Error, Logout]
-  where
-    p Logout     = []
-    p Error      = []
-    p Home       = [ Profile, Courses, Group, Exercise, ClosedExam, Evaulation
-                   , Training, Admin, SubmitExam, Groups, Users ]
-    p CreateExercise = [Admin]
-    p CreateCourse   = [Admin]
-    p CreateGroup    = [Course]
-    p Admin          = [Home, CreateExercise, CreateCourse]
-    p Users      = [Home, UserDetails]
-    p UserDetails = [Users]
-    p Courses    = [Home, Course]
-    p Course     = [Courses, Group, CreateGroup]
-    p Groups     = [Home]
-    p Group      = [Courses]
-    p _          = [Home]
-    p g = error $ "Unknown transition for page: " ++ show g
+pageTransition s = nub $ p s ++ [s, Error, Logout] where
+  p Error            = []
+  p Home = [ Logout, CourseAdmin, EvaulationTable, NewGroupAssignment, NewCourseAssignment
+           , Submission, CourseRegistration, Administration, Profile
+           ]
+  p CourseAdmin      = [Home, CreateGroup, AssignProfessor]
+  p EvaulationTable  = [Home, Evaulation]
+  p Evaulation       = [Home, EvaulationTable]
+  p Submission       = [Home]
+  p Administration   = [Home, CreateCourse, UserDetails, AssignCourseAdmin]
+  p Profile          = [Home]
+  p UserDetails      = [Administration]
+  p CourseRegistration = [Home]
+  p NewGroupAssignment = [Home, NewGroupAssignment]
+  p NewCourseAssignment = [Home, NewCourseAssignment]
+
+  p CreateCourse      = [Administration]
+  p AssignCourseAdmin = [Administration]
+  p CreateGroup       = [CourseAdmin]
+  p AssignProfessor   = [CourseAdmin]
 
 reachable :: Page -> Page -> Bool
 reachable p q = elem q $ pageTransition p
@@ -80,44 +83,49 @@ reachable p q = elem q $ pageTransition p
 regularPages = [
     Home
   , Profile
-  , Course
-  , Courses
-  , Group
-  , Exercise
-  , ClosedExam
   , Error
-  , SubmitExam
+  , Submission
+  , CourseRegistration
+  ]
+
+professorPages = [
+    EvaulationTable
   , Evaulation
-  , Training
+  , NewGroupAssignment
+  ]
+
+courseAdminPages = [
+    CourseAdmin
+  , CreateGroup
+  , AssignProfessor
+  , NewCourseAssignment
   ]
 
 adminPages = [
-    Admin
-  , Groups
+    Administration
   , CreateCourse
-  , CreateExercise
-  , CreateGroup
-  , Users
   , UserDetails
+  , AssignCourseAdmin
   ]
 
 nonMenuPages = [
     Login
   , Logout
   , Error
-  , Exercise
-  , Course
-  , Group
-  , CreateGroup
+  , CreateCourse
   , UserDetails
+  , AssignCourseAdmin
+  , CreateGroup
+  , AssignProfessor
+  , NewGroupAssignment
+  , NewCourseAssignment
   ]
 
 allowedPages :: E.Role -> [Page]
-allowedPages E.Student     =                  regularPages
-allowedPages E.Professor   = CreateExercise : regularPages
-allowedPages E.CourseAdmin = CreateExercise : regularPages
-allowedPages E.Admin       = adminPages    ++ regularPages
-allowedPages p = error $ "There is no pages defined for the " ++ show p
+allowedPages E.Student     =                     regularPages
+allowedPages E.Professor   = professorPages   ++ regularPages
+allowedPages E.CourseAdmin = courseAdminPages ++ regularPages
+allowedPages E.Admin       = adminPages       ++ regularPages
 
 menuPages :: E.Role -> Page -> [Page]
 menuPages r p = filter allowedPage $ pageTransition p
@@ -132,16 +140,21 @@ parentPage :: Page -> Page
 parentPage Login          = Login
 parentPage Error          = Error
 parentPage Logout         = Logout
-parentPage CreateExercise = Admin
-parentPage CreateCourse   = Admin
-parentPage CreateGroup    = Course
-parentPage Courses        = Home
-parentPage Course         = Courses
-parentPage Groups         = Home
-parentPage Group          = Course
-parentPage Users          = Home
-parentPage UserDetails    = Users
-parentPage _              = Home
+parentPage Profile        = Profile
+parentPage Home           = Home
+parentPage CourseAdmin    = Home
+parentPage EvaulationTable = Home
+parentPage Evaulation      = EvaulationTable
+parentPage Submission      = Home
+parentPage Administration  = Home
+parentPage CourseRegistration = Home
+parentPage UserDetails  = Administration
+parentPage CreateCourse = Administration
+parentPage AssignCourseAdmin = Administration
+parentPage CreateGroup     = CourseAdmin
+parentPage AssignProfessor = CourseAdmin
+parentPage NewGroupAssignment  = NewGroupAssignment
+parentPage NewCourseAssignment = NewCourseAssignment
 
 -- * Invariants
 
@@ -153,5 +166,6 @@ invariants = Invariants [
 
 unitTests = UnitTests [
     ("Regular, Admin and NonMenu pages should cover all pages",
-     Set.fromList (regularPages ++ adminPages ++ nonMenuPages) == Set.fromList allPages)
+     Set.fromList (join [regularPages, professorPages, courseAdminPages, adminPages, nonMenuPages]) ==
+     Set.fromList allPages)
   ]

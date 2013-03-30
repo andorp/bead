@@ -122,25 +122,59 @@ menuId P.Login          = "link-login"
 menuId P.Logout         = "link-logout"
 menuId P.Home           = "link-home"
 menuId P.Profile        = "link-profile"
-menuId P.Users          = "link-users"
-menuId P.UserDetails    = "link-userdetails"
-menuId P.Course         = "link-course"
-menuId P.Courses        = "link-courses"
-menuId P.Group          = "link-group"
-menuId P.Groups         = "link-groups"
-menuId P.Exercise       = "link-exercise"
-menuId P.ClosedExam     = "link-closedexam"
 menuId P.Error          = "link-error"
-menuId P.SubmitExam     = "link-submitexam"
-menuId P.Evaulation     = "link-evaulation"
-menuId P.Training       = "link-training"
-menuId P.Admin          = "link-admin"
-menuId P.CreateExercise = "link-create-exercise"
-menuId P.CreateCourse   = "link-create-course"
-menuId P.CreateGroup    = "link-create-group"
+menuId P.Administration = "link-admin"
+menuId P.CourseAdmin    = "link-course-admin"
+menuId P.EvaulationTable = "link-evaulation-table"
+menuId P.Evaulation      = "link-evaulation"
+menuId P.Submission      = "link-submission"
+menuId P.CourseRegistration = "link-course-registration"
+menuId P.CreateCourse = "link-create-course"
+menuId P.UserDetails = "link-user-details"
+menuId P.AssignCourseAdmin = "link-assign-course-admin"
+menuId P.CreateGroup = "link-create-group"
+menuId P.AssignProfessor = "link-assign-professor"
+menuId P.NewGroupAssignment  = "link-new-group-assignment"
+menuId P.NewCourseAssignment = "link-new-course-assignment"
 
 instance SnapFieldName P.Page where
   fieldName = fromString . menuId
+
+data AssignmentField
+  = AssignmentDescField { aFieldName :: String }
+  | AssignmentTCsField { aFieldName :: String }
+  | AssignmentTypeField { aFieldName :: String }
+  | AssignmentStartField { aFieldName :: String }
+  | AssignmentEndField { aFieldName :: String }
+
+assignmentDescField  = AssignmentDescField  "asg-desc"
+assignmentTCsField   = AssignmentTCsField   "asg-tcs"
+assignmentTypeField  = AssignmentTypeField  "asg-type"
+assignmentStartField = AssignmentStartField "asg-start"
+assignmentEndField   = AssignmentEndField   "asg-end"
+
+instance SnapFieldName AssignmentField where
+  fieldName = fromString . aFieldName
+
+data AssignCourseAdminField
+  = SelectedCourse { acFieldName :: String }
+  | SelectedCourseAdmin { acFieldName :: String }
+
+selectedCourse = SelectedCourse "selected-course"
+selectedCourseAdmin = SelectedCourseAdmin "selected-course-admin"
+
+instance SnapFieldName AssignCourseAdminField where
+  fieldName = fromString . acFieldName
+
+data AssignCourseProfessorField
+  = SelectedProfessor { cpFieldName :: String }
+  | SelectedGroup { cpFieldName :: String }
+
+selectedGroup = SelectedGroup "selected-group"
+selectedProfessor = SelectedProfessor "selected-professor"
+
+instance SnapFieldName AssignCourseProfessorField where
+  fieldName = fromString . cpFieldName
 
 -- * Template names
 
@@ -163,7 +197,9 @@ fieldList = map fieldName $ join [
   , SFN courseFormInfo, SFN courseCodeField, SFN courseNameField,        SFN courseDescField
   , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
   , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField
-  , SFN userRoleField,  SFN loginSubmitBtn
+  , SFN userRoleField,  SFN loginSubmitBtn,  SFN assignmentDescField,    SFN assignmentTCsField
+  , SFN selectedCourse, SFN selectedCourseAdmin
+  , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField
   ], (map SFN P.allPages)
   ]
 

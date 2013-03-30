@@ -3,22 +3,31 @@ module Bead.View.Snap.Content.Home (
     home
   ) where
 
-import Control.Monad (liftM)
+import Control.Monad (when, liftM)
 
-import Bead.Controller.Pages as P (Page(Exercise))
 import Bead.Controller.ServiceContext (UserState(..))
-import Bead.Controller.UserStories (selectExercises)
+import Bead.Controller.Pages as P (Page(..))
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
-import Bead.View.Snap.HandlerUtils
+
+import Text.Blaze.Html5 (Html)
+import qualified Text.Blaze.Html5 as H
 
 home :: Content
 home = getContentHandler homePage
 
 homePage :: GETContentHandler
 homePage = withUserStateE $ \s -> do
-  keys <- runStoryE . selectExercises $ every
-  let es = exerciseKeys (routeOf P.Exercise) (map fst keys)
-  blaze $ withUserFrame s es Nothing
-  where
-    every _ _ = True
+  blaze $ withUserFrame s (homeContent s) Nothing
+
+homeContent :: UserState -> Html
+homeContent s = do
+  when (isAdmin s) $ H.p $ "Admin's menu"
+  when (isCourseAdmin s) $ H.p $ do
+    "Course Admin's menu"
+    linkToPage P.NewCourseAssignment
+  when (isProfessor s) $ H.p $ do
+    "Teacher's menu"
+    linkToPage P.NewGroupAssignment
+  when (isStudent s) $ H.p $ "Student's menu"
+

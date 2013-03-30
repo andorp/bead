@@ -4,23 +4,30 @@ import Bead.Domain.Types
 import Bead.Invariants (Invariants(..))
 
 import Data.Char (toLower)
+import Data.Time (UTCTime(..))
 
 -- * Course, exams, exercises, solutions
 
--- | Exercise, that needs to be solved
-data Exercise = Exercise {
-    exercise :: String
-  } deriving (Eq, Show)
+data AssignmentType
+  = Normal
+  | Urn
+  deriving (Show, Eq, Read, Enum)
 
--- | Test against an exercise
-data Test = Test {
-    testDesc :: String
-  } deriving (Eq, Show)
+assignmentTypes = [Normal, Urn]
+
+-- | Assignment for the student
+data Assignment = Assignment {
+    assignmentDesc :: String
+  , assignmentTCs  :: String
+  , assignmentType :: AssignmentType
+  , assignmentStart :: UTCTime
+  , assignmentEnd   :: UTCTime
+  } deriving (Eq)
 
 -- | Solution for one exercise
 data Solution = Solution {
     solution         :: String
-  , solutionPostDate :: Date
+  , solutionPostDate :: UTCTime
   } deriving (Eq, Show)
 
 -- | Comment on the text of exercise, on the evaulation
@@ -46,33 +53,15 @@ instance Str CourseCode where
 
 -- | A course represent a university course
 data Course = Course {
-    courseCode :: CourseCode
-  , courseName :: String
+    courseName :: String
   , courseDesc :: String
   } deriving (Eq, Show)
 
-newtype GroupCode = GroupCode String
-  deriving (Eq, Ord, Show)
-
-instance Str GroupCode where
-  str (GroupCode g) = g
-
 -- | Groups are registered under the courses
 data Group = Group {
-    groupCode  :: GroupCode
-  , groupName  :: String
+    groupName  :: String
   , groupDesc  :: String
   } deriving (Eq, Show)
-
--- | The type of the exam
-data ExamType
-  = Submition
-  | Zh
-  | Exam
-  deriving (Eq, Show)
-
-newtype ExamInfo = ExamInfo (String, Date)
-  deriving (Eq, Ord, Show)
 
 -- | Workflows can happen to exams
 data Workflow
@@ -107,6 +96,22 @@ instance Show Role where
   show CourseAdmin = "Course Admin"
   show Admin       = "Admin"
 
+atLeastCourseAdmin Admin       = True
+atLeastCourseAdmin CourseAdmin = True
+atLeastCourseAdmin _           = False
+
+class InRole r where
+  isAdmin       :: r -> Bool
+  isCourseAdmin :: r -> Bool
+  isProfessor   :: r -> Bool
+  isStudent     :: r -> Bool
+
+instance InRole Role where
+  isAdmin       = (== Admin)
+  isCourseAdmin = (>= CourseAdmin)
+  isProfessor   = (>= Professor)
+  isStudent     = (== Student)
+
 -- * Permissions
 
 -- | Granted permission on a given operation
@@ -126,7 +131,7 @@ canDelete = flip elem [P_Delete]
 
 -- | Permissions are allowed on the following objects
 data PermissionObject
-  = P_Exercise
+  = P_Assignment
   | P_Solution
   | P_Statistics
   | P_Password
@@ -209,8 +214,8 @@ storedValue (Stored (_,v)) = v
 instance PermissionObj Course where
   permissionObject _ = P_Course
 
-instance PermissionObj Exercise where
-  permissionObject _ = P_Exercise
+instance PermissionObj Assignment where
+  permissionObject _ = P_Assignment
 
 -- * Read instances
 
@@ -232,14 +237,12 @@ mockUser = User {
   }
 
 mockCourse = Course {
-    courseCode = CourseCode "FP-001"
-  , courseName = "Functional Programming"
+    courseName = "Functional Programming"
   , courseDesc = "Course about how and why we would create programs by the definitive ways"
   }
 
 mockGroup = Group {
-    groupCode = GroupCode "G010"
-  , groupName = "Esti"
+    groupName = "Esti"
   , groupDesc = "Group description"
   }
 

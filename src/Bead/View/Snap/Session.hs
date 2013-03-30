@@ -38,23 +38,21 @@ instance SessionStore P.Page where
     s P.Login      = "Login"
     s P.Logout     = "Logout"
     s P.Home       = "Home"
-    s P.Profile    = "Profile"
-    s P.Course     = "Course"
-    s P.Courses    = "Courses"
-    s P.Group      = "Group"
-    s P.Groups     = "Groups"
-    s P.Exercise   = "Exercise"
-    s P.ClosedExam = "ClosedExam"
     s P.Error      = "Error"
-    s P.SubmitExam = "SubmitExam"
-    s P.Evaulation = "Evaulation"
-    s P.Training   = "Training"
-    s P.Admin      = "Admin"
-    s P.Users      = "Users"
-    s P.UserDetails    = "UserDetails"
-    s P.CreateExercise = "CreateExercise"
-    s P.CreateCourse   = "CreateCourse"
-    s P.CreateGroup    = "CreateGroup"
+    s P.Profile    = "Profile"
+    s P.CourseAdmin = "CourseAdmin"
+    s P.EvaulationTable = "EvaulationTable"
+    s P.Evaulation      = "Evaulation"
+    s P.Submission      = "Submission"
+    s P.Administration   = "Administration"
+    s P.CourseRegistration = "CourseRegistration"
+    s P.CreateCourse = "CreateCourse"
+    s P.UserDetails = "UserDetails"
+    s P.AssignCourseAdmin = "AssignCourseAdmin"
+    s P.CreateGroup = "CreateGroup"
+    s P.AssignProfessor = "AssignProfessor"
+    s P.NewGroupAssignment  = "NewGroupAssignment"
+    s P.NewCourseAssignment = "NewCourseAssignment"
 
 instance SessionRestore P.Page where
   restoreFromSession kv = case L.lookup pageSessionKey kv of
@@ -62,23 +60,22 @@ instance SessionRestore P.Page where
     Just "Login"      -> Just P.Login
     Just "Logout"     -> Just P.Logout
     Just "Home"       -> Just P.Home
-    Just "Profile"    -> Just P.Profile
-    Just "Course"     -> Just P.Course
-    Just "Courses"    -> Just P.Courses
-    Just "Group"      -> Just P.Group
-    Just "Groups"     -> Just P.Groups
-    Just "Exercise"   -> Just P.Exercise
-    Just "ClosedExam" -> Just P.ClosedExam
     Just "Error"      -> Just P.Error
-    Just "SubmitExam" -> Just P.SubmitExam
-    Just "Evaulation" -> Just P.Evaulation
-    Just "Training"   -> Just P.Training
-    Just "Admin"      -> Just P.Admin
-    Just "Users"      -> Just P.Users
-    Just "UserDetails" -> Just P.UserDetails
-    Just "CreateExercise" -> Just P.CreateExercise
-    Just "CreateCourse"   -> Just P.CreateCourse
-    Just "CreateGroup"    -> Just P.CreateGroup
+    Just "Profile"    -> Just P.Profile
+    Just "CourseAdmin" -> Just P.CourseAdmin
+    Just "EvaulationTable" -> Just P.EvaulationTable
+    Just "Evaulation"      -> Just P.Evaulation
+    Just "Submission"      -> Just P.Submission
+    Just "Administration"   -> Just P.Administration
+    Just "CourseRegistration" -> Just P.CourseRegistration
+    Just "CreateCourse" -> Just P.CreateCourse
+    Just "UserDetails"  -> Just P.UserDetails
+    Just "AssignCourseAdmin" -> Just P.AssignCourseAdmin
+    Just "CreateGroup"  -> Just P.CreateGroup
+    Just "AssignProfessor" -> Just P.AssignProfessor
+    Just "NewCourseAssignment" -> Just P.NewCourseAssignment
+    Just "NewGroupAssignment" -> Just P.NewGroupAssignment
+    Just _              -> Nothing
 
 -- * Session Key Values for Username
 

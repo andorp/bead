@@ -7,13 +7,6 @@ import Control.Monad.Trans.Error
 
 type Erroneous a = Either String a
 
-data Date = Date {
-    utcTime :: UTCTime
-  } deriving (Eq, Ord)
-
-instance Show Date where
-  show _ = "TODO: SHOW DATE"
-
 class Str s where
   str :: s -> String
 

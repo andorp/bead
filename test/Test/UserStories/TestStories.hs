@@ -15,6 +15,7 @@ import Test.HUnit hiding (Test(..))
 import Test.Framework (Test(..), testGroup)
 import Test.Framework.Providers.HUnit
 
+import Data.Time.Clock
 import System.Directory (removeDirectoryRecursive)
 
 errorLogger = Logger {
@@ -104,8 +105,7 @@ loginAndLogout = testCase "Login And Logout" $ do
 courseTest = testCase "Create Course" $ do
   c <- context
   let r = E.Course {
-      courseCode = CourseCode "c"
-    , courseName = "Functional programming"
+      courseName = "Functional programming"
     , courseDesc = "Everything about FP"
     }
   (k,state) <- runStory c adminUserState $ createCourse r
@@ -120,7 +120,9 @@ courseTest = testCase "Create Course" $ do
 
 exerciseTest = testCase "Create exercise list its keys and load it" $ do
   c <- context
-  let e = E.Exercise "exercise"
+  str <- getCurrentTime
+  end <- getCurrentTime
+  let e = E.Assignment "exercise" "test" Normal str end
   (k,state) <- runStory c adminUserState $ createExercise e
   assertUserState state adminUser
   (ks,state) <- runStory c adminUserState $ selectExercises (\_ _ -> True)

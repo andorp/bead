@@ -9,6 +9,7 @@ import Bead.Persistence.Persist
 import Bead.Persistence.NoSQL.Loader
 import Control.Monad.Transaction.TIO
 
+import Control.Applicative ((<$>))
 import Control.Monad (join, mapM, liftM, filterM, when, unless)
 import Control.Exception (IOException, throwIO)
 import System.FilePath (joinPath, takeBaseName)
@@ -17,12 +18,15 @@ import System.Directory (doesFileExist, doesDirectoryExist, createDirectory)
 -- | Simple directory and file based NoSQL persistence implementation
 noSqlDirPersist = Persist {
     saveUser      = nSaveUser      -- :: User -> Password -> IO (Erroneous ())
-  , doesUserExist = nDoesUserExist -- :: Username -> Password -> IO (Erroneous Bool)
+  , canUserLogin  = nCanUserLogin  -- :: Username -> Password -> IO (Erroneous Bool)
   , personalInfo  = nPersonalInfo  -- :: Username -> Password -> IO (Erroneous (Role, String))
   , updatePwd     = nUpdatePwd     -- :: Username -> Password -> Password -> IO (Erroneous ())
   , filterUsers   = nFilterUsers   -- :: (User -> Bool) -> IO (Erroneous [User])
   , loadUser      = nLoadUser      -- :: Username -> IO (Erroneous User)
   , updateUser    = nUpdateUser    -- :: Username -> User -> IO (Erroneous ())
+  , doesUserExist = nDoesUserExist -- :: Username -> IO (Erroneous Bool)
+  , administratedCourses = nAdministratedCourses -- :: Username -> IO (Erroneous [CourseKey])
+  , administratedGroups = nAdministratedGroups -- :: Username -> IO (Erroneous [GroupKey])
 
   , saveCourse    = nSaveCourse    -- :: Course -> IO (Erroneous ())
   , courseKeys    = nCourseKeys    -- :: IO (Erroneous [CourseKey])
@@ -30,17 +34,23 @@ noSqlDirPersist = Persist {
   , loadCourse    = nLoadCourse    -- :: CourseKey -> IO (Erroneous Course)
   , groupKeysOfCourse = nGroupKeysOfCourse -- :: CourseKey -> IO (Erroneous [GroupKey])
   , isUserInCourse = nIsUserInCourse -- :: Username -> CourseKey -> IO (Erroneous Bool)
+  , createCourseAdmin = nCreateCourseAdmin -- :: Username -> CourseKey -> IO (Erroneous ())
 
   , saveGroup     = nSaveGroup     -- :: CourseKey -> Group -> IO (Erroneous GroupKey)
   , loadGroup     = nLoadGroup     -- :: GroupKey -> IO (Erroneous Group)
   , isUserInGroup = nIsUserInGroup -- :: Username -> GroupKey -> IO (Erroneous Bool)
   , subscribe     = nSubscribe     -- :: Username -> CourseKey -> GroupKey -> IO (Erroneous ())
+  , createGroupProfessor = nCreateGroupProfessor -- :: Username -> GroupKey -> IO (Erroneous ())
 
-  , filterExercises = nFilterExercises -- :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey,Exercise)])
-  , exerciseKeys  = nExerciseKeys  -- :: IO (Erroneous [ExerciseKey])
-  , saveExercise  = nSaveExercise  -- :: Exercise -> IO (Erroneous ExerciseKey)
-  , loadExercise    = nLoadExercise  -- :: ExerciseKey -> IO (Erroneous Exercise)
-
+  , filterExercises = nFilterExercises -- :: (AssignmentKey -> Assignment -> Bool) -> IO (Erroneous [(AssignmentKey,Assignment)])
+  , exerciseKeys  = nExerciseKeys  -- :: IO (Erroneous [AssignmentKey])
+  , saveExercise  = nSaveExercise  -- :: Assignment -> IO (Erroneous AssignmentKey)
+  , loadExercise    = nLoadExercise  -- :: AssignmentKey -> IO (Erroneous Assignment)
+  , saveCourseAssignment = nSaveCourseAssignment -- :: CourseKey -> Assignment -> IO (Erroneous AssignmentKey)
+  , saveGroupAssignment = nSaveGroupAssignment   -- :: GroupKey  -> Assignment -> IO (Erroneous AssignmentKey)
+  , courseAssignments = nCourseAssignments -- :: CourseKey -> IO (Erroneous [AssignmentKey])
+  , groupAssignments = nGroupAssignments -- :: GroupKey -> IO (Erroneous [AssignmentKey])
+  
   , isPersistenceSetUp = nIsPersistenceSetUp
   , initPersistence    = nInitPersistence
   }
@@ -77,19 +87,23 @@ isThereAUser uname = hasNoRollback $ do
     False -> return False
     True  -> isCorrectStructure dirname userDirStructure
 
-nDoesUserExist :: Username -> Password -> IO (Erroneous Bool)
-nDoesUserExist u p = runAtomically $ tDoesUserExist u p
+nCanUserLogin :: Username -> Password -> IO (Erroneous Bool)
+nCanUserLogin u p = runAtomically $ tCanUserLogin u p
 
-tDoesUserExist :: Username -> Password -> TIO Bool
-tDoesUserExist uname pwd = do
-  let dirname = dirName uname
-      ePwd = encodePwd pwd
-  exists <- hasNoRollback . doesDirectoryExist $ dirname
+tCanUserLogin :: Username -> Password -> TIO Bool
+tCanUserLogin uname pwd = do
+  exists <- tDoesUserExist uname
   case exists of
     False -> return False
     True  -> do
-      ePwd' <- loadPwd dirname
-      return (ePwd == ePwd')
+      ePwd <- loadPwd . dirName $ uname
+      return (ePwd == (encodePwd pwd))
+
+nDoesUserExist :: Username -> IO (Erroneous Bool)
+nDoesUserExist = runAtomically . tDoesUserExist
+
+tDoesUserExist :: Username -> TIO Bool
+tDoesUserExist = hasNoRollback . doesDirectoryExist . dirName
 
 nPersonalInfo :: Username -> Password -> IO (Erroneous (Role, String))
 nPersonalInfo uname pwd = runAtomically $ do
@@ -112,15 +126,18 @@ nFilterUsers f = runAtomically $
   (mapM load)                                 >>=
   (return . filter f)
 
+tLoadUser :: Username -> TIO User
+tLoadUser = load . dirName
+
 nLoadUser :: Username -> IO (Erroneous User)
-nLoadUser = runAtomically . load . dirName
+nLoadUser = runAtomically . tLoadUser
 
 nUpdateUser :: User -> IO (Erroneous ())
 nUpdateUser user = runAtomically $ update (dirName . u_username $ user) user
 
 nUpdatePwd :: Username -> Password -> Password -> IO (Erroneous ())
 nUpdatePwd uname oldPwd newPwd = runAtomically $ do
-  userExist <- tDoesUserExist uname oldPwd
+  userExist <- tCanUserLogin uname oldPwd
   case userExist of
     False -> throwEx $ userError $ "Invalid user and/or password combination: " ++ show uname
     True -> do
@@ -131,8 +148,21 @@ nUpdatePwd uname oldPwd newPwd = runAtomically $ do
         False -> throwEx . userError $ "Invalid password"
         True  -> savePwd dirname $ encodePwd newPwd
 
+nAdministratedCourses :: Username -> IO (Erroneous [(CourseKey, Course)])
+nAdministratedCourses u = runAtomically $ do
+  let dirname = joinPath [dirName u, "courseadmin"]
+  (selectValidDirsFrom dirname isCourseDir) >>= (mapM tLoadCourse)
+
+nAdministratedGroups :: Username -> IO (Erroneous [(GroupKey, Group)])
+nAdministratedGroups u = runAtomically $ do
+  let dirname = joinPath [dirName u, "groupadmin"]
+  (selectValidDirsFrom dirname isGroupDir) >>= (mapM tLoadGroup)
+
 courseDirPath :: CourseKey -> FilePath
 courseDirPath (CourseKey c) = joinPath [courseDataDir, c]
+
+groupDirPath :: GroupKey -> FilePath
+groupDirPath (GroupKey g) = joinPath [groupDataDir, g]
 
 nLoadCourse :: CourseKey -> IO (Erroneous Course)
 nLoadCourse c = runAtomically $ do
@@ -153,6 +183,15 @@ nGroupKeysOfCourse c = runAtomically $ do
   subdirs <- getSubDirectories g
   return . map (GroupKey . takeBaseName) $ subdirs
 
+nCreateCourseAdmin :: Username -> CourseKey -> IO (Erroneous ())
+nCreateCourseAdmin u ck = runAtomically $ do
+  usr <- tLoadUser u
+  case atLeastCourseAdmin . u_role $ usr of
+    False -> throwEx . userError . join $ [str u, " is not course admin"]
+    True  -> do
+      link u ck "admins"
+      link ck u "courseadmin"
+
 isCorrectDirStructure :: DirStructure -> FilePath -> TIO Bool
 isCorrectDirStructure d p = hasNoRollback $ isCorrectStructure p d
 
@@ -170,25 +209,23 @@ nLoadGroup g = runAtomically $ do
     groupDirPath :: GroupKey -> FilePath
     groupDirPath (GroupKey g) = joinPath [groupDataDir, g]
 
-userIsLinkedInDir username key = runAtomically $
-  hasNoRollback . doesDirectoryExist . joinPath $
-    [referredPath key, "users", baseName username]
-
 nIsUserInGroup :: Username -> GroupKey -> IO (Erroneous Bool)
-nIsUserInGroup = userIsLinkedInDir
+nIsUserInGroup u gk = runAtomically $ isLinkedIn gk u "users"
 
 nIsUserInCourse :: Username -> CourseKey -> IO (Erroneous Bool)
-nIsUserInCourse = userIsLinkedInDir
+nIsUserInCourse u ck = runAtomically $ isLinkedIn ck u "users"
 
 nSubscribe :: Username -> CourseKey -> GroupKey -> IO (Erroneous ())
 nSubscribe username ck gk = runAtomically $ do
-  let pg = joinPath [referredPath gk, "users"]
-      pc = joinPath [referredPath ck, "users"]
-      b = baseName username
-  existsInGroup  <- hasNoRollback . doesDirectoryExist . joinPath $ [pg, b]
-  existsInCourse <- hasNoRollback . doesDirectoryExist . joinPath $ [pc, b]
-  unless existsInGroup  $ foreignKey username gk "users"
-  unless existsInCourse $ foreignKey username ck "users"
+  link username gk "users"
+  link username ck "users"
+  link gk username "group"
+  link ck username "course"
+
+nCreateGroupProfessor :: Username -> GroupKey -> IO (Erroneous ())
+nCreateGroupProfessor u gk = runAtomically $ do
+  link u gk "admins"
+  link gk u "groupadmin"
 
 tLoadPersistenceObject :: (Load o)
   => (String -> k) -- ^ Key constructor
@@ -204,20 +241,10 @@ tLoadGroup = tLoadPersistenceObject GroupKey
 
 nSaveCourse :: Course -> IO (Erroneous CourseKey)
 nSaveCourse c = runAtomically $ do
-  let courseDir = dirName c
-      courseKey = keyString c
-  exist <- hasNoRollback $ doesDirectoryExist courseDir
-  -- GUARD: Course already exists on the disk
-  when exist . throwEx . userError . join $ [
-      "Course already exist: "
-    , courseName c
-    , " (", show $ courseCode c, ")"
-    ]
-
-  -- New course
-  createDir courseDir
-  save courseDir c
-  return . CourseKey $ courseKey
+  dirName <- createTmpDir courseDataDir "cr"
+  let courseKey = CourseKey . takeBaseName $ dirName
+  save dirName c
+  return courseKey
 
 class ForeignKey k where
   referredPath :: k -> DirPath
@@ -228,6 +255,16 @@ foreignKey object linkto subdir =
   createLink
     (joinPath ["..", "..", "..", "..", (referredPath object)])
     (joinPath [(referredPath linkto), subdir, baseName object])
+
+isLinkedIn :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO Bool
+isLinkedIn object linkto subdir =
+  hasNoRollback . doesDirectoryExist . joinPath $ [referredPath object, subdir, baseName linkto]
+
+link :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO ()
+link object linkto subdir = do
+  exist <- isLinkedIn object linkto subdir
+  unless exist $ foreignKey object linkto subdir
+
 
 instance ForeignKey Username where
   referredPath = dirName
@@ -241,6 +278,10 @@ instance ForeignKey CourseKey where
   referredPath (CourseKey c) = joinPath [courseDataDir, c]
   baseName     (CourseKey c) = c
 
+instance ForeignKey AssignmentKey where
+  referredPath (AssignmentKey a) = joinPath [assignmentDataDir, a]
+  baseName     (AssignmentKey a) = a
+
 {- * One primitve value is stored in the file with the same name as the row.
    * One combined value is stored in the given directory into many files. The name
      of the directory is the primary key for the record.
@@ -251,40 +292,44 @@ nSaveGroup ck group = runAtomically $ do
   dirName <- createTmpDir groupDataDir "gr"
   let groupKey = GroupKey . takeBaseName $ dirName
   save dirName group
-  foreignKey groupKey ck "groups"
-  foreignKey ck groupKey "course"
+  link groupKey ck "groups"
+  link ck groupKey "course"
   return groupKey
 
-nSaveExercise :: Exercise -> IO (Erroneous ExerciseKey)
-nSaveExercise exercise = runAtomically $ do
-  dirName <- createTmpDir exerciseDataDir "ex"
-  let exerciseKey = takeBaseName dirName
-  save dirName exercise
-  return . ExerciseKey $ exerciseKey
+nSaveExercise :: Assignment -> IO (Erroneous AssignmentKey)
+nSaveExercise = runAtomically . tSaveAssignment
 
+tSaveAssignment :: Assignment -> TIO AssignmentKey
+tSaveAssignment a = do
+  dirName <- createTmpDir assignmentDataDir "a"
+  let assignmentKey = takeBaseName dirName
+  save dirName a
+  return . AssignmentKey $ assignmentKey
+  
 selectValidDirsFrom :: FilePath -> (FilePath -> TIO Bool) -> TIO [FilePath]
 selectValidDirsFrom dir isValidDir = getSubDirectories dir >>= filterM isValidDir
 
-nExerciseKeys :: IO (Erroneous [ExerciseKey])
+nExerciseKeys :: IO (Erroneous [AssignmentKey])
 nExerciseKeys = runAtomically $
-  (selectValidDirsFrom exerciseDataDir isExerciseDir) >>=
+  (selectValidDirsFrom assignmentDataDir isExerciseDir) >>=
   calcExerciseKeys
     where
-      calcExerciseKeys = return . map (ExerciseKey . takeBaseName)
+      calcExerciseKeys = return . map (AssignmentKey . takeBaseName)
 
-nFilterExercises :: (ExerciseKey -> Exercise -> Bool) -> IO (Erroneous [(ExerciseKey, Exercise)])
+nFilterExercises :: (AssignmentKey -> Assignment -> Bool) -> IO (Erroneous [(AssignmentKey, Assignment)])
 nFilterExercises f = runAtomically $
-  (selectValidDirsFrom exerciseDataDir isExerciseDir) >>=
+  (selectValidDirsFrom assignmentDataDir isExerciseDir) >>=
   (mapM tLoadExercise)             >>=
   (return . filter (uncurry f))
 
 isExerciseDir :: FilePath -> TIO Bool
 isExerciseDir f = hasNoRollback $ do
   d <- doesDirectoryExist f
-  e <- doesFileExist $ joinPath [f,"exercise"]
-  return $ and [d,e]
+  e <- doesFileExist $ joinPath [f,"description"]
+  t <- doesFileExist $ joinPath [f,"testcases"]
+  return $ and [d,e,t]
 
-nLoadExercise :: ExerciseKey -> IO (Erroneous Exercise)
+nLoadExercise :: AssignmentKey -> IO (Erroneous Assignment)
 nLoadExercise e = runAtomically $ do
   let p = exerciseDirPath e
   isEx <- isExerciseDir p
@@ -292,14 +337,40 @@ nLoadExercise e = runAtomically $ do
     False -> throwEx $ userError $ join [str e, " exercise does not exist."]
     True  -> liftM snd $ tLoadExercise p
   where
-    exerciseDirPath :: ExerciseKey -> FilePath
-    exerciseDirPath (ExerciseKey e) = joinPath [exerciseDataDir, e]
+    exerciseDirPath :: AssignmentKey -> FilePath
+    exerciseDirPath (AssignmentKey e) = joinPath [assignmentDataDir, e]
 
-tLoadExercise :: FilePath -> TIO (ExerciseKey, Exercise)
+tLoadExercise :: FilePath -> TIO (AssignmentKey, Assignment)
 tLoadExercise dirName = do
   let exerciseKey = takeBaseName dirName
   e <- load dirName
-  return (ExerciseKey exerciseKey, e)
+  return (AssignmentKey exerciseKey, e)
+
+saveAndLinkAssignment :: (ForeignKey k) => k -> Assignment -> IO (Erroneous AssignmentKey)
+saveAndLinkAssignment k a = runAtomically $ do
+  ak <- tSaveAssignment a
+  link ak k "assignments"
+  return ak
+
+nSaveCourseAssignment :: CourseKey -> Assignment -> IO (Erroneous AssignmentKey)
+nSaveCourseAssignment = saveAndLinkAssignment
+
+nSaveGroupAssignment :: GroupKey  -> Assignment -> IO (Erroneous AssignmentKey)
+nSaveGroupAssignment = saveAndLinkAssignment
+
+isAssignmentDir :: FilePath -> TIO Bool
+isAssignmentDir = isCorrectDirStructure assignmentDirStructure
+
+assignmentsFor :: (a -> FilePath) -> a -> IO (Erroneous [AssignmentKey])
+assignmentsFor dirPath k = runAtomically $ do
+  fp <- (selectValidDirsFrom (joinPath [dirPath k, "assignments"]) isAssignmentDir)
+  return ((AssignmentKey . takeBaseName) <$> fp)
+
+nCourseAssignments :: CourseKey -> IO (Erroneous [AssignmentKey])
+nCourseAssignments = assignmentsFor courseDirPath
+
+nGroupAssignments :: GroupKey -> IO (Erroneous [AssignmentKey])
+nGroupAssignments = assignmentsFor groupDirPath
 
 nCourseKeys :: IO (Erroneous [CourseKey])
 nCourseKeys = runAtomically $
@@ -316,8 +387,6 @@ nFilterCourses f = runAtomically $
   (selectValidDirsFrom courseDataDir isCourseDir) >>=
   (mapM tLoadCourse)             >>=
   (return . filter (uncurry f))
-
-
 
 -- * Tools
 

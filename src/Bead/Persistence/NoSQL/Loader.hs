@@ -10,6 +10,7 @@ import Control.Monad (liftM, filterM)
 
 import Data.Char (ord)
 import Data.Maybe (maybe)
+import Data.Time (UTCTime)
 import System.FilePath (joinPath)
 import System.IO
 import System.IO.Temp (createTempDirectory, openTempFile)
@@ -25,20 +26,20 @@ type DirPath = FilePath
 dataDir = "data"
 userDir = "user"
 courseDir   = "course"
-exerciseDir = "exercise"
+assignmentDir = "assignment"
 groupDir    = "group"
 
-exerciseDataDir = joinPath [dataDir, exerciseDir]
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
 groupDataDir    = joinPath [dataDir, groupDir]
+assignmentDataDir = joinPath [dataDir, assignmentDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
     dataDir
   , userDataDir
   , courseDataDir
-  , exerciseDataDir
+  , assignmentDataDir
   , groupDataDir
   ]
 
@@ -70,23 +71,14 @@ instance DirName Username where
 instance DirName User where
   dirName = dirName . u_username
 
-instance KeyString Course where
-  keyString = ordEncode . str . courseCode
-
 instance KeyString CourseKey where
   keyString (CourseKey k) = k
 
-instance DirName Course where
-  dirName c = joinPath [dataDir, courseDir, keyString c]
-
-instance DirName CourseKey where
-  dirName (CourseKey c) = joinPath [dataDir, courseDir, c]
-
-instance DirName ExerciseKey where
-  dirName (ExerciseKey c) = joinPath [dataDir, exerciseDir, c]
+instance DirName AssignmentKey where
+  dirName (AssignmentKey c) = joinPath [assignmentDataDir, c]
 
 instance DirName GroupKey where
-  dirName (GroupKey g) = joinPath [exerciseDataDir, g]
+  dirName (GroupKey g) = joinPath [assignmentDataDir, g]
 
 -- * Load and save aux functions
 
@@ -190,24 +182,21 @@ instance Save Username where
 instance Save Email where
   save d (Email e) = fileSave d "email" e
 
-instance Save CourseCode where
-  save d (CourseCode s) = fileSave d "course_code" s
-
-instance Save GroupCode where
-  save d (GroupCode g) = fileSave d "group_code" g
-
-instance Save Exercise where
-  save d e = fileSave d "exercise" (exercise e)
+instance Save Assignment where
+  save d e = do
+    fileSave d "description" (assignmentDesc e)
+    fileSave d "testcases"   (assignmentTCs  e)
+    fileSave d "type"        (show . assignmentType $ e)
+    fileSave d "start"       (show . assignmentStart $ e)
+    fileSave d "end"         (show . assignmentEnd $ e)
 
 instance Save Course where
   save d c = do createStructureDirs d courseDirStructure
-                save     d (courseCode c)
                 saveDesc d (courseDesc c)
                 saveName d (courseName c)
 
 instance Save Group where
   save d g = do createStructureDirs d groupDirStructure
-                save     d (groupCode g)
                 saveDesc d (groupDesc g)
                 saveName d (groupName g)
 
@@ -229,32 +218,34 @@ instance Load Username where
 instance Load Email where
   load d = fileLoad d "email" email'
 
-instance Load CourseCode where
-  load d = fileLoad d "course_code" CourseCode
-
-instance Load GroupCode where
-  load d = fileLoad d "group_code" GroupCode
-
-instance Load Exercise where
-  load d = fileLoad d "exercise" Exercise
+instance Load Assignment where
+  load d = do
+    desc <- fileLoad d "description" id
+    tcs  <- fileLoad d "testcases" id
+    t    <- fileLoad d "type"  read
+    s    <- fileLoad d "start" read
+    e    <- fileLoad d "end"   read
+    return $ Assignment {
+        assignmentDesc = desc
+      , assignmentTCs  = tcs
+      , assignmentType = t
+      , assignmentStart = s
+      , assignmentEnd   = e
+      }
 
 instance Load Course where
-  load d = do code <- load     d
-              desc <- loadDesc d
+  load d = do desc <- loadDesc d
               name <- loadName d
               return $ Course {
-                  courseCode = code
-                , courseDesc = desc
+                  courseDesc = desc
                 , courseName = name
                 }
 
 instance Load Group where
-  load d = do code <- load     d
-              desc <- loadDesc d
+  load d = do desc <- loadDesc d
               name <- loadName d
               return $ Group {
-                  groupCode = code
-                , groupDesc = desc
+                  groupDesc = desc
                 , groupName = name
                 }
 
@@ -310,22 +301,22 @@ createStructureDirs p = mapM_ (\x -> createDir (joinPath [p,x])) . directories
 
 userDirStructure = DirStructure {
     files       = ["email", "name", "password", "role", "username"]
-  , directories = []
+  , directories = ["course","group","courseadmin","groupadmin"]
   }
 
-exerciseDirStructure = DirStructure {
-    files       = ["exercise"]
-  , directories = []
+assignmentDirStructure = DirStructure {
+    files       = ["description", "testcases", "type", "start", "end"]
+  , directories = [""]
   }
 
 courseDirStructure = DirStructure {
-    files       = ["course_code", "description", "name"]
-  , directories = ["groups", "exams", "users"]
+    files       = ["description", "name"]
+  , directories = ["groups", "assignments", "users", "admins"]
   }
 
 groupDirStructure = DirStructure {
-    files       = ["group_code", "description", "name"]
-  , directories = ["users", "course"]
+    files       = ["description", "name"]
+  , directories = ["users", "course", "admins", "assignments"]
   }
 
 -- * Encoding

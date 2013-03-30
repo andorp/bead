@@ -6,7 +6,7 @@ module Bead.View.Snap.Content.UserDetails (
 import Bead.View.Snap.Content
 import Bead.Domain.Types (Str(..))
 import Bead.Domain.Entities (Email(..), roles)
-import Bead.Controller.UserStories (loadUser)
+import Bead.Controller.UserStories (loadUser, doesUserExist)
 import Bead.Controller.Pages as P (Page(UserDetails))
 
 import Text.Blaze.Html5 ((!))
@@ -20,8 +20,14 @@ userDetails = getPostContentHandler userDetailPage userDataChange
 userDetailPage :: GETContentHandler
 userDetailPage = withUserStateE $ \s -> do
   username <- getParamE (fieldName usernameField) Username "Username is not found"
-  user     <- runStoryE . loadUser $ username
-  blaze $ withUserFrame s (userDetailForm user) Nothing
+  exist    <- runStoryE . doesUserExist $ username
+  case exist of
+    True -> do
+      user     <- runStoryE . loadUser $ username
+      blaze $ withUserFrame s (userDetailForm user) Nothing
+    
+    False -> blaze $ withUserFrame s (userDoesNotExist username) Nothing
+
 
 userDataChange :: POSTContentHandler
 userDataChange = do
@@ -33,3 +39,8 @@ userDetailForm u = do
   postForm (routeOf P.UserDetails) $ do
     inputPagelet . defaultValue $ u
     submitButton "Save changes"
+
+userDoesNotExist :: Username -> Html
+userDoesNotExist username = do
+  H.p $ do {"User does not exist:"; fromString . str $ username }
+

@@ -21,7 +21,7 @@ import Test.Quick.RolePermissionGen
 
 -- * Unit tests and invariants import from Bead modules
 
-import qualified Bead.View.Snap.RouteOf as R (invariants)
+import qualified Bead.View.Snap.RouteOf as R (invariants, unitTests)
 import qualified Bead.Controller.Pages as P (invariants, unitTests)
 import qualified Bead.Domain.Entities as E (roleInvariants)
 import qualified Bead.Domain.RolePermission as RP (invariants)
@@ -49,6 +49,7 @@ tests = [
   , invariantsGroup "Pages need to have link text" VP.invariants
   , invariantsGroup "Page Session Cookie values" VS.invariants
   , invariantsGroup "Role invariants" E.roleInvariants
+  , unitTestGroup   "RouteOf unit tests" R.unitTests
   , unitTestGroup   "Page unit tests" P.unitTests
   , unitTestGroup   "Template and components" TC.unitTests
   ]

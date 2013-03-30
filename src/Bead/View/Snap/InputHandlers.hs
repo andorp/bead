@@ -1,6 +1,8 @@
 module Bead.View.Snap.InputHandlers where
 
+import Control.Applicative ((<$>))
 import Data.Maybe (maybe, isJust, fromJust)
+import Data.Time (UTCTime(..))
 
 import Bead.Domain.Types (Str(..))
 import Bead.Domain.Entities
@@ -31,18 +33,15 @@ emptyGroup = Nothing
 
 instance InputPagelet Group where
   inputPagelet g = table "create-group" $ do
-    tableLine "Group Code" $ textInput (fieldName groupCodeField) 10 (fmap (str . groupCode) g)
     tableLine "Group Name" $ textInput (fieldName groupNameField) 10 (fmap groupName g)
     tableLine "Group Desc" $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
 
 instance GetValueHandler Group where
   getValue = do
-    codeParam <- getParamE (fieldName groupCodeField) GroupCode "Group code is not found"
     nameParam <- getParamE (fieldName groupNameField) id "Group name is not found"
     descParam <- getParamE (fieldName groupDescField) id "Group description is not found"
     return $ Group {
-        groupCode = codeParam
-      , groupName = nameParam
+        groupName = nameParam
       , groupDesc = descParam
       }
 
@@ -51,12 +50,10 @@ instance GetValueHandler CourseKey where
 
 instance GetValueHandler Course where
   getValue = do
-    codeParam <- getParamE (fieldName courseCodeField) CourseCode "Course code is not found"
     nameParam <- getParamE (fieldName courseNameField) id "Course name is not found"
     descParam <- getParamE (fieldName courseDescField) id "Course description is not found"
     return Course {
-        courseCode = codeParam
-      , courseName = nameParam
+        courseName = nameParam
       , courseDesc = descParam
       }
 
@@ -65,7 +62,6 @@ emptyCourse = Nothing
 
 instance InputPagelet Course where
   inputPagelet c = table "create-course" $ do
-    tableLine "Course Code" $ textInput (fieldName courseCodeField) 10 (fmap (str . courseCode) c)
     tableLine "Course Name" $ textInput (fieldName courseNameField) 10 (fmap courseName c)
     tableLine "Course Desc" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
 
@@ -87,6 +83,14 @@ instance GetValueHandler Role where
         Just r  -> return r
         Nothing -> throwError . strMsg $ "Role was not parseable"
 
+emptyUsername :: Maybe Username
+emptyUsername = Nothing
+
+instance InputPagelet Username where
+  inputPagelet u = textInput (fieldName usernameField) 20 (fmap str u)
+
+instance GetValueHandler Username where
+  getValue = getParamE (fieldName usernameField) Username "Username is not found"
 
 emptyUser :: Maybe User
 emptyUser = Nothing
@@ -94,7 +98,7 @@ emptyUser = Nothing
 instance GetValueHandler User where
   getValue = do
     role     <- getValue
-    username <- getParamE (fieldName usernameField) Username "Username is not found"
+    username <- getValue
     email    <- getParamE (fieldName userEmailField) Email   "Email is not found"
     fname    <- getParamE (fieldName userFamilyNameField) id   "Full name is not found"
     return $ User {
@@ -110,3 +114,43 @@ instance InputPagelet User where
     tableLine "User's email"    $ textInput (fieldName userEmailField)      20 (fmap (str . u_email) u)
     tableLine "User's fullname" $ textInput (fieldName userFamilyNameField) 20 (fmap u_name u)
     when (isJust u) . hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username . fromJust $ u
+
+emptyAssignment :: Maybe Assignment
+emptyAssignment = Nothing
+
+instance GetValueHandler Assignment where
+  getValue = do
+    desc  <- getParamE (fieldName assignmentDescField) id "Assignment Description is not found"
+    tcs   <- getParamE (fieldName assignmentTCsField) id "Assignment TCs is not found"
+    tp    <- getParamE (fieldName assignmentTypeField) read "Assignment Type is not found"
+    start <- getParamE (fieldName assignmentStartField) read "Assignment Start is not found"
+    end   <- getParamE (fieldName assignmentEndField) read "Assignment End is not found"
+    return $ Assignment {
+        assignmentDesc = desc
+      , assignmentTCs  = tcs
+      , assignmentType = tp
+      , assignmentStart = start
+      , assignmentEnd   = end
+      }
+
+instance InputPagelet AssignmentType where
+  inputPagelet a = selection (fieldName assignmentTypeField) $ mapM_ (assignmentOptions a) assignmentTypes
+    where
+      assignmentOptions Nothing   a = option (show a) (show a) False
+      assignmentOptions (Just q') a = option (show a) (show a) (q' == a)
+
+-- * Combined input fields
+
+utcTimeInput :: String -> Maybe UTCTime -> Html
+utcTimeInput n v = textInput n 10 (show <$> v)
+
+utcTimeParam :: String -> HandlerError App App (Maybe UTCTime)
+utcTimeParam n = getParamE n readMaybe "UTC Time field was not found"
+
+-- * Tools
+
+readMaybe :: (Read a) => String -> Maybe a
+readMaybe s =
+  case reads s of
+    [(x,"")] -> Just x
+    _        -> Nothing

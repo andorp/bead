@@ -20,6 +20,7 @@ import Bead.View.Snap.Content.All
 
 -- Haskell imports
 
+import Data.String
 import Data.ByteString.Char8 hiding (index)
 import qualified Data.Text as T
 import Control.Monad (join)
@@ -42,7 +43,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 -- * Login and Logout handlers
 
 login :: Maybe T.Text -> Handler App (AuthManager App) ()
-login authError = blaze $ loginPage
+login authError = blaze $ loginPage authError
 
 -- TODO: Handle multiple login attempts correctly
 -- One user should just log in at once.
@@ -51,7 +52,7 @@ loginSubmit = do
   withTop auth $ loginUser
     (fieldName loginUsername)
     (fieldName loginPassword)
-    Nothing (\_ -> login err) $ do
+    Nothing (\auth -> login (Just . T.pack . fromString . show $ auth)) $ do
       um <- currentUser
       case um of
         Nothing -> do
@@ -127,15 +128,12 @@ userForm act submitText = do
         H.td $ return ()
         H.td $ H.input ! A.type_ "submit" ! A.id (fieldName loginSubmitBtn) ! A.value submitText
 
-loginError :: Html
-loginError = return ()
-
-loginPage :: Html
-loginPage = withTitleAndHead content
+loginPage :: Maybe T.Text -> Html
+loginPage err = withTitleAndHead content
   where
     content = do
       H.h1 $ "Login"
-      H.p $ loginError
+      maybe (return ()) (H.p . fromString. T.unpack) err
       userForm "/login" "Login"
       H.p $ do
         "Don't have a login yet? "

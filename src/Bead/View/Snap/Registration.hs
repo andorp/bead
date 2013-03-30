@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings  #-}
 module Bead.View.Snap.Registration (
     registration
+  , createAdminUser
   ) where
 
 -- Bead imports
@@ -12,11 +13,13 @@ import qualified Bead.Controller.UserStories as S
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
+import qualified Bead.Persistence.Persist as P (Persist(..)) 
 
 import Bead.View.Snap.Content hiding (BlazeTemplate, index, template, empty, method)
 
 -- Haskell imports
 
+import Data.String (fromString)
 import qualified Data.Text as T
 import qualified Data.List as L
 
@@ -24,11 +27,33 @@ import qualified Data.List as L
 
 import Snap hiding (get)
 import Snap.Snaplet.Auth as A
+import Snap.Snaplet.Auth.Backends.JsonFile (mkJsonAuthMgr)
 
 import Text.Blaze (textTag)
 import Text.Blaze.Html5 hiding (base, map, head, menu)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A hiding (title, rows, accept)
+
+createAdminUser :: P.Persist -> FilePath -> String -> String -> IO ()
+createAdminUser persist usersdb name password = do
+  mgr <- mkJsonAuthMgr usersdb
+  pwd <- encryptPassword . ClearText . fromString $ password
+  let authUser = defAuthUser {
+      userLogin    = fromString name
+    , userPassword = Just pwd
+    }
+  save mgr authUser
+  let usr = User {
+      u_role = Admin
+    , u_username = Username name
+    , u_email = Email ""
+    , u_name = ""
+    }
+  createdUser <- lookupByLogin mgr (T.pack name)
+  case createdUser of
+    Nothing -> undefined
+    Just u' -> P.saveUser persist usr (passwordFromAuthUser u')
+  return ()
 
 -- * User registration handler
 

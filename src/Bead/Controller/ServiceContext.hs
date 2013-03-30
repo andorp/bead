@@ -27,6 +27,20 @@ data UserState
   , role :: Role
   } deriving (Show)
 
+instance InRole UserState where
+  isAdmin       UserNotLoggedIn = False
+  isAdmin       s = isAdmin . role $ s
+
+  isCourseAdmin UserNotLoggedIn = False
+  isCourseAdmin s = isCourseAdmin . role $ s
+
+  isProfessor   UserNotLoggedIn = False
+  isProfessor   s = isProfessor . role $ s
+
+  isStudent     UserNotLoggedIn = False
+  isStudent     s = isStudent . role $ s
+
+
 -- | The actual page that corresponds to the user's state
 actualPage :: UserState -> Page
 actualPage UserNotLoggedIn = Login

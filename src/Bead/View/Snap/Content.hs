@@ -4,6 +4,7 @@ module Bead.View.Snap.Content (
   , emptyContent
   , getContentHandler
   , getPostContentHandler
+  , postContentHandler
   , mkContent
   , blaze
   , getParamE
@@ -36,11 +37,11 @@ module Bead.View.Snap.Content (
 
 import Snap hiding (empty, get, route)
 import Snap.Blaze (blaze)
-import Data.ByteString.Char8 hiding (span, empty, map, group)
+import Data.ByteString.Char8 hiding (span, empty, map, group, filter)
 
 import Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
-import Bead.Domain.Entities hiding (ExamType(..))
+import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.View.UserActions
 import Bead.View.Snap.Application (App)
@@ -74,6 +75,7 @@ emptyContent = Content {
   }
 
 getContentHandler     g   = emptyContent { get = Just g }
+postContentHandler    p   = emptyContent { post = Just p }
 getPostContentHandler g p = emptyContent { get = Just g, post = Just p }
 
 mkContent

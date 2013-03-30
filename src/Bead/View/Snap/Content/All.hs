@@ -4,42 +4,40 @@ module Bead.View.Snap.Content.All (
   ) where
 
 import Bead.Controller.Pages as P hiding (invariants)
-import Bead.View.Snap.Content hiding (exercise)
+import Bead.View.Snap.Content
 import Bead.View.Snap.Content.Home (home)
-import Bead.View.Snap.Content.Admin (admin)
-import Bead.View.Snap.Content.CreateExercise (createExercise)
-import Bead.View.Snap.Content.CreateGroup (createGroup)
+import Bead.View.Snap.Content.Profile (profile)
+import Bead.View.Snap.Content.CourseAdmin (courseAdmin, createGroup, assignProfessor)
+import Bead.View.Snap.Content.Administration (administration, assignCourseAdmin)
+import Bead.View.Snap.Content.EvaulationTable (evaulationTable)
+import Bead.View.Snap.Content.Evaulation (evaulation)
+import Bead.View.Snap.Content.NewAssignment (newCourseAssignment, newGroupAssignment)
+import Bead.View.Snap.Content.Submission (submission)
+import Bead.View.Snap.Content.CourseRegistration (courseRegistration)
 import Bead.View.Snap.Content.CreateCourse (createCourse)
-import Bead.View.Snap.Content.Exercise (exercise)
-import Bead.View.Snap.Content.Courses (courses)
-import Bead.View.Snap.Content.Course (course)
-import Bead.View.Snap.Content.Group (group)
-import Bead.View.Snap.Content.Users (users)
 import Bead.View.Snap.Content.UserDetails (userDetails)
 
 import Bead.Invariants (Invariants(..))
 
 content :: Page -> Content
-content P.Login          = emptyContent
-content P.Logout         = emptyContent
-content P.Home           = home
-content P.Profile        = emptyContent
-content P.Course         = course
-content P.Group          = group
-content P.Groups         = emptyContent
-content P.Exercise       = exercise
-content P.ClosedExam     = emptyContent
-content P.Error          = emptyContent
-content P.SubmitExam     = emptyContent
-content P.Evaulation     = emptyContent
-content P.Training       = emptyContent
-content P.Admin          = admin
-content P.Users          = users
-content P.UserDetails    = userDetails
-content P.CreateExercise = createExercise
-content P.CreateCourse   = createCourse
-content P.CreateGroup    = createGroup
-content P.Courses        = courses
+content P.Login  = emptyContent
+content P.Logout = emptyContent
+content P.Home   = home
+content P.Error  = emptyContent
+content P.Profile = profile
+content P.CourseAdmin = courseAdmin
+content P.Administration = administration
+content P.EvaulationTable = evaulationTable
+content P.Evaulation      = evaulation
+content P.Submission      = submission
+content P.CourseRegistration = courseRegistration
+content P.CreateCourse = createCourse
+content P.UserDetails = userDetails
+content P.AssignCourseAdmin = assignCourseAdmin
+content P.CreateGroup = createGroup
+content P.AssignProfessor = assignProfessor
+content P.NewGroupAssignment   = newGroupAssignment
+content P.NewCourseAssignment   = newCourseAssignment
 
 invariants = Invariants [
     ("Content handler must be defined ", \p -> getOrPost p)

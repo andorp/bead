@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import System.Environment (getArgs)
+
 import Bead.Controller.ServiceContext as S
 import Bead.View.Snap.Application
 import Bead.View.Snap.AppInit
@@ -20,8 +22,6 @@ import Control.Monad.Trans
 import Control.Lens.TH
 
 
-import qualified Data.IORef as Ref
-
 c :: IO ServiceContext
 c = do
   userContainer <- ioUserContainer
@@ -34,4 +34,8 @@ c = do
 main :: IO ()
 main = do
   context <- c
-  serveSnaplet defaultConfig (appInit context)
+  args <- getArgs
+  let newAdminUser = case args of
+                       [usr,pwd] -> Just (usr,pwd)
+                       _         -> Nothing
+  serveSnaplet defaultConfig (appInit newAdminUser context)
