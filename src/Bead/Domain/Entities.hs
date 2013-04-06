@@ -17,15 +17,17 @@ assignmentTypes = [Normal, Urn]
 
 -- | Assignment for the student
 data Assignment = Assignment {
-    assignmentDesc :: String
+    assignmentName :: String
+  , assignmentDesc :: String
   , assignmentTCs  :: String
   , assignmentType :: AssignmentType
   , assignmentStart :: UTCTime
   , assignmentEnd   :: UTCTime
+  -- TODO: Number of maximum tries
   } deriving (Eq)
 
 -- | Solution for one exercise
-data Solution = Solution {
+data Submission = Submission {
     solution         :: String
   , solutionPostDate :: UTCTime
   } deriving (Eq, Show)

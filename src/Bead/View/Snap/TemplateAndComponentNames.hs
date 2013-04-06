@@ -142,11 +142,13 @@ instance SnapFieldName P.Page where
 
 data AssignmentField
   = AssignmentDescField { aFieldName :: String }
+  | AssignmentNameField { aFieldName :: String }
   | AssignmentTCsField { aFieldName :: String }
   | AssignmentTypeField { aFieldName :: String }
   | AssignmentStartField { aFieldName :: String }
   | AssignmentEndField { aFieldName :: String }
 
+assignmentNameField  = AssignmentNameField  "asg-name"
 assignmentDescField  = AssignmentDescField  "asg-desc"
 assignmentTCsField   = AssignmentTCsField   "asg-tcs"
 assignmentTypeField  = AssignmentTypeField  "asg-type"

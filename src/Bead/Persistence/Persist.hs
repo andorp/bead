@@ -1,49 +1,72 @@
-module Bead.Persistence.Persist where
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+module Bead.Persistence.Persist (
+    Persist(..)
+  , runPersist
+  ) where
 
 import Bead.Domain.Types (Erroneous)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 
+import Control.Monad (liftM)
+import Control.Exception (IOException)
+import Control.Monad.Transaction.TIO
+
 data Persist = Persist {
   -- User Persistence
-    saveUser      :: User -> Password -> IO (Erroneous ())
-  , canUserLogin  :: Username -> Password -> IO (Erroneous Bool)
-  , personalInfo  :: Username -> Password -> IO (Erroneous (Role, String))
-  , updatePwd     :: Username -> Password -> Password -> IO (Erroneous ())
-  , filterUsers   :: (User -> Bool) -> IO (Erroneous [User])
-  , loadUser      :: Username -> IO (Erroneous User)
-  , updateUser    :: User -> IO (Erroneous ())
-  , doesUserExist :: Username -> IO (Erroneous Bool)
-  , administratedCourses :: Username -> IO (Erroneous [(CourseKey, Course)])
-  , administratedGroups  :: Username -> IO (Erroneous [(GroupKey, Group)])
+    saveUser      :: User -> Password -> TIO ()
+  , canUserLogin  :: Username -> Password -> TIO Bool
+  , personalInfo  :: Username -> Password -> TIO (Role, String)
+  , updatePwd     :: Username -> Password -> Password -> TIO ()
+  , filterUsers   :: (User -> Bool) -> TIO [User]
+  , loadUser      :: Username -> TIO User
+  , updateUser    :: User -> TIO ()
+  , doesUserExist :: Username -> TIO Bool
+  , administratedCourses :: Username -> TIO [(CourseKey, Course)]
+  , administratedGroups  :: Username -> TIO [(GroupKey, Group)]
 
   -- Course Persistence
-  , saveCourse  :: Course -> IO (Erroneous CourseKey)
-  , courseKeys :: IO (Erroneous [CourseKey])
-  , filterCourses :: (CourseKey -> Course -> Bool) -> IO (Erroneous [(CourseKey, Course)])
-  , loadCourse :: CourseKey -> IO (Erroneous Course)
-  , groupKeysOfCourse :: CourseKey -> IO (Erroneous [GroupKey])
-  , isUserInCourse :: Username -> CourseKey -> IO (Erroneous Bool)
-  , createCourseAdmin :: Username -> CourseKey -> IO (Erroneous ())
+  , saveCourse        :: Course -> TIO CourseKey
+  , courseKeys        :: TIO [CourseKey]
+  , filterCourses     :: (CourseKey -> Course -> Bool) -> TIO [(CourseKey, Course)]
+  , loadCourse        :: CourseKey -> TIO Course
+  , groupKeysOfCourse :: CourseKey -> TIO [GroupKey]
+  , isUserInCourse    :: Username -> CourseKey -> TIO Bool
+  , userCourses       :: Username -> TIO [CourseKey]
+  , createCourseAdmin :: Username -> CourseKey -> TIO ()
   
   -- Group Persistence
-  , saveGroup   :: CourseKey -> Group -> IO (Erroneous GroupKey)
-  , loadGroup   :: GroupKey -> IO (Erroneous Group)
-  , isUserInGroup :: Username -> GroupKey -> IO (Erroneous Bool)
-  , subscribe :: Username -> CourseKey -> GroupKey -> IO (Erroneous ())
-  , createGroupProfessor :: Username -> GroupKey -> IO (Erroneous ())
+  , saveGroup     :: CourseKey -> Group -> TIO GroupKey
+  , loadGroup     :: GroupKey -> TIO Group
+  , isUserInGroup :: Username -> GroupKey -> TIO Bool
+  , userGroups    :: Username -> TIO [GroupKey]
+  , subscribe     :: Username -> CourseKey -> GroupKey -> TIO ()
+  , createGroupProfessor :: Username -> GroupKey -> TIO ()
 
   -- Assignment Persistence
-  , filterExercises :: (AssignmentKey -> Assignment -> Bool) -> IO (Erroneous [(AssignmentKey, Assignment)])
-  , exerciseKeys :: IO (Erroneous [AssignmentKey])
-  , saveExercise :: Assignment -> IO (Erroneous AssignmentKey)
-  , loadExercise :: AssignmentKey -> IO (Erroneous Assignment)
-  , saveCourseAssignment :: CourseKey -> Assignment -> IO (Erroneous AssignmentKey)
-  , saveGroupAssignment  :: GroupKey  -> Assignment -> IO (Erroneous AssignmentKey)
-  , courseAssignments :: CourseKey -> IO (Erroneous [AssignmentKey])
-  , groupAssignments :: GroupKey -> IO (Erroneous [AssignmentKey])
+  , filterAssignment  :: (AssignmentKey -> Assignment -> Bool) -> TIO [(AssignmentKey, Assignment)]
+  , assignmentKeys    :: TIO [AssignmentKey]
+  , saveAssignment    :: Assignment -> TIO AssignmentKey
+  , loadAssignment    :: AssignmentKey -> TIO Assignment
+  , courseAssignments :: CourseKey -> TIO [AssignmentKey]
+  , groupAssignments  :: GroupKey -> TIO [AssignmentKey]
+  , saveCourseAssignment :: CourseKey -> Assignment -> TIO AssignmentKey
+  , saveGroupAssignment  :: GroupKey  -> Assignment -> TIO AssignmentKey
+--  , courseOfAssignment   :: AssignmentKey -> TIO (Maybe CourseKey)
+--  , groupOfAssignment    :: AssignmentKey -> TIO (Maybe GroupKey)
+
+  -- Submission
+  , saveSubmission :: AssignmentKey -> Username -> Submission -> TIO SubmissionKey
+  , loadSubmission :: SubmissionKey -> TIO Submission
   
   -- Persistence initialization
   , isPersistenceSetUp :: IO Bool
   , initPersistence    :: IO ()
   }
+
+reason :: Either IOException a -> (Erroneous a)
+reason (Left e)  = Left . show $ e
+reason (Right x) = Right x
+
+runPersist :: TIO a -> IO (Erroneous a)
+runPersist = liftM reason . atomically

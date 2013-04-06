@@ -17,7 +17,7 @@ profile = getContentHandler profilePage
 
 profilePage :: GETContentHandler
 profilePage = withUserStateE $ \s -> do
-  blaze $ withUserFrame s (profileContent) Nothing
+  blaze $ withUserFrame s (profileContent)
 
 profileContent :: Html
 profileContent = do

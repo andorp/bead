@@ -17,7 +17,7 @@ submission = getContentHandler submissionPage
 
 submissionPage :: GETContentHandler
 submissionPage = withUserStateE $ \s -> do
-  blaze $ withUserFrame s (submissionContent) Nothing
+  blaze $ withUserFrame s (submissionContent)
 
 submissionContent :: Html
 submissionContent = do

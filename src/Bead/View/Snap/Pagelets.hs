@@ -16,11 +16,20 @@ import Bead.Domain.Relationships
 import qualified Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.View.Snap.RouteOf
+import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.TemplateAndComponentNames
 
 import Bead.Invariants (Invariants(..))
 
 -- Definitions --
+
+newtype I18NHtml = I18NHtml { un18n :: I18N -> Html }
+
+internationalization :: I18NHtml -> I18N -> Html
+internationalization (I18NHtml h) i = h i
+
+i18nHtml :: (I18N -> Html) -> I18NHtml
+i18nHtml h = I18NHtml h
 
 class BlazeTemplate b where
   template :: b -> Html
@@ -31,8 +40,8 @@ withTitleAndHead content = H.docTypeHtml $ do
   H.body $ do
     H.div ! A.id "content" $ content
 
-withUserFrame :: UserState -> Html -> Maybe Html -> Html
-withUserFrame s content loggedInContent = H.docTypeHtml $ do
+withUserFrame :: UserState -> Html -> Html
+withUserFrame s content = H.docTypeHtml $ do
   H.head $ H.title "Snap web server"
   H.body $ do
     H.div ! A.id "header" $ pageHeader s
@@ -40,11 +49,9 @@ withUserFrame s content loggedInContent = H.docTypeHtml $ do
     H.div ! A.id "content" $ do
       "Content"
       content
-    case loggedInContent of
-      Nothing -> return ()
-      Just inner  -> H.div $ do
-        H.div ! A.id "menu1" $ do
-          inner
+
+withI18NUserFrame :: UserState -> I18NHtml -> I18N -> Html
+withI18NUserFrame s h i = withUserFrame s (internationalization h i)
 
 -- * Basic building blocks
 
@@ -56,6 +63,9 @@ hasNoDefaultValue = Nothing
 
 withDefaultValue Nothing  h = h
 withDefaultValue (Just v) h = h ! A.value (fromString v)
+
+html :: I18N -> String -> Html
+html i18n = fromString . i18n
 
 infix |>
 
@@ -111,7 +121,7 @@ empty :: Html
 empty = return ()
 
 errorPage :: Html
-errorPage = withUserFrame undefined "Error page is not defined" Nothing
+errorPage = withUserFrame undefined "Error page is not defined"
 
 linkText :: (IsString s) => P.Page -> s
 linkText P.Login      = fromString "Login"

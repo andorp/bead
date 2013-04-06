@@ -27,7 +27,7 @@ errorLogger = Logger {
 context :: IO ServiceContext
 context = do
   container <- ioUserContainer
-  return $ serviceContext noSqlDirPersist container errorLogger
+  serviceContext noSqlDirPersist container errorLogger
 
 adminUserState = UserState {
     user = Username "admin"
@@ -73,7 +73,8 @@ tests = testGroup "User Stories" [
   , register
   , loginAndLogout
   , courseTest
-  , exerciseTest
+  , assignmentTest
+  , courseAndGroupAssignmentTest
   , cleanUpPersist
   ]
 
@@ -118,17 +119,41 @@ courseTest = testCase "Create Course" $ do
   assertBool "Loaded course differs from the created one" (r' == r)
   return ()
 
-exerciseTest = testCase "Create exercise list its keys and load it" $ do
+assignmentTest = testCase "Create exercise list its keys and load it" $ do
   c <- context
   str <- getCurrentTime
   end <- getCurrentTime
-  let e = E.Assignment "exercise" "test" Normal str end
-  (k,state) <- runStory c adminUserState $ createExercise e
+  let e = E.Assignment "name" "exercise" "test" Normal str end
+  (k,state) <- runStory c adminUserState $ createAssignment e
   assertUserState state adminUser
-  (ks,state) <- runStory c adminUserState $ selectExercises (\_ _ -> True)
+  (ks,state) <- runStory c adminUserState $ selectAssignments (\_ _ -> True)
   assertUserState state adminUser
   assertBool "Created exercise key is not found" (elem k $ map fst ks)
-  (e',state) <- runStory c adminUserState $ U.loadExercise k
+  (e',state) <- runStory c adminUserState $ U.loadAssignments k
   assertUserState state adminUser
   assertBool "Loaded exercise differs from the created one" (e == e')
 
+courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
+  c <- context
+  str <- getCurrentTime
+  end <- getCurrentTime
+  let ca = E.Assignment "cname" "cexercise" "ctest" Normal str end
+      ga = E.Assignment "gname" "gexercise" "gtest" Normal str end
+      c1  = E.Course "FP" "FP-DESC"
+      c2  = E.Course "MA" "MA-DESC"
+      g1  = E.Group  "G1" "G1-DESC"
+      g2  = E.Group  "G2" "G2-DESC"
+  runStory c adminUserState $ createUser adminUser "password"
+  (_,l) <- runStory c UserNotLoggedIn $ login (E.Username "admin") "password"
+  ((a1,a2,as),_) <- runStory c l $ do
+    ck1 <- createCourse c1
+    ck2 <- createCourse c2
+    gk1 <- createGroup ck1 g1
+    gk2 <- createGroup ck2 g2
+    a1 <- createGroupAssignment gk1 ga
+    a2 <- createCourseAssignment ck2 ca
+    subscribeToGroup ck1 gk1
+    subscribeToGroup ck2 gk2
+    as <- userAssignments
+    return (a1,a2,as)
+  assertBool "Assignment does not found in the assignment list" ([a1,a2] == as || [a2,a1] == as)

@@ -12,6 +12,7 @@ import Bead.Controller.Logging as L
 import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.UserStories as S
 import Bead.View.Snap.Application
+import Bead.View.Snap.Dictionary (Language(..))
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
 
@@ -81,6 +82,7 @@ loginSubmit = do
     initSessionValues page username = do
       withTop sessionManager $ do
         setSessionVersion
+        setLanguageInSession (Language "en")
         setUsernameInSession username
         setActPageInSession  page
 

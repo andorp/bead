@@ -1,8 +1,10 @@
 module Bead.Persistence.NoSQL.Loader where
 
-import Bead.Domain.Types
+import Bead.Domain.Types hiding (FileName(..), fileName)
+import qualified Bead.Domain.Types as T (FileName(..), fileName)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
+import Bead.Invariants (UnitTests(..), InvariantsM2(..))
 import Control.Monad.Transaction.TIO
 
 import Control.DeepSeq (deepseq)
@@ -11,6 +13,7 @@ import Control.Monad (liftM, filterM)
 import Data.Char (ord)
 import Data.Maybe (maybe)
 import Data.Time (UTCTime)
+import Data.List (nub)
 import System.FilePath (joinPath)
 import System.IO
 import System.IO.Temp (createTempDirectory, openTempFile)
@@ -28,11 +31,13 @@ userDir = "user"
 courseDir   = "course"
 assignmentDir = "assignment"
 groupDir    = "group"
+submissionDir = "submission"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
 groupDataDir    = joinPath [dataDir, groupDir]
 assignmentDataDir = joinPath [dataDir, assignmentDir]
+submissionDataDir = joinPath [dataDir, submissionDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -41,6 +46,7 @@ persistenceDirs = [
   , courseDataDir
   , assignmentDataDir
   , groupDataDir
+  , submissionDataDir
   ]
 
 class DirName d where
@@ -184,11 +190,19 @@ instance Save Email where
 
 instance Save Assignment where
   save d e = do
+    createStructureDirs d assignmentDirStructure
+    saveName d (assignmentName e)
     fileSave d "description" (assignmentDesc e)
     fileSave d "testcases"   (assignmentTCs  e)
     fileSave d "type"        (show . assignmentType $ e)
     fileSave d "start"       (show . assignmentStart $ e)
     fileSave d "end"         (show . assignmentEnd $ e)
+
+instance Save Submission where
+  save d s = do
+    createStructureDirs d submissionDirStructure
+    fileSave d "solution" (solution s)
+    fileSave d "date"     (show . solutionPostDate $ s)
 
 instance Save Course where
   save d c = do createStructureDirs d courseDirStructure
@@ -220,17 +234,28 @@ instance Load Email where
 
 instance Load Assignment where
   load d = do
+    name <- loadName d
     desc <- fileLoad d "description" id
     tcs  <- fileLoad d "testcases" id
     t    <- fileLoad d "type"  read
     s    <- fileLoad d "start" read
     e    <- fileLoad d "end"   read
     return $ Assignment {
-        assignmentDesc = desc
+        assignmentName = name
+      , assignmentDesc = desc
       , assignmentTCs  = tcs
       , assignmentType = t
       , assignmentStart = s
       , assignmentEnd   = e
+      }
+
+instance Load Submission where
+  load d = do
+    s <- fileLoad d "solution" id
+    p <- fileLoad d "date" read
+    return $ Submission {
+        solution = s
+      , solutionPostDate = p
       }
 
 instance Load Course where
@@ -301,12 +326,17 @@ createStructureDirs p = mapM_ (\x -> createDir (joinPath [p,x])) . directories
 
 userDirStructure = DirStructure {
     files       = ["email", "name", "password", "role", "username"]
-  , directories = ["course","group","courseadmin","groupadmin"]
+  , directories = ["course", "group" ,"courseadmin" ,"groupadmin", "submissions"]
   }
 
 assignmentDirStructure = DirStructure {
-    files       = ["description", "testcases", "type", "start", "end"]
-  , directories = [""]
+    files       = ["name", "description", "testcases", "type", "start", "end"]
+  , directories = ["group", "course"]
+  }
+
+submissionDirStructure = DirStructure {
+    files = ["solution", "date"]
+  , directories = ["exercise", "user"]
   }
 
 courseDirStructure = DirStructure {
@@ -336,4 +366,50 @@ loadDesc d = loadString d "description"
 
 savePwd d = saveString d "password"
 loadPwd d = loadString d "password"
+
+-- * Invariants
+
+isValidDirStructure :: DirStructure -> Bool
+isValidDirStructure s =
+  let names = join [files s, directories s]
+  in and $ join [
+         (map (not . null) names)
+       , [(length (nub names) == length names)]
+       ]
+
+dirStructures = [
+    submissionDirStructure
+  , courseDirStructure
+  , groupDirStructure
+  , userDirStructure
+  , assignmentDirStructure
+  ]
+
+unitTests = UnitTests [
+    ("Dir structures must has different and not empty names", and . map isValidDirStructure $ dirStructures)
+  ]
+
+invariants :: (Eq a, Load a, Save a) => InvariantsM2 IO T.FileName a
+invariants = InvariantsM2 [
+    ("Load and save must be transparent", \f x -> (runBoolTransaction (loadAndSave f x)))
+  ] where
+      runBoolTransaction :: TIO Bool -> IO Bool
+      runBoolTransaction t = do
+        b <- atomically t
+        return $ case b of
+          Left _   -> False
+          Right b' -> b'
+
+      loadAndSave :: (Eq a, Load a, Save a) => T.FileName -> a -> TIO Bool
+      loadAndSave d x = do
+        let d' = T.fileName d
+        save d' x
+        y <- load d'
+        hasNoRollback $ removeDirectory d'
+        return (x==y)
+
+{- TODO:
+  * All save instances must save the directory structure correctly
+  * All save and load instances must be identical relation
+-}
 

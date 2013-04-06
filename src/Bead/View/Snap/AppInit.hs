@@ -14,15 +14,16 @@ import Bead.View.Snap.TemplateAndComponentNames
 import Bead.Controller.ServiceContext as S
 
 import Bead.View.Snap.Application as A
+import Bead.View.Snap.Dictionary (Dictionaries)
 import Bead.View.Snap.PageHandlers (routes)
 import Bead.View.Snap.Registration (createAdminUser)
 
-appInit :: Maybe (String, String) -> ServiceContext -> SnapletInit App App
-appInit user s = makeSnaplet "bead" description Nothing $ do
+appInit :: Maybe (String, String) -> ServiceContext -> Dictionaries -> SnapletInit App App
+appInit user s d = makeSnaplet "bead" description Nothing $ do
 
   case user of
     Nothing        -> return ()
-    Just (usr,pwd) -> liftIO $ createAdminUser (S.persist s) "users.json" usr pwd
+    Just (usr,pwd) -> liftIO $ S.scRunPersist s $ \p -> createAdminUser p "users.json" usr pwd
 
   sm <- nestSnaplet "session" sessionManager $ initCookieSessionManager
           (joinPath ["config","site_cookie"]) "session" (Just 3600)
@@ -30,8 +31,10 @@ appInit user s = makeSnaplet "bead" description Nothing $ do
           initJsonFileAuthManager defAuthSettings sessionManager "users.json"
   ss <- nestSnaplet "context" A.serviceContext $ contextSnaplet s
 
+  ds <- nestSnaplet "dictionary" dictionaryContext $ dictionarySnaplet d
+
   addRoutes routes
 
-  return $ App sm as ss
+  return $ App sm as ss ds
   where
     description = "The BEAD website"

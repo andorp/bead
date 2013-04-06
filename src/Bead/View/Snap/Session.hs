@@ -6,13 +6,14 @@ module Bead.View.Snap.Session where
 import Bead.Domain.Entities as E
 import qualified Bead.Controller.Pages as P
 import Bead.View.Snap.Application (App)
+import Bead.View.Snap.Dictionary (Language(..))
 
-import Bead.Invariants (Invariants(..))
+import Bead.Invariants (Invariants(..), UnitTests(..))
 
 -- Haskell imports
 
 import Control.Monad (join)
-import Data.ByteString.Char8 hiding (index)
+import Data.ByteString.Char8 hiding (index, length)
 import qualified Data.Text as T
 import qualified Data.List as L
 
@@ -90,6 +91,17 @@ instance SessionRestore E.Username where
     Nothing -> Nothing
     Just v -> Just $ E.Username $ T.unpack v
 
+-- * Session Key Values for Language
+
+languageSessionKey :: T.Text
+languageSessionKey = "Language"
+
+instance SessionStore Language where
+  sessionStore (Language l) = [(languageSessionKey, T.pack l)]
+
+instance SessionRestore Language where
+  restoreFromSession kv = (Language . T.unpack) <$> (L.lookup languageSessionKey kv)
+
 -- * Session handlers
 
 sessionVersionKey :: T.Text
@@ -134,6 +146,12 @@ actPageFromSession = fromSession pageSessionKey
 setActPageInSession :: P.Page -> Handler App SessionManager ()
 setActPageInSession = setInSessionKeyValues . sessionStore
 
+languageFromSession :: Handler App SessionManager (Maybe Language)
+languageFromSession = fromSession languageSessionKey
+
+setLanguageInSession :: Language -> Handler App SessionManager ()
+setLanguageInSession = setInSessionKeyValues . sessionStore
+
 -- * Username and UserState correspondence
 
 usernameFromAuthUser :: AuthUser -> Username
@@ -173,4 +191,16 @@ invariants = Invariants [
         case (restoreFromSession (sessionStore p)) of
           Nothing -> False
           Just p' -> p == p')
+  ]
+
+sessionKeys = [
+    pageSessionKey
+  , usernameSessionKey
+  , languageSessionKey
+  , sessionVersionKey
+  ]
+
+unitTests :: UnitTests
+unitTests = UnitTests [
+    ("Each session key must be different", (length (L.nub sessionKeys) == (length sessionKeys)))
   ]

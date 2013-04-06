@@ -17,7 +17,7 @@ evaulation = getContentHandler evaulationPage
 
 evaulationPage :: GETContentHandler
 evaulationPage = withUserStateE $ \s -> do
-  blaze $ withUserFrame s (evaulationContent) Nothing
+  blaze $ withUserFrame s (evaulationContent)
 
 evaulationContent :: Html
 evaulationContent = do

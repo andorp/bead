@@ -12,11 +12,14 @@ import Bead.Domain.Types (Erroneous)
 import Bead.Domain.Entities
 import Bead.Persistence.Persist
 import Bead.Persistence.NoSQLDir
+import Bead.Persistence.NoSQL.Loader
+import Control.Monad.Transaction.TIO
 
 -- Utils
 
 import Data.Time.Clock
-import System.Directory (removeDirectoryRecursive)
+import System.Directory
+import Control.Monad (liftM)
 
 tests = testGroup "Persistence tests" [
     test_initialize_persistence
@@ -40,16 +43,29 @@ test_initialize_persistence = testCase "Initialize NoSQLDir persistence layer" $
 test_create_exercise = testCase "Save an exercise" $ do
   str <- getCurrentTime
   end <- getCurrentTime
-  e <- saveExercise persist (Assignment "This is an exercise" "This is the test" Normal str end)
-  case e of
-    Left e -> error e
-    Right k -> return ()
+  let assignment = Assignment "Title" "This is an exercise" "This is the test" Normal str end
+  ek <- liftE $ saveAssignment persist assignment
+  let uname = Username "student"
+      user = User {
+        u_role     = Student
+      , u_username = uname
+      , u_email    = Email "student@gmail.com"
+      , u_name     = "Student"
+      }
+      password = "password"
+  liftE $ saveUser persist user password
+  let s = Submission {
+        solution = "Solution"
+      , solutionPostDate = end
+      }
+  sk <- liftE $ saveSubmission persist ek uname s
+  return ()
 
 test_create_load_exercise = testCase "Create and load exercise" $ do
   str <- getCurrentTime
   end <- getCurrentTime
-  k <- liftE $ saveExercise persist (Assignment "This is an exercise" "This is the test" Normal str end)
-  ks <- liftE $ filterExercises persist (\_ _ -> True)
+  k <- liftE $ saveAssignment persist (Assignment "Title" "This is an exercise" "This is the test" Normal str end)
+  ks <- liftE $ filterAssignment persist (\_ _ -> True)
   assertBool "Readed list of exercises was empty" (length ks > 0)
   assertBool "Written key was not in the list" (elem k (map fst ks))
 
@@ -87,6 +103,10 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   gks <- liftE $ groupKeysOfCourse persist ck
   assertBool "Registered group was not found in the group list" (elem gk gks)
   liftE $ subscribe persist username ck gk
+  rCks <- liftE $ userCourses persist username
+  assertBool "Course does not found in user's courses" (rCks == [ck])
+  rGks <- liftE $ userGroups persist username
+  assertBool "Group does not found in user's groups" (rGks == [gk])
   isInGroup <- liftE $ isUserInGroup persist username gk
   assertBool "Registered user is not found" isInGroup
   isInCourse <- liftE $ isUserInCourse persist username ck
@@ -98,6 +118,17 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   liftE $ createGroupProfessor persist admin gk
   gs <- liftE $ administratedGroups persist admin
   assertBool "Group is not found in administrated groups" (elem gk (map fst gs))
+  str <- getCurrentTime
+  end <- getCurrentTime
+  let gAssignment = Assignment "GroupAssignment" "Assignment" "Test" Normal str end
+      cAssignment = Assignment "CourseAssignment" "Assignment" "Test" Urn str end
+  cak <- liftE $ saveCourseAssignment persist ck cAssignment
+  cask <- liftE $ courseAssignments persist ck
+  assertBool "Course does not have the assignment" (elem cak cask)
+  gak <- liftE $ saveGroupAssignment persist gk gAssignment
+  gask <- liftE $ groupAssignments persist gk
+  assertBool "Group does not have the assignment" (elem gak gask)
+  return ()
 
 
 clean_up = testCase "Cleaning up" $ do
@@ -107,9 +138,9 @@ clean_up = testCase "Cleaning up" $ do
 
 -- * Tools
 
-liftE :: IO (Erroneous a) -> IO a
+liftE :: TIO a -> IO a
 liftE m = do
-  x <- m
+  x <- runPersist m
   case x of
     Left e -> error e
     Right y -> return y

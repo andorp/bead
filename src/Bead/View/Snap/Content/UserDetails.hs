@@ -24,9 +24,9 @@ userDetailPage = withUserStateE $ \s -> do
   case exist of
     True -> do
       user     <- runStoryE . loadUser $ username
-      blaze $ withUserFrame s (userDetailForm user) Nothing
-    
-    False -> blaze $ withUserFrame s (userDoesNotExist username) Nothing
+      blaze $ withUserFrame s (userDetailForm user)
+
+    False -> blaze $ withUserFrame s (userDoesNotExist username)
 
 
 userDataChange :: POSTContentHandler

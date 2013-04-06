@@ -13,6 +13,7 @@ import Data.IORef (IORef)
 import qualified Data.IORef as Ref
 import Control.Concurrent.MVar
 import Control.Monad (liftM)
+import Control.Monad.Transaction.TIO (TIO)
 
 type CourseName = String
 type GroupName  = String
@@ -55,13 +56,21 @@ data UserContainer a = UserContainer {
   }
 
 data ServiceContext = ServiceContext {
-    persist       :: Persist
+    persist       :: MVar Persist
   , userContainer :: UserContainer UserState
   , logger        :: Logger
   }
 
-serviceContext :: Persist -> UserContainer UserState -> Logger -> ServiceContext
-serviceContext = ServiceContext
+serviceContext :: Persist -> UserContainer UserState -> Logger -> IO ServiceContext
+serviceContext p u l = do
+  mp <- newMVar p
+  return $ ServiceContext mp u l
+
+scRunPersist :: ServiceContext -> (Persist -> IO a) -> IO a
+scRunPersist sc m =
+  modifyMVar (persist sc) $ \p -> do
+    x <- m p
+    return (p,x)
 
 ioUserContainer :: IO (UserContainer a)
 ioUserContainer = do

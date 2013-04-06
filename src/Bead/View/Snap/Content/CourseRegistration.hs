@@ -17,7 +17,7 @@ courseRegistration = getContentHandler courseRegistrationPage
 
 courseRegistrationPage :: GETContentHandler
 courseRegistrationPage = withUserStateE $ \s -> do
-  blaze $ withUserFrame s (courseRegistrationContent) Nothing
+  blaze $ withUserFrame s (courseRegistrationContent)
 
 courseRegistrationContent :: Html
 courseRegistrationContent = do

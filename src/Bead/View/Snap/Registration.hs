@@ -13,7 +13,7 @@ import qualified Bead.Controller.UserStories as S
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
-import qualified Bead.Persistence.Persist as P (Persist(..)) 
+import qualified Bead.Persistence.Persist as P (Persist(..), runPersist)
 
 import Bead.View.Snap.Content hiding (BlazeTemplate, index, template, empty, method)
 
@@ -51,8 +51,8 @@ createAdminUser persist usersdb name password = do
     }
   createdUser <- lookupByLogin mgr (T.pack name)
   case createdUser of
-    Nothing -> undefined
-    Just u' -> P.saveUser persist usr (passwordFromAuthUser u')
+    Nothing -> error "No user was created"
+    Just u' -> P.runPersist $ P.saveUser persist usr (passwordFromAuthUser u')
   return ()
 
 -- * User registration handler

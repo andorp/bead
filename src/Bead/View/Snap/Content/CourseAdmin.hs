@@ -39,7 +39,7 @@ courseAdminPage = withUserStateE $ \s -> do
     , professors = ps
     , groups     = gs
     }
-  blaze $ withUserFrame s (courseAdminContent pageData) Nothing
+  blaze $ withUserFrame s (courseAdminContent pageData)
   where
     professor = (Professor ==) . u_role
 

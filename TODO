@@ -9,8 +9,9 @@ Terminology:
 - Page dependent cookie key values, when we change page we should remove
   the unallowed keys from the session
 / Simple HTML DSL (Creating some primities)
-- i18n for the generated HTML output
++ i18n for the generated HTML output
 - Pandoc interpreted input exercise input fields
 - Change FamilyName to FullName
 - Parameters for WebDriver executable
+- User error codes: Snap layer, UserStory
 

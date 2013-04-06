@@ -7,6 +7,8 @@ module Bead.View.Snap.HandlerUtils (
   , runStory  -- For logged in user
   , runStoryE -- For logged in user
   , getParamE
+  , i18nE
+  , blazeI18n
   , setInSessionE
   , setReqParamInSession
   , HandlerError(..)
@@ -22,12 +24,13 @@ import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.UserStories as S
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
+import Bead.View.Snap.Dictionary
 import Bead.View.Snap.RouteOf (ReqParam(..))
-
 
 -- Haskell imports
 
 import Data.String (IsString(..))
+import Data.Maybe (isNothing, fromJust)
 import qualified Data.Text as T
 import qualified Data.List as L
 import Control.Monad.Error
@@ -35,6 +38,7 @@ import qualified Data.ByteString.Char8 as B
 
 -- Snap and Blaze imports
 
+import Text.Blaze.Html5 (Html)
 import Snap hiding (get)
 import Snap.Blaze (blaze)
 import Snap.Snaplet.Auth as A
@@ -79,14 +83,24 @@ userState = do
 errorPageHandler :: T.Text -> Handler App b ()
 errorPageHandler msg = undefined -- blaze errorPage
 
+i18nE :: (IsString s) => HandlerError App b (String -> s)
+i18nE = do
+  lang <- lift . withTop sessionManager $ languageFromSession
+  when (isNothing lang) . throwError . strMsg $ "Language was not defined in session"
+  -- If the dictionary is not found for the language stored in session
+  -- the identical dictionary is returned. The fromString is necessary
+  -- for the Attribute names and values used in html templating engines
+  d <- lift . withTop dictionaryContext . getDictionary . fromJust $ lang
+  return (fromString . (unDictionary $ maybe idDictionary id d))
+
+blazeI18n :: (I18N -> Html) -> HandlerError App b ()
+blazeI18n h = i18nE >>= blaze . h
 
 withUserState :: (UserState -> Handler App b c) -> Handler App b c
 withUserState h = userState >>= h
 
 withUserStateE :: (UserState -> HandlerError App b c) -> HandlerError App b c
-withUserStateE h = do
-  u <- lift userState
-  h u
+withUserStateE h = (lift userState) >>= h
 
 -- | If the 'getParamE' found the parameter in the session manager, purges
 --   from the session

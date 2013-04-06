@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Content (
     Content(..)
+  , I18N
   , emptyContent
   , getContentHandler
   , getPostContentHandler
@@ -14,6 +15,8 @@ module Bead.View.Snap.Content (
   , routeWithParams
   , runStory
   , runStoryE
+  , i18nE
+  , blazeI18n
   , withUserState
   , withUserStateE
   , withUserStateAndFrame
@@ -45,6 +48,7 @@ import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.View.UserActions
 import Bead.View.Snap.Application (App)
+import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.Pagelets hiding (invariants)
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.HandlerUtils
@@ -86,5 +90,5 @@ mkContent g p = Content { get = g, post = p }
 
 withUserStateAndFrame :: (UserState -> Html) -> HandlerError App App ()
 withUserStateAndFrame f = withUserStateE $ \state ->
-  lift . blaze $ withUserFrame state (f state) Nothing
+  lift . blaze $ withUserFrame state (f state)
 

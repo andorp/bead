@@ -7,6 +7,15 @@ import Bead.Domain.Entities
 
 type RolePermissions = [(Role,[(Permission, PermissionObject)])]
 
+data AssignmentDesc = AssignmentDesc {
+    aActive :: Bool
+  , aTitle  :: String
+  , aDesc   :: String
+  , aOk     :: Int
+  , aNew    :: Int
+  , aBad    :: Int
+  }
+
 -- * Entity keys
 
 newtype AssignmentKey = AssignmentKey String
@@ -18,7 +27,7 @@ newtype UserKey = UserKey String
 newtype CommentKey = CommentKey String
   deriving (Eq, Ord, Show)
 
-newtype SolutionKey = SolutionKey String
+newtype SubmissionKey = SubmissionKey String
   deriving (Eq, Ord, Show)
 
 newtype TestKey = TestKey String

@@ -9,14 +9,19 @@ import Bead.Controller.Logging  as L
 import Bead.Controller.Pages    as P
 import Bead.Persistence.Persist as R
 
+import Control.Applicative
 import Control.Monad.Error (Error(..))
+import Control.Concurrent.MVar
 import qualified Control.Monad.State  as CMS
 import qualified Control.Monad.Error  as CME
 import qualified Control.Monad.Reader as CMR
 import Control.Monad.Trans
 import Control.Monad (join)
 import Prelude hiding (log)
+import Data.List (nub)
 import Text.Printf (printf)
+
+import Control.Monad.Transaction.TIO
 
 data UserError = UserError String
 
@@ -35,6 +40,7 @@ newtype UserStory a = UserStory {
   } deriving (Monad, CMS.MonadState UserState
                    , CME.MonadError UserError
                    , CMR.MonadReader ServiceContext
+                   , Functor
                    , MonadIO)
 
 runUserStory
@@ -55,18 +61,16 @@ runUserStory context userState
 --   ANSWER:   No, the user can log in once at a time
 login :: Username -> Password -> UserStory ()
 login username password = do
-  prst         <- CMR.asks persist
   usrContainer <- CMR.asks userContainer
-  validUser    <- liftIO $ R.canUserLogin prst username password
+  validUser    <- withPersist $ \p -> R.canUserLogin p username password
   notLoggedIn  <- liftIO $ isUserLoggedIn usrContainer username
   case (validUser, notLoggedIn) of
-    (Left e    ,     _) -> errorPage "Internal error occurred"
-    (Right True, False) -> do
+    (True, False) -> do
       loadUserData username password P.Home
       s <- userState
       liftIO $ userLogsIn usrContainer username s
-    (Right True , True)  -> errorPage "The user is logged in somewhere else"
-    (Right False,    _)  -> errorPage "Invalid user and password combination"
+    (True , True)  -> errorPage "The user is logged in somewhere else"
+    (False,    _)  -> errorPage "Invalid user and password combination"
 
 -- | The user logs out
 logout :: UserStory ()
@@ -79,7 +83,7 @@ logout = do
 doesUserExist :: Username -> UserStory Bool
 doesUserExist u = logAction INFO ("Searches after user: " ++ show u) $ do
   authorize P_Open P_User
-  liftP $ flip R.doesUserExist u
+  withPersist $ flip R.doesUserExist u
 
 -- | The user navigates to the next page
 changePage :: P.Page -> UserStory ()
@@ -97,32 +101,30 @@ changePassword old new new'
       logErrorMessage "Password does not match"
       errorPage "Password does not match"
   | otherwise = do
-      persistence <- CMR.asks persist
       username    <- CMS.gets user
-      liftIOE $ updatePwd persistence username old new
+      withPersist $ \p -> updatePwd p username old new
 
 -- | The authorized user creates a new user
 createUser :: User -> Password -> UserStory ()
 createUser newUser newPassword = do
-  persistence <- CMR.asks persist
-  liftIOE $ saveUser persistence newUser newPassword
+  withPersist $ \p -> saveUser p newUser newPassword
   logger      <- CMR.asks logger
   liftIO $ log logger INFO $ "User is created: " ++ show (u_username newUser)
 
 updateUser :: User -> UserStory ()
 updateUser u = logAction INFO ("Updating user:" ++ (str . u_username $ u)) $ do
-  liftP $ flip R.updateUser u
+  withPersist $ flip R.updateUser u
 
 -- | Selecting users that satisfy the given criteria
 selectUsers :: (User -> Bool) -> UserStory [User]
 selectUsers f = logAction INFO "Select some users" $ do
   authorize P_Open P_User
-  liftP $ flip R.filterUsers f
-  
+  withPersist $ flip R.filterUsers f
+
 loadUser :: Username -> UserStory User
 loadUser u = logAction INFO "Loading user information" $ do
   authorize P_Open P_User
-  liftP $ flip R.loadUser u
+  withPersist $ flip R.loadUser u
 
 -- | The authorized user logically deletes the given user
 --   QUESTION: What to do if the deleted user are logged in when the deletion does happen?
@@ -134,24 +136,24 @@ deleteUser = undefined
 administratedCourses :: UserStory [(CourseKey, Course)]
 administratedCourses = logAction INFO "Selecting adminstrated courses" $ do
   u <- CMS.gets user
-  liftP $ flip R.administratedCourses u
+  withPersist $ flip R.administratedCourses u
 
 administratedGroups :: UserStory [(GroupKey, Group)]
 administratedGroups = logAction INFO "Selection administrated groups" $ do
   u <- CMS.gets user
-  liftP $ flip R.administratedGroups u
+  withPersist $ flip R.administratedGroups u
 
 -- | The 'create' function is an abstract function
 --   for other creators like, createCourse and createExercise
 create
   :: (PermissionObj o)
-  => (o -> k -> String)                 -- ^ Descriptor for the logger
-  -> (Persist -> o -> IO (Erroneous k)) -- ^ Saver function of the persistence
-  -> o                                  -- ^ The object to save
+  => (o -> k -> String)      -- ^ Descriptor for the logger
+  -> (Persist -> o -> TIO k) -- ^ Saver function of the persistence
+  -> o                       -- ^ The object to save
   -> UserStory k
 create descriptor saver object = do
   authorize P_Create (permissionObject object)
-  key <- liftP (flip saver object)
+  key <- withPersist (flip saver object)
   logMessage INFO $ descriptor object key
   return key
 
@@ -166,26 +168,27 @@ createCourse = create descriptor saveCourse
 selectCourses :: (CourseKey -> Course -> Bool) -> UserStory [(CourseKey, Course)]
 selectCourses f = logAction INFO "Select Some Courses" $ do
   authorize P_Open P_Course
-  liftP $ flip filterCourses f
+  withPersist $ flip filterCourses f
 
 loadCourse :: CourseKey -> UserStory (Course,[GroupKey])
 loadCourse k = logAction INFO ("Loading course: " ++ show k) $ do
   authorize P_Open P_Course
-  c  <- liftP $ flip R.loadCourse k
-  ks <- liftP $ flip R.groupKeysOfCourse k
-  return (c,ks)
+  withPersist $ \p -> do
+    c  <- R.loadCourse p k
+    ks <- R.groupKeysOfCourse p k
+    return (c,ks)
 
 createCourseAdmin :: Username -> CourseKey -> UserStory ()
 createCourseAdmin u ck = logAction INFO "Set user to course admin" $ do
   authorize P_Create P_CourseAdmin
   authorize P_Open   P_User
-  liftP $ \p -> R.createCourseAdmin p u ck
+  withPersist $ \p -> R.createCourseAdmin p u ck
 
 createGroupProfessor :: Username -> GroupKey -> UserStory ()
 createGroupProfessor u gk = logAction INFO "Set user as a professor of a group" $ do
   authorize P_Create P_Professor
   authorize P_Open   P_User
-  liftP $ \p -> R.createGroupProfessor p u gk
+  withPersist $ \p -> R.createGroupProfessor p u gk
 
 -- | Logically deletes an existing cousrse
 deleteCourse :: CourseKey -> UserStory ()
@@ -199,33 +202,33 @@ updateCourse = undefined
 createGroup :: CourseKey -> Group -> UserStory GroupKey
 createGroup ck g = logAction INFO ("Creating group: " ++ show (groupName g)) $ do
   authorize P_Create P_Group
-  liftP $ \p -> R.saveGroup p ck g
+  withPersist $ \p -> R.saveGroup p ck g
 
 loadGroup :: GroupKey -> UserStory Group
 loadGroup gk = logAction INFO ("Loading group: " ++ show gk) $ do
   authorize P_Open P_Group
-  liftP $ flip R.loadGroup gk
+  withPersist $ flip R.loadGroup gk
 
 -- | Checks is the user is subscribed for the group
 isUserInGroup :: GroupKey -> UserStory Bool
 isUserInGroup gk = do
   authorize P_Open P_Group
   state <- userState
-  liftP $ \p -> R.isUserInGroup p (user state) gk
+  withPersist $ \p -> R.isUserInGroup p (user state) gk
 
 -- | Checks if the user is subscribed for the course
 isUserInCourse :: CourseKey -> UserStory Bool
 isUserInCourse ck = do
   authorize P_Open P_Course
   state <- userState
-  liftP $ \p -> R.isUserInCourse p (user state) ck
+  withPersist $ \p -> R.isUserInCourse p (user state) ck
 
 -- | Regsiter the user as a group intendee
 subscribeToGroup :: CourseKey -> GroupKey -> UserStory ()
 subscribeToGroup ck gk = logAction INFO ("Subscribe to the group " ++ (show gk)) $ do
   authorize P_Open P_Group
   state <- userState
-  liftP $ \p -> R.subscribe p (user state) ck gk
+  withPersist $ \p -> R.subscribe p (user state) ck gk
 
 -- | Deletes logically the given course
 deleteGroup :: GroupKey -> UserStory ()
@@ -235,9 +238,9 @@ deleteGroup = undefined
 updateGroup :: GroupKey -> Group -> UserStory ()
 updateGroup = undefined
 
--- | Creates an exercise
-createExercise :: Assignment -> UserStory AssignmentKey
-createExercise = create descriptor saveExercise
+-- | Creates an assignment
+createAssignment :: Assignment -> UserStory AssignmentKey
+createAssignment = create descriptor saveAssignment
   where
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
 
@@ -250,18 +253,17 @@ createCourseAssignment :: CourseKey -> Assignment -> UserStory AssignmentKey
 createCourseAssignment ck = create descriptor (\p -> saveCourseAssignment p ck)
   where
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
-    
-    
-selectExercises :: (AssignmentKey -> Assignment -> Bool) -> UserStory [(AssignmentKey, Assignment)]
-selectExercises f = logAction INFO "Select Some Exercises" $ do
+
+selectAssignments :: (AssignmentKey -> Assignment -> Bool) -> UserStory [(AssignmentKey, Assignment)]
+selectAssignments f = logAction INFO "Select Some Assignments" $ do
   authorize P_Open P_Assignment
-  liftP $ flip filterExercises f
+  withPersist $ flip filterAssignment f
 
 -- | The 'loadExercise' loads an exercise from the persistence layer
-loadExercise :: AssignmentKey -> UserStory Assignment
-loadExercise k = logAction INFO ("Loading exercise: " ++ show k) $ do
+loadAssignments :: AssignmentKey -> UserStory Assignment
+loadAssignments k = logAction INFO ("Loading assignment: " ++ show k) $ do
   authorize P_Open P_Assignment
-  liftP $ flip R.loadExercise k
+  withPersist $ flip R.loadAssignment k
 
 errorPage :: String -> UserStory ()
 errorPage s = do
@@ -329,8 +331,7 @@ changeUserState f = do
 
 loadUserData :: Username -> Password -> Page -> UserStory ()
 loadUserData uname pwd p = do
-  persistence <- CMR.asks persist
-  (userRole, userFamilyName) <- liftIOE $ personalInfo persistence uname pwd
+  (userRole, userFamilyName) <- withPersist $ \p -> personalInfo p uname pwd
   CMS.put UserState {
               user = uname
             , page = p
@@ -341,16 +342,23 @@ loadUserData uname pwd p = do
 userState :: UserStory UserState
 userState = CMS.get
 
+userAssignments :: UserStory [AssignmentKey]
+userAssignments = do
+  uname <- CMS.gets user
+  withPersist $ \p -> do
+    gs <- userGroups p uname
+    cs <- userCourses p uname
+    asg <- concat <$> (mapM (groupAssignments p)  (nub gs))
+    asc <- concat <$> (mapM (courseAssignments p) (nub cs))
+    return . nub $ (asg ++ asc)
+
+assignmentInfo :: AssignmentKey -> UserStory AssignmentDesc
+assignmentInfo ak = do
+  undefined
+
 -- * User Story combinators
 
 -- * Tools
-
-liftIOE :: IO (Erroneous a) -> UserStory a
-liftIOE a = do
-  x <- liftIO a
-  case x of
-    Left err -> CME.throwError $ strMsg err
-    Right x  -> return x
 
 -- | The 'logAction' first logs the message after runs the given operation
 logAction :: LogLevel -> String -> UserStory a -> UserStory a
@@ -359,5 +367,12 @@ logAction level msg s = do
   s
 
 -- | Lifting a persistence action
-liftP :: (Persist -> IO (Erroneous a)) -> UserStory a
-liftP f = CMR.asks persist >>= (liftIOE . f)
+withPersist :: (Persist -> TIO a) -> UserStory a
+withPersist m = do
+  mp <- CMR.asks persist
+  x <- liftIO $ modifyMVar mp $ \p -> do
+         ea <- runPersist (m p)
+         return (p,ea)
+  case x of
+    Left e -> CME.throwError $ strMsg e
+    Right x -> return x

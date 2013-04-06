@@ -4,7 +4,7 @@ import Control.Applicative ((<$>))
 import Data.Maybe (maybe, isJust, fromJust)
 import Data.Time (UTCTime(..))
 
-import Bead.Domain.Types (Str(..))
+import Bead.Domain.Types (Str(..), readMaybe)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 
@@ -120,6 +120,7 @@ emptyAssignment = Nothing
 
 instance GetValueHandler Assignment where
   getValue = do
+    name  <- getParamE (fieldName assignmentNameField) id "Assignment Name is not found"
     desc  <- getParamE (fieldName assignmentDescField) id "Assignment Description is not found"
     tcs   <- getParamE (fieldName assignmentTCsField) id "Assignment TCs is not found"
     tp    <- getParamE (fieldName assignmentTypeField) read "Assignment Type is not found"
@@ -127,6 +128,7 @@ instance GetValueHandler Assignment where
     end   <- getParamE (fieldName assignmentEndField) read "Assignment End is not found"
     return $ Assignment {
         assignmentDesc = desc
+      , assignmentName = name
       , assignmentTCs  = tcs
       , assignmentType = tp
       , assignmentStart = start
@@ -146,11 +148,3 @@ utcTimeInput n v = textInput n 10 (show <$> v)
 
 utcTimeParam :: String -> HandlerError App App (Maybe UTCTime)
 utcTimeParam n = getParamE n readMaybe "UTC Time field was not found"
-
--- * Tools
-
-readMaybe :: (Read a) => String -> Maybe a
-readMaybe s =
-  case reads s of
-    [(x,"")] -> Just x
-    _        -> Nothing

@@ -26,7 +26,7 @@ newGroupAssignment = getPostContentHandler newGroupAssignmentPage postGroupAssig
 newCourseAssignmentPage :: GETContentHandler
 newCourseAssignmentPage = withUserStateE $ \s -> do
   cs <- runStoryE administratedCourses
-  blaze $ withUserFrame s (newAssignmentContent P.NewCourseAssignment (Right cs)) Nothing
+  blaze $ withUserFrame s (newAssignmentContent P.NewCourseAssignment (Right cs))
 
 postCourseAssignment :: POSTContentHandler
 postCourseAssignment = do
@@ -37,16 +37,18 @@ postCourseAssignment = do
 newGroupAssignmentPage :: GETContentHandler
 newGroupAssignmentPage = withUserStateE $ \s -> do
   gs <- runStoryE administratedGroups
-  blaze $ withUserFrame s (newAssignmentContent P.NewGroupAssignment (Left gs)) Nothing
+  blaze $ withUserFrame s (newAssignmentContent P.NewGroupAssignment (Left gs))
 
 postGroupAssignment :: POSTContentHandler
 postGroupAssignment = do
   groupKey <- getParamE (fieldName selectedGroup) GroupKey "Selected group was not found"
   assignment <- getValue
   return $ CreateGroupAssignment groupKey assignment
-  
+
 newAssignmentContent :: Page -> (Either [(GroupKey, Group)] [(CourseKey, Course)]) -> Html
 newAssignmentContent p e = postForm (routeOf p) $ do
+  H.p $ "Assignment title"
+  textInput (fieldName assignmentNameField) 10 Nothing
   H.p $ "Description text block / Description files"
   textAreaInput (fieldName assignmentDescField) 300 200 Nothing
   H.p $ "Test Data text block / Test data files"
