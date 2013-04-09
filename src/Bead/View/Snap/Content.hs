@@ -2,6 +2,7 @@
 module Bead.View.Snap.Content (
     Content(..)
   , I18N
+  , (<$>)
   , emptyContent
   , getContentHandler
   , getPostContentHandler
@@ -25,6 +26,7 @@ module Bead.View.Snap.Content (
   , UserState(..)
   , ReqParam(..)
   , RequestParam(..)
+  , ReqParamValue(..)
   , Html
   , module Snap
   , module Data.ByteString.Char8
@@ -38,9 +40,9 @@ module Bead.View.Snap.Content (
   , module Bead.View.Snap.TemplateAndComponentNames
   ) where
 
-import Snap hiding (empty, get, route)
+import Snap hiding (empty, get, route, (<$>))
 import Snap.Blaze (blaze)
-import Data.ByteString.Char8 hiding (span, empty, map, group, filter)
+import Data.ByteString.Char8 (ByteString, unpack)
 
 import Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
@@ -57,6 +59,7 @@ import Bead.View.Snap.InputHandlers
 import Bead.View.Snap.TemplateAndComponentNames
 import Text.Blaze.Html5 (Html)
 
+import Control.Applicative ((<$>))
 import Control.Monad.Error
 
 -- Pages have the following structure. A header, a context-sensitive menu,

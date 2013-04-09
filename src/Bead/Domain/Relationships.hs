@@ -8,13 +8,19 @@ import Bead.Domain.Entities
 type RolePermissions = [(Role,[(Permission, PermissionObject)])]
 
 data AssignmentDesc = AssignmentDesc {
-    aActive :: Bool
-  , aTitle  :: String
-  , aDesc   :: String
-  , aOk     :: Int
-  , aNew    :: Int
-  , aBad    :: Int
+    aActive   :: Bool
+  , aTitle    :: String
+  , aGroup    :: String
+  , aTeachers :: [String]
+  , aOk       :: Int
+  , aNew      :: Int
+  , aBad      :: Int
   }
+
+data GroupDesc = GroupDesc {
+    gName   :: String
+  , gAdmins :: [String]
+  } deriving (Show)
 
 -- * Entity keys
 

@@ -129,7 +129,7 @@ assignmentTest = testCase "Create exercise list its keys and load it" $ do
   (ks,state) <- runStory c adminUserState $ selectAssignments (\_ _ -> True)
   assertUserState state adminUser
   assertBool "Created exercise key is not found" (elem k $ map fst ks)
-  (e',state) <- runStory c adminUserState $ U.loadAssignments k
+  (e',state) <- runStory c adminUserState $ U.loadAssignment k
   assertUserState state adminUser
   assertBool "Loaded exercise differs from the created one" (e == e')
 
@@ -152,8 +152,9 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
     gk2 <- createGroup ck2 g2
     a1 <- createGroupAssignment gk1 ga
     a2 <- createCourseAssignment ck2 ca
-    subscribeToGroup ck1 gk1
-    subscribeToGroup ck2 gk2
+    subscribeToGroup gk1
+    subscribeToGroup gk2
     as <- userAssignments
     return (a1,a2,as)
-  assertBool "Assignment does not found in the assignment list" ([a1,a2] == as || [a2,a1] == as)
+  let as' = map fst as
+  assertBool "Assignment does not found in the assignment list" ([a1,a2] == as' || [a2,a1] == as')

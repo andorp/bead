@@ -57,6 +57,7 @@ test_create_exercise = testCase "Save an exercise" $ do
   let s = Submission {
         solution = "Solution"
       , solutionPostDate = end
+      , evaulation = Open
       }
   sk <- liftE $ saveSubmission persist ek uname s
   return ()
@@ -128,6 +129,10 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   gak <- liftE $ saveGroupAssignment persist gk gAssignment
   gask <- liftE $ groupAssignments persist gk
   assertBool "Group does not have the assignment" (elem gak gask)
+  us <- liftE $ groupAdmins persist gk
+  assertBool "Admin is not in the group" ([admin] == us)
+  gs <- liftE $ filterGroups persist (\_ _ -> True)
+  assertBool "Group list was different" ([gk] == map fst gs)
   return ()
 
 

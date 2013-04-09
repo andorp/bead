@@ -84,7 +84,10 @@ instance DirName AssignmentKey where
   dirName (AssignmentKey c) = joinPath [assignmentDataDir, c]
 
 instance DirName GroupKey where
-  dirName (GroupKey g) = joinPath [assignmentDataDir, g]
+  dirName (GroupKey g) = joinPath [groupDataDir, g]
+
+instance DirName SubmissionKey where
+  dirName (SubmissionKey sk) = joinPath [submissionDataDir, sk]
 
 -- * Load and save aux functions
 
@@ -203,6 +206,7 @@ instance Save Submission where
     createStructureDirs d submissionDirStructure
     fileSave d "solution" (solution s)
     fileSave d "date"     (show . solutionPostDate $ s)
+    fileSave d "evaulation" (show . evaulation $ s)
 
 instance Save Course where
   save d c = do createStructureDirs d courseDirStructure
@@ -253,9 +257,11 @@ instance Load Submission where
   load d = do
     s <- fileLoad d "solution" id
     p <- fileLoad d "date" read
+    e <- fileLoad d "evaulation" read
     return $ Submission {
         solution = s
       , solutionPostDate = p
+      , evaulation = e
       }
 
 instance Load Course where
@@ -335,8 +341,8 @@ assignmentDirStructure = DirStructure {
   }
 
 submissionDirStructure = DirStructure {
-    files = ["solution", "date"]
-  , directories = ["exercise", "user"]
+    files = ["solution", "date", "evaulation"]
+  , directories = ["assignment", "user"]
   }
 
 courseDirStructure = DirStructure {

@@ -15,7 +15,7 @@ import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
 import qualified Bead.Persistence.Persist as P (Persist(..), runPersist)
 
-import Bead.View.Snap.Content hiding (BlazeTemplate, index, template, empty, method)
+import Bead.View.Snap.Content hiding (BlazeTemplate, template, empty, method)
 
 -- Haskell imports
 

@@ -8,8 +8,6 @@ import Control.Monad.Trans.Error (Error(..))
 
 -- Test imports
 
---import Test.Selen.Server
---import Test.Selenium.Syntax (Locator(Id))
 import Test.WebDriver
 import Test.WebDriver.Commands
 import Control.Monad.Transaction
@@ -43,9 +41,9 @@ data Result =
   deriving (Show,Eq)
 
 data PageObject = PageObject {
-    isValid    :: TSelenium Bool
-  , failureMsg :: String
-  , test       :: TSelenium ()
+    precondition :: TSelenium Bool
+  , failureMsg   :: String
+  , test         :: TSelenium ()
   }
 
 failed :: String -> TSelenium a
@@ -66,31 +64,6 @@ runT t = do
 
 pageObject :: PageObject -> TSelenium ()
 pageObject p = do
-  v <- isValid p
+  v <- precondition p
   unless v . failed . failureMsg $ p
   test p
-
-loginPage :: PageObject
-loginPage = PageObject {
-    isValid = liftS $ do
-      u <- findElems . ById . fieldName $ loginUsername
-      p <- findElems . ById . fieldName $ loginPassword
-      s <- findElems . ById . fieldName $ loginSubmitBtn
-      return $ and $ map (not . null) [u,p,s]
-  , failureMsg = "Login page"
-  , test = liftS $ do
-      (findElem . ById . fieldName $ loginUsername) >>= sendKeys "a"
-      (findElem . ById . fieldName $ loginPassword) >>= sendKeys "a"
-      (findElem . ById . fieldName $ loginSubmitBtn) >>= click
-      return ()
-  }
-
-logoutPage :: PageObject
-logoutPage = PageObject {
-    isValid = liftS $ do
-      e <- findElems . ById . fieldName $ Logout
-      return . not . null $ e
-  , failureMsg = "Logout page"
-  , test = liftS $ do
-      (findElem . ById . fieldName $ Logout) >>= click
-  }

@@ -21,7 +21,7 @@ import Bead.View.Snap.HandlerUtils as HU
 
 import Bead.View.Snap.Login as L
 import Bead.View.Snap.Registration
-import Bead.View.Snap.Content hiding (BlazeTemplate, index, template)
+import Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import Bead.View.Snap.Content.All
 
 -- Haskell imports

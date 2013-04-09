@@ -7,7 +7,7 @@ import Control.Monad (liftM)
 
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.View.Snap.Pagelets
-import Bead.View.Snap.Content
+import Bead.View.Snap.Content hiding (evaulation)
 
 import Text.Blaze.Html5 (Html)
 import qualified Text.Blaze.Html5 as H

@@ -37,7 +37,7 @@ data Page
   | NewGroupAssignment
   | NewCourseAssignment
   | Submission
-  | CourseRegistration
+  | GroupRegistration
   | UserDetails
   
   -- Only Post handlers
@@ -59,7 +59,7 @@ pageTransition Login = [Login, Home]
 pageTransition s = nub $ p s ++ [s, Error, Logout] where
   p Error            = []
   p Home = [ Logout, CourseAdmin, EvaulationTable, NewGroupAssignment, NewCourseAssignment
-           , Submission, CourseRegistration, Administration, Profile
+           , Submission, GroupRegistration, Administration, Profile
            ]
   p CourseAdmin      = [Home, CreateGroup, AssignProfessor]
   p EvaulationTable  = [Home, Evaulation]
@@ -68,7 +68,7 @@ pageTransition s = nub $ p s ++ [s, Error, Logout] where
   p Administration   = [Home, CreateCourse, UserDetails, AssignCourseAdmin]
   p Profile          = [Home]
   p UserDetails      = [Administration]
-  p CourseRegistration = [Home]
+  p GroupRegistration = [Home]
   p NewGroupAssignment = [Home, NewGroupAssignment]
   p NewCourseAssignment = [Home, NewCourseAssignment]
 
@@ -85,7 +85,7 @@ regularPages = [
   , Profile
   , Error
   , Submission
-  , CourseRegistration
+  , GroupRegistration
   ]
 
 professorPages = [
@@ -113,6 +113,7 @@ nonMenuPages = [
   , Logout
   , Error
   , CreateCourse
+  , Submission
   , UserDetails
   , AssignCourseAdmin
   , CreateGroup
@@ -147,7 +148,7 @@ parentPage EvaulationTable = Home
 parentPage Evaulation      = EvaulationTable
 parentPage Submission      = Home
 parentPage Administration  = Home
-parentPage CourseRegistration = Home
+parentPage GroupRegistration = Home
 parentPage UserDetails  = Administration
 parentPage CreateCourse = Administration
 parentPage AssignCourseAdmin = Administration

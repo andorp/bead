@@ -2,6 +2,7 @@
 module Bead.View.Snap.RouteOf (
     ReqParam(..)
   , RequestParam(..)
+  , ReqParamValue(..)
   , routeOf
   , routeWithParams
 
@@ -21,7 +22,10 @@ newtype ReqParam = ReqParam (String,String)
 queryStringParam :: ReqParam -> String
 queryStringParam (ReqParam (k,v)) = join [k, "=", v]
 
-class RequestParam r where
+class ReqParamValue p where
+  paramValue :: (IsString s) => p -> s
+
+class (ReqParamValue r) => RequestParam r where
   requestParam :: r -> ReqParam
 
 routeOf :: (IsString s) => Page -> s
@@ -36,7 +40,7 @@ routeOf = r where
   r Evaulation      = fromString "/evaulation"
   r Submission      = fromString "/submission"
   r Administration   = fromString "/administration"
-  r CourseRegistration = fromString "/course-registration"
+  r GroupRegistration = fromString "/group-registration"
   r CreateCourse = fromString "/create-course"
   r UserDetails = fromString "/user-details"
   r AssignCourseAdmin = fromString "/assign-course-admin"

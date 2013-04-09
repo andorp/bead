@@ -30,6 +30,7 @@ data Assignment = Assignment {
 data Submission = Submission {
     solution         :: String
   , solutionPostDate :: UTCTime
+  , evaulation       :: Evaulation
   } deriving (Eq, Show)
 
 -- | Comment on the text of exercise, on the evaulation
@@ -37,15 +38,16 @@ data Comment = Comment {
     comment :: String
   } deriving (Eq, Show)
 
--- | Evaulation of an exercise or an exam
+-- | Evaulation of a submission
 data Evaulation
-  = Failed
-  | Passed Integer
-  deriving (Eq, Ord, Show)
+  = Open
+  | Passed Evaulated
+  | Failed Evaulated
+  deriving (Eq, Ord, Show, Read)
 
-data EvaulationType
-  = Scale
-  deriving (Eq, Show)
+data Evaulated
+  = Scale Integer
+  deriving (Eq, Ord, Show, Read)
 
 newtype CourseCode = CourseCode String
   deriving (Eq, Ord, Show)
@@ -203,6 +205,17 @@ data User = User {
   , u_email    :: Email
   , u_name     :: String
   } deriving (Eq, Ord, Show)
+
+data UserDesc = UserDesc {
+    ud_username :: Username
+  , ud_fullname :: String
+  } deriving (Eq, Ord, Show)
+
+mkUserDescription :: User -> UserDesc
+mkUserDescription u = UserDesc {
+    ud_username = u_username u
+  , ud_fullname = u_name u
+  }
 
 -- * Data storage
 

@@ -8,6 +8,7 @@ import Test.WebDriver
 import Test.WebDriver.Commands
 
 import Test.WebDriver.PageObject
+import Test.WebDriver.SitePages
 
 -- Usage: main http://127.0.0.1:8000 127.0.0.1
 main = do

@@ -128,7 +128,7 @@ menuId P.CourseAdmin    = "link-course-admin"
 menuId P.EvaulationTable = "link-evaulation-table"
 menuId P.Evaulation      = "link-evaulation"
 menuId P.Submission      = "link-submission"
-menuId P.CourseRegistration = "link-course-registration"
+menuId P.GroupRegistration = "link-group-registration"
 menuId P.CreateCourse = "link-create-course"
 menuId P.UserDetails = "link-user-details"
 menuId P.AssignCourseAdmin = "link-assign-course-admin"
@@ -147,6 +147,7 @@ data AssignmentField
   | AssignmentTypeField { aFieldName :: String }
   | AssignmentStartField { aFieldName :: String }
   | AssignmentEndField { aFieldName :: String }
+  | AssignmentKeyField { aFieldName :: String }
 
 assignmentNameField  = AssignmentNameField  "asg-name"
 assignmentDescField  = AssignmentDescField  "asg-desc"
@@ -154,6 +155,7 @@ assignmentTCsField   = AssignmentTCsField   "asg-tcs"
 assignmentTypeField  = AssignmentTypeField  "asg-type"
 assignmentStartField = AssignmentStartField "asg-start"
 assignmentEndField   = AssignmentEndField   "asg-end"
+assignmentKeyField   = AssignmentKeyField   "asg-key"
 
 instance SnapFieldName AssignmentField where
   fieldName = fromString . aFieldName
@@ -178,6 +180,22 @@ selectedProfessor = SelectedProfessor "selected-professor"
 instance SnapFieldName AssignCourseProfessorField where
   fieldName = fromString . cpFieldName
 
+data GroupRegistrationField
+  = GroupRegistrationField { grFieldName :: String }
+
+groupRegistrationField = GroupRegistrationField "group-registration"
+
+instance SnapFieldName GroupRegistrationField where
+  fieldName = fromString . grFieldName
+
+data SubmissionField
+  = SubmissionTextField { sfFieldName :: String }
+
+submissionTextField = SubmissionTextField "submission-text"
+
+instance SnapFieldName SubmissionField where
+  fieldName = fromString . sfFieldName
+
 -- * Template names
 
 newtype LoginTemp = LoginTemp String
@@ -200,8 +218,9 @@ fieldList = map fieldName $ join [
   , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
   , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField
   , SFN userRoleField,  SFN loginSubmitBtn,  SFN assignmentDescField,    SFN assignmentTCsField
-  , SFN selectedCourse, SFN selectedCourseAdmin
+  , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField
   , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField
+  , SFN assignmentKeyField
   ], (map SFN P.allPages)
   ]
 

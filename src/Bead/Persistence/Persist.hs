@@ -1,14 +1,16 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Bead.Persistence.Persist (
     Persist(..)
   , runPersist
+  , userAssignmentKeys
   ) where
 
 import Bead.Domain.Types (Erroneous)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 
-import Control.Monad (liftM)
+import Data.List (nub)
+import Control.Applicative ((<$>))
+import Control.Monad (mapM, liftM)
 import Control.Exception (IOException)
 import Control.Monad.Transaction.TIO
 
@@ -22,6 +24,7 @@ data Persist = Persist {
   , loadUser      :: Username -> TIO User
   , updateUser    :: User -> TIO ()
   , doesUserExist :: Username -> TIO Bool
+  , userDescription :: Username -> TIO UserDesc
   , administratedCourses :: Username -> TIO [(CourseKey, Course)]
   , administratedGroups  :: Username -> TIO [(GroupKey, Group)]
 
@@ -34,13 +37,16 @@ data Persist = Persist {
   , isUserInCourse    :: Username -> CourseKey -> TIO Bool
   , userCourses       :: Username -> TIO [CourseKey]
   , createCourseAdmin :: Username -> CourseKey -> TIO ()
-  
+
   -- Group Persistence
   , saveGroup     :: CourseKey -> Group -> TIO GroupKey
   , loadGroup     :: GroupKey -> TIO Group
+  , courseOfGroup :: GroupKey -> TIO CourseKey
+  , filterGroups  :: (GroupKey -> Group -> Bool) -> TIO [(GroupKey, Group)]
   , isUserInGroup :: Username -> GroupKey -> TIO Bool
   , userGroups    :: Username -> TIO [GroupKey]
   , subscribe     :: Username -> CourseKey -> GroupKey -> TIO ()
+  , groupAdmins   :: GroupKey -> TIO [Username]
   , createGroupProfessor :: Username -> GroupKey -> TIO ()
 
   -- Assignment Persistence
@@ -52,18 +58,30 @@ data Persist = Persist {
   , groupAssignments  :: GroupKey -> TIO [AssignmentKey]
   , saveCourseAssignment :: CourseKey -> Assignment -> TIO AssignmentKey
   , saveGroupAssignment  :: GroupKey  -> Assignment -> TIO AssignmentKey
---  , courseOfAssignment   :: AssignmentKey -> TIO (Maybe CourseKey)
---  , groupOfAssignment    :: AssignmentKey -> TIO (Maybe GroupKey)
+  , courseOfAssignment   :: AssignmentKey -> TIO (Maybe CourseKey)
+  , groupOfAssignment    :: AssignmentKey -> TIO (Maybe GroupKey)
 
   -- Submission
   , saveSubmission :: AssignmentKey -> Username -> Submission -> TIO SubmissionKey
   , loadSubmission :: SubmissionKey -> TIO Submission
-  
+
   -- Persistence initialization
   , isPersistenceSetUp :: IO Bool
   , initPersistence    :: IO ()
   }
 
+-- * Combined Persistence Tasks
+
+userAssignmentKeys :: Persist -> Username -> TIO [AssignmentKey]
+userAssignmentKeys p u = do
+  gs <- userGroups p u
+  cs <- userCourses p u
+  asg <- concat <$> (mapM (groupAssignments p)  (nub gs))
+  asc <- concat <$> (mapM (courseAssignments p) (nub cs))
+  return . nub $ (asg ++ asc)
+
+-- * Runner Tools
+  
 reason :: Either IOException a -> (Erroneous a)
 reason (Left e)  = Left . show $ e
 reason (Right x) = Right x

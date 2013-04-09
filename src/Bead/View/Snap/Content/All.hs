@@ -4,7 +4,7 @@ module Bead.View.Snap.Content.All (
   ) where
 
 import Bead.Controller.Pages as P hiding (invariants)
-import Bead.View.Snap.Content
+import Bead.View.Snap.Content (Content(..), emptyContent)
 import Bead.View.Snap.Content.Home (home)
 import Bead.View.Snap.Content.Profile (profile)
 import Bead.View.Snap.Content.CourseAdmin (courseAdmin, createGroup, assignProfessor)
@@ -13,7 +13,7 @@ import Bead.View.Snap.Content.EvaulationTable (evaulationTable)
 import Bead.View.Snap.Content.Evaulation (evaulation)
 import Bead.View.Snap.Content.NewAssignment (newCourseAssignment, newGroupAssignment)
 import Bead.View.Snap.Content.Submission (submission)
-import Bead.View.Snap.Content.CourseRegistration (courseRegistration)
+import Bead.View.Snap.Content.GroupRegistration (groupRegistration)
 import Bead.View.Snap.Content.CreateCourse (createCourse)
 import Bead.View.Snap.Content.UserDetails (userDetails)
 
@@ -30,7 +30,7 @@ content P.Administration = administration
 content P.EvaulationTable = evaulationTable
 content P.Evaulation      = evaulation
 content P.Submission      = submission
-content P.CourseRegistration = courseRegistration
+content P.GroupRegistration = groupRegistration
 content P.CreateCourse = createCourse
 content P.UserDetails = userDetails
 content P.AssignCourseAdmin = assignCourseAdmin

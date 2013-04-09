@@ -223,12 +223,16 @@ isUserInCourse ck = do
   state <- userState
   withPersist $ \p -> R.isUserInCourse p (user state) ck
 
+
 -- | Regsiter the user as a group intendee
-subscribeToGroup :: CourseKey -> GroupKey -> UserStory ()
-subscribeToGroup ck gk = logAction INFO ("Subscribe to the group " ++ (show gk)) $ do
+subscribeToGroup :: GroupKey -> UserStory ()
+subscribeToGroup gk = logAction INFO ("Subscribe to the group " ++ (show gk)) $ do
   authorize P_Open P_Group
   state <- userState
-  withPersist $ \p -> R.subscribe p (user state) ck gk
+  withPersist $ \p -> do
+    ck <- R.courseOfGroup p gk
+    R.subscribe p (user state) ck gk
+
 
 -- | Deletes logically the given course
 deleteGroup :: GroupKey -> UserStory ()
@@ -260,8 +264,8 @@ selectAssignments f = logAction INFO "Select Some Assignments" $ do
   withPersist $ flip filterAssignment f
 
 -- | The 'loadExercise' loads an exercise from the persistence layer
-loadAssignments :: AssignmentKey -> UserStory Assignment
-loadAssignments k = logAction INFO ("Loading assignment: " ++ show k) $ do
+loadAssignment :: AssignmentKey -> UserStory Assignment
+loadAssignment k = logAction INFO ("Loading assignment: " ++ show k) $ do
   authorize P_Open P_Assignment
   withPersist $ flip R.loadAssignment k
 
@@ -342,19 +346,68 @@ loadUserData uname pwd p = do
 userState :: UserStory UserState
 userState = CMS.get
 
-userAssignments :: UserStory [AssignmentKey]
-userAssignments = do
+submitSolution :: AssignmentKey -> Submission -> UserStory ()
+submitSolution ak s = do
   uname <- CMS.gets user
   withPersist $ \p -> do
-    gs <- userGroups p uname
-    cs <- userCourses p uname
-    asg <- concat <$> (mapM (groupAssignments p)  (nub gs))
-    asc <- concat <$> (mapM (courseAssignments p) (nub cs))
-    return . nub $ (asg ++ asc)
+    saveSubmission p ak uname s
+    return ()
 
-assignmentInfo :: AssignmentKey -> UserStory AssignmentDesc
-assignmentInfo ak = do
-  undefined
+availableGroups :: UserStory [(GroupKey, GroupDesc)]
+availableGroups = do
+  withPersist $ \p -> (mapM (courseAndAdmins p . fst)) =<< (R.filterGroups p each)
+  where
+    each _ _ = True
+
+    courseAndAdmins :: Persist -> GroupKey -> TIO (GroupKey, GroupDesc)
+    courseAndAdmins p gk = do
+      g  <- R.loadGroup p gk
+      admins <- mapM (R.userDescription p) =<< (R.groupAdmins p gk)
+      let gd = GroupDesc {
+          gName   = groupName g
+        , gAdmins = map ud_fullname admins
+        }
+      return (gk,gd)
+
+userAssignmentKeys :: UserStory [AssignmentKey]
+userAssignmentKeys = do
+  uname <- CMS.gets user
+  withPersist $ \p -> R.userAssignmentKeys p uname
+
+userAssignments :: UserStory [(AssignmentKey, AssignmentDesc)]
+userAssignments = do
+  uname <- CMS.gets user
+  withPersist $ \p -> mapM (createDesc p) =<< R.userAssignmentKeys p uname
+
+  where
+    asgGroup p (Nothing) (Nothing) = return id
+    asgGroup p (Just gk) (Just ck) = do
+      dg <- groupName <$> R.loadGroup p gk
+      dc <- courseName <$> R.loadCourse p ck
+      return $ \a -> a { aGroup = join [dg, " - ", dc] }
+    asgGroup p (Nothing) (Just ck) = do
+      d <- courseName <$> R.loadCourse p ck
+      return $ \a -> a { aGroup = d }
+    asgGroup p (Just gk) (Nothing) = do
+      d <- groupName <$> R.loadGroup p gk
+      return $ \a -> a { aGroup = d }
+
+    createDesc :: Persist -> AssignmentKey -> TIO (AssignmentKey, AssignmentDesc)
+    createDesc p ak = do
+      a <- R.loadAssignment p ak
+      mgk <- R.groupOfAssignment p ak
+      mck <- R.courseOfAssignment p ak
+      let desc = AssignmentDesc {
+        aActive = True -- TODO
+      , aTitle  = assignmentName a
+      , aTeachers = [] -- TODO
+      , aGroup  = ""
+      , aOk     = 0 -- TODO
+      , aNew    = 0 -- TODO
+      , aBad    = 0 -- TODO
+      }
+      f <- asgGroup p mgk mck
+      return (ak, f desc)
 
 -- * User Story combinators
 

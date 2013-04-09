@@ -47,21 +47,26 @@ postGroupAssignment = do
 
 newAssignmentContent :: Page -> (Either [(GroupKey, Group)] [(CourseKey, Course)]) -> Html
 newAssignmentContent p e = postForm (routeOf p) $ do
-  H.p $ "Assignment title"
-  textInput (fieldName assignmentNameField) 10 Nothing
-  H.p $ "Description text block / Description files"
-  textAreaInput (fieldName assignmentDescField) 300 200 Nothing
-  H.p $ "Test Data text block / Test data files"
-  textAreaInput (fieldName assignmentTCsField) 300 100 Nothing
+  H.p $ do
+    "Assignment title"
+    textInput (fieldName assignmentNameField) 10 Nothing
+  H.p $ do
+    "Description text block / Description files"
+    textAreaInput (fieldName assignmentDescField) 300 200 Nothing
+  H.p $ do
+    "Test Data text block / Test data files"
+    textAreaInput (fieldName assignmentTCsField) 300 100 Nothing
   H.p $ "Select automata evaulation"
-  H.p $ "Assignment Type"
-  enumSelection (fieldName assignmentTypeField) Normal
+  H.p $ do
+    "Assignment Type"
+    enumSelection (fieldName assignmentTypeField) Normal
   H.p $ "Active period"
   do {"Start date"; utcTimeInput (fieldName assignmentStartField) Nothing }
   do {"End date"  ; utcTimeInput (fieldName assignmentEndField) Nothing }
-  H.p $ "Assignement"
-  either
-    (valueTextSelection (fieldName selectedGroup))
-    (valueTextSelection (fieldName selectedCourse))
-    e
+  H.p $ do
+    "Assignement"
+    either
+      (valueTextSelection (fieldName selectedGroup))
+      (valueTextSelection (fieldName selectedCourse))
+      e
   submitButton "Save"

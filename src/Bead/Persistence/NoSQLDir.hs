@@ -25,6 +25,7 @@ noSqlDirPersist = Persist {
   , loadUser      = nLoadUser
   , updateUser    = nUpdateUser
   , doesUserExist = nDoesUserExist
+  , userDescription = nUserDescription
   , administratedCourses = nAdministratedCourses
   , administratedGroups = nAdministratedGroups
 
@@ -39,9 +40,12 @@ noSqlDirPersist = Persist {
 
   , saveGroup     = nSaveGroup
   , loadGroup     = nLoadGroup
+  , courseOfGroup = nCourseOfGroup
+  , filterGroups  = nFilterGroups
   , isUserInGroup = nIsUserInGroup
   , userGroups    = nUserGroups
   , subscribe     = nSubscribe
+  , groupAdmins   = nGroupAdmins
   , createGroupProfessor = nCreateGroupProfessor
 
   , filterAssignment     = nFilterAssignment
@@ -52,9 +56,9 @@ noSqlDirPersist = Persist {
   , saveGroupAssignment  = nSaveGroupAssignment
   , courseAssignments    = nCourseAssignments
   , groupAssignments     = nGroupAssignments
---  , courseOfAssignment   = nCourseOfAssignment
---  , groupOfAssignment    = nGroupOfAssignemnt
-  
+  , courseOfAssignment   = nCourseOfAssignment
+  , groupOfAssignment    = nGroupOfAssignment
+
   , saveSubmission = nSaveSubmission
   , loadSubmission = nLoadSubmission
 
@@ -95,11 +99,8 @@ isThereAUser uname = hasNoRollback $ do
     True  -> isCorrectStructure dirname userDirStructure
 
 nCanUserLogin :: Username -> Password -> TIO Bool
-nCanUserLogin u p = tCanUserLogin u p
-
-tCanUserLogin :: Username -> Password -> TIO Bool
-tCanUserLogin uname pwd = do
-  exists <- tDoesUserExist uname
+nCanUserLogin uname pwd = do
+  exists <- nDoesUserExist uname
   case exists of
     False -> return False
     True  -> do
@@ -107,10 +108,7 @@ tCanUserLogin uname pwd = do
       return (ePwd == (encodePwd pwd))
 
 nDoesUserExist :: Username -> TIO Bool
-nDoesUserExist = tDoesUserExist
-
-tDoesUserExist :: Username -> TIO Bool
-tDoesUserExist = hasNoRollback . doesDirectoryExist . dirName
+nDoesUserExist = hasNoRollback . doesDirectoryExist . dirName
 
 nPersonalInfo :: Username -> Password -> TIO (Role, String)
 nPersonalInfo uname pwd = do
@@ -133,18 +131,18 @@ nFilterUsers f =
   (mapM load)                                 >>=
   (return . filter f)
 
-tLoadUser :: Username -> TIO User
-tLoadUser = load . dirName
-
 nLoadUser :: Username -> TIO User
-nLoadUser = tLoadUser
+nLoadUser = load . dirName
+
+nUserDescription :: Username -> TIO UserDesc
+nUserDescription = liftM mkUserDescription . nLoadUser
 
 nUpdateUser :: User -> TIO ()
 nUpdateUser user = update (dirName . u_username $ user) user
 
 nUpdatePwd :: Username -> Password -> Password -> TIO ()
 nUpdatePwd uname oldPwd newPwd = do
-  userExist <- tCanUserLogin uname oldPwd
+  userExist <- nCanUserLogin uname oldPwd
   case userExist of
     False -> throwEx $ userError $ "Invalid user and/or password combination: " ++ show uname
     True -> do
@@ -192,7 +190,7 @@ nGroupKeysOfCourse c = do
 
 nCreateCourseAdmin :: Username -> CourseKey -> TIO ()
 nCreateCourseAdmin u ck = do
-  usr <- tLoadUser u
+  usr <- nLoadUser u
   case atLeastCourseAdmin . u_role $ usr of
     False -> throwEx . userError . join $ [str u, " is not course admin"]
     True  -> do
@@ -216,6 +214,11 @@ nLoadGroup g = do
     groupDirPath :: GroupKey -> FilePath
     groupDirPath (GroupKey g) = joinPath [groupDataDir, g]
 
+nGroupAdmins :: GroupKey -> TIO [Username]
+nGroupAdmins gk = do
+  let dirname = joinPath [dirName gk, "admins"]
+  mapM (liftM u_username . load) =<< (selectValidDirsFrom dirname isUserDir)
+
 nIsUserInGroup :: Username -> GroupKey -> TIO Bool
 nIsUserInGroup u gk = isLinkedIn gk u "users"
 
@@ -233,6 +236,15 @@ nCreateGroupProfessor :: Username -> GroupKey -> TIO ()
 nCreateGroupProfessor u gk = do
   link u gk "admins"
   link gk u "groupadmin"
+
+nCourseOfGroup :: GroupKey -> TIO CourseKey
+nCourseOfGroup gk = do
+  let dirname = joinPath [dirName gk, "course"]
+  ks <- map (CourseKey . takeBaseName) <$> selectValidDirsFrom dirname isCourseDir
+  return $ case ks of
+    []  -> error "Impossible: Course Of Group: no course was found for the group"
+    [x] -> x
+    xs  -> error "Impossible: Course Of Group: more than one course were found for the group"
 
 tLoadPersistenceObject :: (Load o)
   => (String -> k) -- ^ Key constructor
@@ -317,16 +329,19 @@ nSaveGroup ck group = do
   link ck groupKey "course"
   return groupKey
 
-nSaveAssignment :: Assignment -> TIO AssignmentKey
-nSaveAssignment = tSaveAssignment
+nFilterGroups :: (GroupKey -> Group -> Bool) -> TIO [(GroupKey, Group)]
+nFilterGroups f =
+  (selectValidDirsFrom groupDataDir isGroupDir) >>=
+  (mapM tLoadGroup)             >>=
+  (return . filter (uncurry f))
 
-tSaveAssignment :: Assignment -> TIO AssignmentKey
-tSaveAssignment a = do
+nSaveAssignment :: Assignment -> TIO AssignmentKey
+nSaveAssignment a = do
   dirName <- createTmpDir assignmentDataDir "a"
   let assignmentKey = takeBaseName dirName
   save dirName a
   return . AssignmentKey $ assignmentKey
-  
+
 selectValidDirsFrom :: FilePath -> (FilePath -> TIO Bool) -> TIO [FilePath]
 selectValidDirsFrom dir isValidDir = getSubDirectories dir >>= filterM isValidDir
 
@@ -360,9 +375,29 @@ tLoadAssignment dirName = do
   e <- load dirName
   return (AssignmentKey exerciseKey, e)
 
+assignmentOf
+  :: (String -> k)
+  -> String
+  -> (FilePath -> TIO Bool)
+  -> AssignmentKey
+  -> TIO (Maybe k)
+assignmentOf key subdir isValidDir ak = do
+  let dirname = joinPath [dirName ak, subdir]
+  ks <- map (key . takeBaseName) <$> (selectValidDirsFrom dirname isValidDir)
+  return $ case ks of
+    []  -> Nothing
+    [k] -> Just k
+    _   -> error $ "Impossible: found more than one course or group for: " ++ show ak
+
+nCourseOfAssignment :: AssignmentKey -> TIO (Maybe CourseKey)
+nCourseOfAssignment = assignmentOf CourseKey "course" isCourseDir
+
+nGroupOfAssignment :: AssignmentKey -> TIO (Maybe GroupKey)
+nGroupOfAssignment = assignmentOf GroupKey "group" isGroupDir
+
 saveAndLinkAssignment :: (ForeignKey k) => FilePath -> k -> Assignment -> TIO AssignmentKey
 saveAndLinkAssignment subdir k a = do
-  ak <- tSaveAssignment a
+  ak <- nSaveAssignment a
   link ak k "assignments"
   link k ak subdir
   return ak
@@ -413,13 +448,13 @@ nSaveSubmission ek u s = do
   dirName <- createTmpDir submissionDataDir "s"
   let submissionKey = SubmissionKey . takeBaseName $ dirName
   save dirName s
-  link ek submissionKey "exercise"
+  link ek submissionKey "assignment"
   link u  submissionKey "user"
   link submissionKey  u "submissions"
   return submissionKey
 
 nLoadSubmission :: SubmissionKey -> TIO Submission
-nLoadSubmission sk = undefined
+nLoadSubmission = load . dirName
 
 -- * Tools
 

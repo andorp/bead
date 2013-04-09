@@ -16,7 +16,7 @@ import Bead.View.Snap.Dictionary (Language(..))
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
 
-import Bead.View.Snap.Content hiding (BlazeTemplate, index, template)
+import Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import Bead.View.Snap.Content.All
 
 -- Haskell imports

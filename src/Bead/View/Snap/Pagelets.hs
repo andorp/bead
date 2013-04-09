@@ -134,7 +134,7 @@ linkText P.Submission  = fromString "Submission"
 linkText P.Administration  = fromString "Administration"
 linkText P.Evaulation      = fromString "Evaulation"
 linkText P.EvaulationTable = fromString "Evaulation"
-linkText P.CourseRegistration = fromString "Register For A Course"
+linkText P.GroupRegistration = fromString "Register For A Course / Group"
 linkText P.CreateCourse       = fromString "Create A course"
 linkText P.UserDetails = fromString "User's Detail"
 linkText P.AssignCourseAdmin = fromString "Add admin to the course"
@@ -148,6 +148,9 @@ linkToPage g = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ linkText g
 
 linkToPageWithText :: P.Page -> String -> Html
 linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString t
+
+link :: String -> String -> Html
+link r t = H.a ! A.href (fromString r) $ fromString t
 
 navigationMenu :: UserState -> Html
 navigationMenu s = do

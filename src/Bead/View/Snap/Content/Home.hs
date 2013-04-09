@@ -9,6 +9,7 @@ import Control.Monad (when, liftM)
 import Bead.Domain.Relationships (AssignmentDesc(..))
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.Pages as P (Page(..))
+import Bead.Controller.UserStories (userAssignments)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 
@@ -18,12 +19,19 @@ import qualified Text.Blaze.Html5 as H
 home :: Content
 home = getContentHandler homePage
 
+data HomePageData = HomePageData {
+    userState   :: UserState
+  , assignments :: [(AssignmentKey, AssignmentDesc)]
+  }
+
 homePage :: GETContentHandler
 homePage = withUserStateE $ \s -> do
-  blaze $ withUserFrame s (homeContent s)
+  a <- runStoryE userAssignments
+  blaze $ withUserFrame s (homeContent (HomePageData s a))
 
-homeContent :: UserState -> Html
-homeContent s = do
+homeContent :: HomePageData -> Html
+homeContent d = do
+  let s = userState d
   when (isAdmin s) $ H.p $ "Admin's menu"
   when (isCourseAdmin s) $ H.p $ do
     "Course Admin's menu"
@@ -33,19 +41,14 @@ homeContent s = do
     linkToPage P.NewGroupAssignment
   when (isStudent s) $ H.p $ do
     "Student's menu"
-    availableAssignments testDescriptions
+    availableAssignments (assignments d)
 
-availableAssignments :: [AssignmentDesc] -> Html
+availableAssignments :: [(AssignmentKey,AssignmentDesc)] -> Html
 availableAssignments as = do
   table "available-assignments" $ do
     mapM_ assignmentLine as
   where
-    assignmentLine a = H.tr $ do
+    assignmentLine (k,a) = H.tr $ do
+      H.td $ link (routeWithParams P.Submission [requestParam k]) "New submission"
       H.td (fromString (aTitle a))
-      H.td (fromString (aDesc a))
-
-testDescriptions :: [AssignmentDesc]
-testDescriptions = [
-    AssignmentDesc True "t1" "d1" 0 0 0
-  , AssignmentDesc True "t2" "d2" 0 0 0
-  ]
+      H.td (fromString (aGroup a))
