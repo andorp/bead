@@ -60,6 +60,9 @@ newAssignmentContent p e = postForm (routeOf p) $ do
   H.p $ do
     "Assignment Type"
     enumSelection (fieldName assignmentTypeField) Normal
+  H.p $ do
+    "Evaulation Type"
+    enumSelection (fieldName assignmentEvField) Scale
   H.p $ "Active period"
   do {"Start date"; utcTimeInput (fieldName assignmentStartField) Nothing }
   do {"End date"  ; utcTimeInput (fieldName assignmentEndField) Nothing }

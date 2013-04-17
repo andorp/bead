@@ -37,6 +37,8 @@ data Page
   | NewGroupAssignment
   | NewCourseAssignment
   | Submission
+  | SubmissionList
+  | SubmissionDetails
   | GroupRegistration
   | UserDetails
   
@@ -59,12 +61,15 @@ pageTransition Login = [Login, Home]
 pageTransition s = nub $ p s ++ [s, Error, Logout] where
   p Error            = []
   p Home = [ Logout, CourseAdmin, EvaulationTable, NewGroupAssignment, NewCourseAssignment
-           , Submission, GroupRegistration, Administration, Profile
+           , Submission, SubmissionList, GroupRegistration, Administration, Profile
+           , SubmissionDetails --TODO
            ]
   p CourseAdmin      = [Home, CreateGroup, AssignProfessor]
   p EvaulationTable  = [Home, Evaulation]
   p Evaulation       = [Home, EvaulationTable]
-  p Submission       = [Home]
+  p Submission       = [Home, SubmissionList]
+  p SubmissionList   = [Home, SubmissionDetails]
+  p SubmissionDetails = [Home, SubmissionList]
   p Administration   = [Home, CreateCourse, UserDetails, AssignCourseAdmin]
   p Profile          = [Home]
   p UserDetails      = [Administration]
@@ -85,6 +90,8 @@ regularPages = [
   , Profile
   , Error
   , Submission
+  , SubmissionList
+  , SubmissionDetails
   , GroupRegistration
   ]
 
@@ -98,6 +105,8 @@ courseAdminPages = [
     CourseAdmin
   , CreateGroup
   , AssignProfessor
+  , EvaulationTable
+  , Evaulation
   , NewCourseAssignment
   ]
 
@@ -114,6 +123,8 @@ nonMenuPages = [
   , Error
   , CreateCourse
   , Submission
+  , SubmissionList
+  , SubmissionDetails
   , UserDetails
   , AssignCourseAdmin
   , CreateGroup
@@ -147,6 +158,8 @@ parentPage CourseAdmin    = Home
 parentPage EvaulationTable = Home
 parentPage Evaulation      = EvaulationTable
 parentPage Submission      = Home
+parentPage SubmissionList  = Home
+parentPage SubmissionDetails = Home
 parentPage Administration  = Home
 parentPage GroupRegistration = Home
 parentPage UserDetails  = Administration
@@ -162,7 +175,8 @@ parentPage NewCourseAssignment = NewCourseAssignment
 invariants = Invariants [
     -- For each page the following property is hold:
     -- Every parent page of a page has a transition to the given page
-    ("Parent page relation", \p -> elem p $ pageTransition $ parentPage p)
+    ("Each parent page of a page has a transition to the given page", 
+      \p -> elem p $ pageTransition $ parentPage p)
   ]
 
 unitTests = UnitTests [

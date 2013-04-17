@@ -10,6 +10,7 @@ import Bead.Controller.Pages    as P
 import Bead.Persistence.Persist as R
 
 import Control.Applicative
+import Control.Monad (when)
 import Control.Monad.Error (Error(..))
 import Control.Concurrent.MVar
 import qualified Control.Monad.State  as CMS
@@ -19,6 +20,7 @@ import Control.Monad.Trans
 import Control.Monad (join)
 import Prelude hiding (log)
 import Data.List (nub)
+import Data.Time (UTCTime(..), getCurrentTime)
 import Text.Printf (printf)
 
 import Control.Monad.Transaction.TIO
@@ -233,6 +235,12 @@ subscribeToGroup gk = logAction INFO ("Subscribe to the group " ++ (show gk)) $ 
     ck <- R.courseOfGroup p gk
     R.subscribe p (user state) ck gk
 
+attendedGroups :: UserStory [(GroupKey, GroupDesc)]
+attendedGroups = do
+  uname <- CMS.gets user
+  withPersist $ \p -> do
+    ks <- R.userGroups p uname
+    mapM (R.groupDescription p) ks
 
 -- | Deletes logically the given course
 deleteGroup :: GroupKey -> UserStory ()
@@ -348,36 +356,33 @@ userState = CMS.get
 
 submitSolution :: AssignmentKey -> Submission -> UserStory ()
 submitSolution ak s = do
-  uname <- CMS.gets user
-  withPersist $ \p -> do
-    saveSubmission p ak uname s
+  withUserAndPersist $ \u p -> do
+    sk <- saveSubmission p ak u s
     return ()
 
 availableGroups :: UserStory [(GroupKey, GroupDesc)]
 availableGroups = do
-  withPersist $ \p -> (mapM (courseAndAdmins p . fst)) =<< (R.filterGroups p each)
+  withPersist $ \p -> (mapM (R.groupDescription p . fst)) =<< (R.filterGroups p each)
   where
     each _ _ = True
-
-    courseAndAdmins :: Persist -> GroupKey -> TIO (GroupKey, GroupDesc)
-    courseAndAdmins p gk = do
-      g  <- R.loadGroup p gk
-      admins <- mapM (R.userDescription p) =<< (R.groupAdmins p gk)
-      let gd = GroupDesc {
-          gName   = groupName g
-        , gAdmins = map ud_fullname admins
-        }
-      return (gk,gd)
 
 userAssignmentKeys :: UserStory [AssignmentKey]
 userAssignmentKeys = do
   uname <- CMS.gets user
   withPersist $ \p -> R.userAssignmentKeys p uname
 
+userSubmissionKeys :: AssignmentKey -> UserStory [SubmissionKey]
+userSubmissionKeys ak = withUserAndPersist $ \u p -> R.userSubmissions p u ak
+
+submissionDetailsDesc :: SubmissionKey -> UserStory SubmissionDetailsDesc
+submissionDetailsDesc sk = withPersist $ \p -> R.submissionDetailsDesc p sk
+
+loadSubmission :: SubmissionKey -> UserStory Submission
+loadSubmission sk = withPersist $ \p -> R.loadSubmission p sk
+
 userAssignments :: UserStory [(AssignmentKey, AssignmentDesc)]
-userAssignments = do
-  uname <- CMS.gets user
-  withPersist $ \p -> mapM (createDesc p) =<< R.userAssignmentKeys p uname
+userAssignments = withUserAndPersist $
+  \u p -> mapM (createDesc p) =<< R.userAssignmentKeys p u
 
   where
     asgGroup p (Nothing) (Nothing) = return id
@@ -400,7 +405,7 @@ userAssignments = do
       let desc = AssignmentDesc {
         aActive = True -- TODO
       , aTitle  = assignmentName a
-      , aTeachers = [] -- TODO
+      , aTeachers = ["Group Admin"] -- TODO
       , aGroup  = ""
       , aOk     = 0 -- TODO
       , aNew    = 0 -- TODO
@@ -408,6 +413,59 @@ userAssignments = do
       }
       f <- asgGroup p mgk mck
       return (ak, f desc)
+
+submissionDescription :: SubmissionKey -> UserStory SubmissionDesc
+submissionDescription sk = do
+  withPersist $ \p -> submissionDesc p sk
+
+openSubmissions :: UserStory [SubmissionKey]
+openSubmissions = do
+  withUserAndPersist $ \uname p -> do
+    cs <- (map fst) <$> R.administratedCourses p uname
+    gs <- (map fst) <$> R.administratedGroups  p uname
+    cas <- concat <$> mapM (courseAssignments p) cs
+    gas <- concat <$> mapM (groupAssignments p) gs
+    let as = nub (cas ++ gas)
+        adminFor (_,a) = elem a as
+    nonEvaulated <- R.openedSubmissions p
+    assignments  <- mapM (assignmentOfSubmission p) nonEvaulated
+    return $ map fst $ filter adminFor $ zip nonEvaulated assignments
+
+submissionListDesc :: AssignmentKey -> UserStory SubmissionListDesc
+submissionListDesc ak = do
+  withUserAndPersist $ \uname p -> R.submissionListDesc p uname ak
+
+-- TODO: Check if the user can evaulates only submissions that
+-- are submitted for the assignment created by the user
+newEvaulation :: SubmissionKey -> Evaulation -> UserStory ()
+newEvaulation sk e = do
+  now <- liftIO $ getCurrentTime
+  withUserAndPersist $ \u p -> do
+    a <- isAdminedSubmission p u sk
+    when a $ do
+      R.saveEvaulation p sk e
+      R.removeFromOpened p sk
+      R.saveComment p sk (evaulationComment now e)
+      return ()
+
+modifyEvaulation :: EvaulationKey -> Evaulation -> UserStory ()
+modifyEvaulation ek e = do
+  now <- liftIO $ getCurrentTime
+  withUserAndPersist $ \u p -> do
+    sk <- submissionOfEvaulation p ek
+    a <- isAdminedSubmission p u sk
+    when a $ do
+      R.modifyEvaulation p ek e
+      saveComment p sk (evaulationComment now e)
+      return ()
+
+createComment :: SubmissionKey -> Comment -> UserStory ()
+createComment sk c = do
+  withUserAndPersist $ \u p -> do
+    can <- canUserCommentOn p u sk
+    when can $ do
+      saveComment p sk c
+      return ()
 
 -- * User Story combinators
 
@@ -419,6 +477,11 @@ logAction level msg s = do
   logMessage level msg
   s
 
+withUserAndPersist :: (Username -> Persist -> TIO a) -> UserStory a
+withUserAndPersist f = do
+  u <- CMS.gets user
+  withPersist (f u)
+
 -- | Lifting a persistence action
 withPersist :: (Persist -> TIO a) -> UserStory a
 withPersist m = do
@@ -429,3 +492,4 @@ withPersist m = do
   case x of
     Left e -> CME.throwError $ strMsg e
     Right x -> return x
+

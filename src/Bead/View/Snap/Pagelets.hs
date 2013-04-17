@@ -131,6 +131,8 @@ linkText P.Profile    = fromString "Profile"
 linkText P.Error      = fromString "Error"
 linkText P.CourseAdmin = fromString "CourseAdmin"
 linkText P.Submission  = fromString "Submission"
+linkText P.SubmissionList = fromString "Submission List"
+linkText P.SubmissionDetails = fromString "Submission Details"
 linkText P.Administration  = fromString "Administration"
 linkText P.Evaulation      = fromString "Evaulation"
 linkText P.EvaulationTable = fromString "Evaulation"
@@ -320,6 +322,12 @@ instance SelectionText AssignmentType where
   selectionText = show
 
 instance SelectionValue AssignmentType where
+  selectionValue = show
+
+instance SelectionText EvaulationType where
+  selectionText = show
+
+instance SelectionValue EvaulationType where
   selectionValue = show
 
 -- * Invariants

@@ -128,6 +128,8 @@ menuId P.CourseAdmin    = "link-course-admin"
 menuId P.EvaulationTable = "link-evaulation-table"
 menuId P.Evaulation      = "link-evaulation"
 menuId P.Submission      = "link-submission"
+menuId P.SubmissionList  = "link-submission-list"
+menuId P.SubmissionDetails = "link-submission-details"
 menuId P.GroupRegistration = "link-group-registration"
 menuId P.CreateCourse = "link-create-course"
 menuId P.UserDetails = "link-user-details"
@@ -148,6 +150,7 @@ data AssignmentField
   | AssignmentStartField { aFieldName :: String }
   | AssignmentEndField { aFieldName :: String }
   | AssignmentKeyField { aFieldName :: String }
+  | AssignmentEvField { aFieldName :: String }
 
 assignmentNameField  = AssignmentNameField  "asg-name"
 assignmentDescField  = AssignmentDescField  "asg-desc"
@@ -156,6 +159,7 @@ assignmentTypeField  = AssignmentTypeField  "asg-type"
 assignmentStartField = AssignmentStartField "asg-start"
 assignmentEndField   = AssignmentEndField   "asg-end"
 assignmentKeyField   = AssignmentKeyField   "asg-key"
+assignmentEvField    = AssignmentEvField    "asg-ev"
 
 instance SnapFieldName AssignmentField where
   fieldName = fromString . aFieldName
@@ -190,11 +194,35 @@ instance SnapFieldName GroupRegistrationField where
 
 data SubmissionField
   = SubmissionTextField { sfFieldName :: String }
+  | SubmissionKeyField { sfFieldName :: String }
 
 submissionTextField = SubmissionTextField "submission-text"
+submissionKeyField  = SubmissionKeyField  "submission-key"
 
 instance SnapFieldName SubmissionField where
   fieldName = fromString . sfFieldName
+
+data EvaulationField
+  = EvaulationValueField { evFieldName :: String }
+  | EvaulationStateField { evFieldName :: String }
+  | EvaulationKeyField   { evFieldName :: String }
+
+evaulationValueField = EvaulationValueField "evaulation"
+evaulationStateField = EvaulationStateField "evaulation-state"
+evaulationKeyField   = EvaulationKeyField "evaulation-key"
+
+instance SnapFieldName EvaulationField where
+  fieldName = fromString . evFieldName
+
+data CommentField
+  = CommentKeyField   { ckFieldName :: String }
+  | CommentValueField { ckFieldName :: String }
+
+commentKeyField = CommentKeyField "comment-key"
+commentValueField = CommentValueField "comment-value"
+
+instance SnapFieldName CommentField where
+  fieldName = fromString . ckFieldName
 
 -- * Template names
 
@@ -218,9 +246,10 @@ fieldList = map fieldName $ join [
   , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
   , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField
   , SFN userRoleField,  SFN loginSubmitBtn,  SFN assignmentDescField,    SFN assignmentTCsField
-  , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField
-  , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField
-  , SFN assignmentKeyField
+  , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField, SFN evaulationValueField
+  , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaulationStateField
+  , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField,     SFN evaulationKeyField
+  , SFN commentKeyField,SFN commentValueField
   ], (map SFN P.allPages)
   ]
 

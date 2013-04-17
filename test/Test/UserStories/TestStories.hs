@@ -123,7 +123,7 @@ assignmentTest = testCase "Create exercise list its keys and load it" $ do
   c <- context
   str <- getCurrentTime
   end <- getCurrentTime
-  let e = E.Assignment "name" "exercise" "test" Normal str end
+  let e = E.Assignment "name" "exercise" "test" Normal str end Scale
   (k,state) <- runStory c adminUserState $ createAssignment e
   assertUserState state adminUser
   (ks,state) <- runStory c adminUserState $ selectAssignments (\_ _ -> True)
@@ -137,8 +137,8 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
   c <- context
   str <- getCurrentTime
   end <- getCurrentTime
-  let ca = E.Assignment "cname" "cexercise" "ctest" Normal str end
-      ga = E.Assignment "gname" "gexercise" "gtest" Normal str end
+  let ca = E.Assignment "cname" "cexercise" "ctest" Normal str end Scale
+      ga = E.Assignment "gname" "gexercise" "gtest" Normal str end Scale
       c1  = E.Course "FP" "FP-DESC"
       c2  = E.Course "MA" "MA-DESC"
       g1  = E.Group  "G1" "G1-DESC"

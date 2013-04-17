@@ -45,6 +45,8 @@ instance SessionStore P.Page where
     s P.EvaulationTable = "EvaulationTable"
     s P.Evaulation      = "Evaulation"
     s P.Submission      = "Submission"
+    s P.SubmissionList  = "SubmissionList"
+    s P.SubmissionDetails = "SubmissionDetails"
     s P.Administration   = "Administration"
     s P.GroupRegistration = "GroupRegistration"
     s P.CreateCourse = "CreateCourse"
@@ -67,6 +69,8 @@ instance SessionRestore P.Page where
     Just "EvaulationTable" -> Just P.EvaulationTable
     Just "Evaulation"      -> Just P.Evaulation
     Just "Submission"      -> Just P.Submission
+    Just "SubmissionList"  -> Just P.SubmissionList
+    Just "SubmissionDetails" -> Just P.SubmissionDetails
     Just "Administration"   -> Just P.Administration
     Just "GroupRegistration" -> Just P.GroupRegistration
     Just "CreateCourse" -> Just P.CreateCourse

@@ -1,7 +1,13 @@
 module Bead.Domain.Relationships where
 
+-- Bead imports
+
 import Bead.Domain.Types
 import Bead.Domain.Entities
+
+-- Haskell imports
+
+import Data.Time (UTCTime(..))
 
 -- * Relations
 
@@ -21,6 +27,33 @@ data GroupDesc = GroupDesc {
     gName   :: String
   , gAdmins :: [String]
   } deriving (Show)
+
+data SubmissionDesc = SubmissionDesc {
+    eGroup    :: String
+  , eStudent  :: String
+  , eSolution :: String
+  , eType     :: EvaulationType
+  , eAssignmentTitle :: String
+  }
+
+type Status = String
+type EvaulatedBy = String
+
+data SubmissionListDesc = SubmissionListDesc {
+    slGroup   :: String
+  , slTeacher :: [String]
+  , slSubmissions :: [(SubmissionKey, UTCTime, Status, EvaulatedBy)]
+  , slAssignmentText :: String
+  }
+
+data SubmissionDetailsDesc = SubmissionDetailsDesc {
+    sdGroup :: String
+  , sdTeacher :: [String]
+  , sdAssignment :: String
+  , sdStatus :: String
+  , sdSubmission :: String
+  , sdComments :: [String]
+  }
 
 -- * Entity keys
 
@@ -42,7 +75,10 @@ newtype TestKey = TestKey String
 newtype CourseKey = CourseKey String
   deriving (Eq, Ord, Show)
 
-data GroupKey = GroupKey String
+newtype GroupKey = GroupKey String
+  deriving (Eq, Ord, Show)
+
+newtype EvaulationKey = EvaulationKey String
   deriving (Eq, Ord, Show)
 
 -- * Str instances

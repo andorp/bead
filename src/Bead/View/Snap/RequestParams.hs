@@ -11,5 +11,14 @@ instance ReqParamValue AssignmentKey where
 instance RequestParam AssignmentKey where
   requestParam a = ReqParam (fieldName assignmentKeyField, paramValue a)
 
+instance ReqParamValue SubmissionKey where
+  paramValue (SubmissionKey s) = fromString s
+
+instance RequestParam SubmissionKey where
+  requestParam s = ReqParam (fieldName submissionKeyField, paramValue s)
+
 instance ReqParamValue GroupKey where
   paramValue (GroupKey g) = fromString g
+
+instance ReqParamValue EvaulationKey where
+  paramValue (EvaulationKey e) = fromString e

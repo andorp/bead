@@ -82,7 +82,7 @@ instance GetValueHandler Role where
       case parseRole s of
         Just r  -> return r
         Nothing -> throwError . strMsg $ "Role was not parseable"
-
+        
 emptyUsername :: Maybe Username
 emptyUsername = Nothing
 
@@ -126,6 +126,7 @@ instance GetValueHandler Assignment where
     tp    <- getParamE (fieldName assignmentTypeField) read "Assignment Type is not found"
     start <- getParamE (fieldName assignmentStartField) read "Assignment Start is not found"
     end   <- getParamE (fieldName assignmentEndField) read "Assignment End is not found"
+    ev    <- getParamE (fieldName assignmentEvField) read "Assignment Evaulation type is not found"
     return $ Assignment {
         assignmentDesc = desc
       , assignmentName = name
@@ -133,14 +134,9 @@ instance GetValueHandler Assignment where
       , assignmentType = tp
       , assignmentStart = start
       , assignmentEnd   = end
+      , evaulationType  = ev
       }
-
-instance InputPagelet AssignmentType where
-  inputPagelet a = selection (fieldName assignmentTypeField) $ mapM_ (assignmentOptions a) assignmentTypes
-    where
-      assignmentOptions Nothing   a = option (show a) (show a) False
-      assignmentOptions (Just q') a = option (show a) (show a) (q' == a)
-
+  
 -- * Combined input fields
 
 utcTimeInput :: String -> Maybe UTCTime -> Html

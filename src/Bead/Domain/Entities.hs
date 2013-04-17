@@ -5,6 +5,7 @@ import Bead.Invariants (Invariants(..))
 
 import Data.Char (toLower)
 import Data.Time (UTCTime(..))
+import Control.Monad (join)
 
 -- * Course, exams, exercises, solutions
 
@@ -23,6 +24,7 @@ data Assignment = Assignment {
   , assignmentType :: AssignmentType
   , assignmentStart :: UTCTime
   , assignmentEnd   :: UTCTime
+  , evaulationType  :: EvaulationType
   -- TODO: Number of maximum tries
   } deriving (Eq)
 
@@ -30,24 +32,40 @@ data Assignment = Assignment {
 data Submission = Submission {
     solution         :: String
   , solutionPostDate :: UTCTime
-  , evaulation       :: Evaulation
   } deriving (Eq, Show)
 
 -- | Comment on the text of exercise, on the evaulation
 data Comment = Comment {
-    comment :: String
+    comment     :: String
+  , commentDate :: UTCTime
   } deriving (Eq, Show)
 
--- | Evaulation of a submission
-data Evaulation
-  = Open
-  | Passed Evaulated
-  | Failed Evaulated
-  deriving (Eq, Ord, Show, Read)
+data EvaulationState
+  = Passed Int
+  | Failed Int
+  deriving (Eq, Show, Read)
 
-data Evaulated
-  = Scale Integer
-  deriving (Eq, Ord, Show, Read)
+-- | Evaulation of a submission
+data Evaulation = Evaulation {
+    evaulationState   :: EvaulationState
+  , writtenEvaulation :: String
+  } deriving (Eq)
+
+data EvaulationType
+  = Scale
+  deriving (Eq, Ord, Show, Read, Enum)
+
+evaulationComment :: UTCTime -> Evaulation -> Comment
+evaulationComment t e = Comment {
+    comment = c
+  , commentDate = t
+  } where
+     result (Passed points) = "Passed, points: " ++ show points
+     result (Failed points) = "Failed, points: " ++ show points
+     c = join [
+           writtenEvaulation e, ", "
+         , result . evaulationState $ e
+         ]
 
 newtype CourseCode = CourseCode String
   deriving (Eq, Ord, Show)

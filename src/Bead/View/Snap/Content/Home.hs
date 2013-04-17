@@ -3,8 +3,9 @@ module Bead.View.Snap.Content.Home (
     home
   ) where
 
+import Data.List (intersperse)
 import Data.String (fromString)
-import Control.Monad (when, liftM)
+import Control.Monad (join, when, liftM)
 
 import Bead.Domain.Relationships (AssignmentDesc(..))
 import Bead.Controller.ServiceContext (UserState(..))
@@ -50,5 +51,9 @@ availableAssignments as = do
   where
     assignmentLine (k,a) = H.tr $ do
       H.td $ link (routeWithParams P.Submission [requestParam k]) "New submission"
-      H.td (fromString (aTitle a))
-      H.td (fromString (aGroup a))
+      H.td (fromString . aGroup $ a)
+      H.td (fromString . join . intersperse ", " . aTeachers $ a) -- TODO
+      H.td $ link (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
+      H.td (fromString . show . aOk  $ a)
+      H.td (fromString . show . aNew $ a)
+      H.td (fromString . show . aBad $ a)

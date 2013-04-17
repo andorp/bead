@@ -23,6 +23,7 @@ module Bead.View.Snap.Content (
   , withUserStateAndFrame
   , GETContentHandler
   , POSTContentHandler
+  , HandlerError
   , UserState(..)
   , ReqParam(..)
   , RequestParam(..)

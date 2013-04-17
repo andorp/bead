@@ -13,6 +13,8 @@ import Bead.View.Snap.Content.EvaulationTable (evaulationTable)
 import Bead.View.Snap.Content.Evaulation (evaulation)
 import Bead.View.Snap.Content.NewAssignment (newCourseAssignment, newGroupAssignment)
 import Bead.View.Snap.Content.Submission (submission)
+import Bead.View.Snap.Content.SubmissionList (submissionList)
+import Bead.View.Snap.Content.SubmissionDetails (submissionDetails)
 import Bead.View.Snap.Content.GroupRegistration (groupRegistration)
 import Bead.View.Snap.Content.CreateCourse (createCourse)
 import Bead.View.Snap.Content.UserDetails (userDetails)
@@ -30,6 +32,8 @@ content P.Administration = administration
 content P.EvaulationTable = evaulationTable
 content P.Evaulation      = evaulation
 content P.Submission      = submission
+content P.SubmissionList  = submissionList
+content P.SubmissionDetails = submissionDetails
 content P.GroupRegistration = groupRegistration
 content P.CreateCourse = createCourse
 content P.UserDetails = userDetails

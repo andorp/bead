@@ -18,7 +18,7 @@ import System.FilePath (joinPath)
 import System.IO
 import System.IO.Temp (createTempDirectory, openTempFile)
 import System.Directory
-import System.Posix.Files (createSymbolicLink, removeLink)
+import System.Posix.Files (createSymbolicLink, removeLink, readSymbolicLink)
 import Control.Exception as E
 import Control.Monad (join, when)
 
@@ -32,12 +32,18 @@ courseDir   = "course"
 assignmentDir = "assignment"
 groupDir    = "group"
 submissionDir = "submission"
+evaulationDir = "evaulation"
+commentDir    = "comment"
+openSubmissionDir = "open-submission"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
 groupDataDir    = joinPath [dataDir, groupDir]
 assignmentDataDir = joinPath [dataDir, assignmentDir]
 submissionDataDir = joinPath [dataDir, submissionDir]
+evaulationDataDir = joinPath [dataDir, evaulationDir]
+commentDataDir    = joinPath [dataDir, commentDir]
+openSubmissionDataDir = joinPath [dataDir, openSubmissionDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -47,6 +53,9 @@ persistenceDirs = [
   , assignmentDataDir
   , groupDataDir
   , submissionDataDir
+  , evaulationDataDir
+  , commentDataDir
+  , openSubmissionDataDir
   ]
 
 class DirName d where
@@ -72,7 +81,7 @@ class Update s where
 -- * DirName and KeyString instances
 
 instance DirName Username where
-  dirName u = joinPath [dataDir, userDir, ordEncode $ str u]
+  dirName u = joinPath [dataDir, userDir, str u]
 
 instance DirName User where
   dirName = dirName . u_username
@@ -86,8 +95,17 @@ instance DirName AssignmentKey where
 instance DirName GroupKey where
   dirName (GroupKey g) = joinPath [groupDataDir, g]
 
+instance DirName CourseKey where
+  dirName (CourseKey c) = joinPath [courseDataDir, c]
+
 instance DirName SubmissionKey where
   dirName (SubmissionKey sk) = joinPath [submissionDataDir, sk]
+
+instance DirName EvaulationKey where
+  dirName (EvaulationKey ek) = joinPath [evaulationDataDir, ek]
+
+instance DirName CommentKey where
+  dirName (CommentKey ck) = joinPath [commentDataDir, ck]
 
 -- * Load and save aux functions
 
@@ -137,11 +155,23 @@ fileUpdate d f c = do
 createDir :: FilePath -> TIO ()
 createDir d = step (createDirectory d) (removeDirectory d)
 
+createDirIfMissing :: FilePath -> TIO ()
+createDirIfMissing d = step (createDirectoryIfMissing True d) (removeDirectory d)
+
 createTmpDir :: FilePath -> String -> TIO FilePath
 createTmpDir f t = stepM (createTempDirectory f t) (return ()) removeDirectory
 
 createLink :: FilePath -> FilePath -> TIO ()
 createLink exist link = step (createSymbolicLink exist link) (removeLink link)
+
+removeSymLink :: FilePath -> TIO ()
+removeSymLink link = do
+  stepM (do f <- readSymbolicLink link
+            removeLink link
+            return f)
+        (return ())
+        (\f -> createSymbolicLink f link >> return ())
+  return ()
 
 removeDir :: FilePath -> TIO ()
 removeDir d = step (removeDirectory d) (createDirectory d)
@@ -198,6 +228,7 @@ instance Save Assignment where
     fileSave d "description" (assignmentDesc e)
     fileSave d "testcases"   (assignmentTCs  e)
     fileSave d "type"        (show . assignmentType $ e)
+    fileSave d "evaulation"  (show . evaulationType $ e)
     fileSave d "start"       (show . assignmentStart $ e)
     fileSave d "end"         (show . assignmentEnd $ e)
 
@@ -206,7 +237,18 @@ instance Save Submission where
     createStructureDirs d submissionDirStructure
     fileSave d "solution" (solution s)
     fileSave d "date"     (show . solutionPostDate $ s)
-    fileSave d "evaulation" (show . evaulation $ s)
+
+instance Save Evaulation where
+  save d e = do
+    createStructureDirs d evaulationDirStructure
+    fileSave d "state" (show . evaulationState $ e)
+    fileSave d "evaulation" (writtenEvaulation e)
+
+instance Save Comment where
+  save d c = do
+    createStructureDirs d commentDirStructure
+    fileSave d "comment" (comment c)
+    fileSave d "date" (show . commentDate $ c)
 
 instance Save Course where
   save d c = do createStructureDirs d courseDirStructure
@@ -242,6 +284,7 @@ instance Load Assignment where
     desc <- fileLoad d "description" id
     tcs  <- fileLoad d "testcases" id
     t    <- fileLoad d "type"  read
+    et   <- fileLoad d "evaulation" read
     s    <- fileLoad d "start" read
     e    <- fileLoad d "end"   read
     return $ Assignment {
@@ -251,18 +294,35 @@ instance Load Assignment where
       , assignmentType = t
       , assignmentStart = s
       , assignmentEnd   = e
+      , evaulationType  = et
       }
 
 instance Load Submission where
   load d = do
     s <- fileLoad d "solution" id
     p <- fileLoad d "date" read
-    e <- fileLoad d "evaulation" read
     return $ Submission {
         solution = s
       , solutionPostDate = p
-      , evaulation = e
       }
+
+instance Load Evaulation where
+  load d = do
+    s <- fileLoad d "state" read
+    e <- fileLoad d "evaulation" id
+    return Evaulation {
+      evaulationState   = s
+    , writtenEvaulation = e
+    }
+
+instance Load Comment where
+  load d = do
+    c <- fileLoad d "comment" id
+    e <- fileLoad d "date" read
+    return Comment {
+      comment     = c
+    , commentDate = e
+    }
 
 instance Load Course where
   load d = do desc <- loadDesc d
@@ -311,6 +371,11 @@ instance Update User where
     update d (u_email    u)
     updateName d (u_name u)
 
+instance Update Evaulation where
+  update d e = do
+    fileUpdate d "state"      (show . evaulationState $ e)
+    fileUpdate d "evaulation" (writtenEvaulation e)
+
 -- * Dir Structures
 
 data DirStructure = DirStructure {
@@ -341,8 +406,8 @@ assignmentDirStructure = DirStructure {
   }
 
 submissionDirStructure = DirStructure {
-    files = ["solution", "date", "evaulation"]
-  , directories = ["assignment", "user"]
+    files = ["solution", "date"]
+  , directories = ["assignment", "user", "evaulation", "comment"]
   }
 
 courseDirStructure = DirStructure {
@@ -353,6 +418,16 @@ courseDirStructure = DirStructure {
 groupDirStructure = DirStructure {
     files       = ["description", "name"]
   , directories = ["users", "course", "admins", "assignments"]
+  }
+
+evaulationDirStructure = DirStructure {
+    files       = ["state", "evaulation"]
+  , directories = ["submission"]
+  }
+
+commentDirStructure = DirStructure {
+    files = ["comment", "date"]
+  , directories = ["submission"]
   }
 
 -- * Encoding
@@ -389,6 +464,8 @@ dirStructures = [
   , groupDirStructure
   , userDirStructure
   , assignmentDirStructure
+  , evaulationDirStructure
+  , commentDirStructure
   ]
 
 unitTests = UnitTests [
