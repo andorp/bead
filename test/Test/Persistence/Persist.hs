@@ -62,6 +62,10 @@ testDecoratedPersist a q = Persist {
       mapM (testGroupKey a) gs
       return gs
 
+  , subscribedToCourse = \ck -> do
+      testCourseKey a ck
+      subscribedToCourse q ck
+
   , isUserInCourse = isUserInCourse q
   , userCourses = \u -> do
       cs <- userCourses q u
@@ -109,6 +113,10 @@ testDecoratedPersist a q = Persist {
 
   , createGroupProfessor = createGroupProfessor q
 
+  , subscribedToGroup = \gk -> do
+      testGroupKey a gk
+      subscribedToGroup q gk
+
   , filterAssignment = filterAssignment q
   , assignmentKeys = do
       as <- assignmentKeys q
@@ -120,7 +128,14 @@ testDecoratedPersist a q = Persist {
       testAssignmentKey a ak
       return ak
 
-  , loadAssignment = loadAssignment q
+  , loadAssignment = \ak -> do
+      testAssignmentKey a ak
+      loadAssignment q ak
+
+  , modifyAssignment = \ak s -> do
+      testAssignmentKey a ak
+      modifyAssignment q ak s
+
   , courseAssignments = \ck -> do
       testCourseKey a ck
       as <- courseAssignments q ck
@@ -156,6 +171,16 @@ testDecoratedPersist a q = Persist {
         Nothing -> return ()
         Just gk' -> testGroupKey a gk'
       return gk
+
+  , submissionsForAssignment = \ak -> do
+      testAssignmentKey a ak
+      ks <- submissionsForAssignment q ak
+      mapM (testSubmissionKey a) ks
+      return ks
+
+  , assignmentCreatedTime = \ak -> do
+      testAssignmentKey a ak
+      assignmentCreatedTime q ak
 
   -- Submission
   , saveSubmission = \ak u s -> do
@@ -227,6 +252,12 @@ testDecoratedPersist a q = Persist {
       testEvaulationKey a ek
       sk <- submissionOfEvaulation q ek
       testSubmissionKey a sk
+      return sk
+
+  , lastSubmission = \ak u -> do
+      testAssignmentKey a ak
+      sk <- lastSubmission q ak u
+      when (isJust sk) . testSubmissionKey a . fromJust $ sk
       return sk
 
   , saveComment = \sk c -> do

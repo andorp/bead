@@ -10,14 +10,15 @@ import Bead.View.Snap.Content.Profile (profile)
 import Bead.View.Snap.Content.CourseAdmin (courseAdmin, createGroup, assignProfessor)
 import Bead.View.Snap.Content.Administration (administration, assignCourseAdmin)
 import Bead.View.Snap.Content.EvaulationTable (evaulationTable)
-import Bead.View.Snap.Content.Evaulation (evaulation)
-import Bead.View.Snap.Content.NewAssignment (newCourseAssignment, newGroupAssignment)
+import Bead.View.Snap.Content.Evaulation (evaulation, modifyEvaulation)
+import Bead.View.Snap.Content.NewAssignment (newCourseAssignment, newGroupAssignment, modifyAssignment)
 import Bead.View.Snap.Content.Submission (submission)
 import Bead.View.Snap.Content.SubmissionList (submissionList)
 import Bead.View.Snap.Content.SubmissionDetails (submissionDetails)
 import Bead.View.Snap.Content.GroupRegistration (groupRegistration)
 import Bead.View.Snap.Content.CreateCourse (createCourse)
 import Bead.View.Snap.Content.UserDetails (userDetails)
+import Bead.View.Snap.Content.UserSubmissions (userSubmissions)
 
 import Bead.Invariants (Invariants(..))
 
@@ -33,6 +34,8 @@ content P.EvaulationTable = evaulationTable
 content P.Evaulation      = evaulation
 content P.Submission      = submission
 content P.SubmissionList  = submissionList
+content P.UserSubmissions = userSubmissions
+content P.ModifyEvaulation = modifyEvaulation
 content P.SubmissionDetails = submissionDetails
 content P.GroupRegistration = groupRegistration
 content P.CreateCourse = createCourse
@@ -40,8 +43,9 @@ content P.UserDetails = userDetails
 content P.AssignCourseAdmin = assignCourseAdmin
 content P.CreateGroup = createGroup
 content P.AssignProfessor = assignProfessor
-content P.NewGroupAssignment   = newGroupAssignment
-content P.NewCourseAssignment   = newCourseAssignment
+content P.NewGroupAssignment  = newGroupAssignment
+content P.NewCourseAssignment = newCourseAssignment
+content P.ModifyAssignment    = modifyAssignment
 
 invariants = Invariants [
     ("Content handler must be defined ", \p -> getOrPost p)

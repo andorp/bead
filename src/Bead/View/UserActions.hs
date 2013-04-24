@@ -39,6 +39,7 @@ data UserAction
   -- Assignment
   | CreateGroupAssignment GroupKey Assignment
   | CreateCourseAssignment CourseKey Assignment
+  | ModifyAssignment AssignmentKey Assignment
 
   -- Submission
   | NewSubmission AssignmentKey Submission
@@ -49,7 +50,7 @@ data UserAction
 
   -- Comment
   | SubmissionComment SubmissionKey Comment
-  
+
   -- Administration
   | CreateUser User Password
   | UpdateUser User
@@ -72,8 +73,10 @@ userStoryFor (CreateProfessor u g)   = Story.createGroupProfessor u g
 userStoryFor (SubscribeToGroup g)    = Story.subscribeToGroup g
 userStoryFor (CreateGroupAssignment gk a)  = Story.createGroupAssignment gk a >> return ()
 userStoryFor (CreateCourseAssignment ck a) = Story.createCourseAssignment ck a >> return ()
+userStoryFor (ModifyAssignment ak a) = Story.modifyAssignment ak a
 userStoryFor (NewSubmission ak s)    = Story.submitSolution ak s >> return ()
 userStoryFor (NewEvaulation sk e)    = Story.newEvaulation sk e
+userStoryFor (ModifyEvaulation ek e) = Story.modifyEvaulation ek e
 userStoryFor (SubmissionComment sk c) = Story.createComment sk c
 userStoryFor _                      = Story.logMessage L.DEBUG "No story was selected"
 -- etc ...

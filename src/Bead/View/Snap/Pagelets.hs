@@ -121,7 +121,7 @@ empty :: Html
 empty = return ()
 
 errorPage :: Html
-errorPage = withUserFrame undefined "Error page is not defined"
+errorPage = withUserFrame (error "errorPage: undefined") "Error page is not defined"
 
 linkText :: (IsString s) => P.Page -> s
 linkText P.Login      = fromString "Login"
@@ -132,6 +132,8 @@ linkText P.Error      = fromString "Error"
 linkText P.CourseAdmin = fromString "CourseAdmin"
 linkText P.Submission  = fromString "Submission"
 linkText P.SubmissionList = fromString "Submission List"
+linkText P.UserSubmissions = fromString "User Submission"
+linkText P.ModifyEvaulation = fromString "Evaulation"
 linkText P.SubmissionDetails = fromString "Submission Details"
 linkText P.Administration  = fromString "Administration"
 linkText P.Evaulation      = fromString "Evaulation"
@@ -144,6 +146,7 @@ linkText P.CreateGroup = fromString "Create a Group"
 linkText P.AssignProfessor = fromString "Add professor to the group"
 linkText P.NewGroupAssignment  = fromString "Create a New Group Assignment"
 linkText P.NewCourseAssignment = fromString "Create a New Course Assignment"
+linkText P.ModifyAssignment = fromString "Modify Assignment"
 
 linkToPage :: P.Page -> Html
 linkToPage g = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ linkText g

@@ -8,15 +8,23 @@ module Bead.Persistence.Persist (
   , groupDescription
   , isAdminedSubmission
   , canUserCommentOn
+  , submissionTables
+  , userSubmissionDesc
+  , courseOrGroupOfAssignment
   ) where
 
 import Bead.Domain.Types (Erroneous)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 
-import Data.List (nub)
+import Data.Function (on)
+import Data.Time (UTCTime)
+import Data.List (nub, sortBy)
+import Data.Map (Map(..))
+import qualified Data.Map as Map
+
 import Control.Applicative ((<$>))
-import Control.Monad (mapM, liftM)
+import Control.Monad (mapM, liftM, liftM2)
 import Control.Exception (IOException)
 import Control.Monad.Transaction.TIO
 
@@ -45,6 +53,7 @@ data Persist = Persist {
   , userCourses       :: Username -> TIO [CourseKey]
   , createCourseAdmin :: Username -> CourseKey -> TIO ()
   , courseAdmins      :: CourseKey -> TIO [Username]
+  , subscribedToCourse :: CourseKey -> TIO [Username]
 
   -- Group Persistence
   , saveGroup     :: CourseKey -> Group -> TIO GroupKey
@@ -56,18 +65,22 @@ data Persist = Persist {
   , subscribe     :: Username -> CourseKey -> GroupKey -> TIO ()
   , groupAdmins   :: GroupKey -> TIO [Username]
   , createGroupProfessor :: Username -> GroupKey -> TIO ()
+  , subscribedToGroup    :: GroupKey -> TIO [Username]
 
   -- Assignment Persistence
   , filterAssignment  :: (AssignmentKey -> Assignment -> Bool) -> TIO [(AssignmentKey, Assignment)]
   , assignmentKeys    :: TIO [AssignmentKey]
   , saveAssignment    :: Assignment -> TIO AssignmentKey
   , loadAssignment    :: AssignmentKey -> TIO Assignment
+  , modifyAssignment  :: AssignmentKey -> Assignment -> TIO ()
   , courseAssignments :: CourseKey -> TIO [AssignmentKey]
   , groupAssignments  :: GroupKey -> TIO [AssignmentKey]
   , saveCourseAssignment :: CourseKey -> Assignment -> TIO AssignmentKey
   , saveGroupAssignment  :: GroupKey  -> Assignment -> TIO AssignmentKey
   , courseOfAssignment   :: AssignmentKey -> TIO (Maybe CourseKey)
   , groupOfAssignment    :: AssignmentKey -> TIO (Maybe GroupKey)
+  , submissionsForAssignment :: AssignmentKey -> TIO [SubmissionKey]
+  , assignmentCreatedTime    :: AssignmentKey -> TIO UTCTime
 
   -- Submission
   , saveSubmission :: AssignmentKey -> Username -> Submission -> TIO SubmissionKey
@@ -77,6 +90,7 @@ data Persist = Persist {
   , filterSubmissions :: (SubmissionKey -> Submission -> Bool) -> TIO [(SubmissionKey, Submission)]
   , evaulationOfSubmission :: SubmissionKey -> TIO (Maybe EvaulationKey)
   , commentsOfSubmission :: SubmissionKey -> TIO [CommentKey]
+  , lastSubmission :: AssignmentKey -> Username -> TIO (Maybe SubmissionKey)
 
   , placeToOpened     :: SubmissionKey -> TIO ()
   , removeFromOpened  :: SubmissionKey -> TIO ()
@@ -193,7 +207,6 @@ submissionEvalStr p sk = do
       Passed _ -> "Passed"
       Failed _ -> "Failed"
 
-
 submissionDetailsDesc :: Persist -> SubmissionKey -> TIO SubmissionDetailsDesc
 submissionDetailsDesc p sk = do
   ak <- assignmentOfSubmission p sk
@@ -219,6 +232,94 @@ isAdminedSubmission p u sk = return True
 -- TODO
 canUserCommentOn :: Persist -> Username -> SubmissionKey -> TIO Bool
 canUserCommentOn p u sk = return True
+
+submissionTables :: Persist -> Username -> TIO [SubmissionTableInfo]
+submissionTables p u = do
+  courseTables <- mapM (courseSubmissionTableInfo p . fst) =<< administratedCourses p u
+  groupTables  <- mapM (groupSubmissionTableInfo  p . fst) =<< administratedGroups  p u
+  return $ courseTables ++ groupTables
+
+groupSubmissionTableInfo :: Persist -> GroupKey -> TIO SubmissionTableInfo
+groupSubmissionTableInfo p gk = do
+  assignments <- groupAssignments p gk
+  usernames   <- subscribedToGroup p gk
+  name        <- groupName <$> loadGroup p gk
+  submissionTableInfo p name assignments usernames
+
+courseSubmissionTableInfo :: Persist -> CourseKey -> TIO SubmissionTableInfo
+courseSubmissionTableInfo p ck = do
+  assignments <- courseAssignments p ck
+  usernames   <- subscribedToCourse p ck
+  name        <- courseName <$> loadCourse p ck
+  submissionTableInfo p name assignments usernames
+
+submissionTableInfo :: Persist -> String -> [AssignmentKey] -> [Username] -> TIO SubmissionTableInfo
+submissionTableInfo p courseName as usernames = do
+  assignments <- sortAssignments as
+
+  ulines <- flip mapM usernames $ \u -> do
+    ud  <- userDescription p u
+    asi <- mapM (submissionInfo' u) as
+    let passed = count (isPassed . snd) asi
+    return (ud, passed, asi)
+
+  return SubmissionTableInfo {
+    stCourse      = courseName
+  , stNumberOfAssignments = length assignments
+  , stAssignments = assignments
+  , stUsers       = usernames
+  , stUserLines   = ulines
+  }
+  where
+    sortAssignments :: [AssignmentKey] -> TIO [AssignmentKey]
+    sortAssignments ks = map snd . sortBy (compare `on` fst) <$> mapM (assignmentCreatedTime') ks
+
+    assignmentCreatedTime' k = do
+      t <- assignmentCreatedTime p k
+      return (t,k)
+
+    submissionInfo' u ak = do
+      s <- do mSk <- lastSubmission p ak u
+              case mSk of
+                Nothing -> return Submission_Not_Found
+                Just sk -> submissionInfo p sk
+      return (ak,s)
+
+    count f = length . filter f
+
+submissionInfo :: Persist -> SubmissionKey -> TIO SubmissionInfo
+submissionInfo p sk = do
+  mEk <- evaulationOfSubmission p sk
+  case mEk of
+    Nothing -> return Submission_Unevaulated
+    Just ek -> do
+      state <- evaulationState <$> loadEvaulation p ek
+      case state of
+        Passed _ -> return $ Submission_Passed ek
+        Failed _ -> return $ Submission_Failed ek
+
+userSubmissionDesc :: Persist -> Username -> AssignmentKey -> TIO UserSubmissionDesc
+userSubmissionDesc p u ak = do
+  -- Calculate the normal fields
+  asgName       <- assignmentName <$> loadAssignment p ak
+  courseOrGroup <- courseOrGroupOfAssignment p ak
+  crName <- case courseOrGroup of
+              Left  ck -> courseName <$> loadCourse p ck
+              Right gk -> groupName  <$> loadGroup  p gk
+  student <- ud_fullname <$> userDescription p u
+  keys    <- userSubmissions p u ak
+  -- Calculate the submission information list
+  submissions <- flip mapM keys $ \sk -> do
+    time  <- solutionPostDate <$> loadSubmission p sk
+    sinfo <- submissionInfo p sk
+    return (sk, time, sinfo, EvHand)
+
+  return UserSubmissionDesc {
+    usCourse         = crName
+  , usAssignmentName = asgName
+  , usStudent        = student
+  , usSubmissions    = submissions
+  }
 
 -- * Runner Tools
 

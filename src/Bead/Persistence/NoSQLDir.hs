@@ -14,6 +14,9 @@ import Control.Monad (join, mapM, liftM, filterM, when, unless)
 import Control.Exception (IOException, throwIO)
 import System.FilePath (joinPath, takeBaseName)
 import System.Directory (doesFileExist, doesDirectoryExist, createDirectory)
+import Data.Function (on)
+import Data.Time (UTCTime, getCurrentTime)
+import Data.List (sortBy)
 
 -- | Simple directory and file based NoSQL persistence implementation
 noSqlDirPersist = Persist {
@@ -39,6 +42,7 @@ noSqlDirPersist = Persist {
   , userCourses = nUserCourses
   , createCourseAdmin = nCreateCourseAdmin
   , courseAdmins = nCourseAdmins
+  , subscribedToCourse = nSubscribedToCourse
 
   , saveGroup     = nSaveGroup
   , loadGroup     = nLoadGroup
@@ -49,17 +53,22 @@ noSqlDirPersist = Persist {
   , subscribe     = nSubscribe
   , groupAdmins   = nGroupAdmins
   , createGroupProfessor = nCreateGroupProfessor
+  , subscribedToGroup   = nSubscribedToGroup
 
   , filterAssignment     = nFilterAssignment
   , assignmentKeys       = nAssignmentKeys
   , saveAssignment       = nSaveAssignment
   , loadAssignment       = nLoadAssignment
+  , modifyAssignment     = nModifyAssignment
   , saveCourseAssignment = nSaveCourseAssignment
   , saveGroupAssignment  = nSaveGroupAssignment
   , courseAssignments    = nCourseAssignments
   , groupAssignments     = nGroupAssignments
   , courseOfAssignment   = nCourseOfAssignment
   , groupOfAssignment    = nGroupOfAssignment
+  , submissionsForAssignment = nSubmissionsForAssignment
+  , assignmentCreatedTime    = nAssignmentCreatedTime
+  , lastSubmission           = nLastSubmission
 
   , saveSubmission = nSaveSubmission
   , loadSubmission = nLoadSubmission
@@ -214,6 +223,12 @@ nCreateCourseAdmin u ck = do
       link u ck "admins"
       link ck u "courseadmin"
 
+nSubscribedToCourse :: CourseKey -> TIO [Username]
+nSubscribedToCourse = objectsIn "users" Username isUserDir
+
+nSubscribedToGroup :: GroupKey -> TIO [Username]
+nSubscribedToGroup = objectsIn "users" Username isUserDir
+
 isCorrectDirStructure :: DirStructure -> FilePath -> TIO Bool
 isCorrectDirStructure d p = hasNoRollback $ isCorrectStructure p d
 
@@ -349,12 +364,31 @@ nSaveGroup ck group = do
 nFilterGroups :: (GroupKey -> Group -> Bool) -> TIO [(GroupKey, Group)]
 nFilterGroups f = filterDirectory groupDataDir isGroupDir tLoadGroup (filter (uncurry f))
 
+currentTime :: TIO UTCTime
+currentTime = hasNoRollback getCurrentTime
+
 nSaveAssignment :: Assignment -> TIO AssignmentKey
 nSaveAssignment a = do
   dirName <- createTmpDir assignmentDataDir "a"
   let assignmentKey = takeBaseName dirName
   save dirName a
+  saveCreatedTime dirName =<< currentTime
   return . AssignmentKey $ assignmentKey
+
+nModifyAssignment :: AssignmentKey -> Assignment -> TIO ()
+nModifyAssignment ak a = do
+  let p = assignmentDirPath ak
+  isA <- isAssignmentDir p
+  unless isA . throwEx . userError $ "Assignment does not exist"
+  update p a
+
+nAssignmentCreatedTime :: AssignmentKey -> TIO UTCTime
+nAssignmentCreatedTime ak = do
+  let p = assignmentDirPath ak
+  isDir <- isAssignmentDir p
+  case isDir of
+    False -> throwEx $ userError $ join [str ak, " assignment does not exist."]
+    True  -> getCreatedTime p
 
 selectValidDirsFrom :: FilePath -> (FilePath -> TIO Bool) -> TIO [FilePath]
 selectValidDirsFrom dir isValidDir = getSubDirectories dir >>= filterM isValidDir
@@ -376,9 +410,9 @@ nLoadAssignment a = do
   case isEx of
     False -> throwEx $ userError $ join [str a, " assignment does not exist."]
     True  -> liftM snd $ tLoadAssignment p
-  where
-    assignmentDirPath :: AssignmentKey -> FilePath
-    assignmentDirPath (AssignmentKey e) = joinPath [assignmentDataDir, e]
+
+assignmentDirPath :: AssignmentKey -> FilePath
+assignmentDirPath (AssignmentKey e) = joinPath [assignmentDataDir, e]
 
 tLoadAssignment :: FilePath -> TIO (AssignmentKey, Assignment)
 tLoadAssignment dirName = do
@@ -386,21 +420,23 @@ tLoadAssignment dirName = do
   e <- load dirName
   return (AssignmentKey exerciseKey, e)
 
-objectIn
+
+objectsIn
   :: (Show sk, DirName sk)
   => FilePath               -- Subdir where to look at
   -> (String -> rk)         -- Result's key constructor
   -> (FilePath -> TIO Bool) -- Checks if the given subdir is appropiate
   -> sk                     -- The source's key
-  -> TIO (Maybe rk)         -- Returns (Just rk) if only one key was found in the given dictionary,
-                            --   otherwise Nothing
-objectIn subdir keyConstructor isValidDir sourceKey = do
+  -> TIO [rk]
+objectsIn subdir keyConstructor isValidDir sourceKey = do
   let dirname = joinPath [dirName sourceKey, subdir]
-  ks <- map (keyConstructor . takeBaseName) <$> (selectValidDirsFrom dirname isValidDir)
-  return $ case ks of
-    []  -> Nothing
-    [k] -> Just k
-    _   -> error $ "Impossible: found more than one object found for: " ++ show sourceKey
+  map (keyConstructor . takeBaseName) <$> (selectValidDirsFrom dirname isValidDir)
+
+objectIn s k v sk = fmap just $ objectsIn s k v sk
+  where
+    just []  = Nothing
+    just [k] = Just k
+    just _   = error $ "Impossible: found more than one object found for: " ++ show sk
 
 objectIn' msg subdir keyConstructor isValidDir sourceKey = do
   m <- objectIn subdir keyConstructor isValidDir sourceKey
@@ -413,6 +449,9 @@ nCourseOfAssignment = objectIn "course" CourseKey isCourseDir
 
 nGroupOfAssignment :: AssignmentKey -> TIO (Maybe GroupKey)
 nGroupOfAssignment = objectIn  "group" GroupKey isGroupDir
+
+nSubmissionsForAssignment :: AssignmentKey -> TIO [SubmissionKey]
+nSubmissionsForAssignment = objectsIn "submission" SubmissionKey isSubmissionDir
 
 saveAndLinkAssignment :: (ForeignKey k) => FilePath -> k -> Assignment -> TIO AssignmentKey
 saveAndLinkAssignment subdir k a = do
@@ -467,18 +506,39 @@ nSaveSubmission ak u s = do
   save dirName s
   link ak submissionKey "assignment"
   link u  submissionKey "user"
+  link submissionKey ak "submission"
   linkUserSubmission submissionKey
   nPlaceToOpened submissionKey
   return submissionKey
     where
       linkUserSubmission :: SubmissionKey -> TIO ()
       linkUserSubmission sk = do
-        let dirName = joinPath [referredPath u, "submissions", baseName ak]
+        let dirName = userAsgSubmissionDir u ak
         createDirIfMissing dirName
         createLink
           (joinPath ["..","..","..","..","..",(referredPath sk)])
           (joinPath [dirName, (baseName sk)])
 
+userAsgSubmissionDir :: Username -> AssignmentKey -> FilePath
+userAsgSubmissionDir u ak = joinPath [referredPath u, "submissions", baseName ak]
+
+nLastSubmission :: AssignmentKey -> Username -> TIO (Maybe SubmissionKey)
+nLastSubmission ak u = do
+  let dirName = userAsgSubmissionDir u ak
+  e <- hasNoRollback $ doesDirectoryExist dirName
+  case e of
+    False -> return Nothing
+    True -> do
+      paths <- selectValidDirsFrom dirName isSubmissionDir
+      case paths of
+       [] -> return Nothing
+       ps -> (Just . snd . last . sortBy (compare `on` (solutionPostDate . fst))) <$> (mapM loadSbm ps)
+  where
+    loadSbm p = do
+      s <- load p
+      return (s, SubmissionKey . takeBaseName $ p)
+
+-- TODO: Validate the directory
 nLoadSubmission :: SubmissionKey -> TIO Submission
 nLoadSubmission = load . dirName
 

@@ -34,13 +34,16 @@ data Page
   | CourseAdmin
   | EvaulationTable
   | Evaulation
+  | ModifyEvaulation
   | NewGroupAssignment
   | NewCourseAssignment
+  | ModifyAssignment
   | Submission
   | SubmissionList
   | SubmissionDetails
   | GroupRegistration
   | UserDetails
+  | UserSubmissions
   
   -- Only Post handlers
   | CreateCourse
@@ -62,20 +65,23 @@ pageTransition s = nub $ p s ++ [s, Error, Logout] where
   p Error            = []
   p Home = [ Logout, CourseAdmin, EvaulationTable, NewGroupAssignment, NewCourseAssignment
            , Submission, SubmissionList, GroupRegistration, Administration, Profile
-           , SubmissionDetails --TODO
+           , UserSubmissions, SubmissionDetails, ModifyAssignment --TODO
            ]
   p CourseAdmin      = [Home, CreateGroup, AssignProfessor]
-  p EvaulationTable  = [Home, Evaulation]
+  p EvaulationTable  = [Home, Evaulation, ModifyEvaulation]
   p Evaulation       = [Home, EvaulationTable]
   p Submission       = [Home, SubmissionList]
   p SubmissionList   = [Home, SubmissionDetails]
   p SubmissionDetails = [Home, SubmissionList]
   p Administration   = [Home, CreateCourse, UserDetails, AssignCourseAdmin]
   p Profile          = [Home]
+  p UserSubmissions  = [Home, ModifyEvaulation]
+  p ModifyEvaulation = [Home, EvaulationTable]
   p UserDetails      = [Administration]
   p GroupRegistration = [Home]
   p NewGroupAssignment = [Home, NewGroupAssignment]
   p NewCourseAssignment = [Home, NewCourseAssignment]
+  p ModifyAssignment    = [Home]
 
   p CreateCourse      = [Administration]
   p AssignCourseAdmin = [Administration]
@@ -98,7 +104,10 @@ regularPages = [
 professorPages = [
     EvaulationTable
   , Evaulation
+  , ModifyEvaulation
   , NewGroupAssignment
+  , ModifyAssignment
+  , UserSubmissions
   ]
 
 courseAdminPages = [
@@ -107,7 +116,10 @@ courseAdminPages = [
   , AssignProfessor
   , EvaulationTable
   , Evaulation
+  , ModifyEvaulation
   , NewCourseAssignment
+  , ModifyAssignment
+  , UserSubmissions
   ]
 
 adminPages = [
@@ -126,11 +138,15 @@ nonMenuPages = [
   , SubmissionList
   , SubmissionDetails
   , UserDetails
+  , Evaulation
+  , ModifyEvaulation
   , AssignCourseAdmin
   , CreateGroup
   , AssignProfessor
   , NewGroupAssignment
   , NewCourseAssignment
+  , ModifyAssignment
+  , UserSubmissions
   ]
 
 allowedPages :: E.Role -> [Page]
@@ -157,8 +173,10 @@ parentPage Home           = Home
 parentPage CourseAdmin    = Home
 parentPage EvaulationTable = Home
 parentPage Evaulation      = EvaulationTable
+parentPage ModifyEvaulation = EvaulationTable
 parentPage Submission      = Home
 parentPage SubmissionList  = Home
+parentPage UserSubmissions = Home
 parentPage SubmissionDetails = Home
 parentPage Administration  = Home
 parentPage GroupRegistration = Home
@@ -169,6 +187,7 @@ parentPage CreateGroup     = CourseAdmin
 parentPage AssignProfessor = CourseAdmin
 parentPage NewGroupAssignment  = NewGroupAssignment
 parentPage NewCourseAssignment = NewCourseAssignment
+parentPage ModifyAssignment    = Home
 
 -- * Invariants
 

@@ -82,7 +82,7 @@ instance GetValueHandler Role where
       case parseRole s of
         Just r  -> return r
         Nothing -> throwError . strMsg $ "Role was not parseable"
-        
+
 emptyUsername :: Maybe Username
 emptyUsername = Nothing
 
@@ -117,6 +117,9 @@ instance InputPagelet User where
 
 emptyAssignment :: Maybe Assignment
 emptyAssignment = Nothing
+
+instance GetValueHandler AssignmentKey where
+  getValue = getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
 
 instance GetValueHandler Assignment where
   getValue = do

@@ -51,6 +51,7 @@ groupRegistrationContent desc = do
     groupsForTheUser (groups desc)
   H.p $ "Choose"
 
+-- TODO
 groupsAlreadyRegistered :: [(GroupKey, GroupDesc)] -> Html
 groupsAlreadyRegistered ds = return ()
   

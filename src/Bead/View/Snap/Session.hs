@@ -46,7 +46,9 @@ instance SessionStore P.Page where
     s P.Evaulation      = "Evaulation"
     s P.Submission      = "Submission"
     s P.SubmissionList  = "SubmissionList"
+    s P.UserSubmissions = "UserSubmissions"
     s P.SubmissionDetails = "SubmissionDetails"
+    s P.ModifyEvaulation  = "ModifyEvaulation"
     s P.Administration   = "Administration"
     s P.GroupRegistration = "GroupRegistration"
     s P.CreateCourse = "CreateCourse"
@@ -56,6 +58,7 @@ instance SessionStore P.Page where
     s P.AssignProfessor = "AssignProfessor"
     s P.NewGroupAssignment  = "NewGroupAssignment"
     s P.NewCourseAssignment = "NewCourseAssignment"
+    s P.ModifyAssignment = "ModifyAssignment"
 
 instance SessionRestore P.Page where
   restoreFromSession kv = case L.lookup pageSessionKey kv of
@@ -70,7 +73,9 @@ instance SessionRestore P.Page where
     Just "Evaulation"      -> Just P.Evaulation
     Just "Submission"      -> Just P.Submission
     Just "SubmissionList"  -> Just P.SubmissionList
+    Just "UserSubmissions" -> Just P.UserSubmissions
     Just "SubmissionDetails" -> Just P.SubmissionDetails
+    Just "ModifyEvaulation"  -> Just P.ModifyEvaulation
     Just "Administration"   -> Just P.Administration
     Just "GroupRegistration" -> Just P.GroupRegistration
     Just "CreateCourse" -> Just P.CreateCourse
@@ -80,6 +85,7 @@ instance SessionRestore P.Page where
     Just "AssignProfessor" -> Just P.AssignProfessor
     Just "NewCourseAssignment" -> Just P.NewCourseAssignment
     Just "NewGroupAssignment" -> Just P.NewGroupAssignment
+    Just "ModifyAssignment" -> Just P.ModifyAssignment
     Just _              -> Nothing
 
 -- * Session Key Values for Username

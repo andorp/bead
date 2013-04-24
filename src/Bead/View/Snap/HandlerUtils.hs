@@ -81,7 +81,7 @@ userState = do
 
 -- TODO: Show some error
 errorPageHandler :: T.Text -> Handler App b ()
-errorPageHandler msg = undefined -- blaze errorPage
+errorPageHandler msg = error "errorPageHandler: undefined" -- blaze errorPage
 
 i18nE :: (IsString s) => HandlerError App b (String -> s)
 i18nE = do

@@ -14,6 +14,4 @@ createCourse :: Content
 createCourse = postContentHandler submitCourse
 
 submitCourse :: POSTContentHandler
-submitCourse = do
-  course <- getValue
-  return . UA.CreateCourse $ course
+submitCourse = UA.CreateCourse <$> getValue

@@ -173,6 +173,7 @@ removeSymLink link = do
         (\f -> createSymbolicLink f link >> return ())
   return ()
 
+
 removeDir :: FilePath -> TIO ()
 removeDir d = step (removeDirectory d) (createDirectory d)
 
@@ -353,6 +354,8 @@ instance Load User where
       , u_name = name
       }
 
+
+
 -- * Update instances
 
 instance Update Role where
@@ -376,6 +379,16 @@ instance Update Evaulation where
     fileUpdate d "state"      (show . evaulationState $ e)
     fileUpdate d "evaulation" (writtenEvaulation e)
 
+instance Update Assignment where
+  update d a = do
+    updateName d (assignmentName a)
+    fileUpdate d "type"  (show . assignmentType  $ a)
+    fileUpdate d "start" (show . assignmentStart $ a)
+    fileUpdate d "end"   (show . assignmentEnd   $ a)
+    fileUpdate d "description" (assignmentDesc a)
+    fileUpdate d "testcases"   (assignmentTCs  a)
+    fileUpdate d "evaulation"  (show . evaulationType $ a)
+
 -- * Dir Structures
 
 data DirStructure = DirStructure {
@@ -395,14 +408,23 @@ isCorrectStructure dirname ds = do
 createStructureDirs :: DirPath -> DirStructure -> TIO ()
 createStructureDirs p = mapM_ (\x -> createDir (joinPath [p,x])) . directories
 
+created = "created"
+
+saveCreatedTime :: DirPath -> UTCTime -> TIO ()
+saveCreatedTime d = fileSave d "created" . show
+
+getCreatedTime :: DirPath -> TIO UTCTime
+getCreatedTime d = fileLoad d "created" read
+
 userDirStructure = DirStructure {
     files       = ["email", "name", "password", "role", "username"]
   , directories = ["course", "group" ,"courseadmin" ,"groupadmin", "submissions"]
   }
 
 assignmentDirStructure = DirStructure {
-    files       = ["name", "description", "testcases", "type", "start", "end"]
-  , directories = ["group", "course"]
+    files = [ "name", "description", "testcases"
+            , "type", "start", "end", created ]
+  , directories = ["group", "course", "submission"]
   }
 
 submissionDirStructure = DirStructure {

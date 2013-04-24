@@ -129,6 +129,8 @@ menuId P.EvaulationTable = "link-evaulation-table"
 menuId P.Evaulation      = "link-evaulation"
 menuId P.Submission      = "link-submission"
 menuId P.SubmissionList  = "link-submission-list"
+menuId P.UserSubmissions = "link-user-submissions"
+menuId P.ModifyEvaulation = "link-modify-evaulation"
 menuId P.SubmissionDetails = "link-submission-details"
 menuId P.GroupRegistration = "link-group-registration"
 menuId P.CreateCourse = "link-create-course"
@@ -138,6 +140,7 @@ menuId P.CreateGroup = "link-create-group"
 menuId P.AssignProfessor = "link-assign-professor"
 menuId P.NewGroupAssignment  = "link-new-group-assignment"
 menuId P.NewCourseAssignment = "link-new-course-assignment"
+menuId P.ModifyAssignment = "link-modify-assignment"
 
 instance SnapFieldName P.Page where
   fieldName = fromString . menuId

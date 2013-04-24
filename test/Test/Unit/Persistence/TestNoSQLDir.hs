@@ -20,6 +20,7 @@ import Control.Monad.Transaction.TIO
 -- Utils
 
 import Data.Time.Clock
+import Data.Maybe
 import System.Directory
 import Control.Monad (join, liftM)
 
@@ -135,6 +136,8 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   gs <- liftE $ filterGroups persist (\_ _ -> True)
   assertBool "Group list was different" ([gk] == map fst gs)
 
+  testHasNoLastSubmission gak username
+
   -- Submission
   let sbsm = Submission "submission" str
   sk <- liftE $ saveSubmission persist gak username sbsm
@@ -146,6 +149,12 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool "Assignment differs from registered" (gak == sk_ak)
   osk <- liftE $ openedSubmissions persist
   assertBool "Submission is not in the opened submissions" (elem sk osk)
+
+  testHasLastSubmission gak username sk
+
+  -- Test Submissions
+  submissions <- liftE $ submissionsForAssignment persist gak
+  assertBool "Submissions for assignment was different" (submissions == [sk])
 
   uss <- liftE $ userSubmissions persist username gak
   assertBool "Submission is not in the users' submission" (elem sk uss)
@@ -177,6 +186,17 @@ testComment sk = do
   assertBool "Loaded comment was different" (comment == c2)
   sk2 <- liftE $ submissionOfComment persist key
   assertBool "Submission key was different" (sk == sk2)
+
+testHasNoLastSubmission :: AssignmentKey -> Username -> IO ()
+testHasNoLastSubmission ak u = do
+  mKey <- liftE $ lastSubmission persist ak u
+  assertBool "Found submission" (isNothing mKey)
+
+testHasLastSubmission :: AssignmentKey -> Username -> SubmissionKey -> IO ()
+testHasLastSubmission ak u sk = do
+  mKey <- liftE $ lastSubmission persist ak u
+  assertBool "Submission was not found" (isJust mKey)
+  assertBool "Submission was different" (sk == fromJust mKey)
 
 clean_up = testCase "Cleaning up" $ do
   -- We use background knowledge, to clean up

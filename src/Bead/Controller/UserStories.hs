@@ -133,7 +133,7 @@ loadUser u = logAction INFO "Loading user information" $ do
 --   ANSWER: During his active session he can made authorized changes, after logging out
 --           he will be not able to relogin.
 deleteUser :: Username -> UserStory ()
-deleteUser = undefined
+deleteUser = error "deleteUser: undefined"
 
 administratedCourses :: UserStory [(CourseKey, Course)]
 administratedCourses = logAction INFO "Selecting adminstrated courses" $ do
@@ -194,11 +194,11 @@ createGroupProfessor u gk = logAction INFO "Set user as a professor of a group" 
 
 -- | Logically deletes an existing cousrse
 deleteCourse :: CourseKey -> UserStory ()
-deleteCourse = undefined
+deleteCourse = error "deleteCourse: undefined"
 
 -- | Updates the course information
 updateCourse :: CourseKey -> Course -> UserStory ()
-updateCourse = undefined
+updateCourse = error "updateCourse: undefined"
 
 -- | Adds a new group to the given course
 createGroup :: CourseKey -> Group -> UserStory GroupKey
@@ -244,11 +244,11 @@ attendedGroups = do
 
 -- | Deletes logically the given course
 deleteGroup :: GroupKey -> UserStory ()
-deleteGroup = undefined
+deleteGroup = error "deleteGroup: undefined"
 
 -- | Updates the group information
 updateGroup :: GroupKey -> Group -> UserStory ()
-updateGroup = undefined
+updateGroup = error "updateGroup: undefined"
 
 -- | Creates an assignment
 createAssignment :: Assignment -> UserStory AssignmentKey
@@ -317,7 +317,7 @@ authorize permission pObject
 
 -- | Checks if the user is authorized for a given operation
 isAuthorized :: Permission -> PermissionObject -> UserStory Bool
-isAuthorized = undefined
+isAuthorized = error "isAuthorized: undefined"
 
 -- | No operational User Story
 noOperation :: UserStory ()
@@ -435,6 +435,10 @@ submissionListDesc :: AssignmentKey -> UserStory SubmissionListDesc
 submissionListDesc ak = do
   withUserAndPersist $ \uname p -> R.submissionListDesc p uname ak
 
+submissionTables :: UserStory [SubmissionTableInfo]
+submissionTables = do
+  withUserAndPersist $ \uname p -> R.submissionTables p uname
+
 -- TODO: Check if the user can evaulates only submissions that
 -- are submitted for the assignment created by the user
 newEvaulation :: SubmissionKey -> Evaulation -> UserStory ()
@@ -466,6 +470,30 @@ createComment sk c = do
     when can $ do
       saveComment p sk c
       return ()
+
+userSubmissions :: Username -> AssignmentKey -> UserStory (Maybe UserSubmissionDesc)
+userSubmissions s ak = do
+  withUserAndPersist $ \u p -> do
+    -- The admin can see the submission of students who are belonging to him
+    courses <- (map fst) <$> R.administratedCourses p u
+    groups  <- (map fst) <$> R.administratedGroups  p u
+    courseStudents <- concat <$> mapM (subscribedToCourse p) courses
+    groupStudents  <- concat <$> mapM (subscribedToGroup p)  groups
+    let students = nub (courseStudents ++ groupStudents)
+    case elem s students of
+      False -> return Nothing
+      True  -> Just <$> R.userSubmissionDesc p s ak
+
+modifyAssignment :: AssignmentKey -> Assignment -> UserStory ()
+modifyAssignment ak a = do
+  withUserAndPersist $ \u p -> do
+    courseOrGroup <- R.courseOrGroupOfAssignment p ak
+    ownedAssignment <- case courseOrGroup of
+      Left  ck -> (elem ck . map fst) <$> R.administratedCourses p u
+      Right gk -> (elem gk . map fst) <$> R.administratedGroups  p u
+    when ownedAssignment $ R.modifyAssignment p ak a
+    -- TODO: Log invalid access
+    return ()
 
 -- * User Story combinators
 

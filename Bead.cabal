@@ -17,23 +17,22 @@ Executable Bead
                  snap-blaze, bytestring == 0.9.2.1, xmlhtml, text,
                  MonadCatchIO-transformers, snap-blaze, blaze-html,
                  blaze-markup, temporary, deepseq, mtl, directory, filepath,
-                 transformers, time, containers, unix, base
---                 blaze-markup, temporary, transformers, base, time,
---                 containers
+                 transformers, time, containers, base,
+                 unix
 
 
-Executable Test
-  GHC-Options: -fhpc -hpcdir dist/build/Test/Mix/
-  HS-Source-Dirs: src, test
-  Main-is: TestMain.hs
-  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
-                 transformers, HUnit, test-framework, test-framework-hunit,
-                 test-framework-quickcheck2, QuickCheck, unix, deepseq
+--Executable Test
+--  GHC-Options: -fhpc -hpcdir dist/build/Test/Mix/
+--  HS-Source-Dirs: src, test
+--  Main-is: TestMain.hs
+--  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
+--                 transformers, HUnit, test-framework, test-framework-hunit,
+--                 test-framework-quickcheck2, QuickCheck, unix, deepseq
 
-Executable WebDriver
-  Main-is: WebDriverMain.hs
-  HS-Source-Dirs: src, test
-  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
-                 transformers, network >= 2.4.1.0 , webdriver
+--Executable WebDriver
+--  Main-is: WebDriverMain.hs
+--  HS-Source-Dirs: src, test
+--  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
+--                 transformers, network >= 2.4.1.0 , webdriver
 
 

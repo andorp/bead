@@ -55,6 +55,46 @@ data SubmissionDetailsDesc = SubmissionDetailsDesc {
   , sdComments :: [String]
   }
 
+data SubmissionInfo
+  = Submission_Not_Found
+  | Submission_Unevaulated
+  | Submission_Passed EvaulationKey
+  | Submission_Failed EvaulationKey
+
+isPassed :: SubmissionInfo -> Bool
+isPassed (Submission_Passed _) = True
+isPassed _                     = False
+
+siEvaulationKey :: SubmissionInfo -> Maybe EvaulationKey
+siEvaulationKey Submission_Not_Found   = Nothing
+siEvaulationKey Submission_Unevaulated = Nothing
+siEvaulationKey (Submission_Failed ek) = Just ek
+siEvaulationKey (Submission_Passed ek) = Just ek
+
+type NoOfPassed = Int
+
+data SubmissionTableInfo = SubmissionTableInfo {
+    stCourse   :: String
+  , stNumberOfAssignments :: Int
+  , stAssignments :: [AssignmentKey] -- Cronologically ordered list of assignments
+  , stUsers       :: [Username]      -- Alphabetically ordered list of usernames
+  , stUserLines   :: [(UserDesc, NoOfPassed, [(AssignmentKey, SubmissionInfo)])]
+  }
+
+-- TODO
+checkSubmissionTableInfo :: SubmissionTableInfo -> Bool
+checkSubmissionTableInfo _ = True
+
+data EvaulatedWith
+  = EvHand
+
+data UserSubmissionDesc = UserSubmissionDesc {
+    usCourse         :: String
+  , usAssignmentName :: String
+  , usStudent        :: String
+  , usSubmissions :: [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)]
+  }
+
 -- * Entity keys
 
 newtype AssignmentKey = AssignmentKey String
