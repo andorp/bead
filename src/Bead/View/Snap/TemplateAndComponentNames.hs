@@ -35,7 +35,9 @@ instance SnapFieldName LoginComp where
 
 loginUsername = UsernameField "login"
 loginPassword = PasswordField "password"
-loginSubmitBtn = SubmitButton  "login-submit"
+
+loginSubmitBtn = SubmitButton "login-submit"
+regSubmitBtn   = SubmitButton "reg-submit"
 
 data RegistrationComp
   = RegFamilyName   { rFieldName :: String }
@@ -252,7 +254,7 @@ fieldList = map fieldName $ join [
   , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField, SFN evaulationValueField
   , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaulationStateField
   , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField,     SFN evaulationKeyField
-  , SFN commentKeyField,SFN commentValueField
+  , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn
   ], (map SFN P.allPages)
   ]
 

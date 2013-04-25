@@ -4,31 +4,61 @@ module Test.WebDriver.SitePages where
 import Test.WebDriver
 import Test.WebDriver.Commands
 import Test.WebDriver.PageObject
+import Test.WebDriver.Tools
 
-import Bead.Controller.Pages
+import Bead.Domain.Entities
 import Bead.View.Snap.TemplateAndComponentNames
+import Bead.Controller.Pages
 
-loginPage :: PageObject
-loginPage = PageObject {
-    precondition = liftS $ do
-      u <- findElems . ById . fieldName $ loginUsername
-      p <- findElems . ById . fieldName $ loginPassword
-      s <- findElems . ById . fieldName $ loginSubmitBtn
-      return $ and $ map (not . null) [u,p,s]
-  , failureMsg = "Login page"
-  , test = liftS $ do
-      (findElem . ById . fieldName $ loginUsername) >>= sendKeys "a"
-      (findElem . ById . fieldName $ loginPassword) >>= sendKeys "a"
-      (findElem . ById . fieldName $ loginSubmitBtn) >>= click
-      return ()
+import Data.String
+
+data LoginPage = LoginPage {
+    lUsername :: String
+  , lPassword :: String
   }
 
-logoutPage :: PageObject
-logoutPage = PageObject {
-    precondition = liftS $ do
-      e <- findElems . ById . fieldName $ Logout
-      return . not . null $ e
-  , failureMsg = "Logout page"
-  , test = liftS $ do
-      (findElem . ById . fieldName $ Logout) >>= click
+instance PageObject LoginPage where
+  precondition = const $
+    doesFieldExist loginUsername <&&>
+    doesFieldExist loginPassword <&&>
+    doesFieldExist loginSubmitBtn
+  failureMsg = const "Login page"
+  action l = do
+    (sendKeysStr (lUsername l)) <@> loginUsername
+    (sendKeysStr (lPassword l)) <@> loginPassword
+    click <@> loginSubmitBtn
+
+data LogoutPage = LogoutPage
+
+instance PageObject LogoutPage where
+  precondition = const $ doesFieldExist Logout
+  failureMsg   = const "Logout page"
+  action = const $ click <@> Logout
+
+data Registration = Registration {
+    rUsername :: String
+  , rPassword :: String
+  , rEmail    :: String
+  , rFullName :: String
   }
+
+loginInfo :: Registration -> LoginPage
+loginInfo r = LoginPage {
+    lUsername = rUsername r
+  , lPassword = rPassword r
+  }
+
+instance PageObject Registration where
+  precondition = const $
+    doesFieldExist loginUsername <&&>
+    doesFieldExist loginPassword <&&>
+    doesFieldExist registrationEmailAddress <&&>
+    doesFieldExist registrationFamilyName
+  failureMsg = const "Registration page"
+  action d = do
+    (sendKeysStr (rUsername d)) <@> loginUsername
+    (sendKeysStr (rPassword d)) <@> loginPassword
+    (sendKeysStr (rEmail    d)) <@> registrationEmailAddress
+    (sendKeysStr (rFullName d)) <@> registrationFamilyName
+    click <@> regSubmitBtn
+

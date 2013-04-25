@@ -117,7 +117,7 @@ newUser = withTitleAndHead content
 registrationForm :: AttributeValue -> AttributeValue -> Html
 registrationForm postAction submitText = do
   H.form ! A.method "post" ! A.action postAction $ do
-    H.table ! A.id "registration" $ do
+    H.table $ do
       -- Fields
       mapM_ field [ ("Login:", "text","login")
                   , ("Password:", "password","password")
@@ -127,7 +127,7 @@ registrationForm postAction submitText = do
       -- Submit button
       H.tr $ do
         H.td (return ())
-        H.td $ H.input ! A.type_ "submit" ! A.value submitText
+        H.td $ H.input ! A.id (fieldName regSubmitBtn) ! A.type_ "submit" ! A.value submitText
   where
     field (f,t,n) = do
       H.tr $ do

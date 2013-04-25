@@ -33,37 +33,36 @@ testResultMsg (TestFailure    Nothing) = "Failure: No error message"
 testResultMsg (TestException (Just m)) = m
 testResultMsg (TestFailure   (Just m)) = m
 
-type TSelenium a = Transaction TestException WD a
+type TWD a = Transaction TestException WD a
 
 data Result =
     Passed
   | Failed String
   deriving (Show,Eq)
 
-data PageObject = PageObject {
-    precondition :: TSelenium Bool
-  , failureMsg   :: String
-  , test         :: TSelenium ()
-  }
+class PageObject p where
+  precondition :: p -> WD Bool
+  failureMsg   :: p -> String
+  action       :: p -> WD ()
 
-failed :: String -> TSelenium a
+failed :: String -> TWD a
 failed msg = stepEither (return . Left . TestFailure . Just $ msg) (return ())
 
-liftS :: WD a -> TSelenium a
+liftS :: WD a -> TWD a
 liftS s = stepEither (liftM Right s) (return ())
 
-stepR :: WD a -> WD () -> TSelenium a
+stepR :: WD a -> WD () -> TWD a
 stepR s r = stepEither (liftM Right s) r
 
-runT :: TSelenium a -> WD Result
+runT :: TWD a -> WD Result
 runT t = do
   r <- atomically t
   case r of
     Left  e -> return . Failed . testResultMsg $ e
     Right _ -> return Passed
 
-pageObject :: PageObject -> TSelenium ()
-pageObject p = do
-  v <- precondition p
+page :: (PageObject p) => p -> TWD ()
+page p = do
+  v <- liftS . precondition $ p
   unless v . failed . failureMsg $ p
-  test p
+  liftS . action $ p

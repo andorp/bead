@@ -9,6 +9,7 @@ import Test.WebDriver.Commands
 
 import Test.WebDriver.PageObject
 import Test.WebDriver.SitePages
+import Test.WebDriver.UserStories
 
 -- Usage: main http://127.0.0.1:8000 127.0.0.1
 main = do
@@ -29,6 +30,6 @@ simpleTest :: WD ()
 simpleTest = do
   runT $ do
     liftS $ openPage "http://127.0.0.1:8000/"
-    pageObject loginPage
-    pageObject logoutPage
+    page (LoginPage "a" "a")
+    page LogoutPage
   return ()
