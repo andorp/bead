@@ -95,11 +95,11 @@ newAssignmentContent pd = postForm (routeOf . page $ pd) $ do
   do {"End date"  ; utcTimeInput (fieldName assignmentEndField)   (amap assignmentEnd   pd) }
   H.p $ do
     "Assignement"
-    pdMap (valueTextSelection (fieldName selectedGroup))
-          (valueTextSelection (fieldName selectedCourse))
+    pdMap (valueTextSelection (fieldName selectedCourse))
+          (valueTextSelection (fieldName selectedGroup))
           (hiddenInput (fieldName assignmentKeyField) . paramValue  . fst)
           pd
-  submitButton "Save"
+  submitButton (fieldName saveSubmitBtn) "Save"
     where
       pdMap f _ _ (PD_Course x)     = f x
       pdMap _ g _ (PD_Group  x)     = g x

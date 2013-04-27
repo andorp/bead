@@ -53,12 +53,12 @@ courseAdminContent info = do
   H.p $ postForm (routeOf P.CreateGroup) $ do
           valueTextSelection (fieldName courseKeyInfo) (courses info)
           inputPagelet emptyGroup
-          submitButton "Create Group"
+          submitButton (fieldName createGroupBtn) "Create Group"
   H.p $ "Assign teacher to the group"
   H.p $ postForm (routeOf P.AssignProfessor) $ do
           valueTextSelection (fieldName selectedGroup) (groups info)
           valueTextSelection (fieldName selectedProfessor) (professors info)
-          submitButton "Assign"
+          submitButton (fieldName assignGroupAdminBtn) "Assign"
 
 -- * Create group
 

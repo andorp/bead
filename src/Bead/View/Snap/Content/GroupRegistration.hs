@@ -60,7 +60,7 @@ groupsForTheUser gs = do
   postForm (routeOf P.GroupRegistration) $ do
     selection (fieldName groupRegistrationField) $ do
       mapM_ (\(gk,gd) -> option (paramValue gk) (descriptive gd) False) gs
-    submitButton "Register"
+    submitButton (fieldName regGroupSubmitBtn) "Register"
 
   where
     descriptive :: GroupDesc -> String

@@ -38,6 +38,17 @@ loginPassword = PasswordField "password"
 
 loginSubmitBtn = SubmitButton "login-submit"
 regSubmitBtn   = SubmitButton "reg-submit"
+regGroupSubmitBtn = SubmitButton "reg-group-submit"
+createGroupBtn    = SubmitButton "crt-group-submit"
+createCourseBtn = SubmitButton "crt-course-submit"
+assignBtn = SubmitButton "asg-assign-submit"
+selectBtn = SubmitButton "select-submit"
+saveEvalBtn = SubmitButton "save-eval-submit"
+saveSubmitBtn = SubmitButton "save-submit-button"
+submitSolutionBtn = SubmitButton "submit-solution-btn"
+commentBtn = SubmitButton "comment-submit-btn"
+saveChangesBtn = SubmitButton "save-changes-btn"
+assignGroupAdminBtn = SubmitButton "asg-group-admin-submit"
 
 data RegistrationComp
   = RegFamilyName   { rFieldName :: String }
@@ -254,7 +265,9 @@ fieldList = map fieldName $ join [
   , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField, SFN evaulationValueField
   , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaulationStateField
   , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField,     SFN evaulationKeyField
-  , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn
+  , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
+  , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
+  , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
   ], (map SFN P.allPages)
   ]
 

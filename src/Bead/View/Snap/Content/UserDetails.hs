@@ -38,7 +38,7 @@ userDetailForm :: User -> Html
 userDetailForm u = do
   postForm (routeOf P.UserDetails) $ do
     inputPagelet . defaultValue $ u
-    submitButton "Save changes"
+    submitButton (fieldName saveChangesBtn) "Save changes"
 
 userDoesNotExist :: Username -> Html
 userDoesNotExist username = do

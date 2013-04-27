@@ -53,17 +53,17 @@ administrationContent info = i18nHtml $ \i18n -> do
   H.p $ (html i18n "New Course")
   H.p $ postForm (routeOf P.CreateCourse) $ do
           inputPagelet emptyCourse
-          submitButton (i18n "Create Course")
+          submitButton (fieldName createCourseBtn) (i18n "Create Course")
   H.p $ (html i18n "Add course admin to the course")
   H.p $ postForm (routeOf P.AssignCourseAdmin) $ do
           valueTextSelection (fieldName selectedCourse) (courses info)
           valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
-          submitButton (i18n "Assign")
+          submitButton (fieldName assignBtn) (i18n "Assign")
   H.p $ valueTextSelection "course-selection" (courses info)
   H.p $ (html i18n "Modify user's account")
   H.p $ getForm (routeOf P.UserDetails) $ do
           inputPagelet emptyUsername
-          submitButton (i18n "Select")
+          submitButton (fieldName selectBtn) (i18n "Select")
   H.p $ (html i18n "Admin list / Add new admin")
   H.p $ valueTextSelection "admin-selection" (admins info)
   H.p $ (html i18n "Change password for a given user")

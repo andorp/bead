@@ -87,7 +87,7 @@ evaulationContent pd = do
             -- TODO: Checkbox
             textInput (fieldName evaulationStateField) 10 (Just (show (Passed 10)))
           hiddenKeyField . sbmKey $ pd
-          submitButton "Save Evaulation"
+          submitButton (fieldName saveEvalBtn) "Save Evaulation"
   H.p $ do
     "Submitted solution"
     (fromString . eSolution $ sd)

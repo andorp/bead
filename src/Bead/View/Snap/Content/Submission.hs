@@ -53,7 +53,7 @@ submissionContent p = postForm (routeOf P.Submission) $ do
     (fromString (assignmentDesc (asValue p)))
   H.p $ "Course / Group / Teacher / Assignment Information"
   hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
-  submitButton "Submit"
+  submitButton (fieldName submitSolutionBtn) "Submit"
 
 invalidAssignment :: Html
 invalidAssignment = "You have tried to open an assignment that not belongs to you"

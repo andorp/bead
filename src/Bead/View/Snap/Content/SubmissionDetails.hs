@@ -84,7 +84,7 @@ submissionDetailsContent p = do
       textAreaInput (fieldName commentValueField) 300 200 Nothing
       hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
       hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
-      submitButton "Comment"
+      submitButton (fieldName commentBtn) "Comment"
   H.p $ do
     "Comments"
     (mapM_ fromString (sdComments sm))
