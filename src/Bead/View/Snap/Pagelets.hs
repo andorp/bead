@@ -93,8 +93,8 @@ hiddenInput name value =
           ! A.name (fromString name)
           ! A.value (fromString value)
 
-submitButton :: String -> Html
-submitButton t = H.input ! A.type_ "submit" ! A.value (fromString t)
+submitButton :: String -> String -> Html
+submitButton i t = H.input ! A.id (fromString i) ! A.type_ "submit" ! A.value (fromString t)
 
 -- * Form
 
@@ -163,114 +163,12 @@ navigationMenu s = do
   mapM_ (linkToPage) $ P.menuPages (role s) (page s)
   H.p $ "Menu"
 
-class ButtonText b where
-  buttonText :: b -> String
-
-class KeyString b where
-  keyString :: b -> String
-
-data KeyFormData = KeyFormData {
-    divId   :: String
-  , tableId :: String
-  , key     :: String
-  , parent  :: Maybe (String, String)
-  , title   :: Html
-  }
-
-hiddenGroupKeyInput :: GroupKey -> Html
-hiddenGroupKeyInput k = hiddenInput (fieldName groupKeyName) (keyString k)
-
-hiddenCourseKeyInput :: CourseKey -> Html
-hiddenCourseKeyInput k = hiddenInput (fieldName courseKeyInfo) (keyString k)
-
-keySelectionForm :: (ButtonText k, KeyString k) => KeyFormData -> String -> [k] -> Html
-keySelectionForm formData act ks = do
-    (title formData)
-    mapM_ keyDivForm ks
-  where
-  keyDivForm k =
-    let parentRef = parentReference (parent formData) in
-    H.div ! A.id (fromString . divId $ formData) $ do
-      getForm act $ do
-        table (tableId formData) $
-          H.tr $ do
-            parentRef
-            H.td $ hiddenInput (key formData) (keyString k)
-            H.td $ submitButton (buttonText k)
-
-  parentReference Nothing      = return ()
-  parentReference (Just (k,v)) = H.td $ hiddenInput k v
-
-instance ButtonText AssignmentKey where
-  buttonText (AssignmentKey e) = e
-
-instance KeyString AssignmentKey where
-  keyString (AssignmentKey e) = e
-
-exerciseKeys :: String -> [AssignmentKey] -> Html
-exerciseKeys act = keySelectionForm exerciseFormData act where
-  exerciseFormData = KeyFormData {
-      divId   = "assignment"
-    , tableId = "assignment-table"
-    , key     = fieldName exerciseKey
-    , parent  = Nothing
-    , title   = "Assignments for the user"
-    }
-
 pageHeader :: UserState -> Html
 pageHeader s = do
   H.p $ "Header"
   H.span $ do { "Welcome "; fromString . str . user $ s ; "!"  }
   linkToPage P.Logout
   H.p $ "Header"
-
-instance ButtonText CourseKey where
-  buttonText (CourseKey e) = e
-
-instance KeyString CourseKey where
-  keyString (CourseKey e) = e
-
-courseKeys :: String -> [CourseKey] -> Html
-courseKeys act = keySelectionForm courseFormData act where
-  courseFormData = KeyFormData {
-      divId   = "course"
-    , tableId = "course-table"
-    , key     = fieldName courseKeyInfo
-    , parent  = Nothing
-    , title   = "Courses"
-    }
-
-instance ButtonText GroupKey where
-  buttonText (GroupKey g) = g
-
-instance KeyString GroupKey where
-  keyString (GroupKey g) = g
-
-groupKeys :: String -> CourseKey -> [GroupKey] -> Html
-groupKeys act ck = keySelectionForm groupFormData act where
-  groupFormData = KeyFormData {
-      divId   = "group"
-    , tableId = "group-table"
-    , key     = fieldName groupKeyName
-    , parent  = Just (fieldName courseKeyInfo, keyString ck)
-    , title   = "Groups"
-    }
-
-instance ButtonText Username where
-  buttonText (Username n) = n
-
-instance KeyString Username where
-  keyString (Username n) = n
-
-userKeys :: String -> [Username] -> Html
-userKeys act = keySelectionForm userFormData act where
-  userFormData = KeyFormData {
-      divId   = "users"
-    , tableId = "users"
-    , key     = fieldName usernameField
-    , parent  = Nothing
-    , title   = "Users"
-    }
 
 -- * Picklist
 
