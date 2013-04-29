@@ -102,21 +102,12 @@ withUserState h = userState >>= h
 withUserStateE :: (UserState -> HandlerError App b c) -> HandlerError App b c
 withUserStateE h = (lift userState) >>= h
 
--- | If the 'getParamE' found the parameter in the session manager, purges
---   from the session
 getParamE :: String -> (String -> a) -> String -> HandlerError App b a
-getParamE p f msg = do
-  x <- lift . getParam . B.pack $ p
-  y <- lift . withTop sessionManager . getFromSession . fromString $ p
-  case (x,y) of
-    (Just _, Just _)  -> error "Parameter were defined both in request parameter and cookie"
-    (Nothing,Nothing) -> throwError . strMsg $ msg
-    (Just x',Nothing) -> return . f . B.unpack $ x'
-    (Nothing,Just y') -> do
-      lift . withTop sessionManager $ do
-        deleteFromSession . fromString $ p
-        commitSession
-      return . f . T.unpack $ y'
+getParamE param f msg = do
+  x <- getParam . B.pack $ param
+  case x of
+    Nothing -> throwError . strMsg $ msg
+    Just  y -> return . f . B.unpack $ y
 
 setReqParamInSession :: ReqParam -> HandlerError App b ()
 setReqParamInSession (ReqParam (k,v)) = setInSessionE k v
