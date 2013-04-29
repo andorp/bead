@@ -76,12 +76,13 @@ x |> f = f x
 
 textInput :: String -> Int -> Maybe String -> Html
 textInput name size value =
-  (H.input ! A.type_ "text" ! A.name (fromString name)) |> (withDefaultValue value)
+  (H.input ! A.type_ "text" ! A.id (fromString name) ! A.name (fromString name)) |> (withDefaultValue value)
 
 textAreaInput :: String -> Int -> Int -> Maybe String -> Html
 textAreaInput name cols rows value =
   (H.input ! A.type_ "textarea"
            ! A.name (fromString name)
+           ! A.id   (fromString name)
            ! A.cols (fromString . show $ cols)
            ! A.rows (fromString . show $ rows))
   |>
@@ -177,7 +178,7 @@ option value text False = H.option ! A.value (fromString value)                 
 option value text True  = H.option ! A.value (fromString value) ! A.selected "" $ fromString text
 
 selection :: String -> Html -> Html
-selection name = H.select ! A.name (fromString name) ! A.multiple "false"
+selection name = H.select ! A.id (fromString name) ! A.name (fromString name) ! A.multiple "false"
 
 class SelectionValue v where
   selectionValue :: v -> String

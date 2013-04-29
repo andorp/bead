@@ -132,5 +132,5 @@ registrationForm postAction submitText = do
     field (f,t,n) = do
       H.tr $ do
         H.td f
-        H.td $ H.input ! A.type_ t ! A.name n ! A.size "20"
+        H.td $ H.input ! A.type_ t ! A.id n ! A.name n ! A.size "20"
 

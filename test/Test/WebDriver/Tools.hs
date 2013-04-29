@@ -3,6 +3,7 @@ module Test.WebDriver.Tools where
 -- Webdriver imports
 
 import Test.WebDriver
+import Test.WebDriver.Classes
 import Test.WebDriver.Commands
 
 -- Haskell imports
@@ -16,18 +17,21 @@ import Bead.View.Snap.TemplateAndComponentNames
 
 -- * Tools
 
-doesFieldExist :: (SnapFieldName f) => f -> WD Bool
+doesFieldExist :: (WebDriver wd, SnapFieldName f) => f -> wd Bool
 doesFieldExist f = (not . null) <$> (findElems . ById . fieldName $ f)
 
-findField :: (SnapFieldName f) => f -> WD Element
+doesElementExist :: (WebDriver wd, SnapFieldName f) => f -> wd Bool
+doesElementExist = doesFieldExist
+
+findField :: (WebDriver wd, SnapFieldName f) => f -> wd Element
 findField = findElem . ById . fieldName
 
-onField :: (SnapFieldName f) => f -> (Element -> WD a) -> WD a
+onField :: (WebDriver wd, SnapFieldName f) => f -> (Element -> wd a) -> wd a
 onField f w = (findField f) >>= w
 
 infixr 1 <@>
 
-(<@>) :: (SnapFieldName f) => (Element -> WD a) -> f -> WD a
+(<@>) :: (WebDriver wd, SnapFieldName f) => (Element -> wd a) -> f -> wd a
 w <@> f = onField f w
 
 infixr 1 <&&>
@@ -40,9 +44,16 @@ a <&&> b = do
     False -> return False
     True  -> b
 
+ifM :: (Monad m) => m Bool -> m a -> m a -> m a
+ifM p t e = do
+  x <- p
+  case x of
+    True  -> t
+    False -> e
+
 allM :: (Functor m, Monad m) => [m Bool] -> m Bool
 allM = (fmap and) . sequence
 
-sendKeysStr :: String -> Element -> WD ()
+sendKeysStr :: (WebDriver wd) => String -> Element -> wd ()
 sendKeysStr s = sendKeys (fromString s)
 

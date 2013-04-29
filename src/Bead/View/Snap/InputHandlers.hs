@@ -81,7 +81,7 @@ instance GetValueHandler Role where
     createRole s = do
       case parseRole s of
         Just r  -> return r
-        Nothing -> throwError . strMsg $ "Role was not parseable"
+        Nothing -> throwError . strMsg $ "Role was not parseable: " ++ s
 
 emptyUsername :: Maybe Username
 emptyUsername = Nothing

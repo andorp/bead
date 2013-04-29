@@ -3,12 +3,14 @@ module Test.WebDriver.PageObject where
 
 -- Haskell imports
 
+import Data.Maybe
 import Control.Monad (liftM, unless)
-import Control.Monad.Trans.Error (Error(..))
+import Control.Monad.Trans.Error
 
 -- Test imports
 
 import Test.WebDriver
+import Test.WebDriver.Classes
 import Test.WebDriver.Commands
 import Control.Monad.Transaction
 
@@ -17,11 +19,14 @@ import Control.Monad.Transaction
 import Bead.Controller.Pages
 import Bead.View.Snap.TemplateAndComponentNames
 
+import Control.Monad.TestContext.Trans
+
 -- Definitions
 
 data TestException
   = TestException (Maybe String)
   | TestFailure   (Maybe String)
+  deriving Show
 
 instance Error TestException where
   noMsg  = TestException Nothing
@@ -33,7 +38,7 @@ testResultMsg (TestFailure    Nothing) = "Failure: No error message"
 testResultMsg (TestException (Just m)) = m
 testResultMsg (TestFailure   (Just m)) = m
 
-type TWD a = Transaction TestException WD a
+type TWD a = ErrorT TestException WD a
 
 data Result =
     Passed
@@ -41,28 +46,47 @@ data Result =
   deriving (Show,Eq)
 
 class PageObject p where
-  precondition :: p -> WD Bool
+  precondition :: p -> TWD Bool
   failureMsg   :: p -> String
-  action       :: p -> WD ()
+
+class (PageObject p) => PageAction p where
+  action :: p -> TWD ()
+
+onPage :: (PageObject p) => p -> TWD a -> TWD a
+onPage p a = do
+  checkIfPageIs p
+  a
 
 failed :: String -> TWD a
-failed msg = stepEither (return . Left . TestFailure . Just $ msg) (return ())
+failed = throwError . TestFailure . Just
 
-liftS :: WD a -> TWD a
-liftS s = stepEither (liftM Right s) (return ())
+failsOn :: (a -> Bool) -> (a -> b) -> String -> TWD a -> TWD b
+failsOn f g msg m = do
+  x <- m
+  case f x of
+    True  -> failed msg
+    False -> return . g $ x
 
-stepR :: WD a -> WD () -> TWD a
-stepR s r = stepEither (liftM Right s) r
+failsOnNothing :: String -> TWD (Maybe a) -> TWD a
+failsOnNothing = failsOn isNothing fromJust
+
+failsOnFalse :: String -> TWD Bool -> TWD Bool
+failsOnFalse = failsOn (==False) id
 
 runT :: TWD a -> WD Result
-runT t = do
-  r <- atomically t
-  case r of
-    Left  e -> return . Failed . testResultMsg $ e
+runT k = do
+  x <- runErrorT k
+  case x of
+    Left  e -> return . Failed . show $ e
     Right _ -> return Passed
 
-page :: (PageObject p) => p -> TWD ()
+page :: (PageAction p) => p -> TWD ()
 page p = do
-  v <- liftS . precondition $ p
-  unless v . failed . failureMsg $ p
-  liftS . action $ p
+  checkIfPageIs p
+  action        p
+
+checkIfPageIs :: (PageObject p) => p -> TWD ()
+checkIfPageIs p = do
+  x <- precondition              $ p
+  unless x . failed . failureMsg $ p
+
