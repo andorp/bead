@@ -193,6 +193,9 @@ getSubDirectories = hasNoRollback . filterDirContents doesDirectoryExist
 getFilesInFolder :: FilePath -> TIO [FilePath]
 getFilesInFolder = hasNoRollback . filterDirContents doesFileExist
 
+doesDirExist :: FilePath -> TIO Bool
+doesDirExist = hasNoRollback . doesDirectoryExist
+
 openTmpFile :: FilePath -> String -> TIO (FilePath, Handle)
 openTmpFile f t = stepM
   (openTempFile f t)

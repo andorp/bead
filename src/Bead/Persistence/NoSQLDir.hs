@@ -574,6 +574,15 @@ nRemoveFromOpened sk = removeSymLink (joinPath [openSubmissionDataDir, baseName 
 filterDirectory :: FilePath -> (FilePath -> TIO Bool) -> (FilePath -> TIO a) -> ([a] -> [b]) -> TIO [b]
 filterDirectory dir isValid loader f = f <$> ((selectValidDirsFrom dir isValid) >>= (mapM loader))
 
+-- | First it checks if the directory exist, if not the result is an empty list
+--   else, the result is the original filtered data
+safeFilterDirectory :: FilePath -> (FilePath -> TIO Bool) -> (FilePath -> TIO a) -> ([a] -> [b]) -> TIO [b]
+safeFilterDirectory dir isValid loader f = do
+  e <- doesDirExist dir
+  case e of
+    False -> return []
+    True  -> filterDirectory dir isValid loader f
+
 nOpenedSubmission :: TIO [SubmissionKey]
 nOpenedSubmission = filterDirectory openSubmissionDataDir isSubmissionDir tLoadSubmission (map fst)
 
@@ -585,7 +594,7 @@ submissionDirPath (SubmissionKey sk) = joinPath [submissionDataDir, sk]
 
 nUserSubmissions :: Username -> AssignmentKey -> TIO [SubmissionKey]
 nUserSubmissions u ak =
-  filterDirectory
+  safeFilterDirectory
     (joinPath [userDirPath u, "submissions", baseName ak])
     isSubmissionDir
     (return . takeBaseName)
