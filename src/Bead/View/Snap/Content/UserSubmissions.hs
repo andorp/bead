@@ -52,9 +52,9 @@ submissionTable s = table "submission-table" $ do
 
   where
     headerLine = H.tr $ do
-      H.td "Date of submission"
-      H.td "Evaulated By"
-      H.td ""
+      H.th "Date of submission"
+      H.th "Evaulated By"
+      H.th ""
 
     submissionLine (sk,t,si,ev) = H.tr $ do
       H.td $ sbmLink si sk t

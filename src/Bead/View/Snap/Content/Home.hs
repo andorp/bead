@@ -79,7 +79,7 @@ htmlSubmissionTable (i,s) = table (join ["st", show i]) $ do
   assignmentLine (stAssignments s)
   mapM_ userLine (stUserLines s)
   where
-    headLine = H.tr . H.td . fromString
+    headLine = H.tr . H.th . fromString
     assignmentLine as = H.tr $ do
       H.td "Name"
       H.td "Username"
