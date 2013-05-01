@@ -35,6 +35,12 @@ data PageData
   | PD_Group      [(GroupKey, Group)]
   | PD_Assignment (AssignmentKey, Assignment)
 
+pageDataMap f _ _ (PD_Course x)     = f x
+pageDataMap _ g _ (PD_Group  x)     = g x
+pageDataMap _ _ h (PD_Assignment x) = h x
+
+isEmptyData = pageDataMap null null (const False)
+
 -- * Course Assignment
 
 newCourseAssignmentPage :: GETContentHandler
@@ -73,6 +79,11 @@ postModifyAssignment :: POSTContentHandler
 postModifyAssignment = ModifyAssignment <$> getValue <*> getValue
 
 newAssignmentContent :: PageData -> Html
+newAssignmentContent pd
+  | isEmptyData pd = H.p $ pageDataMap (const "You are not an admin for any course")
+                                       (const "You are not an admin for any groups")
+                                       (const "This assignment is not created by you")
+                                       pd
 newAssignmentContent pd = postForm (routeOf . page $ pd) $ do
   H.p $ do
     "Assignment title"
@@ -94,19 +105,17 @@ newAssignmentContent pd = postForm (routeOf . page $ pd) $ do
   do {"Start date"; utcTimeInput (fieldName assignmentStartField) (amap assignmentStart pd) }
   do {"End date"  ; utcTimeInput (fieldName assignmentEndField)   (amap assignmentEnd   pd) }
   H.p $ do
-    "Assignement"
-    pdMap (valueTextSelection (fieldName selectedCourse))
+    pageDataMap (const "Course") (const "Group") (const "") pd
+    pageDataMap
+          (valueTextSelection (fieldName selectedCourse))
           (valueTextSelection (fieldName selectedGroup))
           (hiddenInput (fieldName assignmentKeyField) . paramValue  . fst)
           pd
   submitButton (fieldName saveSubmitBtn) "Save"
     where
-      pdMap f _ _ (PD_Course x)     = f x
-      pdMap _ g _ (PD_Group  x)     = g x
-      pdMap _ _ h (PD_Assignment x) = h x
-
       page :: PageData -> Page
-      page = pdMap (const P.NewCourseAssignment)
+      page = pageDataMap
+                   (const P.NewCourseAssignment)
                    (const P.NewGroupAssignment)
                    (const P.ModifyAssignment)
 
