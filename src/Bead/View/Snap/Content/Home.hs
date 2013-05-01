@@ -58,7 +58,7 @@ homeContent d = do
 
 availableAssignments :: [(AssignmentKey,AssignmentDesc)] -> Html
 availableAssignments as = do
-  table "available-assignments" $ do
+  table (fieldName availableAssignmentsTable) (className assignmentTable) $ do
     mapM_ assignmentLine as
   where
     assignmentLine (k,a) = H.tr $ do
@@ -74,7 +74,7 @@ htmlSubmissionTables :: [SubmissionTableInfo] -> Html
 htmlSubmissionTables xs = mapM_ htmlSubmissionTable . zip [1..] $ xs
 
 htmlSubmissionTable :: (Int,SubmissionTableInfo) -> Html
-htmlSubmissionTable (i,s) = table (join ["st", show i]) $ do
+htmlSubmissionTable (i,s) = table (join ["st", show i]) (className groupSubmissionTable) $ do
   headLine (stCourse s)
   assignmentLine (stAssignments s)
   mapM_ userLine (stUserLines s)

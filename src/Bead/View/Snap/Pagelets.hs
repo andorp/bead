@@ -107,8 +107,8 @@ getForm action = H.form ! A.method "get" ! A.action (fromString action)
 
 -- * Table
 
-table :: String -> Html -> Html
-table i = H.table ! A.id (fromString i)
+table :: String -> String -> Html -> Html
+table i c = H.table ! A.id (fromString i) ! A.class_ (fromString c)
 
 tableLine :: String -> Html -> Html
 tableLine title field = H.tr $ do

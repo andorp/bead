@@ -73,6 +73,14 @@ failsOnNothing = failsOn isNothing fromJust
 failsOnFalse :: String -> TWD Bool -> TWD Bool
 failsOnFalse = failsOn (==False) id
 
+cleanUp :: TWD a -> TWD b -> TWD a
+cleanUp t c =
+  catchError
+    t
+    (\e -> do
+       c
+       throwError e)
+
 runT :: TWD a -> WD Result
 runT k = do
   x <- runErrorT k

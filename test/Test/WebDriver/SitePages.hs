@@ -6,6 +6,7 @@ import Test.WebDriver.Commands
 import Test.WebDriver.PageObject
 import Test.WebDriver.Tools
 import Test.WebDriver.Support.Select
+import Test.WebDriver.Support.Table
 
 import Bead.Domain.Entities
 import Bead.View.Snap.TemplateAndComponentNames
@@ -13,7 +14,11 @@ import Bead.Controller.Pages
 
 import Data.String
 import Data.Maybe
-import Control.Monad (when)
+import Data.List (find)
+import Control.Monad
+import Control.Applicative ((<$>))
+
+import Data.Text (unpack)
 
 -- * Login and logout
 
@@ -110,25 +115,6 @@ instance PageObject HomePage where
 instance PageAction HomePage where
   action = const $ return ()
 
--- * Group Registration
-
-data GroupRegData = GroupRegData {
-    gName :: String
-  }
-
-instance PageObject GroupRegData where
-  precondition = const $ do
-    doesFieldExist groupRegistrationField
-  failureMsg = const "Group registration"
-
-instance PageAction GroupRegData where
-  action g = do
-    ms <- select =<< findField groupRegistrationField
-    when (isNothing ms) $ failed "Group registration was not on the page"
-    let s = fromJust ms
-    selectByValue s (fromString . gName $ g)
-    click <@> regGroupSubmitBtn
-
 -- * Administration
 
 data AdminData = AdminData
@@ -218,6 +204,15 @@ createGroup g = do
   sendKeysStr (gdGroupDesc g) <@> groupDescField
   click <@> createGroupBtn
 
+checkSelectionVisibleText :: (SnapFieldName s) => s -> String -> TWD ()
+checkSelectionVisibleText s v = do
+  os <- options =<< (createSelect s $ "No selection was found: " ++ fieldName s)
+  e <- elem (fromString v) <$> mapM getText os
+  unless e $ failed "No text was found in the selection"
+
+checkGroupSelection :: GroupData -> TWD ()
+checkGroupSelection g = checkSelectionVisibleText selectedGroup (gdGroupName g)
+
 setGroupAdmin :: String -> String -> TWD ()
 setGroupAdmin groupAdmin g = do
   users <- createSelect selectedProfessor "Group admin user field is not found"
@@ -226,7 +221,51 @@ setGroupAdmin groupAdmin g = do
   selectByVisibleText groups (fromString g)
   click <@> assignGroupAdminBtn
 
--- Assignment creation
+tables :: (SnapClassName c) => c -> TWD [Table]
+tables c = do
+  tableElements <- findElems (ByClass . className $ c)
+  tables <- mapM table tableElements
+  unless (and . map isJust $ tables) $
+    failed $ join ["At least one element with ",className c," class was not a table"]
+  return . map fromJust $ tables
+
+tableById :: (SnapFieldName f) => f -> TWD Table
+tableById i = do
+  tableElements <- findElems (ById . fieldName $ i)
+  when (length tableElements /= 1) $ failed "Zero or more than selected table were found"
+  t <- table (head tableElements)
+  when (isNothing t) $ failed "Element was not a table"
+  return . fromJust $ t
+
+findGroupSubmissionTable :: String -> TWD ()
+findGroupSubmissionTable g = do
+  ts <- tables groupSubmissionTable
+  tableHeaders <- concat <$> (mapM headers ts)
+  when (null tableHeaders) $ failed "No header was found"
+  tableHeaderTexts <- mapM getText tableHeaders
+  unless (isJust . find (fromString g ==) $ tableHeaderTexts) $
+    failed $ "No submission table was found with header: " ++ g
+
+findGroupAssignmentInTable :: String -> String -> TWD ()
+findGroupAssignmentInTable g a = do
+  ts <- tables assignmentTable
+  when (null ts) $
+    failed "No assignment table was found"
+  let t = head ts
+  rs <- rows t
+  when (null rs) $
+    failed "No rows was found in the table"
+  found <- or <$> mapM foundAssignmentLine rs
+  unless found $
+    failed "Assignment was not found"
+    where
+      foundAssignmentLine e = do
+        texts <- mapM getText =<< findElemsFrom e (ByTag "td")
+        let foundGroup = elem (fromString g) texts
+            foundAsg   = elem (fromString a) texts
+        return (foundGroup && foundAsg)
+
+-- * Assignment creation
 
 data AsgType = GroupAsg | CourseAsg
 
@@ -273,6 +312,58 @@ instance PageAction AssignmentData where
       CourseAsg -> createSelect selectedCourse "No course selection is found"
     selectByVisibleText gc (fromString . aGroupOrCourse $ a)
     click <@> saveSubmitBtn
+
+-- * Group Registration
+
+data GroupRegData = GroupRegData {
+    grName :: String
+  }
+
+instance PageObject GroupRegData where
+  precondition = const $ do
+    failsOnFalse "Group registration button was not found" (doesElementExist regGroupSubmitBtn)
+    failsOnFalse "Group registration selection was not found" (doesFieldExist groupRegistrationField)
+    return True
+  failureMsg _ = "Group Registraion"
+
+instance PageAction GroupRegData where
+  action g = do
+    groups <- createSelect groupRegistrationField "No group selection was not found"
+    selectByVisibleText groups (fromString . grName $ g)
+    click <@> regGroupSubmitBtn
+
+-- * Submit solution
+
+clickNewSolution :: String -> String -> TWD ()
+clickNewSolution gName aName = do
+  l <- mapM link =<< filterM assignmentLine =<< rows =<< tableById availableAssignmentsTable
+  when (null l) . failed . join $ ["No assignment link was found: ", gName, " ", aName]
+  when (length l > 1) . failed . join $ ["More than one assignment were found: ", gName, " ", aName]
+  click . head $ l
+  where
+    assignmentLine :: Element -> TWD Bool
+    assignmentLine e = do
+      cells <- mapM getText =<< findElemsFrom e (ByTag "td")
+      return $ ((cells !! 1) == (fromString gName)) && ((cells !! 3) == (fromString aName))
+
+    link e = do
+      cells <- findElemsFrom e (ByTag "td")
+      findElemFrom (cells !! 0) (ByTag "a")
+
+data SubmissionData = SubmissionData {
+    sbm :: String
+  }
+
+instance PageObject SubmissionData where
+  precondition = const $ do
+    failsOnFalse "No submission field was found" (doesFieldExist submissionTextField)
+    failsOnFalse "No submission button was found" (doesElementExist submitSolutionBtn)
+  failureMsg = const "Submission"
+
+instance PageAction SubmissionData where
+  action s = do
+    sendKeysStr (sbm s) <@> submissionTextField
+    click <@> submitSolutionBtn
 
 -- * Page Components
 

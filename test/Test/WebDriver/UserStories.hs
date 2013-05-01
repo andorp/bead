@@ -40,13 +40,6 @@ invalidLogin url loginData = do
   page loginData
   checkIfPageIs loginData
 
-groupRegistration :: String -> LoginData -> GroupRegData -> TWD ()
-groupRegistration url login group = do
-  loginUser url login $ do
-    selectPageFromMenu GroupRegistration
-    page group
-    isPage (parentPage GroupRegistration)
-
 changeUserRole :: String -> LoginData -> LoginData -> Role -> TWD ()
 changeUserRole url adminUser user r = do
   loginUser url adminUser $ do
@@ -75,22 +68,43 @@ cAdminCreateGroup url courseAdmin g = do
   loginUser url courseAdmin $ do
     selectPageFromMenu CourseAdmin
     onPage CourseAdminPage $ createGroup $ g
+    onPage CourseAdminPage $ checkGroupSelection $ g
 
-cAdminAssignGroupAdmin :: String -> LoginData -> String -> String -> TWD ()
+cAdminAssignGroupAdmin :: String -> LoginData -> LoginData -> String -> TWD ()
 cAdminAssignGroupAdmin url courseAdmin groupAdmin g = do
   loginUser url courseAdmin $ do
     selectPageFromMenu CourseAdmin
-    onPage CourseAdminPage $ setGroupAdmin groupAdmin g
+    onPage CourseAdminPage $ setGroupAdmin (lUsername groupAdmin) g
+  loginUser url groupAdmin $ do
+    findGroupSubmissionTable g
 
 -- * Group Admin
 
-gAdminCreatesAssignment :: String -> LoginData -> AssignmentData -> TWD ()
-gAdminCreatesAssignment url groupAdmin aData = do
+gAdminCreatesAssignment :: String -> LoginData -> LoginData -> AssignmentData -> TWD ()
+gAdminCreatesAssignment url groupAdmin student aData = do
   loginUser url groupAdmin $ do
     selectPageLink NewGroupAssignment
     page aData
     selectPageFromMenu Home
-    -- TODO Check the created assignment
+  loginUser url student $ do
+    findGroupAssignmentInTable
+      (aGroupOrCourse aData)
+      (aName aData)
+
+-- * Student
+
+groupRegistration :: String -> LoginData -> String -> TWD ()
+groupRegistration url student g = do
+  loginUser url student $ do
+    selectPageFromMenu GroupRegistration
+    page (GroupRegData { grName = g})
+
+studentSubmitsSolution :: String -> LoginData -> String -> String -> String -> TWD ()
+studentSubmitsSolution url student g a s = do
+  loginUser url student $ do
+    clickNewSolution g a
+    page (SubmissionData s)
+    -- TODO Check if the solution appears on the list
 
 -- * Navigation
 

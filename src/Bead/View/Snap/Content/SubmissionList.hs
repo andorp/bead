@@ -52,7 +52,7 @@ submissionListContent p = postForm (routeOf P.SubmissionList) $ do
     (fromString . join . slTeacher . smList $ p)
   H.p $ do
     "Submission list"
-    table "submission-table" $
+    table "submission-table" (className submissionListTable) $
       mapM_ submissionLine (slSubmissions . smList $ p)
   H.p $ do
     "Assignment"

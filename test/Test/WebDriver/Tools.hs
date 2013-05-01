@@ -54,6 +54,10 @@ ifM p t e = do
 allM :: (Functor m, Monad m) => [m Bool] -> m Bool
 allM = (fmap and) . sequence
 
+maybeM :: (Functor m, Monad m) => (a -> m b) -> Maybe a -> m (Maybe b)
+maybeM _ Nothing  = return Nothing
+maybeM k (Just x) = Just <$> (k x)
+
 sendKeysStr :: (WebDriver wd) => String -> Element -> wd ()
 sendKeysStr s = sendKeys (fromString s)
 

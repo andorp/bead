@@ -19,6 +19,9 @@ import qualified Data.Set as Set
 class SnapFieldName f where
   fieldName :: (IsString s) => f -> s
 
+class SnapClassName c where
+  className :: (IsString s) => c -> s
+
 newtype SubmitButton = SubmitButton { sbFieldName :: String }
 
 instance SnapFieldName SubmitButton where
@@ -240,12 +243,36 @@ commentValueField = CommentValueField "comment-value"
 instance SnapFieldName CommentField where
   fieldName = fromString . ckFieldName
 
+data TableName = TableName {
+    tName :: String
+  }
+
+instance SnapFieldName TableName where
+  fieldName = fromString . tName
+
+availableAssignmentsTable = TableName "available-assignments"
+
 -- * Template names
 
 newtype LoginTemp = LoginTemp String
   deriving (Eq)
 
 loginTemp = LoginTemp "login"
+
+-- * Class names
+
+data TableClassName = TableClassName {
+    tcName :: String
+  }
+
+instance SnapClassName TableClassName where
+  className = fromString . tcName
+
+groupSubmissionTable = TableClassName "group-submission-table"
+assignmentTable = TableClassName "assignment-table"
+evaulationClassTable = TableClassName "evaulation-table"
+userSubmissionClassTable = TableClassName "user-submission-class-table"
+submissionListTable = TableClassName "submission-list-table"
 
 -- * Unit tests
 
@@ -268,10 +295,19 @@ fieldList = map fieldName $ join [
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
   , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
+  , SFN availableAssignmentsTable
   ], (map SFN P.allPages)
   ]
 
+classList :: [String]
+classList = map className [
+    groupSubmissionTable, assignmentTable, evaulationClassTable, userSubmissionClassTable
+  , submissionListTable
+  ]
+
+names = fieldList ++ classList
+
 unitTests = UnitTests [
     ( "Field names must be unique"
-      , ((Set.size . Set.fromList $ fieldList) == (length fieldList)) )
+      , ((Set.size . Set.fromList $ names) == (length names)) )
   ]

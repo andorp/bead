@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Test.WebDriver.Support.Select (
     Select
-  , rootElement
   , isMultiple
 
   , select

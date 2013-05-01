@@ -24,6 +24,6 @@ evaulationTablePage = withUserStateE $ \s -> do
 
 evaulationTableContent :: [SubmissionKey] -> Html
 evaulationTableContent ks = do
-  H.p $ table "evaulation-table" $ do
+  H.p $ table "evaulation-table" (className evaulationClassTable) $ do
     H.th $ "Table of new unevaulated assignements"
     mapM_ (\s -> H.td $ link (routeWithParams P.Evaulation [requestParam s]) (show s)) ks

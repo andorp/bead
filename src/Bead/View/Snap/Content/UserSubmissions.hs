@@ -46,7 +46,7 @@ userSubmissionHtml u = do
     submissionTable . usSubmissions $ u
 
 submissionTable :: [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)] -> Html
-submissionTable s = table "submission-table" $ do
+submissionTable s = table "submission-table" (className userSubmissionClassTable) $ do
   headerLine
   mapM_ submissionLine s
 
