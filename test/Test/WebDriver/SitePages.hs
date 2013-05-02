@@ -334,21 +334,27 @@ instance PageAction GroupRegData where
 
 -- * Submit solution
 
-clickNewSolution :: String -> String -> TWD ()
-clickNewSolution gName aName = do
-  l <- mapM link =<< filterM assignmentLine =<< rows =<< tableById availableAssignmentsTable
-  when (null l) . failed . join $ ["No assignment link was found: ", gName, " ", aName]
-  when (length l > 1) . failed . join $ ["More than one assignment were found: ", gName, " ", aName]
-  click . head $ l
+findAssignmentLine :: String -> String -> TWD Element
+findAssignmentLine gName aName = do
+  as <- filterM assignmentLine =<< rows =<< tableById availableAssignmentsTable
+  when (null as) . failed . join $ ["No assignment link was found: ", gName, " ", aName]
+  when (length as > 1) . failed . join $ ["More than one assignment were found: ", gName, " ", aName]
+  return . head $ as
+
   where
     assignmentLine :: Element -> TWD Bool
     assignmentLine e = do
       cells <- mapM getText =<< findElemsFrom e (ByTag "td")
       return $ ((cells !! 1) == (fromString gName)) && ((cells !! 3) == (fromString aName))
 
-    link e = do
-      cells <- findElemsFrom e (ByTag "td")
-      findElemFrom (cells !! 0) (ByTag "a")
+rowLink :: Element -> Int -> TWD Element
+rowLink e i = do
+  cells <- findElemsFrom e (ByTag "td")
+  findElemFrom (cells !! i) (ByTag "a")
+
+clickNewSolution :: String -> String -> TWD ()
+clickNewSolution gName aName = click =<< link =<< findAssignmentLine gName aName
+  where link e = rowLink e 0
 
 data SubmissionData = SubmissionData {
     sbm :: String
@@ -364,6 +370,51 @@ instance PageAction SubmissionData where
   action s = do
     sendKeysStr (sbm s) <@> submissionTextField
     click <@> submitSolutionBtn
+
+-- * New comment on submission
+
+clickOnAssignment :: String -> String -> TWD ()
+clickOnAssignment gName aName = click =<< link =<< findAssignmentLine gName aName
+  where link e = rowLink e 3
+
+data SubmissionListData = SubmissionListData {
+    slNo :: Int
+  }
+
+instance PageObject SubmissionListData where
+  precondition = const $ do
+    failsOnTrue
+      "No submission table was not found"
+      (null <$> findElems (ById . fieldName $ submissionTableName))
+    return True
+  failureMsg = const $ "Submission List"
+
+instance PageAction SubmissionListData where
+  action s = do
+    rs <- rows =<< tableById submissionTableName
+    click =<< link (rs !! (slNo s))
+    where
+      link e = rowLink e 0
+
+data CommentData = CommentData {
+    cmt :: String
+  }
+
+instance PageObject CommentData where
+  precondition = const $ do
+    failsOnFalse "No comment field was found"  (doesFieldExist commentValueField)
+    failsOnFalse "No comment button was found" (doesElementExist commentBtn)
+    return True
+  failureMsg = const "Comment on solution"
+
+instance PageAction CommentData where
+  action c = do
+    sendKeysStr (cmt c) <@> commentValueField
+    click <@> commentBtn
+
+checkCommentOnPage :: CommentData -> TWD ()
+checkCommentOnPage _ = do
+  return ()
 
 -- * Page Components
 

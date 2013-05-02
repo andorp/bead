@@ -73,6 +73,9 @@ failsOnNothing = failsOn isNothing fromJust
 failsOnFalse :: String -> TWD Bool -> TWD Bool
 failsOnFalse = failsOn (==False) id
 
+failsOnTrue :: String -> TWD Bool -> TWD Bool
+failsOnTrue = failsOn (==True) id
+
 cleanUp :: TWD a -> TWD b -> TWD a
 cleanUp t c =
   catchError

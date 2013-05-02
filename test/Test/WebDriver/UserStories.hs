@@ -17,19 +17,20 @@ import Bead.Domain.Entities hiding (CourseAdmin)
 
 loginUser :: String -> LoginData -> TWD () -> TWD ()
 loginUser url l m = do
-  openPage url
-  page l
-  page . homePage $ l
-  m
-  page logout
+  cleanUp
+    (do openPage url
+        page l
+        page . homePage $ l
+        m
+        page logout)
+    (page logout)
 
 registration :: String -> RegistrationData -> TWD ()
 registration url reg = do
   openPage url
   click =<< findElem (ByLinkText "Create new user")
   page reg
-  page . loginInfo $ reg
-  page LogoutData
+  loginUser url (loginInfo reg) (return ())
 
 validLogin :: String -> LoginData -> TWD ()
 validLogin url login = loginUser url login (return ())
@@ -91,6 +92,11 @@ gAdminCreatesAssignment url groupAdmin student aData = do
       (aGroupOrCourse aData)
       (aName aData)
 
+gAdminEvaulateSubmission :: String -> LoginData -> TWD ()
+gAdminEvaulateSubmission url groupAdmin = do
+  loginUser url groupAdmin $ do
+    undefined
+
 -- * Student
 
 groupRegistration :: String -> LoginData -> String -> TWD ()
@@ -105,6 +111,14 @@ studentSubmitsSolution url student g a s = do
     clickNewSolution g a
     page (SubmissionData s)
     -- TODO Check if the solution appears on the list
+
+studentCommentsOnSolution :: String -> LoginData -> String -> String -> Int -> String -> TWD ()
+studentCommentsOnSolution url student g a no comment = do
+  loginUser url student $ do
+    clickOnAssignment g a
+    page (SubmissionListData no)
+    page (CommentData comment)
+    checkCommentOnPage (CommentData comment)
 
 -- * Navigation
 

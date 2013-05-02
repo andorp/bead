@@ -36,5 +36,6 @@ positives url = [
       , aEndDate = "2013-05-02 12:00:00"
       })
   , studentSubmitsSolution url student "g01" "Assignment-01" "solution"
+  , studentCommentsOnSolution url student "g01" "Assignment-01" 0 "comment"
   ]
 
