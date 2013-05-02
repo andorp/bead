@@ -7,7 +7,7 @@ import Bead.View.Snap.Content
 import Bead.Domain.Types (Str(..))
 import Bead.Domain.Entities (Email(..), roles)
 import qualified Bead.Controller.UserStories as U (userSubmissions)
-import Bead.Controller.Pages as P (Page(ModifyEvaulation))
+import Bead.Controller.Pages as P (Page(ModifyEvaulation, Evaulation))
 
 import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
@@ -58,14 +58,15 @@ submissionTable s = table "submission-table" (className userSubmissionClassTable
 
     submissionLine (sk,t,si,ev) = H.tr $ do
       H.td $ sbmLink si sk t
-      H.td $ submissionInfo si
+      H.td $ submissionInfo (si,sk)
       H.td $ evaulatedWith  ev
 
-    submissionInfo :: SubmissionInfo -> Html
-    submissionInfo Submission_Not_Found   = "Not Found"
-    submissionInfo Submission_Unevaulated = "Unevaulated"
-    submissionInfo (Submission_Passed _)  = "Passed"
-    submissionInfo (Submission_Failed _)  = "Failed"
+    submissionInfo :: (SubmissionInfo, SubmissionKey) -> Html
+    submissionInfo (Submission_Not_Found   , _) = "Not Found"
+    submissionInfo ((Submission_Passed _)  , _) = "Passed"
+    submissionInfo ((Submission_Failed _)  , _) = "Failed"
+    submissionInfo (Submission_Unevaulated ,sk) =
+      link (routeWithParams P.Evaulation [requestParam sk]) "Unevaulated"
 
     evaulatedWith EvHand = "By Hand"
 
