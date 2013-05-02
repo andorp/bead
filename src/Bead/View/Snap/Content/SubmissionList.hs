@@ -16,11 +16,12 @@ import Bead.View.Snap.Content
 import Bead.View.Snap.Content.Utils
 import Bead.Domain.Relationships
 
-import Text.Blaze.Html5 (Html)
+import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A (class_)
 
 submissionList :: Content
-submissionList = getPostContentHandler submissionListPage submissionListPostHandler
+submissionList = getContentHandler submissionListPage
 
 data PageData = PageData {
     asKey :: AssignmentKey
@@ -37,13 +38,8 @@ submissionListPage = withUserStateE $ \s -> do
         sl <- runStoryE (submissionListDesc ak)
         blaze . withUserFrame s $ submissionListContent (PageData { asKey = ak, smList = sl })
 
-submissionListPostHandler :: POSTContentHandler
-submissionListPostHandler = do
-  -- TODO: Craete the site
-  error "submissionListPostHandler"
-
 submissionListContent :: PageData -> Html
-submissionListContent p = postForm (routeOf P.SubmissionList) $ do
+submissionListContent p = H.div ! A.class_ (className submissionListDiv) $ do
   H.p $ do
     "Group / Course"
     (fromString . slGroup . smList $ p)

@@ -274,12 +274,26 @@ evaulationClassTable = TableClassName "evaulation-table"
 userSubmissionClassTable = TableClassName "user-submission-class-table"
 submissionListTable = TableClassName "submission-list-table"
 
+data DivClassName = DivClassName {
+    divClass :: String
+  }
+
+instance SnapClassName DivClassName where
+  className = fromString . divClass
+
+submissionListDiv = DivClassName "submission-list-div"
+
 -- * Unit tests
 
 data SFN = forall n . SnapFieldName n => SFN n
 
 instance SnapFieldName SFN where
   fieldName (SFN n) = fieldName n
+
+data SCN = forall n . SnapClassName n => SCN n
+
+instance SnapClassName SCN where
+  className (SCN n) = className n
 
 fieldList :: [String]
 fieldList = map fieldName $ join [
@@ -301,8 +315,8 @@ fieldList = map fieldName $ join [
 
 classList :: [String]
 classList = map className [
-    groupSubmissionTable, assignmentTable, evaulationClassTable, userSubmissionClassTable
-  , submissionListTable
+    SCN groupSubmissionTable, SCN assignmentTable, SCN evaulationClassTable, SCN userSubmissionClassTable
+  , SCN submissionListTable, SCN submissionListDiv
   ]
 
 names = fieldList ++ classList
