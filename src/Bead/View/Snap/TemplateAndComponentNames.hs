@@ -251,6 +251,7 @@ instance SnapFieldName TableName where
   fieldName = fromString . tName
 
 availableAssignmentsTable = TableName "available-assignments"
+submissionTableName = TableName "submission-table"
 
 -- * Template names
 
@@ -309,7 +310,7 @@ fieldList = map fieldName $ join [
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
   , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
-  , SFN availableAssignmentsTable
+  , SFN availableAssignmentsTable, SFN submissionTableName
   ], (map SFN P.allPages)
   ]
 

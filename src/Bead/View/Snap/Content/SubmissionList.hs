@@ -48,7 +48,7 @@ submissionListContent p = H.div ! A.class_ (className submissionListDiv) $ do
     (fromString . join . slTeacher . smList $ p)
   H.p $ do
     "Submission list"
-    table "submission-table" (className submissionListTable) $
+    table (fieldName submissionTableName) (className submissionListTable) $
       mapM_ submissionLine (slSubmissions . smList $ p)
   H.p $ do
     "Assignment"
