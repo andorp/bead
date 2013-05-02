@@ -54,11 +54,11 @@ submissionListContent p = H.div ! A.class_ (className submissionListDiv) $ do
     "Assignment"
     (fromString . slAssignmentText . smList $ p)
   where
-    submissionLine (sk, time, status, t) = H.td $ do
-      H.tr $ link
+    submissionLine (sk, time, status, t) = H.tr $ do
+      H.td $ link
         (routeWithParams P.SubmissionDetails [requestParam (asKey p), requestParam sk])
         (fromString . show $ time)
-      H.tr (fromString status)
+      H.td (fromString status)
 
 invalidAssignment :: Html
 invalidAssignment = "You have tried to open an assignment that not belongs to you"
