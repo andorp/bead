@@ -53,7 +53,9 @@ evaulationPostHandler :: POSTContentHandler
 evaulationPostHandler = do
   sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key does not found"
   ev <- getParamE (fieldName evaulationValueField) id "Evaulation value does not found"
-  es <- getParamE (fieldName evaulationStateField) read "Evaulation state does nof found"
+  es <- getParamE (fieldName evaulationStateField)
+                  (readMsg "Evaulation state")
+                  "Evaulation state does nof found"
   let e = C.Evaulation {
     evaulationState = es
   , writtenEvaulation = ev
@@ -64,7 +66,9 @@ modifyEvaulationPost :: POSTContentHandler
 modifyEvaulationPost = do
   ek <- getParamE (fieldName evaulationKeyField) EvaulationKey "Evaulation key does not found"
   ev <- getParamE (fieldName evaulationValueField) id "Evaulation value does not found"
-  es <- getParamE (fieldName evaulationStateField) read "Evaulation state does nof found"
+  es <- getParamE (fieldName evaulationStateField)
+                  (readMsg "Evaulation state")
+                  "Evaulation state does nof found"
   let e = C.Evaulation {
     evaulationState = es
   , writtenEvaulation = ev

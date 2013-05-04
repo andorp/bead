@@ -11,6 +11,12 @@ type Erroneous a = Either String a
 class Str s where
   str :: s -> String
 
+readMsg :: (Read a) => String -> String -> a
+readMsg msg s =
+  case readMaybe s of
+    Nothing -> error $ "No read: " ++ msg
+    Just  x -> x
+
 readMaybe :: (Read a) => String -> Maybe a
 readMaybe s =
   case reads s of

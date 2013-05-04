@@ -126,10 +126,10 @@ instance GetValueHandler Assignment where
     name  <- getParamE (fieldName assignmentNameField) id "Assignment Name is not found"
     desc  <- getParamE (fieldName assignmentDescField) id "Assignment Description is not found"
     tcs   <- getParamE (fieldName assignmentTCsField) id "Assignment TCs is not found"
-    tp    <- getParamE (fieldName assignmentTypeField) read "Assignment Type is not found"
-    start <- getParamE (fieldName assignmentStartField) read "Assignment Start is not found"
-    end   <- getParamE (fieldName assignmentEndField) read "Assignment End is not found"
-    ev    <- getParamE (fieldName assignmentEvField) read "Assignment Evaulation type is not found"
+    tp    <- getParamE (fieldName assignmentTypeField) (readMsg "Assignment type") "Assignment Type is not found"
+    start <- getParamE (fieldName assignmentStartField) (readMsg "Assignment start") "Assignment Start is not found"
+    end   <- getParamE (fieldName assignmentEndField) (readMsg "Assignment end") "Assignment End is not found"
+    ev    <- getParamE (fieldName assignmentEvField) (readMsg "Assignment evaulation") "Assignment Evaulation type is not found"
     return $ Assignment {
         assignmentDesc = desc
       , assignmentName = name
