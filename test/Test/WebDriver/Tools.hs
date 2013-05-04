@@ -54,6 +54,14 @@ ifM p t e = do
 allM :: (Functor m, Monad m) => [m Bool] -> m Bool
 allM = (fmap and) . sequence
 
+findM :: (Monad m) => (a -> m Bool) -> [a] -> m (Maybe a)
+findM f [] = return Nothing
+findM f (a:as) = do
+  x <- f a
+  case x of
+    True  -> return (Just a)
+    False -> findM f as
+
 maybeM :: (Functor m, Monad m) => (a -> m b) -> Maybe a -> m (Maybe b)
 maybeM _ Nothing  = return Nothing
 maybeM k (Just x) = Just <$> (k x)
