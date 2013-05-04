@@ -7,6 +7,7 @@ module Bead.View.Snap.Content.Evaulation (
 import Data.String (fromString)
 import Control.Monad (liftM)
 
+import Bead.Domain.Types (readMsg)
 import Bead.Domain.Relationships (SubmissionDesc(..))
 import Bead.Controller.Pages as P(Page(Evaulation, ModifyEvaulation))
 import Bead.Controller.ServiceContext (UserState(..))

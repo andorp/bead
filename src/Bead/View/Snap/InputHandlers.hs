@@ -4,7 +4,7 @@ import Control.Applicative ((<$>))
 import Data.Maybe (maybe, isJust, fromJust)
 import Data.Time (UTCTime(..))
 
-import Bead.Domain.Types (Str(..), readMaybe)
+import Bead.Domain.Types (Str(..), readMaybe, readMsg)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 
