@@ -84,6 +84,13 @@ cleanUp t c =
        c
        throwError e)
 
+expectToFail :: String -> TWD () -> TWD ()
+expectToFail msg e = ErrorT $ do
+  x <- runErrorT e
+  return $ case x of
+    Left _  -> Right ()
+    Right _ -> Left . strMsg $ msg
+
 runT :: TWD a -> WD Result
 runT k = do
   x <- runErrorT k

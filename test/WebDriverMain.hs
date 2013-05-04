@@ -23,7 +23,6 @@ main = do
       result <- runSession
         defaultSession
         defaultCaps { browser = firefox { ffBinary = Just "/usr/local/bin/firefox" } } $ do
-          setImplicitWait 30000
           simpleTest beadAddress
 
       print result

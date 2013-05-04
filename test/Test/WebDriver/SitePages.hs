@@ -229,6 +229,9 @@ tables c = do
     failed $ join ["At least one element with ",className c," class was not a table"]
   return . map fromJust $ tables
 
+tableByClass :: (SnapClassName c) => c -> TWD (Maybe Table)
+tableByClass = fmap listToMaybe . tables
+
 tableById :: (SnapFieldName f) => f -> TWD Table
 tableById i = do
   tableElements <- findElems (ById . fieldName $ i)
@@ -240,7 +243,7 @@ tableById i = do
 findGroupSubmissionTable :: String -> TWD ()
 findGroupSubmissionTable g = do
   ts <- tables groupSubmissionTable
-  tableHeaders <- concat <$> (mapM headers ts)
+  tableHeaders <- concat <$> (mapM headerCells ts)
   when (null tableHeaders) $ failed "No header was found"
   tableHeaderTexts <- mapM getText tableHeaders
   unless (isJust . find (fromString g ==) $ tableHeaderTexts) $
@@ -411,6 +414,92 @@ instance PageAction CommentData where
   action c = do
     sendKeysStr (cmt c) <@> commentValueField
     click <@> commentBtn
+
+-- * Select Submission
+
+data SelectSubmissionData = SelectSubmissionData {
+    sGroup   :: String
+  , sStudent :: String
+  , sNo      :: Int
+  }
+
+instance PageObject SelectSubmissionData where
+  precondition = const $ do
+    failsOnTrue
+      "No evaulation table was found"
+      (null <$> findElems (ByClass . className $ groupSubmissionTable))
+    return True
+  failureMsg = const "Evaulation"
+
+isHeader :: Element -> TWD Bool
+isHeader e = (not . null) <$> findElemsFrom e (ByTag "th")
+
+instance PageAction SelectSubmissionData where
+  action s = do
+    ts <- tables groupSubmissionTable
+    t <- failsOnNothing "No evaulation table was found for the group" $ findM isGroup ts
+    rs <- rows t
+    r <- failsOnNothing "Student was not found" $ findM isStudentRow rs
+    ls <- findElemsFrom r (ByTag "a")
+    click (ls !! (sNo s))
+    where
+      isGroup t = do
+        hs <- headerCells t
+        when (null hs) $ failed "No header was found in the table"
+        ((fromString . sGroup $ s) ==) <$> getText (head hs)
+
+      isStudentRow e = do
+        h <- isHeader e
+        case h of
+          True  -> return False
+          False -> do
+            cs <- findElemsFrom e (ByTag "td")
+            when (null cs) $ failed "No cell was found in the student's row"
+            ((fromString . sStudent $ s) ==) <$> getText (cs !! 0)
+
+-- * User's submission
+
+data UserSubmissionsData = UserSubmissionsData {
+    usNo :: Int
+  }
+
+instance PageObject UserSubmissionsData where
+  precondition = const $ do
+    failsOnTrue
+      "No submission table was found"
+      (null <$> (findElems (ByClass . className $ userSubmissionClassTable)))
+    return True
+  failureMsg = const "User's submission page"
+
+instance PageAction UserSubmissionsData where
+  action u = do
+    t <- failsOnNothing
+           "No user's submission table"
+           (tableByClass userSubmissionClassTable)
+    rs <- filterM (fmap not . isHeader) =<< rows t
+    click =<< findElemFrom (rs !! (usNo u)) (ByTag "a")
+
+-- * Evaulation
+
+data EvaulationData = EvaulationData {
+    evMessage :: String
+  , evValue   :: String
+  }
+
+instance PageObject EvaulationData where
+  precondition = const $ do
+    failsOnFalse "Evaulation field was not found" (doesFieldExist evaulationValueField)
+    failsOnFalse "Evaulation state field was not found" (doesFieldExist evaulationStateField)
+    failsOnFalse "Sve button was not found" (doesElementExist saveEvalBtn)
+    return True
+  failureMsg = const "Evaulation page"
+
+instance PageAction EvaulationData where
+  action e = do
+    clearInput <@> evaulationStateField
+    sendKeysStr (evMessage e) <@> evaulationValueField
+    sendKeysStr (evValue e)   <@> evaulationStateField
+    click <@> saveEvalBtn
 
 checkCommentOnPage :: CommentData -> TWD ()
 checkCommentOnPage _ = do

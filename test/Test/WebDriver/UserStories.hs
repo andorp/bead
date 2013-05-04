@@ -92,10 +92,17 @@ gAdminCreatesAssignment url groupAdmin student aData = do
       (aGroupOrCourse aData)
       (aName aData)
 
-gAdminEvaulateSubmission :: String -> LoginData -> TWD ()
-gAdminEvaulateSubmission url groupAdmin = do
+gAdminEvaulateSubmission
+  :: String -> LoginData
+  -> SelectSubmissionData -> Int -> EvaulationData
+  -> TWD ()
+gAdminEvaulateSubmission url groupAdmin s noOfSbm e = do
   loginUser url groupAdmin $ do
-    undefined
+    page s
+    page (UserSubmissionsData noOfSbm)
+    page e
+    -- TODO Check if the comment appears on the list
+    
 
 -- * Student
 

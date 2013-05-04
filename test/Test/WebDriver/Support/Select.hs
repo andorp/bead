@@ -27,7 +27,6 @@ import Control.Monad
 
 import qualified Data.Text as T
 
-
 data Select = Select {
     rootElement :: Element
   , isMultiple  :: Bool

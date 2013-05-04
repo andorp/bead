@@ -2,7 +2,7 @@
 module Test.WebDriver.Support.Table (
     Table
   , table
-  , headers
+  , headerCells
   , rows
   , cells
   , cell
@@ -19,7 +19,7 @@ import Control.Applicative ((<$>))
 data Table = Table {
     rootElement :: Element
   }
-
+  
 table :: (WebDriver wd) => Element -> wd (Maybe Table)
 table e = do
   t <- tagName e
@@ -33,8 +33,8 @@ table e = do
 rows :: (WebDriver wd) => Table -> wd [Element]
 rows t = findElemsFrom (rootElement t) (ByTag "tr")
 
-headers :: (WebDriver wd) => Table -> wd [Element]
-headers t = findElemsFrom (rootElement t) (ByTag "th")
+headerCells :: (WebDriver wd) => Table -> wd [Element]
+headerCells t = findElemsFrom (rootElement t) (ByTag "th")
 
 cells :: (WebDriver wd) => Table -> Int -> wd (Maybe [Element])
 cells t r = do

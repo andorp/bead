@@ -37,5 +37,11 @@ positives url = [
       })
   , studentSubmitsSolution url student "g01" "Assignment-01" "solution"
   , studentCommentsOnSolution url student "g01" "Assignment-01" 0 "comment"
+  , gAdminEvaulateSubmission
+      url
+      groupAdmin
+      (SelectSubmissionData {sGroup = "g01", sStudent = "s1", sNo = 0 })
+      0
+      (EvaulationData { evMessage = "Good", evValue = "Passed 100"})
   ]
 
