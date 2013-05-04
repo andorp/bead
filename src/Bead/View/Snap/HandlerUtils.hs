@@ -11,6 +11,7 @@ module Bead.View.Snap.HandlerUtils (
   , blazeI18n
   , setInSessionE
   , setReqParamInSession
+  , sessionToken
   , HandlerError(..)
   , ContentHandlerError
   , module Control.Monad.Error
@@ -62,17 +63,21 @@ logMessage lvl msg = do
   context <- withTop serviceContext $ getServiceContext
   liftIO $ L.log (logger context) lvl msg
 
+sessionToken :: Handler App b String
+sessionToken = T.unpack <$> (withTop sessionManager $ csrfToken)
+
 userState :: Handler App b UserState
 userState = do
   context   <- withTop serviceContext $ getServiceContext
   mUsername <- withTop sessionManager $ usernameFromSession
+  token     <- sessionToken
   case mUsername of
     Nothing -> do
       logMessage ERROR "User is not logged in the session"
       error "User is not logged in the session"
     Just user -> do
       let users = userContainer context
-      userData <- liftIO $ users `userData` user
+      userData <- liftIO $ users `userData` (userToken (user, token))
       case userData of
         Nothing -> do
           logMessage ERROR "No data found for the user"
@@ -129,7 +134,9 @@ runStory :: S.UserStory a -> Handler App b (Either S.UserError a)
 runStory story = withTop serviceContext $ do
   result <- serviceContextAndUserData $ \context users authUser -> do
       let unameFromAuth = usernameFromAuthUser authUser
-      ustate <- liftIO $ userData users unameFromAuth
+      token  <- sessionToken
+      let usrToken = userToken (unameFromAuth, token)
+      ustate <- liftIO $ userData users usrToken
       case ustate of
         Nothing -> return . Left . strMsg $ "The user was not authenticated: " ++ show unameFromAuth
         Just state -> do
@@ -137,7 +144,7 @@ runStory story = withTop serviceContext $ do
           case eResult of
             Left e -> return . Left $ e
             Right (a,state') -> do
-              liftIO $ modifyUserData users unameFromAuth (const state')
+              liftIO $ modifyUserData users usrToken (const state')
               saveActPage state'
               return $ Right a
   case result of

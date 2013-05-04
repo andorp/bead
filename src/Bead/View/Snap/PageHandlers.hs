@@ -113,13 +113,15 @@ userIsLoggedInFilter inside outside = do
 
       -- Guard: Is user logged in?
       context <- lift . withTop serviceContext $ getServiceContext
+      tkn     <- lift sessionToken
       let users = userContainer context
-      isLoggedIn <- lift (liftIO $ users `isUserLoggedIn` unameFromAuth)
+          usrToken = userToken (unameFromAuth, tkn)
+      isLoggedIn <- lift (liftIO $ users `isUserLoggedIn` usrToken)
       unless (isLoggedIn) . CME.throwError $ "User is not logged in persistence"
 
       -- Guard: User's actul page differs from the one that is stored on the server
       pageFromSession <- lift . withTop sessionManager $ actPageFromSession
-      mUserData       <- lift . liftIO $ userData users unameFromAuth
+      mUserData       <- lift . liftIO $ userData users usrToken -- unameFromAuth
       when (isNothing mUserData) . CME.throwError $
         "No user data was found for the user " ++ show unameFromAuth
       when (Just (page (fromJust mUserData)) /= pageFromSession) . CME.throwError $ join [
@@ -130,7 +132,7 @@ userIsLoggedInFilter inside outside = do
 
       -- Correct user is logged in, run the handler and save the data
       lift inside
-      mUserData <- lift (liftIO $ users `userData` unameFromAuth)
+      mUserData <- lift (liftIO $ users `userData` usrToken)
 
       when (isNothing mUserData) . CME.throwError $
         "No user data was found for the user " ++ show unameFromAuth
@@ -138,8 +140,6 @@ userIsLoggedInFilter inside outside = do
       lift $ CMC.catch
         (withTop sessionManager . setActPageInSession . page . fromJust $ mUserData)
         someExceptionHandler
-
-
 
 -- | The 'redirectToActPage' redirects to the page if the user's state stored in the cookie
 --   and the service state are the same, otherwise it's raises an exception

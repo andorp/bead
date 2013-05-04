@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleInstances #-}
 module Bead.Controller.ServiceContext where
 
 import Bead.Domain.Types
@@ -18,6 +19,16 @@ import Control.Monad.Transaction.TIO (TIO)
 type CourseName = String
 type GroupName  = String
 
+
+newtype UsrToken = UsrToken (Username, String)
+  deriving (Show, Eq, Ord)
+
+class UserToken u where
+  userToken :: u -> UsrToken
+
+instance UserToken (Username, String) where
+  userToken (u,t) = UsrToken (u,t)
+
 -- TODO: UTF8 named strings
 data UserState
   = UserNotLoggedIn
@@ -26,7 +37,12 @@ data UserState
   , page :: Page
   , name :: String
   , role :: Role
+  , token :: String
   } deriving (Show)
+
+instance UserToken UserState where
+  userToken UserNotLoggedIn = error "Impossible: userToken UserNotLoggedIn"
+  userToken u = UsrToken (user u, token u)
 
 instance InRole UserState where
   isAdmin       UserNotLoggedIn = False
@@ -47,12 +63,13 @@ actualPage :: UserState -> Page
 actualPage UserNotLoggedIn = Login
 actualPage u               = page u
 
+
 data UserContainer a = UserContainer {
-    isUserLoggedIn :: Username -> IO Bool
-  , userLogsIn     :: Username -> a -> IO ()
-  , userLogsOut    :: Username -> IO ()
-  , userData       :: Username -> IO (Maybe a)
-  , modifyUserData :: Username -> (a -> a) -> IO ()
+    isUserLoggedIn :: UsrToken -> IO Bool
+  , userLogsIn     :: UsrToken -> a -> IO ()
+  , userLogsOut    :: UsrToken -> IO ()
+  , userData       :: UsrToken -> IO (Maybe a)
+  , modifyUserData :: UsrToken -> (a -> a) -> IO ()
   }
 
 data ServiceContext = ServiceContext {

@@ -34,6 +34,7 @@ adminUserState = UserState {
   , page = P.Home
   , name = "Admin"
   , role = E.Admin
+  , token = "token"
   }
 
 
@@ -96,7 +97,7 @@ register = testCase "User registration" $ do
 
 loginAndLogout = testCase "Login And Logout" $ do
   c <- context
-  (_,state) <- runStory c UserNotLoggedIn $ login (Username "student") "user"
+  (_,state) <- runStory c UserNotLoggedIn $ login (Username "student") "user" "token"
   assertUserState state student
   (_,state) <- runStory c state $ logout
   case state of
@@ -144,7 +145,7 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
       g1  = E.Group  "G1" "G1-DESC"
       g2  = E.Group  "G2" "G2-DESC"
   runStory c adminUserState $ createUser adminUser "password"
-  (_,l) <- runStory c UserNotLoggedIn $ login (E.Username "admin") "password"
+  (_,l) <- runStory c UserNotLoggedIn $ login (E.Username "admin") "password" "token"
   ((a1,a2,as),_) <- runStory c l $ do
     ck1 <- createCourse c1
     ck2 <- createCourse c2

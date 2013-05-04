@@ -61,16 +61,16 @@ runUserStory context userState
 -- | The user logs in with a given username and password
 --   QUESTION: Is there multiple login for the given user?
 --   ANSWER:   No, the user can log in once at a time
-login :: Username -> Password -> UserStory ()
-login username password = do
+login :: Username -> Password -> String -> UserStory ()
+login username password token = do
   usrContainer <- CMR.asks userContainer
   validUser    <- withPersist $ \p -> R.canUserLogin p username password
-  notLoggedIn  <- liftIO $ isUserLoggedIn usrContainer username
+  notLoggedIn  <- liftIO $ isUserLoggedIn usrContainer (userToken (username, token))
   case (validUser, notLoggedIn) of
     (True, False) -> do
-      loadUserData username password P.Home
+      loadUserData username password token P.Home
       s <- userState
-      liftIO $ userLogsIn usrContainer username s
+      liftIO $ userLogsIn usrContainer (userToken s) s
     (True , True)  -> errorPage "The user is logged in somewhere else"
     (False,    _)  -> errorPage "Invalid user and password combination"
 
@@ -79,7 +79,7 @@ logout :: UserStory ()
 logout = do
   state <- userState
   users <- CMR.asks userContainer
-  liftIO $ userLogsOut users (user state)
+  liftIO $ userLogsOut users (userToken state)
   CMS.put UserNotLoggedIn
 
 doesUserExist :: Username -> UserStory Bool
@@ -330,8 +330,11 @@ logErrorMessage = logMessage ERROR
 -- | Log a message through the log subsystem
 logMessage :: LogLevel -> String -> UserStory ()
 logMessage level msg = do
+  state  <- CMS.get
+  let u = str . user $ state
+      t = token $ state
   user   <- CMS.gets (str . user)
-  CMR.asks logger >>= (\lgr -> (liftIO $ log lgr level $ join [user, ": ", msg]))
+  CMR.asks logger >>= (\lgr -> (liftIO $ log lgr level $ join [user, " ", t, ": ", msg]))
 
 -- | Change user state, if the user state is logged in
 changeUserState :: (UserState -> UserState) -> UserStory ()
@@ -341,14 +344,15 @@ changeUserState f = do
     UserNotLoggedIn -> return ()
     state' -> CMS.put (f state')
 
-loadUserData :: Username -> Password -> Page -> UserStory ()
-loadUserData uname pwd p = do
+loadUserData :: Username -> Password -> String -> Page -> UserStory ()
+loadUserData uname pwd t p = do
   (userRole, userFamilyName) <- withPersist $ \p -> personalInfo p uname pwd
   CMS.put UserState {
               user = uname
             , page = p
             , name = userFamilyName
             , role = userRole
+            , token = t
             }
 
 userState :: UserStory UserState
