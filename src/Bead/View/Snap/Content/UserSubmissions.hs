@@ -58,20 +58,21 @@ submissionTable s = table "submission-table" (className userSubmissionClassTable
 
     submissionLine (sk,t,si,ev) = H.tr $ do
       H.td $ sbmLink si sk t
-      H.td $ submissionInfo (si,sk)
+      H.td $ submissionInfo si
       H.td $ evaulatedWith  ev
 
-    submissionInfo :: (SubmissionInfo, SubmissionKey) -> Html
-    submissionInfo (Submission_Not_Found   , _) = "Not Found"
-    submissionInfo ((Submission_Passed _)  , _) = "Passed"
-    submissionInfo ((Submission_Failed _)  , _) = "Failed"
-    submissionInfo (Submission_Unevaulated ,sk) =
-      link (routeWithParams P.Evaulation [requestParam sk]) "Unevaulated"
+    submissionInfo :: SubmissionInfo -> Html
+    submissionInfo Submission_Not_Found   = "Not Found"
+    submissionInfo (Submission_Passed _)  = "Passed"
+    submissionInfo (Submission_Failed _)  = "Failed"
+    submissionInfo Submission_Unevaulated = "Unevaulated"
 
     evaulatedWith EvHand = "By Hand"
 
     sbmLink si sk t = case siEvaulationKey si of
-      Nothing -> fromString . show $ t
+      Nothing -> link
+        (routeWithParams P.Evaulation [requestParam sk])
+        (fromString . show $ t)
       Just ek -> link
         (routeWithParams P.ModifyEvaulation [requestParam sk,requestParam ek] )
         (show t)
