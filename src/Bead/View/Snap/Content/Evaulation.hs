@@ -86,7 +86,7 @@ evaulationContent pd = do
   H.p $ postForm (routeOf . evPage . sbmKey $ pd) $ do
           H.p $ do
             "Evaulation text block"
-            textAreaInput (fieldName evaulationValueField) 300 200 Nothing
+            textAreaInput (fieldName evaulationValueField) 50 10 Nothing
           H.p $ do
             "Evaulation checkbox, Submit button"
             -- TODO: Checkbox

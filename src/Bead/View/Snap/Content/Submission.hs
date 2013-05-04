@@ -47,7 +47,7 @@ submissionContent :: PageData -> Html
 submissionContent p = postForm (routeOf P.Submission) $ do
   H.p $ do
     "Solution text box / Solution files"
-    textAreaInput (fieldName submissionTextField) 300 200 Nothing
+    textAreaInput (fieldName submissionTextField) 50 10 Nothing
   H.p $ do
     "Description of the Assignment"
     (fromString (assignmentDesc (asValue p)))

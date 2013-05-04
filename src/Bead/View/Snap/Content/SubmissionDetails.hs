@@ -81,7 +81,7 @@ submissionDetailsContent p = do
   H.p $ do
     "New comment"
     postForm (routeOf P.SubmissionDetails) $ do
-      textAreaInput (fieldName commentValueField) 300 200 Nothing
+      textAreaInput (fieldName commentValueField) 50 10 Nothing
       hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
       hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
       submitButton (fieldName commentBtn) "Comment"

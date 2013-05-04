@@ -80,13 +80,12 @@ textInput name size value =
 
 textAreaInput :: String -> Int -> Int -> Maybe String -> Html
 textAreaInput name cols rows value =
-  (H.input ! A.type_ "textarea"
-           ! A.name (fromString name)
-           ! A.id   (fromString name)
-           ! A.cols (fromString . show $ cols)
-           ! A.rows (fromString . show $ rows))
-  |>
-  (withDefaultValue value)
+  (H.textarea ! A.name (fromString name)
+              ! A.id   (fromString name)
+              ! A.cols (fromString . show $ cols)
+              ! A.rows (fromString . show $ rows)) value'
+  where
+    value' = fromString . maybe "" id $ value
 
 hiddenInput :: String -> String -> Html
 hiddenInput name value =

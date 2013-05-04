@@ -90,10 +90,10 @@ newAssignmentContent pd = postForm (routeOf . page $ pd) $ do
     textInput (fieldName assignmentNameField) 10 (amap assignmentName pd)
   H.p $ do
     "Description text block / Description files"
-    textAreaInput (fieldName assignmentDescField) 300 200 (amap assignmentDesc pd)
+    textAreaInput (fieldName assignmentDescField) 50 10 (amap assignmentDesc pd)
   H.p $ do
     "Test Data text block / Test data files"
-    textAreaInput (fieldName assignmentTCsField) 300 100 (amap assignmentTCs pd)
+    textAreaInput (fieldName assignmentTCsField) 50 10 (amap assignmentTCs pd)
   H.p $ "Select automated evaulation method"
   H.p $ do
     "Assignment Type"
