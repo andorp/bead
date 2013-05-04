@@ -81,10 +81,10 @@ htmlSubmissionTable (i,s) = table (join ["st", show i]) (className groupSubmissi
   where
     headLine = H.tr . H.th . fromString
     assignmentLine as = H.tr $ do
-      H.td "Name"
-      H.td "Username"
-      mapM_ (H.td . modifyAssignmentLink) . zip [1..] $ as
-      H.td "Passed"
+      H.th "Name"
+      H.th "Username"
+      mapM_ (H.th . modifyAssignmentLink) . zip [1..] $ as
+      H.th "Passed"
 
     modifyAssignmentLink (i,ak) =
       link (routeWithParams P.ModifyAssignment [requestParam ak])
