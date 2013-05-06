@@ -98,6 +98,7 @@ logout = do
 
     Nothing -> do
       logMessage ERROR "There is no user logged in to log out."
+      withTop sessionManager $ resetSession
       redirect "/"
 
     Just authUser -> do
@@ -107,6 +108,7 @@ logout = do
       -- Service context authentication
       token <- sessionToken
       liftIO $ users `userLogsOut` (userToken (unameFromAuth, token))
+      withTop sessionManager $ resetSession
       withTop auth A.logout
       redirect "/"
 

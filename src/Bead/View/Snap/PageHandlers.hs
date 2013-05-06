@@ -217,8 +217,7 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
          ((runGETHandler (error . show)) <$> (get c)) )
 
       -- Not logged in user tries to get some data
-      (do withTop sessionManager $ resetSession
-          L.logout)
+      L.logout
 
     handleSubmitPage :: Handler App App ()
     handleSubmitPage = userIsLoggedInFilter
@@ -235,12 +234,14 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
       )
 
       -- Not logged in user tires to post some data
-      (do withTop sessionManager $ resetSession
-          L.logout)
+      L.logout
 
 allowedPageByTransition :: P.Page -> Handler App App a -> Handler App App a -> Handler App App a
 allowedPageByTransition p allowed restricted = withUserState $ \state ->
-  case P.reachable (page state) p of
+  let allow = and [
+          P.reachable (page state) p
+        , elem p (P.allowedPages (role state))
+        ]
+  in case allow of
     False -> restricted
     True  -> allowed
-

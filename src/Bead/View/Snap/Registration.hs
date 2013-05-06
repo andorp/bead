@@ -93,7 +93,7 @@ registration = method GET handleForm <|> method POST handleFormSubmit
             Nothing -> withTop serviceContext . logMessage ERROR $
                          "User was not created at the first stage"
             Just u' -> do
-              result  <- liftIO $ S.runUserStory context UserNotLoggedIn
+              result  <- liftIO $ S.runUserStory context Registration
                            (S.createUser usr (passwordFromAuthUser u'))
               case result of
                 Left err -> withTop serviceContext . logMessage ERROR . show $ err
