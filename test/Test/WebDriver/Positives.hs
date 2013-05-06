@@ -43,5 +43,24 @@ positives url = [
       (SelectSubmissionData {sGroup = "g01", sStudent = "s1", sNo = 0 })
       0
       (EvaulationData { evMessage = "Good", evValue = "Passed 100"})
+  , cAdminCreatesAssignment url courseAdmin student (AssignmentData {
+        aType = CourseAsg
+      , aGroupOrCourse = "ct-01"
+      , aName = "Assignment-02"
+      , aDesc = "Assignment-02-desc"
+      , aTCs  = "Assignment-02-test"
+      , aEv = Scale
+      , asgType = Normal
+      , aStartDate = "2013-05-01 12:00:00"
+      , aEndDate = "2013-05-02 12:00:00"
+      })
+  , studentSubmitsSolution url student "ct-01" "Assignment-02" "solution2"
+  , studentCommentsOnSolution url student "ct-01" "Assignment-02" 0 "comment2"
+  , cAdminEvaulateSubmission
+      url
+      courseAdmin
+      (SelectSubmissionData {sGroup = "ct-01", sStudent = "s1", sNo = 0 })
+      0
+      (EvaulationData { evMessage = "Good", evValue = "Passed 100"})
   ]
 

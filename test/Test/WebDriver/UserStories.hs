@@ -79,6 +79,27 @@ cAdminAssignGroupAdmin url courseAdmin groupAdmin g = do
   loginUser url groupAdmin $ do
     findGroupSubmissionTable g
 
+cAdminCreatesAssignment :: String -> LoginData -> LoginData -> AssignmentData -> TWD ()
+cAdminCreatesAssignment url courseAdmin student aData = do
+  loginUser url courseAdmin $ do
+    selectPageLink NewCourseAssignment
+    page aData
+    selectPageFromMenu Home
+  loginUser url student $ do
+    findGroupAssignmentInTable
+      (aGroupOrCourse aData)
+      (aName aData)
+
+cAdminEvaulateSubmission
+  :: String -> LoginData
+  -> SelectSubmissionData -> Int -> EvaulationData
+  -> TWD ()
+cAdminEvaulateSubmission url courseAdmin s noOfSbm e = do
+  loginUser url courseAdmin $ do
+    page s
+    page (UserSubmissionsData noOfSbm)
+    page e
+
 -- * Group Admin
 
 gAdminCreatesAssignment :: String -> LoginData -> LoginData -> AssignmentData -> TWD ()
@@ -102,7 +123,6 @@ gAdminEvaulateSubmission url groupAdmin s noOfSbm e = do
     page (UserSubmissionsData noOfSbm)
     page e
     -- TODO Check if the comment appears on the list
-    
 
 -- * Student
 
@@ -136,7 +156,4 @@ selectPageFromMenu p = do
 
 selectPageLink :: Page -> TWD ()
 selectPageLink = selectPageFromMenu
-
-
--- * Pagelets
 
