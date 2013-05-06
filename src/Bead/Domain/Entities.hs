@@ -95,6 +95,7 @@ data Workflow
 
 -- * Authorization and authentication
 
+
 -- | Login roles
 data Role
   = Student
@@ -104,6 +105,11 @@ data Role
   deriving (Eq, Ord, Enum)
 
 roles = [Student, Professor, CourseAdmin, Admin]
+
+data OutsideRole
+  = EmptyRole
+  | RegRole
+  deriving (Eq, Ord)
 
 parseRole :: String -> Maybe Role
 parseRole "Student"      = Just Student
@@ -154,7 +160,9 @@ canDelete = flip elem [P_Delete]
 -- | Permissions are allowed on the following objects
 data PermissionObject
   = P_Assignment
-  | P_Solution
+  | P_Submission
+  | P_Evaulation
+  | P_Comment
   | P_Statistics
   | P_Password
   | P_Professor
@@ -169,6 +177,8 @@ data PermissionObject
 -- Permission Objects are dynamically associated with values
 class PermissionObj p where
   permissionObject :: p -> PermissionObject
+
+newtype ObjectPermissions = ObjectPermissions { permissions :: [(Permission, PermissionObject)] }
 
 data Authentication = Authentication
   deriving (Eq, Show)

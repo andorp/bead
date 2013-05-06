@@ -3,6 +3,7 @@ module Bead.Controller.UserStories where
 
 import Bead.Domain.Entities     as E
 import Bead.Domain.Relationships
+import Bead.Domain.RolePermission (permission)
 import Bead.Domain.Types
 import Bead.Controller.ServiceContext
 import Bead.Controller.Logging  as L
@@ -83,7 +84,7 @@ logout = do
   CMS.put UserNotLoggedIn
 
 doesUserExist :: Username -> UserStory Bool
-doesUserExist u = logAction INFO ("Searches after user: " ++ show u) $ do
+doesUserExist u = logAction INFO ("searches after user " ++ show u) $ do
   authorize P_Open P_User
   withPersist $ flip R.doesUserExist u
 
@@ -109,17 +110,19 @@ changePassword old new new'
 -- | The authorized user creates a new user
 createUser :: User -> Password -> UserStory ()
 createUser newUser newPassword = do
+  authorize P_Create P_User
   withPersist $ \p -> saveUser p newUser newPassword
   logger      <- CMR.asks logger
   liftIO $ log logger INFO $ "User is created: " ++ show (u_username newUser)
 
 updateUser :: User -> UserStory ()
-updateUser u = logAction INFO ("Updating user:" ++ (str . u_username $ u)) $ do
+updateUser u = logAction INFO ("updates user " ++ (str . u_username $ u)) $ do
+  authorize P_Modify P_User
   withPersist $ flip R.updateUser u
 
 -- | Selecting users that satisfy the given criteria
 selectUsers :: (User -> Bool) -> UserStory [User]
-selectUsers f = logAction INFO "Select some users" $ do
+selectUsers f = logAction INFO "selects some users" $ do
   authorize P_Open P_User
   withPersist $ flip R.filterUsers f
 
@@ -136,12 +139,14 @@ deleteUser :: Username -> UserStory ()
 deleteUser = error "deleteUser: undefined"
 
 administratedCourses :: UserStory [(CourseKey, Course)]
-administratedCourses = logAction INFO "Selecting adminstrated courses" $ do
+administratedCourses = logAction INFO "selects adminstrated courses" $ do
+  authorize P_Open P_Course
   u <- CMS.gets user
   withPersist $ flip R.administratedCourses u
 
 administratedGroups :: UserStory [(GroupKey, Group)]
-administratedGroups = logAction INFO "Selection administrated groups" $ do
+administratedGroups = logAction INFO "selects administrated groups" $ do
+  authorize P_Open P_Group
   u <- CMS.gets user
   withPersist $ flip R.administratedGroups u
 
@@ -161,19 +166,21 @@ create descriptor saver object = do
 
 -- | Creates a new course
 createCourse :: Course -> UserStory CourseKey
-createCourse = create descriptor saveCourse
+createCourse ck = logAction INFO "creates course" $ do
+  authorize P_Create P_Course
+  create descriptor saveCourse ck
   where
     descriptor course _ =
       printf "Course is created: %s"
         (show (courseName course))
 
 selectCourses :: (CourseKey -> Course -> Bool) -> UserStory [(CourseKey, Course)]
-selectCourses f = logAction INFO "Select Some Courses" $ do
+selectCourses f = logAction INFO "selects some courses" $ do
   authorize P_Open P_Course
   withPersist $ flip filterCourses f
 
 loadCourse :: CourseKey -> UserStory (Course,[GroupKey])
-loadCourse k = logAction INFO ("Loading course: " ++ show k) $ do
+loadCourse k = logAction INFO ("loads course: " ++ show k) $ do
   authorize P_Open P_Course
   withPersist $ \p -> do
     c  <- R.loadCourse p k
@@ -181,13 +188,13 @@ loadCourse k = logAction INFO ("Loading course: " ++ show k) $ do
     return (c,ks)
 
 createCourseAdmin :: Username -> CourseKey -> UserStory ()
-createCourseAdmin u ck = logAction INFO "Set user to course admin" $ do
+createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
   authorize P_Create P_CourseAdmin
   authorize P_Open   P_User
   withPersist $ \p -> R.createCourseAdmin p u ck
 
 createGroupProfessor :: Username -> GroupKey -> UserStory ()
-createGroupProfessor u gk = logAction INFO "Set user as a professor of a group" $ do
+createGroupProfessor u gk = logAction INFO "sets user as a professor of a group" $ do
   authorize P_Create P_Professor
   authorize P_Open   P_User
   withPersist $ \p -> R.createGroupProfessor p u gk
@@ -202,33 +209,32 @@ updateCourse = error "updateCourse: undefined"
 
 -- | Adds a new group to the given course
 createGroup :: CourseKey -> Group -> UserStory GroupKey
-createGroup ck g = logAction INFO ("Creating group: " ++ show (groupName g)) $ do
+createGroup ck g = logAction INFO ("creats group " ++ show (groupName g)) $ do
   authorize P_Create P_Group
   withPersist $ \p -> R.saveGroup p ck g
 
 loadGroup :: GroupKey -> UserStory Group
-loadGroup gk = logAction INFO ("Loading group: " ++ show gk) $ do
+loadGroup gk = logAction INFO ("loads group " ++ show gk) $ do
   authorize P_Open P_Group
   withPersist $ flip R.loadGroup gk
 
 -- | Checks is the user is subscribed for the group
 isUserInGroup :: GroupKey -> UserStory Bool
-isUserInGroup gk = do
+isUserInGroup gk = logAction INFO ("checks if user is in the group " ++ show gk) $ do
   authorize P_Open P_Group
   state <- userState
   withPersist $ \p -> R.isUserInGroup p (user state) gk
 
 -- | Checks if the user is subscribed for the course
 isUserInCourse :: CourseKey -> UserStory Bool
-isUserInCourse ck = do
+isUserInCourse ck = logAction INFO ("checks if user is in the course " ++ show ck) $ do
   authorize P_Open P_Course
   state <- userState
   withPersist $ \p -> R.isUserInCourse p (user state) ck
 
-
 -- | Regsiter the user as a group intendee
 subscribeToGroup :: GroupKey -> UserStory ()
-subscribeToGroup gk = logAction INFO ("Subscribe to the group " ++ (show gk)) $ do
+subscribeToGroup gk = logAction INFO ("subscribes to the group " ++ (show gk)) $ do
   authorize P_Open P_Group
   state <- userState
   withPersist $ \p -> do
@@ -236,7 +242,8 @@ subscribeToGroup gk = logAction INFO ("Subscribe to the group " ++ (show gk)) $ 
     R.subscribe p (user state) ck gk
 
 attendedGroups :: UserStory [(GroupKey, GroupDesc)]
-attendedGroups = do
+attendedGroups = logAction INFO "selects courses attended in" $ do
+  authorize P_Open P_Group
   uname <- CMS.gets user
   withPersist $ \p -> do
     ks <- R.userGroups p uname
@@ -250,30 +257,32 @@ deleteGroup = error "deleteGroup: undefined"
 updateGroup :: GroupKey -> Group -> UserStory ()
 updateGroup = error "updateGroup: undefined"
 
--- | Creates an assignment
-createAssignment :: Assignment -> UserStory AssignmentKey
-createAssignment = create descriptor saveAssignment
-  where
-    descriptor _ key = printf "Exercise is created with id: %s" (str key)
-
 createGroupAssignment :: GroupKey -> Assignment -> UserStory AssignmentKey
-createGroupAssignment gk = create descriptor (\p -> saveGroupAssignment p gk)
+createGroupAssignment gk a = logAction INFO msg $ do
+  authorize P_Open   P_Group
+  authorize P_Create P_Assignment
+  create descriptor (\p -> saveGroupAssignment p gk) a
   where
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
+    msg = "creates assignment for group " ++ show gk
 
 createCourseAssignment :: CourseKey -> Assignment -> UserStory AssignmentKey
-createCourseAssignment ck = create descriptor (\p -> saveCourseAssignment p ck)
+createCourseAssignment ck a = logAction INFO msg $ do
+  authorize P_Open P_Course
+  authorize P_Create P_Assignment
+  create descriptor (\p -> saveCourseAssignment p ck) a
   where
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
+    msg = "creates assignment for course " ++ show ck
 
 selectAssignments :: (AssignmentKey -> Assignment -> Bool) -> UserStory [(AssignmentKey, Assignment)]
-selectAssignments f = logAction INFO "Select Some Assignments" $ do
+selectAssignments f = logAction INFO "selects some assignments" $ do
   authorize P_Open P_Assignment
   withPersist $ flip filterAssignment f
 
 -- | The 'loadExercise' loads an exercise from the persistence layer
 loadAssignment :: AssignmentKey -> UserStory Assignment
-loadAssignment k = logAction INFO ("Loading assignment: " ++ show k) $ do
+loadAssignment k = logAction INFO ("loads assignment " ++ show k) $ do
   authorize P_Open P_Assignment
   withPersist $ flip R.loadAssignment k
 
@@ -284,36 +293,34 @@ errorPage s = do
 
 -- * Low level user story functionality
 
+
+authPerms :: ObjectPermissions -> UserStory ()
+authPerms = mapM_ (uncurry authorize) . permissions
+
 -- | Authorize the user for the given operation.
 --   It throws exception if the user is not authorized
 --   for the given operation
 authorize :: Permission -> PermissionObject -> UserStory ()
-authorize permission pObject
-  -- Only admin can open admin's page
-  | pObject == P_AdminPage && canOpen permission = do
-      userRole <- CMS.gets role
-      case userRole of
-        E.Admin -> return ()
-        _       -> errorPage "Admin authorization is required"
+authorize p o = do
+  er <- CMS.gets userRole
+  case er of
 
-  -- Only Course Admin and Admin can create courses
-  | pObject == P_Course   && canCreate permission = adminAuthorization
-  -- Only Course Admin and Admin can create exercises
-  | pObject == P_Assignment && canCreate permission = groupAdminAuthorization
+    Left EmptyRole ->
+      errorPage "User is not logged in."
 
-  | otherwise = return ()
-  where
-    groupAdminAuthorization = do
-      userRole <- CMS.gets role
-      case userRole >= E.Professor of
-        False -> errorPage "Group Admin or greater authorization is required"
-        True -> return ()
+    Left RegRole -> case (p,o) == (P_Create, P_User) of
+      True  -> return ()
+      False -> errorPage $ join [
+          "Registration tries to reach other authentication "
+        , show p, " ", show o
+        ]
 
-    adminAuthorization = do
-      userRole <- CMS.gets role
-      case userRole >= E.CourseAdmin of
-        False -> errorPage "Course Admin or Admin authorization is required"
-        True  -> return ()
+    Right r -> case permission r p o of
+      True  -> return ()
+      False -> errorPage $ join [
+          "Authorization is required: ", show r, " "
+        , show p, " ", show o
+        ]
 
 -- | Checks if the user is authorized for a given operation
 isAuthorized :: Permission -> PermissionObject -> UserStory Bool
@@ -334,7 +341,7 @@ logMessage level msg = do
   let u = str . user $ state
       t = token $ state
   user   <- CMS.gets (str . user)
-  CMR.asks logger >>= (\lgr -> (liftIO $ log lgr level $ join [user, " ", t, ": ", msg]))
+  CMR.asks logger >>= (\lgr -> (liftIO $ log lgr level $ join [user, " ", t, " ", msg, "."]))
 
 -- | Change user state, if the user state is logged in
 changeUserState :: (UserState -> UserState) -> UserStory ()
@@ -359,34 +366,53 @@ userState :: UserStory UserState
 userState = CMS.get
 
 submitSolution :: AssignmentKey -> Submission -> UserStory ()
-submitSolution ak s = do
+submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show ak) $ do
+  authorize P_Open   P_Assignment
+  authorize P_Create P_Submission
   withUserAndPersist $ \u p -> do
     sk <- saveSubmission p ak u s
     return ()
 
 availableGroups :: UserStory [(GroupKey, GroupDesc)]
-availableGroups = do
+availableGroups = logAction INFO "lists available assignments" $ do
+  authorize P_Open P_Group
   withPersist $ \p -> (mapM (R.groupDescription p . fst)) =<< (R.filterGroups p each)
   where
     each _ _ = True
 
 userAssignmentKeys :: UserStory [AssignmentKey]
-userAssignmentKeys = do
+userAssignmentKeys = logAction INFO "lists its assignments" $ do
+  authorize P_Open P_Assignment
   uname <- CMS.gets user
   withPersist $ \p -> R.userAssignmentKeys p uname
 
 userSubmissionKeys :: AssignmentKey -> UserStory [SubmissionKey]
-userSubmissionKeys ak = withUserAndPersist $ \u p -> R.userSubmissions p u ak
+userSubmissionKeys ak = logAction INFO msg $ do
+  authorize P_Open P_Assignment
+  authorize P_Open P_Submission
+  withUserAndPersist $ \u p -> R.userSubmissions p u ak
+  where
+    msg = "lists the submissions for assignment " ++ show ak
 
 submissionDetailsDesc :: SubmissionKey -> UserStory SubmissionDetailsDesc
-submissionDetailsDesc sk = withPersist $ \p -> R.submissionDetailsDesc p sk
+submissionDetailsDesc sk = logAction INFO msg $ do
+  authPerms submissionDetailsDescPermissions
+  withPersist $ \p -> R.submissionDetailsDesc p sk
+  where
+    msg = "loads information about submission " ++ show sk
 
 loadSubmission :: SubmissionKey -> UserStory Submission
-loadSubmission sk = withPersist $ \p -> R.loadSubmission p sk
+loadSubmission sk = logAction INFO ("loads submission " ++ show sk) $ do
+  authorize P_Open P_Submission
+  withPersist $ \p -> R.loadSubmission p sk
 
 userAssignments :: UserStory [(AssignmentKey, AssignmentDesc)]
-userAssignments = withUserAndPersist $
-  \u p -> mapM (createDesc p) =<< R.userAssignmentKeys p u
+userAssignments = logAction INFO "lists assignments" $ do
+  authorize P_Open P_Assignment
+  authorize P_Open P_Course
+  authorize P_Open P_Group
+  withUserAndPersist $
+    \u p -> mapM (createDesc p) =<< R.userAssignmentKeys p u
 
   where
     asgGroup p (Nothing) (Nothing) = return id
@@ -419,11 +445,15 @@ userAssignments = withUserAndPersist $
       return (ak, f desc)
 
 submissionDescription :: SubmissionKey -> UserStory SubmissionDesc
-submissionDescription sk = do
+submissionDescription sk = logAction INFO msg $ do
+  authPerms submissionDescPermissions
   withPersist $ \p -> submissionDesc p sk
+  where
+    msg = "loads submission infomation for " ++ show sk
 
 openSubmissions :: UserStory [SubmissionKey]
-openSubmissions = do
+openSubmissions = logAction INFO ("lists unevaulated submissions") $ do
+  authorize P_Open P_Submission
   withUserAndPersist $ \uname p -> do
     cs <- (map fst) <$> R.administratedCourses p uname
     gs <- (map fst) <$> R.administratedGroups  p uname
@@ -436,17 +466,21 @@ openSubmissions = do
     return $ map fst $ filter adminFor $ zip nonEvaulated assignments
 
 submissionListDesc :: AssignmentKey -> UserStory SubmissionListDesc
-submissionListDesc ak = do
+submissionListDesc ak = logAction INFO ("lists submissions for assignment " ++ show ak) $ do
+  authPerms submissionListDescPermissions
   withUserAndPersist $ \uname p -> R.submissionListDesc p uname ak
 
 submissionTables :: UserStory [SubmissionTableInfo]
-submissionTables = do
+submissionTables = logAction INFO "lists submission tables" $ do
+  authPerms submissionTableInfoPermissions
   withUserAndPersist $ \uname p -> R.submissionTables p uname
 
 -- TODO: Check if the user can evaulates only submissions that
 -- are submitted for the assignment created by the user
 newEvaulation :: SubmissionKey -> Evaulation -> UserStory ()
-newEvaulation sk e = do
+newEvaulation sk e = logAction INFO ("saves new evaulation for " ++ show sk) $ do
+  authorize P_Open   P_Submission
+  authorize P_Create P_Evaulation
   now <- liftIO $ getCurrentTime
   withUserAndPersist $ \u p -> do
     a <- isAdminedSubmission p u sk
@@ -457,7 +491,8 @@ newEvaulation sk e = do
       return ()
 
 modifyEvaulation :: EvaulationKey -> Evaulation -> UserStory ()
-modifyEvaulation ek e = do
+modifyEvaulation ek e = logAction INFO ("modifies evaulation " ++ show ek) $ do
+  authorize P_Modify P_Evaulation
   now <- liftIO $ getCurrentTime
   withUserAndPersist $ \u p -> do
     sk <- submissionOfEvaulation p ek
@@ -468,7 +503,9 @@ modifyEvaulation ek e = do
       return ()
 
 createComment :: SubmissionKey -> Comment -> UserStory ()
-createComment sk c = do
+createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
+  authorize P_Open   P_Submission
+  authorize P_Create P_Comment
   withUserAndPersist $ \u p -> do
     can <- canUserCommentOn p u sk
     when can $ do
@@ -476,7 +513,8 @@ createComment sk c = do
       return ()
 
 userSubmissions :: Username -> AssignmentKey -> UserStory (Maybe UserSubmissionDesc)
-userSubmissions s ak = do
+userSubmissions s ak = logAction INFO msg $ do
+  authPerms userSubmissionDescPermissions
   withUserAndPersist $ \u p -> do
     -- The admin can see the submission of students who are belonging to him
     courses <- (map fst) <$> R.administratedCourses p u
@@ -487,9 +525,12 @@ userSubmissions s ak = do
     case elem s students of
       False -> return Nothing
       True  -> Just <$> R.userSubmissionDesc p s ak
+  where
+    msg = join ["lists ",show s,"'s submissions for assignment ", show ak]
 
 modifyAssignment :: AssignmentKey -> Assignment -> UserStory ()
-modifyAssignment ak a = do
+modifyAssignment ak a = logAction INFO ("modifies assignment " ++ show ak) $ do
+  authorize P_Modify P_Assignment
   withUserAndPersist $ \u p -> do
     courseOrGroup <- R.courseOrGroupOfAssignment p ak
     ownedAssignment <- case courseOrGroup of

@@ -32,6 +32,7 @@ instance UserToken (Username, String) where
 -- TODO: UTF8 named strings
 data UserState
   = UserNotLoggedIn
+  | Registration
   | UserState {
     user :: Username
   , page :: Page
@@ -39,6 +40,11 @@ data UserState
   , role :: Role
   , token :: String
   } deriving (Show)
+
+userRole :: UserState -> Either OutsideRole Role
+userRole UserNotLoggedIn = Left EmptyRole
+userRole Registration    = Left RegRole
+userRole s@(UserState{}) = Right . role $ s
 
 instance UserToken UserState where
   userToken UserNotLoggedIn = error "Impossible: userToken UserNotLoggedIn"

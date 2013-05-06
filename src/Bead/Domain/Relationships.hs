@@ -23,10 +23,19 @@ data AssignmentDesc = AssignmentDesc {
   , aBad      :: Int
   }
 
+assignmentDescPermissions = ObjectPermissions [
+    (P_Open, P_Assignment), (P_Open, P_Course)
+  , (P_Open, P_Course)
+  ]
+
 data GroupDesc = GroupDesc {
     gName   :: String
   , gAdmins :: [String]
   } deriving (Show)
+
+groupDescPermissions = ObjectPermissions [
+    (P_Open, P_Group)
+  ]
 
 data SubmissionDesc = SubmissionDesc {
     eGroup    :: String
@@ -36,6 +45,11 @@ data SubmissionDesc = SubmissionDesc {
   , eAssignmentTitle :: String
   }
 
+submissionDescPermissions = ObjectPermissions [
+    (P_Open, P_Group), (P_Open, P_Course)
+  , (P_Open, P_Submission), (P_Open, P_Assignment)
+  ]
+  
 type Status = String
 type EvaulatedBy = String
 
@@ -46,6 +60,11 @@ data SubmissionListDesc = SubmissionListDesc {
   , slAssignmentText :: String
   }
 
+submissionListDescPermissions = ObjectPermissions [
+    (P_Open, P_Group), (P_Open, P_Course)
+  , (P_Open, P_Submission), (P_Open, P_Assignment)
+  ]
+  
 data SubmissionDetailsDesc = SubmissionDetailsDesc {
     sdGroup :: String
   , sdTeacher :: [String]
@@ -54,6 +73,12 @@ data SubmissionDetailsDesc = SubmissionDetailsDesc {
   , sdSubmission :: String
   , sdComments :: [String]
   }
+
+submissionDetailsDescPermissions = ObjectPermissions [
+    (P_Open, P_Group), (P_Open, P_Course)
+  , (P_Open, P_Assignment), (P_Open, P_Submission)
+  , (P_Open, P_Comment)
+  ]
 
 data SubmissionInfo
   = Submission_Not_Found
@@ -81,6 +106,10 @@ data SubmissionTableInfo = SubmissionTableInfo {
   , stUserLines   :: [(UserDesc, NoOfPassed, [(AssignmentKey, SubmissionInfo)])]
   }
 
+submissionTableInfoPermissions = ObjectPermissions [
+    (P_Open, P_Course), (P_Open, P_Assignment)
+  ]
+  
 -- TODO
 checkSubmissionTableInfo :: SubmissionTableInfo -> Bool
 checkSubmissionTableInfo _ = True
@@ -94,6 +123,10 @@ data UserSubmissionDesc = UserSubmissionDesc {
   , usStudent        :: String
   , usSubmissions :: [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)]
   }
+
+userSubmissionDescPermissions = ObjectPermissions [
+    (P_Open, P_Course), (P_Open, P_Assignment), (P_Open, P_Submission)
+  ]
 
 -- * Entity keys
 
