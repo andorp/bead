@@ -74,7 +74,6 @@ tests = testGroup "User Stories" [
   , register
   , loginAndLogout
   , courseTest
-  , assignmentTest
   , courseAndGroupAssignmentTest
   , cleanUpPersist
   ]
@@ -119,20 +118,6 @@ courseTest = testCase "Create Course" $ do
   assertUserState state adminUser
   assertBool "Loaded course differs from the created one" (r' == r)
   return ()
-
-assignmentTest = testCase "Create exercise list its keys and load it" $ do
-  c <- context
-  str <- getCurrentTime
-  end <- getCurrentTime
-  let e = E.Assignment "name" "exercise" "test" Normal str end Scale
-  (k,state) <- runStory c adminUserState $ createAssignment e
-  assertUserState state adminUser
-  (ks,state) <- runStory c adminUserState $ selectAssignments (\_ _ -> True)
-  assertUserState state adminUser
-  assertBool "Created exercise key is not found" (elem k $ map fst ks)
-  (e',state) <- runStory c adminUserState $ U.loadAssignment k
-  assertUserState state adminUser
-  assertBool "Loaded exercise differs from the created one" (e == e')
 
 courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
   c <- context
