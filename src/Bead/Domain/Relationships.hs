@@ -43,11 +43,13 @@ data SubmissionDesc = SubmissionDesc {
   , eSolution :: String
   , eType     :: EvaulationType
   , eAssignmentTitle :: String
+  , eComments :: [Comment]
   }
 
 submissionDescPermissions = ObjectPermissions [
     (P_Open, P_Group), (P_Open, P_Course)
   , (P_Open, P_Submission), (P_Open, P_Assignment)
+  , (P_Open, P_Comment)
   ]
   
 type Status = String

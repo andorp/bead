@@ -14,6 +14,7 @@ import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.UserStories (submissionDescription)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content as C
+import Bead.View.Snap.Content.Comments
 
 import Text.Blaze.Html5 (Html)
 import qualified Text.Blaze.Html5 as H
@@ -96,6 +97,7 @@ evaulationContent pd = do
   H.p $ do
     "Submitted solution"
     (fromString . eSolution $ sd)
+  commentsDiv . eComments $ sd
 
   where
     hiddenKeyField (Left ek)  = hiddenInput (fieldName evaulationKeyField) (paramValue ek)

@@ -154,12 +154,14 @@ submissionDesc p sk = do
   gr <- case cgk of
     Left ck  -> courseName <$> loadCourse p ck
     Right gk -> groupName  <$> loadGroup  p gk
+  cs  <- mapM (loadComment p) =<< (commentsOfSubmission p sk)
   return SubmissionDesc {
     eGroup    = gr
   , eStudent  = u
   , eSolution = s
   , eType     = evaulationType asg
   , eAssignmentTitle = assignmentName asg
+  , eComments = cs
   }
 
 courseNameAndAdmins :: Persist -> AssignmentKey -> TIO (String, [String])
