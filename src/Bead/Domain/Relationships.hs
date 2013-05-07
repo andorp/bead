@@ -64,14 +64,14 @@ submissionListDescPermissions = ObjectPermissions [
     (P_Open, P_Group), (P_Open, P_Course)
   , (P_Open, P_Submission), (P_Open, P_Assignment)
   ]
-  
+
 data SubmissionDetailsDesc = SubmissionDetailsDesc {
     sdGroup :: String
   , sdTeacher :: [String]
   , sdAssignment :: String
   , sdStatus :: String
   , sdSubmission :: String
-  , sdComments :: [String]
+  , sdComments :: [Comment]
   }
 
 submissionDetailsDescPermissions = ObjectPermissions [

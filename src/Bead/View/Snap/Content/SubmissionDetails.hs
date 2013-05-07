@@ -15,8 +15,10 @@ import Bead.Controller.UserStories (submissionDetailsDesc)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 import Bead.View.Snap.Content.Utils
+import Bead.View.Snap.Content.Comments
 import Bead.Domain.Entities (Comment(..))
 import Bead.Domain.Relationships
+
 
 import Text.Blaze.Html5 (Html)
 import qualified Text.Blaze.Html5 as H
@@ -85,9 +87,7 @@ submissionDetailsContent p = do
       hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
       hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
       submitButton (fieldName commentBtn) "Comment"
-  H.p $ do
-    "Comments"
-    (mapM_ fromString (sdComments sm))
+  commentsDiv (sdComments sm)
 
 invalidSubmission :: Html
 invalidSubmission = "You have tried to open a submission that not belongs to you"

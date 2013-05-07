@@ -213,7 +213,7 @@ submissionDetailsDesc p sk = do
   (name, adminNames) <- courseNameAndAdmins p ak
   asg <- assignmentDesc <$> loadAssignment p ak
   sol <- solution       <$> loadSubmission p sk
-  cs  <- mapM (fmap comment . loadComment p) =<< (commentsOfSubmission p sk)
+  cs  <- mapM (loadComment p) =<< (commentsOfSubmission p sk)
   s   <- submissionEvalStr p sk
   return SubmissionDetailsDesc {
     sdGroup   = name
