@@ -20,10 +20,10 @@ evaulationTable = getContentHandler evaulationTablePage
 evaulationTablePage :: GETContentHandler
 evaulationTablePage = withUserStateE $ \s -> do
   keys <- runStoryE (openSubmissions)
-  blaze $ withUserFrame s (evaulationTableContent keys)
+  renderPagelet $ withUserFrame s (evaulationTableContent keys)
 
-evaulationTableContent :: [SubmissionKey] -> Html
-evaulationTableContent ks = do
+evaulationTableContent :: [SubmissionKey] -> Pagelet
+evaulationTableContent ks = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ table "evaulation-table" (className evaulationClassTable) $ do
-    H.th $ "Table of new unevaulated assignements"
+    H.th $ (joinHtml i "Table of new unevaulated assignements")
     mapM_ (\s -> H.td $ link (routeWithParams P.Evaulation [requestParam s]) (show s)) ks

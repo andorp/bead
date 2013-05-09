@@ -24,9 +24,9 @@ userDetailPage = withUserStateE $ \s -> do
   case exist of
     True -> do
       user     <- runStoryE . loadUser $ username
-      blaze $ withUserFrame s (userDetailForm user)
+      renderPagelet $ withUserFrame s (userDetailForm user)
 
-    False -> blaze $ withUserFrame s (userDoesNotExist username)
+    False -> renderPagelet $ withUserFrame s (userDoesNotExist username)
 
 
 userDataChange :: POSTContentHandler
@@ -34,13 +34,15 @@ userDataChange = do
   user <- getValue
   return $ UpdateUser user
 
-userDetailForm :: User -> Html
-userDetailForm u = do
+userDetailForm :: User -> Pagelet
+userDetailForm u = onlyHtml $ mkI18NHtml $ \i18n -> do
   postForm (routeOf P.UserDetails) $ do
     inputPagelet . defaultValue $ u
-    submitButton (fieldName saveChangesBtn) "Save changes"
+    submitButton (fieldName saveChangesBtn) (i18n "Save changes")
 
-userDoesNotExist :: Username -> Html
-userDoesNotExist username = do
-  H.p $ do {"User does not exist:"; fromString . str $ username }
+userDoesNotExist :: Username -> Pagelet
+userDoesNotExist username = onlyHtml $ mkI18NHtml $ \i -> do
+  H.p $ do
+    joinHtml i "User does not exist:"
+    fromString . str $ username
 

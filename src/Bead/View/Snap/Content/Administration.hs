@@ -35,7 +35,7 @@ administrationPage = withUserStateE $ \s -> do
     , admins = filter admin ausers
     , courseAdmins = filter courseAdmin ausers
     }
-  blazeI18n $ withI18NUserFrame s (administrationContent info)
+  renderPagelet $ withUserFrame s (administrationContent info)
   where
     each _ _ = True
 
@@ -48,25 +48,25 @@ administrationPage = withUserStateE $ \s -> do
     admin = (Admin ==) . u_role
     courseAdmin = (CourseAdmin ==) . u_role
 
-administrationContent :: PageInfo -> I18NHtml
-administrationContent info = i18nHtml $ \i18n -> do
-  H.p $ (html i18n "New Course")
+administrationContent :: PageInfo -> Pagelet
+administrationContent info = onlyHtml $ mkI18NHtml $ \i18n -> do
+  H.p $ (joinHtml i18n "New Course")
   H.p $ postForm (routeOf P.CreateCourse) $ do
           inputPagelet emptyCourse
           submitButton (fieldName createCourseBtn) (i18n "Create Course")
-  H.p $ (html i18n "Add course admin to the course")
+  H.p $ (joinHtml i18n "Add course admin to the course")
   H.p $ postForm (routeOf P.AssignCourseAdmin) $ do
           valueTextSelection (fieldName selectedCourse) (courses info)
           valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
           submitButton (fieldName assignBtn) (i18n "Assign")
   H.p $ valueTextSelection "course-selection" (courses info)
-  H.p $ (html i18n "Modify user's account")
+  H.p $ (joinHtml i18n "Modify user's account")
   H.p $ getForm (routeOf P.UserDetails) $ do
           inputPagelet emptyUsername
           submitButton (fieldName selectBtn) (i18n "Select")
-  H.p $ (html i18n "Admin list / Add new admin")
+  H.p $ (joinHtml i18n "Admin list / Add new admin")
   H.p $ valueTextSelection "admin-selection" (admins info)
-  H.p $ (html i18n "Change password for a given user")
+  H.p $ (joinHtml i18n "Change password for a given user")
 
 -- Add Course Admin
 

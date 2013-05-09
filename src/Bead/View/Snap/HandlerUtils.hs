@@ -9,6 +9,7 @@ module Bead.View.Snap.HandlerUtils (
   , getParamE
   , i18nE
   , blazeI18n
+  , renderPagelet
   , setInSessionE
   , setReqParamInSession
   , sessionToken
@@ -26,6 +27,7 @@ import qualified Bead.Controller.UserStories as S
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
 import Bead.View.Snap.Dictionary
+import Bead.View.Snap.Pagelets (Pagelet, runPagelet)
 import Bead.View.Snap.RouteOf (ReqParam(..))
 
 -- Haskell imports
@@ -100,6 +102,9 @@ i18nE = do
 
 blazeI18n :: (I18N -> Html) -> HandlerError App b ()
 blazeI18n h = i18nE >>= blaze . h
+
+renderPagelet :: Pagelet -> HandlerError App b ()
+renderPagelet p = i18nE >>= blaze . (runPagelet p)
 
 withUserState :: (UserState -> Handler App b c) -> Handler App b c
 withUserState h = userState >>= h

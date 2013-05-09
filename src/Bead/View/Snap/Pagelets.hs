@@ -10,6 +10,8 @@ import Text.Blaze.Html5 (Html, AttributeValue(..), (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
+import Text.CSS
+
 import Bead.Domain.Types (Str(..))
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
@@ -21,15 +23,39 @@ import Bead.View.Snap.TemplateAndComponentNames
 
 import Bead.Invariants (Invariants(..))
 
--- Definitions --
+-- * Definitions
+
+data Pagelet = Pagelet {
+    struct :: I18NHtml
+  , style  :: Css
+  }
+
+emptyPagelet  = Pagelet { struct = mkI18NHtml (const $ return ()) , style = return () }
+onlyHtml h = Pagelet { struct = h, style = return () }
+
+structMap :: (I18NHtml -> I18NHtml) -> Pagelet -> Pagelet
+structMap f p = p { struct = f . struct $ p }
+
+styleMap :: (Css -> Css) -> Pagelet -> Pagelet
+styleMap f p = p { style = f . style $ p }
+
+runPagelet :: Pagelet -> I18N -> Html
+runPagelet p i = H.docTypeHtml $ do
+  H.head $ do
+    H.title "Snap web server"
+    H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
+  H.body $ (joinHtml i . struct $ p)
 
 newtype I18NHtml = I18NHtml { un18n :: I18N -> Html }
 
-internationalization :: I18NHtml -> I18N -> Html
-internationalization (I18NHtml h) i = h i
+joinHtml :: I18N -> I18NHtml -> Html
+joinHtml i (I18NHtml h) = h i
 
-i18nHtml :: (I18N -> Html) -> I18NHtml
-i18nHtml h = I18NHtml h
+instance IsString I18NHtml where
+  fromString s = I18NHtml (\f -> fromString . f $ s)
+
+mkI18NHtml :: (I18N -> Html) -> I18NHtml
+mkI18NHtml h = I18NHtml h
 
 class BlazeTemplate b where
   template :: b -> Html
@@ -40,18 +66,15 @@ withTitleAndHead content = H.docTypeHtml $ do
   H.body $ do
     H.div ! A.id "content" $ content
 
-withUserFrame :: UserState -> Html -> Html
-withUserFrame s content = H.docTypeHtml $ do
-  H.head $ H.title "Snap web server"
-  H.body $ do
-    H.div ! A.id "header" $ pageHeader s
-    H.div ! A.id "menu" $ navigationMenu s
-    H.div ! A.id "content" $ do
-      "Content"
-      content
-
-withI18NUserFrame :: UserState -> I18NHtml -> I18N -> Html
-withI18NUserFrame s h i = withUserFrame s (internationalization h i)
+withUserFrame :: UserState -> Pagelet -> Pagelet
+withUserFrame s = structMap withUserFrame'
+  where
+    withUserFrame' content = mkI18NHtml $ \i -> do
+      H.div ! A.id "header" $ pageHeader s
+      H.div ! A.id "menu" $ navigationMenu s
+      H.div ! A.id "content" $ do
+         "Content"
+         (un18n content i)
 
 -- * Basic building blocks
 
@@ -63,9 +86,6 @@ hasNoDefaultValue = Nothing
 
 withDefaultValue Nothing  h = h
 withDefaultValue (Just v) h = h ! A.value (fromString v)
-
-html :: I18N -> String -> Html
-html i18n = fromString . i18n
 
 infix |>
 
@@ -119,9 +139,6 @@ hiddenTableLine = H.tr . H.td
 
 empty :: Html
 empty = return ()
-
-errorPage :: Html
-errorPage = withUserFrame (error "errorPage: undefined") "Error page is not defined"
 
 linkText :: (IsString s) => P.Page -> s
 linkText P.Login      = fromString "Login"

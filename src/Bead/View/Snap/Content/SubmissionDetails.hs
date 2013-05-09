@@ -38,10 +38,10 @@ submissionDetailsPage = withUserStateE $ \s -> do
   sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key was not found"
   usersSubmission ak sk $ \submission -> do
     case submission of
-      Nothing -> blaze . withUserFrame s $ invalidSubmission
+      Nothing -> renderPagelet . withUserFrame s $ invalidSubmission
       Just sm -> do
         sd <- runStoryE $ submissionDetailsDesc sk
-        blaze . withUserFrame s $
+        renderPagelet . withUserFrame s $
           submissionDetailsContent PageData {
               smKey = sk
             , aKey  = ak
@@ -62,33 +62,34 @@ submissionDetailsPostHandler = do
                    , commentDate = now
                    }
 
-submissionDetailsContent :: PageData -> Html
-submissionDetailsContent p = do
+submissionDetailsContent :: PageData -> Pagelet
+submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
   let sm = smDetails p
   H.p $ do
-    "Group / Course"
+    (joinHtml i "Group / Course")
     (fromString . sdGroup $ sm)
   H.p $ do
-    "Teacher"
+    (joinHtml i "Teacher")
     (fromString . join . intersperse ", " . sdTeacher $ sm)
   H.p $ do
-    "Assignment"
+    (joinHtml i "Assignment")
     (fromString . sdAssignment $ sm)
   H.p $ do
-    "Status"
+    (joinHtml i "Status")
     (fromString . sdStatus $ sm)
   H.p $ do
-    "Submission text"
+    (joinHtml i "Submission text")
     (fromString . sdSubmission $ sm)
   H.p $ do
-    "New comment"
+    (joinHtml i "New comment")
     postForm (routeOf P.SubmissionDetails) $ do
       textAreaInput (fieldName commentValueField) 50 10 Nothing
       hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
       hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
-      submitButton (fieldName commentBtn) "Comment"
-  commentsDiv (sdComments sm)
+      submitButton (fieldName commentBtn) (i "Comment")
+  joinHtml i . commentsDiv . sdComments $ sm
 
-invalidSubmission :: Html
-invalidSubmission = "You have tried to open a submission that not belongs to you"
+invalidSubmission :: Pagelet
+invalidSubmission = onlyHtml $ mkI18NHtml $ \i ->
+  (joinHtml i "You have tried to open a submission that not belongs to you")
 

@@ -31,7 +31,7 @@ submissionPage :: GETContentHandler
 submissionPage = withUserStateE $ \s -> do
   ak <- getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
   usersAssignment ak $ \assignment ->
-    blaze . withUserFrame s $
+    renderPagelet . withUserFrame s $
       case assignment of
         Nothing -> invalidAssignment
         Just a  -> submissionContent (PageData { asKey = ak, asValue = a })
@@ -43,18 +43,19 @@ submissionPostHandler = do
   now <- liftIO getCurrentTime
   return $ NewSubmission assignmentKey (E.Submission submissionText now)
 
-submissionContent :: PageData -> Html
-submissionContent p = postForm (routeOf P.Submission) $ do
+submissionContent :: PageData -> Pagelet
+submissionContent p = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf P.Submission) $ do
   H.p $ do
-    "Solution text box / Solution files"
+    (joinHtml i "Solution text box / Solution files")
     textAreaInput (fieldName submissionTextField) 50 10 Nothing
   H.p $ do
-    "Description of the Assignment"
+    (joinHtml i "Description of the Assignment")
     (fromString (assignmentDesc (asValue p)))
-  H.p $ "Course / Group / Teacher / Assignment Information"
+  H.p $ (joinHtml i "Course / Group / Teacher / Assignment Information")
   hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
-  submitButton (fieldName submitSolutionBtn) "Submit"
+  submitButton (fieldName submitSolutionBtn) (i "Submit")
 
-invalidAssignment :: Html
-invalidAssignment = "You have tried to open an assignment that not belongs to you"
+invalidAssignment :: Pagelet
+invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->
+  (joinHtml i "You have tried to open an assignment that not belongs to you")
 

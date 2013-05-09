@@ -24,44 +24,46 @@ userSubmissionPage = withUserStateE $ \s -> do
   aKey     <- getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
   mDesc <- runStoryE $ U.userSubmissions username aKey
   case mDesc of
-    Nothing -> blaze $ withUserFrame s unauthorized
-    Just  d -> blaze $ withUserFrame s (userSubmissionHtml d)
+    Nothing -> renderPagelet $ withUserFrame s unauthorized
+    Just  d -> renderPagelet $ withUserFrame s (userSubmissionHtml d)
 
-unauthorized :: Html
-unauthorized = "You have tried to reach a submission that not belongs to your groups"
+unauthorized :: Pagelet
+unauthorized = onlyHtml $ mkI18NHtml $ const $
+  "You have tried to reach a submission that not belongs to your groups"
 
-userSubmissionHtml :: UserSubmissionDesc -> Html
-userSubmissionHtml u = do
+userSubmissionHtml :: UserSubmissionDesc -> Pagelet
+userSubmissionHtml u = onlyHtml $ mkI18NHtml $ \i18n -> do
   H.p $ do
-    "Course: "
+    fromString . i18n $ "Course: "
     fromString . usCourse $ u
   H.p $ do
-    "Assignment: "
+    fromString . i18n $ "Assignment: "
     fromString . usAssignmentName $ u
   H.p $ do
-    "Student: "
+    fromString . i18n $ "Student: "
     fromString . usStudent $ u
   H.p $ do
-    "Submitted Solutions: "
-    submissionTable . usSubmissions $ u
+    fromString . i18n $ "Submitted Solutions: "
+    submissionTable i18n . usSubmissions $ u
 
-submissionTable :: [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)] -> Html
-submissionTable s = table "submission-table" (className userSubmissionClassTable) $ do
-  headerLine
-  mapM_ submissionLine s
+submissionTable :: I18N -> [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)] -> Html
+submissionTable i18n s = do
+  table "submission-table" (className userSubmissionClassTable) $ do
+    headerLine
+    mapM_ submissionLine s
 
   where
     headerLine = H.tr $ do
-      H.th "Date of submission"
-      H.th "Evaulated By"
-      H.th ""
+      H.th . fromString . i18n $ "Date of submission"
+      H.th . fromString . i18n $ "Evaulated By"
+      H.th . fromString . i18n $ ""
 
     submissionLine (sk,t,si,ev) = H.tr $ do
       H.td $ sbmLink si sk t
-      H.td $ submissionInfo si
-      H.td $ evaulatedWith  ev
+      H.td $ fromString $ i18n $ submissionInfo si
+      H.td $ fromString $ i18n $ evaulatedWith  ev
 
-    submissionInfo :: SubmissionInfo -> Html
+    submissionInfo :: SubmissionInfo -> String
     submissionInfo Submission_Not_Found   = "Not Found"
     submissionInfo (Submission_Passed _)  = "Passed"
     submissionInfo (Submission_Failed _)  = "Failed"

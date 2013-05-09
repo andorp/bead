@@ -38,7 +38,7 @@ evaulationPage = withUserStateE $ \s -> do
       sbmKey  = Right sk
     , sbmDesc = sd
     }
-  blaze $ withUserFrame s (evaulationContent pageData)
+  renderPagelet $ withUserFrame s (evaulationContent pageData)
 
 modifyEvaulationPage :: GETContentHandler
 modifyEvaulationPage = withUserStateE $ \s -> do
@@ -49,7 +49,7 @@ modifyEvaulationPage = withUserStateE $ \s -> do
     sbmKey  = Left ek
   , sbmDesc = sd
   }
-  blaze $ withUserFrame s (evaulationContent pageData)
+  renderPagelet $ withUserFrame s (evaulationContent pageData)
 
 evaulationPostHandler :: POSTContentHandler
 evaulationPostHandler = do
@@ -77,27 +77,27 @@ modifyEvaulationPost = do
   }
   return $ C.ModifyEvaulation ek e
 
-evaulationContent :: PageData -> Html
-evaulationContent pd = do
+evaulationContent :: PageData -> Pagelet
+evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   let sd = sbmDesc pd
   H.p $ do
-    "Information: Course, Group, Student"
+    (joinHtml i "Information: Course, Group, Student")
     (fromString . eGroup   $ sd)
     (fromString . eStudent $ sd)
   H.p $ postForm (routeOf . evPage . sbmKey $ pd) $ do
           H.p $ do
-            "Evaulation text block"
+            (joinHtml i "Evaulation text block")
             textAreaInput (fieldName evaulationValueField) 50 10 Nothing
           H.p $ do
-            "Evaulation checkbox, Submit button"
+            (joinHtml i "Evaulation checkbox, Submit button")
             -- TODO: Checkbox
             textInput (fieldName evaulationStateField) 10 (Just (show (Passed 10)))
           hiddenKeyField . sbmKey $ pd
-          submitButton (fieldName saveEvalBtn) "Save Evaulation"
+          submitButton (fieldName saveEvalBtn) (i "Save Evaulation")
   H.p $ do
-    "Submitted solution"
+    (joinHtml i "Submitted solution")
     (fromString . eSolution $ sd)
-  commentsDiv . eComments $ sd
+  joinHtml i . commentsDiv . eComments $ sd
 
   where
     hiddenKeyField (Left ek)  = hiddenInput (fieldName evaulationKeyField) (paramValue ek)

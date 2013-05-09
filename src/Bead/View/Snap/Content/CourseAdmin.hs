@@ -39,7 +39,7 @@ courseAdminPage = withUserStateE $ \s -> do
     , professors = ps
     , groups     = gs
     }
-  blaze $ withUserFrame s (courseAdminContent pageData)
+  renderPagelet $ withUserFrame s (courseAdminContent pageData)
   where
     professor = (Professor ==) . u_role
 
@@ -47,18 +47,18 @@ courseAdminPage = withUserStateE $ \s -> do
       g <- loadGroup gk
       return (gk,g)
 
-courseAdminContent :: PageData -> Html
-courseAdminContent info = do
-  H.p $ "New group for the course"
+courseAdminContent :: PageData -> Pagelet
+courseAdminContent info = onlyHtml $ mkI18NHtml $ \i -> do
+  H.p $ (joinHtml i "New group for the course")
   H.p $ postForm (routeOf P.CreateGroup) $ do
           valueTextSelection (fieldName courseKeyInfo) (courses info)
           inputPagelet emptyGroup
-          submitButton (fieldName createGroupBtn) "Create Group"
-  H.p $ "Assign teacher to the group"
+          submitButton (fieldName createGroupBtn) (i "Create Group")
+  H.p $ (joinHtml i "Assign teacher to the group")
   H.p $ postForm (routeOf P.AssignProfessor) $ do
           valueTextSelection (fieldName selectedGroup) (groups info)
           valueTextSelection (fieldName selectedProfessor) (professors info)
-          submitButton (fieldName assignGroupAdminBtn) "Assign"
+          submitButton (fieldName assignGroupAdminBtn) (i "Assign")
 
 -- * Create group
 

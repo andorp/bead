@@ -17,7 +17,7 @@ module Bead.View.Snap.Content (
   , runStory
   , runStoryE
   , i18nE
-  , blazeI18n
+  , renderPagelet
   , withUserState
   , withUserStateE
   , withUserStateAndFrame
@@ -92,7 +92,7 @@ mkContent
   -> Content
 mkContent g p = Content { get = g, post = p }
 
-withUserStateAndFrame :: (UserState -> Html) -> HandlerError App App ()
+withUserStateAndFrame :: (UserState -> Pagelet) -> HandlerError App App ()
 withUserStateAndFrame f = withUserStateE $ \state ->
-  lift . blaze $ withUserFrame state (f state)
+  renderPagelet $ withUserFrame state (f state)
 

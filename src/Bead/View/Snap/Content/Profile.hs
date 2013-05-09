@@ -17,9 +17,9 @@ profile = getContentHandler profilePage
 
 profilePage :: GETContentHandler
 profilePage = withUserStateE $ \s -> do
-  blaze $ withUserFrame s (profileContent)
+  renderPagelet $ withUserFrame s (profileContent)
 
-profileContent :: Html
-profileContent = do
-  H.p $ "Full name"
-  H.p $ "Password section"
+profileContent :: Pagelet
+profileContent = onlyHtml $ mkI18NHtml $ \i -> do
+  H.p $ (joinHtml i "Full name")
+  H.p $ (joinHtml i "Password section")

@@ -46,7 +46,7 @@ isEmptyData = pageDataMap null null (const False)
 newCourseAssignmentPage :: GETContentHandler
 newCourseAssignmentPage = withUserStateE $ \s -> do
   cs <- runStoryE S.administratedCourses
-  blaze $ withUserFrame s (newAssignmentContent (PD_Course cs))
+  renderPagelet $ withUserFrame s (newAssignmentContent (PD_Course cs))
 
 postCourseAssignment :: POSTContentHandler
 postCourseAssignment = do
@@ -59,7 +59,7 @@ postCourseAssignment = do
 newGroupAssignmentPage :: GETContentHandler
 newGroupAssignmentPage = withUserStateE $ \s -> do
   gs <- runStoryE S.administratedGroups
-  blaze $ withUserFrame s (newAssignmentContent (PD_Group gs))
+  renderPagelet $ withUserFrame s (newAssignmentContent (PD_Group gs))
 
 postGroupAssignment :: POSTContentHandler
 postGroupAssignment = do
@@ -73,45 +73,46 @@ modifyAssignmentPage :: GETContentHandler
 modifyAssignmentPage = withUserStateE $ \s -> do
   ak <- getValue
   as <- runStoryE (S.loadAssignment ak)
-  blaze $ withUserFrame s (newAssignmentContent (PD_Assignment (ak,as)))
+  renderPagelet $ withUserFrame s (newAssignmentContent (PD_Assignment (ak,as)))
 
 postModifyAssignment :: POSTContentHandler
 postModifyAssignment = ModifyAssignment <$> getValue <*> getValue
 
-newAssignmentContent :: PageData -> Html
+newAssignmentContent :: PageData -> Pagelet
 newAssignmentContent pd
-  | isEmptyData pd = H.p $ pageDataMap (const "You are not an admin for any course")
-                                       (const "You are not an admin for any groups")
-                                       (const "This assignment is not created by you")
-                                       pd
-newAssignmentContent pd = postForm (routeOf . page $ pd) $ do
+  | isEmptyData pd = onlyHtml $ mkI18NHtml $ \i -> do
+      H.p $ pageDataMap (const . joinHtml i $ "You are not an admin for any course")
+                        (const . joinHtml i $ "You are not an admin for any groups")
+                        (const . joinHtml i $ "This assignment is not created by you")
+                        pd
+newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page $ pd) $ do
   H.p $ do
-    "Assignment title"
+    (joinHtml i "Assignment title")
     textInput (fieldName assignmentNameField) 10 (amap assignmentName pd)
   H.p $ do
-    "Description text block / Description files"
+    (joinHtml i "Description text block / Description files")
     textAreaInput (fieldName assignmentDescField) 50 10 (amap assignmentDesc pd)
   H.p $ do
-    "Test Data text block / Test data files"
+    (joinHtml i "Test Data text block / Test data files")
     textAreaInput (fieldName assignmentTCsField) 50 10 (amap assignmentTCs pd)
-  H.p $ "Select automated evaulation method"
+  H.p $ (joinHtml i "Select automated evaulation method")
   H.p $ do
-    "Assignment Type"
+    (joinHtml i "Assignment Type")
     enumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
   H.p $ do
-    "Evaulation Type"
+    (joinHtml i "Evaulation Type")
     enumSelection (fieldName assignmentEvField) (maybe Scale id . amap evaulationType $ pd)
-  H.p $ "Active period"
-  do {"Start date"; utcTimeInput (fieldName assignmentStartField) (amap assignmentStart pd) }
-  do {"End date"  ; utcTimeInput (fieldName assignmentEndField)   (amap assignmentEnd   pd) }
+  H.p $ (joinHtml i "Active period")
+  do {(joinHtml i "Start date"); utcTimeInput (fieldName assignmentStartField) (amap assignmentStart pd) }
+  do {(joinHtml i "End date")  ; utcTimeInput (fieldName assignmentEndField)   (amap assignmentEnd   pd) }
   H.p $ do
-    pageDataMap (const "Course") (const "Group") (const "") pd
+    pageDataMap (const (joinHtml i "Course")) (const (joinHtml i "Group")) (const (joinHtml i "")) pd
     pageDataMap
           (valueTextSelection (fieldName selectedCourse))
           (valueTextSelection (fieldName selectedGroup))
           (hiddenInput (fieldName assignmentKeyField) . paramValue  . fst)
           pd
-  submitButton (fieldName saveSubmitBtn) "Save"
+  submitButton (fieldName saveSubmitBtn) (i "Save")
     where
       page :: PageData -> Page
       page = pageDataMap

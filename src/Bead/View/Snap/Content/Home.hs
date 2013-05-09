@@ -28,7 +28,7 @@ data HomePageData = HomePageData {
 
 homePage :: GETContentHandler
 homePage = withUserStateE $ \s ->
-  (blaze . withUserFrame s . homeContent) =<<
+  (renderPagelet . withUserFrame s . homeContent) =<<
     (runStoryE $ do
        a <- userAssignments
        t <- submissionTables
@@ -39,30 +39,30 @@ homePage = withUserStateE $ \s ->
          })
 
 
-homeContent :: HomePageData -> Html
-homeContent d = do
+homeContent :: HomePageData -> Pagelet
+homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
   let s = userState d
-  when (isAdmin s) $ H.p $ "Admin's menu"
+  when (isAdmin s) $ H.p $ (joinHtml i18n "Admin's menu")
   when (isCourseAdmin s) $ H.p $ do
-    "Course Admin's menu"
+    (joinHtml i18n "Course Admin's menu")
     linkToPage P.NewCourseAssignment
   when (isProfessor s) $ H.p $ do
-    "Teacher's menu"
+    (joinHtml i18n "Teacher's menu")
     linkToPage P.NewGroupAssignment
   when (isCourseAdmin s || isProfessor s) $ H.p $ do
-    "Submission table"
-    htmlSubmissionTables (sTables d)
+    (joinHtml i18n "Submission table")
+    htmlSubmissionTables i18n (sTables d)
   when (isStudent s) $ H.p $ do
-    "Student's menu"
-    availableAssignments (assignments d)
+    (joinHtml i18n "Student's menu")
+    availableAssignments i18n (assignments d)
 
-availableAssignments :: [(AssignmentKey,AssignmentDesc)] -> Html
-availableAssignments as = do
+availableAssignments :: I18N -> [(AssignmentKey,AssignmentDesc)] -> Html
+availableAssignments i18n as = do
   table (fieldName availableAssignmentsTable) (className assignmentTable) $ do
     mapM_ assignmentLine as
   where
     assignmentLine (k,a) = H.tr $ do
-      H.td $ link (routeWithParams P.Submission [requestParam k]) "New submission"
+      H.td $ link (routeWithParams P.Submission [requestParam k]) (i18n "New submission")
       H.td (fromString . aGroup $ a)
       H.td (fromString . join . intersperse ", " . aTeachers $ a)
       H.td $ link (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
@@ -70,21 +70,21 @@ availableAssignments as = do
       H.td (fromString . show . aNew $ a)
       H.td (fromString . show . aBad $ a)
 
-htmlSubmissionTables :: [SubmissionTableInfo] -> Html
-htmlSubmissionTables xs = mapM_ htmlSubmissionTable . zip [1..] $ xs
+htmlSubmissionTables :: I18N -> [SubmissionTableInfo] -> Html
+htmlSubmissionTables i18n xs = mapM_ (htmlSubmissionTable i18n) . zip [1..] $ xs
 
-htmlSubmissionTable :: (Int,SubmissionTableInfo) -> Html
-htmlSubmissionTable (i,s) = table (join ["st", show i]) (className groupSubmissionTable) $ do
+htmlSubmissionTable :: I18N -> (Int,SubmissionTableInfo) -> Html
+htmlSubmissionTable i18n (i,s) = table (join ["st", show i]) (className groupSubmissionTable) $ do
   headLine (stCourse s)
   assignmentLine (stAssignments s)
   mapM_ userLine (stUserLines s)
   where
     headLine = H.tr . H.th . fromString
     assignmentLine as = H.tr $ do
-      H.th "Name"
-      H.th "Username"
+      H.th (joinHtml i18n "Name")
+      H.th (joinHtml i18n "Username")
       mapM_ (H.th . modifyAssignmentLink) . zip [1..] $ as
-      H.th "Passed"
+      H.th (joinHtml i18n "Passed")
 
     modifyAssignmentLink (i,ak) =
       link (routeWithParams P.ModifyAssignment [requestParam ak])

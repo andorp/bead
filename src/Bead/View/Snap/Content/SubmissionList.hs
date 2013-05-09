@@ -33,25 +33,25 @@ submissionListPage = withUserStateE $ \s -> do
   ak <- getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
   usersAssignment ak $ \assignment -> do
     case assignment of
-      Nothing -> blaze . withUserFrame s $ invalidAssignment
+      Nothing -> renderPagelet . withUserFrame s $ invalidAssignment
       Just  _ -> do
         sl <- runStoryE (submissionListDesc ak)
-        blaze . withUserFrame s $ submissionListContent (PageData { asKey = ak, smList = sl })
+        renderPagelet . withUserFrame s $ submissionListContent (PageData { asKey = ak, smList = sl })
 
-submissionListContent :: PageData -> Html
-submissionListContent p = H.div ! A.class_ (className submissionListDiv) $ do
+submissionListContent :: PageData -> Pagelet
+submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (className submissionListDiv) $ do
   H.p $ do
-    "Group / Course"
+    (joinHtml i "Group / Course")
     (fromString . slGroup . smList $ p)
   H.p $ do
-    "Teacher"
+    (joinHtml i "Teacher")
     (fromString . join . slTeacher . smList $ p)
   H.p $ do
-    "Submission list"
+    (joinHtml i "Submission list")
     table (fieldName submissionTableName) (className submissionListTable) $
       mapM_ submissionLine (slSubmissions . smList $ p)
   H.p $ do
-    "Assignment"
+    (joinHtml i "Assignment")
     (fromString . slAssignmentText . smList $ p)
   where
     submissionLine (sk, time, status, t) = H.tr $ do
@@ -60,6 +60,7 @@ submissionListContent p = H.div ! A.class_ (className submissionListDiv) $ do
         (fromString . show $ time)
       H.td (fromString status)
 
-invalidAssignment :: Html
-invalidAssignment = "You have tried to open an assignment that not belongs to you"
+invalidAssignment :: Pagelet
+invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->
+  (joinHtml i "You have tried to open an assignment that not belongs to you")
 

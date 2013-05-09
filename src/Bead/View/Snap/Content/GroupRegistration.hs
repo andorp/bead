@@ -39,28 +39,28 @@ groupRegistrationPage = withUserStateE $ \s -> do
         groups = gs
       , groupsRegistered = as
       }
-  blaze $ withUserFrame s (groupRegistrationContent desc)
+  renderPagelet $ withUserFrame s (groupRegistrationContent desc)
 
-groupRegistrationContent :: GroupRegData -> Html
-groupRegistrationContent desc = do
+groupRegistrationContent :: GroupRegData -> Pagelet
+groupRegistrationContent desc = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ do
-    "Table of registered courses and teachers of them"
-    groupsAlreadyRegistered (groupsRegistered desc)
+    (joinHtml i "Table of registered courses and teachers of them")
+    groupsAlreadyRegistered i (groupsRegistered desc)
   H.p $ do
-    "Course / Group selection"
-    groupsForTheUser (groups desc)
-  H.p $ "Choose"
+    (joinHtml i "Course / Group selection")
+    groupsForTheUser i (groups desc)
+  H.p $ (joinHtml i "Choose")
 
 -- TODO
-groupsAlreadyRegistered :: [(GroupKey, GroupDesc)] -> Html
-groupsAlreadyRegistered ds = return ()
+groupsAlreadyRegistered :: I18N -> [(GroupKey, GroupDesc)] -> Html
+groupsAlreadyRegistered i ds = return ()
   
-groupsForTheUser :: [(GroupKey, GroupDesc)] -> Html
-groupsForTheUser gs = do
+groupsForTheUser :: I18N -> [(GroupKey, GroupDesc)] -> Html
+groupsForTheUser i18n gs = do
   postForm (routeOf P.GroupRegistration) $ do
     selection (fieldName groupRegistrationField) $ do
       mapM_ (\(gk,gd) -> option (paramValue gk) (descriptive gd) False) gs
-    submitButton (fieldName regGroupSubmitBtn) "Register"
+    submitButton (fieldName regGroupSubmitBtn) (i18n "Register")
 
   where
     descriptive :: GroupDesc -> String
