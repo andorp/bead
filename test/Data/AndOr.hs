@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Data.AndOr where
 
 import Prelude hiding (map)
@@ -36,3 +37,13 @@ foldM
 foldM _  _  fl _  _  (Leaf x)   = fl x
 foldM fa fo fl ga go (And x ts) = (fa x) =<< ga =<< (mapM (foldM fa fo fl ga go) ts)
 foldM fa fo fl ga go (Or  x ts) = (fo x) =<< go =<< (mapM (foldM fa fo fl ga go) ts)
+
+leaf :: a -> AndOr a
+leaf = Leaf
+
+orNode :: a -> [AndOr a] -> AndOr a
+orNode = Or
+
+andNode :: a -> [AndOr a] -> AndOr a
+andNode = And
+

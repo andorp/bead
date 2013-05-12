@@ -136,12 +136,15 @@ selectUserToModify u = do
 data CourseData = CourseData {
     cName :: String
   , cDesc :: String
+  , cEval :: EvaulationType
   }
 
 createCourse :: CourseData -> TWD ()
 createCourse c = do
   sendKeysStr (cName c) <@> courseNameField
   sendKeysStr (cDesc c) <@> courseDescField
+  eval <- createSelect courseEvalField "No evaulation selection was found"
+  selectByValue eval (fromString . show . cEval $ c)
   click <@> createCourseBtn
 
 
@@ -194,6 +197,7 @@ data GroupData = GroupData {
     gdCourseName :: String
   , gdGroupName :: String
   , gdGroupDesc :: String
+  , gdEval :: EvaulationType
   }
 
 createGroup :: GroupData -> TWD ()
@@ -202,6 +206,8 @@ createGroup g = do
   selectByVisibleText s (fromString . gdCourseName $ g)
   sendKeysStr (gdGroupName g) <@> groupNameField
   sendKeysStr (gdGroupDesc g) <@> groupDescField
+  eval <- createSelect groupEvalField "No evaulation field is not found"
+  selectByValue eval (fromString . show . gdEval $ g)
   click <@> createGroupBtn
 
 checkSelectionVisibleText :: (SnapFieldName s) => s -> String -> TWD ()
@@ -278,7 +284,6 @@ data AssignmentData = AssignmentData {
   , aName :: String
   , aDesc :: String
   , aTCs  :: String
-  , aEv     :: EvaulationType
   , asgType :: AssignmentType
   , aStartDate :: String
   , aEndDate   :: String
@@ -291,7 +296,7 @@ instance PageObject AssignmentData where
     failsOnFalse "Assignment description is not found" (doesFieldExist assignmentDescField)
     failsOnFalse "Assignment test cases are not found" (doesFieldExist assignmentTCsField)
     failsOnFalse "Assignment type is not found" (doesFieldExist assignmentTypeField)
-    failsOnFalse "Assignment evaulation is not found" (doesFieldExist assignmentEvField)
+--    failsOnFalse "Assignment evaulation is not found" (doesFieldExist assignmentEvField)
     failsOnFalse "Assignment start field is not found" (doesFieldExist assignmentStartField)
     failsOnFalse "Assignment end field is not found" (doesFieldExist assignmentEndField)
     case aType a of
@@ -306,8 +311,6 @@ instance PageAction AssignmentData where
     sendKeysStr (aTCs  a) <@> assignmentTCsField
     types <- createSelect assignmentTypeField "No assignment selection was found"
     selectByValue types (fromString . show . asgType $ a)
-    evals <- createSelect assignmentEvField "No assignment evaulation was found"
-    selectByValue evals (fromString . show . aEv $ a)
     sendKeysStr (aStartDate a) <@> assignmentStartField
     sendKeysStr (aEndDate a) <@> assignmentEndField
     gc <- case aType a of

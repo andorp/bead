@@ -6,6 +6,7 @@ module Test.WebDriver.PageObject where
 import Data.Maybe
 import Control.Monad (liftM, unless)
 import Control.Monad.Trans.Error
+import Control.Monad.Trans.Reader
 
 -- Test imports
 
@@ -43,7 +44,31 @@ type TWD a = ErrorT TestException WD a
 data Result =
     Passed
   | Failed String
-  deriving (Show,Eq)
+  deriving (Show, Eq, Ord)
+
+class IsResult r where
+  isFailure :: r -> Bool
+  isPassed  :: r -> Bool
+
+instance IsResult Result where
+  isFailure (Failed _) = True
+  isFailure _          = False
+
+  isPassed Passed = True
+  isPassed _      = False
+
+newtype TestCase a = TestCase (String, a)
+  deriving (Show, Eq, Ord)
+
+mkTestCase :: String -> a -> TestCase a
+mkTestCase msg tc = TestCase (msg, tc)
+
+tcValue :: TestCase a -> a
+tcValue (TestCase (name, a)) = a
+
+instance (IsResult r) => IsResult (TestCase r) where
+  isFailure = isFailure . tcValue
+  isPassed  = isPassed  . tcValue
 
 class PageObject p where
   precondition :: p -> TWD Bool
