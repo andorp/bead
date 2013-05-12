@@ -4,6 +4,7 @@ module Text.CSS.Internal where
 
 import Data.String
 import Data.Typeable
+import Control.Monad (join)
 
 -- * Declarations
 
@@ -25,7 +26,15 @@ data CSS = CSS {
 
 isEmptyCSS :: CSS -> Bool
 isEmptyCSS = null . elements
-  
+
+-- * Selector functions
+
+desc :: Selector -> Selector -> Selector
+desc (Selector p) (Selector c) = Selector (join [p, " ", c])
+
+child :: Selector -> Selector -> Selector
+child (Selector p) (Selector c) = Selector (join [p, " > ", c])
+
 -- * IsString instances
 
 instance IsString Selector where
@@ -98,6 +107,12 @@ instance Monad SelectorM where
 
 instance IsString (SelectorM a) where
   fromString = SElement . fromString
+
+class MonadSelector s where
+  selector :: s -> SelectorM ()
+
+instance MonadSelector Selector where
+  selector = SElement
 
 runSelectorM :: SelectorM a -> [Selector]
 runSelectorM SEmpty = []
