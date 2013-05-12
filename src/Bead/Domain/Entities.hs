@@ -271,26 +271,6 @@ instance Read Username where
 instance Show Username where
   show (Username u) = u
 
--- * Mock user
-
-
-mockUser = User {
-    u_role = Admin
-  , u_username = username "andor2"
-  , u_email = Email "mpegdj@gmail.com"
-  , u_name = "Penzes Andor"
-  }
-
-mockCourse = Course {
-    courseName = "Functional Programming"
-  , courseDesc = "Course about how and why we would create programs by the definitive ways"
-  }
-
-mockGroup = Group {
-    groupName = "Esti"
-  , groupDesc = "Group description"
-  }
-
 -- * Invariants
 
 roleInvariants = Invariants [
