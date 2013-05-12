@@ -99,9 +99,6 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
   H.p $ do
     (joinHtml i "Assignment Type")
     enumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
-  H.p $ do
-    (joinHtml i "Evaulation Type")
-    enumSelection (fieldName assignmentEvField) (maybe Scale id . amap evaulationType $ pd)
   H.p $ (joinHtml i "Active period")
   do {(joinHtml i "Start date"); utcTimeInput (fieldName assignmentStartField) (amap assignmentStart pd) }
   do {(joinHtml i "End date")  ; utcTimeInput (fieldName assignmentEndField)   (amap assignmentEnd   pd) }

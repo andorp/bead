@@ -35,14 +35,18 @@ instance InputPagelet Group where
   inputPagelet g = table "create-group" "create-group-table" $ do
     tableLine "Group Name" $ textInput (fieldName groupNameField) 10 (fmap groupName g)
     tableLine "Group Desc" $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
+    tableLine "Group Evaulation type" $
+      enumSelection (fieldName groupEvalField) $ maybe Scale id (fmap groupEvaulation g)
 
 instance GetValueHandler Group where
   getValue = do
     nameParam <- getParamE (fieldName groupNameField) id "Group name is not found"
     descParam <- getParamE (fieldName groupDescField) id "Group description is not found"
+    evalParam <- getParamE (fieldName groupEvalField) read "Group evaulation is not found"
     return $ Group {
         groupName = nameParam
       , groupDesc = descParam
+      , groupEvaulation = evalParam
       }
 
 instance GetValueHandler CourseKey where
@@ -52,9 +56,11 @@ instance GetValueHandler Course where
   getValue = do
     nameParam <- getParamE (fieldName courseNameField) id "Course name is not found"
     descParam <- getParamE (fieldName courseDescField) id "Course description is not found"
+    evalParam <- getParamE (fieldName courseEvalField) read "Course evaulation is not found"
     return Course {
         courseName = nameParam
       , courseDesc = descParam
+      , courseEvaulation = evalParam
       }
 
 emptyCourse :: Maybe Course
@@ -64,6 +70,8 @@ instance InputPagelet Course where
   inputPagelet c = table "create-course" "create-course-table" $ do
     tableLine "Course Name" $ textInput (fieldName courseNameField) 10 (fmap courseName c)
     tableLine "Course Desc" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
+    tableLine "Course Evaulation Type" $
+      enumSelection (fieldName courseEvalField) $ maybe Scale id (fmap courseEvaulation c)
 
 emptyRole :: Maybe Role
 emptyRole = Nothing
@@ -129,7 +137,6 @@ instance GetValueHandler Assignment where
     tp    <- getParamE (fieldName assignmentTypeField) (readMsg "Assignment type") "Assignment Type is not found"
     start <- getParamE (fieldName assignmentStartField) (readMsg "Assignment start") "Assignment Start is not found"
     end   <- getParamE (fieldName assignmentEndField) (readMsg "Assignment end") "Assignment End is not found"
-    ev    <- getParamE (fieldName assignmentEvField) (readMsg "Assignment evaulation") "Assignment Evaulation type is not found"
     return $ Assignment {
         assignmentDesc = desc
       , assignmentName = name
@@ -137,7 +144,6 @@ instance GetValueHandler Assignment where
       , assignmentType = tp
       , assignmentStart = start
       , assignmentEnd   = end
-      , evaulationType  = ev
       }
   
 -- * Combined input fields

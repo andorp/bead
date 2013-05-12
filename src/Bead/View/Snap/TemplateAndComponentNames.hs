@@ -89,6 +89,7 @@ data CourseFormInfo
   | CourseNameField { cFieldName :: String }
   | CourseCodeField { cFieldName :: String }
   | CourseDescField { cFieldName :: String }
+  | CourseEvalField { cFieldName :: String }
 
 instance SnapFieldName CourseFormInfo where
   fieldName = fromString . cFieldName
@@ -98,6 +99,7 @@ courseFormInfo = CourseFormInfo "course"
 courseCodeField = CourseCodeField "course-code"
 courseNameField = CourseNameField "course-name"
 courseDescField = CourseDescField "course-desc"
+courseEvalField = CourseEvalField "course-eval"
 
 newtype GroupKeyName
   = GroupKeyName { gkFieldName :: String }
@@ -111,6 +113,7 @@ data GroupField
   = GroupCodeField { gFieldName :: String }
   | GroupDescField { gFieldName :: String }
   | GroupNameField { gFieldName :: String }
+  | GroupEvalField { gFieldName :: String }
 
 instance SnapFieldName GroupField where
   fieldName = fromString . gFieldName
@@ -118,6 +121,7 @@ instance SnapFieldName GroupField where
 groupCodeField = GroupCodeField "group-code"
 groupNameField = GroupNameField "group-name"
 groupDescField = GroupDescField "group-desc"
+groupEvalField = GroupEvalField "group-eval"
 
 data UserField
   = UserField  { uFieldName :: String }
@@ -310,7 +314,7 @@ fieldList = map fieldName $ join [
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
   , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
-  , SFN availableAssignmentsTable, SFN submissionTableName
+  , SFN availableAssignmentsTable, SFN submissionTableName, SFN courseEvalField, SFN groupEvalField
   ], (map SFN P.allPages)
   ]
 

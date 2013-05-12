@@ -24,6 +24,7 @@ import Data.Map (Map(..))
 import qualified Data.Map as Map
 
 import Control.Applicative ((<$>))
+import Control.Arrow ((&&&))
 import Control.Monad (mapM, liftM, liftM2)
 import Control.Exception (IOException)
 import Control.Monad.Transaction.TIO
@@ -151,15 +152,15 @@ submissionDesc p sk = do
   ak <- assignmentOfSubmission p sk
   asg <- loadAssignment p ak
   cgk <- courseOrGroupOfAssignment p ak
-  gr <- case cgk of
-    Left ck  -> courseName <$> loadCourse p ck
-    Right gk -> groupName  <$> loadGroup  p gk
+  (e,gr) <- case cgk of
+    Left ck  -> (courseEvaulation &&& courseName) <$> loadCourse p ck
+    Right gk -> (groupEvaulation &&& groupName)   <$> loadGroup p gk
   cs  <- mapM (loadComment p) =<< (commentsOfSubmission p sk)
   return SubmissionDesc {
     eGroup    = gr
   , eStudent  = u
   , eSolution = s
-  , eType     = evaulationType asg
+  , eType     = e
   , eAssignmentTitle = assignmentName asg
   , eComments = cs
   }

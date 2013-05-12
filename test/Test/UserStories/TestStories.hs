@@ -108,6 +108,7 @@ courseTest = testCase "Create Course" $ do
   let r = E.Course {
       courseName = "Functional programming"
     , courseDesc = "Everything about FP"
+    , courseEvaulation = Scale
     }
   (k,state) <- runStory c adminUserState $ createCourse r
   assertUserState state adminUser
@@ -123,12 +124,12 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
   c <- context
   str <- getCurrentTime
   end <- getCurrentTime
-  let ca = E.Assignment "cname" "cexercise" "ctest" Normal str end Scale
-      ga = E.Assignment "gname" "gexercise" "gtest" Normal str end Scale
-      c1  = E.Course "FP" "FP-DESC"
-      c2  = E.Course "MA" "MA-DESC"
-      g1  = E.Group  "G1" "G1-DESC"
-      g2  = E.Group  "G2" "G2-DESC"
+  let ca = E.Assignment "cname" "cexercise" "ctest" Normal str end
+      ga = E.Assignment "gname" "gexercise" "gtest" Normal str end
+      c1  = E.Course "FP" "FP-DESC" Scale
+      c2  = E.Course "MA" "MA-DESC" Scale
+      g1  = E.Group  "G1" "G1-DESC" Scale
+      g2  = E.Group  "G2" "G2-DESC" Scale
   runStory c adminUserState $ createUser adminUser "password"
   (_,l) <- runStory c UserNotLoggedIn $ login (E.Username "admin") "password" "token"
   ((a1,a2,as),_) <- runStory c l $ do

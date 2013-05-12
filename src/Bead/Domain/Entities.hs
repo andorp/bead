@@ -24,7 +24,6 @@ data Assignment = Assignment {
   , assignmentType :: AssignmentType
   , assignmentStart :: UTCTime
   , assignmentEnd   :: UTCTime
-  , evaulationType  :: EvaulationType
   -- TODO: Number of maximum tries
   } deriving (Eq)
 
@@ -77,12 +76,14 @@ instance Str CourseCode where
 data Course = Course {
     courseName :: String
   , courseDesc :: String
+  , courseEvaulation :: EvaulationType
   } deriving (Eq, Show)
 
 -- | Groups are registered under the courses
 data Group = Group {
     groupName  :: String
   , groupDesc  :: String
+  , groupEvaulation :: EvaulationType
   } deriving (Eq, Show)
 
 -- | Workflows can happen to exams
@@ -271,6 +272,7 @@ instance Show Username where
   show (Username u) = u
 
 -- * Mock user
+
 
 mockUser = User {
     u_role = Admin

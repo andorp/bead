@@ -232,7 +232,6 @@ instance Save Assignment where
     fileSave d "description" (assignmentDesc e)
     fileSave d "testcases"   (assignmentTCs  e)
     fileSave d "type"        (show . assignmentType $ e)
-    fileSave d "evaulation"  (show . evaulationType $ e)
     fileSave d "start"       (show . assignmentStart $ e)
     fileSave d "end"         (show . assignmentEnd $ e)
 
@@ -258,11 +257,13 @@ instance Save Course where
   save d c = do createStructureDirs d courseDirStructure
                 saveDesc d (courseDesc c)
                 saveName d (courseName c)
+                fileSave d "evaulation" (show . courseEvaulation $ c)
 
 instance Save Group where
   save d g = do createStructureDirs d groupDirStructure
                 saveDesc d (groupDesc g)
                 saveName d (groupName g)
+                fileSave d "evaulation" (show . groupEvaulation $ g)
 
 instance Save User where
   save d u = do createStructureDirs d userDirStructure
@@ -288,7 +289,6 @@ instance Load Assignment where
     desc <- fileLoad d "description" id
     tcs  <- fileLoad d "testcases" id
     t    <- fileLoad d "type"  read
-    et   <- fileLoad d "evaulation" read
     s    <- fileLoad d "start" read
     e    <- fileLoad d "end"   read
     return $ Assignment {
@@ -298,7 +298,6 @@ instance Load Assignment where
       , assignmentType = t
       , assignmentStart = s
       , assignmentEnd   = e
-      , evaulationType  = et
       }
 
 instance Load Submission where
@@ -331,17 +330,21 @@ instance Load Comment where
 instance Load Course where
   load d = do desc <- loadDesc d
               name <- loadName d
+              eval <- fileLoad d "evaulation" (readMsg "Course evaulation")
               return $ Course {
                   courseDesc = desc
                 , courseName = name
+                , courseEvaulation = eval
                 }
 
 instance Load Group where
   load d = do desc <- loadDesc d
               name <- loadName d
+              eval <- fileLoad d "evaulation" (readMsg "Group evaulation")
               return $ Group {
                   groupDesc = desc
                 , groupName = name
+                , groupEvaulation = eval
                 }
 
 instance Load User where
@@ -390,7 +393,6 @@ instance Update Assignment where
     fileUpdate d "end"   (show . assignmentEnd   $ a)
     fileUpdate d "description" (assignmentDesc a)
     fileUpdate d "testcases"   (assignmentTCs  a)
-    fileUpdate d "evaulation"  (show . evaulationType $ a)
 
 -- * Dir Structures
 
