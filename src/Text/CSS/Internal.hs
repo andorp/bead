@@ -16,7 +16,6 @@ newtype Property = Property (String, String)
 
 data Element = Element {
     selectors   :: [Selector]
-  , pseudoClass :: Maybe PseudoClass
   , properties  :: [Property]
   }
 
@@ -34,6 +33,9 @@ desc (Selector p) (Selector c) = Selector (join [p, " ", c])
 
 child :: Selector -> Selector -> Selector
 child (Selector p) (Selector c) = Selector (join [p, " > ", c])
+
+pseudoClass :: Selector -> String -> Selector
+pseudoClass (Selector s) c = Selector (join [s, ":", c])
 
 -- * IsString instances
 
@@ -124,6 +126,5 @@ infixl 2 <&>
 (<&>) :: SelectorM a -> PropertyM b -> CssM ()
 s <&> p = CssElement $ Element {
     selectors   = runSelectorM s
-  , pseudoClass = Nothing
   , properties  = runPropertyM p
   }

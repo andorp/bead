@@ -20,8 +20,6 @@ instance Pretty Property where
 instance Pretty Element where
   pretty e = join
       [ (join . intersperse ", " . map pretty . selectors $ e)
-      , " "
-      , (maybe "" (\c -> join [":", pretty c]) . pseudoClass $ e)
       , " {\n"
       , join (map (\p -> join ["  ", pretty p, "\n"]) . properties $ e)
       , "}\n"
