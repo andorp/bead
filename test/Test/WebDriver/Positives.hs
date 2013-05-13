@@ -11,7 +11,7 @@ courseAdmin = LoginData "c1" "c1"
 groupAdmin  = LoginData "g1" "g1"
 student     = LoginData "s1" "s1"
 
-positives :: String -> [TestCase (TWD ())]
+positives :: String -> [TestCase (Test ())]
 positives url = [
     mkTestCase "Student registration"     $ registration url (RegistrationData "s1" "s1" "s1" "s1")
   , mkTestCase "Group admin registration" $ registration url (RegistrationData "g1" "g1" "g1" "g1")

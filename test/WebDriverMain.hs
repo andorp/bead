@@ -33,7 +33,7 @@ main = do
 simpleTest :: String -> WD [TestCase (Run Result)]
 simpleTest url = runCases url (positives url)
 
-runCases :: String -> [TestCase (TWD ())] -> WD [TestCase (Run Result)]
+runCases :: String -> [TestCase (Test ())] -> WD [TestCase (Run Result)]
 runCases _ [] = return []
 runCases url (t:ts) = do
   r <- runTestCase t

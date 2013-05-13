@@ -15,7 +15,7 @@ import Bead.Domain.Entities hiding (CourseAdmin)
 
 -- * User stories
 
-loginUser :: String -> LoginData -> TWD () -> TWD ()
+loginUser :: String -> LoginData -> Test () -> Test ()
 loginUser url l m = do
   cleanUp
     (do openPage url
@@ -25,23 +25,23 @@ loginUser url l m = do
         page logout)
     (page logout)
 
-registration :: String -> RegistrationData -> TWD ()
+registration :: String -> RegistrationData -> Test ()
 registration url reg = do
   openPage url
   click =<< findElem (ByLinkText "Create new user")
   page reg
   loginUser url (loginInfo reg) (return ())
 
-validLogin :: String -> LoginData -> TWD ()
+validLogin :: String -> LoginData -> Test ()
 validLogin url login = loginUser url login (return ())
 
-invalidLogin :: String -> LoginData -> TWD ()
+invalidLogin :: String -> LoginData -> Test ()
 invalidLogin url loginData = do
   openPage url
   page loginData
   checkIfPageIs loginData
 
-changeUserRole :: String -> LoginData -> LoginData -> Role -> TWD ()
+changeUserRole :: String -> LoginData -> LoginData -> Role -> Test ()
 changeUserRole url adminUser user r = do
   loginUser url adminUser $ do
     selectPageFromMenu Administration
@@ -50,13 +50,13 @@ changeUserRole url adminUser user r = do
   -- Login with the user
   validLogin url user
 
-adminCreatesCourse :: String -> LoginData -> CourseData -> TWD ()
+adminCreatesCourse :: String -> LoginData -> CourseData -> Test ()
 adminCreatesCourse url adminUser c = do
   loginUser url adminUser $ do
     selectPageFromMenu Administration
     onPage AdminData . createCourse $ c
 
-assignCourseAdmin :: String -> LoginData -> String -> String -> TWD ()
+assignCourseAdmin :: String -> LoginData -> String -> String -> Test ()
 assignCourseAdmin url adminUser courseAdmin c = do
   loginUser url adminUser $ do
     selectPageFromMenu Administration
@@ -64,14 +64,14 @@ assignCourseAdmin url adminUser courseAdmin c = do
 
 -- * Course Admin
 
-cAdminCreateGroup :: String -> LoginData -> GroupData -> TWD ()
+cAdminCreateGroup :: String -> LoginData -> GroupData -> Test ()
 cAdminCreateGroup url courseAdmin g = do
   loginUser url courseAdmin $ do
     selectPageFromMenu CourseAdmin
     onPage CourseAdminPage $ createGroup $ g
     onPage CourseAdminPage $ checkGroupSelection $ g
 
-cAdminAssignGroupAdmin :: String -> LoginData -> LoginData -> String -> TWD ()
+cAdminAssignGroupAdmin :: String -> LoginData -> LoginData -> String -> Test ()
 cAdminAssignGroupAdmin url courseAdmin groupAdmin g = do
   loginUser url courseAdmin $ do
     selectPageFromMenu CourseAdmin
@@ -79,7 +79,7 @@ cAdminAssignGroupAdmin url courseAdmin groupAdmin g = do
   loginUser url groupAdmin $ do
     findGroupSubmissionTable g
 
-cAdminCreatesAssignment :: String -> LoginData -> LoginData -> AssignmentData -> TWD ()
+cAdminCreatesAssignment :: String -> LoginData -> LoginData -> AssignmentData -> Test ()
 cAdminCreatesAssignment url courseAdmin student aData = do
   loginUser url courseAdmin $ do
     selectPageLink NewCourseAssignment
@@ -93,7 +93,7 @@ cAdminCreatesAssignment url courseAdmin student aData = do
 cAdminEvaulateSubmission
   :: String -> LoginData
   -> SelectSubmissionData -> Int -> EvaulationData
-  -> TWD ()
+  -> Test ()
 cAdminEvaulateSubmission url courseAdmin s noOfSbm e = do
   loginUser url courseAdmin $ do
     page s
@@ -102,7 +102,7 @@ cAdminEvaulateSubmission url courseAdmin s noOfSbm e = do
 
 -- * Group Admin
 
-gAdminCreatesAssignment :: String -> LoginData -> LoginData -> AssignmentData -> TWD ()
+gAdminCreatesAssignment :: String -> LoginData -> LoginData -> AssignmentData -> Test ()
 gAdminCreatesAssignment url groupAdmin student aData = do
   loginUser url groupAdmin $ do
     selectPageLink NewGroupAssignment
@@ -116,7 +116,7 @@ gAdminCreatesAssignment url groupAdmin student aData = do
 gAdminEvaulateSubmission
   :: String -> LoginData
   -> SelectSubmissionData -> Int -> EvaulationData
-  -> TWD ()
+  -> Test ()
 gAdminEvaulateSubmission url groupAdmin s noOfSbm e = do
   loginUser url groupAdmin $ do
     page s
@@ -126,20 +126,20 @@ gAdminEvaulateSubmission url groupAdmin s noOfSbm e = do
 
 -- * Student
 
-groupRegistration :: String -> LoginData -> String -> TWD ()
+groupRegistration :: String -> LoginData -> String -> Test ()
 groupRegistration url student g = do
   loginUser url student $ do
     selectPageFromMenu GroupRegistration
     page (GroupRegData { grName = g})
 
-studentSubmitsSolution :: String -> LoginData -> String -> String -> String -> TWD ()
+studentSubmitsSolution :: String -> LoginData -> String -> String -> String -> Test ()
 studentSubmitsSolution url student g a s = do
   loginUser url student $ do
     clickNewSolution g a
     page (SubmissionData s)
     -- TODO Check if the solution appears on the list
 
-studentCommentsOnSolution :: String -> LoginData -> String -> String -> Int -> String -> TWD ()
+studentCommentsOnSolution :: String -> LoginData -> String -> String -> Int -> String -> Test ()
 studentCommentsOnSolution url student g a no comment = do
   loginUser url student $ do
     clickOnAssignment g a
@@ -149,11 +149,11 @@ studentCommentsOnSolution url student g a no comment = do
 
 -- * Navigation
 
-selectPageFromMenu :: Page -> TWD ()
+selectPageFromMenu :: Page -> Test ()
 selectPageFromMenu p = do
   failsOnFalse (join [show p," is not found in the menu"]) $ doesElementExist p
   click <@> p
 
-selectPageLink :: Page -> TWD ()
+selectPageLink :: Page -> Test ()
 selectPageLink = selectPageFromMenu
 

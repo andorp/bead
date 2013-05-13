@@ -5,8 +5,8 @@ module Test.WebDriver.PageObject where
 
 import Data.Maybe
 import Control.Monad (liftM, unless)
-import Control.Monad.Trans.Error
-import Control.Monad.Trans.Reader
+import Control.Monad.Trans.Error  as CME
+import Control.Monad.Trans.Reader as CMR
 
 -- Test imports
 
@@ -39,7 +39,11 @@ testResultMsg (TestFailure    Nothing) = "Failure: No error message"
 testResultMsg (TestException (Just m)) = m
 testResultMsg (TestFailure   (Just m)) = m
 
-type TWD a = ErrorT TestException WD a
+type TWD = ErrorT TestException WD
+
+type TestFrame = TWD ()
+
+type Test a = ReaderT [TestFrame] TWD a
 
 data Result =
     Passed
@@ -71,64 +75,79 @@ instance (IsResult r) => IsResult (TestCase r) where
   isPassed  = isPassed  . tcValue
 
 class PageObject p where
-  precondition :: p -> TWD Bool
+  precondition :: p -> Test Bool
   failureMsg   :: p -> String
 
 class (PageObject p) => PageAction p where
-  action :: p -> TWD ()
+  action :: p -> Test ()
 
-onPage :: (PageObject p) => p -> TWD a -> TWD a
+onPage :: (PageObject p) => p -> Test a -> Test a
 onPage p a = do
   checkIfPageIs p
   a
 
-failed :: String -> TWD a
-failed = throwError . TestFailure . Just
+failed :: String -> Test a
+failed = lift . throwError . TestFailure . Just
 
-failsOn :: (a -> Bool) -> (a -> b) -> String -> TWD a -> TWD b
+failsOn :: (a -> Bool) -> (a -> b) -> String -> Test a -> Test b
 failsOn f g msg m = do
   x <- m
   case f x of
     True  -> failed msg
     False -> return . g $ x
 
-failsOnNothing :: String -> TWD (Maybe a) -> TWD a
+failsOnNothing :: String -> Test (Maybe a) -> Test a
 failsOnNothing = failsOn isNothing fromJust
 
-failsOnFalse :: String -> TWD Bool -> TWD Bool
+failsOnFalse :: String -> Test Bool -> Test Bool
 failsOnFalse = failsOn (==False) id
 
-failsOnTrue :: String -> TWD Bool -> TWD Bool
+failsOnTrue :: String -> Test Bool -> Test Bool
 failsOnTrue = failsOn (==True) id
 
-cleanUp :: TWD a -> TWD b -> TWD a
+cleanUp :: Test a -> Test b -> Test a
 cleanUp t c =
-  catchError
+  liftCatch
+    catchError
     t
     (\e -> do
        c
-       throwError e)
+       lift $ throwError e)
 
-expectToFail :: String -> TWD () -> TWD ()
-expectToFail msg e = ErrorT $ do
-  x <- runErrorT e
-  return $ case x of
-    Left _  -> Right ()
-    Right _ -> Left . strMsg $ msg
+expectToFail :: String -> Test () -> Test ()
+expectToFail msg t = ReaderT (expectToFail' msg . runReaderT t)
+  where
+   expectToFail' :: String -> TWD () -> TWD ()
+   expectToFail' msg e = ErrorT $ do
+     x <- runErrorT e
+     return $ case x of
+       Left _  -> Right ()
+       Right _ -> Left . strMsg $ msg
 
-runT :: TWD a -> WD Result
-runT k = do
-  x <- runErrorT k
+runTest :: Test a -> WD Result
+runTest t = do
+  x <- runErrorT (runReaderT t [])
   case x of
-    Left  e -> return . Failed . show $ e
+    Left e  -> return . Failed . show $ e
     Right _ -> return Passed
 
-page :: (PageAction p) => p -> TWD ()
-page p = do
-  checkIfPageIs p
-  action        p
+testFrames :: [TestFrame] -> Test a -> Test a
+testFrames fs = local (fs ++)
 
-checkIfPageIs :: (PageObject p) => p -> TWD ()
+checkFrames :: Test ()
+checkFrames = do
+  fs <- ask
+  mapM_ lift fs
+
+page :: (PageAction p) => p -> Test ()
+page p = do
+  checkFrames
+  checkIfPageIs p
+  checkFrames
+  action        p
+  checkFrames
+
+checkIfPageIs :: (PageObject p) => p -> Test ()
 checkIfPageIs p = do
   x <- precondition              $ p
   unless x . failed . failureMsg $ p

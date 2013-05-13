@@ -99,10 +99,10 @@ homePageUsr u = HomePage {
 instance HomePageInfo LoginData where
   homePage = homePageUsr . lUsername
 
-testHeader :: String -> TWD ()
+testHeader :: String -> Test ()
 testHeader usr = return ()
 
-testMenu :: Page -> TWD ()
+testMenu :: Page -> Test ()
 testMenu p = return ()
 
 instance PageObject HomePage where
@@ -128,7 +128,7 @@ instance PageObject AdminData where
     return True
   failureMsg = const "Administration page"
 
-selectUserToModify :: String -> TWD ()
+selectUserToModify :: String -> Test ()
 selectUserToModify u = do
   (sendKeysStr u) <@> usernameField
   click <@> selectBtn
@@ -139,7 +139,7 @@ data CourseData = CourseData {
   , cEval :: EvaulationType
   }
 
-createCourse :: CourseData -> TWD ()
+createCourse :: CourseData -> Test ()
 createCourse c = do
   sendKeysStr (cName c) <@> courseNameField
   sendKeysStr (cDesc c) <@> courseDescField
@@ -148,7 +148,7 @@ createCourse c = do
   click <@> createCourseBtn
 
 
-setCourseAdmin :: String -> String -> TWD ()
+setCourseAdmin :: String -> String -> Test ()
 setCourseAdmin courseAdmin course = do
   users   <- createSelect selectedCourseAdmin "No users selection was found"
   courses <- createSelect selectedCourse      "No courses selection was found"
@@ -200,7 +200,7 @@ data GroupData = GroupData {
   , gdEval :: EvaulationType
   }
 
-createGroup :: GroupData -> TWD ()
+createGroup :: GroupData -> Test ()
 createGroup g = do
   s <- createSelect courseKeyInfo "No course selection field is not found"
   selectByVisibleText s (fromString . gdCourseName $ g)
@@ -210,16 +210,16 @@ createGroup g = do
   selectByValue eval (fromString . show . gdEval $ g)
   click <@> createGroupBtn
 
-checkSelectionVisibleText :: (SnapFieldName s) => s -> String -> TWD ()
+checkSelectionVisibleText :: (SnapFieldName s) => s -> String -> Test ()
 checkSelectionVisibleText s v = do
   os <- options =<< (createSelect s $ "No selection was found: " ++ fieldName s)
   e <- elem (fromString v) <$> mapM getText os
   unless e $ failed "No text was found in the selection"
 
-checkGroupSelection :: GroupData -> TWD ()
+checkGroupSelection :: GroupData -> Test ()
 checkGroupSelection g = checkSelectionVisibleText selectedGroup (gdGroupName g)
 
-setGroupAdmin :: String -> String -> TWD ()
+setGroupAdmin :: String -> String -> Test ()
 setGroupAdmin groupAdmin g = do
   users <- createSelect selectedProfessor "Group admin user field is not found"
   groups <- createSelect selectedGroup "Group field is not found"
@@ -227,7 +227,7 @@ setGroupAdmin groupAdmin g = do
   selectByVisibleText groups (fromString g)
   click <@> assignGroupAdminBtn
 
-tables :: (SnapClassName c) => c -> TWD [Table]
+tables :: (SnapClassName c) => c -> Test [Table]
 tables c = do
   tableElements <- findElems (ByClass . className $ c)
   tables <- mapM table tableElements
@@ -235,10 +235,10 @@ tables c = do
     failed $ join ["At least one element with ",className c," class was not a table"]
   return . map fromJust $ tables
 
-tableByClass :: (SnapClassName c) => c -> TWD (Maybe Table)
+tableByClass :: (SnapClassName c) => c -> Test (Maybe Table)
 tableByClass = fmap listToMaybe . tables
 
-tableById :: (SnapFieldName f) => f -> TWD Table
+tableById :: (SnapFieldName f) => f -> Test Table
 tableById i = do
   tableElements <- findElems (ById . fieldName $ i)
   when (length tableElements /= 1) $ failed "Zero or more than selected table were found"
@@ -246,7 +246,7 @@ tableById i = do
   when (isNothing t) $ failed "Element was not a table"
   return . fromJust $ t
 
-findGroupSubmissionTable :: String -> TWD ()
+findGroupSubmissionTable :: String -> Test ()
 findGroupSubmissionTable g = do
   ts <- tables groupSubmissionTable
   tableHeaders <- concat <$> (mapM headerCells ts)
@@ -255,7 +255,7 @@ findGroupSubmissionTable g = do
   unless (isJust . find (fromString g ==) $ tableHeaderTexts) $
     failed $ "No submission table was found with header: " ++ g
 
-findGroupAssignmentInTable :: String -> String -> TWD ()
+findGroupAssignmentInTable :: String -> String -> Test ()
 findGroupAssignmentInTable g a = do
   ts <- tables assignmentTable
   when (null ts) $
@@ -340,7 +340,7 @@ instance PageAction GroupRegData where
 
 -- * Submit solution
 
-findAssignmentLine :: String -> String -> TWD Element
+findAssignmentLine :: String -> String -> Test Element
 findAssignmentLine gName aName = do
   as <- filterM assignmentLine =<< rows =<< tableById availableAssignmentsTable
   when (null as) . failed . join $ ["No assignment link was found: ", gName, " ", aName]
@@ -348,17 +348,17 @@ findAssignmentLine gName aName = do
   return . head $ as
 
   where
-    assignmentLine :: Element -> TWD Bool
+    assignmentLine :: Element -> Test Bool
     assignmentLine e = do
       cells <- mapM getText =<< findElemsFrom e (ByTag "td")
       return $ ((cells !! 1) == (fromString gName)) && ((cells !! 3) == (fromString aName))
 
-rowLink :: Element -> Int -> TWD Element
+rowLink :: Element -> Int -> Test Element
 rowLink e i = do
   cells <- findElemsFrom e (ByTag "td")
   findElemFrom (cells !! i) (ByTag "a")
 
-clickNewSolution :: String -> String -> TWD ()
+clickNewSolution :: String -> String -> Test ()
 clickNewSolution gName aName = click =<< link =<< findAssignmentLine gName aName
   where link e = rowLink e 0
 
@@ -379,7 +379,7 @@ instance PageAction SubmissionData where
 
 -- * New comment on submission
 
-clickOnAssignment :: String -> String -> TWD ()
+clickOnAssignment :: String -> String -> Test ()
 clickOnAssignment gName aName = click =<< link =<< findAssignmentLine gName aName
   where link e = rowLink e 3
 
@@ -434,7 +434,7 @@ instance PageObject SelectSubmissionData where
     return True
   failureMsg = const "Evaulation"
 
-isHeader :: Element -> TWD Bool
+isHeader :: Element -> Test Bool
 isHeader e = (not . null) <$> findElemsFrom e (ByTag "th")
 
 instance PageAction SelectSubmissionData where
@@ -504,16 +504,16 @@ instance PageAction EvaulationData where
     sendKeysStr (evValue e)   <@> evaulationStateField
     click <@> saveEvalBtn
 
-checkCommentOnPage :: CommentData -> TWD ()
+checkCommentOnPage :: CommentData -> Test ()
 checkCommentOnPage _ = do
   return ()
 
 -- * Page Components
 
-isPage :: Page -> TWD ()
+isPage :: Page -> Test ()
 isPage _ = return ()
 
 -- * Tools
 
-createSelect :: (SnapFieldName f) => f -> String -> TWD Select
+createSelect :: (SnapFieldName f) => f -> String -> Test Select
 createSelect field msg = (failsOnNothing msg . select) =<< (findField field)

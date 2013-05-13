@@ -42,18 +42,18 @@ isTcFailure = isFailure . tcValue
 
 
 
-runTestCase :: TestCase (TWD a) -> WD (TestCase (Run Result))
-runTestCase (TestCase (name, t)) = mkTestCase name . Run <$> runT t
+runTestCase :: TestCase (Test a) -> WD (TestCase (Run Result))
+runTestCase (TestCase (name, t)) = mkTestCase name . Run <$> runTest t
 
-skipTestCase :: TestCase (TWD a) -> WD (TestCase (Run Result))
+skipTestCase :: TestCase (Test a) -> WD (TestCase (Run Result))
 skipTestCase (TestCase (name,_)) = return $ mkTestCase name Skipped
 
-skipTCSet :: TestCase (TWD a) -> WD (Set (TestCase (Run Result)))
+skipTCSet :: TestCase (Test a) -> WD (Set (TestCase (Run Result)))
 skipTCSet t = Set.singleton <$> skipTestCase t
 
 
 
-traverse :: AndOr (TestCase (TWD a)) -> WD (TestResultSet)
+traverse :: AndOr (TestCase (Test a)) -> WD (TestResultSet)
 traverse (Leaf tc) = do
   r <- runTestCase tc
   return (Set.singleton r)
@@ -85,7 +85,7 @@ results s = case setfind isTcSkipped s of
                Just _  -> SomeFailed
                Nothing -> AllPassed
 
-findFirstFailed :: [AndOr (TestCase (TWD a))] -> WD [TestResultSet]
+findFirstFailed :: [AndOr (TestCase (Test a))] -> WD [TestResultSet]
 findFirstFailed []     = return []
 findFirstFailed (t:ts) = do
   r <- traverse t
@@ -94,10 +94,10 @@ findFirstFailed (t:ts) = do
     SomeSkipped -> (r:) <$> (mapM skipAllCases ts)
     SomeFailed  -> (r:) <$> (mapM skipAllCases ts)
 
-runAll :: [AndOr (TestCase (TWD a))] -> WD [TestResultSet]
+runAll :: [AndOr (TestCase (Test a))] -> WD [TestResultSet]
 runAll = mapM traverse
 
-skipAllCases :: AndOr (TestCase (TWD a)) -> WD TestResultSet
+skipAllCases :: AndOr (TestCase (Test a)) -> WD TestResultSet
 skipAllCases (Leaf tc) = skipTCSet tc
 skipAllCases (And tc trees) = do
   r  <- skipTCSet tc
