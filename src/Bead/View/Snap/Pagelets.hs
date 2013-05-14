@@ -43,6 +43,7 @@ runPagelet :: Pagelet -> I18N -> Html
 runPagelet p i = H.docTypeHtml $ do
   H.head $ do
     H.title "Snap web server"
+    H.link ! A.type_ "text/css" ! A.href "inside.css" ! A.rel "stylesheet"
     H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
   H.body $ (joinHtml i . struct $ p)
 
@@ -62,7 +63,9 @@ class BlazeTemplate b where
 
 withTitleAndHead :: Html -> Html
 withTitleAndHead content = H.docTypeHtml $ do
-  H.head $ H.title "Snap web server"
+  H.head $ do
+    H.title "Snap web server"
+    H.link ! A.rel "stylesheet" ! A.href "screen.css" ! A.type_ "text/css"
   H.body $ do
     H.div ! A.id "content" $ content
 

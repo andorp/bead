@@ -1,0 +1,42 @@
+html {
+  background-color: #ffffff
+  font family: Verdana, Helvetica, sans-serif;
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  padding: 0;
+  margin: 0;
+}
+
+a {
+  text-decoration: underline;
+}
+
+a:hover {
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+#header {
+  border-color: black;
+  border-width: 1px;
+  border-style: solid;
+  text-align: center;
+}
+
+#menu {
+  border-color: black;
+  border-width: 1px;
+  border-style: solid;
+  text-align: left;
+  float: left;
+}
+
+#content {
+  border-color: black;
+  border-width: 1px;
+  border-style: solid;
+  float: left;
+}
