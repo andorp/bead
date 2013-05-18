@@ -7,6 +7,7 @@ import Snap.Snaplet.Session
 import Snap.Snaplet.Session.Backends.CookieSession
 import Snap.Snaplet.Auth
 import Snap.Snaplet.Auth.Backends.JsonFile
+import Snap.Snaplet.Fay
 import Data.Maybe (maybe)
 import System.FilePath (joinPath)
 
@@ -33,8 +34,10 @@ appInit user s d = makeSnaplet "bead" description Nothing $ do
 
   ds <- nestSnaplet "dictionary" dictionaryContext $ dictionarySnaplet d
 
+  fs <- nestSnaplet "fay" fayContext $ initFay
+
   addRoutes routes
 
-  return $ App sm as ss ds
+  return $ App sm as ss ds fs
   where
     description = "The BEAD website"

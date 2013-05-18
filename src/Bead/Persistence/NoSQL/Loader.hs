@@ -173,7 +173,6 @@ removeSymLink link = do
         (\f -> createSymbolicLink f link >> return ())
   return ()
 
-
 removeDir :: FilePath -> TIO ()
 removeDir d = step (removeDirectory d) (createDirectory d)
 
@@ -244,8 +243,8 @@ instance Save Submission where
 instance Save Evaulation where
   save d e = do
     createStructureDirs d evaulationDirStructure
-    fileSave d "state" (show . evaulationState $ e)
     fileSave d "evaulation" (writtenEvaulation e)
+    fileSave d "result" (show . evaulationResult $ e)
 
 instance Save Comment where
   save d c = do
@@ -257,13 +256,13 @@ instance Save Course where
   save d c = do createStructureDirs d courseDirStructure
                 saveDesc d (courseDesc c)
                 saveName d (courseName c)
-                fileSave d "evaulation" (show . courseEvaulation $ c)
+                fileSave d "evalcfg" (show . courseEvalConfig $ c)
 
 instance Save Group where
   save d g = do createStructureDirs d groupDirStructure
                 saveDesc d (groupDesc g)
                 saveName d (groupName g)
-                fileSave d "evaulation" (show . groupEvaulation $ g)
+                fileSave d "evalcfg" (show . groupEvalConfig $ g)
 
 instance Save User where
   save d u = do createStructureDirs d userDirStructure
@@ -311,11 +310,11 @@ instance Load Submission where
 
 instance Load Evaulation where
   load d = do
-    s <- fileLoad d "state" read
     e <- fileLoad d "evaulation" id
+    r <- fileLoad d "result" read
     return Evaulation {
-      evaulationState   = s
-    , writtenEvaulation = e
+      writtenEvaulation = e
+    , evaulationResult  = r
     }
 
 instance Load Comment where
@@ -330,21 +329,21 @@ instance Load Comment where
 instance Load Course where
   load d = do desc <- loadDesc d
               name <- loadName d
-              eval <- fileLoad d "evaulation" (readMsg "Course evaulation")
+              eval <- fileLoad d "evalcfg" (readMsg "Course evaulation config")
               return $ Course {
                   courseDesc = desc
                 , courseName = name
-                , courseEvaulation = eval
+                , courseEvalConfig = eval
                 }
 
 instance Load Group where
   load d = do desc <- loadDesc d
               name <- loadName d
-              eval <- fileLoad d "evaulation" (readMsg "Group evaulation")
+              eval <- fileLoad d "evalcfg" (readMsg "Group evaulation config")
               return $ Group {
                   groupDesc = desc
                 , groupName = name
-                , groupEvaulation = eval
+                , groupEvalConfig = eval
                 }
 
 instance Load User where
@@ -359,8 +358,6 @@ instance Load User where
       , u_email = email
       , u_name = name
       }
-
-
 
 -- * Update instances
 
@@ -382,8 +379,8 @@ instance Update User where
 
 instance Update Evaulation where
   update d e = do
-    fileUpdate d "state"      (show . evaulationState $ e)
     fileUpdate d "evaulation" (writtenEvaulation e)
+    fileUpdate d "result"      (show . evaulationResult $ e)
 
 instance Update Assignment where
   update d a = do
@@ -438,17 +435,17 @@ submissionDirStructure = DirStructure {
   }
 
 courseDirStructure = DirStructure {
-    files       = ["description", "name"]
+    files       = ["description", "name", "evalcfg"]
   , directories = ["groups", "assignments", "users", "admins"]
   }
 
 groupDirStructure = DirStructure {
-    files       = ["description", "name"]
+    files       = ["description", "name", "evalcfg"]
   , directories = ["users", "course", "admins", "assignments"]
   }
 
 evaulationDirStructure = DirStructure {
-    files       = ["state", "evaulation"]
+    files       = ["result", "evaulation"]
   , directories = ["submission"]
   }
 
@@ -522,4 +519,3 @@ invariants = InvariantsM2 [
   * All save instances must save the directory structure correctly
   * All save and load instances must be identical relation
 -}
-

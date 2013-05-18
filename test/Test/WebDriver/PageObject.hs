@@ -131,8 +131,8 @@ runTest t = do
     Left e  -> return . Failed . show $ e
     Right _ -> return Passed
 
-testFrames :: [TestFrame] -> Test a -> Test a
-testFrames fs = local (fs ++)
+setTestFrames :: [TestFrame] -> Test a -> Test a
+setTestFrames fs = local (fs ++)
 
 checkFrames :: Test ()
 checkFrames = do

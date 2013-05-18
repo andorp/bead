@@ -11,6 +11,7 @@ import Test.Persistence.Persist
 
 import Bead.Domain.Types (Erroneous)
 import Bead.Domain.Entities
+import Bead.Domain.Evaulation
 import Bead.Domain.Relationships
 import Bead.Persistence.Persist
 import Bead.Persistence.NoSQLDir
@@ -101,8 +102,8 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
         , u_name = "admin"
         }
       password = "password"
-  ck <- liftE $ saveCourse persist (Course "name" "desc" Scale)
-  gk <- liftE $ saveGroup persist ck (Group "gname" "gdesc" Scale)
+  ck <- liftE $ saveCourse persist (Course "name" "desc" binaryEvalConfig)
+  gk <- liftE $ saveGroup persist ck (Group "gname" "gdesc" binaryEvalConfig)
   gks <- liftE $ groupKeysOfCourse persist ck
   assertBool "Registered group was not found in the group list" (elem gk gks)
   liftE $ subscribe persist username ck gk
@@ -159,7 +160,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   uss <- liftE $ userSubmissions persist username gak
   assertBool "Submission is not in the users' submission" (elem sk uss)
 
-  let ev = Evaulation (Passed 1) "Good"
+  let ev = Evaulation (BinEval (Binary Passed)) "Good"
   evKey <- liftE $ saveEvaulation persist sk ev
   ev1 <- liftE $ loadEvaulation persist evKey
   assertBool "Evaulation was not loaded correctly" (ev == ev1)

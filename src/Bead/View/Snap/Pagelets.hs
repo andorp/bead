@@ -169,7 +169,7 @@ linkText P.NewCourseAssignment = fromString "Create a New Course Assignment"
 linkText P.ModifyAssignment = fromString "Modify Assignment"
 
 linkToPage :: P.Page -> Html
-linkToPage g = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ linkText g
+linkToPage g = H.a ! A.href (routeOf g) ! A.id (fieldName g) $ linkText g
 
 linkToPageWithText :: P.Page -> String -> Html
 linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString t
@@ -179,16 +179,16 @@ link r t = H.a ! A.href (fromString r) $ fromString t
 
 navigationMenu :: UserState -> Html
 navigationMenu s = do
-  H.p $ "Menu"
-  mapM_ (linkToPage) $ P.menuPages (role s) (page s)
-  H.p $ "Menu"
+  H.ul $ mapM_ (H.li . linkToPage) $ P.menuPages (role s) (page s)
 
 pageHeader :: UserState -> Html
 pageHeader s = do
-  H.p $ "Header"
-  H.span $ do { "Welcome "; fromString . str . user $ s ; "!"  }
-  linkToPage P.Logout
-  H.p $ "Header"
+  H.div ! A.id "logo" $ "Bead"
+  H.div ! A.id "user" $ do
+    fromString . str . user $ s
+    " "
+    linkToPage P.Logout
+  H.div ! A.id "title" $ "Title"
 
 -- * Picklist
 
@@ -219,6 +219,11 @@ valueTextSelection name = selection name . mapM_ option'
 enumSelection :: (Enum e, SelectionValue e, SelectionText e) => String -> e -> Html
 enumSelection name start = valueTextSelection name [start .. ]
 
+listSelection :: String -> [(String, String)] -> Html
+listSelection name = selection name . mapM_ option'
+  where
+    option' (v, n) = option v n False
+
 -- SelectionValue and SelectionText instances
 
 instance SelectionValue CourseKey where
@@ -243,12 +248,6 @@ instance SelectionText AssignmentType where
   selectionText = show
 
 instance SelectionValue AssignmentType where
-  selectionValue = show
-
-instance SelectionText EvaulationType where
-  selectionText = show
-
-instance SelectionValue EvaulationType where
   selectionValue = show
 
 -- * Invariants

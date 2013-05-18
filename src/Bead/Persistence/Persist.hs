@@ -152,15 +152,15 @@ submissionDesc p sk = do
   ak <- assignmentOfSubmission p sk
   asg <- loadAssignment p ak
   cgk <- courseOrGroupOfAssignment p ak
-  (e,gr) <- case cgk of
-    Left ck  -> (courseEvaulation &&& courseName) <$> loadCourse p ck
-    Right gk -> (groupEvaulation &&& groupName)   <$> loadGroup p gk
+  (c,gr) <- case cgk of
+    Left ck  -> (courseEvalConfig &&& courseName) <$> loadCourse p ck
+    Right gk -> (groupEvalConfig  &&& groupName)  <$> loadGroup  p gk
   cs  <- mapM (loadComment p) =<< (commentsOfSubmission p sk)
   return SubmissionDesc {
     eGroup    = gr
   , eStudent  = u
   , eSolution = s
-  , eType     = e
+  , eConfig = c
   , eAssignmentTitle = assignmentName asg
   , eComments = cs
   }
@@ -206,9 +206,7 @@ submissionEvalStr p sk = do
     Nothing -> return "Not evaulated yet"
     Just ek -> eString <$> loadEvaulation p ek
   where
-    eString e = case (evaulationState e) of
-      Passed _ -> "Passed"
-      Failed _ -> "Failed"
+    eString = resultString . evaulationResult
 
 submissionDetailsDesc :: Persist -> SubmissionKey -> TIO SubmissionDetailsDesc
 submissionDetailsDesc p sk = do
@@ -246,25 +244,31 @@ groupSubmissionTableInfo :: Persist -> GroupKey -> TIO SubmissionTableInfo
 groupSubmissionTableInfo p gk = do
   assignments <- groupAssignments p gk
   usernames   <- subscribedToGroup p gk
-  name        <- groupName <$> loadGroup p gk
-  submissionTableInfo p name assignments usernames
+  (name,evalCfg) <- (groupName &&& groupEvalConfig) <$> loadGroup p gk
+  submissionTableInfo p name evalCfg assignments usernames
 
 courseSubmissionTableInfo :: Persist -> CourseKey -> TIO SubmissionTableInfo
 courseSubmissionTableInfo p ck = do
   assignments <- courseAssignments p ck
   usernames   <- subscribedToCourse p ck
-  name        <- courseName <$> loadCourse p ck
-  submissionTableInfo p name assignments usernames
+  (name,evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
+  submissionTableInfo p name evalCfg assignments usernames
 
-submissionTableInfo :: Persist -> String -> [AssignmentKey] -> [Username] -> TIO SubmissionTableInfo
-submissionTableInfo p courseName as usernames = do
+submissionTableInfo
+  :: Persist
+  -> String
+  -> EvaulationConfig
+  -> [AssignmentKey]
+  -> [Username]
+  -> TIO SubmissionTableInfo
+submissionTableInfo p courseName evalCfg as usernames = do
   assignments <- sortAssignments as
 
   ulines <- flip mapM usernames $ \u -> do
     ud  <- userDescription p u
     asi <- mapM (submissionInfo' u) as
-    let passed = count (isPassed . snd) asi
-    return (ud, passed, asi)
+    let result = calculateResult . map snd $ asi
+    return (ud, result, asi)
 
   return SubmissionTableInfo {
     stCourse      = courseName
@@ -288,18 +292,20 @@ submissionTableInfo p courseName as usernames = do
                 Just sk -> submissionInfo p sk
       return (ak,s)
 
-    count f = length . filter f
+    calculateResult = evaulateResults evalCfg . map sbmResult . filter hasResult
+
+    hasResult (Submission_Result _ _) = True
+    hasResult _                       = False
+
+    sbmResult (Submission_Result _ r) = r
+    sbmResult _ = error "sbmResult: impossible"
 
 submissionInfo :: Persist -> SubmissionKey -> TIO SubmissionInfo
 submissionInfo p sk = do
   mEk <- evaulationOfSubmission p sk
   case mEk of
     Nothing -> return Submission_Unevaulated
-    Just ek -> do
-      state <- evaulationState <$> loadEvaulation p ek
-      case state of
-        Passed _ -> return $ Submission_Passed ek
-        Failed _ -> return $ Submission_Failed ek
+    Just ek -> (Submission_Result ek . evaulationResult) <$> loadEvaulation p ek
 
 userSubmissionDesc :: Persist -> Username -> AssignmentKey -> TIO UserSubmissionDesc
 userSubmissionDesc p u ak = do

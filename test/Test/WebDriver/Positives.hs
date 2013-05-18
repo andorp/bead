@@ -5,6 +5,7 @@ import Test.WebDriver.SitePages
 import Test.WebDriver.UserStories
 
 import Bead.Domain.Entities
+import Bead.Domain.Evaulation as E
 
 admin       = LoginData "a" "a"
 courseAdmin = LoginData "c1" "c1"
@@ -19,9 +20,9 @@ positives url = [
   , mkTestCase "Invalid login" $ invalidLogin url (LoginData "s1" "e")
   , mkTestCase "Create course admin" $ changeUserRole url admin courseAdmin CourseAdmin
   , mkTestCase "Group course admin"  $ changeUserRole url admin groupAdmin Professor
-  , mkTestCase "Create course" $ adminCreatesCourse url admin (CourseData "ct-01" "desc" Scale)
+  , mkTestCase "Create course" $ adminCreatesCourse url admin (CourseData "ct-01" "desc" binaryEvalConfig)
   , mkTestCase "Assign course admin" $ assignCourseAdmin  url admin "c1" "ct-01"
-  , mkTestCase "Group creating" $ cAdminCreateGroup  url courseAdmin (GroupData "ct-01" "g01" "g01" Scale)
+  , mkTestCase "Group creating" $ cAdminCreateGroup  url courseAdmin (GroupData "ct-01" "g01" "g01" binaryEvalConfig)
   , mkTestCase "Assign group admin" $ cAdminAssignGroupAdmin url courseAdmin groupAdmin "g01"
   , mkTestCase "Student registers to group" $ groupRegistration url student "g01"
   , mkTestCase "Create group assignment" $ gAdminCreatesAssignment url groupAdmin student (AssignmentData {
@@ -41,7 +42,7 @@ positives url = [
       groupAdmin
       (SelectSubmissionData {sGroup = "g01", sStudent = "s1", sNo = 0 })
       0
-      (EvaulationData { evMessage = "Good", evValue = "Passed 100"})
+      (EvaulationData { evMessage = "Good", evValue = BinEval (Binary E.Passed)})
   , mkTestCase "Course admin creates assignment" $ cAdminCreatesAssignment url courseAdmin student (AssignmentData {
         aType = CourseAsg
       , aGroupOrCourse = "ct-01"
@@ -59,6 +60,6 @@ positives url = [
       courseAdmin
       (SelectSubmissionData {sGroup = "ct-01", sStudent = "s1", sNo = 0 })
       0
-      (EvaulationData { evMessage = "Good", evValue = "Passed 100"})
+      (EvaulationData { evMessage = "Good", evValue = BinEval (Binary E.Passed)})
   ]
 

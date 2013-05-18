@@ -5,6 +5,7 @@ import Snap
 import Snap.Snaplet
 import Snap.Snaplet.Session
 import Snap.Snaplet.Auth
+import Snap.Snaplet.Fay
 import Control.Lens.TH
 import Data.IORef
 import qualified Data.Map as Map
@@ -62,6 +63,7 @@ data App = App {
   , _auth           :: Snaplet (AuthManager App)
   , _serviceContext :: Snaplet SnapletServiceContext
   , _dictionaryContext :: Snaplet DictionaryContext
+  , _fayContext     :: Snaplet Fay
   }
 
 makeLenses ''App

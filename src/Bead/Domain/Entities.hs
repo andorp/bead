@@ -1,6 +1,7 @@
 module Bead.Domain.Entities where
 
 import Bead.Domain.Types
+import Bead.Domain.Evaulation
 import Bead.Invariants (Invariants(..))
 
 import Data.Char (toLower)
@@ -39,31 +40,70 @@ data Comment = Comment {
   , commentDate :: UTCTime
   } deriving (Eq, Show)
 
-data EvaulationState
-  = Passed Int
-  | Failed Int
+data EvaulationData b p
+  = BinEval b
+  | PctEval p
   deriving (Eq, Show, Read)
+
+binaryEval :: EvaulationData b p -> Maybe b
+binaryEval (BinEval b) = Just b
+binaryEval _           = Nothing
+
+percentEval :: EvaulationData b p -> Maybe p
+percentEval (PctEval p) = Just p
+percentEval _           = Nothing
+
+type EvaulationResult = EvaulationData Binary Percentage
+
+type EvaulationConfig = EvaulationData () PctConfig
+
+binaryEvalConfig :: EvaulationConfig
+binaryEvalConfig = BinEval ()
+
+percentageEvalConfig :: PctConfig -> EvaulationConfig
+percentageEvalConfig p = PctEval p
+
+class IsEvaulationResult e where
+  mkEvalResult :: e -> EvaulationResult
+
+instance IsEvaulationResult Binary where
+  mkEvalResult b = BinEval b
+
+instance IsEvaulationResult Percentage where
+  mkEvalResult p = PctEval p
+
+allBinaryEval :: [EvaulationData b p] -> Maybe [b]
+allBinaryEval = sequence . map binaryEval
+
+allPercentEval :: [EvaulationData b p] -> Maybe [p]
+allPercentEval = sequence . map percentEval
+
+evaulateResults :: EvaulationConfig -> [EvaulationResult] -> Maybe Result
+evaulateResults (BinEval cfg) = fmap (flip calculateEvaulation cfg) . allBinaryEval
+evaulateResults (PctEval cfg) = fmap (flip calculateEvaulation cfg) . allPercentEval
 
 -- | Evaulation of a submission
 data Evaulation = Evaulation {
-    evaulationState   :: EvaulationState
+    evaulationResult  :: EvaulationResult
   , writtenEvaulation :: String
   } deriving (Eq)
 
-data EvaulationType
-  = Scale
-  deriving (Eq, Ord, Show, Read, Enum)
+resultString :: EvaulationResult -> String
+resultString (BinEval (Binary Passed)) = "Passed"
+resultString (BinEval (Binary Failed)) = "Failed"
+resultString (PctEval p) =
+  case point p of
+    Nothing -> error "evaulationComment impossible situation"
+    Just q  -> "Percentage: " ++ show q
 
 evaulationComment :: UTCTime -> Evaulation -> Comment
 evaulationComment t e = Comment {
     comment = c
   , commentDate = t
   } where
-     result (Passed points) = "Passed, points: " ++ show points
-     result (Failed points) = "Failed, points: " ++ show points
      c = join [
            writtenEvaulation e, ", "
-         , result . evaulationState $ e
+         , resultString . evaulationResult $ e
          ]
 
 newtype CourseCode = CourseCode String
@@ -76,14 +116,14 @@ instance Str CourseCode where
 data Course = Course {
     courseName :: String
   , courseDesc :: String
-  , courseEvaulation :: EvaulationType
+  , courseEvalConfig :: EvaulationConfig
   } deriving (Eq, Show)
 
 -- | Groups are registered under the courses
 data Group = Group {
     groupName  :: String
   , groupDesc  :: String
-  , groupEvaulation :: EvaulationType
+  , groupEvalConfig :: EvaulationConfig
   } deriving (Eq, Show)
 
 -- | Workflows can happen to exams

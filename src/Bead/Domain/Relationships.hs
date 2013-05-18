@@ -4,6 +4,7 @@ module Bead.Domain.Relationships where
 
 import Bead.Domain.Types
 import Bead.Domain.Entities
+import Bead.Domain.Evaulation
 
 -- Haskell imports
 
@@ -41,7 +42,7 @@ data SubmissionDesc = SubmissionDesc {
     eGroup    :: String
   , eStudent  :: String
   , eSolution :: String
-  , eType     :: EvaulationType
+  , eConfig   :: EvaulationConfig
   , eAssignmentTitle :: String
   , eComments :: [Comment]
   }
@@ -51,7 +52,7 @@ submissionDescPermissions = ObjectPermissions [
   , (P_Open, P_Submission), (P_Open, P_Assignment)
   , (P_Open, P_Comment)
   ]
-  
+
 type Status = String
 type EvaulatedBy = String
 
@@ -85,33 +86,25 @@ submissionDetailsDescPermissions = ObjectPermissions [
 data SubmissionInfo
   = Submission_Not_Found
   | Submission_Unevaulated
-  | Submission_Passed EvaulationKey
-  | Submission_Failed EvaulationKey
-
-isPassed :: SubmissionInfo -> Bool
-isPassed (Submission_Passed _) = True
-isPassed _                     = False
+  | Submission_Result EvaulationKey EvaulationResult
 
 siEvaulationKey :: SubmissionInfo -> Maybe EvaulationKey
-siEvaulationKey Submission_Not_Found   = Nothing
-siEvaulationKey Submission_Unevaulated = Nothing
-siEvaulationKey (Submission_Failed ek) = Just ek
-siEvaulationKey (Submission_Passed ek) = Just ek
-
-type NoOfPassed = Int
+siEvaulationKey Submission_Not_Found     = Nothing
+siEvaulationKey Submission_Unevaulated   = Nothing
+siEvaulationKey (Submission_Result ek _) = Just ek
 
 data SubmissionTableInfo = SubmissionTableInfo {
     stCourse   :: String
   , stNumberOfAssignments :: Int
   , stAssignments :: [AssignmentKey] -- Cronologically ordered list of assignments
   , stUsers       :: [Username]      -- Alphabetically ordered list of usernames
-  , stUserLines   :: [(UserDesc, NoOfPassed, [(AssignmentKey, SubmissionInfo)])]
+  , stUserLines   :: [(UserDesc, Maybe Result, [(AssignmentKey, SubmissionInfo)])]
   }
 
 submissionTableInfoPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment)
   ]
-  
+
 -- TODO
 checkSubmissionTableInfo :: SubmissionTableInfo -> Bool
 checkSubmissionTableInfo _ = True
@@ -166,5 +159,3 @@ instance Str CourseKey where
 
 instance Str GroupKey where
   str (GroupKey g) = g
-
-

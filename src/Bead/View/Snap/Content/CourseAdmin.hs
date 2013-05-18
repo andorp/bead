@@ -28,17 +28,17 @@ data PageData = PageData {
 
 courseAdminPage :: GETContentHandler
 courseAdminPage = withUserStateE $ \s -> do
-  cs <- runStoryE administratedCourses
-  gs <- runStoryE $ do
-          courseAndGroupKeys <- mapM (loadCourse . fst) cs
-          let gks = join . map snd $ courseAndGroupKeys
-          mapM loadGroup' gks
-  ps <- runStoryE (selectUsers professor)
-  let pageData = PageData {
-      courses    = cs
-    , professors = ps
-    , groups     = gs
-    }
+  pageData <- runStoryE $ do
+    cs <- administratedCourses
+    gs <- do courseAndGroupKeys <- mapM (loadCourse . fst) cs
+             let gks = join . map snd $ courseAndGroupKeys
+             mapM loadGroup' gks
+    ps <- selectUsers professor
+    return PageData {
+        courses    = cs
+      , professors = ps
+      , groups     = gs
+      }
   renderPagelet $ withUserFrame s (courseAdminContent pageData)
   where
     professor = (Professor ==) . u_role

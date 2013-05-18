@@ -5,10 +5,10 @@ import Test.WebDriver
 import Test.WebDriver.Commands
 import Test.WebDriver.PageObject
 import Test.WebDriver.Tools
-import Test.WebDriver.Support.Select
-import Test.WebDriver.Support.Table
+import Test.WebDriver.Support
 
-import Bead.Domain.Entities
+import Bead.Domain.Entities hiding (EvaulationData)
+import Bead.Domain.Evaulation as E
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.Controller.Pages
 
@@ -136,15 +136,14 @@ selectUserToModify u = do
 data CourseData = CourseData {
     cName :: String
   , cDesc :: String
-  , cEval :: EvaulationType
+  , cEval :: EvaulationConfig
   }
 
 createCourse :: CourseData -> Test ()
 createCourse c = do
   sendKeysStr (cName c) <@> courseNameField
   sendKeysStr (cDesc c) <@> courseDescField
-  eval <- createSelect courseEvalField "No evaulation selection was found"
-  selectByValue eval (fromString . show . cEval $ c)
+  sendKeysStr (show . cEval $ c) <@> courseEvalField
   click <@> createCourseBtn
 
 
@@ -197,7 +196,7 @@ data GroupData = GroupData {
     gdCourseName :: String
   , gdGroupName :: String
   , gdGroupDesc :: String
-  , gdEval :: EvaulationType
+  , gdEval :: EvaulationConfig
   }
 
 createGroup :: GroupData -> Test ()
@@ -206,8 +205,7 @@ createGroup g = do
   selectByVisibleText s (fromString . gdCourseName $ g)
   sendKeysStr (gdGroupName g) <@> groupNameField
   sendKeysStr (gdGroupDesc g) <@> groupDescField
-  eval <- createSelect groupEvalField "No evaulation field is not found"
-  selectByValue eval (fromString . show . gdEval $ g)
+  sendKeysStr (show . gdEval $ g) <@> groupEvalField
   click <@> createGroupBtn
 
 checkSelectionVisibleText :: (SnapFieldName s) => s -> String -> Test ()
@@ -296,7 +294,6 @@ instance PageObject AssignmentData where
     failsOnFalse "Assignment description is not found" (doesFieldExist assignmentDescField)
     failsOnFalse "Assignment test cases are not found" (doesFieldExist assignmentTCsField)
     failsOnFalse "Assignment type is not found" (doesFieldExist assignmentTypeField)
---    failsOnFalse "Assignment evaulation is not found" (doesFieldExist assignmentEvField)
     failsOnFalse "Assignment start field is not found" (doesFieldExist assignmentStartField)
     failsOnFalse "Assignment end field is not found" (doesFieldExist assignmentEndField)
     case aType a of
@@ -486,23 +483,36 @@ instance PageAction UserSubmissionsData where
 
 data EvaulationData = EvaulationData {
     evMessage :: String
-  , evValue   :: String
+  , evValue   :: EvaulationResult
   }
 
 instance PageObject EvaulationData where
   precondition = const $ do
     failsOnFalse "Evaulation field was not found" (doesFieldExist evaulationValueField)
-    failsOnFalse "Evaulation state field was not found" (doesFieldExist evaulationStateField)
-    failsOnFalse "Sve button was not found" (doesElementExist saveEvalBtn)
+    failsOnFalse "Evaulation result field was not found" (doesFieldExist evaulationResultField)
+    failsOnFalse "Save button was not found" (doesElementExist saveEvalBtn)
     return True
   failureMsg = const "Evaulation page"
 
 instance PageAction EvaulationData where
   action e = do
-    clearInput <@> evaulationStateField
+    setResult . evValue $ e
     sendKeysStr (evMessage e) <@> evaulationValueField
-    sendKeysStr (evValue e)   <@> evaulationStateField
     click <@> saveEvalBtn
+    where
+      visible :: Binary -> String
+      visible (Binary E.Passed) = "Passed"
+      visible (Binary E.Failed) = "Failed"
+
+      setResult :: EvaulationResult -> Test ()
+      setResult (BinEval v) = do
+        r <- createSelect evaulationResultField "No result selection was found"
+        selectByVisibleText r (fromString . visible $ v)
+
+      setResult p@(PctEval cfg) = do
+        t <- createTextInput evaulationResultField "No result input was found"
+        clearTextInput t
+        enterText (fromString . show $ p) t
 
 checkCommentOnPage :: CommentData -> Test ()
 checkCommentOnPage _ = do
@@ -517,3 +527,6 @@ isPage _ = return ()
 
 createSelect :: (SnapFieldName f) => f -> String -> Test Select
 createSelect field msg = (failsOnNothing msg . select) =<< (findField field)
+
+createTextInput :: (SnapFieldName f) => f -> String -> Test TextInput
+createTextInput field msg = (failsOnNothing msg . textInput) =<< (findField field)

@@ -9,14 +9,15 @@ import Test.WebDriver.Commands
 import Test.WebDriver.Tools
 import Test.WebDriver.PageObject
 import Test.WebDriver.SitePages
+import Test.WebDriver.Frames
 
 import Bead.Controller.Pages
-import Bead.Domain.Entities hiding (CourseAdmin)
+import Bead.Domain.Entities hiding (CourseAdmin, EvaulationData)
 
 -- * User stories
 
 loginUser :: String -> LoginData -> Test () -> Test ()
-loginUser url l m = do
+loginUser url l m = setTestFrames [webhandlerException] $ do
   cleanUp
     (do openPage url
         page l

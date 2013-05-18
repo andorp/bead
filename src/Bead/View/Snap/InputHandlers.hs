@@ -7,6 +7,7 @@ import Data.Time (UTCTime(..))
 import Bead.Domain.Types (Str(..), readMaybe, readMsg)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
+import Bead.Domain.Evaulation
 
 import Bead.View.Snap.Application (App(..))
 import Bead.View.Snap.Pagelets
@@ -35,8 +36,7 @@ instance InputPagelet Group where
   inputPagelet g = table "create-group" "create-group-table" $ do
     tableLine "Group Name" $ textInput (fieldName groupNameField) 10 (fmap groupName g)
     tableLine "Group Desc" $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
-    tableLine "Group Evaulation type" $
-      enumSelection (fieldName groupEvalField) $ maybe Scale id (fmap groupEvaulation g)
+    tableLine "Eval Config" $ evaulationConfig (fieldName groupEvalField) (fmap groupEvalConfig g)
 
 instance GetValueHandler Group where
   getValue = do
@@ -46,7 +46,7 @@ instance GetValueHandler Group where
     return $ Group {
         groupName = nameParam
       , groupDesc = descParam
-      , groupEvaulation = evalParam
+      , groupEvalConfig = evalParam
       }
 
 instance GetValueHandler CourseKey where
@@ -60,7 +60,7 @@ instance GetValueHandler Course where
     return Course {
         courseName = nameParam
       , courseDesc = descParam
-      , courseEvaulation = evalParam
+      , courseEvalConfig = evalParam
       }
 
 emptyCourse :: Maybe Course
@@ -70,8 +70,7 @@ instance InputPagelet Course where
   inputPagelet c = table "create-course" "create-course-table" $ do
     tableLine "Course Name" $ textInput (fieldName courseNameField) 10 (fmap courseName c)
     tableLine "Course Desc" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
-    tableLine "Course Evaulation Type" $
-      enumSelection (fieldName courseEvalField) $ maybe Scale id (fmap courseEvaulation c)
+    tableLine "Course Eval" $ evaulationConfig (fieldName courseEvalField) (fmap courseEvalConfig c)
 
 emptyRole :: Maybe Role
 emptyRole = Nothing
@@ -145,9 +144,17 @@ instance GetValueHandler Assignment where
       , assignmentStart = start
       , assignmentEnd   = end
       }
-  
+
 -- * Combined input fields
 
+emptyEvaulationConfig :: Maybe (EvaulationData Binary Percentage)
+emptyEvaulationConfig = Nothing
+
+-- TODO
+evaulationConfig :: String -> Maybe EvaulationConfig -> Html
+evaulationConfig n v = textInput n 10 (show <$> v)
+
+-- TODO
 utcTimeInput :: String -> Maybe UTCTime -> Html
 utcTimeInput n v = textInput n 10 (show <$> v)
 

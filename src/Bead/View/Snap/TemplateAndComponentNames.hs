@@ -231,7 +231,7 @@ data EvaulationField
   | EvaulationKeyField   { evFieldName :: String }
 
 evaulationValueField = EvaulationValueField "evaulation"
-evaulationStateField = EvaulationStateField "evaulation-state"
+evaulationResultField = EvaulationStateField "evaulation-result"
 evaulationKeyField   = EvaulationKeyField "evaulation-key"
 
 instance SnapFieldName EvaulationField where
@@ -309,7 +309,7 @@ fieldList = map fieldName $ join [
   , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField
   , SFN userRoleField,  SFN loginSubmitBtn,  SFN assignmentDescField,    SFN assignmentTCsField
   , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField, SFN evaulationValueField
-  , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaulationStateField
+  , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaulationResultField
   , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField,     SFN evaulationKeyField
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn

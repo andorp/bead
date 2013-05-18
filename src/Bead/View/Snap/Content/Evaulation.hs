@@ -16,6 +16,8 @@ import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content as C
 import Bead.View.Snap.Content.Comments
 
+import Bead.Domain.Evaulation
+
 import Text.Blaze.Html5 (Html)
 import qualified Text.Blaze.Html5 as H
 
@@ -55,11 +57,11 @@ evaulationPostHandler :: POSTContentHandler
 evaulationPostHandler = do
   sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key does not found"
   ev <- getParamE (fieldName evaulationValueField) id "Evaulation value does not found"
-  es <- getParamE (fieldName evaulationStateField)
-                  (readMsg "Evaulation state")
-                  "Evaulation state does nof found"
+  er <- getParamE (fieldName evaulationResultField)
+                   (readMsg "Evaulation result")
+                   "Evaulation result does not found"
   let e = C.Evaulation {
-    evaulationState = es
+    evaulationResult = er
   , writtenEvaulation = ev
   }
   return $ NewEvaulation sk e
@@ -68,11 +70,11 @@ modifyEvaulationPost :: POSTContentHandler
 modifyEvaulationPost = do
   ek <- getParamE (fieldName evaulationKeyField) EvaulationKey "Evaulation key does not found"
   ev <- getParamE (fieldName evaulationValueField) id "Evaulation value does not found"
-  es <- getParamE (fieldName evaulationStateField)
-                  (readMsg "Evaulation state")
-                  "Evaulation state does nof found"
+  er <- getParamE (fieldName evaulationResultField)
+                   (readMsg "Evaulation result")
+                   "Evaulation result does not found"
   let e = C.Evaulation {
-    evaulationState = es
+    evaulationResult = er
   , writtenEvaulation = ev
   }
   return $ C.ModifyEvaulation ek e
@@ -91,8 +93,8 @@ evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
           H.p $ do
             (joinHtml i "Evaulation checkbox, Submit button")
             -- TODO: Checkbox
-            textInput (fieldName evaulationStateField) 10 (Just (show (Passed 10)))
           hiddenKeyField . sbmKey $ pd
+          joinHtml i . inputEvalResult . eConfig $ sd
           submitButton (fieldName saveEvalBtn) (i "Save Evaulation")
   H.p $ do
     (joinHtml i "Submitted solution")
@@ -100,8 +102,24 @@ evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   joinHtml i . commentsDiv . eComments $ sd
 
   where
+    defaultEvalCfg :: EvaulationResult
+    defaultEvalCfg = BinEval (Binary Passed)
+
     hiddenKeyField (Left ek)  = hiddenInput (fieldName evaulationKeyField) (paramValue ek)
     hiddenKeyField (Right sk) = hiddenInput (fieldName submissionKeyField) (paramValue sk)
 
     evPage (Left  _) = P.ModifyEvaulation
     evPage (Right _) = P.Evaulation
+
+inputEvalResult :: EvaulationConfig -> I18NHtml
+inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
+  listSelection (fieldName evaulationResultField) $
+    map binaryResult [(Passed, i "Passed"), (Failed, i "Failed")]
+  where
+    binaryResult :: (Result, String) -> (String, String)
+    binaryResult (v,n) = (show . mkEvalResult . Binary $ v, n)
+
+inputEvalResult (PctEval cfg) = mkI18NHtml $ \i -> do
+  -- TODO: field validation
+  (joinHtml i "Evaulation between 0.0 and 1.0: ")
+  textInput (fieldName evaulationResultField) 10 (Just . show $ 0.0)

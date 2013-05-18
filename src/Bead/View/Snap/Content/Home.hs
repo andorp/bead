@@ -102,5 +102,4 @@ htmlSubmissionTable i18n (i,s) = table (join ["st", show i]) (className groupSub
       where
         sc Submission_Not_Found   = " "
         sc Submission_Unevaulated = "."
-        sc (Submission_Failed _)  = "X"
-        sc (Submission_Passed _)  = "O"
+        sc (Submission_Result _ _) = "R"

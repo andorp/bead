@@ -65,9 +65,8 @@ submissionTable i18n s = do
 
     submissionInfo :: SubmissionInfo -> String
     submissionInfo Submission_Not_Found   = "Not Found"
-    submissionInfo (Submission_Passed _)  = "Passed"
-    submissionInfo (Submission_Failed _)  = "Failed"
     submissionInfo Submission_Unevaulated = "Unevaulated"
+    submissionInfo (Submission_Result _ _) = "Result"
 
     evaulatedWith EvHand = "By Hand"
 
