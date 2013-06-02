@@ -1,6 +1,7 @@
 module Bead.Domain.Entities where
 
 import Bead.Domain.Types
+import Bead.Domain.Shared
 import Bead.Domain.Evaulation
 import Bead.Invariants (Invariants(..))
 
@@ -39,19 +40,6 @@ data Comment = Comment {
     comment     :: String
   , commentDate :: UTCTime
   } deriving (Eq, Show)
-
-data EvaulationData b p
-  = BinEval b
-  | PctEval p
-  deriving (Eq, Show, Read)
-
-binaryEval :: EvaulationData b p -> Maybe b
-binaryEval (BinEval b) = Just b
-binaryEval _           = Nothing
-
-percentEval :: EvaulationData b p -> Maybe p
-percentEval (PctEval p) = Just p
-percentEval _           = Nothing
 
 type EvaulationResult = EvaulationData Binary Percentage
 

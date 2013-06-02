@@ -12,7 +12,7 @@ import Test.WebDriver.SitePages
 import Test.WebDriver.Frames
 
 import Bead.Controller.Pages
-import Bead.Domain.Entities hiding (CourseAdmin, EvaulationData)
+import Bead.Domain.Entities hiding (CourseAdmin)
 
 -- * User stories
 

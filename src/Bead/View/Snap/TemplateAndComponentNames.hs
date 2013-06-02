@@ -7,6 +7,7 @@ module Bead.View.Snap.TemplateAndComponentNames where
 -- Haskell imports
 import Data.String
 import Control.Monad (join)
+import Bead.View.Snap.Fay.HookIds
 import qualified Bead.Controller.Pages as P
 
 -- Test imports
@@ -89,7 +90,6 @@ data CourseFormInfo
   | CourseNameField { cFieldName :: String }
   | CourseCodeField { cFieldName :: String }
   | CourseDescField { cFieldName :: String }
-  | CourseEvalField { cFieldName :: String }
 
 instance SnapFieldName CourseFormInfo where
   fieldName = fromString . cFieldName
@@ -99,7 +99,6 @@ courseFormInfo = CourseFormInfo "course"
 courseCodeField = CourseCodeField "course-code"
 courseNameField = CourseNameField "course-name"
 courseDescField = CourseDescField "course-desc"
-courseEvalField = CourseEvalField "course-eval"
 
 newtype GroupKeyName
   = GroupKeyName { gkFieldName :: String }
@@ -288,6 +287,9 @@ instance SnapClassName DivClassName where
 
 submissionListDiv = DivClassName "submission-list-div"
 
+instance SnapFieldName HookId where
+  fieldName = fromString . hookId
+
 -- * Unit tests
 
 data SFN = forall n . SnapFieldName n => SFN n
@@ -314,7 +316,10 @@ fieldList = map fieldName $ join [
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
   , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
-  , SFN availableAssignmentsTable, SFN submissionTableName, SFN courseEvalField, SFN groupEvalField
+  , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField
+
+  , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue
+  , SFN evalTypeSelectionDiv
   ], (map SFN P.allPages)
   ]
 

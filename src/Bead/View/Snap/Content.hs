@@ -18,6 +18,7 @@ module Bead.View.Snap.Content (
   , runStoryE
   , i18nE
   , renderPagelet
+  , renderDynamicPagelet 
   , withUserState
   , withUserStateE
   , withUserStateAndFrame

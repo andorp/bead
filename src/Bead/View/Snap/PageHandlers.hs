@@ -43,6 +43,7 @@ import qualified Control.Monad.Error as CME
 import Snap hiding (get)
 import Snap.Blaze (blaze)
 import Snap.Snaplet.Auth as A
+import Snap.Snaplet.Fay
 import Snap.Snaplet.Session
 import Snap.Util.FileServe (serveDirectory)
 
@@ -54,6 +55,7 @@ routes = join
     [ ("/",         index)
     , ("/logout",   L.logout)
     , ("/new_user", with auth $ registration)
+    , ("/fay", with fayContext fayServe)
     ]
     -- Add all pages with template names and handlers
   , L.map (routeOf &&& ((P.id &&& content) >>> handlePage)) P.allPages

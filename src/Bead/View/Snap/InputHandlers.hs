@@ -6,6 +6,7 @@ import Data.Time (UTCTime(..))
 
 import Bead.Domain.Types (Str(..), readMaybe, readMsg)
 import Bead.Domain.Entities
+import Bead.Domain.Shared
 import Bead.Domain.Relationships
 import Bead.Domain.Evaulation
 
@@ -13,6 +14,7 @@ import Bead.View.Snap.Application (App(..))
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.TemplateAndComponentNames
+import Bead.View.Snap.Fay.Hooks
 
 import Text.Blaze.Html5 (Html(..))
 
@@ -54,23 +56,38 @@ instance GetValueHandler CourseKey where
 
 instance GetValueHandler Course where
   getValue = do
+    let hook = createCourseHook
     nameParam <- getParamE (fieldName courseNameField) id "Course name is not found"
     descParam <- getParamE (fieldName courseDescField) id "Course description is not found"
-    evalParam <- getParamE (fieldName courseEvalField) read "Course evaulation is not found"
+    evalParam <- getParamE (evHiddenValueId hook) readAndConvert "Course evaulation is not found"
     return Course {
         courseName = nameParam
       , courseDesc = descParam
       , courseEvalConfig = evalParam
       }
+    where
+      readFloatConfig :: String -> EvaulationData () Float
+      readFloatConfig = read
+
+      readAndConvert :: String -> EvaulationData () PctConfig
+      readAndConvert = convert . readFloatConfig
+
+      convert :: EvaulationData () Float -> EvaulationData () PctConfig
+      convert (BinEval ()) = BinEval ()
+      convert (PctEval f) = PctEval (PctConfig f)
 
 emptyCourse :: Maybe Course
 emptyCourse = Nothing
 
 instance InputPagelet Course where
-  inputPagelet c = table "create-course" "create-course-table" $ do
-    tableLine "Course Name" $ textInput (fieldName courseNameField) 10 (fmap courseName c)
-    tableLine "Course Desc" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
-    tableLine "Course Eval" $ evaulationConfig (fieldName courseEvalField) (fmap courseEvalConfig c)
+  inputPagelet c = do
+    let hook = createCourseHook
+    table "create-course" "create-course-table" $ do
+      tableLine "Course Name" $ textInput (fieldName courseNameField) 10 (fmap courseName c)
+      tableLine "Course Desc" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
+      tableLine "Course Eval" $ evaulationConfig (evSelectionId hook) (fmap courseEvalConfig c)
+    hiddenInputWithId (evHiddenValueId hook) ""
+    evalSelectionDiv hook
 
 emptyRole :: Maybe Role
 emptyRole = Nothing
@@ -152,7 +169,13 @@ emptyEvaulationConfig = Nothing
 
 -- TODO
 evaulationConfig :: String -> Maybe EvaulationConfig -> Html
-evaulationConfig n v = textInput n 10 (show <$> v)
+evaulationConfig n v = do
+  valueSelection valueAndName n evaulationTypes
+  where
+    valueAndName e = (encodeEvalType e, name e)
+
+    name (BinEval ()) = "Binary"
+    name (PctEval ()) = "Percentage"
 
 -- TODO
 utcTimeInput :: String -> Maybe UTCTime -> Html

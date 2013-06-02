@@ -12,6 +12,7 @@ import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.UserStories (selectCourses, selectUsers)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
+import Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
 
 import Text.Blaze.Html5 (Html)
@@ -35,7 +36,7 @@ administrationPage = withUserStateE $ \s -> do
     , admins = filter admin ausers
     , courseAdmins = filter courseAdmin ausers
     }
-  renderPagelet $ withUserFrame s (administrationContent info)
+  renderDynamicPagelet $ withUserFrame s (administrationContent info)
   where
     each _ _ = True
 
@@ -51,7 +52,7 @@ administrationPage = withUserStateE $ \s -> do
 administrationContent :: PageInfo -> Pagelet
 administrationContent info = onlyHtml $ mkI18NHtml $ \i18n -> do
   H.p $ (joinHtml i18n "New Course")
-  H.p $ postForm (routeOf P.CreateCourse) $ do
+  H.p $ (postForm (routeOf P.CreateCourse) `withId` (evFormId createCourseHook)) $ do
           inputPagelet emptyCourse
           submitButton (fieldName createCourseBtn) (i18n "Create Course")
   H.p $ (joinHtml i18n "Add course admin to the course")

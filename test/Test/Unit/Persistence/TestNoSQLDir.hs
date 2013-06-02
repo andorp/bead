@@ -11,6 +11,7 @@ import Test.Persistence.Persist
 
 import Bead.Domain.Types (Erroneous)
 import Bead.Domain.Entities
+import Bead.Domain.Shared
 import Bead.Domain.Evaulation
 import Bead.Domain.Relationships
 import Bead.Persistence.Persist

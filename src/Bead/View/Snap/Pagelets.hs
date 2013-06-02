@@ -20,6 +20,7 @@ import Bead.Controller.ServiceContext (UserState(..))
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.TemplateAndComponentNames
+import Bead.View.Snap.Fay.Hooks
 
 import Bead.Invariants (Invariants(..))
 
@@ -42,9 +43,19 @@ styleMap f p = p { style = f . style $ p }
 runPagelet :: Pagelet -> I18N -> Html
 runPagelet p i = H.docTypeHtml $ do
   H.head $ do
-    H.title "Snap web server"
+    H.title "Bead"
     H.link ! A.type_ "text/css" ! A.href "inside.css" ! A.rel "stylesheet"
     H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
+  H.body $ (joinHtml i . struct $ p)
+
+runDynamicPagelet :: Pagelet -> I18N -> Html
+runDynamicPagelet p i = H.docTypeHtml $ do
+  H.head $ do
+    H.title "Bead"
+    H.link ! A.type_ "text/css" ! A.href "inside.css" ! A.rel "stylesheet"
+    H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
+    H.script ! A.src "/jquery.js" $ return ()
+    H.script ! A.src "/fay/DynamicContents.js" $ return ()
   H.body $ (joinHtml i . struct $ p)
 
 newtype I18NHtml = I18NHtml { un18n :: I18N -> Html }
@@ -116,8 +127,14 @@ hiddenInput name value =
           ! A.name (fromString name)
           ! A.value (fromString value)
 
+hiddenInputWithId :: String -> String -> Html
+hiddenInputWithId n v = hiddenInput n v ! A.id (fromString n)
+
 submitButton :: String -> String -> Html
 submitButton i t = H.input ! A.id (fromString i) ! A.type_ "submit" ! A.value (fromString t)
+
+withId :: (Html -> Html) -> String -> (Html -> Html)
+withId f i = (f ! A.id (fromString i))
 
 -- * Form
 
@@ -224,6 +241,11 @@ listSelection name = selection name . mapM_ option'
   where
     option' (v, n) = option v n False
 
+valueSelection :: (o -> (String, String)) -> String -> [o] -> Html
+valueSelection f n = selection n . mapM_ option'
+  where
+    option' o = let (v,n) = f o in option v n False
+
 -- SelectionValue and SelectionText instances
 
 instance SelectionValue CourseKey where
@@ -249,6 +271,9 @@ instance SelectionText AssignmentType where
 
 instance SelectionValue AssignmentType where
   selectionValue = show
+
+evalSelectionDiv :: EvaulationHook -> Html
+evalSelectionDiv h = (H.div `withId` (evSelectionDivId h)) $ empty
 
 -- * Invariants
 
