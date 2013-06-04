@@ -12,6 +12,7 @@ body {
 
 a {
   text-decoration: underline;
+  text-color: blue;
 }
 
 a:hover {
@@ -23,11 +24,16 @@ a:hover {
   border-color: black;
   border-width: 1px;
   border-style: solid;
+  background: none repeat scroll 0 0 #F6FFF6;
 }
 
 #logo {
   float: left;
   border: 1px solid black;
+  color: orange;
+  font-size: 2em;
+  font-style: italic;
+  font-weight: bold;
 }
 
 #user {
@@ -39,14 +45,29 @@ a:hover {
   overflow: hidden;
   text-align: center;
   border: 1px solid black;
+  font-size: 2.5em;
+  font-weight: bold;
 }
 
 #menu {
   border-color: black;
   border-width: 1px;
   border-style: solid;
-  text-align: left;
-  float: left;
+  text-align: center;
+}
+
+#menu ul {
+  width: 100%;
+  list-style-type: none;
+  padding: 0 10px;
+}
+
+#menu ul a {
+  padding: 10px 10px 10px 0px;
+}
+
+#menu > ul > li {
+  display: inline;
 }
 
 #content {
@@ -55,5 +76,34 @@ a:hover {
   border-style: solid;
   margin-left: auto;
   margin-right: auto;
-  width: 50%;
+  width: 70%;
+  text-align: center;
 }
+
+.assignment-table,
+.group-submission-table,
+.user-submission-class-table
+{
+  border-color: gray;
+  border-width: 1px;
+  border-style: inset;
+}
+
+.assignment-table td,
+.group-submission-table td,
+.user-submission-class-table td
+{
+  border-color: black;
+  border-width: 1px;
+  border-style: inset;
+}
+
+.create-course-table,
+.group-submission-table,
+.user-submission-class-table,
+.create-group-table
+{
+  margin-left: auto;
+  margin-right: auto;
+}
+
