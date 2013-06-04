@@ -9,6 +9,8 @@ import Text.Blaze (ToMarkup(..), textTag)
 import Text.Blaze.Html5 (Html, AttributeValue(..), (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import Bead.View.Snap.I18N (I18NHtml, translate)
+import qualified Bead.View.Snap.I18N as I18N
 
 import Text.CSS
 
@@ -31,7 +33,7 @@ data Pagelet = Pagelet {
   , style  :: Css
   }
 
-emptyPagelet  = Pagelet { struct = mkI18NHtml (const $ return ()) , style = return () }
+emptyPagelet  = Pagelet { struct = return () , style = return () }
 onlyHtml h = Pagelet { struct = h, style = return () }
 
 structMap :: (I18NHtml -> I18NHtml) -> Pagelet -> Pagelet
@@ -46,7 +48,7 @@ runPagelet p i = H.docTypeHtml $ do
     H.title "Bead"
     H.link ! A.type_ "text/css" ! A.href "inside.css" ! A.rel "stylesheet"
     H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
-  H.body $ (joinHtml i . struct $ p)
+  H.body $ (translate i . struct $ p)
 
 runDynamicPagelet :: Pagelet -> I18N -> Html
 runDynamicPagelet p i = H.docTypeHtml $ do
@@ -56,18 +58,7 @@ runDynamicPagelet p i = H.docTypeHtml $ do
     H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
     H.script ! A.src "/jquery.js" $ return ()
     H.script ! A.src "/fay/DynamicContents.js" $ return ()
-  H.body $ (joinHtml i . struct $ p)
-
-newtype I18NHtml = I18NHtml { un18n :: I18N -> Html }
-
-joinHtml :: I18N -> I18NHtml -> Html
-joinHtml i (I18NHtml h) = h i
-
-instance IsString I18NHtml where
-  fromString s = I18NHtml (\f -> fromString . f $ s)
-
-mkI18NHtml :: (I18N -> Html) -> I18NHtml
-mkI18NHtml h = I18NHtml h
+  H.body $ (translate i . struct $ p)
 
 class BlazeTemplate b where
   template :: b -> Html
@@ -83,12 +74,12 @@ withTitleAndHead content = H.docTypeHtml $ do
 withUserFrame :: UserState -> Pagelet -> Pagelet
 withUserFrame s = structMap withUserFrame'
   where
-    withUserFrame' content = mkI18NHtml $ \i -> do
+    withUserFrame' content = I18N.liftH2 $ \i -> do
       H.div ! A.id "header" $ pageHeader s
       H.div ! A.id "menu" $ navigationMenu s
       H.div ! A.id "content" $ do
          "Content"
-         (un18n content i)
+         (translate i content)
 
 -- * Basic building blocks
 

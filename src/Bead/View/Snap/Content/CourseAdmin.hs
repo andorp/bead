@@ -49,12 +49,12 @@ courseAdminPage = withUserStateE $ \s -> do
 
 courseAdminContent :: PageData -> Pagelet
 courseAdminContent info = onlyHtml $ mkI18NHtml $ \i -> do
-  H.p $ (joinHtml i "New group for the course")
+  H.p $ (translate i "New group for the course")
   H.p $ postForm (routeOf P.CreateGroup) $ do
           valueTextSelection (fieldName courseKeyInfo) (courses info)
           inputPagelet emptyGroup
           submitButton (fieldName createGroupBtn) (i "Create Group")
-  H.p $ (joinHtml i "Assign teacher to the group")
+  H.p $ (translate i "Assign teacher to the group")
   H.p $ postForm (routeOf P.AssignProfessor) $ do
           valueTextSelection (fieldName selectedGroup) (groups info)
           valueTextSelection (fieldName selectedProfessor) (professors info)

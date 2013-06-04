@@ -84,23 +84,23 @@ evaulationContent :: PageData -> Pagelet
 evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   let sd = sbmDesc pd
   H.p $ do
-    (joinHtml i "Information: Course, Group, Student")
+    (translate i "Information: Course, Group, Student")
     (fromString . eGroup   $ sd)
     (fromString . eStudent $ sd)
   H.p $ postForm (routeOf . evPage . sbmKey $ pd) $ do
           H.p $ do
-            (joinHtml i "Evaulation text block")
+            (translate i "Evaulation text block")
             textAreaInput (fieldName evaulationValueField) 50 10 Nothing
           H.p $ do
-            (joinHtml i "Evaulation checkbox, Submit button")
+            (translate i "Evaulation checkbox, Submit button")
             -- TODO: Checkbox
           hiddenKeyField . sbmKey $ pd
-          joinHtml i . inputEvalResult . eConfig $ sd
+          translate i . inputEvalResult . eConfig $ sd
           submitButton (fieldName saveEvalBtn) (i "Save Evaulation")
   H.p $ do
-    (joinHtml i "Submitted solution")
+    (translate i "Submitted solution")
     (fromString . eSolution $ sd)
-  joinHtml i . commentsDiv . eComments $ sd
+  translate i . commentsDiv . eComments $ sd
 
   where
     defaultEvalCfg :: EvaulationResult
@@ -122,5 +122,5 @@ inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
 
 inputEvalResult (PctEval cfg) = mkI18NHtml $ \i -> do
   -- TODO: field validation
-  (joinHtml i "Evaulation between 0.0 and 1.0: ")
+  (translate i "Evaulation between 0.0 and 1.0: ")
   textInput (fieldName evaulationResultField) 10 (Just . show $ 0.0)

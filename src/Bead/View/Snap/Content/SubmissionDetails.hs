@@ -66,30 +66,30 @@ submissionDetailsContent :: PageData -> Pagelet
 submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
   let sm = smDetails p
   H.p $ do
-    (joinHtml i "Group / Course")
+    (translate i "Group / Course")
     (fromString . sdGroup $ sm)
   H.p $ do
-    (joinHtml i "Teacher")
+    (translate i "Teacher")
     (fromString . join . intersperse ", " . sdTeacher $ sm)
   H.p $ do
-    (joinHtml i "Assignment")
+    (translate i "Assignment")
     (fromString . sdAssignment $ sm)
   H.p $ do
-    (joinHtml i "Status")
+    (translate i "Status")
     (fromString . sdStatus $ sm)
   H.p $ do
-    (joinHtml i "Submission text")
+    (translate i "Submission text")
     (fromString . sdSubmission $ sm)
   H.p $ do
-    (joinHtml i "New comment")
+    (translate i "New comment")
     postForm (routeOf P.SubmissionDetails) $ do
       textAreaInput (fieldName commentValueField) 50 10 Nothing
       hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
       hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
       submitButton (fieldName commentBtn) (i "Comment")
-  joinHtml i . commentsDiv . sdComments $ sm
+  translate i . commentsDiv . sdComments $ sm
 
 invalidSubmission :: Pagelet
 invalidSubmission = onlyHtml $ mkI18NHtml $ \i ->
-  (joinHtml i "You have tried to open a submission that not belongs to you")
+  (translate i "You have tried to open a submission that not belongs to you")
 

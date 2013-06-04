@@ -41,17 +41,17 @@ submissionListPage = withUserStateE $ \s -> do
 submissionListContent :: PageData -> Pagelet
 submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (className submissionListDiv) $ do
   H.p $ do
-    (joinHtml i "Group / Course")
+    (translate i "Group / Course")
     (fromString . slGroup . smList $ p)
   H.p $ do
-    (joinHtml i "Teacher")
+    (translate i "Teacher")
     (fromString . join . slTeacher . smList $ p)
   H.p $ do
-    (joinHtml i "Submission list")
+    (translate i "Submission list")
     table (fieldName submissionTableName) (className submissionListTable) $
       mapM_ submissionLine (slSubmissions . smList $ p)
   H.p $ do
-    (joinHtml i "Assignment")
+    (translate i "Assignment")
     (fromString . slAssignmentText . smList $ p)
   where
     submissionLine (sk, time, status, t) = H.tr $ do
@@ -62,5 +62,5 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
 
 invalidAssignment :: Pagelet
 invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->
-  (joinHtml i "You have tried to open an assignment that not belongs to you")
+  (translate i "You have tried to open an assignment that not belongs to you")
 

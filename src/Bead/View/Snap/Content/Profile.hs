@@ -21,5 +21,5 @@ profilePage = withUserStateE $ \s -> do
 
 profileContent :: Pagelet
 profileContent = onlyHtml $ mkI18NHtml $ \i -> do
-  H.p $ (joinHtml i "Full name")
-  H.p $ (joinHtml i "Password section")
+  H.p $ (translate i "Full name")
+  H.p $ (translate i "Password section")

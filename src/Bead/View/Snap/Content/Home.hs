@@ -42,18 +42,18 @@ homePage = withUserStateE $ \s ->
 homeContent :: HomePageData -> Pagelet
 homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
   let s = userState d
-  when (isAdmin s) $ H.p $ (joinHtml i18n "Admin's menu")
+  when (isAdmin s) $ H.p $ (translate i18n "Admin's menu")
   when (isCourseAdmin s) $ H.p $ do
-    (joinHtml i18n "Course Admin's menu")
+    (translate i18n "Course Admin's menu")
     linkToPage P.NewCourseAssignment
   when (isProfessor s) $ H.p $ do
-    (joinHtml i18n "Teacher's menu")
+    (translate i18n "Teacher's menu")
     linkToPage P.NewGroupAssignment
   when (isCourseAdmin s || isProfessor s) $ H.p $ do
-    (joinHtml i18n "Submission table")
+    (translate i18n "Submission table")
     htmlSubmissionTables i18n (sTables d)
   when (isStudent s) $ H.p $ do
-    (joinHtml i18n "Student's menu")
+    (translate i18n "Student's menu")
     availableAssignments i18n (assignments d)
 
 availableAssignments :: I18N -> [(AssignmentKey,AssignmentDesc)] -> Html
@@ -81,10 +81,10 @@ htmlSubmissionTable i18n (i,s) = table (join ["st", show i]) (className groupSub
   where
     headLine = H.tr . H.th . fromString
     assignmentLine as = H.tr $ do
-      H.th (joinHtml i18n "Name")
-      H.th (joinHtml i18n "Username")
+      H.th (translate i18n "Name")
+      H.th (translate i18n "Username")
       mapM_ (H.th . modifyAssignmentLink) . zip [1..] $ as
-      H.th (joinHtml i18n "Passed")
+      H.th (translate i18n "Passed")
 
     modifyAssignmentLink (i,ak) =
       link (routeWithParams P.ModifyAssignment [requestParam ak])

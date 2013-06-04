@@ -44,17 +44,17 @@ groupRegistrationPage = withUserStateE $ \s -> do
 groupRegistrationContent :: GroupRegData -> Pagelet
 groupRegistrationContent desc = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ do
-    (joinHtml i "Table of registered courses and teachers of them")
+    (translate i "Table of registered courses and teachers of them")
     groupsAlreadyRegistered i (groupsRegistered desc)
   H.p $ do
-    (joinHtml i "Course / Group selection")
+    (translate i "Course / Group selection")
     groupsForTheUser i (groups desc)
-  H.p $ (joinHtml i "Choose")
+  H.p $ (translate i "Choose")
 
 -- TODO
 groupsAlreadyRegistered :: I18N -> [(GroupKey, GroupDesc)] -> Html
 groupsAlreadyRegistered i ds = return ()
-  
+
 groupsForTheUser :: I18N -> [(GroupKey, GroupDesc)] -> Html
 groupsForTheUser i18n gs = do
   postForm (routeOf P.GroupRegistration) $ do

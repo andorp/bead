@@ -51,23 +51,23 @@ administrationPage = withUserStateE $ \s -> do
 
 administrationContent :: PageInfo -> Pagelet
 administrationContent info = onlyHtml $ mkI18NHtml $ \i18n -> do
-  H.p $ (joinHtml i18n "New Course")
+  H.p $ (translate i18n "New Course")
   H.p $ (postForm (routeOf P.CreateCourse) `withId` (evFormId createCourseHook)) $ do
           inputPagelet emptyCourse
           submitButton (fieldName createCourseBtn) (i18n "Create Course")
-  H.p $ (joinHtml i18n "Add course admin to the course")
+  H.p $ (translate i18n "Add course admin to the course")
   H.p $ postForm (routeOf P.AssignCourseAdmin) $ do
           valueTextSelection (fieldName selectedCourse) (courses info)
           valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
           submitButton (fieldName assignBtn) (i18n "Assign")
   H.p $ valueTextSelection "course-selection" (courses info)
-  H.p $ (joinHtml i18n "Modify user's account")
+  H.p $ (translate i18n "Modify user's account")
   H.p $ getForm (routeOf P.UserDetails) $ do
           inputPagelet emptyUsername
           submitButton (fieldName selectBtn) (i18n "Select")
-  H.p $ (joinHtml i18n "Admin list / Add new admin")
+  H.p $ (translate i18n "Admin list / Add new admin")
   H.p $ valueTextSelection "admin-selection" (admins info)
-  H.p $ (joinHtml i18n "Change password for a given user")
+  H.p $ (translate i18n "Change password for a given user")
 
 -- Add Course Admin
 

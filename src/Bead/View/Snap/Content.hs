@@ -18,7 +18,7 @@ module Bead.View.Snap.Content (
   , runStoryE
   , i18nE
   , renderPagelet
-  , renderDynamicPagelet 
+  , renderDynamicPagelet
   , withUserState
   , withUserStateE
   , withUserStateAndFrame
@@ -36,6 +36,7 @@ module Bead.View.Snap.Content (
   , module Bead.Domain.Entities
   , module Bead.Domain.Relationships
   , module Bead.View.UserActions
+  , module Bead.View.Snap.I18N
   , module Bead.View.Snap.Application
   , module Bead.View.Snap.Pagelets
   , module Bead.View.Snap.InputHandlers
@@ -51,6 +52,7 @@ import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.View.UserActions
+import Bead.View.Snap.I18N
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.Pagelets hiding (invariants)

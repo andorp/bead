@@ -43,6 +43,6 @@ userDetailForm u = onlyHtml $ mkI18NHtml $ \i18n -> do
 userDoesNotExist :: Username -> Pagelet
 userDoesNotExist username = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ do
-    joinHtml i "User does not exist:"
+    translate i "User does not exist:"
     fromString . str $ username
 

@@ -46,16 +46,16 @@ submissionPostHandler = do
 submissionContent :: PageData -> Pagelet
 submissionContent p = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf P.Submission) $ do
   H.p $ do
-    (joinHtml i "Solution text box / Solution files")
+    (translate i "Solution text box / Solution files")
     textAreaInput (fieldName submissionTextField) 50 10 Nothing
   H.p $ do
-    (joinHtml i "Description of the Assignment")
+    (translate i "Description of the Assignment")
     (fromString (assignmentDesc (asValue p)))
-  H.p $ (joinHtml i "Course / Group / Teacher / Assignment Information")
+  H.p $ (translate i "Course / Group / Teacher / Assignment Information")
   hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
   submitButton (fieldName submitSolutionBtn) (i "Submit")
 
 invalidAssignment :: Pagelet
 invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->
-  (joinHtml i "You have tried to open an assignment that not belongs to you")
+  (translate i "You have tried to open an assignment that not belongs to you")
 

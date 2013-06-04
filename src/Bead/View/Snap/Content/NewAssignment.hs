@@ -81,29 +81,29 @@ postModifyAssignment = ModifyAssignment <$> getValue <*> getValue
 newAssignmentContent :: PageData -> Pagelet
 newAssignmentContent pd
   | isEmptyData pd = onlyHtml $ mkI18NHtml $ \i -> do
-      H.p $ pageDataMap (const . joinHtml i $ "You are not an admin for any course")
-                        (const . joinHtml i $ "You are not an admin for any groups")
-                        (const . joinHtml i $ "This assignment is not created by you")
+      H.p $ pageDataMap (const . translate i $ "You are not an admin for any course")
+                        (const . translate i $ "You are not an admin for any groups")
+                        (const . translate i $ "This assignment is not created by you")
                         pd
 newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page $ pd) $ do
   H.p $ do
-    (joinHtml i "Assignment title")
+    (translate i "Assignment title")
     textInput (fieldName assignmentNameField) 10 (amap assignmentName pd)
   H.p $ do
-    (joinHtml i "Description text block / Description files")
+    (translate i "Description text block / Description files")
     textAreaInput (fieldName assignmentDescField) 50 10 (amap assignmentDesc pd)
   H.p $ do
-    (joinHtml i "Test Data text block / Test data files")
+    (translate i "Test Data text block / Test data files")
     textAreaInput (fieldName assignmentTCsField) 50 10 (amap assignmentTCs pd)
-  H.p $ (joinHtml i "Select automated evaulation method")
+  H.p $ (translate i "Select automated evaulation method")
   H.p $ do
-    (joinHtml i "Assignment Type")
+    (translate i "Assignment Type")
     enumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
-  H.p $ (joinHtml i "Active period")
-  do {(joinHtml i "Start date"); utcTimeInput (fieldName assignmentStartField) (amap assignmentStart pd) }
-  do {(joinHtml i "End date")  ; utcTimeInput (fieldName assignmentEndField)   (amap assignmentEnd   pd) }
+  H.p $ (translate i "Active period")
+  do {(translate i "Start date"); utcTimeInput (fieldName assignmentStartField) (amap assignmentStart pd) }
+  do {(translate i "End date")  ; utcTimeInput (fieldName assignmentEndField)   (amap assignmentEnd   pd) }
   H.p $ do
-    pageDataMap (const (joinHtml i "Course")) (const (joinHtml i "Group")) (const (joinHtml i "")) pd
+    pageDataMap (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
     pageDataMap
           (valueTextSelection (fieldName selectedCourse))
           (valueTextSelection (fieldName selectedGroup))

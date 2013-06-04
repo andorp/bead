@@ -6,7 +6,7 @@ module Bead.View.Snap.Content.Comments (
 import Data.String
 
 import Bead.Domain.Entities (Comment(..))
-import Bead.View.Snap.Content (I18NHtml, mkI18NHtml, joinHtml)
+import Bead.View.Snap.Content (I18NHtml, mkI18NHtml, translate)
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
@@ -15,7 +15,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 commentsDiv :: [Comment] -> I18NHtml
 commentsDiv cs = mkI18NHtml $ \i -> do
   H.div ! A.id "comments" $ do
-    H.p (joinHtml i "Comments")
+    H.p (translate i "Comments")
     mapM_ commentPar cs
 
 commentPar :: Comment -> Html
