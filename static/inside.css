@@ -1,6 +1,5 @@
 html {
   background-color: #ffffff
-  font family: Verdana, Helvetica, sans-serif;
   padding: 0;
   margin: 0;
 }
@@ -18,35 +17,6 @@ a {
 a:hover {
   cursor: pointer;
   text-decoration: underline;
-}
-
-#header {
-  border-color: black;
-  border-width: 1px;
-  border-style: solid;
-  background: none repeat scroll 0 0 #F6FFF6;
-}
-
-#logo {
-  float: left;
-  border: 1px solid black;
-  color: orange;
-  font-size: 2em;
-  font-style: italic;
-  font-weight: bold;
-}
-
-#user {
-  float: right;
-  border: 1px solid black;
-}
-
-#title {
-  overflow: hidden;
-  text-align: center;
-  border: 1px solid black;
-  font-size: 2.5em;
-  font-weight: bold;
 }
 
 #menu {
@@ -87,6 +57,8 @@ a:hover {
   border-color: gray;
   border-width: 1px;
   border-style: inset;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .assignment-table td,
@@ -101,7 +73,8 @@ a:hover {
 .create-course-table,
 .group-submission-table,
 .user-submission-class-table,
-.create-group-table
+.create-group-table,
+.submission-list-table
 {
   margin-left: auto;
   margin-right: auto;

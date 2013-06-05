@@ -15,6 +15,7 @@ import Bead.View.Snap.Application
 import Bead.View.Snap.Dictionary (Language(..))
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
+import Bead.View.Snap.Pagelets
 
 import Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import Bead.View.Snap.Content.All
@@ -36,7 +37,7 @@ import Snap.Snaplet.Session
 -- import Control.Monad (mapM_)
 
 import Text.Blaze (textTag)
-import Text.Blaze.Html5 hiding (base, map, head, menu)
+import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import Text.Blaze.Html5.Attributes hiding (title, rows, accept)
 import qualified Text.Blaze.Html5.Attributes as A
@@ -114,33 +115,21 @@ logout = do
 
 -- * Blaze --
 
-userForm :: AttributeValue -> AttributeValue -> Html
-userForm act submitText = do
-  H.form ! A.method "post" ! A.action act $ do
-    H.table ! A.id "info" $ do
-      H.tr $ do
-        H.td "Login:"
-        H.td $ H.input ! A.type_ "text"
-                       ! A.name (fieldName loginUsername)
-                       ! A.id   (fieldName loginUsername)
-                       ! A.size "20"
-      H.tr $ do
-        H.td "Password:"
-        H.td $ H.input ! A.type_ "password"
-                       ! A.name (fieldName loginPassword)
-                       ! A.id   (fieldName loginPassword)
-                       ! A.size "20"
-      H.tr $ do
-        H.td $ return ()
-        H.td $ H.input ! A.type_ "submit" ! A.id (fieldName loginSubmitBtn) ! A.value submitText
+userForm :: String -> Html
+userForm act = do
+  postForm act $ do
+    table (fieldName loginForm) (fieldName loginForm) $ do
+      tableLine "Login:" (textInput (fieldName loginUsername) 20 Nothing ! A.required "")
+      tableLine "Password:" (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
+    submitButton (fieldName loginSubmitBtn) "Login"
 
 loginPage :: Maybe T.Text -> Html
 loginPage err = withTitleAndHead content
   where
     content = do
-      H.h1 $ "Login"
       maybe (return ()) (H.p . fromString. T.unpack) err
-      userForm "/login" "Login"
+      userForm "/login"
       H.p $ do
         "Don't have a login yet? "
         H.a ! A.href "/new_user" $ "Create new user"
+

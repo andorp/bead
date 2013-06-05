@@ -33,12 +33,14 @@ instance SnapFieldName SubmitButton where
 data LoginComp
   = UsernameField { lcFieldName :: String }
   | PasswordField { lcFieldName :: String }
+  | LoginForm { lcFieldName :: String }
 
 instance SnapFieldName LoginComp where
   fieldName = fromString . lcFieldName
 
 loginUsername = UsernameField "login"
 loginPassword = PasswordField "password"
+loginForm = LoginForm "login-form"
 
 loginSubmitBtn = SubmitButton "login-submit"
 regSubmitBtn   = SubmitButton "reg-submit"
@@ -315,7 +317,7 @@ fieldList = map fieldName $ join [
   , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField,     SFN evaulationKeyField
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
-  , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
+  , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn, SFN loginForm
   , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue

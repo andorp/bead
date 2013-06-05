@@ -42,34 +42,42 @@ structMap f p = p { struct = f . struct $ p }
 styleMap :: (Css -> Css) -> Pagelet -> Pagelet
 styleMap f p = p { style = f . style $ p }
 
-runPagelet :: Pagelet -> I18N -> Html
-runPagelet p i = H.docTypeHtml $ do
+css :: String -> Html
+css c = H.link ! A.type_ "text/css" ! A.href (fromString c) ! A.rel "stylesheet"
+
+js :: String -> Html
+js j = H.script ! A.src (fromString j) $ empty
+
+document :: Html -> Html -> Html
+document headers body = H.docTypeHtml $ do
   H.head $ do
     H.title "Bead"
-    H.link ! A.type_ "text/css" ! A.href "inside.css" ! A.rel "stylesheet"
-    H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
-  H.body $ (translate i . struct $ p)
+    headers
+    css "header.css"
+  H.body $ body
+
+runPagelet :: Pagelet -> I18N -> Html
+runPagelet p i = document (css "inside.css") (translate i . struct $ p)
 
 runDynamicPagelet :: Pagelet -> I18N -> Html
-runDynamicPagelet p i = H.docTypeHtml $ do
-  H.head $ do
-    H.title "Bead"
-    H.link ! A.type_ "text/css" ! A.href "inside.css" ! A.rel "stylesheet"
-    H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
-    H.script ! A.src "/jquery.js" $ return ()
-    H.script ! A.src "/fay/DynamicContents.js" $ return ()
-  H.body $ (translate i . struct $ p)
+runDynamicPagelet p i =
+  document
+    (do css "inside.css"
+        H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
+        js "/jquery.js"
+        js "/fay/DynamicContents.js")
+    (translate i . struct $ p)
 
 class BlazeTemplate b where
   template :: b -> Html
 
 withTitleAndHead :: Html -> Html
-withTitleAndHead content = H.docTypeHtml $ do
-  H.head $ do
-    H.title "Snap web server"
-    H.link ! A.rel "stylesheet" ! A.href "screen.css" ! A.type_ "text/css"
-  H.body $ do
-    H.div ! A.id "content" $ content
+withTitleAndHead content = document
+  (css "screen.css")
+  (do H.div ! A.id "header" $ do
+        H.div ! A.id "logo" $ "Bead"
+        H.div ! A.id "title" $ "Login"
+      H.div ! A.id "content" $ content)
 
 withUserFrame :: UserState -> Pagelet -> Pagelet
 withUserFrame s = structMap withUserFrame'
@@ -99,9 +107,15 @@ x |> f = f x
 
 -- * Input fields
 
+charInput :: String -> String -> Int -> Maybe String -> Html
+charInput t name size value =
+  (H.input ! A.type_ (fromString t) ! A.id (fromString name) ! A.name (fromString name)) |> (withDefaultValue value)
+
 textInput :: String -> Int -> Maybe String -> Html
-textInput name size value =
-  (H.input ! A.type_ "text" ! A.id (fromString name) ! A.name (fromString name)) |> (withDefaultValue value)
+textInput = charInput "text"
+
+passwordInput :: String -> Int -> Maybe String -> Html
+passwordInput = charInput "password"
 
 textAreaInput :: String -> Int -> Int -> Maybe String -> Html
 textAreaInput name cols rows value =
@@ -196,7 +210,10 @@ pageHeader s = do
     fromString . str . user $ s
     " "
     linkToPage P.Logout
-  H.div ! A.id "title" $ "Title"
+  H.div ! A.id "title" $ title s
+  where
+    title u@(UserState {}) = linkText . page $ u
+    title _ = ""
 
 -- * Picklist
 

@@ -2,7 +2,7 @@ html {
    padding: 0;
    margin: 0;
    background-color: #ffffff;
-   font-family: Verdana, Helvetica, sans-serif;
+   text-align: center;
 }
 body {
    padding: 0;
@@ -15,12 +15,12 @@ a :hover {
    cursor: pointer;
    text-decoration: underline;
 }
-img {
-   border: none;
+
+.login-form {
+  margin-left: auto;
+  margin-right: auto;
 }
-#content {
-   padding-left: 1em;
-}
-#info {
-   font-size: 60%;
+
+#login-form td {
+  text-align: right;
 }
