@@ -205,7 +205,9 @@ option value text False = H.option ! A.value (fromString value)                 
 option value text True  = H.option ! A.value (fromString value) ! A.selected "" $ fromString text
 
 selection :: String -> Html -> Html
-selection name = H.select ! A.id (fromString name) ! A.name (fromString name) ! A.multiple "false"
+selection name =
+  H.select ! A.id (fromString name) ! A.name (fromString name)
+           ! A.multiple "false" ! A.required ""
 
 class SelectionValue v where
   selectionValue :: v -> String
