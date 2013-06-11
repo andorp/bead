@@ -10,12 +10,26 @@ Stability: Experimental
 Build-Type: Simple
 Cabal-Version: >= 1.2
 
+Data-Files:
+  snaplets/fay/devel.cfg,
+  snaplets/fay/src/DynamicContents.hs,
+  snaplets/fay/src/Bead/Domain/Shared.hs,
+  snaplets/fay/src/Bead/View/Snap/Fay/HookIds.hs,
+  snaplets/fay/src/Bead/View/Snap/Fay/Hooks.hs,
+
+  static/header.css,
+  static/inside.css,
+  static/jquery.js,
+  static/screen.css,
+
+  cookie
+
 Executable Bead
   Main-is: SnapMain.hs
   HS-Source-Dirs: src, snaplets/fay/src
   Build-Depends: snap, snap-core, snap-server, lens, blaze-html >= 0.5,
-                 snap-blaze, snaplet-fay == 0.3.2.0, bytestring == 0.9.2.1,
-                 MonadCatchIO-transformers, snap-blaze, blaze-html, xmlhtml, text,
+                 snap-blaze, snaplet-fay == 0.3.2.0, fay-jquery, bytestring,
+                 MonadCatchIO-transformers, blaze-html, xmlhtml, text,
                  blaze-markup, temporary, deepseq, mtl, directory, filepath,
                  transformers, time, containers, base,
                  unix
