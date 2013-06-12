@@ -114,11 +114,11 @@ evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
 
 inputEvalResult :: EvaulationConfig -> I18NHtml
 inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
-  listSelection (fieldName evaulationResultField) $
-    map binaryResult [(Passed, i "Passed"), (Failed, i "Failed")]
+  valueSelection valueAndText (fieldName evaulationResultField) $
+    [(Passed, i "Passed"), (Failed, i "Failed")]
   where
-    binaryResult :: (Result, String) -> (String, String)
-    binaryResult (v,n) = (show . mkEvalResult . Binary $ v, n)
+    valueAndText :: (Result, String) -> (String, String)
+    valueAndText (v,n) = (show . mkEvalResult . Binary $ v, n)
 
 inputEvalResult (PctEval cfg) = mkI18NHtml $ \i -> do
   -- TODO: field validation

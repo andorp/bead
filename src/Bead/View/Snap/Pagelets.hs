@@ -246,11 +246,6 @@ valueTextSelection name = selection name . mapM_ option'
 enumSelection :: (Enum e, SelectionValue e, SelectionText e) => String -> e -> Html
 enumSelection name start = valueTextSelection name [start .. ]
 
-listSelection :: String -> [(String, String)] -> Html
-listSelection name = selection name . mapM_ option'
-  where
-    option' (v, n) = option v n False
-
 valueSelection :: (o -> (String, String)) -> String -> [o] -> Html
 valueSelection f n = selection n . mapM_ option'
   where
