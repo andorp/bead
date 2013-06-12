@@ -322,7 +322,7 @@ fieldList = map fieldName $ join [
   , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue
-  , SFN evalTypeSelectionDiv, SFN registrationTable
+  , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm
   ], (map SFN P.allPages)
   ]
 

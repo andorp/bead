@@ -35,16 +35,21 @@ emptyGroup :: Maybe Group
 emptyGroup = Nothing
 
 instance InputPagelet Group where
-  inputPagelet g = table "create-group" "create-group-table" $ do
-    tableLine "Group Name" $ textInput (fieldName groupNameField) 10 (fmap groupName g)
-    tableLine "Group Desc" $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
-    tableLine "Eval Config" $ evaulationConfig (fieldName groupEvalField) (fmap groupEvalConfig g)
+  inputPagelet g = do
+    let hook = createGroupHook
+    table "create-group" "create-group-table" $ do
+      tableLine "Group Name" $ textInput (fieldName groupNameField) 10 (fmap groupName g)
+      tableLine "Group Desc" $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
+      tableLine "Group Eval" $ evaulationConfig (evSelectionId hook) (fmap groupEvalConfig g)
+    hiddenInputWithId (evHiddenValueId hook) ""
+    evalSelectionDiv hook
 
 instance GetValueHandler Group where
   getValue = do
+    let hook = createGroupHook
     nameParam <- getParamE (fieldName groupNameField) id "Group name is not found"
     descParam <- getParamE (fieldName groupDescField) id "Group description is not found"
-    evalParam <- getParamE (fieldName groupEvalField) read "Group evaulation is not found"
+    evalParam <- getParamE (evHiddenValueId hook) readEvalConfig "Group evaulation is not found"
     return $ Group {
         groupName = nameParam
       , groupDesc = descParam
@@ -59,22 +64,20 @@ instance GetValueHandler Course where
     let hook = createCourseHook
     nameParam <- getParamE (fieldName courseNameField) id "Course name is not found"
     descParam <- getParamE (fieldName courseDescField) id "Course description is not found"
-    evalParam <- getParamE (evHiddenValueId hook) readAndConvert "Course evaulation is not found"
+    evalParam <- getParamE (evHiddenValueId hook) readEvalConfig "Course evaulation is not found"
     return Course {
         courseName = nameParam
       , courseDesc = descParam
       , courseEvalConfig = evalParam
       }
     where
-      readFloatConfig :: String -> EvaulationData () Float
-      readFloatConfig = read
 
-      readAndConvert :: String -> EvaulationData () PctConfig
-      readAndConvert = convert . readFloatConfig
-
-      convert :: EvaulationData () Float -> EvaulationData () PctConfig
-      convert (BinEval ()) = BinEval ()
-      convert (PctEval f) = PctEval (PctConfig f)
+readEvalConfig :: String -> EvaulationData () PctConfig
+readEvalConfig = convert . read
+  where
+    convert :: EvaulationData () Float -> EvaulationData () PctConfig
+    convert (BinEval ()) = BinEval ()
+    convert (PctEval f) = PctEval (PctConfig f)
 
 emptyCourse :: Maybe Course
 emptyCourse = Nothing

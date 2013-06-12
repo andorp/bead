@@ -105,6 +105,13 @@ infix |>
 (|>) :: a -> (a -> b) -> b
 x |> f = f x
 
+conditional :: Bool -> Html -> Html -> Html
+conditional True _ visible = visible
+conditional False text _   = text
+
+nonEmpty :: [o] -> Html -> Html -> Html
+nonEmpty os = conditional (not . null $ os)
+
 -- * Input fields
 
 charInput :: String -> String -> Int -> Maybe String -> Html

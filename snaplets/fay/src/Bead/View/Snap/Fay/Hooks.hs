@@ -5,6 +5,7 @@ module Bead.View.Snap.Fay.Hooks (
   , evHiddenValueId
   , evSelectionDivId
   , createCourseHook
+  , createGroupHook
   ) where
 
 import Bead.View.Snap.Fay.HookIds
@@ -19,6 +20,13 @@ data EvaulationHook = EvaulationHook {
 createCourseHook = EvaulationHook {
     evFormId        = hookId createCourseForm
   , evSelectionId   = hookId evaulationTypeSelection
+  , evHiddenValueId = hookId evaulationTypeValue
+  , evSelectionDivId = hookId evalTypeSelectionDiv
+  }
+
+createGroupHook = EvaulationHook {
+    evFormId      = hookId createGroupForm
+  , evSelectionId = hookId evaulationTypeSelection
   , evHiddenValueId = hookId evaulationTypeValue
   , evSelectionDivId = hookId evalTypeSelectionDiv
   }

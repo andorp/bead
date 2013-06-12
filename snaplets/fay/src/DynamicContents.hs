@@ -16,6 +16,7 @@ main = addOnLoad onload
 onload :: Fay ()
 onload = do
   hookEvaulationTypeForm createCourseHook
+  hookEvaulationTypeForm createGroupHook
 
 hookEvaulationTypeForm :: EvaulationHook -> Fay ()
 hookEvaulationTypeForm hook = do

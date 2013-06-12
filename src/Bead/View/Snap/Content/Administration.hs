@@ -56,17 +56,16 @@ administrationContent info = onlyHtml $ mkI18NHtml $ \i18n -> do
           inputPagelet emptyCourse
           submitButton (fieldName createCourseBtn) (i18n "Create Course")
   H.p $ (translate i18n "Add course admin to the course")
-  H.p $ postForm (routeOf P.AssignCourseAdmin) $ do
-          valueTextSelection (fieldName selectedCourse) (courses info)
-          valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
-          submitButton (fieldName assignBtn) (i18n "Assign")
-  H.p $ valueTextSelection "course-selection" (courses info)
+  H.p $ nonEmpty (courses info)      (translate i18n "No courses were found") $
+        nonEmpty (courseAdmins info) (translate i18n "No course admins were found") $
+          postForm (routeOf P.AssignCourseAdmin) $ do
+            valueTextSelection (fieldName selectedCourse) (courses info)
+            valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
+            submitButton (fieldName assignBtn) (i18n "Assign")
   H.p $ (translate i18n "Modify user's account")
   H.p $ getForm (routeOf P.UserDetails) $ do
           inputPagelet emptyUsername
           submitButton (fieldName selectBtn) (i18n "Select")
-  H.p $ (translate i18n "Admin list / Add new admin")
-  H.p $ valueTextSelection "admin-selection" (admins info)
   H.p $ (translate i18n "Change password for a given user")
 
 -- Add Course Admin

@@ -12,6 +12,7 @@ import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.UserStories hiding (createGroup)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
+import Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
 
 import Text.Blaze.Html5 (Html)
@@ -22,8 +23,8 @@ courseAdmin = getContentHandler courseAdminPage
 
 data PageData = PageData {
     courses    :: [(CourseKey, Course)]
-  , professors :: [User]
   , groups     :: [(GroupKey, Group)]
+  , groupAdmins :: [User]
   }
 
 courseAdminPage :: GETContentHandler
@@ -36,10 +37,10 @@ courseAdminPage = withUserStateE $ \s -> do
     ps <- selectUsers professor
     return PageData {
         courses    = cs
-      , professors = ps
       , groups     = gs
+      , groupAdmins = ps
       }
-  renderPagelet $ withUserFrame s (courseAdminContent pageData)
+  renderDynamicPagelet $ withUserFrame s (courseAdminContent pageData)
   where
     professor = (Professor ==) . u_role
 
@@ -50,14 +51,17 @@ courseAdminPage = withUserStateE $ \s -> do
 courseAdminContent :: PageData -> Pagelet
 courseAdminContent info = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ (translate i "New group for the course")
-  H.p $ postForm (routeOf P.CreateGroup) $ do
+  H.p $ nonEmpty (courses info) (translate i "No courses were found") $
+        (postForm (routeOf P.CreateGroup) `withId` (evFormId createGroupHook)) $ do
           valueTextSelection (fieldName courseKeyInfo) (courses info)
           inputPagelet emptyGroup
           submitButton (fieldName createGroupBtn) (i "Create Group")
   H.p $ (translate i "Assign teacher to the group")
-  H.p $ postForm (routeOf P.AssignProfessor) $ do
+  H.p $ nonEmpty (groups info)      (translate i "No groups were found") $
+        nonEmpty (groupAdmins info) (translate i "No group admins were found") $
+        postForm (routeOf P.AssignProfessor) $ do
           valueTextSelection (fieldName selectedGroup) (groups info)
-          valueTextSelection (fieldName selectedProfessor) (professors info)
+          valueTextSelection (fieldName selectedProfessor) (groupAdmins info)
           submitButton (fieldName assignGroupAdminBtn) (i "Assign")
 
 -- * Create group

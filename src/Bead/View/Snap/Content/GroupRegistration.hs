@@ -13,6 +13,7 @@ import Bead.Controller.Pages as P (Page(GroupRegistration))
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 
+import Data.String (fromString)
 import Text.Blaze.Html5 (Html)
 import qualified Text.Blaze.Html5 as H
 
@@ -53,10 +54,12 @@ groupRegistrationContent desc = onlyHtml $ mkI18NHtml $ \i -> do
 
 -- TODO
 groupsAlreadyRegistered :: I18N -> [(GroupKey, GroupDesc)] -> Html
-groupsAlreadyRegistered i ds = return ()
+groupsAlreadyRegistered i18n ds =
+  nonEmpty ds (fromString . i18n $ "There are no attended groups on") $
+    return ()
 
 groupsForTheUser :: I18N -> [(GroupKey, GroupDesc)] -> Html
-groupsForTheUser i18n gs = do
+groupsForTheUser i18n gs = nonEmpty gs (fromString . i18n $ "No groups were found") $
   postForm (routeOf P.GroupRegistration) $ do
     selection (fieldName groupRegistrationField) $ do
       mapM_ (\(gk,gd) -> option (paramValue gk) (descriptive gd) False) gs
