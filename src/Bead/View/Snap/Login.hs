@@ -124,7 +124,7 @@ userForm act = do
     submitButton (fieldName loginSubmitBtn) "Login"
 
 loginPage :: Maybe T.Text -> Html
-loginPage err = withTitleAndHead content
+loginPage err = withTitleAndHead "Login" content
   where
     content = do
       maybe (return ()) (H.p . fromString. T.unpack) err

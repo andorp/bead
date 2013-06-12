@@ -16,11 +16,14 @@ a :hover {
    text-decoration: underline;
 }
 
-.login-form {
+.login-form,
+.reg-form {
   margin-left: auto;
   margin-right: auto;
 }
 
-#login-form td {
+#login-form td,
+#reg-form td {
   text-align: right;
 }
+

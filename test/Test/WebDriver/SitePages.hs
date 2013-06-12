@@ -71,16 +71,16 @@ instance PageObject RegistrationData where
   precondition = const $
     doesFieldExist loginUsername <&&>
     doesFieldExist loginPassword <&&>
-    doesFieldExist registrationEmailAddress <&&>
-    doesFieldExist registrationFamilyName
+    doesFieldExist regEmailAddress <&&>
+    doesFieldExist regFullName
   failureMsg = const "Registration page"
 
 instance PageAction RegistrationData where
   action d = do
     (sendKeysStr (rUsername d)) <@> loginUsername
     (sendKeysStr (rPassword d)) <@> loginPassword
-    (sendKeysStr (rEmail    d)) <@> registrationEmailAddress
-    (sendKeysStr (rFullName d)) <@> registrationFamilyName
+    (sendKeysStr (rEmail    d)) <@> regEmailAddress
+    (sendKeysStr (rFullName d)) <@> regFullName
     click <@> regSubmitBtn
 
 -- * Home page

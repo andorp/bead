@@ -57,14 +57,14 @@ saveChangesBtn = SubmitButton "save-changes-btn"
 assignGroupAdminBtn = SubmitButton "asg-group-admin-submit"
 
 data RegistrationComp
-  = RegFamilyName   { rFieldName :: String }
+  = RegFullName     { rFieldName :: String }
   | RegEmailAddress { rFieldName :: String }
 
 instance SnapFieldName RegistrationComp where
   fieldName = fromString . rFieldName
 
-registrationFamilyName   = RegFamilyName   "reg_family_name"
-registrationEmailAddress = RegEmailAddress "reg_email_address"
+regFullName     = RegFullName     "reg_family_name"
+regEmailAddress = RegEmailAddress "reg_email_address"
 
 data ExerciseForm
   = ExerciseForm     { eFieldName :: String }
@@ -257,6 +257,7 @@ instance SnapFieldName TableName where
 
 availableAssignmentsTable = TableName "available-assignments"
 submissionTableName = TableName "submission-table"
+registrationTable = TableName "reg-form"
 
 -- * Template names
 
@@ -306,7 +307,7 @@ instance SnapClassName SCN where
 
 fieldList :: [String]
 fieldList = map fieldName $ join [
-  [ SFN loginUsername,  SFN loginPassword,   SFN registrationFamilyName, SFN registrationEmailAddress
+  [ SFN loginUsername,  SFN loginPassword,   SFN regFullName, SFN regEmailAddress
   , SFN exerciseForm,   SFN exerciseKey,     SFN coursesForm,            SFN coursesKey
   , SFN courseFormInfo, SFN courseCodeField, SFN courseNameField,        SFN courseDescField
   , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
@@ -321,7 +322,7 @@ fieldList = map fieldName $ join [
   , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue
-  , SFN evalTypeSelectionDiv
+  , SFN evalTypeSelectionDiv, SFN registrationTable
   ], (map SFN P.allPages)
   ]
 

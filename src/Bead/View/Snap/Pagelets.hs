@@ -71,12 +71,12 @@ runDynamicPagelet p i =
 class BlazeTemplate b where
   template :: b -> Html
 
-withTitleAndHead :: Html -> Html
-withTitleAndHead content = document
+withTitleAndHead :: String -> Html -> Html
+withTitleAndHead title content = document
   (css "screen.css")
   (do H.div ! A.id "header" $ do
         H.div ! A.id "logo" $ "Bead"
-        H.div ! A.id "title" $ "Login"
+        H.div ! A.id "title" $ (fromString title)
       H.div ! A.id "content" $ content)
 
 withUserFrame :: UserState -> Pagelet -> Pagelet
