@@ -29,6 +29,9 @@ Data-Files:
 
   cookie
 
+Flag Tests
+  Description:  Enable testing
+
 Executable Bead
   Main-is: SnapMain.hs
   HS-Source-Dirs: src, snaplets/fay/src
@@ -49,6 +52,10 @@ Executable Bead
 --                 test-framework-quickcheck2, QuickCheck, unix, deepseq
 
 Executable WebDriver
+  if flag(Tests)
+    Buildable: True
+  else
+    Buildable: False
   Main-is: WebDriverMain.hs
   HS-Source-Dirs: src, snaplets/fay/src, test
   Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
