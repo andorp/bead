@@ -53,15 +53,18 @@ appInit user s d = makeSnaplet "bead" description dataDir $ do
 
     dataDir = Just referenceDataDir
 
+-- | Creating data context in the current directory,
+--   copying reference files.
 copyDataContext :: Initializer b v ()
 copyDataContext = do
   reference <- liftIO referenceDataDir
   dataDir   <- getSnapletFilePath
-  liftIO $ copyFileIfMissing reference dataDir
+  liftIO $ copyFiles reference dataDir
   return ()
 
-copyFileIfMissing :: FilePath -> FilePath -> IO ()
-copyFileIfMissing src dst = do
+-- | Copy files if missing or outdated
+copyFiles :: FilePath -> FilePath -> IO ()
+copyFiles src dst = do
   dstExist <- doesDirectoryExist dst
   unless dstExist $ createDirectory dst
   contents <- getDirectoryContents src
@@ -71,7 +74,12 @@ copyFileIfMissing src dst = do
         dstPath = dst </> name
     isDirectory <- doesDirectoryExist srcPath
     if isDirectory
-      then copyFileIfMissing srcPath dstPath
+      then copyFiles srcPath dstPath
       else do
         dstFileExist <- doesFileExist dstPath
-        unless dstFileExist $ copyFile srcPath dstPath
+        doCopy <- if dstFileExist then do
+                       srcDate <- getModificationTime srcPath
+                       dstDate <- getModificationTime dstPath
+                       return $ dstDate < srcDate
+                     else return True
+        when doCopy $ copyFile srcPath dstPath

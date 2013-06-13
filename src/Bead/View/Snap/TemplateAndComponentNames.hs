@@ -305,6 +305,9 @@ data SCN = forall n . SnapClassName n => SCN n
 instance SnapClassName SCN where
   className (SCN n) = className n
 
+instance SnapClassName HookClass where
+  className = fromString . hookClass
+
 fieldList :: [String]
 fieldList = map fieldName $ join [
   [ SFN loginUsername,  SFN loginPassword,   SFN regFullName, SFN regEmailAddress
@@ -329,7 +332,8 @@ fieldList = map fieldName $ join [
 classList :: [String]
 classList = map className [
     SCN groupSubmissionTable, SCN assignmentTable, SCN evaulationClassTable, SCN userSubmissionClassTable
-  , SCN submissionListTable, SCN submissionListDiv
+  , SCN submissionListTable, SCN submissionListDiv, SCN datePickerClass, SCN minuteSpinnerClass
+  , SCN hourSpinnerClass
   ]
 
 names = fieldList ++ classList

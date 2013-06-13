@@ -12,6 +12,7 @@ Cabal-Version: >= 1.2
 
 Data-Files:
   snaplets/fay/devel.cfg,
+  snaplets/fay/src/Fay/JQueryUI.hs,
   snaplets/fay/src/DynamicContents.hs,
   snaplets/fay/src/Bead/Domain/Shared.hs,
   snaplets/fay/src/Bead/View/Snap/Fay/HookIds.hs,
@@ -19,8 +20,12 @@ Data-Files:
 
   static/header.css,
   static/inside.css,
+  static/jquery-ui.css,
   static/jquery.js,
+  static/jquery-ui.js,
   static/screen.css,
+  static/images/*.png,
+  static/images/*.gif,
 
   cookie
 

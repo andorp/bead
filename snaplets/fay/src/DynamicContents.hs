@@ -6,9 +6,11 @@ module DynamicContents where
 import FFI
 import Prelude
 import JQuery
+import Fay.JQueryUI
 
 import Bead.Domain.Shared
 import Bead.View.Snap.Fay.Hooks
+import Bead.View.Snap.Fay.HookIds
 
 main :: Fay ()
 main = addOnLoad onload
@@ -17,6 +19,13 @@ onload :: Fay ()
 onload = do
   hookEvaulationTypeForm createCourseHook
   hookEvaulationTypeForm createGroupHook
+  attachDatePickers
+
+attachDatePickers :: Fay ()
+attachDatePickers = void $ do
+  (select . cssClass . hookClass $ datePickerClass)  >>= datepicker
+  (select . cssClass . hookClass $ hourSpinnerClass) >>= hourSpinner
+  (select . cssClass . hookClass $ minuteSpinnerClass) >>= minuteSpinner
 
 hookEvaulationTypeForm :: EvaulationHook -> Fay ()
 hookEvaulationTypeForm hook = do
@@ -52,6 +61,9 @@ hookEvaulationTypeForm hook = do
 
 cssId :: String -> String
 cssId i = '#':i
+
+cssClass :: String -> String
+cssClass c = '.':c
 
 -- * Helpers
 

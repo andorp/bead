@@ -46,7 +46,7 @@ isEmptyData = pageDataMap null null (const False)
 newCourseAssignmentPage :: GETContentHandler
 newCourseAssignmentPage = withUserStateE $ \s -> do
   cs <- runStoryE S.administratedCourses
-  renderPagelet $ withUserFrame s (newAssignmentContent (PD_Course cs))
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Course cs))
 
 postCourseAssignment :: POSTContentHandler
 postCourseAssignment = do
@@ -59,7 +59,7 @@ postCourseAssignment = do
 newGroupAssignmentPage :: GETContentHandler
 newGroupAssignmentPage = withUserStateE $ \s -> do
   gs <- runStoryE S.administratedGroups
-  renderPagelet $ withUserFrame s (newAssignmentContent (PD_Group gs))
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Group gs))
 
 postGroupAssignment :: POSTContentHandler
 postGroupAssignment = do
@@ -73,7 +73,7 @@ modifyAssignmentPage :: GETContentHandler
 modifyAssignmentPage = withUserStateE $ \s -> do
   ak <- getValue
   as <- runStoryE (S.loadAssignment ak)
-  renderPagelet $ withUserFrame s (newAssignmentContent (PD_Assignment (ak,as)))
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Assignment (ak,as)))
 
 postModifyAssignment :: POSTContentHandler
 postModifyAssignment = ModifyAssignment <$> getValue <*> getValue
@@ -100,8 +100,15 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
     (translate i "Assignment Type")
     enumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
   H.p $ (translate i "Active period")
-  do {(translate i "Start date"); utcTimeInput (fieldName assignmentStartField) (amap assignmentStart pd) }
-  do {(translate i "End date")  ; utcTimeInput (fieldName assignmentEndField)   (amap assignmentEnd   pd) }
+  do translate i "Start date"
+     dateInput (fieldName assignmentStartField) (amap assignmentStart pd)
+     hourInput "start-date-hour" (Just 0)
+     minInput  "start-date-min"  (Just 0)
+  H.br
+  do translate i "End date"
+     dateInput (fieldName assignmentEndField) (amap assignmentEnd pd)
+     hourInput "end-date-hour" (Just 0)
+     minInput  "end-date-min"  (Just 0)
   H.p $ do
     pageDataMap (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
     pageDataMap

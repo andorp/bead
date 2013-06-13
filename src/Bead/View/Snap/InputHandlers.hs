@@ -15,6 +15,7 @@ import Bead.View.Snap.Pagelets
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
+import Bead.View.Snap.Fay.HookIds
 
 import Text.Blaze.Html5 (Html(..))
 
@@ -181,8 +182,14 @@ evaulationConfig n v = do
     name (PctEval ()) = "Percentage"
 
 -- TODO
-utcTimeInput :: String -> Maybe UTCTime -> Html
-utcTimeInput n v = textInput n 10 (show <$> v)
+dateInput :: String -> Maybe UTCTime -> Html
+dateInput n v = required . setHookClass datePickerClass $ textInput n 10 (show <$> v)
+
+hourInput :: String -> Maybe Int -> Html
+hourInput n v = required . setHookClass hourSpinnerClass $ textInput n 2 (show <$> v)
+
+minInput :: String -> Maybe Int -> Html
+minInput n v = required . setHookClass minuteSpinnerClass $ textInput n 2 (show <$> v)
 
 utcTimeParam :: String -> HandlerError App App (Maybe UTCTime)
 utcTimeParam n = getParamE n readMaybe "UTC Time field was not found"

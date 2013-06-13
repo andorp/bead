@@ -23,6 +23,7 @@ import Bead.View.Snap.RouteOf
 import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
+import Bead.View.Snap.Fay.HookIds
 
 import Bead.Invariants (Invariants(..))
 
@@ -62,9 +63,11 @@ runPagelet p i = document (css "inside.css") (translate i . struct $ p)
 runDynamicPagelet :: Pagelet -> I18N -> Html
 runDynamicPagelet p i =
   document
-    (do css "inside.css"
+    (do css "jquery-ui.css"
+        css "inside.css"
         H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
         js "/jquery.js"
+        js "/jquery-ui.js"
         js "/fay/DynamicContents.js")
     (translate i . struct $ p)
 
@@ -116,7 +119,11 @@ nonEmpty os = conditional (not . null $ os)
 
 charInput :: String -> String -> Int -> Maybe String -> Html
 charInput t name size value =
-  (H.input ! A.type_ (fromString t) ! A.id (fromString name) ! A.name (fromString name)) |> (withDefaultValue value)
+  (H.input ! A.type_ (fromString t)
+           ! A.id (fromString name)
+           ! A.name (fromString name)
+           ! A.size (fromString . show $ size))
+  |> (withDefaultValue value)
 
 textInput :: String -> Int -> Maybe String -> Html
 textInput = charInput "text"
@@ -147,6 +154,10 @@ submitButton i t = H.input ! A.id (fromString i) ! A.type_ "submit" ! A.value (f
 
 withId :: (Html -> Html) -> String -> (Html -> Html)
 withId f i = (f ! A.id (fromString i))
+
+setHookClass c h = h ! A.class_ (className c)
+
+required h = h ! A.required ""
 
 -- * Form
 

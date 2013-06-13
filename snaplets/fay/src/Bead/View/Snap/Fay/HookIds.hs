@@ -7,3 +7,9 @@ createGroupForm = HookId "create-group-form"
 evaulationTypeSelection = HookId "eval-type-selection"
 evaulationTypeValue = HookId "eval-type-value"
 evalTypeSelectionDiv = HookId "eval-type-selection-div"
+
+data HookClass = HookClass { hookClass :: String }
+
+datePickerClass = HookClass "datepicker"
+hourSpinnerClass = HookClass "hourspinner"
+minuteSpinnerClass = HookClass "minutespinner"
