@@ -39,7 +39,7 @@ instance InputPagelet Group where
   inputPagelet g = do
     let hook = createGroupHook
     table "create-group" "create-group-table" $ do
-      tableLine "Group Name" $ textInput (fieldName groupNameField) 10 (fmap groupName g)
+      tableLine "Group Name" $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
       tableLine "Group Desc" $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
       tableLine "Group Eval" $ evaulationConfig (evSelectionId hook) (fmap groupEvalConfig g)
     hiddenInputWithId (evHiddenValueId hook) ""
@@ -87,7 +87,7 @@ instance InputPagelet Course where
   inputPagelet c = do
     let hook = createCourseHook
     table "create-course" "create-course-table" $ do
-      tableLine "Course Name" $ textInput (fieldName courseNameField) 10 (fmap courseName c)
+      tableLine "Course Name" $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
       tableLine "Course Desc" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
       tableLine "Course Eval" $ evaulationConfig (evSelectionId hook) (fmap courseEvalConfig c)
     hiddenInputWithId (evHiddenValueId hook) ""
@@ -138,9 +138,9 @@ instance GetValueHandler User where
 
 instance InputPagelet User where
   inputPagelet u = table "user-detail-table" "user-detail-table" $ do
-    tableLine "User's role'"    $ inputPagelet (fmap u_role u)
-    tableLine "User's email"    $ textInput (fieldName userEmailField)      20 (fmap (str . u_email) u)
-    tableLine "User's fullname" $ textInput (fieldName userFamilyNameField) 20 (fmap u_name u)
+    tableLine "User's role'"    $ required $ inputPagelet (fmap u_role u)
+    tableLine "User's email"    $ required $ textInput (fieldName userEmailField)      20 (fmap (str . u_email) u)
+    tableLine "User's fullname" $ required $ textInput (fieldName userFamilyNameField) 20 (fmap u_name u)
     when (isJust u) . hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username . fromJust $ u
 
 emptyAssignment :: Maybe Assignment
