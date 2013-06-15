@@ -16,8 +16,9 @@ import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 import Bead.View.UserActions (UserAction(CreateGroupAssignment, CreateCourseAssignment))
 
-import Text.Blaze.Html5 (Html)
+import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A (id)
 
 -- * Content Handlers
 
@@ -100,15 +101,14 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
     (translate i "Assignment Type")
     enumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
   H.p $ (translate i "Active period")
-  do translate i "Start date"
-     dateInput (fieldName assignmentStartField) (amap assignmentStart pd)
-     hourInput "start-date-hour" (Just 0)
-     minInput  "start-date-min"  (Just 0)
-  H.br
-  do translate i "End date"
-     dateInput (fieldName assignmentEndField) (amap assignmentEnd pd)
-     hourInput "end-date-hour" (Just 0)
-     minInput  "end-date-min"  (Just 0)
+  H.div ! A.id (fieldName startDateDivId) $ do
+     translate i "Start date"
+     hiddenInput (fieldName assignmentStartField) ""
+     H.br
+  H.div ! A.id (fieldName endDateDivId) $ do
+     translate i "End date"
+     hiddenInput (fieldName assignmentEndField) ""
+     H.br
   H.p $ do
     pageDataMap (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
     pageDataMap

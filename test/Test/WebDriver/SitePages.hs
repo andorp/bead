@@ -11,6 +11,7 @@ import Bead.Domain.Entities
 import Bead.Domain.Shared hiding (EvaulationData)
 import Bead.Domain.Evaulation as E
 import Bead.View.Snap.TemplateAndComponentNames
+import Bead.View.Snap.Fay.HookIds
 import Bead.Controller.Pages
 
 import Data.String

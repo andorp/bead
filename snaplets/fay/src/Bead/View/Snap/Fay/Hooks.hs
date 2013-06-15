@@ -1,12 +1,4 @@
-module Bead.View.Snap.Fay.Hooks (
-    EvaulationHook
-  , evFormId
-  , evSelectionId
-  , evHiddenValueId
-  , evSelectionDivId
-  , createCourseHook
-  , createGroupHook
-  ) where
+module Bead.View.Snap.Fay.Hooks where
 
 import Bead.View.Snap.Fay.HookIds
 
@@ -29,4 +21,19 @@ createGroupHook = EvaulationHook {
   , evSelectionId = hookId evaulationTypeSelection
   , evHiddenValueId = hookId evaulationTypeValue
   , evSelectionDivId = hookId evalTypeSelectionDiv
+  }
+
+data DateTimePickerHook = DateTimePickerHook {
+    dtDivId         :: String
+  , dtHiddenInputId :: String
+  }
+
+startDateTimeHook = DateTimePickerHook {
+    dtDivId = hookId startDateDivId
+  , dtHiddenInputId = hookId assignmentStartField
+  }
+
+endDateTimeHook = DateTimePickerHook {
+    dtDivId = hookId endDateDivId
+  , dtHiddenInputId = hookId assignmentEndField
   }

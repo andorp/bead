@@ -171,8 +171,6 @@ data AssignmentField
   | AssignmentNameField { aFieldName :: String }
   | AssignmentTCsField { aFieldName :: String }
   | AssignmentTypeField { aFieldName :: String }
-  | AssignmentStartField { aFieldName :: String }
-  | AssignmentEndField { aFieldName :: String }
   | AssignmentKeyField { aFieldName :: String }
   | AssignmentEvField { aFieldName :: String }
 
@@ -180,8 +178,6 @@ assignmentNameField  = AssignmentNameField  "asg-name"
 assignmentDescField  = AssignmentDescField  "asg-desc"
 assignmentTCsField   = AssignmentTCsField   "asg-tcs"
 assignmentTypeField  = AssignmentTypeField  "asg-type"
-assignmentStartField = AssignmentStartField "asg-start"
-assignmentEndField   = AssignmentEndField   "asg-end"
 assignmentKeyField   = AssignmentKeyField   "asg-key"
 assignmentEvField    = AssignmentEvField    "asg-ev"
 
@@ -324,8 +320,8 @@ fieldList = map fieldName $ join [
   , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn, SFN loginForm
   , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField
 
-  , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue
-  , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm
+  , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue, SFN startDateDivId
+  , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
   ], (map SFN P.allPages)
   ]
 

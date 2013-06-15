@@ -5,11 +5,11 @@ import Prelude
 import JQuery
 
 datepicker :: JQuery -> Fay JQuery
-datepicker = ffi "%1.datepicker({ dateFormat: \"yy-mm-dd\"})"
+datepicker = ffi "%1.datepicker({dateFormat: \"yy-mm-dd\", constrainInput: true})"
 
-hourSpinner :: JQuery -> Fay JQuery
-hourSpinner = ffi "%1.spinner({min:0, max:23})"
+hourSpinner :: (Event -> Fay ()) -> JQuery -> Fay JQuery
+hourSpinner = ffi "%2.spinner({min:0, max:23, stop: %1})"
 
-minuteSpinner :: JQuery -> Fay JQuery
-minuteSpinner = ffi "%1.spinner({min:0, max:59})"
+minuteSpinner :: (Event -> Fay ()) -> JQuery -> Fay JQuery
+minuteSpinner = ffi "%2.spinner({min:0, max:59, stop: %1})"
 

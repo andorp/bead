@@ -143,6 +143,7 @@ textAreaInput name cols rows value =
 hiddenInput :: String -> String -> Html
 hiddenInput name value =
   H.input ! A.type_ "hidden"
+          ! A.id (fromString name)
           ! A.name (fromString name)
           ! A.value (fromString value)
 
