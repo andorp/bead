@@ -23,6 +23,8 @@ createGroupHook = EvaulationHook {
   , evSelectionDivId = hookId evalTypeSelectionDiv
   }
 
+
+
 data DateTimePickerHook = DateTimePickerHook {
     dtDivId         :: String
   , dtHiddenInputId :: String
@@ -37,3 +39,17 @@ endDateTimeHook = DateTimePickerHook {
     dtDivId = hookId endDateDivId
   , dtHiddenInputId = hookId assignmentEndField
   }
+
+
+
+data PercentageHook = PercentageHook {
+    ptDivId :: String
+  , ptHiddenInputId :: String
+  }
+
+evaulationPctHook = PercentageHook {
+    ptDivId = hookId evaulationPercentageDiv
+  , ptHiddenInputId = hookId evaulationResultField
+  }
+
+

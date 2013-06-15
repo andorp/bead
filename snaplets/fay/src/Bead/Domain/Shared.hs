@@ -1,4 +1,7 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 module Bead.Domain.Shared where
+
+import Prelude
 
 {- Shared data structures between Client and Server -}
 
@@ -25,4 +28,13 @@ encodeEvalType (PctEval _) = "PctEval"
 decodeEvalType :: String -> EvaulationData () ()
 decodeEvalType "BinEval" = BinEval ()
 decodeEvalType "PctEval" = PctEval ()
+
+data PctConfig = PctConfig { pLimit :: Double }
+  deriving (Eq, Show, Read)
+
+data Scores a = Scores { unScores :: [a] }
+  deriving (Eq, Show, Read)
+
+data Percentage = Percentage (Scores Double)
+  deriving (Eq, Show, Read)
 

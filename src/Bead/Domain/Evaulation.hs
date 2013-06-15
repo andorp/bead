@@ -4,6 +4,7 @@ module Bead.Domain.Evaulation where
 import Control.Monad.Reader
 import Data.Monoid
 
+import Bead.Domain.Shared
 
 class Monoid m => Evaulate m e where
   evaulate :: m -> e -> Result
@@ -28,9 +29,6 @@ instance Evaulate Binary () where
   evaulate (Binary Passed) _ = Passed
   evaulate (Binary Failed) _ = Failed
 
-newtype Scores a = Scores { unScores :: [a] }
-  deriving (Eq, Show, Read)
-
 score :: a -> Scores a
 score x = Scores [x]
 
@@ -38,22 +36,16 @@ instance Monoid (Scores a) where
   mempty = Scores mempty
   mappend (Scores p) (Scores q) = Scores (mappend p q)
 
-data Percentage = Percentage (Scores Float)
-  deriving (Eq, Show, Read)
-
-percentage :: Float -> Percentage
+percentage :: Double -> Percentage
 percentage = Percentage . score
 
-point :: Percentage -> Maybe Float
+point :: Percentage -> Maybe Double
 point (Percentage (Scores [p])) = Just p
 point (Percentage _) = Nothing
 
 instance Monoid Percentage where
   mempty = Percentage mempty
   mappend (Percentage p) (Percentage q) = Percentage (mappend p q)
-
-data PctConfig = PctConfig { pLimit :: Float }
-  deriving (Eq, Show, Read)
 
 instance Evaulate Percentage PctConfig where
   evaulate (Percentage s) c =

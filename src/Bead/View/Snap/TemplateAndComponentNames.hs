@@ -228,7 +228,6 @@ data EvaulationField
   | EvaulationKeyField   { evFieldName :: String }
 
 evaulationValueField = EvaulationValueField "evaulation"
-evaulationResultField = EvaulationStateField "evaulation-result"
 evaulationKeyField   = EvaulationKeyField "evaulation-key"
 
 instance SnapFieldName EvaulationField where
@@ -322,6 +321,7 @@ fieldList = map fieldName $ join [
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
+  , SFN evaulationPercentageDiv
   ], (map SFN P.allPages)
   ]
 

@@ -19,8 +19,9 @@ import Bead.View.Snap.Content.Comments
 
 import Bead.Domain.Evaulation
 
-import Text.Blaze.Html5 (Html)
+import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A (id)
 
 evaulation :: Content
 evaulation = getPostContentHandler evaulationPage evaulationPostHandler
@@ -33,6 +34,9 @@ data PageData = PageData {
   , sbmKey  :: Either EvaulationKey SubmissionKey
   }
 
+render (BinEval _) = renderPagelet
+render (PctEval _) = renderDynamicPagelet
+
 evaulationPage :: GETContentHandler
 evaulationPage = withUserStateE $ \s -> do
   sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key does not found"
@@ -41,7 +45,7 @@ evaulationPage = withUserStateE $ \s -> do
       sbmKey  = Right sk
     , sbmDesc = sd
     }
-  renderPagelet $ withUserFrame s (evaulationContent pageData)
+  render (eConfig sd) $ withUserFrame s (evaulationContent pageData)
 
 modifyEvaulationPage :: GETContentHandler
 modifyEvaulationPage = withUserStateE $ \s -> do
@@ -52,7 +56,7 @@ modifyEvaulationPage = withUserStateE $ \s -> do
     sbmKey  = Left ek
   , sbmDesc = sd
   }
-  renderPagelet $ withUserFrame s (evaulationContent pageData)
+  render (eConfig sd) $ withUserFrame s (evaulationContent pageData)
 
 evaulationPostHandler :: POSTContentHandler
 evaulationPostHandler = do
@@ -95,8 +99,9 @@ evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
             (translate i "Evaulation checkbox, Submit button")
             -- TODO: Checkbox
           hiddenKeyField . sbmKey $ pd
-          translate i . inputEvalResult . eConfig $ sd
-          submitButton (fieldName saveEvalBtn) (i "Save Evaulation")
+          H.div ! A.id (fieldName evaulationPercentageDiv) $ do
+            translate i . inputEvalResult . eConfig $ sd
+            submitButton (fieldName saveEvalBtn) (i "Save Evaulation")
   H.p $ do
     (translate i "Submitted solution")
     (fromString . eSolution $ sd)
@@ -120,7 +125,7 @@ inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
     valueAndText :: (Result, String) -> (String, String)
     valueAndText (v,n) = (show . mkEvalResult . Binary $ v, n)
 
+-- When the page is dynamic the percentage spinner is hooked on the field
 inputEvalResult (PctEval cfg) = mkI18NHtml $ \i -> do
   -- TODO: field validation
-  (translate i "Evaulation between 0.0 and 1.0: ")
-  textInput (fieldName evaulationResultField) 10 (Just . show $ 0.0)
+  hiddenInput (fieldName evaulationResultField) ""

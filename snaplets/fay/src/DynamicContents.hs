@@ -22,6 +22,10 @@ onload = do
   hookEvaulationTypeForm createGroupHook
   hookDatetimePickerDiv startDateTimeHook
   hookDatetimePickerDiv endDateTimeHook
+  hookPercentageDiv evaulationPctHook pctValue
+
+pctValue :: String -> String
+pctValue x = "PctEval (Percentage (Scores { unScores = [" ++ x ++ "]}))"
 
 hookDatetimePickerDiv :: DateTimePickerHook -> Fay ()
 hookDatetimePickerDiv hook = void $ do
@@ -54,6 +58,23 @@ hookDatetimePickerDiv hook = void $ do
 
 twoDigits [d] = ['0',d]
 twoDigits ds  = ds
+
+hookPercentageDiv :: PercentageHook -> (String -> String) -> Fay ()
+hookPercentageDiv hook f = void $ do
+  div <- select . cssId . ptDivId $ hook
+  input <- select. cssId . ptHiddenInputId $ hook
+  pctInput <- select "<input type=\"text\" size=\"3\" required />"
+  appendTo div pctInput
+  select "<span class=\"evtremoveable\">&#37;</span>" >>= appendTo div
+  let changeHiddenInput e = void $ do
+        t <- targetElement e
+        val <- getVal t
+        setVal (f . double $ val) input
+  numberField pctInput 0 100
+  pctSpinner changeHiddenInput pctInput
+  where
+    double "100" = "1.0"
+    double n = "0." ++ twoDigits n
 
 numberField :: JQuery -> Int -> Int -> Fay ()
 numberField i min max = do

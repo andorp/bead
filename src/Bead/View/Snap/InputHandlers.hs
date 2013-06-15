@@ -76,7 +76,7 @@ instance GetValueHandler Course where
 readEvalConfig :: String -> EvaulationData () PctConfig
 readEvalConfig = convert . read
   where
-    convert :: EvaulationData () Float -> EvaulationData () PctConfig
+    convert :: EvaulationData () Double -> EvaulationData () PctConfig
     convert (BinEval ()) = BinEval ()
     convert (PctEval f) = PctEval (PctConfig f)
 
