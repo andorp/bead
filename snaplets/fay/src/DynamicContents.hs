@@ -46,32 +46,29 @@ hookDatetimePickerDiv hook = void $ do
   change createDateTime date
   change createDateTime hour
   change createDateTime min
-  x <- sValue hour
-  putStrLn . show $ x
   where
     createDateInput = "<input type=\"text\" size=\"10\" required readonly />"
     createTimeInput = "<input type=\"text\" size=\"2\" value=\"0\"/>"
 
-    correction [d] = ['0',d]
-    correction ds  = ds
+    datetime d h m = d ++ " " ++ (twoDigits h) ++ ":" ++ (twoDigits m) ++ ":00"
 
-    datetime d h m = d ++ " " ++ (correction h) ++ ":" ++ (correction m) ++ ":00"
+twoDigits [d] = ['0',d]
+twoDigits ds  = ds
 
-    numberField :: JQuery -> Int -> Int -> Fay ()
-    numberField i min max = do
-      flip keyup i $ \e -> void $ do
-        t <- targetElement e
-        val <- getVal t
-        putStrLn val
-        setVal (filter isDigit val) t
-      flip change i $ \e -> void $ do
-        t <- targetElement e
-        val <- getVal t
-        case val of
-          [] -> void $ setVal "0" t
-          v  -> do let x = parseInt v
-                   when (x <  min) $ setVal (show min) t
-                   when (x >= max) $ setVal (show max) t
+numberField :: JQuery -> Int -> Int -> Fay ()
+numberField i min max = do
+  flip keyup i $ \e -> void $ do
+    t <- targetElement e
+    val <- getVal t
+    setVal (filter isDigit val) t
+  flip change i $ \e -> void $ do
+    t <- targetElement e
+    val <- getVal t
+    case val of
+      [] -> void $ setVal "0" t
+      v  -> do let x = parseInt v
+               when (x <  min) $ setVal (show min) t
+               when (x >= max) $ setVal (show max) t
 
 hookEvaulationTypeForm :: EvaulationHook -> Fay ()
 hookEvaulationTypeForm hook = do
@@ -91,13 +88,20 @@ hookEvaulationTypeForm hook = do
 
     addPercentageField :: JQuery -> Fay ()
     addPercentageField form = void $ do
-      textInput <- select "<input type=\"text\" id=\"percentage\" class=\"evtremoveable\"/>"
+      pctInput <- select "<input type=\"text\" id=\"percentage\" class=\"evtremoveable\" size=\"3\" required />"
       div <- findSelector (cssId . evSelectionDivId $ hook) form
-      appendTo div textInput
-      change setEvalLimit textInput
+      appendTo div pctInput
+      select "<span class=\"evtremoveable\">&#37;</span>" >>= appendTo div
+      numberField pctInput 0 100
+      pctSpinner setEvalLimit pctInput
+      change setEvalLimit pctInput
 
     setEvalLimit :: Event -> Fay ()
-    setEvalLimit e = target e >>= value >>= (setEvaulationValue . PctEval)
+    setEvalLimit e = do
+      t <- targetElement e
+      v <- getVal t
+      let pct = "0." ++ (twoDigits v)
+      setEvaulationValue (PctEval pct)
 
     setEvaulationValue :: EvaulationData () String -> Fay ()
     setEvaulationValue c = void $ select (cssId . evHiddenValueId $ hook) >>= setVal (value c)
