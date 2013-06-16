@@ -7,6 +7,8 @@ import Data.List (intersperse)
 import Data.String (fromString)
 import Control.Monad (join, when, liftM)
 
+import Bead.Domain.Shared
+import Bead.Domain.Evaulation
 import Bead.Domain.Relationships (AssignmentDesc(..))
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.Pages as P (Page(..))
@@ -94,12 +96,18 @@ htmlSubmissionTable i18n (i,s) = table (join ["st", show i]) (className groupSub
       let username = ud_username u
       H.td . fromString . ud_fullname $ u
       H.td . fromString . show $ username
-      mapM_ (H.td . submissionCell username) $ as
+      mapM_ (submissionCell username) $ as
       H.td . fromString . show $ p
 
     submissionCell u (ak,s) =
-      link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]) (sc s)
+      H.td $ link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]) (sc s)
       where
         sc Submission_Not_Found   = " "
         sc Submission_Unevaulated = "."
-        sc (Submission_Result _ _) = "R"
+        sc (Submission_Result _ r) = val r
+
+        val (BinEval (Binary Passed)) = "1"
+        val (BinEval (Binary Failed)) = "0"
+        val (PctEval (Percentage (Scores [p]))) = percent p
+
+        percent x = join [show . round $ (100 * x), "%"]
