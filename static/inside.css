@@ -74,9 +74,23 @@ a:hover {
 .group-submission-table,
 .user-submission-class-table,
 .create-group-table,
+.user-detail-table,
 .submission-list-table
 {
   margin-left: auto;
   margin-right: auto;
 }
 
+.assignment-text-div
+{
+  margin-left: 0px;
+  background: lightgray;
+}
+
+.assignment-text-div pre
+{
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  padding: .5em;
+  text-align: left;
+}

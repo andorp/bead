@@ -50,8 +50,8 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
     (translate i "Submission list")
     table (fieldName submissionTableName) (className submissionListTable) $
       mapM_ submissionLine (slSubmissions . smList $ p)
-  H.p $ do
-    (translate i "Assignment")
+  H.h2 $ (translate i "Assignment")
+  H.div ! A.class_ (className assignmentTextDiv) $ H.pre $
     (fromString . slAssignmentText . smList $ p)
   where
     submissionLine (sk, time, status, t) = H.tr $ do

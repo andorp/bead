@@ -284,6 +284,7 @@ instance SnapClassName DivClassName where
   className = fromString . divClass
 
 submissionListDiv = DivClassName "submission-list-div"
+assignmentTextDiv = DivClassName "assignment-text-div"
 
 instance SnapFieldName HookId where
   fieldName = fromString . hookId
@@ -329,7 +330,7 @@ classList :: [String]
 classList = map className [
     SCN groupSubmissionTable, SCN assignmentTable, SCN evaulationClassTable, SCN userSubmissionClassTable
   , SCN submissionListTable, SCN submissionListDiv, SCN datePickerClass, SCN minuteSpinnerClass
-  , SCN hourSpinnerClass
+  , SCN hourSpinnerClass, SCN assignmentTextDiv
   ]
 
 names = fieldList ++ classList

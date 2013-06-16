@@ -20,8 +20,9 @@ import Bead.Domain.Entities (Comment(..))
 import Bead.Domain.Relationships
 
 
-import Text.Blaze.Html5 (Html)
+import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A (class_)
 
 submissionDetails :: Content
 submissionDetails = getPostContentHandler submissionDetailsPage submissionDetailsPostHandler
@@ -71,9 +72,8 @@ submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ do
     (translate i "Teacher")
     (fromString . join . intersperse ", " . sdTeacher $ sm)
-  H.p $ do
-    (translate i "Assignment")
-    (fromString . sdAssignment $ sm)
+  H.h2 $ (translate i "Assignment")
+  H.div ! A.class_ (className assignmentTextDiv) $ H.pre . fromString . sdAssignment $ sm
   H.p $ do
     (translate i "Status")
     (fromString . sdStatus $ sm)
