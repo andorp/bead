@@ -5,7 +5,6 @@ import Test.WebDriver.SitePages
 import Test.WebDriver.UserStories
 
 import Bead.Domain.Entities
-import Bead.Domain.Shared
 import Bead.Domain.Evaulation as E
 
 admin       = LoginData "a" "a"

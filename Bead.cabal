@@ -14,10 +14,11 @@ Data-Files:
   snaplets/fay/devel.cfg,
   snaplets/fay/src/Fay/JQueryUI.hs,
   snaplets/fay/src/DynamicContents.hs,
-  snaplets/fay/src/Bead/Domain/Shared.hs,
+  snaplets/fay/src/Bead/Domain/Shared/Evaulation.hs,
   snaplets/fay/src/Bead/View/Snap/Validators.hs,
   snaplets/fay/src/Bead/View/Snap/Fay/HookIds.hs,
   snaplets/fay/src/Bead/View/Snap/Fay/Hooks.hs,
+  snaplets/fay/src/Bead/View/Snap/Fay/JSON.hs,
 
   static/header.css,
   static/inside.css,
@@ -38,9 +39,9 @@ Executable Bead
   HS-Source-Dirs: src, snaplets/fay/src
   Build-Depends: snap, snap-core, snap-server, lens, blaze-html >= 0.5,
                  snap-blaze, snaplet-fay == 0.3.2.0, fay-jquery, bytestring,
-                 MonadCatchIO-transformers, blaze-html, xmlhtml, text,
+                 MonadCatchIO-transformers, blaze-html, xmlhtml, text, aeson,
                  blaze-markup, temporary, deepseq, mtl, directory, filepath,
-                 transformers, time, containers, base,
+                 transformers, time, containers, base, fay == 0.14.5.0,
                  unix
 
 

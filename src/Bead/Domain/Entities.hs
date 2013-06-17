@@ -1,7 +1,6 @@
 module Bead.Domain.Entities where
 
 import Bead.Domain.Types
-import Bead.Domain.Shared
 import Bead.Domain.Evaulation
 import Bead.Invariants (Invariants(..))
 
@@ -55,10 +54,10 @@ class IsEvaulationResult e where
   mkEvalResult :: e -> EvaulationResult
 
 instance IsEvaulationResult Binary where
-  mkEvalResult b = BinEval b
+  mkEvalResult = BinEval
 
 instance IsEvaulationResult Percentage where
-  mkEvalResult p = PctEval p
+  mkEvalResult = PctEval
 
 allBinaryEval :: [EvaulationData b p] -> Maybe [b]
 allBinaryEval = sequence . map binaryEval

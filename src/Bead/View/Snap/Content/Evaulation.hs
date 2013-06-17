@@ -8,7 +8,6 @@ import Data.String (fromString)
 import Control.Monad (liftM)
 
 import Bead.Domain.Types (readMsg)
-import Bead.Domain.Shared
 import Bead.Domain.Relationships (SubmissionDesc(..))
 import Bead.Controller.Pages as P(Page(Evaulation, ModifyEvaulation))
 import Bead.Controller.ServiceContext (UserState(..))
@@ -39,7 +38,7 @@ render (PctEval _) = renderDynamicPagelet
 
 evaulationPage :: GETContentHandler
 evaulationPage = withUserStateE $ \s -> do
-  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key does not found"
+  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key is not found"
   sd <- runStoryE (submissionDescription sk)
   let pageData = PageData {
       sbmKey  = Right sk
@@ -49,8 +48,8 @@ evaulationPage = withUserStateE $ \s -> do
 
 modifyEvaulationPage :: GETContentHandler
 modifyEvaulationPage = withUserStateE $ \s -> do
-  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key does not found"
-  ek <- getParamE (fieldName evaulationKeyField) EvaulationKey "Evaulation kes does not found"
+  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key is not found"
+  ek <- getParamE (fieldName evaulationKeyField) EvaulationKey "Evaulation kes is not found"
   sd <- runStoryE (submissionDescription sk)
   let pageData = PageData {
     sbmKey  = Left ek
@@ -60,26 +59,22 @@ modifyEvaulationPage = withUserStateE $ \s -> do
 
 evaulationPostHandler :: POSTContentHandler
 evaulationPostHandler = do
-  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key does not found"
-  ev <- getParamE (fieldName evaulationValueField) id "Evaulation value does not found"
-  er <- getParamE (fieldName evaulationResultField)
-                   (readMsg "Evaulation result")
-                   "Evaulation result does not found"
+  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key is not found"
+  ev <- getParamE (fieldName evaulationValueField) id "Evaulation value is not found"
+  er <- getJSONParam (fieldName evaulationResultField) "Evaulation result is not found"
   let e = C.Evaulation {
-    evaulationResult = er
+    evaulationResult = evResult er
   , writtenEvaulation = ev
   }
   return $ NewEvaulation sk e
 
 modifyEvaulationPost :: POSTContentHandler
 modifyEvaulationPost = do
-  ek <- getParamE (fieldName evaulationKeyField) EvaulationKey "Evaulation key does not found"
-  ev <- getParamE (fieldName evaulationValueField) id "Evaulation value does not found"
-  er <- getParamE (fieldName evaulationResultField)
-                   (readMsg "Evaulation result")
-                   "Evaulation result does not found"
+  ek <- getParamE (fieldName evaulationKeyField) EvaulationKey "Evaulation key is not found"
+  ev <- getParamE (fieldName evaulationValueField) id "Evaulation value is not found"
+  er <- getJSONParam (fieldName evaulationResultField) "Evaulation result is not found"
   let e = C.Evaulation {
-    evaulationResult = er
+    evaulationResult = evResult er
   , writtenEvaulation = ev
   }
   return $ C.ModifyEvaulation ek e

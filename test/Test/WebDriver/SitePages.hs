@@ -8,8 +8,7 @@ import Test.WebDriver.Tools
 import Test.WebDriver.Support
 
 import Bead.Domain.Entities
-import Bead.Domain.Shared hiding (EvaulationData)
-import Bead.Domain.Evaulation as E
+import Bead.Domain.Evaulation as E hiding (EvaulationData)
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.HookIds
 import Bead.Controller.Pages

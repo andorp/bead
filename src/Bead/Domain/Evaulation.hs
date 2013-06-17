@@ -1,24 +1,23 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Bead.Domain.Evaulation where
+module Bead.Domain.Evaulation (
+    Evaulate(..)
+  , calculateEvaulation
+  , score
+  , percentage
+  , point
+  , module Bead.Domain.Shared.Evaulation
+  ) where
 
 import Control.Monad.Reader
 import Data.Monoid
 
-import Bead.Domain.Shared
+import Bead.Domain.Shared.Evaulation
 
 class Monoid m => Evaulate m e where
   evaulate :: m -> e -> Result
 
 calculateEvaulation :: Evaulate m e => [m] -> e -> Result
 calculateEvaulation = evaulate . mconcat
-
-data Result = Passed | Failed
-  deriving (Eq, Show, Read)
-
-newtype Binary = Binary Result
-  deriving (Eq, Show, Read)
-
-binary = Binary
 
 instance Monoid Binary where
   mempty = Binary Failed

@@ -5,12 +5,14 @@ module DynamicContents where
 
 import FFI
 import Prelude
+import Data.Data
 import JQuery hiding (filter)
 import Fay.JQueryUI
 
-import Bead.Domain.Shared
+import Bead.Domain.Shared.Evaulation
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
+import Bead.View.Snap.Fay.JSON
 import Bead.View.Snap.Validators
 
 main :: Fay ()
@@ -25,7 +27,7 @@ onload = do
   hookPercentageDiv evaulationPctHook pctValue
 
 pctValue :: String -> String
-pctValue x = "PctEval (Percentage (Scores { unScores = [" ++ x ++ "]}))"
+pctValue = toEvResultJSON . percentageResult . parseDouble
 
 hookDatetimePickerDiv :: DateTimePickerHook -> Fay ()
 hookDatetimePickerDiv hook = void $ do
@@ -165,3 +167,6 @@ value = ffi "%1.value"
 
 parseInt :: String -> Int
 parseInt = ffi "parseInt(%1)"
+
+parseDouble :: String -> Double
+parseDouble = ffi "parseFloat(%1)"

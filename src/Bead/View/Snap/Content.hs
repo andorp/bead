@@ -10,6 +10,7 @@ module Bead.View.Snap.Content (
   , mkContent
   , blaze
   , getParamE
+  , getJSONParam
   , setInSessionE
   , setReqParamInSession
   , routeOf

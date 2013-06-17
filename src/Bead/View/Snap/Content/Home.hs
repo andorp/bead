@@ -7,7 +7,6 @@ import Data.List (intersperse)
 import Data.String (fromString)
 import Control.Monad (join, when, liftM)
 
-import Bead.Domain.Shared
 import Bead.Domain.Evaulation
 import Bead.Domain.Relationships (AssignmentDesc(..))
 import Bead.Controller.ServiceContext (UserState(..))

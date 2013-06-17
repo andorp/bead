@@ -6,7 +6,6 @@ import Data.Time (UTCTime(..))
 
 import Bead.Domain.Types (Str(..), readMaybe, readMsg)
 import Bead.Domain.Entities
-import Bead.Domain.Shared
 import Bead.Domain.Relationships
 import Bead.Domain.Evaulation
 

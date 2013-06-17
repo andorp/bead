@@ -12,7 +12,8 @@ Terminology:
 + i18n for the generated HTML output
 - Pandoc interpreted input exercise input fields
 - Change FamilyName to FullName
-- Parameters for WebDriver executable
++ Parameters for WebDriver executable
 - User error codes: Snap layer, UserStory
 - Add evaulation type to the assignment
+- Change 'read' in persistence layer to read with exception thrown within the layer
 
