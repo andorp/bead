@@ -120,15 +120,21 @@ fileSave d f s = step
         exists <- doesFileExist fname
         when exists $ removeFile fname)
 
-fileLoad :: DirPath -> FilePath -> (String -> a) -> TIO a
-fileLoad d f l = step
+fileLoad :: DirPath -> FilePath -> (String -> Maybe a) -> TIO a
+fileLoad d f reader = step
     (do let fname = joinPath [d,f]
         exist <- doesFileExist fname
         h <- openFile fname ReadMode
         s <- hGetContents h
         s `deepseq` hClose h
-        return . l $ s)
+        case reader s of
+          Nothing -> throwIO . userError . join $
+            ["Non parseable data in file: ", fname]
+          Just x  -> return x)
     (return ())
+
+same :: a -> Maybe a
+same = Just
 
 fileUpdate :: DirPath -> FilePath -> String -> TIO ()
 fileUpdate d f c = do
@@ -208,7 +214,7 @@ saveString :: DirPath -> FilePath -> String -> TIO ()
 saveString = fileSave
 
 loadString :: DirPath -> FilePath -> TIO String
-loadString d f = fileLoad d f id
+loadString d f = fileLoad d f same
 
 updateString :: DirPath -> FilePath -> String -> TIO ()
 updateString d f c = fileUpdate d f c
@@ -274,22 +280,22 @@ instance Save User where
 -- * Load instances
 
 instance Load Role where
-  load d = fileLoad d "role" (maybe (error "Role parsing was failed") id . parseRole)
+  load d = fileLoad d "role" (maybe (error "Role parsing was failed") same . parseRole)
 
 instance Load Username where
-  load d = fileLoad d "username" username
+  load d = fileLoad d "username" (same . username)
 
 instance Load Email where
-  load d = fileLoad d "email" email'
+  load d = fileLoad d "email" (same . email')
 
 instance Load Assignment where
   load d = do
     name <- loadName d
-    desc <- fileLoad d "description" id
-    tcs  <- fileLoad d "testcases" id
-    t    <- fileLoad d "type"  read
-    s    <- fileLoad d "start" read
-    e    <- fileLoad d "end"   read
+    desc <- fileLoad d "description" same
+    tcs  <- fileLoad d "testcases" same
+    t    <- fileLoad d "type"  readMaybe
+    s    <- fileLoad d "start" readMaybe
+    e    <- fileLoad d "end"   readMaybe
     return $ Assignment {
         assignmentName = name
       , assignmentDesc = desc
@@ -301,8 +307,8 @@ instance Load Assignment where
 
 instance Load Submission where
   load d = do
-    s <- fileLoad d "solution" id
-    p <- fileLoad d "date" read
+    s <- fileLoad d "solution" same
+    p <- fileLoad d "date" readMaybe
     return $ Submission {
         solution = s
       , solutionPostDate = p
@@ -310,8 +316,8 @@ instance Load Submission where
 
 instance Load Evaulation where
   load d = do
-    e <- fileLoad d "evaulation" id
-    r <- fileLoad d "result" read
+    e <- fileLoad d "evaulation" same
+    r <- fileLoad d "result" readMaybe
     return Evaulation {
       writtenEvaulation = e
     , evaulationResult  = r
@@ -319,8 +325,8 @@ instance Load Evaulation where
 
 instance Load Comment where
   load d = do
-    c <- fileLoad d "comment" id
-    e <- fileLoad d "date" read
+    c <- fileLoad d "comment" same
+    e <- fileLoad d "date" readMaybe
     return Comment {
       comment     = c
     , commentDate = e
@@ -329,7 +335,7 @@ instance Load Comment where
 instance Load Course where
   load d = do desc <- loadDesc d
               name <- loadName d
-              eval <- fileLoad d "evalcfg" (readMsg "Course evaulation config")
+              eval <- fileLoad d "evalcfg" readMaybe
               return $ Course {
                   courseDesc = desc
                 , courseName = name
@@ -339,7 +345,7 @@ instance Load Course where
 instance Load Group where
   load d = do desc <- loadDesc d
               name <- loadName d
-              eval <- fileLoad d "evalcfg" (readMsg "Group evaulation config")
+              eval <- fileLoad d "evalcfg" readMaybe
               return $ Group {
                   groupDesc = desc
                 , groupName = name
@@ -416,7 +422,7 @@ saveCreatedTime :: DirPath -> UTCTime -> TIO ()
 saveCreatedTime d = fileSave d "created" . show
 
 getCreatedTime :: DirPath -> TIO UTCTime
-getCreatedTime d = fileLoad d "created" read
+getCreatedTime d = fileLoad d "created" readMaybe
 
 userDirStructure = DirStructure {
     files       = ["email", "name", "password", "role", "username"]
