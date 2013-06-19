@@ -43,6 +43,7 @@ module Bead.View.Snap.Content (
   , module Bead.View.Snap.InputHandlers
   , module Bead.View.Snap.TemplateAndComponentNames
   , module Bead.View.Snap.Fay.HookIds
+  , module Bead.View.Snap.Fay.JSON.ServerSide
   ) where
 
 import Snap hiding (empty, get, route, (<$>))
@@ -64,6 +65,7 @@ import Bead.View.Snap.RequestParams
 import Bead.View.Snap.InputHandlers
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.HookIds
+import Bead.View.Snap.Fay.JSON.ServerSide
 import Text.Blaze.Html5 (Html)
 
 import Control.Applicative ((<$>))

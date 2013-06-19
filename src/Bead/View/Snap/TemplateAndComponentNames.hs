@@ -289,6 +289,15 @@ assignmentTextDiv = DivClassName "assignment-text-div"
 instance SnapFieldName HookId where
   fieldName = fromString . hookId
 
+newtype SubmissionTableCell = SubmissionTableCell { stc :: String }
+
+instance SnapClassName SubmissionTableCell where
+  className = fromString . stc
+
+submissionUnevaulated = SubmissionTableCell "submission-unevaulated"
+submissionBinaryPassed = SubmissionTableCell "submission-binary-passed"
+submissionBinaryFailed = SubmissionTableCell "submission-binary-failed"
+
 -- * Unit tests
 
 data SFN = forall n . SnapFieldName n => SFN n
@@ -330,7 +339,8 @@ classList :: [String]
 classList = map className [
     SCN groupSubmissionTable, SCN assignmentTable, SCN evaulationClassTable, SCN userSubmissionClassTable
   , SCN submissionListTable, SCN submissionListDiv, SCN datePickerClass, SCN minuteSpinnerClass
-  , SCN hourSpinnerClass, SCN assignmentTextDiv
+  , SCN hourSpinnerClass, SCN assignmentTextDiv, SCN submissionUnevaulated, SCN submissionBinaryPassed
+  , SCN submissionBinaryFailed
   ]
 
 names = fieldList ++ classList

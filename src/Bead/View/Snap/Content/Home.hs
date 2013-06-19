@@ -15,8 +15,9 @@ import Bead.Controller.UserStories (userAssignments, submissionTables)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 
-import Text.Blaze.Html5 (Html)
+import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A (class_)
 
 home :: Content
 home = getContentHandler homePage
@@ -99,7 +100,7 @@ htmlSubmissionTable i18n (i,s) = table (join ["st", show i]) (className groupSub
       H.td . fromString . show $ p
 
     submissionCell u (ak,s) =
-      H.td $ link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]) (sc s)
+      coloredCell $ link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]) (sc s)
       where
         sc Submission_Not_Found   = " "
         sc Submission_Unevaulated = "."
@@ -108,5 +109,15 @@ htmlSubmissionTable i18n (i,s) = table (join ["st", show i]) (className groupSub
         val (BinEval (Binary Passed)) = "1"
         val (BinEval (Binary Failed)) = "0"
         val (PctEval (Percentage (Scores [p]))) = percent p
+
+        coloredCell = color s H.td
+
+        color (Submission_Not_Found)   x = x
+        color (Submission_Unevaulated) x = x ! A.class_ (className submissionUnevaulated)
+        color (Submission_Result _ r)  x = resultCell r x
+
+        resultCell (BinEval (Binary Passed)) x = x ! A.class_ (className submissionBinaryPassed)
+        resultCell (BinEval (Binary Failed)) x = x ! A.class_ (className submissionBinaryFailed)
+        resultCell (PctEval (Percentage (Scores [p]))) x = x -- TODO
 
         percent x = join [show . round $ (100 * x), "%"]

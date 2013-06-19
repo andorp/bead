@@ -12,7 +12,7 @@ import Fay.JQueryUI
 import Bead.Domain.Shared.Evaulation
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
-import Bead.View.Snap.Fay.JSON
+import Bead.View.Snap.Fay.JSON.ClientSide
 import Bead.View.Snap.Validators
 
 main :: Fay ()

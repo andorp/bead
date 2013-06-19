@@ -81,6 +81,22 @@ a:hover {
   margin-right: auto;
 }
 
+.submission-unevaulated
+{
+  background: gray;
+}
+
+.submission-binary-passed
+{
+  background: lightgreen;
+}
+
+.submission-binary-failed
+{
+  background: red;
+}
+
+
 .assignment-text-div
 {
   margin-left: 0px;

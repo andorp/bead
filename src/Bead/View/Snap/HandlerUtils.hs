@@ -40,7 +40,6 @@ import qualified Data.Text as T
 import qualified Data.List as L
 import Control.Monad.Error
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy.Char8 as BL
 
 -- Snap and Blaze imports
 
@@ -52,9 +51,8 @@ import Snap.Snaplet.Session
 
 -- Fay imports
 
-import Data.Aeson
-import Data.Data
-import Fay.Convert
+import Bead.View.Snap.Fay.JSON.ServerSide
+
 
 newtype ContentHandlerError = ContentHandlerError (Maybe String)
   deriving (Show)
@@ -134,12 +132,9 @@ getJSONParam param msg = do
   x <- getParam . B.pack $ param
   case x of
     Nothing -> throwError . strMsg $ msg
-    Just y  -> case decodeFromFay y of
+    Just y  -> case decodeFromFay . B.unpack $ y of
       Nothing -> throwError . strMsg $ "Decoding error"
       Just z  -> return z
-  where
-    decodeFromFay :: (Data a) => B.ByteString -> Maybe a
-    decodeFromFay = readFromFay <=< (decode . BL.pack . B.unpack)
 
 setReqParamInSession :: ReqParam -> HandlerError App b ()
 setReqParamInSession (ReqParam (k,v)) = setInSessionE k v

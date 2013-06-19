@@ -118,7 +118,10 @@ inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
     [(Passed, i "Passed"), (Failed, i "Failed")]
   where
     valueAndText :: (Result, String) -> (String, String)
-    valueAndText (v,n) = (show . mkEvalResult . Binary $ v, n)
+    valueAndText (v,n) = (errorOnNothing . encodeToFay . EvResult . mkEvalResult . Binary $ v, n)
+
+    errorOnNothing (Just x) = x
+    errorOnNothing Nothing  = error "Error in encoding Binary input result"
 
 -- When the page is dynamic the percentage spinner is hooked on the field
 inputEvalResult (PctEval cfg) = mkI18NHtml $ \i -> do

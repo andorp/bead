@@ -1,4 +1,4 @@
-module Bead.View.Snap.Fay.JSON where
+module Bead.View.Snap.Fay.JSON.ClientSide where
 
 import FFI
 import Prelude
