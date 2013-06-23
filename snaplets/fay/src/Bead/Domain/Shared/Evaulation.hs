@@ -51,3 +51,7 @@ data EvResult = EvResult {
 
 percentageResult :: Double -> EvResult
 percentageResult d = EvResult (PctEval (Percentage (Scores { unScores = [ d ]})))
+
+percentValue :: EvResult -> Maybe Double
+percentValue (EvResult (PctEval (Percentage (Scores [p])))) = Just p
+percentValue _ = Nothing

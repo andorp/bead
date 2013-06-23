@@ -3,6 +3,7 @@ module Bead.View.Snap.Content.Home (
     home
   ) where
 
+import Numeric (showHex)
 import Data.List (intersperse)
 import Data.String (fromString)
 import Control.Monad (join, when, liftM)
@@ -17,7 +18,7 @@ import Bead.View.Snap.Content
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A (class_)
+import qualified Text.Blaze.Html5.Attributes as A (class_, style)
 
 home :: Content
 home = getContentHandler homePage
@@ -118,6 +119,25 @@ htmlSubmissionTable i18n (i,s) = table (join ["st", show i]) (className groupSub
 
         resultCell (BinEval (Binary Passed)) x = x ! A.class_ (className submissionBinaryPassed)
         resultCell (BinEval (Binary Failed)) x = x ! A.class_ (className submissionBinaryFailed)
-        resultCell (PctEval (Percentage (Scores [p]))) x = x -- TODO
+        resultCell p@(PctEval {}) x = withRGBClass (EvResult p) x
 
         percent x = join [show . round $ (100 * x), "%"]
+
+        withRGBClass r = maybe id (\pct html -> html ! (A.style . fromString . colorStyle . pctCellColor $ pct)) (percentValue r)
+
+
+-- * Colors
+
+newtype RGB = RGB (Int, Int, Int)
+
+pctCellColor :: Double -> RGB
+pctCellColor x = RGB (round ((1 - x) * 255), round (x * 255), 0)
+
+colorStyle :: RGB -> String
+colorStyle (RGB (r,g,b)) = join ["background-color:#", hex r, hex g, hex b]
+  where
+    twoDigits [d] = ['0',d]
+    twoDigits ds  = ds
+
+    hex x = twoDigits (showHex x "")
+
