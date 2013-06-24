@@ -80,6 +80,7 @@ hookPercentageDiv hook f = void $ do
 
 numberField :: JQuery -> Int -> Int -> Fay ()
 numberField i min max = do
+  setVal (printInt min) i
   flip keyup i $ \e -> void $ do
     t <- targetElement e
     val <- getVal t
@@ -170,3 +171,6 @@ parseInt = ffi "parseInt(%1)"
 
 parseDouble :: String -> Double
 parseDouble = ffi "parseFloat(%1)"
+
+printInt :: Int -> String
+printInt = ffi "%1.toString()"
