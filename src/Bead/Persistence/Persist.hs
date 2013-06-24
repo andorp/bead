@@ -11,6 +11,7 @@ module Bead.Persistence.Persist (
   , submissionTables
   , userSubmissionDesc
   , courseOrGroupOfAssignment
+  , courseNameAndAdmins
   ) where
 
 import Bead.Domain.Types (Erroneous)
@@ -165,7 +166,7 @@ submissionDesc p sk = do
   , eComments = cs
   }
 
-courseNameAndAdmins :: Persist -> AssignmentKey -> TIO (String, [String])
+courseNameAndAdmins :: Persist -> AssignmentKey -> TIO (CourseName, [UsersFullname])
 courseNameAndAdmins p ak = do
   eCkGk <- courseOrGroupOfAssignment p ak
   (name, admins) <- case eCkGk of

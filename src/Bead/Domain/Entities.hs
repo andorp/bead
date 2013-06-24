@@ -2,7 +2,7 @@ module Bead.Domain.Entities where
 
 import Bead.Domain.Types
 import Bead.Domain.Evaulation
-import Bead.Invariants (Invariants(..))
+import Bead.Invariants (Invariants(..), UnitTests(..))
 
 import Data.Char (toLower)
 import Data.Time (UTCTime(..))
@@ -28,6 +28,13 @@ data Assignment = Assignment {
   -- TODO: Number of maximum tries
   } deriving (Eq)
 
+-- | Produces True if the given time is between the start-end time of the assignment
+isActivePeriod :: Assignment -> UTCTime -> Bool
+isActivePeriod a t = and [start <= t, t <= end]
+  where
+    start = assignmentStart a
+    end   = assignmentEnd   a
+
 -- | Solution for one exercise
 data Submission = Submission {
     solution         :: String
@@ -39,6 +46,10 @@ data Comment = Comment {
     comment     :: String
   , commentDate :: UTCTime
   } deriving (Eq, Show)
+
+type CourseName = String
+
+type UsersFullname = String
 
 type EvaulationResult = EvaulationData Binary Percentage
 
@@ -305,3 +316,24 @@ roleInvariants = Invariants [
       \r -> ((Just r) ==) . parseRole . show $ r
     )
   ]
+
+assignmentTests =
+  let a = Assignment {
+          assignmentName = "name"
+        , assignmentDesc = "desc"
+        , assignmentTCs  = "test"
+        , assignmentType = Normal
+        , assignmentStart = read "2010-10-10 12:00:00 UTC"
+        , assignmentEnd   = read "2010-11-10 12:00:00 UTC"
+        }
+      before  = read "2010-09-10 12:00:00 UTC"
+      between = read "2010-10-20 12:00:00 UTC"
+      after   = read "2010-12-10 12:00:00 UTC"
+  in UnitTests [
+    ("Time before active period", isFalse $ isActivePeriod a before)
+  , ("Time in active period"    , isTrue  $ isActivePeriod a between)
+  , ("Time after active period" , isFalse $ isActivePeriod a after)
+  ]
+  where
+    isFalse = not
+    isTrue  = id

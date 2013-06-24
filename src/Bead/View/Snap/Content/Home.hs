@@ -65,7 +65,9 @@ availableAssignments i18n as = do
     mapM_ assignmentLine as
   where
     assignmentLine (k,a) = H.tr $ do
-      H.td $ link (routeWithParams P.Submission [requestParam k]) (i18n "New submission")
+      case aActive a of
+        True -> H.td $ link (routeWithParams P.Submission [requestParam k]) (i18n "New submission")
+        False -> H.td "Inactive"
       H.td (fromString . aGroup $ a)
       H.td (fromString . join . intersperse ", " . aTeachers $ a)
       H.td $ link (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))

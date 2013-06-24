@@ -11,7 +11,7 @@ import Bead.Controller.Pages    as P
 import Bead.Persistence.Persist as R
 
 import Control.Applicative
-import Control.Monad (when)
+import Control.Monad (when, unless)
 import Control.Monad.Error (Error(..))
 import Control.Concurrent.MVar
 import qualified Control.Monad.State  as CMS
@@ -21,6 +21,7 @@ import Control.Monad.Trans
 import Control.Monad (join)
 import Prelude hiding (log)
 import Data.List (nub)
+import Data.Maybe (catMaybes)
 import Data.Time (UTCTime(..), getCurrentTime)
 import Text.Printf (printf)
 
@@ -369,9 +370,18 @@ submitSolution :: AssignmentKey -> Submission -> UserStory ()
 submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show ak) $ do
   authorize P_Open   P_Assignment
   authorize P_Create P_Submission
+  checkActiveAssignment
   withUserAndPersist $ \u p -> do
     sk <- saveSubmission p ak u s
     return ()
+  where
+    checkActiveAssignment :: UserStory ()
+    checkActiveAssignment = do
+      a <- Bead.Controller.UserStories.loadAssignment ak
+      now <- liftIO getCurrentTime
+      unless (isActivePeriod a now) $
+        errorPage "Submission is closed for the assignment"
+
 
 availableGroups :: UserStory [(GroupKey, GroupDesc)]
 availableGroups = logAction INFO "lists available assignments" $ do
@@ -411,38 +421,31 @@ userAssignments = logAction INFO "lists assignments" $ do
   authorize P_Open P_Assignment
   authorize P_Open P_Course
   authorize P_Open P_Group
+  now <- liftIO getCurrentTime
   withUserAndPersist $
-    \u p -> mapM (createDesc p) =<< R.userAssignmentKeys p u
+    \u p -> catMaybes <$> (mapM (createDesc p now) =<< R.userAssignmentKeys p u)
 
   where
-    asgGroup p (Nothing) (Nothing) = return id
-    asgGroup p (Just gk) (Just ck) = do
-      dg <- groupName <$> R.loadGroup p gk
-      dc <- courseName <$> R.loadCourse p ck
-      return $ \a -> a { aGroup = join [dg, " - ", dc] }
-    asgGroup p (Nothing) (Just ck) = do
-      d <- courseName <$> R.loadCourse p ck
-      return $ \a -> a { aGroup = d }
-    asgGroup p (Just gk) (Nothing) = do
-      d <- groupName <$> R.loadGroup p gk
-      return $ \a -> a { aGroup = d }
 
-    createDesc :: Persist -> AssignmentKey -> TIO (AssignmentKey, AssignmentDesc)
-    createDesc p ak = do
+    -- Produces the assignment description if the assignment is active
+    --   Nothing if the Urn assignment is not in the active state
+    createDesc :: Persist -> UTCTime -> AssignmentKey -> TIO (Maybe (AssignmentKey, AssignmentDesc))
+    createDesc p now ak = do
       a <- R.loadAssignment p ak
-      mgk <- R.groupOfAssignment p ak
-      mck <- R.courseOfAssignment p ak
-      let desc = AssignmentDesc {
-        aActive = True -- TODO
-      , aTitle  = assignmentName a
-      , aTeachers = ["Group Admin"] -- TODO
-      , aGroup  = ""
-      , aOk     = 0 -- TODO
-      , aNew    = 0 -- TODO
-      , aBad    = 0 -- TODO
-      }
-      f <- asgGroup p mgk mck
-      return (ak, f desc)
+      case and [assignmentType a == Urn, not $ isActivePeriod a now] of
+        True -> return Nothing
+        False -> do
+          (name, adminNames) <- R.courseNameAndAdmins p ak
+          let desc = AssignmentDesc {
+            aActive = isActivePeriod a now
+          , aTitle  = assignmentName a
+          , aTeachers = adminNames
+          , aGroup  = name
+          , aOk     = 0 -- TODO
+          , aNew    = 0 -- TODO
+          , aBad    = 0 -- TODO
+          }
+          return $ Just (ak, desc)
 
 submissionDescription :: SubmissionKey -> UserStory SubmissionDesc
 submissionDescription sk = logAction INFO msg $ do
