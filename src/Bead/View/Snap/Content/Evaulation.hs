@@ -89,7 +89,7 @@ evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ postForm (routeOf . evPage . sbmKey $ pd) $ do
           H.p $ do
             (translate i "Evaulation text block")
-            textAreaInput (fieldName evaulationValueField) 50 10 Nothing
+            textAreaInput (fieldName evaulationValueField) Nothing
           H.p $ do
             (translate i "Evaulation checkbox, Submit button")
             -- TODO: Checkbox

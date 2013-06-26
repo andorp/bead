@@ -18,7 +18,7 @@ import Bead.View.UserActions (UserAction(CreateGroupAssignment, CreateCourseAssi
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A (id)
+import qualified Text.Blaze.Html5.Attributes as A (id, style)
 
 -- * Content Handlers
 
@@ -86,37 +86,40 @@ newAssignmentContent pd
                         (const . translate i $ "You are not an admin for any groups")
                         (const . translate i $ "This assignment is not created by you")
                         pd
-newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page $ pd) $ do
-  H.p $ do
-    (translate i "Assignment title")
-    textInput (fieldName assignmentNameField) 10 (amap assignmentName pd)
-  H.p $ do
-    (translate i "Description text block / Description files")
-    textAreaInput (fieldName assignmentDescField) 50 10 (amap assignmentDesc pd)
-  H.p $ do
-    (translate i "Test Data text block / Test data files")
-    textAreaInput (fieldName assignmentTCsField) 50 10 (amap assignmentTCs pd)
-  H.p $ (translate i "Select automated evaulation method")
-  H.p $ do
-    (translate i "Assignment Type")
+newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page $ pd) $ H.div ! formDiv $ do
+  H.div ! slimLeftCell  $ H.b $ (translate i "Assignment title")
+  H.div ! slimRightCell $ textInput (fieldName assignmentNameField) 10 (amap assignmentName pd) ! fillDiv
+  H.div ! leftCell $ do
+    H.b $ (translate i "Active period")
+    H.div ! A.id (fieldName startDateDivId) $ do
+       translate i "Start date"
+       H.br
+       hiddenInput (fieldName assignmentStartField) ""
+    H.div ! A.id (fieldName endDateDivId) $ do
+       translate i "End date"
+       H.br
+       hiddenInput (fieldName assignmentEndField) ""
+  H.div ! rightCell $ do
+    H.b $ (translate i "Description text block / Description files")
+    textAreaInput (fieldName assignmentDescField) (amap assignmentDesc pd) ! fillDiv
+  H.div ! leftCell $ do
+    H.b $ (translate i "Assignment Type")
+    H.br
     enumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
-  H.p $ (translate i "Active period")
-  H.div ! A.id (fieldName startDateDivId) $ do
-     translate i "Start date"
-     hiddenInput (fieldName assignmentStartField) ""
-     H.br
-  H.div ! A.id (fieldName endDateDivId) $ do
-     translate i "End date"
-     hiddenInput (fieldName assignmentEndField) ""
-     H.br
-  H.p $ do
-    pageDataMap (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
-    pageDataMap
-          (valueTextSelection (fieldName selectedCourse))
-          (valueTextSelection (fieldName selectedGroup))
-          (hiddenInput (fieldName assignmentKeyField) . paramValue  . fst)
-          pd
-  submitButton (fieldName saveSubmitBtn) (i "Save")
+  H.div ! rightCell $ do
+    H.b $ (translate i "Test Data text block / Test data files")
+    textAreaInput (fieldName assignmentTCsField) (amap assignmentTCs pd) ! fillDiv
+  H.div ! leftCell $ do
+    H.p $ (translate i "Select automated evaulation method")
+    H.p $ do
+      pageDataMap (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
+      H.br
+      pageDataMap
+        (valueTextSelection (fieldName selectedCourse))
+        (valueTextSelection (fieldName selectedGroup))
+        (hiddenInput (fieldName assignmentKeyField) . paramValue  . fst)
+        pd
+    H.p $ submitButton (fieldName saveSubmitBtn) (i "Save")
     where
       page :: PageData -> Page
       page = pageDataMap
@@ -128,3 +131,11 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
       amap f (PD_Assignment (_,a)) = Just . f $ a
       amap _ _                     = Nothing
 
+-- CSS Section
+
+slimLeftCell  = A.style "float: left;  width:30%; height: 5%"
+slimRightCell = A.style "float: right; width:68%; height: 5%"
+leftCell      = A.style "float: left;  width:30%; height: 30%"
+rightCell     = A.style "float: right; width:68%; height: 44%"
+fillDiv       = A.style "width: 98%; height: 90%"
+formDiv       = A.style "width: 100%; height: 600px"

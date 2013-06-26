@@ -83,7 +83,7 @@ submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ do
     (translate i "New comment")
     postForm (routeOf P.SubmissionDetails) $ do
-      textAreaInput (fieldName commentValueField) 50 10 Nothing
+      textAreaInput (fieldName commentValueField) Nothing
       hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
       hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
       submitButton (fieldName commentBtn) (i "Comment")

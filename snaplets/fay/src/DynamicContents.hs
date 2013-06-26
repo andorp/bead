@@ -37,7 +37,9 @@ hookDatetimePickerDiv hook = void $ do
   datepicker date
   hour <- select createTimeInput
   min <- select createTimeInput
+  br  <- select newLine
   appendTo div date
+  appendTo div br
   appendTo div hour
   appendTo div min
   numberField hour 0 23
@@ -55,6 +57,7 @@ hookDatetimePickerDiv hook = void $ do
   where
     createDateInput = "<input type=\"text\" size=\"10\" required readonly />"
     createTimeInput = "<input type=\"text\" size=\"2\" value=\"0\"/>"
+    newLine = "<br/>"
 
     datetime d h m = d ++ " " ++ (twoDigits h) ++ ":" ++ (twoDigits m) ++ ":00"
 

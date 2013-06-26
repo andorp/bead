@@ -47,7 +47,7 @@ submissionContent :: PageData -> Pagelet
 submissionContent p = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf P.Submission) $ do
   H.p $ do
     (translate i "Solution text box / Solution files")
-    textAreaInput (fieldName submissionTextField) 50 10 Nothing
+    textAreaInput (fieldName submissionTextField) Nothing
   H.p $ do
     (translate i "Description of the Assignment")
     (fromString (assignmentDesc (asValue p)))

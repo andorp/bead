@@ -131,12 +131,10 @@ textInput = charInput "text"
 passwordInput :: String -> Int -> Maybe String -> Html
 passwordInput = charInput "password"
 
-textAreaInput :: String -> Int -> Int -> Maybe String -> Html
-textAreaInput name cols rows value =
+textAreaInput :: String -> Maybe String -> Html
+textAreaInput name value =
   (H.textarea ! A.name (fromString name)
-              ! A.id   (fromString name)
-              ! A.cols (fromString . show $ cols)
-              ! A.rows (fromString . show $ rows)) value'
+              ! A.id   (fromString name)) value'
   where
     value' = fromString . maybe "" id $ value
 
