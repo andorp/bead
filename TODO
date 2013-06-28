@@ -11,9 +11,35 @@ Terminology:
 / Simple HTML DSL (Creating some primities)
 + i18n for the generated HTML output
 - Pandoc interpreted input exercise input fields
-- Change FamilyName to FullName
++ Change FamilyName to FullName
 + Parameters for WebDriver executable
 - User error codes: Snap layer, UserStory
-- Add evaulation type to the assignment
-- Change 'read' in persistence layer to read with exception thrown within the layer
++ Add evaulation type to the assignment
++ Change 'read' in persistence layer to read with exception thrown within the layer
+
++ Register page, go back to login page
+- Registration field validation
+- Username field validation, configurable pattern
+- Admin creation, read from stdin
+- Rename Professor to Group Admin
++ Remove Create Course Assignment from Home for admin
++ Remove Create Group Assignment from Home for admin
++ Remove Create Group Assignment form Home for Course Admin
+- Print text only for empty assignment tables
++ Change CourseAdmin text in navigational menu
+- Create Profile page (where you can change your password)
+- Force logged out message
+- Session timeout
+- Email registration
+- Auto Test Cases for assignments
+- MD5 sum in the persistence layer
+- Sending messages for the users
+- Opcional assignment
+- Print numbers of passed assignment for the binary evaluation in the submission table
+- Print the result of the percentage evaulation in the submission table
+- Upload files as solution for the assignment
+- Print and download the uploaded files
+- More helpful text on the course and course admin assignment section
+
+
 
