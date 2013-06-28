@@ -10,6 +10,7 @@ import Bead.Controller.ServiceContext hiding (serviceContext)
 import Bead.Controller.Logging as L
 
 import qualified Bead.Controller.UserStories as S
+import qualified Bead.Controller.Pages as P (Page(Login))
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
@@ -113,6 +114,7 @@ newUser = withTitleAndHead "Registration" content
     content = do
       H.h1 $ "Register a new user"
       registrationForm "/new_user"
+      linkToPageWithText P.Login "Go back to the login page"
 
 registrationForm :: String -> Html
 registrationForm postAction = do
