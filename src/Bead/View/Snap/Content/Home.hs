@@ -12,9 +12,14 @@ import Bead.Domain.Evaulation
 import Bead.Domain.Relationships (AssignmentDesc(..))
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.Pages as P (Page(..))
-import Bead.Controller.UserStories (userAssignments, submissionTables)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
+import Bead.Controller.UserStories (
+    userAssignments
+  , submissionTables
+  , administratedCourses
+  , administratedGroups
+  )
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
@@ -25,6 +30,8 @@ home = getContentHandler homePage
 
 data HomePageData = HomePageData {
     userState   :: UserState
+  , hasCourses  :: Bool -- True if the user has administrated courses
+  , hasGroups   :: Bool -- True if the user has administrated groups
   , assignments :: [(AssignmentKey, AssignmentDesc)]
   , sTables     :: [SubmissionTableInfo]
   }
@@ -32,27 +39,24 @@ data HomePageData = HomePageData {
 homePage :: GETContentHandler
 homePage = withUserStateE $ \s ->
   (renderPagelet . withUserFrame s . homeContent) =<<
-    (runStoryE $ do
-       a <- userAssignments
-       t <- submissionTables
-       return HomePageData {
-           userState   = s
-         , assignments = a
-         , sTables     = t
-         })
-
+    (runStoryE
+       (HomePageData s
+          <$> ((not . null) <$> administratedCourses)
+          <*> ((not . null) <$> administratedGroups)
+          <*> userAssignments
+          <*> submissionTables))
 
 homeContent :: HomePageData -> Pagelet
 homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
   let s = userState d
   when (isAdmin s) $ H.p $ (translate i18n "Admin's menu")
-  when (isCourseAdmin s) $ H.p $ do
+  when (hasCourses d) $ H.p $ do
     (translate i18n "Course Admin's menu")
     linkToPage P.NewCourseAssignment
-  when (isProfessor s) $ H.p $ do
+  when (hasGroups d) $ H.p $ do
     (translate i18n "Teacher's menu")
     linkToPage P.NewGroupAssignment
-  when (isCourseAdmin s || isProfessor s) $ H.p $ do
+  when (or [hasCourses d, hasGroups d]) $ H.p $ do
     (translate i18n "Submission table")
     htmlSubmissionTables i18n (sTables d)
   when (isStudent s) $ H.p $ do

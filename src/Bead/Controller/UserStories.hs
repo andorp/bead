@@ -45,6 +45,7 @@ newtype UserStory a = UserStory {
                    , CME.MonadError UserError
                    , CMR.MonadReader ServiceContext
                    , Functor
+                   , Applicative
                    , MonadIO)
 
 runUserStory
