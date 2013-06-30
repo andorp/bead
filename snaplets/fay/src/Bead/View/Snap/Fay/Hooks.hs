@@ -52,4 +52,3 @@ evaulationPctHook = PercentageHook {
   , ptHiddenInputId = hookId evaulationResultField
   }
 
-

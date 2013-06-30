@@ -118,7 +118,7 @@ logout = do
 userForm :: String -> Html
 userForm act = do
   postForm act $ do
-    table (fieldName loginForm) (fieldName loginForm) $ do
+    table (formId loginForm) (formId loginForm) $ do
       tableLine "Login:" (textInput (fieldName loginUsername) 20 Nothing ! A.required "")
       tableLine "Password:" (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
     submitButton (fieldName loginSubmitBtn) "Login"

@@ -23,6 +23,12 @@ class SnapFieldName f where
 class SnapClassName c where
   className :: (IsString s) => c -> s
 
+class SnapFormId f where
+  formId :: (IsString s) => f -> s
+
+instance SnapFormId FormId where
+  formId = fromString . rFormId
+
 newtype SubmitButton = SubmitButton { sbFieldName :: String }
 
 instance SnapFieldName SubmitButton where
@@ -30,17 +36,8 @@ instance SnapFieldName SubmitButton where
 
 -- * Component names
 
-data LoginComp
-  = UsernameField { lcFieldName :: String }
-  | PasswordField { lcFieldName :: String }
-  | LoginForm { lcFieldName :: String }
-
-instance SnapFieldName LoginComp where
+instance SnapFieldName LoginField where
   fieldName = fromString . lcFieldName
-
-loginUsername = UsernameField "login"
-loginPassword = PasswordField "password"
-loginForm = LoginForm "login-form"
 
 loginSubmitBtn = SubmitButton "login-submit"
 regSubmitBtn   = SubmitButton "reg-submit"
@@ -56,15 +53,8 @@ commentBtn = SubmitButton "comment-submit-btn"
 saveChangesBtn = SubmitButton "save-changes-btn"
 assignGroupAdminBtn = SubmitButton "asg-group-admin-submit"
 
-data RegistrationComp
-  = RegFullName     { rFieldName :: String }
-  | RegEmailAddress { rFieldName :: String }
-
 instance SnapFieldName RegistrationComp where
   fieldName = fromString . rFieldName
-
-regFullName     = RegFullName     "reg_family_name"
-regEmailAddress = RegEmailAddress "reg_email_address"
 
 data ExerciseForm
   = ExerciseForm     { eFieldName :: String }
@@ -252,7 +242,7 @@ instance SnapFieldName TableName where
 
 availableAssignmentsTable = TableName "available-assignments"
 submissionTableName = TableName "submission-table"
-registrationTable = TableName "reg-form"
+registrationTable = TableName "reg-form-table"
 
 -- * Template names
 
@@ -301,9 +291,11 @@ submissionBinaryFailed = SubmissionTableCell "submission-binary-failed"
 -- * Unit tests
 
 data SFN = forall n . SnapFieldName n => SFN n
+         | forall n . SnapFormId n    => SFI n
 
 instance SnapFieldName SFN where
   fieldName (SFN n) = fieldName n
+  fieldName (SFI n) = formId n
 
 data SCN = forall n . SnapClassName n => SCN n
 
@@ -326,12 +318,14 @@ fieldList = map fieldName $ join [
   , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField,     SFN evaulationKeyField
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
-  , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn, SFN loginForm
+  , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
   , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
   , SFN evaulationPercentageDiv
+
+  , SFI regForm, SFI loginForm
   ], (map SFN P.allPages)
   ]
 

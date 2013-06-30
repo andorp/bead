@@ -23,3 +23,18 @@ datePickerClass = HookClass "datepicker"
 hourSpinnerClass = HookClass "hourspinner"
 minuteSpinnerClass = HookClass "minutespinner"
 
+data LoginField = LoginField { lcFieldName :: String }
+
+loginUsername = LoginField "login"
+loginPassword = LoginField "password"
+
+data RegistrationComp = RegComp { rFieldName :: String }
+
+regFullName = RegComp "reg_full_name"
+regEmailAddress = RegComp "reg_email_address"
+
+data FormId = FormId { rFormId :: String }
+
+loginForm = FormId "login-form"
+regForm = FormId "reg-form"
+

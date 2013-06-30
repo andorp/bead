@@ -109,7 +109,7 @@ registration = method GET handleForm <|> method POST handleFormSubmit
 -- * Blaze
 
 newUser :: Html
-newUser = withTitleAndHead "Registration" content
+newUser = dynamicTitleAndHead "Registration" content
   where
     content = do
       H.h1 $ "Register a new user"
@@ -118,7 +118,7 @@ newUser = withTitleAndHead "Registration" content
 
 registrationForm :: String -> Html
 registrationForm postAction = do
-  postForm postAction $ do
+  postForm postAction ! (A.id . formId $ regForm) $ do
     table (fieldName registrationTable) (fieldName registrationTable) $ do
       tableLine "Username:"      $ textInput (fieldName loginUsername)     20 Nothing ! A.required ""
       tableLine "Password:"      $ passwordInput (fieldName loginPassword) 20 Nothing ! A.required ""

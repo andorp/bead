@@ -18,14 +18,17 @@ Terminology:
 + Change 'read' in persistence layer to read with exception thrown within the layer
 
 + Register page, go back to login page
-- Registration field validation
+/ Registration field validation
+  + Client side field validation
+  - Client side error indication on fields
+  - Server side field validation
 - Username field validation, configurable pattern
 - Admin creation, read from stdin
 - Rename Professor to Group Admin
 + Remove Create Course Assignment from Home for admin
 + Remove Create Group Assignment from Home for admin
 + Remove Create Group Assignment form Home for Course Admin
-- Print text only for empty assignment tables
++ Print text only for empty assignment tables
 + Change CourseAdmin text in navigational menu
 - Create Profile page (where you can change your password)
 - Force logged out message
@@ -40,6 +43,8 @@ Terminology:
 - Upload files as solution for the assignment
 - Print and download the uploaded files
 - More helpful text on the course and course admin assignment section
+- File logging
+
 
 
 

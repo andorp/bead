@@ -25,6 +25,7 @@ onload = do
   hookDatetimePickerDiv startDateTimeHook
   hookDatetimePickerDiv endDateTimeHook
   hookPercentageDiv evaulationPctHook pctValue
+  hookRegistrationForm
 
 pctValue :: String -> String
 pctValue = toEvResultJSON . percentageResult . parseDouble
@@ -96,6 +97,26 @@ numberField i min max = do
       v  -> do let x = parseInt v
                when (x <  min) $ setVal (show min) t
                when (x >= max) $ setVal (show max) t
+
+hookRegistrationForm :: Fay ()
+hookRegistrationForm = void $ do
+  regForm <- select . cssId . rFormId $ regForm
+  uname <- select . cssId . lcFieldName $ loginUsername
+  pwd   <- select . cssId . lcFieldName $ loginPassword
+  email <- select . cssId . rFieldName $ regEmailAddress
+  fname <- select . cssId . rFieldName $ regFullName
+
+  let validator = do
+        u <- getVal uname
+        p <- getVal pwd
+        e <- getVal email
+        f <- getVal fname
+        return $ and [
+            isUsername u
+          , isPassword p
+          ]
+
+  onSubmit validator regForm
 
 hookEvaulationTypeForm :: EvaulationHook -> Fay ()
 hookEvaulationTypeForm hook = do

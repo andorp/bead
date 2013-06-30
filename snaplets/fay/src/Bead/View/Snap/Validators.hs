@@ -4,11 +4,11 @@ import Prelude
 
 {- This module is compiled with Fay and Haskell -}
 
-username :: String -> Bool
-username = not . null
+isUsername :: String -> Bool
+isUsername = not . null
 
-password :: String -> Bool
-password = (>4) . length
+isPassword :: String -> Bool
+isPassword = (>4) . length
 
 isDigit :: Char -> Bool
 isDigit '0' = True

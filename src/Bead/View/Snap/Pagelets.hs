@@ -57,30 +57,40 @@ document headers body = H.docTypeHtml $ do
     css "header.css"
   H.body $ body
 
+dynamicDocument :: Html -> Html -> Html
+dynamicDocument header = document
+    (do css "jquery-ui.css"
+        js "/jquery.js"
+        js "/jquery-ui.js"
+        js "/fay/DynamicContents.js"
+        header)
+
 runPagelet :: Pagelet -> I18N -> Html
 runPagelet p i = document (css "inside.css") (translate i . struct $ p)
 
 runDynamicPagelet :: Pagelet -> I18N -> Html
 runDynamicPagelet p i =
-  document
-    (do css "jquery-ui.css"
-        css "inside.css"
-        H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p)
-        js "/jquery.js"
-        js "/jquery-ui.js"
-        js "/fay/DynamicContents.js")
+  dynamicDocument
+    (do css "inside.css"
+        H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p))
     (translate i . struct $ p)
 
 class BlazeTemplate b where
   template :: b -> Html
 
-withTitleAndHead :: String -> Html -> Html
-withTitleAndHead title content = document
+titleAndHead :: (Html -> Html -> Html) -> String -> Html -> Html
+titleAndHead doc title content = doc
   (css "screen.css")
   (do H.div ! A.id "header" $ do
         H.div ! A.id "logo" $ "Bead"
         H.div ! A.id "title" $ (fromString title)
       H.div ! A.id "content" $ content)
+
+dynamicTitleAndHead :: String -> Html -> Html
+dynamicTitleAndHead = titleAndHead dynamicDocument
+
+withTitleAndHead :: String -> Html -> Html
+withTitleAndHead = titleAndHead document
 
 withUserFrame :: UserState -> Pagelet -> Pagelet
 withUserFrame s = structMap withUserFrame'
