@@ -82,12 +82,26 @@ availableAssignments i18n as = do
 htmlSubmissionTables :: I18N -> [SubmissionTableInfo] -> Html
 htmlSubmissionTables i18n xs = mapM_ (htmlSubmissionTable i18n) . zip [1..] $ xs
 
+-- Produces the HTML table from the submission table information,
+-- if there is no users registered and submission posted to the
+-- group or course students, an informational text is shown.
 htmlSubmissionTable :: I18N -> (Int,SubmissionTableInfo) -> Html
-htmlSubmissionTable i18n (i,s) = table (join ["st", show i]) (className groupSubmissionTable) $ do
+
+-- Empty table
+htmlSubmissionTable i18n (i,s)
+  | and [null . stAssignments $ s, null . stUsers $ s] = H.p $ do
+      translate i18n "Assignments and users are not registered for the group:"
+      H.br
+      fromString . stCourse $ s
+      H.br
+
+-- Non empty table
+htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) $ do
   headLine (stCourse s)
   assignmentLine (stAssignments s)
   mapM_ userLine (stUserLines s)
   where
+    tableId = join ["st", show i]
     headLine = H.tr . H.th . fromString
     assignmentLine as = H.tr $ do
       H.th (translate i18n "Name")
