@@ -14,6 +14,7 @@ import qualified Bead.Controller.Pages as P (Page(Login))
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
+import Bead.View.Snap.Validators
 import qualified Bead.Persistence.Persist as P (Persist(..), runPersist)
 
 import Bead.View.Snap.Content hiding (BlazeTemplate, template, empty, method)
@@ -58,6 +59,12 @@ createAdminUser persist usersdb name password = do
 
 -- * User registration handler
 
+data RegError = RegError LogLevel String
+
+instance Error RegError where
+  noMsg      = RegError DEBUG ""
+  strMsg msg = RegError DEBUG msg
+
 registration :: Handler App (AuthManager App) ()
 registration = method GET handleForm <|> method POST handleFormSubmit
   where
@@ -66,45 +73,53 @@ registration = method GET handleForm <|> method POST handleFormSubmit
     -- Registers a user as a Student, the administrator can grant
     -- better access to the user
     handleFormSubmit = do
-      -- Register the user in the Snap auth module
-      registerUser
-        (fieldName loginUsername)
-        (fieldName loginPassword)
-      -- Register the user in the service context module
-      uname      <- getParam (fieldName loginUsername)
-      passwBS    <- getParam (fieldName loginPassword)
-      email      <- getParam (fieldName regEmailAddress)
-      fullname   <- getParam (fieldName regFullName)
-      case (uname,email,fullname) of
-        (Just u,Just e, Just f) -> do
-          -- Create a user info for the service context and
-          -- read the created user info from the Snap auth service context
-          -- and run the registration user story in the service context
-          -- with a freshly created (and encrypted) user password
-          -- in the user context
-          let usr = User {
-                u_role = Student
-              , u_username = asUsername u
-              , u_email = Email . unpack $ e
-              , u_name = unpack f
-              }
-          context <- withTop serviceContext $ getServiceContext
-          createdUser <- withBackend $ \r -> liftIO $ lookupByLogin r (T.pack $ unpack u)
-          case createdUser of
-            Nothing -> withTop serviceContext . logMessage ERROR $
-                         "User was not created at the first stage"
-            Just u' -> do
-              result  <- liftIO $ S.runUserStory context Registration
-                           (S.createUser usr (passwordFromAuthUser u'))
-              case result of
-                Left err -> withTop serviceContext . logMessage ERROR . show $ err
-                _        -> withTop serviceContext . logMessage INFO . show $
-                              "Everything went fine. The user is created."
+      regResult <- runErrorT $ do
+        -- Register the user in the Snap auth module
+        lift $ registerUser
+          (fieldName loginUsername)
+          (fieldName loginPassword)
+        -- Register the user in the service context module
+        uname      <- getParam (fieldName loginUsername)
+        passwBS    <- getParam (fieldName loginPassword)
+        email      <- getParam (fieldName regEmailAddress)
+        fullname   <- getParam (fieldName regFullName)
+        case (uname,email,fullname, passwBS) of
+          (Just u,Just e, Just f, Just p) -> do
+            -- Create a user info for the service context and
+            -- read the created user info from the Snap auth service context
+            -- and run the registration user story in the service context
+            -- with a freshly created (and encrypted) user password
+            -- in the user context
+            validateField isUsername u
+            validateField isPassword p
+            let usr = User {
+                  u_role = Student
+                , u_username = asUsername u
+                , u_email = Email . unpack $ e
+                , u_name = unpack f
+                }
+            context     <- lift $ withTop serviceContext $ getServiceContext
+            createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (T.pack $ unpack u)
+            case createdUser of
+              Nothing -> throwError (RegError ERROR "User was not created at the first stage")
+              Just u' -> do
+                result  <- liftIO $ S.runUserStory context Registration
+                             (S.createUser usr (passwordFromAuthUser u'))
+                case result of
+                  Left err -> throwError (RegError ERROR (show err))
+                  _        -> throwError (RegError INFO "Everything went fine. The user is created.")
 
-        _ -> withTop serviceContext . logMessage ERROR $
-               "Username, email, or family name was not provided by the form"
+          _ -> throwError (RegError ERROR "Username, email, or family name was not provided by the form")
+      case regResult of
+        Left (RegError lvl msg) -> withTop serviceContext $ logMessage lvl msg
+        Right _                 -> return ()
       -- It does not matter what happens we redirect to the "/" page
       redirect "/"
+      where
+        validateField f v =
+          validate f (unpack v)
+            (return ())
+            (throwError . RegError ERROR)
 
 -- * Blaze
 

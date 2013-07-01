@@ -18,10 +18,10 @@ Terminology:
 + Change 'read' in persistence layer to read with exception thrown within the layer
 
 + Register page, go back to login page
-/ Registration field validation
++ Registration field validation
   + Client side field validation
-  - Client side error indication on fields
-  - Server side field validation
+  + Client side error indication on fields
+  + Server side field validation
 - Username field validation, configurable pattern
 - Admin creation, read from stdin
 - Rename Professor to Group Admin

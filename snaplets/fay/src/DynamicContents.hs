@@ -6,7 +6,7 @@ module DynamicContents where
 import FFI
 import Prelude
 import Data.Data
-import JQuery hiding (filter)
+import JQuery hiding (filter, validate)
 import Fay.JQueryUI
 
 import Bead.Domain.Shared.Evaulation
@@ -107,16 +107,30 @@ hookRegistrationForm = void $ do
   fname <- select . cssId . rFieldName $ regFullName
 
   let validator = do
-        u <- getVal uname
-        p <- getVal pwd
-        e <- getVal email
-        f <- getVal fname
-        return $ and [
-            isUsername u
-          , isPassword p
+        messages <- select . cssClass $ removable
+        remove messages
+        andM
+          [ insertErrorMsg isUsername uname
+          , insertErrorMsg isPassword pwd
           ]
 
   onSubmit validator regForm
+  where
+    insertErrorMsg :: FieldValidator -> JQuery -> Fay Bool
+    insertErrorMsg f e = do
+      v <- getVal e
+      validate f v
+        (return True)
+        (\m -> do span <- makeMessage m
+                  after span e
+                  return False)
+
+    removable = "regremovable"
+    makeMessage msg = select (
+      "<snap class=\"" ++
+      removable ++ "\"><br>"
+      ++ msg ++
+      "</span>")
 
 hookEvaulationTypeForm :: EvaulationHook -> Fay ()
 hookEvaulationTypeForm hook = do
@@ -170,6 +184,9 @@ void f = f >> return ()
 
 (<$>) :: (a -> b) -> Fay a -> Fay b
 f <$> m = m >>= (return . f)
+
+andM :: [Fay Bool] -> Fay Bool
+andM fs = and <$> (sequence fs)
 
 -- * JQuery helpers
 

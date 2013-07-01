@@ -4,11 +4,28 @@ import Prelude
 
 {- This module is compiled with Fay and Haskell -}
 
-isUsername :: String -> Bool
-isUsername = not . null
+-- | Validator for an input field
+data FieldValidator = FieldValidator {
+    validator :: String -> Bool -- Produces True if the String is valid
+  , message   :: String         -- The message to shown when the validation fails
+  }
 
-isPassword :: String -> Bool
-isPassword = (>4) . length
+validate :: FieldValidator -> String -> a -> (String -> a) -> a
+validate f v onValid onFail
+  | validator f v = onValid
+  | otherwise     = onFail (message f)
+
+isUsername :: FieldValidator
+isUsername = FieldValidator {
+    validator = not . null
+  , message   = "Empty username"
+  }
+
+isPassword :: FieldValidator
+isPassword = FieldValidator {
+    validator = (>4) . length
+  , message   = "Less than 4 characters"
+  }
 
 isDigit :: Char -> Bool
 isDigit '0' = True
