@@ -22,7 +22,7 @@ import Bead.Domain.Relationships
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A (class_)
+import qualified Text.Blaze.Html5.Attributes as A (class_, style)
 
 submissionDetails :: Content
 submissionDetails = getPostContentHandler submissionDetailsPage submissionDetailsPostHandler
@@ -67,29 +67,35 @@ submissionDetailsContent :: PageData -> Pagelet
 submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
   let sm = smDetails p
   H.p $ do
-    (translate i "Group / Course")
+    (translate i "Group / Course: ")
     (fromString . sdGroup $ sm)
   H.p $ do
-    (translate i "Teacher")
+    (translate i "Teacher: ")
     (fromString . join . intersperse ", " . sdTeacher $ sm)
-  H.h2 $ (translate i "Assignment")
+  H.h2 $ (translate i "Assignment: ")
   H.div ! A.class_ (className assignmentTextDiv) $ H.pre . fromString . sdAssignment $ sm
   H.p $ do
-    (translate i "Status")
+    (translate i "Status: ")
     (fromString . sdStatus $ sm)
   H.p $ do
-    (translate i "Submission text")
+    (translate i "Submission text: ")
     (fromString . sdSubmission $ sm)
   H.p $ do
     (translate i "New comment")
     postForm (routeOf P.SubmissionDetails) $ do
-      textAreaInput (fieldName commentValueField) Nothing
-      hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
-      hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
+      H.div ! formDiv $ do
+        textAreaInput (fieldName commentValueField) Nothing ! fillDiv
+        hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
+        hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
       submitButton (fieldName commentBtn) (i "Comment")
   translate i . commentsDiv . sdComments $ sm
 
 invalidSubmission :: Pagelet
 invalidSubmission = onlyHtml $ mkI18NHtml $ \i ->
   (translate i "You have tried to open a submission that not belongs to you")
+
+-- CSS Section
+
+fillDiv = A.style "width: 98%; height: 98%"
+formDiv = A.style "width: 100%; height: 100px"
 
