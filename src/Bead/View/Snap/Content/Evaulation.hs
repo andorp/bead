@@ -20,7 +20,7 @@ import Bead.Domain.Evaulation
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A (id)
+import qualified Text.Blaze.Html5.Attributes as A (id, class_, style)
 
 evaulation :: Content
 evaulation = getPostContentHandler evaulationPage evaulationPostHandler
@@ -82,23 +82,24 @@ modifyEvaulationPost = do
 evaulationContent :: PageData -> Pagelet
 evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   let sd = sbmDesc pd
-  H.p $ do
-    (translate i "Information: Course, Group, Student")
-    (fromString . eGroup   $ sd)
-    (fromString . eStudent $ sd)
-  H.p $ postForm (routeOf . evPage . sbmKey $ pd) $ do
-          H.p $ do
-            (translate i "Evaulation text block")
-            textAreaInput (fieldName evaulationValueField) Nothing
-          H.p $ do
-            (translate i "Evaulation checkbox, Submit button")
-            -- TODO: Checkbox
-          hiddenKeyField . sbmKey $ pd
-          H.div ! A.id (fieldName evaulationPercentageDiv) $ do
-            translate i . inputEvalResult . eConfig $ sd
-            submitButton (fieldName saveEvalBtn) (i "Save Evaulation")
-  H.p $ do
-    (translate i "Submitted solution")
+  postForm (routeOf . evPage . sbmKey $ pd) $ H.div ! formDiv $ do
+    H.div ! title $ H.h2 (translate i "Evaluation")
+    H.div ! leftInfo $ do
+      H.table $ do
+        H.tr $ do
+          H.td $ H.b $ (translate i "Course, Group: ")
+          H.td $ (fromString . eGroup $ sd)
+        H.tr $ do
+          H.td $ H.b $ (translate i "Student: ")
+          H.td $ (fromString . eStudent $ sd)
+      H.div ! A.id (fieldName evaulationPercentageDiv) $
+        translate i . inputEvalResult . eConfig $ sd
+      submitButton (fieldName saveEvalBtn) (i "Save Evaluation")
+    H.div ! rightText $ do
+      textAreaInput (fieldName evaulationValueField) Nothing ! fillDiv
+      hiddenKeyField . sbmKey $ pd
+  H.div $ H.h2 $ (translate i "Submitted solution")
+  H.div ! A.class_ (className assignmentTextDiv) $ H.pre $ do
     (fromString . eSolution $ sd)
   translate i . commentsDiv . eComments $ sd
 
@@ -127,3 +128,11 @@ inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
 inputEvalResult (PctEval cfg) = mkI18NHtml $ \i -> do
   -- TODO: field validation
   hiddenInput (fieldName evaulationResultField) ""
+
+-- CSS Section
+
+formDiv = A.style "width: 100%; height: 200px"
+title   = A.style "width: 100%"
+leftInfo = A.style "float: left; width: 28%; height: 100%"
+rightText = A.style "float: right; width: 68%; height: 100%"
+fillDiv = A.style "width: 98%; height: 98%"
