@@ -44,7 +44,5 @@ Terminology:
 - Print and download the uploaded files
 - More helpful text on the course and course admin assignment section
 - File logging
-
-
-
-
+- Assignment creation start field should be required
+- Assignment creation end   field should be required
