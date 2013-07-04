@@ -19,7 +19,7 @@ userDetails = getPostContentHandler userDetailPage userDataChange
 
 userDetailPage :: GETContentHandler
 userDetailPage = withUserStateE $ \s -> do
-  username <- getParamE (fieldName usernameField) Username "Username is not found"
+  username <- getParameter usernamePrm
   exist    <- runStoryE . doesUserExist $ username
   case exist of
     True -> do

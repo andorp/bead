@@ -30,7 +30,7 @@ data PageData = PageData {
 
 submissionPage :: GETContentHandler
 submissionPage = withUserStateE $ \s -> do
-  ak <- getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
+  ak <- getParameter assignmentKeyPrm
   usersAssignment ak $ \assignment ->
     renderPagelet . withUserFrame s $
       case assignment of
@@ -38,11 +38,12 @@ submissionPage = withUserStateE $ \s -> do
         Just a  -> submissionContent (PageData { asKey = ak, asValue = a })
 
 submissionPostHandler :: POSTContentHandler
-submissionPostHandler = do
-  submissionText <- getParamE (fieldName submissionTextField) id "Submission text was not found"
-  assignmentKey  <- getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
-  now <- liftIO getCurrentTime
-  return $ NewSubmission assignmentKey (E.Submission submissionText now)
+submissionPostHandler =
+  NewSubmission
+    <$> getParameter assignmentKeyPrm
+    <*> (E.Submission
+           <$> getParameter (stringParameter (fieldName submissionTextField) "Submission text")
+           <*> liftIO getCurrentTime)
 
 submissionContent :: PageData -> Pagelet
 submissionContent p = onlyHtml $ mkI18NHtml $ \i -> do

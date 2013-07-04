@@ -81,7 +81,6 @@ assignProfessor :: Content
 assignProfessor = postContentHandler submitProfessor
 
 submitProfessor :: POSTContentHandler
-submitProfessor = do
-  username <- getParamE (fieldName selectedProfessor) Username "Professor was not found"
-  groupKey <- getParamE (fieldName selectedGroup) GroupKey "Group key was not found"
-  return $ UA.CreateProfessor username groupKey
+submitProfessor = UA.CreateProfessor
+  <$> getParameter (customUsernamePrm (fieldName selectedProfessor))
+  <*> getParameter (customGroupKeyPrm (fieldName selectedGroup))

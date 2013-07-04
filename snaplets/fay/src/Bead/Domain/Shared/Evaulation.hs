@@ -14,6 +14,10 @@ data EvaulationData b p
   | PctEval p
   deriving (Eq, Show, Read, Data, Typeable)
 
+evaluationDataMap :: (b -> a) -> (p -> a) -> EvaulationData b p -> a
+evaluationDataMap f _ (BinEval x) = f x
+evaluationDataMap _ f (PctEval x) = f x
+
 evaulationTypes :: [EvaulationData () ()]
 evaulationTypes = [BinEval (), PctEval ()]
 

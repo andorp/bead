@@ -9,7 +9,7 @@ module Bead.View.Snap.Content (
   , postContentHandler
   , mkContent
   , blaze
-  , getParamE
+  , getParameter
   , getJSONParam
   , setInSessionE
   , setReqParamInSession
@@ -40,6 +40,7 @@ module Bead.View.Snap.Content (
   , module Bead.View.Snap.I18N
   , module Bead.View.Snap.Application
   , module Bead.View.Snap.Pagelets
+  , module Bead.View.Snap.DataBridge
   , module Bead.View.Snap.InputHandlers
   , module Bead.View.Snap.TemplateAndComponentNames
   , module Bead.View.Snap.Fay.HookIds
@@ -58,6 +59,7 @@ import Bead.View.UserActions
 import Bead.View.Snap.I18N
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.Dictionary (I18N)
+import Bead.View.Snap.DataBridge hiding (name)
 import Bead.View.Snap.Pagelets hiding (invariants)
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.HandlerUtils

@@ -35,8 +35,8 @@ data PageData = PageData {
 
 submissionDetailsPage :: GETContentHandler
 submissionDetailsPage = withUserStateE $ \s -> do
-  ak <- getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
-  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key was not found"
+  ak <- getParameter assignmentKeyPrm
+  sk <- getParameter submissionKeyPrm
   usersSubmission ak sk $ \submission -> do
     case submission of
       Nothing -> renderPagelet . withUserFrame s $ invalidSubmission
@@ -51,9 +51,9 @@ submissionDetailsPage = withUserStateE $ \s -> do
 
 submissionDetailsPostHandler :: POSTContentHandler
 submissionDetailsPostHandler = do
-  ak <- getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
-  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key was not found"
-  c  <- getParamE (fieldName commentValueField) id "Comment was not found"
+  ak <- getParameter assignmentKeyPrm
+  sk <- getParameter submissionKeyPrm
+  c  <- getParameter (stringParameter (fieldName commentValueField) "Comment")
   now <- liftIO $ getCurrentTime
   usersSubmission ak sk $ \s -> do
     return $ case s of

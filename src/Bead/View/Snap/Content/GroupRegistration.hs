@@ -26,8 +26,8 @@ data GroupRegData = GroupRegData {
   }
 
 postGroupReg :: POSTContentHandler
-postGroupReg =
-  SubscribeToGroup <$> getParamE (fieldName groupRegistrationField) GroupKey "Group key is not found"
+postGroupReg = SubscribeToGroup
+  <$> getParameter (customGroupKeyPrm (fieldName groupRegistrationField))
 
 groupRegistrationPage :: GETContentHandler
 groupRegistrationPage = withUserStateE $ \s -> do

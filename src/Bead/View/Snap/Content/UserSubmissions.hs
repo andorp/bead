@@ -20,8 +20,8 @@ userSubmissions = getContentHandler userSubmissionPage
 
 userSubmissionPage :: GETContentHandler
 userSubmissionPage = withUserStateE $ \s -> do
-  username <- getParamE (fieldName usernameField)      Username "Username is not found"
-  aKey     <- getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
+  username <- getParameter usernamePrm
+  aKey     <- getParameter assignmentKeyPrm
   mDesc <- runStoryE $ U.userSubmissions username aKey
   case mDesc of
     Nothing -> renderPagelet $ withUserFrame s unauthorized

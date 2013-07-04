@@ -1,6 +1,6 @@
 module Bead.View.Snap.InputHandlers where
 
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>),(<*>))
 import Data.Maybe (maybe, isJust, fromJust)
 import Data.Time (UTCTime(..))
 
@@ -15,6 +15,7 @@ import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
+import Bead.View.Snap.DataBridge
 
 import Text.Blaze.Html5 (Html(..))
 
@@ -29,7 +30,7 @@ class InputPagelet i where
 -- * Instances
 
 instance GetValueHandler GroupKey where
-  getValue = getParamE (fieldName groupKeyName) GroupKey "Group key is not found"
+  getValue = getParameter groupKeyPrm
 
 emptyGroup :: Maybe Group
 emptyGroup = Nothing
@@ -45,39 +46,19 @@ instance InputPagelet Group where
     evalSelectionDiv hook
 
 instance GetValueHandler Group where
-  getValue = do
-    let hook = createGroupHook
-    nameParam <- getParamE (fieldName groupNameField) id "Group name is not found"
-    descParam <- getParamE (fieldName groupDescField) id "Group description is not found"
-    evalParam <- getParamE (evHiddenValueId hook) readEvalConfig "Group evaulation is not found"
-    return $ Group {
-        groupName = nameParam
-      , groupDesc = descParam
-      , groupEvalConfig = evalParam
-      }
+  getValue = Group
+      <$> getParameter (stringParameter (fieldName groupNameField) "Group name")
+      <*> getParameter (stringParameter (fieldName groupDescField) "Group description")
+      <*> getParameter (evalConfigPrm createGroupHook)
 
 instance GetValueHandler CourseKey where
-  getValue = getParamE (fieldName courseKeyInfo) CourseKey "Course key is not found"
+  getValue = getParameter courseKeyPrm
 
 instance GetValueHandler Course where
-  getValue = do
-    let hook = createCourseHook
-    nameParam <- getParamE (fieldName courseNameField) id "Course name is not found"
-    descParam <- getParamE (fieldName courseDescField) id "Course description is not found"
-    evalParam <- getParamE (evHiddenValueId hook) readEvalConfig "Course evaulation is not found"
-    return Course {
-        courseName = nameParam
-      , courseDesc = descParam
-      , courseEvalConfig = evalParam
-      }
-    where
-
-readEvalConfig :: String -> EvaulationData () PctConfig
-readEvalConfig = convert . read
-  where
-    convert :: EvaulationData () Double -> EvaulationData () PctConfig
-    convert (BinEval ()) = BinEval ()
-    convert (PctEval f) = PctEval (PctConfig f)
+  getValue = Course
+    <$> getParameter (stringParameter (fieldName courseNameField) "Course name")
+    <*> getParameter (stringParameter (fieldName courseDescField) "Course description")
+    <*> getParameter (evalConfigPrm createCourseHook)
 
 emptyCourse :: Maybe Course
 emptyCourse = Nothing
@@ -102,13 +83,7 @@ instance InputPagelet Role where
       roleOptions (Just q') r = option (show r) (show r) (q' == r)
 
 instance GetValueHandler Role where
-  getValue = getParamE (fieldName userRoleField) id "Role is not defined" >>= createRole where
-
-    createRole :: String -> HandlerError App App Role
-    createRole s = do
-      case parseRole s of
-        Just r  -> return r
-        Nothing -> throwError . strMsg $ "Role was not parseable: " ++ s
+  getValue = getParameter rolePrm
 
 emptyUsername :: Maybe Username
 emptyUsername = Nothing
@@ -117,23 +92,17 @@ instance InputPagelet Username where
   inputPagelet u = textInput (fieldName usernameField) 20 (fmap str u)
 
 instance GetValueHandler Username where
-  getValue = getParamE (fieldName usernameField) Username "Username is not found"
+  getValue = getParameter usernamePrm
 
 emptyUser :: Maybe User
 emptyUser = Nothing
 
 instance GetValueHandler User where
-  getValue = do
-    role     <- getValue
-    username <- getValue
-    email    <- getParamE (fieldName userEmailField) Email   "Email is not found"
-    fname    <- getParamE (fieldName userFamilyNameField) id   "Full name is not found"
-    return $ User {
-        u_role = role
-      , u_username = username
-      , u_email = email
-      , u_name = fname
-      }
+  getValue = User
+    <$> getValue -- role
+    <*> getValue -- username
+    <*> getParameter userEmailPrm
+    <*> getParameter (stringParameter (fieldName userFamilyNameField) "Full name")
 
 instance InputPagelet User where
   inputPagelet u = table "user-detail-table" "user-detail-table" $ do
@@ -146,24 +115,16 @@ emptyAssignment :: Maybe Assignment
 emptyAssignment = Nothing
 
 instance GetValueHandler AssignmentKey where
-  getValue = getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
+  getValue = getParameter assignmentKeyPrm
 
 instance GetValueHandler Assignment where
-  getValue = do
-    name  <- getParamE (fieldName assignmentNameField) id "Assignment Name is not found"
-    desc  <- getParamE (fieldName assignmentDescField) id "Assignment Description is not found"
-    tcs   <- getParamE (fieldName assignmentTCsField) id "Assignment TCs is not found"
-    tp    <- getParamE (fieldName assignmentTypeField) (readMsg "Assignment type") "Assignment Type is not found"
-    start <- getParamE (fieldName assignmentStartField) (readMsg "Assignment start") "Assignment Start is not found"
-    end   <- getParamE (fieldName assignmentEndField) (readMsg "Assignment end") "Assignment End is not found"
-    return $ Assignment {
-        assignmentDesc = desc
-      , assignmentName = name
-      , assignmentTCs  = tcs
-      , assignmentType = tp
-      , assignmentStart = start
-      , assignmentEnd   = end
-      }
+  getValue = Assignment
+    <$> getParameter (stringParameter (fieldName assignmentNameField) "Assignment Name")
+    <*> getParameter (stringParameter (fieldName assignmentDescField) "Assignment Description")
+    <*> getParameter (stringParameter (fieldName assignmentTCsField) "Assignment Tests")
+    <*> getParameter assignmentTypePrm
+    <*> getParameter assignmentStartPrm
+    <*> getParameter assignmentEndPrm
 
 -- * Combined input fields
 
@@ -189,6 +150,3 @@ hourInput n v = required . setHookClass hourSpinnerClass $ textInput n 2 (show <
 
 minInput :: String -> Maybe Int -> Html
 minInput n v = required . setHookClass minuteSpinnerClass $ textInput n 2 (show <$> v)
-
-utcTimeParam :: String -> HandlerError App App (Maybe UTCTime)
-utcTimeParam n = getParamE n readMaybe "UTC Time field was not found"

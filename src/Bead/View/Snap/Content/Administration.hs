@@ -74,7 +74,6 @@ assignCourseAdmin :: Content
 assignCourseAdmin = postContentHandler submitCourse
 
 submitCourse :: POSTContentHandler
-submitCourse = do
-  username  <- getParamE (fieldName selectedCourseAdmin) Username "Selected course admin parameter was not found"
-  courseKey <- getParamE (fieldName selectedCourse) CourseKey "Selected course was not found"
-  return $ UA.CreateCourseAdmin username courseKey
+submitCourse = UA.CreateCourseAdmin
+  <$> getParameter (customUsernamePrm  (fieldName selectedCourseAdmin))
+  <*> getParameter (customCourseKeyPrm (fieldName selectedCourse))

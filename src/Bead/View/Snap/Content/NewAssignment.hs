@@ -50,10 +50,9 @@ newCourseAssignmentPage = withUserStateE $ \s -> do
   renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Course cs))
 
 postCourseAssignment :: POSTContentHandler
-postCourseAssignment = do
-  courseKey <- getParamE (fieldName selectedCourse) CourseKey "Selected course was not found"
-  assignment <- getValue
-  return $ CreateCourseAssignment courseKey assignment
+postCourseAssignment = CreateCourseAssignment
+  <$> getParameter (customCourseKeyPrm (fieldName selectedCourse))
+  <*> getValue -- assignment
 
 -- * Group Assignment
 
@@ -63,10 +62,9 @@ newGroupAssignmentPage = withUserStateE $ \s -> do
   renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Group gs))
 
 postGroupAssignment :: POSTContentHandler
-postGroupAssignment = do
-  groupKey <- getParamE (fieldName selectedGroup) GroupKey "Selected group was not found"
-  assignment <- getValue
-  return $ CreateGroupAssignment groupKey assignment
+postGroupAssignment = CreateGroupAssignment
+  <$> getParameter (customGroupKeyPrm (fieldName selectedGroup))
+  <*> getValue -- assignment
 
 -- * Modify Assignment
 

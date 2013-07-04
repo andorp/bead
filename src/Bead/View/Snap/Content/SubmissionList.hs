@@ -30,7 +30,7 @@ data PageData = PageData {
 
 submissionListPage :: GETContentHandler
 submissionListPage = withUserStateE $ \s -> do
-  ak <- getParamE (fieldName assignmentKeyField) AssignmentKey "Assignment key was not found"
+  ak <- getParameter assignmentKeyPrm
   usersAssignment ak $ \assignment -> do
     case assignment of
       Nothing -> renderPagelet . withUserFrame s $ invalidAssignment

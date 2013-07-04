@@ -128,6 +128,9 @@ userSubmissionDescPermissions = ObjectPermissions [
 newtype AssignmentKey = AssignmentKey String
   deriving (Eq, Ord, Show)
 
+assignmentKeyMap :: (String -> a) -> AssignmentKey -> a
+assignmentKeyMap f (AssignmentKey x) = f x
+
 newtype UserKey = UserKey String
   deriving (Eq, Ord, Show)
 
@@ -137,17 +140,29 @@ newtype CommentKey = CommentKey String
 newtype SubmissionKey = SubmissionKey String
   deriving (Eq, Ord, Show)
 
+submissionKeyMap :: (String -> a) -> SubmissionKey -> a
+submissionKeyMap f (SubmissionKey s) = f s
+
 newtype TestKey = TestKey String
   deriving (Eq, Ord, Show)
 
 newtype CourseKey = CourseKey String
   deriving (Eq, Ord, Show)
 
+courseKeyMap :: (String -> a) -> CourseKey -> a
+courseKeyMap f (CourseKey g) = f g
+
 newtype GroupKey = GroupKey String
   deriving (Eq, Ord, Show)
 
+groupKeyMap :: (String -> a) -> GroupKey -> a
+groupKeyMap f (GroupKey g) = f g
+
 newtype EvaulationKey = EvaulationKey String
   deriving (Eq, Ord, Show)
+
+evaluationKeyMap :: (String -> a) -> EvaulationKey -> a
+evaluationKeyMap f (EvaulationKey e) = f e
 
 -- * Str instances
 

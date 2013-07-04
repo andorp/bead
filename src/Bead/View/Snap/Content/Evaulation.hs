@@ -38,7 +38,7 @@ render (PctEval _) = renderDynamicPagelet
 
 evaulationPage :: GETContentHandler
 evaulationPage = withUserStateE $ \s -> do
-  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key is not found"
+  sk <- getParameter submissionKeyPrm
   sd <- runStoryE (submissionDescription sk)
   let pageData = PageData {
       sbmKey  = Right sk
@@ -48,8 +48,8 @@ evaulationPage = withUserStateE $ \s -> do
 
 modifyEvaulationPage :: GETContentHandler
 modifyEvaulationPage = withUserStateE $ \s -> do
-  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key is not found"
-  ek <- getParamE (fieldName evaulationKeyField) EvaulationKey "Evaulation kes is not found"
+  sk <- getParameter submissionKeyPrm
+  ek <- getParameter evaluationKeyPrm
   sd <- runStoryE (submissionDescription sk)
   let pageData = PageData {
     sbmKey  = Left ek
@@ -59,8 +59,8 @@ modifyEvaulationPage = withUserStateE $ \s -> do
 
 evaulationPostHandler :: POSTContentHandler
 evaulationPostHandler = do
-  sk <- getParamE (fieldName submissionKeyField) SubmissionKey "Submission key is not found"
-  ev <- getParamE (fieldName evaulationValueField) id "Evaulation value is not found"
+  sk <- getParameter submissionKeyPrm
+  ev <- getParameter evaluationValuePrm
   er <- getJSONParam (fieldName evaulationResultField) "Evaulation result is not found"
   let e = C.Evaulation {
     evaulationResult = evResult er
@@ -70,8 +70,8 @@ evaulationPostHandler = do
 
 modifyEvaulationPost :: POSTContentHandler
 modifyEvaulationPost = do
-  ek <- getParamE (fieldName evaulationKeyField) EvaulationKey "Evaulation key is not found"
-  ev <- getParamE (fieldName evaulationValueField) id "Evaulation value is not found"
+  ek <- getParameter evaluationKeyPrm
+  ev <- getParameter evaluationValuePrm
   er <- getJSONParam (fieldName evaulationResultField) "Evaulation result is not found"
   let e = C.Evaulation {
     evaulationResult = evResult er

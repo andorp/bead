@@ -6,7 +6,7 @@ module Bead.View.Snap.HandlerUtils (
   , errorPageHandler
   , runStory  -- For logged in user
   , runStoryE -- For logged in user
-  , getParamE
+  , getParameter
   , getJSONParam
   , i18nE
   , blazeI18n
@@ -22,12 +22,13 @@ module Bead.View.Snap.HandlerUtils (
 
 -- Bead imports
 
-import Bead.Controller.ServiceContext hiding (serviceContext)
+import Bead.Controller.ServiceContext hiding (serviceContext, name)
 import Bead.Controller.Logging as L
 import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.UserStories as S
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
+import Bead.View.Snap.DataBridge
 import Bead.View.Snap.Dictionary
 import Bead.View.Snap.Pagelets (Pagelet, runPagelet, runDynamicPagelet)
 import Bead.View.Snap.RouteOf (ReqParam(..))
@@ -120,12 +121,14 @@ withUserState h = userState >>= h
 withUserStateE :: (UserState -> HandlerError App b c) -> HandlerError App b c
 withUserStateE h = (lift userState) >>= h
 
-getParamE :: String -> (String -> a) -> String -> HandlerError App b a
-getParamE param f msg = do
-  x <- getParam . B.pack $ param
-  case x of
-    Nothing -> throwError . strMsg $ msg
-    Just  y -> return . f . B.unpack $ y
+getParameter :: Parameter a -> HandlerError App b a
+getParameter param = do
+  reqParam <- getParam . B.pack . name $ param
+  when (isNothing reqParam) . throwError . strMsg . notFound $ param
+  let msg   = B.unpack . fromJust $ reqParam
+      value = decode param msg
+  when (isNothing value) . throwError . strMsg . decodeError param $ msg
+  return . fromJust $ value
 
 getJSONParam :: (Data a) => String -> String -> HandlerError App b a
 getJSONParam param msg = do
