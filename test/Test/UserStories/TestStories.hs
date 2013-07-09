@@ -10,6 +10,7 @@ import Bead.Controller.ServiceContext
 import Bead.Controller.Pages as P
 import Bead.Persistence.NoSQLDir
 import Bead.Persistence.Persist
+import Bead.Domain.Shared.Evaulation
 
 import Test.HUnit hiding (Test(..))
 import Test.Framework (Test(..), testGroup)
@@ -44,6 +45,14 @@ student = User {
   , u_email = Email "student@university.com"
   , u_name = "Stu Dent"
   }
+
+student2 = User {
+    u_role = E.Student
+  , u_username = (Username "student2")
+  , u_email = Email "student@university.com"
+  , u_name = "Stu Dent"
+  }
+
 
 adminUser = User {
     u_role = E.Admin
@@ -129,10 +138,11 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
       c1  = E.Course "FP" "FP-DESC" binaryEvalConfig
       c2  = E.Course "MA" "MA-DESC" binaryEvalConfig
       g1  = E.Group  "G1" "G1-DESC" binaryEvalConfig
-      g2  = E.Group  "G2" "G2-DESC" binaryEvalConfig
+      g2  = E.Group  "G2" "G2-DESC" $ percentageEvalConfig (PctConfig 0.4)
   runStory c adminUserState $ createUser adminUser "password"
+  runStory c adminUserState $ createUser student2 "password"
   (_,l) <- runStory c UserNotLoggedIn $ login (E.Username "admin") "password" "token"
-  ((a1,a2,as),_) <- runStory c l $ do
+  ((a1,a2,as,ck2,gk2),_) <- runStory c l $ do
     ck1 <- createCourse c1
     ck2 <- createCourse c2
     gk1 <- createGroup ck1 g1
@@ -142,6 +152,14 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
     subscribeToGroup gk1
     subscribeToGroup gk2
     as <- userAssignments
-    return (a1,a2,as)
+    return (a1,a2,as,ck2,gk2)
   let as' = map fst as
   assertBool "Assignment does not found in the assignment list" ([a1,a2] == as' || [a2,a1] == as')
+  (_,ul) <- runStory c UserNotLoggedIn $ login (E.Username "student2") "password" "token"
+  ((uc,ug),_) <- runStory c ul $ do
+    subscribeToGroup  gk2
+    uc <- U.isUserInCourse ck2
+    ug <- attendedGroups
+    return (uc,ug)
+  assertBool "User is not registered in course" (uc == True)
+  assertBool "User is not registered in group" (elem gk2 (map fst ug))
