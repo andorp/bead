@@ -2,7 +2,6 @@
 module Bead.View.Snap.Login (
     login
   , loginSubmit
-  , Bead.View.Snap.Login.logout
   ) where
 
 -- Bead imports
@@ -91,27 +90,6 @@ loginSubmit = do
       withTop serviceContext $ do
         logMessage DEBUG $ "Username is set in session to: " ++ show username
         logMessage DEBUG $ "User's actual page is set in session to: " ++ show page
-
-logout :: Handler App b ()
-logout = do
-  um <- withTop auth $ currentUser
-  case um of
-
-    Nothing -> do
-      logMessage ERROR "There is no user logged in to log out."
-      withTop sessionManager $ resetSession
-      redirect "/"
-
-    Just authUser -> do
-      let unameFromAuth = usernameFromAuthUser authUser
-      context <- withTop serviceContext $ getServiceContext
-      let users = userContainer context
-      -- Service context authentication
-      token <- sessionToken
-      liftIO $ users `userLogsOut` (userToken (unameFromAuth, token))
-      withTop sessionManager $ resetSession
-      withTop auth A.logout
-      redirect "/"
 
 -- * Blaze --
 

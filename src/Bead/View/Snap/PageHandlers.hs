@@ -23,6 +23,7 @@ import Bead.View.Snap.Login as L
 import Bead.View.Snap.Registration
 import Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import Bead.View.Snap.Content.All
+import Bead.View.Snap.ErrorPage
 
 -- Haskell imports
 
@@ -53,7 +54,7 @@ routes :: [(ByteString, Handler App App ())]
 routes = join
   [ -- Add login handlers
     [ ("/",         index)
-    , ("/logout",   L.logout)
+    , ("/logout",   logoutAndResetRoute)
     , ("/new_user", with auth $ registration)
     , ("/fay", with fayContext fayServe)
     ]
@@ -77,7 +78,7 @@ index =
    using the service context. There is an extra criteria for the user, it's session
    must be the same as the actual version, otherwise the authentication fails
 -}
-userIsLoggedInFilter :: Handler App b () -> Handler App b () -> Handler App b ()
+userIsLoggedInFilter :: Handler App b HandlerResult -> Handler App b () -> Handler App b ()
 userIsLoggedInFilter inside outside = do
   e <- CME.runErrorT loggedInFilter
   case e of
@@ -133,54 +134,75 @@ userIsLoggedInFilter inside outside = do
         ]
 
       -- Correct user is logged in, run the handler and save the data
-      lift inside
-      mUserData <- lift (liftIO $ users `userData` usrToken)
+      result <- lift inside
+      case result of
+        HFailure -> lift $ HU.logout
+        HSuccess -> do
+          mUserData <- lift (liftIO $ users `userData` usrToken)
 
-      when (isNothing mUserData) . CME.throwError $
-        "No user data was found for the user " ++ show unameFromAuth
+          when (isNothing mUserData) . CME.throwError $
+            "No user data was found for the user " ++ show unameFromAuth
 
-      lift $ CMC.catch
-        (withTop sessionManager . setActPageInSession . page . fromJust $ mUserData)
-        someExceptionHandler
+          lift $ CMC.catch
+            (withTop sessionManager . setActPageInSession . page . fromJust $ mUserData)
+            someExceptionHandler
 
 -- | The 'redirectToActPage' redirects to the page if the user's state stored in the cookie
 --   and the service state are the same, otherwise it's raises an exception
 redirectToActPage :: Handler App b ()
 redirectToActPage = do
   pageInSession <- withTop sessionManager $ actPageFromSession
-  withUserState $ \uState -> 
+  withUserState $ \uState ->
     case pageInSession == Just (page uState) of
       False -> do
         logMessage ERROR $ "Actual page data stored in session and in the server differ"
         error $ "Actual page data stored in session and in the server differ"
       True ->  redirect . routeOf . page $ uState
 
+-- | Represents the result of a GET or POST handler
+-- HandSuccess when no exception occured during the execution
+-- HandFailure when some exception occured
+data HandlerResult
+  = HSuccess
+  | HFailure
+  deriving (Eq)
+
+hsuccess :: Handler App a b -> Handler App a HandlerResult
+hsuccess h = h >> (return HSuccess)
+
+hfailure :: Handler App a b -> Handler App a HandlerResult
+hfailure h = h >> (return HFailure)
+
 runGETHandler
   :: (ContentHandlerError -> Handler App App ())
   -> HandlerError App App ()
-  -> Handler App App ()
+  -> Handler App App HandlerResult
 runGETHandler onError m = do
   x <- runErrorT m
   case x of
-    Left e -> onError e
-    Right y -> return y
+    Left e -> hfailure $ onError e
+    Right y -> return HSuccess
 
 runPOSTHandler
   :: (ContentHandlerError -> Handler App App ())
   -> P.Page
   -> HandlerError App App UserAction
-  -> Handler App App ()
+  -> Handler App App HandlerResult
 runPOSTHandler onError p m = do
   x <- runErrorT m
   case x of
-    Left e -> onError e
-    Right userAction -> do
+    Left e -> hfailure $ onError e
+    Right userAction -> hsuccess $ do
       runStory $ do
         userStoryFor userAction
         S.changePage . P.parentPage $ p
       with sessionManager $ (commitSession >> touchSession)
       redirectToActPage
 
+logoutAndResetRoute :: Handler App App ()
+logoutAndResetRoute = do
+  HU.logout
+  redirect "/"
 
 {- When a user logs in the home page is shown for her. An universal handler
    is used. E.g "/home" -> handlePage P.Home.
@@ -199,12 +221,12 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
           "Page transition is not allowed "
         , show (page s), " -> ", show p
         ]
-      L.logout
+      logoutAndResetRoute
 
     changePage h =
       allowedPageByTransition p
         (do { runStory $ S.changePage p; h })
-        notAllowedPage
+        (hsuccess notAllowedPage)
 
     handleRenderPage :: Handler App App ()
     handleRenderPage = userIsLoggedInFilter
@@ -213,13 +235,15 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
       -- required as the user tries to do some invalid operation.
       (maybe
          -- GET handler is not found
-         ((logMessage DEBUG $ "No GET handler found for " ++ show p) >> L.logout)
+         (do logMessage DEBUG $ "No GET handler found for " ++ show p
+             logoutAndResetRoute
+             return HSuccess)
          -- GET handler is found
          changePage
-         ((runGETHandler (error . show)) <$> (get c)) )
+         ((runGETHandler errorPage) <$> (get c)) )
 
       -- Not logged in user tries to get some data
-      L.logout
+      logoutAndResetRoute
 
     handleSubmitPage :: Handler App App ()
     handleSubmitPage = userIsLoggedInFilter
@@ -228,15 +252,15 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
       -- required as the user tries to do some invalid operation
       (case post c of
          -- POST handler is not found
-         Nothing -> do
+         Nothing -> hsuccess $ do
            logMessage DEBUG $ "No POST handler found for " ++ show p
-           L.logout
+           logoutAndResetRoute
          -- POST handler is found
-         Just handlerUserAction -> runPOSTHandler (error . show) p handlerUserAction
+         Just handlerUserAction -> runPOSTHandler errorPage p handlerUserAction
       )
 
       -- Not logged in user tires to post some data
-      L.logout
+      logoutAndResetRoute
 
 allowedPageByTransition :: P.Page -> Handler App App a -> Handler App App a -> Handler App App a
 allowedPageByTransition p allowed restricted = withUserState $ \state ->

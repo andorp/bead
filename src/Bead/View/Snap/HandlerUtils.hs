@@ -15,8 +15,10 @@ module Bead.View.Snap.HandlerUtils (
   , setInSessionE
   , setReqParamInSession
   , sessionToken
+  , logout
   , HandlerError(..)
   , ContentHandlerError
+  , contentHandlerErrorMap
   , module Control.Monad.Error
   ) where
 
@@ -47,7 +49,8 @@ import qualified Data.ByteString.Char8 as B
 import Text.Blaze.Html5 (Html)
 import Snap hiding (get)
 import Snap.Blaze (blaze)
-import Snap.Snaplet.Auth as A
+import Snap.Snaplet.Auth hiding (logout)
+import qualified Snap.Snaplet.Auth as A (logout)
 import Snap.Snaplet.Session
 
 -- Fay imports
@@ -61,6 +64,9 @@ newtype ContentHandlerError = ContentHandlerError (Maybe String)
 instance Error ContentHandlerError where
   noMsg  = ContentHandlerError Nothing
   strMsg = ContentHandlerError . Just
+
+contentHandlerErrorMap :: (Maybe String -> a) -> ContentHandlerError -> a
+contentHandlerErrorMap f (ContentHandlerError x) = f x
 
 type HandlerError a b c = ErrorT ContentHandlerError (Handler a b) c
 
@@ -192,3 +198,20 @@ runStory story = withTop serviceContext $ do
       case um of
         Nothing -> return . Left $ "Unauthenticated user"
         Just authUser -> liftM Right $ f context users authUser
+
+logout :: Handler App b ()
+logout = do
+  um <- withTop auth $ currentUser
+  case um of
+    Nothing -> do
+      logMessage ERROR "There is no user logged in to log out."
+      withTop sessionManager $ resetSession
+
+    Just authUser -> do
+      let unameFromAuth = usernameFromAuthUser authUser
+      context <- withTop serviceContext $ getServiceContext
+      let users = userContainer context
+      token <- sessionToken
+      liftIO $ users `userLogsOut` (userToken (unameFromAuth, token))
+      withTop sessionManager $ resetSession
+      withTop auth A.logout
