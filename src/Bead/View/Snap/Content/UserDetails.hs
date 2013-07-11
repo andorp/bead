@@ -18,7 +18,7 @@ userDetails :: Content
 userDetails = getPostContentHandler userDetailPage userDataChange
 
 userDetailPage :: GETContentHandler
-userDetailPage = withUserStateE $ \s -> do
+userDetailPage = withUserState $ \s -> do
   username <- getParameter usernamePrm
   exist    <- runStoryE . doesUserExist $ username
   case exist of

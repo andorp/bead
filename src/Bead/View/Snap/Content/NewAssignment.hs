@@ -45,7 +45,7 @@ isEmptyData = pageDataMap null null (const False)
 -- * Course Assignment
 
 newCourseAssignmentPage :: GETContentHandler
-newCourseAssignmentPage = withUserStateE $ \s -> do
+newCourseAssignmentPage = withUserState $ \s -> do
   cs <- runStoryE S.administratedCourses
   renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Course cs))
 
@@ -57,7 +57,7 @@ postCourseAssignment = CreateCourseAssignment
 -- * Group Assignment
 
 newGroupAssignmentPage :: GETContentHandler
-newGroupAssignmentPage = withUserStateE $ \s -> do
+newGroupAssignmentPage = withUserState $ \s -> do
   gs <- runStoryE S.administratedGroups
   renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Group gs))
 
@@ -69,7 +69,7 @@ postGroupAssignment = CreateGroupAssignment
 -- * Modify Assignment
 
 modifyAssignmentPage :: GETContentHandler
-modifyAssignmentPage = withUserStateE $ \s -> do
+modifyAssignmentPage = withUserState $ \s -> do
   ak <- getValue
   as <- runStoryE (S.loadAssignment ak)
   renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Assignment (ak,as)))

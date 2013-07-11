@@ -16,7 +16,7 @@ profile :: Content
 profile = getContentHandler profilePage
 
 profilePage :: GETContentHandler
-profilePage = withUserStateE $ \s -> do
+profilePage = withUserState $ \s -> do
   renderPagelet $ withUserFrame s (profileContent)
 
 profileContent :: Pagelet

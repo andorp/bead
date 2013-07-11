@@ -2,8 +2,6 @@
 module Bead.View.Snap.HandlerUtils (
     logMessage
   , withUserState
-  , withUserStateE
-  , errorPageHandler
   , runStory  -- For logged in user
   , runStoryE -- For logged in user
   , getParameter
@@ -18,6 +16,7 @@ module Bead.View.Snap.HandlerUtils (
   , logout
   , HandlerError(..)
   , ContentHandlerError
+  , contentHandlerError
   , contentHandlerErrorMap
   , module Control.Monad.Error
   ) where
@@ -65,6 +64,9 @@ instance Error ContentHandlerError where
   noMsg  = ContentHandlerError Nothing
   strMsg = ContentHandlerError . Just
 
+contentHandlerError :: String -> ContentHandlerError
+contentHandlerError = ContentHandlerError . Just
+
 contentHandlerErrorMap :: (Maybe String -> a) -> ContentHandlerError -> a
 contentHandlerErrorMap f (ContentHandlerError x) = f x
 
@@ -80,22 +82,22 @@ logMessage lvl msg = do
 sessionToken :: Handler App b String
 sessionToken = T.unpack <$> (withTop sessionManager $ csrfToken)
 
-userState :: Handler App b UserState
+userState :: HandlerError App b UserState
 userState = do
-  context   <- withTop serviceContext $ getServiceContext
-  mUsername <- withTop sessionManager $ usernameFromSession
-  token     <- sessionToken
+  context   <- lift $ withTop serviceContext $ getServiceContext
+  mUsername <- lift $ withTop sessionManager $ usernameFromSession
+  token     <- lift $ sessionToken
   case mUsername of
     Nothing -> do
-      logMessage ERROR "User is not logged in the session"
-      error "User is not logged in the session"
+      lift $ logMessage ERROR "User is not logged in the session"
+      throwError . strMsg $ "User is not logged in the session"
     Just user -> do
       let users = userContainer context
       userData <- liftIO $ users `userData` (userToken (user, token))
       case userData of
         Nothing -> do
-          logMessage ERROR "No data found for the user"
-          error "No data found for the user"
+          lift $ logMessage ERROR "No data found for the user"
+          throwError . strMsg $ "No data found for the user"
         Just ud -> return ud
 
 -- TODO: Show some error
@@ -121,11 +123,8 @@ renderPagelet p = i18nE >>= blaze . (runPagelet p)
 renderDynamicPagelet :: Pagelet -> HandlerError App b ()
 renderDynamicPagelet p = i18nE >>= blaze . (runDynamicPagelet p)
 
-withUserState :: (UserState -> Handler App b c) -> Handler App b c
-withUserState h = userState >>= h
-
-withUserStateE :: (UserState -> HandlerError App b c) -> HandlerError App b c
-withUserStateE h = (lift userState) >>= h
+withUserState :: (UserState -> HandlerError App b c) -> HandlerError App b c
+withUserState = (userState >>=)
 
 getParameter :: Parameter a -> HandlerError App b a
 getParameter param = do

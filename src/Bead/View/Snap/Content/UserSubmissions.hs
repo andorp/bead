@@ -19,7 +19,7 @@ userSubmissions :: Content
 userSubmissions = getContentHandler userSubmissionPage
 
 userSubmissionPage :: GETContentHandler
-userSubmissionPage = withUserStateE $ \s -> do
+userSubmissionPage = withUserState $ \s -> do
   username <- getParameter usernamePrm
   aKey     <- getParameter assignmentKeyPrm
   mDesc <- runStoryE $ U.userSubmissions username aKey

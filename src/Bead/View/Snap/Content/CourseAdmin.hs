@@ -28,7 +28,7 @@ data PageData = PageData {
   }
 
 courseAdminPage :: GETContentHandler
-courseAdminPage = withUserStateE $ \s -> do
+courseAdminPage = withUserState $ \s -> do
   pageData <- runStoryE $ do
     cs <- administratedCourses
     gs <- do courseAndGroupKeys <- mapM (loadCourse . fst) cs

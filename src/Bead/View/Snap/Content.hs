@@ -21,7 +21,6 @@ module Bead.View.Snap.Content (
   , renderPagelet
   , renderDynamicPagelet
   , withUserState
-  , withUserStateE
   , withUserStateAndFrame
   , GETContentHandler
   , POSTContentHandler
@@ -103,6 +102,6 @@ mkContent
 mkContent g p = Content { get = g, post = p }
 
 withUserStateAndFrame :: (UserState -> Pagelet) -> HandlerError App App ()
-withUserStateAndFrame f = withUserStateE $ \state ->
+withUserStateAndFrame f = withUserState $ \state ->
   renderPagelet $ withUserFrame state (f state)
 

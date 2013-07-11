@@ -37,7 +37,7 @@ data HomePageData = HomePageData {
   }
 
 homePage :: GETContentHandler
-homePage = withUserStateE $ \s ->
+homePage = withUserState $ \s ->
   (renderPagelet . withUserFrame s . homeContent) =<<
     (runStoryE
        (HomePageData s

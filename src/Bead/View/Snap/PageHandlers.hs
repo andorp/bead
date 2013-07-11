@@ -78,22 +78,26 @@ index =
    using the service context. There is an extra criteria for the user, it's session
    must be the same as the actual version, otherwise the authentication fails
 -}
-userIsLoggedInFilter :: Handler App b HandlerResult -> Handler App b () -> Handler App b ()
-userIsLoggedInFilter inside outside = do
+userIsLoggedInFilter
+  :: Handler App b HandlerResult
+  -> Handler App b ()
+  -> (String -> Handler App b ())
+  -> Handler App b ()
+userIsLoggedInFilter inside outside onError = do
   e <- CME.runErrorT loggedInFilter
   case e of
     Right () -> return ()
-    Left e' -> errorHappened e'
+    Left e' -> errorHappened . show $ e'
 
   where
     errorHappened e = do
       logMessage ERROR e
       outside
 
-    someExceptionHandler :: CE.SomeException -> Handler App b ()
-    someExceptionHandler e = do
+    someExceptionHandler :: (String -> Handler App b ()) -> CE.SomeException -> Handler App b ()
+    someExceptionHandler onError e = do
       logMessage ERROR $ "Exception occured, redirecting to error page. " ++ show e
-      errorPageHandler $ T.append "Exception occured; " (T.pack . show $ e)
+      onError $ show e
 
     loggedInFilter = do
       -- Authenticated user information
@@ -101,15 +105,15 @@ userIsLoggedInFilter inside outside = do
       sessionVer     <- lift . withTop sessionManager $ getSessionVersion
 
       -- Guards: invalid session version or invalid user
-      when (sessionVer /= (Just sessionVersion)) . CME.throwError $ "Invalid session version was found"
-      when (isNothing serverSideUser)            . CME.throwError $ "Unknown user from session"
+      when (sessionVer /= (Just sessionVersion)) . CME.throwError . strMsg $ "Invalid session version was found"
+      when (isNothing serverSideUser)            . CME.throwError . strMsg $ "Unknown user from session"
 
       -- Username and page from session
       let unameFromAuth = usernameFromAuthUser . fromJust $ serverSideUser
       usernameFromSession <- lift . withTop sessionManager $ usernameFromSession
 
       -- Guard: invalid user in session
-      when (usernameFromSession /= (Just unameFromAuth)) . CME.throwError $ join [
+      when (usernameFromSession /= (Just unameFromAuth)) . CME.throwError . strMsg  $ join [
               "hLoggedIn: invalid username from session ", show unameFromAuth
             , ", ", show usernameFromSession
             ]
@@ -120,14 +124,14 @@ userIsLoggedInFilter inside outside = do
       let users = userContainer context
           usrToken = userToken (unameFromAuth, tkn)
       isLoggedIn <- lift (liftIO $ users `isUserLoggedIn` usrToken)
-      unless (isLoggedIn) . CME.throwError $ "User is not logged in persistence"
+      unless (isLoggedIn) . CME.throwError . strMsg  $ "User is not logged in persistence"
 
       -- Guard: User's actul page differs from the one that is stored on the server
       pageFromSession <- lift . withTop sessionManager $ actPageFromSession
       mUserData       <- lift . liftIO $ userData users usrToken -- unameFromAuth
-      when (isNothing mUserData) . CME.throwError $
+      when (isNothing mUserData) . CME.throwError . strMsg  $
         "No user data was found for the user " ++ show unameFromAuth
-      when (Just (page (fromJust mUserData)) /= pageFromSession) . CME.throwError $ join [
+      when (Just (page (fromJust mUserData)) /= pageFromSession) . CME.throwError . strMsg  $ join [
           "Page stored in session and in server differs: ",
           "Server Side:", show (page (fromJust mUserData)), " <=> ",
           "Client Side:", show pageFromSession
@@ -140,23 +144,23 @@ userIsLoggedInFilter inside outside = do
         HSuccess -> do
           mUserData <- lift (liftIO $ users `userData` usrToken)
 
-          when (isNothing mUserData) . CME.throwError $
+          when (isNothing mUserData) . CME.throwError . contentHandlerError $
             "No user data was found for the user " ++ show unameFromAuth
 
-          lift $ CMC.catch
-            (withTop sessionManager . setActPageInSession . page . fromJust $ mUserData)
-            someExceptionHandler
+          lift $ (CMC.catch
+                    (withTop sessionManager . setActPageInSession . page . fromJust $ mUserData)
+                    (someExceptionHandler onError))
 
 -- | The 'redirectToActPage' redirects to the page if the user's state stored in the cookie
 --   and the service state are the same, otherwise it's raises an exception
-redirectToActPage :: Handler App b ()
+redirectToActPage :: HandlerError App b ()
 redirectToActPage = do
-  pageInSession <- withTop sessionManager $ actPageFromSession
+  pageInSession <- lift $ withTop sessionManager $ actPageFromSession
   withUserState $ \uState ->
     case pageInSession == Just (page uState) of
       False -> do
-        logMessage ERROR $ "Actual page data stored in session and in the server differ"
-        error $ "Actual page data stored in session and in the server differ"
+        lift $ logMessage ERROR $ "Actual page data stored in session and in the server differ"
+        throwError . strMsg $ "Actual page data stored in session and in the server differ"
       True ->  redirect . routeOf . page $ uState
 
 -- | Represents the result of a GET or POST handler
@@ -173,36 +177,51 @@ hsuccess h = h >> (return HSuccess)
 hfailure :: Handler App a b -> Handler App a HandlerResult
 hfailure h = h >> (return HFailure)
 
+evalHandlerError
+  :: (ContentHandlerError -> Handler App b a)
+  -> (c -> Handler App b a)
+  -> HandlerError App b c
+  -> Handler App b a
+evalHandlerError onError onSuccess h = do
+  x <- runErrorT h
+  case x of
+    Left e  -> onError e
+    Right s -> onSuccess s
+
 runGETHandler
   :: (ContentHandlerError -> Handler App App ())
   -> HandlerError App App ()
   -> Handler App App HandlerResult
-runGETHandler onError m = do
-  x <- runErrorT m
-  case x of
-    Left e -> hfailure $ onError e
-    Right y -> return HSuccess
+runGETHandler onError
+  = evalHandlerError
+      (hfailure . onError)
+      (\_ -> return HSuccess)
 
 runPOSTHandler
   :: (ContentHandlerError -> Handler App App ())
   -> P.Page
   -> HandlerError App App UserAction
   -> Handler App App HandlerResult
-runPOSTHandler onError p m = do
-  x <- runErrorT m
-  case x of
-    Left e -> hfailure $ onError e
-    Right userAction -> hsuccess $ do
-      runStory $ do
-        userStoryFor userAction
-        S.changePage . P.parentPage $ p
-      with sessionManager $ (commitSession >> touchSession)
-      redirectToActPage
+runPOSTHandler onError p h
+  = evalHandlerError
+      (hfailure . onError)
+      (\_ -> return HSuccess)
+      (do userAction <- h
+          lift $ runStory $ do
+            userStoryFor userAction
+            S.changePage . P.parentPage $ p
+          lift $ with sessionManager $ (commitSession >> touchSession)
+          redirectToActPage)
 
 logoutAndResetRoute :: Handler App App ()
 logoutAndResetRoute = do
   HU.logout
   redirect "/"
+
+logoutAndErrorPage :: String -> Handler App App ()
+logoutAndErrorPage msg = do
+  HU.logout
+  msgErrorPage msg
 
 {- When a user logs in the home page is shown for her. An universal handler
    is used. E.g "/home" -> handlePage P.Home.
@@ -216,34 +235,41 @@ handlePage :: (P.Page, Content) -> Handler App App ()
 handlePage (P.Login, _) = loginSubmit
 handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
   where
+    failure, success :: (Monad m) => a -> m HandlerResult
+    failure = const . return $ HFailure
+    success = const . return $ HSuccess
+    forgetResult h = h >> return ()
+
     notAllowedPage = withUserState $ \s -> do
-      logMessage ERROR . join $ [
+      lift $ logMessage ERROR . join $ [
           "Page transition is not allowed "
         , show (page s), " -> ", show p
         ]
-      logoutAndResetRoute
+      lift $ logoutAndResetRoute
 
     changePage h =
       allowedPageByTransition p
-        (do { runStory $ S.changePage p; h })
-        (hsuccess notAllowedPage)
+        (do lift $ runStory $ S.changePage p
+            h)
+        notAllowedPage
 
     handleRenderPage :: Handler App App ()
     handleRenderPage = userIsLoggedInFilter
 
       -- If the GET handler is not found for the given page, the logout action is
       -- required as the user tries to do some invalid operation.
-      (maybe
-         -- GET handler is not found
-         (do logMessage DEBUG $ "No GET handler found for " ++ show p
-             logoutAndResetRoute
-             return HSuccess)
-         -- GET handler is found
-         changePage
-         ((runGETHandler errorPage) <$> (get c)) )
+      (case get c of
+         Nothing -> hsuccess $ do
+           logMessage DEBUG $ "No GET handler found for " ++ show p
+           logoutAndResetRoute
+         Just getHandler -> runGETHandler errorPage $ changePage getHandler
+      )
 
       -- Not logged in user tries to get some data
       logoutAndResetRoute
+
+      -- Some internal error happened
+      logoutAndErrorPage
 
     handleSubmitPage :: Handler App App ()
     handleSubmitPage = userIsLoggedInFilter
@@ -262,7 +288,11 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
       -- Not logged in user tires to post some data
       logoutAndResetRoute
 
-allowedPageByTransition :: P.Page -> Handler App App a -> Handler App App a -> Handler App App a
+      -- Some internal error happened
+      logoutAndErrorPage
+
+allowedPageByTransition
+  :: P.Page -> HandlerError App App a -> HandlerError App App a -> HandlerError App App a
 allowedPageByTransition p allowed restricted = withUserState $ \state ->
   let allow = and [
           P.reachable (page state) p

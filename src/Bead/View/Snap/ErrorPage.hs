@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.ErrorPage (
     errorPage
+  , msgErrorPage
   ) where
 
 import Data.String
@@ -22,6 +23,9 @@ import Bead.View.Snap.Pagelets (
 --   login page after a while
 errorPage :: ContentHandlerError -> Handler App b ()
 errorPage = contentHandlerErrorMap (blaze . page)
+
+msgErrorPage :: String -> Handler App b ()
+msgErrorPage = blaze . page . Just
 
 page :: (Maybe String) -> Html
 page e = withTitleAndHead "Error" $ do

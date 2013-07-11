@@ -29,7 +29,7 @@ data PageData = PageData {
   }
 
 submissionListPage :: GETContentHandler
-submissionListPage = withUserStateE $ \s -> do
+submissionListPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
   usersAssignment ak $ \assignment -> do
     case assignment of

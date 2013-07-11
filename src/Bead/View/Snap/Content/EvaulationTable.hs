@@ -18,7 +18,7 @@ evaulationTable :: Content
 evaulationTable = getContentHandler evaulationTablePage
 
 evaulationTablePage :: GETContentHandler
-evaulationTablePage = withUserStateE $ \s -> do
+evaulationTablePage = withUserState $ \s -> do
   keys <- runStoryE (openSubmissions)
   renderPagelet $ withUserFrame s (evaulationTableContent keys)
 

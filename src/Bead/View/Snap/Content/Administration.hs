@@ -28,7 +28,7 @@ data PageInfo = PageInfo {
   }
 
 administrationPage :: GETContentHandler
-administrationPage = withUserStateE $ \s -> do
+administrationPage = withUserState $ \s -> do
   cs <- runStoryE (selectCourses each)
   ausers <- runStoryE (selectUsers adminOrCourseAdmin)
   let info = PageInfo {

@@ -34,7 +34,7 @@ data PageData = PageData {
   }
 
 submissionDetailsPage :: GETContentHandler
-submissionDetailsPage = withUserStateE $ \s -> do
+submissionDetailsPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
   sk <- getParameter submissionKeyPrm
   usersSubmission ak sk $ \submission -> do

@@ -29,7 +29,7 @@ data PageData = PageData {
   }
 
 submissionPage :: GETContentHandler
-submissionPage = withUserStateE $ \s -> do
+submissionPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
   usersAssignment ak $ \assignment ->
     renderPagelet . withUserFrame s $

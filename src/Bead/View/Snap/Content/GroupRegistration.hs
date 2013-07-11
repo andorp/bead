@@ -30,7 +30,7 @@ postGroupReg = SubscribeToGroup
   <$> getParameter (customGroupKeyPrm (fieldName groupRegistrationField))
 
 groupRegistrationPage :: GETContentHandler
-groupRegistrationPage = withUserStateE $ \s -> do
+groupRegistrationPage = withUserState $ \s -> do
   desc <- runStoryE $ do
     as <- attendedGroups
     let attendedGroupKeys = map fst as

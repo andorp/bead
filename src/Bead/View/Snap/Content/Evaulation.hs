@@ -37,7 +37,7 @@ render (BinEval _) = renderPagelet
 render (PctEval _) = renderDynamicPagelet
 
 evaulationPage :: GETContentHandler
-evaulationPage = withUserStateE $ \s -> do
+evaulationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
   sd <- runStoryE (submissionDescription sk)
   let pageData = PageData {
@@ -47,7 +47,7 @@ evaulationPage = withUserStateE $ \s -> do
   render (eConfig sd) $ withUserFrame s (evaulationContent pageData)
 
 modifyEvaulationPage :: GETContentHandler
-modifyEvaulationPage = withUserStateE $ \s -> do
+modifyEvaulationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
   ek <- getParameter evaluationKeyPrm
   sd <- runStoryE (submissionDescription sk)
