@@ -47,3 +47,6 @@ Terminology:
 - Assignment creation start field should be required
 - Assignment creation end   field should be required
 - New comments div
++ Appropiate page is shown on error
+  + Error page and handler
+  + Remove other error page chunks

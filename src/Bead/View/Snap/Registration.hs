@@ -21,6 +21,7 @@ import Bead.View.Snap.Content hiding (BlazeTemplate, template, empty, method)
 
 -- Haskell imports
 
+import Data.Maybe (fromJust, isNothing)
 import Data.String (fromString)
 import qualified Data.Text as T
 import qualified Data.List as L
@@ -54,7 +55,9 @@ createAdminUser persist usersdb name password = do
   createdUser <- lookupByLogin mgr (T.pack name)
   case createdUser of
     Nothing -> error "No user was created"
-    Just u' -> P.runPersist $ P.saveUser persist usr (passwordFromAuthUser u')
+    Just u' -> case passwordFromAuthUser u' of
+      Nothing  -> error "No password was given"
+      Just pwd -> P.runPersist $ P.saveUser persist usr pwd
   return ()
 
 -- * User registration handler
@@ -100,14 +103,15 @@ registration = method GET handleForm <|> method POST handleFormSubmit
                 }
             context     <- lift $ withTop serviceContext $ getServiceContext
             createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (T.pack $ unpack u)
-            case createdUser of
-              Nothing -> throwError (RegError ERROR "User was not created at the first stage")
-              Just u' -> do
-                result  <- liftIO $ S.runUserStory context Registration
-                             (S.createUser usr (passwordFromAuthUser u'))
-                case result of
-                  Left err -> throwError (RegError ERROR (show err))
-                  _        -> throwError (RegError INFO "Everything went fine. The user is created.")
+            when (isNothing createdUser) $ throwError (RegError ERROR "User was not created at the first stage")
+            let user = fromJust createdUser
+                mpwd = passwordFromAuthUser user
+            when (isNothing mpwd) $ throwError (RegError ERROR "No password was given")
+            let pwd = fromJust mpwd
+            result <- liftIO $ S.runUserStory context Registration (S.createUser usr pwd)
+            case result of
+              Left err -> throwError (RegError ERROR (show err))
+              _        -> throwError (RegError INFO "Everything went fine. The user is created.")
 
           _ -> throwError (RegError ERROR "Username, email, or family name was not provided by the form")
       case regResult of

@@ -63,15 +63,19 @@ loginSubmit = do
           context <- withTop serviceContext getServiceContext
           token   <- sessionToken
           let unameFromAuth = usernameFromAuthUser authUser
-              passwFromAuth = passwordFromAuthUser authUser
-          result <- liftIO $ S.runUserStory context UserNotLoggedIn (S.login unameFromAuth passwFromAuth token)
-          case result of
-            Right (val,userState) -> initSessionValues (page userState) unameFromAuth
-            Left err -> do
-              logMessage ERROR $ "Error happened processing user story: " ++ show err
-              -- Service context authentication
-              liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
-              A.logout
+              mpasswFromAuth = passwordFromAuthUser authUser
+          case mpasswFromAuth of
+            Nothing -> do logMessage ERROR "No password was given"
+                          A.logout
+            Just passwFromAuth -> do
+              result <- liftIO $ S.runUserStory context UserNotLoggedIn (S.login unameFromAuth passwFromAuth token)
+              case result of
+                Right (val,userState) -> initSessionValues (page userState) unameFromAuth
+                Left err -> do
+                  logMessage ERROR $ "Error happened processing user story: " ++ show err
+                  -- Service context authentication
+                  liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
+                  A.logout
 
   withTop sessionManager $ commitSession
   redirect "/"

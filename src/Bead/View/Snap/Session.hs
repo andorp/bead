@@ -167,10 +167,8 @@ setLanguageInSession = setInSessionKeyValues . sessionStore
 usernameFromAuthUser :: AuthUser -> Username
 usernameFromAuthUser = E.Username . (T.unpack) . A.userLogin
 
-passwordFromAuthUser :: AuthUser -> E.Password
-passwordFromAuthUser a = case userPassword a of
-  Just p  -> asPassword p
-  Nothing -> error "passwordFromAuthUser: No password was given"
+passwordFromAuthUser :: AuthUser -> Maybe E.Password
+passwordFromAuthUser = fmap asPassword . userPassword
 
 instance AsUsername ByteString where
   asUsername = E.Username . unpack
