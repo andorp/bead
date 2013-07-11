@@ -32,6 +32,7 @@ Terminology:
 + Change CourseAdmin text in navigational menu
 - Create Profile page (where you can change your password)
 - Force logged out message
++ Invalid password, username error message
 - Session timeout
 - Email registration
 - Auto Test Cases for assignments

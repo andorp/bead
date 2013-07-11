@@ -43,7 +43,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 -- * Login and Logout handlers
 
-login :: Maybe T.Text -> Handler App (AuthManager App) ()
+login :: Maybe AuthFailure -> Handler App (AuthManager App) ()
 login authError = blaze $ loginPage authError
 
 -- TODO: Handle multiple login attempts correctly
@@ -53,12 +53,12 @@ loginSubmit = do
   withTop auth $ loginUser
     (fieldName loginUsername)
     (fieldName loginPassword)
-    Nothing (\auth -> login (Just . T.pack . fromString . show $ auth)) $ do
+    Nothing (login . visibleFailure) $ do
       um <- currentUser
       case um of
         Nothing -> do
           logMessage ERROR $ "User is not logged during login submittion process"
-          return ()
+          withTop sessionManager $ commitSession
         Just authUser -> do
           context <- withTop serviceContext getServiceContext
           token   <- sessionToken
@@ -70,15 +70,16 @@ loginSubmit = do
             Just passwFromAuth -> do
               result <- liftIO $ S.runUserStory context UserNotLoggedIn (S.login unameFromAuth passwFromAuth token)
               case result of
-                Right (val,userState) -> initSessionValues (page userState) unameFromAuth
                 Left err -> do
                   logMessage ERROR $ "Error happened processing user story: " ++ show err
                   -- Service context authentication
                   liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
                   A.logout
-
-  withTop sessionManager $ commitSession
-  redirect "/"
+                  withTop sessionManager $ commitSession
+                Right (val,userState) -> do
+                  initSessionValues (page userState) unameFromAuth
+                  withTop sessionManager $ commitSession
+                  redirect "/"
 
   where
     err = Just . T.pack $ "Unknown user or password"
@@ -105,13 +106,22 @@ userForm act = do
       tableLine "Password:" (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
     submitButton (fieldName loginSubmitBtn) "Login"
 
-loginPage :: Maybe T.Text -> Html
+loginPage :: Maybe AuthFailure -> Html
 loginPage err = withTitleAndHead "Login" content
   where
     content = do
-      maybe (return ()) (H.p . fromString. T.unpack) err
       userForm "/login"
+      maybe (return ())
+            ((H.p ! A.style "font-size: smaller") . fromString . show)
+            err
       H.p $ do
         "Don't have a login yet? "
         H.a ! A.href "/new_user" $ "Create new user"
 
+-- Keeps only the authentication failures which are
+-- visible for the user
+visibleFailure :: AuthFailure -> Maybe AuthFailure
+visibleFailure (AuthError e)     = Just (AuthError e)
+visibleFailure IncorrectPassword = Just IncorrectPassword
+visibleFailure UserNotFound      = Just UserNotFound
+visibleFailure _ = Nothing
