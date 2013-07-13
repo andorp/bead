@@ -19,3 +19,14 @@ newtype UnitTests = UnitTests [(String,Bool)]
 
 newtype UnitTestsM m = UnitTestsM [(String,m Bool)]
 
+-- Represents an named assertion for a function that produce a value
+-- and the expected value of the result.
+data Assertion a = Assertion {
+    name     :: String
+  , found    :: a
+  , expected :: a
+  }
+
+assertionMap :: (String -> a -> a -> b) -> Assertion a -> b
+assertionMap g (Assertion n f e) = g n f e
+

@@ -10,6 +10,7 @@ import Bead.Domain.Shared.Evaulation
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
+import Bead.View.Snap.Validators
 
 {-
 Parameters are the data bridge between the Server side and the Client side.
@@ -135,14 +136,36 @@ customUsernamePrm field = Parameter {
 usernamePrm :: Parameter Username
 usernamePrm = customUsernamePrm (fieldName usernameField)
 
-userEmailPrm :: Parameter Email
-userEmailPrm = Parameter {
+emailPrm :: String -> Parameter Email
+emailPrm field = validateBy isEmailAddress $ Parameter {
     encode = emailMap id
   , decode = parseEmail
-  , name = fieldName userEmailField
+  , name = field
   , decodeError = ("Invalid email is given: "++)
   , notFound = "Email is not found"
   }
+
+userEmailPrm :: Parameter Email
+userEmailPrm = emailPrm (fieldName userEmailField)
+
+regEmailPrm :: Parameter Email
+regEmailPrm = emailPrm (fieldName regEmailAddress)
+
+regPasswordPrm :: Parameter String
+regPasswordPrm = validateBy isPassword $ stringParameter (fieldName loginPassword) "Password"
+
+regUsernamePrm :: Parameter Username
+regUsernamePrm = validateBy isUsername $ customUsernamePrm (fieldName loginUsername)
+
+-- Creates a new parameter where the the decode function first
+-- validates a parameter with the given validator
+validateBy :: FieldValidator -> Parameter a -> Parameter a
+validateBy v p = p { decode = attachValidator (decode p) }
+  where
+    attachValidator :: (String -> Maybe a) -> (String -> Maybe a)
+    attachValidator f s
+      | validator v s = f s
+      | otherwise     = Nothing
 
 -- Produces a Parameter for a read instance for the
 -- given parameter and a name. The name is shown

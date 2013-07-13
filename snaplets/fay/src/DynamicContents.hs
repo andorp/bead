@@ -110,14 +110,15 @@ hookRegistrationForm = void $ do
         messages <- select . cssClass $ removable
         remove messages
         andM
-          [ insertErrorMsg isUsername uname
-          , insertErrorMsg isPassword pwd
+          [ validateField isUsername uname
+          , validateField isPassword pwd
+          , validateField isEmailAddress email
           ]
 
   onSubmit validator regForm
   where
-    insertErrorMsg :: FieldValidator -> JQuery -> Fay Bool
-    insertErrorMsg f e = do
+    validateField :: FieldValidator -> JQuery -> Fay Bool
+    validateField f e = do
       v <- getVal e
       validate f v
         (return True)
@@ -127,8 +128,8 @@ hookRegistrationForm = void $ do
 
     removable = "regremovable"
     makeMessage msg = select (
-      "<snap class=\"" ++
-      removable ++ "\"><br>"
+      "<br><snap style=\"font-size: smaller\" class=\"" ++
+      removable ++ "\">"
       ++ msg ++
       "</span>")
 

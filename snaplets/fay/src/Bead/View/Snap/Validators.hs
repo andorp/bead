@@ -1,6 +1,13 @@
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.Validators where
 
 import Prelude
+
+#ifndef FAY
+import Data.List (find)
+
+import Bead.Invariants (Assertion(..))
+#endif
 
 {- This module is compiled with Fay and Haskell -}
 
@@ -23,8 +30,14 @@ isUsername = FieldValidator {
 
 isPassword :: FieldValidator
 isPassword = FieldValidator {
-    validator = (>4) . length
+    validator = (>=4) . length
   , message   = "Less than 4 characters"
+  }
+
+isEmailAddress :: FieldValidator
+isEmailAddress = FieldValidator {
+    validator = emailAddress
+  , message   = "Invalid email address"
   }
 
 isDigit :: Char -> Bool
@@ -41,3 +54,36 @@ toLower c =
 
 isAlpha :: Char -> Bool
 isAlpha c = elem (toLower c) "qwertzuiopasdfghjklyxcvbnm"
+
+emailAddress :: String -> Bool
+emailAddress []     = False
+emailAddress (c:cs) = isAlpha c && isEmailBody cs
+  where
+    isSpecial :: Char -> Bool
+    isSpecial c = elem c "._,!"
+
+    isEmailChar :: Char -> Bool
+    isEmailChar c = or [isAlpha c, isDigit c, isSpecial c]
+
+    isEmailBody [] = False
+    isEmailBody ('@':cs) = isEmailRest cs
+    isEmailBody (c:cs)
+      | isEmailChar c = isEmailBody cs
+      | otherwise     = False
+
+    isEmailRest []    = True
+    isEmailRest ['.'] = False
+    isEmailRest (c:cs)
+      | isEmailChar c = isEmailRest cs
+      | otherwise     = False
+
+#ifndef FAY
+assertEmailAddress = [
+    Assertion "Empty"     (emailAddress "") False
+  , Assertion "One char"  (emailAddress "q") False
+  , Assertion "One char"  (emailAddress "1") False
+  , Assertion "Only user" (emailAddress "q.dfs") False
+  , Assertion "Valid"     (emailAddress "q.fd@gma.il.com") True
+  , Assertion "Invalid"   (emailAddress "1adf@ga.com.") False
+  ]
+#endif

@@ -6,7 +6,6 @@ module Bead.View.Snap.Registration (
 
 -- Bead imports
 
-import Bead.Controller.ServiceContext hiding (serviceContext)
 import Bead.Controller.Logging as L
 
 import qualified Bead.Controller.UserStories as S
@@ -14,10 +13,12 @@ import qualified Bead.Controller.Pages as P (Page(Login))
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
-import Bead.View.Snap.Validators
+import Bead.View.Snap.DataBridge
 import qualified Bead.Persistence.Persist as P (Persist(..), runPersist)
 
-import Bead.View.Snap.Content hiding (BlazeTemplate, template, empty, method)
+import Bead.View.Snap.Content hiding (
+    BlazeTemplate, name, template, empty, method
+  )
 
 -- Haskell imports
 
@@ -25,6 +26,7 @@ import Data.Maybe (fromJust, isNothing)
 import Data.String (fromString)
 import qualified Data.Text as T
 import qualified Data.List as L
+import qualified Data.ByteString.Char8 as B
 
 -- Snap and Blaze imports
 
@@ -68,6 +70,11 @@ instance Error RegError where
   noMsg      = RegError DEBUG ""
   strMsg msg = RegError DEBUG msg
 
+readParameter :: (MonadSnap m) => Parameter a -> m (Maybe a)
+readParameter param = do
+  reqParam <- getParam . B.pack . name $ param
+  return (reqParam >>= decode param . B.unpack)
+
 registration :: Handler App (AuthManager App) ()
 registration = method GET handleForm <|> method POST handleFormSubmit
   where
@@ -82,9 +89,9 @@ registration = method GET handleForm <|> method POST handleFormSubmit
           (fieldName loginUsername)
           (fieldName loginPassword)
         -- Register the user in the service context module
-        uname      <- getParam (fieldName loginUsername)
-        passwBS    <- getParam (fieldName loginPassword)
-        email      <- getParam (fieldName regEmailAddress)
+        uname      <- readParameter regUsernamePrm -- (fieldName loginUsername)
+        passwBS    <- readParameter regPasswordPrm -- (fieldName loginPassword)
+        email      <- readParameter regEmailPrm    -- (fieldName regEmailAddress)
         fullname   <- getParam (fieldName regFullName)
         case (uname,email,fullname, passwBS) of
           (Just u,Just e, Just f, Just p) -> do
@@ -93,16 +100,14 @@ registration = method GET handleForm <|> method POST handleFormSubmit
             -- and run the registration user story in the service context
             -- with a freshly created (and encrypted) user password
             -- in the user context
-            validateField isUsername u
-            validateField isPassword p
             let usr = User {
                   u_role = Student
-                , u_username = asUsername u
-                , u_email = Email . unpack $ e
+                , u_username = u
+                , u_email = e
                 , u_name = unpack f
                 }
             context     <- lift $ withTop serviceContext $ getServiceContext
-            createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (T.pack $ unpack u)
+            createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameMap T.pack u)
             when (isNothing createdUser) $ throwError (RegError ERROR "User was not created at the first stage")
             let user = fromJust createdUser
                 mpwd = passwordFromAuthUser user
@@ -120,10 +125,6 @@ registration = method GET handleForm <|> method POST handleFormSubmit
       -- It does not matter what happens we redirect to the "/" page
       redirect "/"
       where
-        validateField f v =
-          validate f (unpack v)
-            (return ())
-            (throwError . RegError ERROR)
 
 -- * Blaze
 

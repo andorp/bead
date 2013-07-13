@@ -8,7 +8,7 @@ import Bead.Invariants
 
 -- * Test Framework imports
 
-import Test.HUnit hiding (Test(..))
+import Test.HUnit hiding (Test(..), Assertion (..))
 import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Monadic
 import Test.Framework (Test(..), testGroup)
@@ -31,7 +31,9 @@ import qualified Bead.View.Snap.Content.All as VA (invariants)
 import qualified Bead.View.Snap.Pagelets as VP (invariants)
 import qualified Bead.View.Snap.Session as VS (invariants, unitTests)
 import qualified Bead.View.Snap.TemplateAndComponentNames as TC (unitTests)
+import qualified Bead.View.Snap.Validators as V (assertEmailAddress)
 
+import Control.Monad (join)
 
 unitTestGroup :: String -> UnitTests -> Test
 unitTestGroup name (UnitTests ts) = testGroup name
@@ -47,6 +49,12 @@ invariantsIO2Group
 invariantsIO2Group name (InvariantsM2 is) = testGroup name
   $ map (\(desc, prop) -> testProperty desc (\a b -> monadicIO (run (prop a b)))) is
 
+assertionTestGroup :: (Show a, Eq a) => String -> [Assertion a] -> Test
+assertionTestGroup name as = testGroup name
+  $ map (assertionMap createTestCase) as
+  where
+    createTestCase n f e =
+      testCase n $ assertBool (join ["Found: ", show f, " expected: ", show e]) (f == e)
 -- * Unit tests
 
 tests = [
@@ -63,6 +71,7 @@ tests = [
   , unitTestGroup   "RouteOf unit tests" R.unitTests
   , unitTestGroup   "Page unit tests" P.unitTests
   , unitTestGroup   "Template and components" TC.unitTests
+  , assertionTestGroup "Email address" V.assertEmailAddress
   ]
 
 

@@ -130,9 +130,9 @@ getParameter :: Parameter a -> HandlerError App b a
 getParameter param = do
   reqParam <- getParam . B.pack . name $ param
   when (isNothing reqParam) . throwError . strMsg . notFound $ param
-  let msg   = B.unpack . fromJust $ reqParam
-      value = decode param msg
-  when (isNothing value) . throwError . strMsg . decodeError param $ msg
+  let v     = B.unpack . fromJust $ reqParam
+      value = decode param v
+  when (isNothing value) . throwError . strMsg . decodeError param $ v
   return . fromJust $ value
 
 getJSONParam :: (Data a) => String -> String -> HandlerError App b a
