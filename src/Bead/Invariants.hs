@@ -1,5 +1,7 @@
 module Bead.Invariants where
 
+import Control.Monad (join, mapM_)
+
 -- * Invariants for testing
 
 -- All module can define invariants and unit test in a
@@ -30,3 +32,11 @@ data Assertion a = Assertion {
 assertionMap :: (String -> a -> a -> b) -> Assertion a -> b
 assertionMap g (Assertion n f e) = g n f e
 
+testAssertion :: (Eq a, Show a) => Assertion a -> IO ()
+testAssertion = putStrLn . assertionMap check where
+  check msg f e
+    | f == e    = join [msg, ": passed"]
+    | otherwise = join [msg, ": failed. Found:", show f, " Expected:", show e]
+
+testAssertions :: (Eq a, Show a) => [Assertion a] -> IO ()
+testAssertions = mapM_ testAssertion
