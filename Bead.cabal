@@ -46,7 +46,7 @@ Executable Bead
 
 
 --Executable Test
---  GHC-Options: -fhpc -hpcdir dist/build/Test/Mix/
+--  GHC-Options: -fhpc -hpcdir dist/build/Test/Mix/ -DTEST
 --  HS-Source-Dirs: src, test
 --  Main-is: TestMain.hs
 --  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,

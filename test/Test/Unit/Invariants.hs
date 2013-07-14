@@ -32,6 +32,7 @@ import qualified Bead.View.Snap.Pagelets as VP (invariants)
 import qualified Bead.View.Snap.Session as VS (invariants, unitTests)
 import qualified Bead.View.Snap.TemplateAndComponentNames as TC (unitTests)
 import qualified Bead.View.Snap.Validators as V (assertEmailAddress)
+import Bead.View.Snap.Content.Home (sumBinaryResultTests)
 
 import Control.Monad (join)
 
@@ -72,6 +73,7 @@ tests = [
   , unitTestGroup   "Page unit tests" P.unitTests
   , unitTestGroup   "Template and components" TC.unitTests
   , assertionTestGroup "Email address" V.assertEmailAddress
+  , assertionTestGroup "Home binary results" sumBinaryResultTests
   ]
 
 

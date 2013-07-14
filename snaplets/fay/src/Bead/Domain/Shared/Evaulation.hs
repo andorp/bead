@@ -9,6 +9,7 @@ import Data.Data
 data Result = Passed | Failed
   deriving (Eq, Show, Read, Data, Typeable)
 
+-- Represents the evaulation type for an assignment
 data EvaulationData b p
   = BinEval b
   | PctEval p

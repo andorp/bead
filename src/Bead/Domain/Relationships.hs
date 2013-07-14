@@ -88,6 +88,11 @@ data SubmissionInfo
   | Submission_Unevaulated
   | Submission_Result EvaulationKey EvaulationResult
 
+submissionInfoMap :: a -> a -> (EvaulationKey -> EvaulationResult -> a) -> SubmissionInfo -> a
+submissionInfoMap n _ _ Submission_Not_Found    = n
+submissionInfoMap _ u _ Submission_Unevaulated  = u
+submissionInfoMap _ _ f (Submission_Result k r) = f k r
+
 siEvaulationKey :: SubmissionInfo -> Maybe EvaulationKey
 siEvaulationKey Submission_Not_Found     = Nothing
 siEvaulationKey Submission_Unevaulated   = Nothing

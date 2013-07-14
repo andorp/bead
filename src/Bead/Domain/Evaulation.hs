@@ -17,10 +17,11 @@ class Monoid m => Evaulate m e where
   evaulate :: m -> e -> Result
 
 calculateEvaulation :: Evaulate m e => [m] -> e -> Result
-calculateEvaulation = evaulate . mconcat
+calculateEvaulation [] _ = Failed
+calculateEvaulation ms e = evaulate (mconcat ms) e
 
 instance Monoid Binary where
-  mempty = Binary Failed
+  mempty = Binary Passed
   (Binary Passed) `mappend` (Binary Passed) = Binary Passed
   _               `mappend` _               = Binary Failed
 

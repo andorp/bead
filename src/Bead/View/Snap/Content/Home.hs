@@ -1,12 +1,18 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, CPP #-}
 module Bead.View.Snap.Content.Home (
     home
+#ifdef TEST
+  , sumBinaryResultTests
+#endif
   ) where
 
 import Numeric (showHex)
+import Data.Maybe (catMaybes)
 import Data.List (intersperse)
 import Data.String (fromString)
 import Control.Monad (join, when, liftM)
+import Control.Monad.Identity
+import Control.Monad.Trans.Error
 
 import Bead.Domain.Evaulation
 import Bead.Domain.Relationships (AssignmentDesc(..))
@@ -24,6 +30,10 @@ import Bead.Controller.UserStories (
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A (class_, style)
+
+#ifdef TEST
+import Bead.Invariants
+#endif
 
 home :: Content
 home = getContentHandler homePage
@@ -131,20 +141,56 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
         val (BinEval (Binary Failed)) = "0"
         val (PctEval (Percentage (Scores [p]))) = percent p
 
-        coloredCell = color s H.td
+        coloredCell = color s
 
-        color (Submission_Not_Found)   x = x
-        color (Submission_Unevaulated) x = x ! A.class_ (className submissionUnevaulated)
-        color (Submission_Result _ r)  x = resultCell r x
+        color =
+          submissionInfoMap
+            (H.td) -- Not Found
+            (H.td ! A.class_ (className submissionUnevaulated)) -- Unevaulated
+            (const resultCell) -- Result
 
-        resultCell (BinEval (Binary Passed)) x = x ! A.class_ (className submissionBinaryPassed)
-        resultCell (BinEval (Binary Failed)) x = x ! A.class_ (className submissionBinaryFailed)
-        resultCell p@(PctEval {}) x = withRGBClass (EvResult p) x
+        resultCell (BinEval (Binary Passed)) = H.td ! A.class_ (className submissionBinaryPassed)
+        resultCell (BinEval (Binary Failed)) = H.td ! A.class_ (className submissionBinaryFailed)
+        resultCell p@(PctEval {}) = withRGBClass (EvResult p) H.td
 
         percent x = join [show . round $ (100 * x), "%"]
 
         withRGBClass r = maybe id (\pct html -> html ! (A.style . fromString . colorStyle . pctCellColor $ pct)) (percentValue r)
 
+-- * Evaluation
+
+-- Produces the result of a user's submission list for a binary evaulation.
+-- Returns (Right Result) when there is no error in the submission set
+-- otherwise (Left "Reason")
+sumBinaryResult :: [SubmissionInfo] -> Either String Result
+sumBinaryResult si = right calculateResult . checkErrors . map binary . filterEvaulation $ si
+  where
+    result = const Just
+
+    right :: (a -> b) -> Either c a -> Either c b
+    right f (Right x) = Right (f x)
+    right _ (Left x)  = (Left x)
+
+    -- Filters only the evaulation results
+    filterEvaulation :: [SubmissionInfo] -> [EvaulationResult]
+    filterEvaulation = catMaybes . map (submissionInfoMap Nothing Nothing result)
+
+    -- Checks if the result is a binary result
+    -- Produces (Left "error") if the result is not a binary result
+    -- otherwise (Right result)
+    binary :: EvaulationResult -> Either String Binary
+    binary = evaluationDataMap Right (const . Left $ "Not a binary evaluation")
+
+    -- Checks if no error is found.
+    -- Produces (Left "error") when at least one element has an error,
+    -- otherwise the list
+    checkErrors :: [Either String Binary] -> Either String [Binary]
+    checkErrors [] = Right []
+    checkErrors ((Left msg):_) = Left msg
+    checkErrors ((Right b):bs) = fmap (b:) (checkErrors bs)
+
+    calculateResult :: [Binary] -> Result
+    calculateResult bs = calculateEvaulation bs ()
 
 -- * Colors
 
@@ -161,3 +207,18 @@ colorStyle (RGB (r,g,b)) = join ["background-color:#", hex r, hex g, hex b]
 
     hex x = twoDigits (showHex x "")
 
+-- * Tests
+
+#ifdef TEST
+binPassed = Submission_Result undefined (BinEval (Binary Passed))
+binFailed = Submission_Result undefined (BinEval (Binary Failed))
+pctResult = Submission_Result undefined (PctEval (Percentage (Scores [0.1])))
+
+sumBinaryResultTests = [
+    Assertion "Empty list" (sumBinaryResult []) (Right Failed)
+  , Assertion "Homogenous passed list" (sumBinaryResult [binPassed, binPassed]) (Right Passed)
+  , Assertion "Homogenous failed list" (sumBinaryResult [binPassed, binFailed]) (Right Failed)
+  , Assertion "Inhomogenous list" (sumBinaryResult [binPassed, binFailed, pctResult, binPassed])
+              (Left "Not a binary evaluation")
+  ]
+#endif
