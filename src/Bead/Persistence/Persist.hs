@@ -274,6 +274,7 @@ submissionTableInfo p courseName evalCfg as usernames = do
   return SubmissionTableInfo {
     stCourse      = courseName
   , stNumberOfAssignments = length assignments
+  , stEvalConfig  = evalCfg
   , stAssignments = assignments
   , stUsers       = usernames
   , stUserLines   = ulines

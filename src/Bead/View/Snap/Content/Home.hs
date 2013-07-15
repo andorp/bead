@@ -3,6 +3,8 @@ module Bead.View.Snap.Content.Home (
     home
 #ifdef TEST
   , sumBinaryResultTests
+  , sumPercentageResultTests
+  , calculateSubmissionResultTests
 #endif
   ) where
 
@@ -125,10 +127,11 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
 
     userLine (u, p, as) = H.tr $ do
       let username = ud_username u
+          submissionInfos = map snd as
       H.td . fromString . ud_fullname $ u
       H.td . fromString . show $ username
       mapM_ (submissionCell username) $ as
-      H.td . fromString . show $ p
+      H.td . fromString . show $ calculateSubmissionResult submissionInfos (stEvalConfig s)
 
     submissionCell u (ak,s) =
       coloredCell $ link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]) (sc s)
@@ -159,11 +162,52 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
 
 -- * Evaluation
 
+-- Produces the result of the submissions. The selected evaulation method depends
+-- on the given configuration.
+calculateSubmissionResult :: [SubmissionInfo] -> EvaulationConfig -> Either String Result
+calculateSubmissionResult si =
+  evaluationDataMap
+    (const (sumBinaryResult si))
+    (flip sumPercentageResult si)
+
 -- Produces the result of a user's submission list for a binary evaulation.
--- Returns (Right Result) when there is no error in the submission set
--- otherwise (Left "Reason")
+-- Returns (Right result) when there is no error in the submission set, otherwise (Left "Reason")
 sumBinaryResult :: [SubmissionInfo] -> Either String Result
-sumBinaryResult si = right calculateResult . checkErrors . map binary . filterEvaulation $ si
+sumBinaryResult = calcEvaluationResult binary calcBinaryResult
+  where
+    -- Checks if the result is a binary result
+    -- Produces (Left "error") if the result is not a binary result
+    -- otherwise (Right result)
+    binary :: EvaulationResult -> Either String Binary
+    binary = evaluationDataMap Right (const . Left $ "Not a binary evaluation")
+
+    calcBinaryResult :: [Binary] -> Result
+    calcBinaryResult bs = calculateEvaulation bs ()
+
+-- Produces the result of a user's submission list for a percentage evaulation using
+-- the given config.
+-- Returns (Right result) when there is no error in the submission set, otherwise (Left "Reason")
+sumPercentageResult :: PctConfig -> [SubmissionInfo] -> Either String Result
+sumPercentageResult config = calcEvaluationResult percentage calcPercentageResult
+  where
+    percentage :: EvaulationResult -> Either String Percentage
+    percentage = evaluationDataMap
+                   (const . Left $ "Not a percentage evaluation")
+                   Right
+
+    calcPercentageResult :: [Percentage] -> Result
+    calcPercentageResult ps = calculateEvaulation ps config
+
+-- Produces the result of a user's submission list using the selectResult
+-- projection and the calculateResult function
+-- Returns (Right result) if the calculation is correct, otherwise (Left "reason")
+calcEvaluationResult
+  :: (EvaulationResult -> Either String result) -- Selects the correct result or produces an error msg
+  -> ([result] -> Result) -- Aggregates the results calculating into the final result
+  -> [SubmissionInfo]
+  -> Either String Result
+calcEvaluationResult selectResult calculateResult
+  = right calculateResult . checkErrors . map selectResult . filterEvaulation
   where
     result = const Just
 
@@ -175,22 +219,14 @@ sumBinaryResult si = right calculateResult . checkErrors . map binary . filterEv
     filterEvaulation :: [SubmissionInfo] -> [EvaulationResult]
     filterEvaulation = catMaybes . map (submissionInfoMap Nothing Nothing result)
 
-    -- Checks if the result is a binary result
-    -- Produces (Left "error") if the result is not a binary result
-    -- otherwise (Right result)
-    binary :: EvaulationResult -> Either String Binary
-    binary = evaluationDataMap Right (const . Left $ "Not a binary evaluation")
-
     -- Checks if no error is found.
     -- Produces (Left "error") when at least one element has an error,
     -- otherwise the list
-    checkErrors :: [Either String Binary] -> Either String [Binary]
+    checkErrors :: [Either String a] -> Either String [a]
     checkErrors [] = Right []
     checkErrors ((Left msg):_) = Left msg
     checkErrors ((Right b):bs) = fmap (b:) (checkErrors bs)
 
-    calculateResult :: [Binary] -> Result
-    calculateResult bs = calculateEvaulation bs ()
 
 -- * Colors
 
@@ -221,4 +257,35 @@ sumBinaryResultTests = [
   , Assertion "Inhomogenous list" (sumBinaryResult [binPassed, binFailed, pctResult, binPassed])
               (Left "Not a binary evaluation")
   ]
+
+cfg30 = PctConfig 0.3 -- At least 30% is needed to pass
+cfg40 = PctConfig 0.4 -- At least 40% is needed to pass
+pct x = Submission_Result undefined (PctEval (Percentage (Scores [x])))
+
+sumPercentageResultTests = [
+    Assertion "Empty list"     (sumPercentageResult cfg30 []) (Right Failed)
+  , Assertion "30% and passed" (sumPercentageResult cfg30 [pct 0.3]) (Right Passed)
+  , Assertion "40% and failed" (sumPercentageResult cfg40 [pct 0.3]) (Right Failed)
+  , Assertion "60/200 and passed" (sumPercentageResult cfg30 [pct 0.1, pct 0.5]) (Right Passed)
+  , Assertion "50/200 and failed" (sumPercentageResult cfg30 [pct 0, pct 0.5]) (Right Failed)
+  , Assertion "Inhomogenous list" (sumPercentageResult cfg30 [pct 0, binPassed])
+                                  (Left "Not a percentage evaluation")
+  ]
+
+binConfig = BinEval ()
+pctConfig = PctEval cfg30
+
+calculateSubmissionResultTests = [
+    Assertion "Binary config, failed"
+              (calculateSubmissionResult [binPassed, binFailed] binConfig) (Right Failed)
+  , Assertion "Percentage config, failed"
+              (calculateSubmissionResult [pct 0.3, pct 0.1] pctConfig) (Right Failed)
+  , Assertion "Binary config, wrong list"
+              (calculateSubmissionResult [binPassed, binFailed] pctConfig)
+              (Left "Not a percentage evaluation")
+  , Assertion "Percentage config, wrong list"
+              (calculateSubmissionResult [pct 0.3, pct 0.1] binConfig)
+              (Left "Not a binary evaluation")
+  ]
+
 #endif

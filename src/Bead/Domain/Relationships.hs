@@ -101,6 +101,7 @@ siEvaulationKey (Submission_Result ek _) = Just ek
 data SubmissionTableInfo = SubmissionTableInfo {
     stCourse   :: String
   , stNumberOfAssignments :: Int
+  , stEvalConfig  :: EvaulationConfig
   , stAssignments :: [AssignmentKey] -- Cronologically ordered list of assignments
   , stUsers       :: [Username]      -- Alphabetically ordered list of usernames
   , stUserLines   :: [(UserDesc, Maybe Result, [(AssignmentKey, SubmissionInfo)])]
