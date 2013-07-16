@@ -131,7 +131,10 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
       H.td . fromString . ud_fullname $ u
       H.td . fromString . show $ username
       mapM_ (submissionCell username) $ as
-      H.td . fromString . show $ calculateSubmissionResult submissionInfos (stEvalConfig s)
+      case calculateSubmissionResult submissionInfos (stEvalConfig s) of
+        Left  e      -> H.td ! summaryErrorStyle  $ fromString e
+        Right Passed -> H.td ! summaryPassedStyle $ fromString (i18n "Passed")
+        Right Failed -> H.td ! summaryFailedStyle $ fromString (i18n "Failed")
 
     submissionCell u (ak,s) =
       coloredCell $ link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]) (sc s)
@@ -148,12 +151,12 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
 
         color =
           submissionInfoMap
-            (H.td) -- Not Found
-            (H.td ! A.class_ (className submissionUnevaulated)) -- Unevaulated
-            (const resultCell) -- Result
+            (H.td)                    -- Not Found
+            (H.td ! unevaulatedStyle) -- Unevulated
+            (const resultCell)        -- Result
 
-        resultCell (BinEval (Binary Passed)) = H.td ! A.class_ (className submissionBinaryPassed)
-        resultCell (BinEval (Binary Failed)) = H.td ! A.class_ (className submissionBinaryFailed)
+        resultCell (BinEval (Binary Passed)) = H.td ! binaryPassedStyle
+        resultCell (BinEval (Binary Failed)) = H.td ! binaryFailedStyle
         resultCell p@(PctEval {}) = withRGBClass (EvResult p) H.td
 
         percent x = join [show . round $ (100 * x), "%"]
@@ -227,6 +230,14 @@ calcEvaluationResult selectResult calculateResult
     checkErrors ((Left msg):_) = Left msg
     checkErrors ((Right b):bs) = fmap (b:) (checkErrors bs)
 
+-- * CSS Section
+
+binaryPassedStyle = A.style "background: lightgreen"
+binaryFailedStyle = A.style "background: red"
+unevaulatedStyle  = A.style "background: gray"
+summaryPassedStyle = A.style "background: lightgreen"
+summaryFailedStyle = A.style "background: red"
+summaryErrorStyle  = A.style "background: yellow"
 
 -- * Colors
 
@@ -287,5 +298,4 @@ calculateSubmissionResultTests = [
               (calculateSubmissionResult [pct 0.3, pct 0.1] binConfig)
               (Left "Not a binary evaluation")
   ]
-
 #endif

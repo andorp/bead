@@ -38,9 +38,9 @@ Terminology:
 - Auto Test Cases for assignments
 - MD5 sum in the persistence layer
 - Sending messages for the users
-- Opcional assignment
-- Print numbers of passed assignment for the binary evaluation in the submission table
-- Print the result of the percentage evaulation in the submission table
+- Optional assignment
++ Print numbers of passed assignment for the binary evaluation in the submission table
++ Print the result of the percentage evaulation in the submission table
 - Upload files as solution for the assignment
 - Print and download the uploaded files
 - More helpful text on the course and course admin assignment section
@@ -51,3 +51,4 @@ Terminology:
 + Appropiate page is shown on error
   + Error page and handler
   + Remove other error page chunks
+- Webdriver tests for the new design
