@@ -33,7 +33,7 @@ Terminology:
 - Create Profile page (where you can change your password)
 - Force logged out message
 + Invalid password, username error message
-- Session timeout
++ Session timeout
 - Email registration
 - Auto Test Cases for assignments
 - MD5 sum in the persistence layer
@@ -73,5 +73,5 @@ Terminology:
 - Some headers on the submission details page
 - Some headers on the user submission page, for the group admin
 - Show or hide evaulation values in the user submission page for the group admin
-
+- Server configuration in data
 

@@ -84,10 +84,16 @@ userIsLoggedInFilter
   -> (String -> Handler App b ())
   -> Handler App b ()
 userIsLoggedInFilter inside outside onError = do
-  e <- CME.runErrorT loggedInFilter
-  case e of
-    Right () -> return ()
-    Left e' -> errorHappened . show $ e'
+  sessionVer <- withTop sessionManager $ getSessionVersion
+  case sessionVer of
+    -- Session timed out
+    Nothing -> onError "Session timed out"
+    -- Active session
+    Just _ -> do
+      e <- CME.runErrorT loggedInFilter
+      case e of
+        Right () -> return ()
+        Left e' -> errorHappened . show $ e'
 
   where
     errorHappened e = do
