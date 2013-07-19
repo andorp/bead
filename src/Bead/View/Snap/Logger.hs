@@ -1,6 +1,10 @@
 module Bead.View.Snap.Logger where
 
 import Data.ByteString.Char8
+
+import System.FilePath (dropFileName)
+import System.Directory (createDirectoryIfMissing)
+
 import qualified System.FastLogger       as S
 import qualified Bead.Controller.Logging as L
 
@@ -15,6 +19,7 @@ data SnapLogger = SnapLogger {
 -- used by this logger
 createSnapLogger :: FilePath -> IO SnapLogger
 createSnapLogger logFile = do
+  createDirectoryIfMissing True $ dropFileName logFile
   l <- S.newLogger logFile
 
   let logger lvl msg = S.logMsg l (pack msg)

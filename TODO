@@ -53,7 +53,7 @@ Terminology:
   + Remove other error page chunks
 - Webdriver tests for the new design
 
-- Create log file automatically: log/useractions.log
++ Create log file automatically: log/useractions.log
 - Log successful actions on registration
 - Remove 'content' from the content div
 - Change password for the given user in admin page
