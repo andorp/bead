@@ -33,6 +33,7 @@ import qualified Bead.View.Snap.Session as VS (invariants, unitTests)
 import qualified Bead.View.Snap.TemplateAndComponentNames as TC (unitTests)
 import qualified Bead.View.Snap.Validators as V (assertEmailAddress)
 import Bead.View.Snap.Content.Home
+import Bead.Configuration (initTaskAssertions)
 
 import Control.Monad (join)
 
@@ -52,10 +53,15 @@ invariantsIO2Group name (InvariantsM2 is) = testGroup name
 
 assertionTestGroup :: (Show a, Eq a) => String -> [Assertion a] -> Test
 assertionTestGroup name as = testGroup name
-  $ map (assertionMap createTestCase) as
+  $ map (assertionMap createTestCase createOracleTestCase) as
   where
     createTestCase n f e =
       testCase n $ assertBool (join ["Found: ", show f, " expected: ", show e]) (f == e)
+
+    createOracleTestCase n f o =
+      testCase n $
+        assertBool (join ["Found: ", show f, " The oracle does not accept the result."]) (o f)
+
 -- * Unit tests
 
 tests = [
@@ -76,6 +82,7 @@ tests = [
   , assertionTestGroup "Home page binary results" sumBinaryResultTests
   , assertionTestGroup "Home page percentage results" sumPercentageResultTests
   , assertionTestGroup "Home page calc results" calculateSubmissionResultTests
+  , assertionTestGroup "Command line and configuration" initTaskAssertions
   ]
 
 

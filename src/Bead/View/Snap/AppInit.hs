@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
 module Bead.View.Snap.AppInit (appInit) where
 
-import Snap
+import Snap hiding (Config(..))
 import Snap.Snaplet
 import Snap.Snaplet.Session
 import Snap.Snaplet.Session.Backends.CookieSession
@@ -11,6 +11,7 @@ import Snap.Snaplet.Fay
 import Data.Maybe (maybe)
 import System.FilePath (joinPath)
 
+import Bead.Configuration (Config(..))
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.Controller.ServiceContext as S
 
@@ -24,8 +25,8 @@ import System.FilePath ((</>))
 import System.Directory
 
 
-appInit :: Maybe (String, String) -> ServiceContext -> Dictionaries -> SnapletInit App App
-appInit user s d = makeSnaplet "bead" description dataDir $ do
+appInit :: Config -> Maybe (String, String) -> ServiceContext -> Dictionaries -> SnapletInit App App
+appInit config user s d = makeSnaplet "bead" description dataDir $ do
 
   copyDataContext
 
@@ -34,7 +35,7 @@ appInit user s d = makeSnaplet "bead" description dataDir $ do
     Just (usr,pwd) -> liftIO $ S.scRunPersist s $ \p -> createAdminUser p "users.json" usr pwd
 
   sm <- nestSnaplet "session" sessionManager $
-          initCookieSessionManager "cookie" "session" (Just 3600)
+          initCookieSessionManager "cookie" "session" (Just (sessionTimeout config))
 
   as <- nestSnaplet "auth" auth $
           initJsonFileAuthManager defAuthSettings sessionManager "users.json"

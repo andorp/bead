@@ -22,21 +22,36 @@ newtype UnitTests = UnitTests [(String,Bool)]
 newtype UnitTestsM m = UnitTestsM [(String,m Bool)]
 
 -- Represents an named assertion for a function that produce a value
--- and the expected value of the result.
-data Assertion a = Assertion {
-    name     :: String
-  , found    :: a
-  , expected :: a
-  }
+-- and the expected value of the result, or a function that decide
+-- of a found value is an appropiate one
+data Assertion a
+  = Assertion
+    { name     :: String
+    , found    :: a
+    , expected :: a
+    }
+  | AssertPredicate
+    { name   :: String
+    , found  :: a
+    , oracle :: a -> Bool
+    }
 
-assertionMap :: (String -> a -> a -> b) -> Assertion a -> b
-assertionMap g (Assertion n f e) = g n f e
+assertionMap
+  :: (String -> a -> a -> b)
+  -> (String -> a -> (a -> Bool) -> b)
+  -> Assertion a -> b
+assertionMap g _ (Assertion       n f e) = g n f e
+assertionMap _ g (AssertPredicate n f o) = g n f o
 
 testAssertion :: (Eq a, Show a) => Assertion a -> IO ()
-testAssertion = putStrLn . assertionMap check where
+testAssertion = putStrLn . assertionMap check checkOracle where
   check msg f e
     | f == e    = join [msg, ": passed"]
     | otherwise = join [msg, ": failed. Found:", show f, " Expected:", show e]
+
+  checkOracle msg found oracle
+    | oracle found = join [msg, ": passed"]
+    | otherwise = join [msg, ": failed (Oracle does not accept result) Found:", show found]
 
 testAssertions :: (Eq a, Show a) => [Assertion a] -> IO ()
 testAssertions = mapM_ testAssertion
