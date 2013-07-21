@@ -67,21 +67,21 @@ submissionDetailsContent :: PageData -> Pagelet
 submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
   let sm = smDetails p
   H.p $ do
-    (translate i "Group / Course: ")
+    H.h4 (translate i "Group / Course: ")
     (fromString . sdGroup $ sm)
   H.p $ do
-    (translate i "Teacher: ")
+    H.h4 (translate i "Teacher: ")
     (fromString . join . intersperse ", " . sdTeacher $ sm)
   H.h2 $ (translate i "Assignment: ")
   H.div ! A.class_ (className assignmentTextDiv) $ H.pre . fromString . sdAssignment $ sm
   H.p $ do
-    (translate i "Status: ")
+    H.h4 (translate i "Status: ")
     (fromString . sdStatus $ sm)
   H.p $ do
-    (translate i "Submission text: ")
+    H.h4 (translate i "Submission text: ")
     (fromString . sdSubmission $ sm)
   H.p $ do
-    (translate i "New comment")
+    H.h4 (translate i "New comment")
     postForm (routeOf P.SubmissionDetails) $ do
       H.div ! formDiv $ do
         textAreaInput (fieldName commentValueField) Nothing ! fillDiv

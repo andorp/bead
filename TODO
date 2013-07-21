@@ -59,20 +59,20 @@ Terminology:
 - Change password for the given user in admin page
 - Remove user's email address, for the user role profile page
 + Place newline after username in the header
-- Set headers in the course administration page
++ Set headers in the course administration page
 - Show successful actions on the course administration page
-- Set headers in the home page for the course admin
-- Set headers in the course administration page
++ Set headers in the home page for the course admin
++ Set headers in the course administration page
 - Show successful action on the course administration page
-- Set header for the Group admin home page
-- Show evaulation type for the assignments
-- Set headers for the student home page
++ Set header for the Group admin home page
+- Show evaulation type for the assignments in the table
++ Set headers for the student home page
 - Set headers for the group registration page
 - Show registered courses and groups in the course group registration page
-- Some headers on the submission list page
-- Some headers on the submission details page
-- Some headers on the user submission page, for the group admin
++ Some headers on the submission list page
++ Some headers on the submission details page
++ Some headers on the user submission page, for the group admin
 - Show or hide evaulation values in the user submission page for the group admin
 - Server configuration in data
 - Write ifdef TEST where tests are in the files
-
+- Collect all common CSS style attributes into Sytle.hs

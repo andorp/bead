@@ -33,18 +33,22 @@ unauthorized = onlyHtml $ mkI18NHtml $ const $
 
 userSubmissionHtml :: UserSubmissionDesc -> Pagelet
 userSubmissionHtml u = onlyHtml $ mkI18NHtml $ \i18n -> do
+  H.table ! centerTable $ do
+    H.tr $ do
+      firstCol  . i18n $ "Course:"
+      secondCol . usCourse $ u
+    H.tr $ do
+      firstCol  . i18n $ "Assignment:"
+      secondCol . usAssignmentName $ u
+    H.tr $ do
+      firstCol  . i18n $ "Student:"
+      secondCol . usStudent $ u
   H.p $ do
-    fromString . i18n $ "Course: "
-    fromString . usCourse $ u
-  H.p $ do
-    fromString . i18n $ "Assignment: "
-    fromString . usAssignmentName $ u
-  H.p $ do
-    fromString . i18n $ "Student: "
-    fromString . usStudent $ u
-  H.p $ do
-    fromString . i18n $ "Submitted Solutions: "
+    H.h3 . fromString . i18n $ "Submitted Solutions: "
     submissionTable i18n . usSubmissions $ u
+  where
+    firstCol  t = H.td ! textAlignRight $ H.b $ fromString t
+    secondCol t = H.td ! textAlignLeft        $ fromString t
 
 submissionTable :: I18N -> [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)] -> Html
 submissionTable i18n s = do
@@ -77,3 +81,4 @@ submissionTable i18n s = do
       Just ek -> link
         (routeWithParams P.ModifyEvaulation [requestParam sk,requestParam ek] )
         (show t)
+
