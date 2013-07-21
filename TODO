@@ -58,7 +58,7 @@ Terminology:
 + Remove 'content' from the content div
 - Change password for the given user in admin page
 - Remove user's email address, for the user role profile page
-- Place newline after username in the header
++ Place newline after username in the header
 - Set headers in the course administration page
 - Show successful actions on the course administration page
 - Set headers in the home page for the course admin

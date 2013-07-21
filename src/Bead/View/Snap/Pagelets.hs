@@ -233,7 +233,7 @@ pageHeader s = do
   H.div ! A.id "logo" $ "Bead"
   H.div ! A.id "user" $ do
     fromString . str . user $ s
-    " "
+    H.br
     linkToPage P.Logout
   H.div ! A.id "title" $ title s
   where
