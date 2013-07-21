@@ -23,7 +23,7 @@ Terminology:
   + Client side error indication on fields
   + Server side field validation
 - Username field validation, configurable pattern
-- Admin creation, read from stdin
++ Admin creation, read from stdin
 - Rename Professor to Group Admin
 + Remove Create Course Assignment from Home for admin
 + Remove Create Group Assignment from Home for admin
@@ -55,7 +55,7 @@ Terminology:
 
 + Create log file automatically: log/useractions.log
 - Log successful actions on registration
-- Remove 'content' from the content div
++ Remove 'content' from the content div
 - Change password for the given user in admin page
 - Remove user's email address, for the user role profile page
 - Place newline after username in the header

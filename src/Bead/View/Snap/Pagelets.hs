@@ -98,9 +98,7 @@ withUserFrame s = structMap withUserFrame'
     withUserFrame' content = I18N.liftH2 $ \i -> do
       H.div ! A.id "header" $ pageHeader s
       H.div ! A.id "menu" $ navigationMenu s
-      H.div ! A.id "content" $ do
-         "Content"
-         (translate i content)
+      H.div ! A.id "content" $ translate i content
 
 -- * Basic building blocks
 
