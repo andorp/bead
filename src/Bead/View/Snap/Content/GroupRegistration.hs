@@ -14,7 +14,7 @@ import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 
 import Data.String (fromString)
-import Text.Blaze.Html5 (Html)
+import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 
 groupRegistration :: Content
@@ -45,24 +45,33 @@ groupRegistrationPage = withUserState $ \s -> do
 groupRegistrationContent :: GroupRegData -> Pagelet
 groupRegistrationContent desc = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ do
-    (translate i "Table of registered courses and teachers of them")
+    H.h3 $ (translate i "Registered groups")
     groupsAlreadyRegistered i (groupsRegistered desc)
   H.p $ do
-    (translate i "Course / Group selection")
+    H.h3 $ (translate i "Course / Group selection")
     groupsForTheUser i (groups desc)
-  H.p $ (translate i "Choose")
 
--- TODO
 groupsAlreadyRegistered :: I18N -> [(GroupKey, GroupDesc)] -> Html
 groupsAlreadyRegistered i18n ds =
-  nonEmpty ds (fromString . i18n $ "There are no attended groups on") $
-    return ()
+  nonEmpty ds
+    (fromString . i18n $ "There are no attended groups on")
+    (H.table ! informationalTable $ do
+      H.tr $ do
+        H.th ! informationalCell $ fromString $ i18n $ "Groups"
+        H.th ! informationalCell $ fromString $ i18n $ "Teachers"
+      mapM_ (groupLine . snd) ds)
+  where
+    groupLine = groupDescFold $ \n as -> do
+      H.tr $ do
+        H.td ! informationalCell $ fromString $ n
+        H.td ! informationalCell $ fromString $ join $ intersperse " " as
 
 groupsForTheUser :: I18N -> [(GroupKey, GroupDesc)] -> Html
 groupsForTheUser i18n gs = nonEmpty gs (fromString . i18n $ "No groups were found") $
   postForm (routeOf P.GroupRegistration) $ do
     selection (fieldName groupRegistrationField) $ do
       mapM_ (\(gk,gd) -> option (paramValue gk) (descriptive gd) False) gs
+    H.br
     submitButton (fieldName regGroupSubmitBtn) (i18n "Register")
 
   where

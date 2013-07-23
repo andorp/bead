@@ -34,6 +34,9 @@ data GroupDesc = GroupDesc {
   , gAdmins :: [String]
   } deriving (Show)
 
+groupDescFold :: (String -> [String] -> a) -> GroupDesc -> a
+groupDescFold f (GroupDesc n a) = f n a
+
 groupDescPermissions = ObjectPermissions [
     (P_Open, P_Group)
   ]

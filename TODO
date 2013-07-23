@@ -31,7 +31,7 @@ Terminology:
 + Print text only for empty assignment tables
 + Change CourseAdmin text in navigational menu
 - Create Profile page (where you can change your password)
-- Force logged out message
++ Force logged out message
 + Invalid password, username error message
 + Session timeout
 - Email registration
@@ -67,8 +67,8 @@ Terminology:
 + Set header for the Group admin home page
 - Show evaulation type for the assignments in the table
 + Set headers for the student home page
-- Set headers for the group registration page
-- Show registered courses and groups in the course group registration page
++ Set headers for the group registration page
++ Show registered courses and groups in the course group registration page
 + Some headers on the submission list page
 + Some headers on the submission details page
 + Some headers on the user submission page, for the group admin
@@ -76,3 +76,5 @@ Terminology:
 - Server configuration in data
 - Write ifdef TEST where tests are in the files
 - Collect all common CSS style attributes into Sytle.hs
+- Color the header fields gray of the table
+
