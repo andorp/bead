@@ -40,7 +40,7 @@ submissionListPage = withUserState $ \s -> do
 
 submissionListContent :: PageData -> Pagelet
 submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (className submissionListDiv) $ do
-  H.table ! centerTable $ do
+  H.table # centerTable $ do
     H.tr $ do
       firstCol  (i "Group / Course")
       secondCol (slGroup . smList $ p)
@@ -54,8 +54,8 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
   H.div ! A.class_ (className assignmentTextDiv) $ H.pre $
     (fromString . slAssignmentText . smList $ p)
   where
-    firstCol  t = H.td ! textAlignRight $ H.b $ fromString t
-    secondCol t = H.td ! textAlignLeft        $ fromString t
+    firstCol  t = H.td # textAlignRight $ H.b $ fromString t
+    secondCol t = H.td # textAlignLeft        $ fromString t
     submissionLine (sk, time, status, t) = H.tr $ do
       H.td $ link
         (routeWithParams P.SubmissionDetails [requestParam (asKey p), requestParam sk])

@@ -32,6 +32,7 @@ module Bead.View.Snap.Content (
   , Html
   , module Snap
   , module Data.ByteString.Char8
+  , module Data.Monoid
 
   , module Bead.Domain.Entities
   , module Bead.Domain.Relationships
@@ -50,6 +51,7 @@ module Bead.View.Snap.Content (
 import Snap hiding (empty, get, route, (<$>))
 import Snap.Blaze (blaze)
 import Data.ByteString.Char8 (ByteString, unpack)
+import Data.Monoid ((<>))
 
 import Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))

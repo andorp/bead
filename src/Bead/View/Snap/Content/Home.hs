@@ -78,19 +78,20 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
 
 availableAssignments :: I18N -> [(AssignmentKey,AssignmentDesc)] -> Html
 availableAssignments i18n as = do
-  table (fieldName availableAssignmentsTable) (className assignmentTable) $ do
+  table' (fieldName availableAssignmentsTable) # informationalTable $ do
     mapM_ assignmentLine as
   where
+    dataCell = H.td # informationalCell
     assignmentLine (k,a) = H.tr $ do
       case aActive a of
-        True -> H.td $ link (routeWithParams P.Submission [requestParam k]) (i18n "New submission")
-        False -> H.td "Inactive"
-      H.td (fromString . aGroup $ a)
-      H.td (fromString . join . intersperse ", " . aTeachers $ a)
-      H.td $ link (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
-      H.td (fromString . show . aOk  $ a)
-      H.td (fromString . show . aNew $ a)
-      H.td (fromString . show . aBad $ a)
+        True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (i18n "New submission")
+        False -> dataCell "Inactive"
+      dataCell (fromString . aGroup $ a)
+      dataCell (fromString . join . intersperse ", " . aTeachers $ a)
+      dataCell $ link (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
+      dataCell (fromString . show . aOk  $ a)
+      dataCell (fromString . show . aNew $ a)
+      dataCell (fromString . show . aBad $ a)
 
 htmlSubmissionTables :: I18N -> [SubmissionTableInfo] -> Html
 htmlSubmissionTables i18n xs = mapM_ (htmlSubmissionTable i18n) . zip [1..] $ xs
@@ -109,18 +110,20 @@ htmlSubmissionTable i18n (i,s)
       H.br
 
 -- Non empty table
-htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) $ do
+htmlSubmissionTable i18n (i,s) = table' tableId # informationalTable $ do
   headLine (stCourse s)
   assignmentLine (stAssignments s)
   mapM_ userLine (stUserLines s)
   where
     tableId = join ["st", show i]
     headLine = H.tr . H.th . fromString
+    headerCell = H.th # (informationalCell <> grayBackground)
+    dataCell r = H.td # (informationalCell <> r)
     assignmentLine as = H.tr $ do
-      H.th (translate i18n "Name")
-      H.th (translate i18n "Username")
-      mapM_ (H.th . modifyAssignmentLink) . zip [1..] $ as
-      H.th (translate i18n "Passed")
+      headerCell $ (translate i18n "Name")
+      headerCell $ (translate i18n "Username")
+      mapM_ (headerCell . modifyAssignmentLink) . zip [1..] $ as
+      headerCell $ (translate i18n "Passed")
 
     modifyAssignmentLink (i,ak) =
       link (routeWithParams P.ModifyAssignment [requestParam ak])
@@ -129,13 +132,13 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
     userLine (u, p, as) = H.tr $ do
       let username = ud_username u
           submissionInfos = map snd as
-      H.td . fromString . ud_fullname $ u
-      H.td . fromString . show $ username
+      dataCell noStyle . fromString . ud_fullname $ u
+      dataCell noStyle . fromString . show $ username
       mapM_ (submissionCell username) $ as
       case calculateSubmissionResult submissionInfos (stEvalConfig s) of
-        Left  e      -> H.td ! summaryErrorStyle  $ fromString e
-        Right Passed -> H.td ! summaryPassedStyle $ fromString (i18n "Passed")
-        Right Failed -> H.td ! summaryFailedStyle $ fromString (i18n "Failed")
+        Left  e      -> dataCell summaryErrorStyle  $ fromString e
+        Right Passed -> dataCell summaryPassedStyle $ fromString (i18n "Passed")
+        Right Failed -> dataCell summaryFailedStyle $ fromString (i18n "Failed")
 
     submissionCell u (ak,s) =
       coloredCell $ link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]) (sc s)
@@ -152,12 +155,12 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
 
         color =
           submissionInfoMap
-            (H.td)                    -- Not Found
-            (H.td ! unevaulatedStyle) -- Unevulated
+            (dataCell noStyle)        -- Not Found
+            (dataCell unevaulatedStyle) -- Unevulated
             (const resultCell)        -- Result
 
-        resultCell (BinEval (Binary Passed)) = H.td ! binaryPassedStyle
-        resultCell (BinEval (Binary Failed)) = H.td ! binaryFailedStyle
+        resultCell (BinEval (Binary Passed)) = dataCell binaryPassedStyle
+        resultCell (BinEval (Binary Failed)) = dataCell binaryFailedStyle
         resultCell p@(PctEval {}) = withRGBClass (EvResult p) H.td
 
         percent x = join [show . round $ (100 * x), "%"]
@@ -233,12 +236,12 @@ calcEvaluationResult selectResult calculateResult
 
 -- * CSS Section
 
-binaryPassedStyle = A.style "background: lightgreen"
-binaryFailedStyle = A.style "background: red"
-unevaulatedStyle  = A.style "background: gray"
-summaryPassedStyle = A.style "background: lightgreen"
-summaryFailedStyle = A.style "background: red"
-summaryErrorStyle  = A.style "background: yellow"
+binaryPassedStyle = backgroundColor "lightgreen"
+binaryFailedStyle = backgroundColor "red"
+unevaulatedStyle  = backgroundColor "gray"
+summaryPassedStyle = backgroundColor "lightgreen"
+summaryFailedStyle = backgroundColor "red"
+summaryErrorStyle  = backgroundColor "yellow"
 
 -- * Colors
 

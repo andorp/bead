@@ -25,5 +25,5 @@ evaulationTablePage = withUserState $ \s -> do
 evaulationTableContent :: [SubmissionKey] -> Pagelet
 evaulationTableContent ks = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ table "evaulation-table" (className evaulationClassTable) $ do
-    H.th $ (translate i "Table of new unevaulated assignements")
+    H.th # grayBackground $ (translate i "Table of new unevaulated assignements")
     mapM_ (\s -> H.td $ link (routeWithParams P.Evaulation [requestParam s]) (show s)) ks

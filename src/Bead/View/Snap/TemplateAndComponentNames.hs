@@ -260,10 +260,7 @@ data TableClassName = TableClassName {
 instance SnapClassName TableClassName where
   className = fromString . tcName
 
-groupSubmissionTable = TableClassName "group-submission-table"
-assignmentTable = TableClassName "assignment-table"
 evaulationClassTable = TableClassName "evaulation-table"
-userSubmissionClassTable = TableClassName "user-submission-class-table"
 submissionListTable = TableClassName "submission-list-table"
 
 data DivClassName = DivClassName {
@@ -322,7 +319,7 @@ fieldList = map fieldName $ join [
 
 classList :: [String]
 classList = map className [
-    SCN groupSubmissionTable, SCN assignmentTable, SCN evaulationClassTable, SCN userSubmissionClassTable
+    SCN evaulationClassTable
   , SCN submissionListTable, SCN submissionListDiv, SCN datePickerClass, SCN minuteSpinnerClass
   , SCN hourSpinnerClass, SCN assignmentTextDiv
   ]

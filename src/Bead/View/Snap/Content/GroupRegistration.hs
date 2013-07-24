@@ -55,16 +55,16 @@ groupsAlreadyRegistered :: I18N -> [(GroupKey, GroupDesc)] -> Html
 groupsAlreadyRegistered i18n ds =
   nonEmpty ds
     (fromString . i18n $ "There are no attended groups on")
-    (H.table ! informationalTable $ do
+    (H.table # informationalTable $ do
       H.tr $ do
-        H.th ! informationalCell $ fromString $ i18n $ "Groups"
-        H.th ! informationalCell $ fromString $ i18n $ "Teachers"
+        H.th # (grayBackground <> informationalCell) $ fromString $ i18n $ "Groups"
+        H.th # (grayBackground <> informationalCell) $ fromString $ i18n $ "Teachers"
       mapM_ (groupLine . snd) ds)
   where
     groupLine = groupDescFold $ \n as -> do
       H.tr $ do
-        H.td ! informationalCell $ fromString $ n
-        H.td ! informationalCell $ fromString $ join $ intersperse " " as
+        H.td # informationalCell $ fromString $ n
+        H.td # informationalCell $ fromString $ join $ intersperse " " as
 
 groupsForTheUser :: I18N -> [(GroupKey, GroupDesc)] -> Html
 groupsForTheUser i18n gs = nonEmpty gs (fromString . i18n $ "No groups were found") $

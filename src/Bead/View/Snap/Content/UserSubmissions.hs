@@ -33,7 +33,7 @@ unauthorized = onlyHtml $ mkI18NHtml $ const $
 
 userSubmissionHtml :: UserSubmissionDesc -> Pagelet
 userSubmissionHtml u = onlyHtml $ mkI18NHtml $ \i18n -> do
-  H.table ! centerTable $ do
+  H.table # centerTable $ do
     H.tr $ do
       firstCol  . i18n $ "Course:"
       secondCol . usCourse $ u
@@ -47,25 +47,25 @@ userSubmissionHtml u = onlyHtml $ mkI18NHtml $ \i18n -> do
     H.h3 . fromString . i18n $ "Submitted Solutions: "
     submissionTable i18n . usSubmissions $ u
   where
-    firstCol  t = H.td ! textAlignRight $ H.b $ fromString t
-    secondCol t = H.td ! textAlignLeft        $ fromString t
+    firstCol  t = H.td # textAlignRight $ H.b $ fromString t
+    secondCol t = H.td # textAlignLeft        $ fromString t
 
 submissionTable :: I18N -> [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)] -> Html
 submissionTable i18n s = do
-  table "submission-table" (className userSubmissionClassTable) $ do
+  table' "submission-table" # informationalTable $ do
     headerLine
     mapM_ submissionLine s
 
   where
     headerLine = H.tr $ do
-      H.th . fromString . i18n $ "Date of submission"
-      H.th . fromString . i18n $ "Evaulated By"
-      H.th . fromString . i18n $ ""
+      (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ "Date of submission"
+      (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ "Evaulated By"
+      (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ ""
 
     submissionLine (sk,t,si,ev) = H.tr $ do
-      H.td $ sbmLink si sk t
-      H.td $ fromString $ i18n $ submissionInfo si
-      H.td $ fromString $ i18n $ evaulatedWith  ev
+      H.td # informationalCell $ sbmLink si sk t
+      H.td # informationalCell $ fromString $ i18n $ submissionInfo si
+      H.td # informationalCell $ fromString $ i18n $ evaulatedWith  ev
 
     submissionInfo :: SubmissionInfo -> String
     submissionInfo Submission_Not_Found   = "Not Found"
