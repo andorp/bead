@@ -1,8 +1,6 @@
 {-# LANGUAGE CPP #-}
 module Bead.Invariants where
 
-#ifdef TEST
-
 import Control.Monad (join, mapM_)
 
 -- * Invariants for testing
@@ -59,4 +57,3 @@ testAssertion = putStrLn . assertionMap check checkOracle where
 testAssertions :: (Eq a, Show a) => [Assertion a] -> IO ()
 testAssertions = mapM_ testAssertion
 
-#endif

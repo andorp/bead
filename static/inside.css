@@ -65,16 +65,3 @@ textarea {
   margin-right: auto;
 }
 
-.assignment-text-div
-{
-  margin-left: 0px;
-  background: lightgray;
-}
-
-.assignment-text-div pre
-{
-  white-space: pre-wrap;
-  word-wrap: break-word;
-  padding: .5em;
-  text-align: left;
-}

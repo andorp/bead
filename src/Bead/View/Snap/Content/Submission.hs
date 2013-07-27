@@ -67,7 +67,7 @@ submissionContent p = onlyHtml $ mkI18NHtml $ \i -> do
         submitButton (fieldName submitSolutionBtn) (i "Submit")
     hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
   H.h2 (translate i "Description")
-  H.div ! A.class_ (className assignmentTextDiv) $ H.pre $
+  H.div # assignmentTextDiv $ H.pre # assignmentTextPre $
     (fromString . assignmentName . asValue $ p)
 
 

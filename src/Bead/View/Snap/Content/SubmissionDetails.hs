@@ -73,7 +73,7 @@ submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
     H.h4 (translate i "Teacher: ")
     (fromString . join . intersperse ", " . sdTeacher $ sm)
   H.h2 $ (translate i "Assignment: ")
-  H.div ! A.class_ (className assignmentTextDiv) $ H.pre . fromString . sdAssignment $ sm
+  H.div # assignmentTextDiv $ H.pre # assignmentTextPre $ fromString . sdAssignment $ sm
   H.p $ do
     H.h4 (translate i "Status: ")
     (fromString . sdStatus $ sm)

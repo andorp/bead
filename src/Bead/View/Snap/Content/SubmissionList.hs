@@ -51,7 +51,7 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
   table (fieldName submissionTableName) (className submissionListTable) $
     mapM_ submissionLine (slSubmissions . smList $ p)
   H.h2 $ (translate i "Assignment")
-  H.div ! A.class_ (className assignmentTextDiv) $ H.pre $
+  H.div # assignmentTextDiv $ H.pre # assignmentTextPre $
     (fromString . slAssignmentText . smList $ p)
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t

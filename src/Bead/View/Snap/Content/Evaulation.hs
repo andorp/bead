@@ -99,7 +99,7 @@ evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
       textAreaInput (fieldName evaulationValueField) Nothing ! fillDiv
       hiddenKeyField . sbmKey $ pd
   H.div $ H.h2 $ (translate i "Submitted solution")
-  H.div ! A.class_ (className assignmentTextDiv) $ H.pre $ do
+  H.div # assignmentTextDiv $ H.pre # assignmentTextPre $ do
     (fromString . eSolution $ sd)
   translate i . commentsDiv . eComments $ sd
 

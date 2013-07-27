@@ -48,6 +48,24 @@ borderStyle s = create . join $ ["border-style: ", s]
 backgroundColor :: String -> StyleElement
 backgroundColor c = create . join $ ["background-color: ", c]
 
+background :: String -> StyleElement
+background c = create . join $ ["background: ", c]
+
+whiteSpace :: String -> StyleElement
+whiteSpace v = create . join $ ["white-space:", v]
+
+wordWrap :: String -> StyleElement
+wordWrap v = create . join $ ["word-wrap:", v]
+
+padding :: String -> StyleElement
+padding v = create . join $ ["padding:", v]
+
+textAlign :: String -> StyleElement
+textAlign v = create . join $ ["text-align:", v]
+
+marginLeft :: Int -> StyleElement
+marginLeft v = create . join $ ["margin-left:", show v, "px"]
+
 -- Produces an HTML element attaching the style element onto it
 -- infix notation is handy here
 (#) :: Attributable h => h -> StyleElement -> h
@@ -72,6 +90,18 @@ informationalCell = mconcat [
     borderColor "black"
   , borderWidth 1
   , borderStyle "inset"
+  ]
+
+assignmentTextDiv = mconcat [
+    marginLeft 0
+  , background "lightgray"
+  ]
+
+assignmentTextPre = mconcat [
+    whiteSpace "pre-wrap"
+  , wordWrap   "break-word"
+  , padding    ".5em"
+  , textAlign  "left"
   ]
 
 textAlignLeft  = create $ "text-align: left"

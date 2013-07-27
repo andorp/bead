@@ -5,10 +5,7 @@ import Prelude
 
 #ifndef FAY
 import Data.List (find)
-
-#ifdef TEST
 import Bead.Invariants (Assertion(..))
-#endif
 #endif
 
 {- This module is compiled with Fay and Haskell -}
@@ -79,7 +76,7 @@ emailAddress (c:cs) = isAlpha c && isEmailBody cs
       | isEmailChar c = isEmailRest cs
       | otherwise     = False
 
-#ifdef TEST
+#ifndef FAY
 assertEmailAddress = [
     Assertion "Empty"     (emailAddress "") False
   , Assertion "One char"  (emailAddress "q") False
