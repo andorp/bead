@@ -79,9 +79,16 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
 availableAssignments :: I18N -> [(AssignmentKey,AssignmentDesc)] -> Html
 availableAssignments i18n as = do
   table' (fieldName availableAssignmentsTable) # informationalTable $ do
+    headerLine
     mapM_ assignmentLine as
   where
     dataCell = H.td # informationalCell
+    headerCell t = H.th # (informationalCell <> grayBackground) $ fromString $ i18n t
+    headerLine = H.tr $ do
+      headerCell ""
+      headerCell "Course"
+      headerCell "Teachers"
+      headerCell "Assignment"
     assignmentLine (k,a) = H.tr $ do
       case aActive a of
         True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (i18n "New submission")
@@ -89,9 +96,6 @@ availableAssignments i18n as = do
       dataCell (fromString . aGroup $ a)
       dataCell (fromString . join . intersperse ", " . aTeachers $ a)
       dataCell $ link (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
-      dataCell (fromString . show . aOk  $ a)
-      dataCell (fromString . show . aNew $ a)
-      dataCell (fromString . show . aBad $ a)
 
 htmlSubmissionTables :: I18N -> [SubmissionTableInfo] -> Html
 htmlSubmissionTables i18n xs = mapM_ (htmlSubmissionTable i18n) . zip [1..] $ xs

@@ -19,9 +19,6 @@ data AssignmentDesc = AssignmentDesc {
   , aTitle    :: String
   , aGroup    :: String
   , aTeachers :: [String]
-  , aOk       :: Int
-  , aNew      :: Int
-  , aBad      :: Int
   }
 
 assignmentDescPermissions = ObjectPermissions [
