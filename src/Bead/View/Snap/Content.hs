@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.Content (
     Content(..)
   , I18N
@@ -62,7 +63,6 @@ import Bead.View.Snap.I18N
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.DataBridge hiding (name)
-import Bead.View.Snap.Pagelets hiding (invariants)
 import Bead.View.Snap.Style
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.HandlerUtils
@@ -72,6 +72,11 @@ import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Fay.JSON.ServerSide
 import Text.Blaze.Html5 (Html)
+#ifdef TEST
+import Bead.View.Snap.Pagelets hiding (invariants)
+#else
+import Bead.View.Snap.Pagelets
+#endif
 
 import Control.Applicative ((<$>))
 import Control.Monad.Error

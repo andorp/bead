@@ -1,10 +1,10 @@
+{-# LANGUAGE CPP #-}
 module Bead.Persistence.NoSQL.Loader where
 
 import Bead.Domain.Types hiding (FileName(..), fileName)
 import qualified Bead.Domain.Types as T (FileName(..), fileName)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
-import Bead.Invariants (UnitTests(..), InvariantsM2(..))
 import Control.Monad.Transaction.TIO
 
 import Control.DeepSeq (deepseq)
@@ -21,6 +21,10 @@ import System.Directory
 import System.Posix.Files (createSymbolicLink, removeLink, readSymbolicLink)
 import Control.Exception as E
 import Control.Monad (join, when)
+
+#ifdef TEST
+import Bead.Invariants (UnitTests(..), InvariantsM2(..))
+#endif
 
 type DirPath = FilePath
 
@@ -478,6 +482,8 @@ loadDesc d = loadString d "description"
 savePwd d = saveString d "password"
 loadPwd d = loadString d "password"
 
+#ifdef TEST
+
 -- * Invariants
 
 isValidDirStructure :: DirStructure -> Bool
@@ -525,3 +531,4 @@ invariants = InvariantsM2 [
   * All save instances must save the directory structure correctly
   * All save and load instances must be identical relation
 -}
+#endif

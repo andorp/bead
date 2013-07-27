@@ -74,7 +74,7 @@ Terminology:
 + Some headers on the user submission page, for the group admin
 - Show or hide evaulation values in the user submission page for the group admin
 - Server configuration in data
-- Write ifdef TEST where tests are in the files
++ Write ifdef TEST where tests are in the files
 - Collect all common CSS style attributes into Sytle.hs
 - Color the header fields gray of the table
 

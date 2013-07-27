@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings, ExistentialQuantification #-}
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.TemplateAndComponentNames where
 
 -- This module contains information about templates and
@@ -11,7 +12,9 @@ import Bead.View.Snap.Fay.HookIds
 import qualified Bead.Controller.Pages as P
 
 -- Test imports
+#ifdef TEST
 import Bead.Invariants (UnitTests(..))
+#endif
 import Data.Set (Set)
 import qualified Data.Set as Set
 
@@ -276,6 +279,11 @@ assignmentTextDiv = DivClassName "assignment-text-div"
 instance SnapFieldName HookId where
   fieldName = fromString . hookId
 
+instance SnapClassName HookClass where
+  className = fromString . hookClass
+
+#ifdef TEST
+
 -- * Unit tests
 
 data SFN = forall n . SnapFieldName n => SFN n
@@ -289,9 +297,6 @@ data SCN = forall n . SnapClassName n => SCN n
 
 instance SnapClassName SCN where
   className (SCN n) = className n
-
-instance SnapClassName HookClass where
-  className = fromString . hookClass
 
 fieldList :: [String]
 fieldList = map fieldName $ join [
@@ -330,3 +335,5 @@ unitTests = UnitTests [
     ( "Field names must be unique"
       , ((Set.size . Set.fromList $ names) == (length names)) )
   ]
+
+#endif

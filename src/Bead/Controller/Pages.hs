@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Bead.Controller.Pages (
     Page(..)
   , allPages
@@ -7,8 +8,10 @@ module Bead.Controller.Pages (
   , contentPages
   , menuPages
   , reachable
+#ifdef TEST
   , invariants
   , unitTests
+#endif
   ) where
 
 import qualified Bead.Domain.Entities      as E
@@ -19,8 +22,9 @@ import Control.Monad (join)
 
 import Data.Set (Set(..))
 import qualified Data.Set as Set hiding ((\\))
-
+#ifdef TEST
 import Bead.Invariants (Invariants(..), UnitTests(..))
+#endif
 
 -- * Page types and necessary data
 
@@ -189,6 +193,8 @@ parentPage NewGroupAssignment  = NewGroupAssignment
 parentPage NewCourseAssignment = NewCourseAssignment
 parentPage ModifyAssignment    = Home
 
+#ifdef TEST
+
 -- * Invariants
 
 invariants = Invariants [
@@ -203,3 +209,4 @@ unitTests = UnitTests [
      Set.fromList (join [regularPages, professorPages, courseAdminPages, adminPages, nonMenuPages]) ==
      Set.fromList allPages)
   ]
+#endif

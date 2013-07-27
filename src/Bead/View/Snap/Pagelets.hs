@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.Pagelets where
 
 import Data.Maybe (isJust, fromJust)
@@ -24,8 +25,9 @@ import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
-
+#ifdef TEST
 import Bead.Invariants (Invariants(..))
+#endif
 
 -- * Definitions
 
@@ -307,6 +309,8 @@ instance SelectionValue AssignmentType where
 evalSelectionDiv :: EvaulationHook -> Html
 evalSelectionDiv h = (H.div `withId` (evSelectionDivId h)) $ empty
 
+#ifdef TEST
+
 -- * Invariants
 
 invariants = Invariants [
@@ -314,3 +318,5 @@ invariants = Invariants [
   ] where
       linkText' :: P.Page -> String
       linkText' = linkText
+
+#endif

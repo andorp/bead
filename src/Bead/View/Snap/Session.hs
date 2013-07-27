@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.Session where
 
 -- Bead imports
@@ -7,8 +8,9 @@ import Bead.Domain.Entities as E
 import qualified Bead.Controller.Pages as P
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.Dictionary (Language(..))
-
+#ifdef TEST
 import Bead.Invariants (Invariants(..), UnitTests(..))
+#endif
 
 -- Haskell imports
 
@@ -187,6 +189,8 @@ sessionCookies = do
   as <- sessionToList
   return . join . join . L.map (\(k,v) -> ["(KEY: ",T.unpack k,",","VALUE: ",T.unpack v,")"]) $ as
 
+#ifdef TEST
+
 -- * Invariants
 
 invariants :: Invariants P.Page
@@ -212,3 +216,5 @@ unitTests :: UnitTests
 unitTests = UnitTests [
     ("Each session key must be different", (length (L.nub sessionKeys) == (length sessionKeys)))
   ]
+
+#endif

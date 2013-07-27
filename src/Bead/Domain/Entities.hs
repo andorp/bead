@@ -1,8 +1,11 @@
+{-# LANGUAGE CPP #-}
 module Bead.Domain.Entities where
 
 import Bead.Domain.Types
 import Bead.Domain.Evaulation
+#ifdef TEST
 import Bead.Invariants (Invariants(..), UnitTests(..))
+#endif
 
 import Data.Char (toLower)
 import Data.Time (UTCTime(..))
@@ -318,6 +321,8 @@ instance Read Username where
 instance Show Username where
   show (Username u) = u
 
+#ifdef TEST
+
 -- * Invariants
 
 roleInvariants = Invariants [
@@ -346,3 +351,4 @@ assignmentTests =
   where
     isFalse = not
     isTrue  = id
+#endif

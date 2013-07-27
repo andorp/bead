@@ -1,9 +1,12 @@
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.Content.All (
     content
+#ifdef TEST
   , invariants
+#endif
   ) where
 
-import Bead.Controller.Pages as P hiding (invariants)
+import Bead.Controller.Pages (Page)
 import Bead.View.Snap.Content (Content(..), emptyContent)
 import Bead.View.Snap.Content.Home (home)
 import Bead.View.Snap.Content.Profile (profile)
@@ -20,7 +23,11 @@ import Bead.View.Snap.Content.CreateCourse (createCourse)
 import Bead.View.Snap.Content.UserDetails (userDetails)
 import Bead.View.Snap.Content.UserSubmissions (userSubmissions)
 
+import qualified Bead.Controller.Pages as P
+
+#ifdef TEST
 import Bead.Invariants (Invariants(..))
+#endif
 
 content :: Page -> Content
 content P.Login  = emptyContent
@@ -47,6 +54,8 @@ content P.NewGroupAssignment  = newGroupAssignment
 content P.NewCourseAssignment = newCourseAssignment
 content P.ModifyAssignment    = modifyAssignment
 
+#ifdef TEST
+
 invariants = Invariants [
     ("Content handler must be defined ", \p -> getOrPost p)
   ]
@@ -58,3 +67,4 @@ invariants = Invariants [
            (Just _, Nothing) -> True
            (Nothing, Just _) -> True
            (Nothing, Nothing) -> True
+#endif

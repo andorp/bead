@@ -1,21 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.RouteOf (
     ReqParam(..)
   , RequestParam(..)
   , ReqParamValue(..)
   , routeOf
   , routeWithParams
-
+#ifdef TEST
   , invariants
   , unitTests
+#endif
   ) where
 
 import Data.String
 import Data.List (intersperse, nub)
 import Control.Monad (join)
+#ifdef TEST
 import Bead.Controller.Pages hiding (invariants, unitTests)
-
 import Bead.Invariants (Invariants(..), UnitTests(..))
+#else
+import Bead.Controller.Pages
+#endif
 
 newtype ReqParam = ReqParam (String,String)
 
@@ -58,6 +63,8 @@ routeWithParams :: (IsString s) => Page -> [ReqParam] -> s
 routeWithParams p rs = fromString . join $
   [routeOf p, "?"] ++ (intersperse "&" (map queryStringParam rs))
 
+#ifdef TEST
+
 -- * Invariants
 
 unitTests = UnitTests [
@@ -69,3 +76,5 @@ invariants = Invariants [
   ] where
     routeOf' :: Page -> String
     routeOf' = routeOf
+
+#endif

@@ -1,12 +1,16 @@
+{-# LANGUAGE CPP #-}
 module Bead.Domain.RolePermission (
     permission
+#ifdef TEST
   , invariants
+#endif
   ) where
 
 import Control.Monad (join)
 import Bead.Domain.Entities hiding (roles)
-
+#ifdef TEST
 import Bead.Invariants (Invariants(..))
+#endif
 
 permission :: Role -> Permission -> PermissionObject -> Bool
 permission Student     = student
@@ -50,8 +54,11 @@ admin P_Create o = elem o [P_Course, P_CourseAdmin, P_Professor, P_Group, P_User
 admin P_Modify o = elem o [P_Course, P_CourseAdmin, P_Professor, P_Password, P_User]
 admin P_Delete o = elem o [P_Course, P_CourseAdmin, P_Professor]
 
+#ifdef TEST
+
 -- * Invariants
 
 invariants = Invariants [
     ("Permission relation is totally defined",\(r,p,o) -> length (show (permission r p o)) > 0)
   ]
+#endif
