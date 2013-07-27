@@ -104,6 +104,10 @@ assignmentTextPre = mconcat [
   , textAlign  "left"
   ]
 
+commentTextDiv = assignmentTextDiv
+
+commentTextPre = assignmentTextPre
+
 textAlignLeft  = create $ "text-align: left"
 textAlignRight = create $ "text-align: right"
 grayBackground = backgroundColor $ "lightgray"

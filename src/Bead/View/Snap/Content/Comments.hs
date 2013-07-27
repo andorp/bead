@@ -6,7 +6,7 @@ module Bead.View.Snap.Content.Comments (
 import Data.String
 
 import Bead.Domain.Entities (Comment(..))
-import Bead.View.Snap.Content (I18NHtml, mkI18NHtml, translate)
+import Bead.View.Snap.Content
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
@@ -19,6 +19,6 @@ commentsDiv cs = mkI18NHtml $ \i -> do
     mapM_ commentPar cs
 
 commentPar :: Comment -> Html
-commentPar c = H.div $ do
-  H.p . fromString . show . commentDate $ c
-  H.p . fromString . comment $ c
+commentPar c = H.div # commentTextDiv $ do
+  H.p # textAlign "left" $ fromString . show . commentDate $ c
+  H.pre # commentTextPre $ fromString . comment $ c
