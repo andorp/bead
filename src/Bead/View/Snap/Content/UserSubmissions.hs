@@ -52,7 +52,7 @@ userSubmissionHtml u = onlyHtml $ mkI18NHtml $ \i18n -> do
 
 submissionTable :: I18N -> [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)] -> Html
 submissionTable i18n s = do
-  table' "submission-table" # informationalTable $ do
+  table "submission-table" (className userSubmissionTable) # informationalTable $ do
     headerLine
     mapM_ submissionLine s
 

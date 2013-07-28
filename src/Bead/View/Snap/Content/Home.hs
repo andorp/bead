@@ -78,7 +78,7 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
 
 availableAssignments :: I18N -> [(AssignmentKey,AssignmentDesc)] -> Html
 availableAssignments i18n as = do
-  table' (fieldName availableAssignmentsTable) # informationalTable $ do
+  table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
     headerLine
     mapM_ assignmentLine as
   where
@@ -114,7 +114,7 @@ htmlSubmissionTable i18n (i,s)
       H.br
 
 -- Non empty table
-htmlSubmissionTable i18n (i,s) = table' tableId # informationalTable $ do
+htmlSubmissionTable i18n (i,s) = table tableId (className userSubmissionTable) # informationalTable $ do
   headLine (stCourse s)
   assignmentLine (stAssignments s)
   mapM_ userLine (stUserLines s)

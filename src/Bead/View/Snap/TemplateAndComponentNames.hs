@@ -37,6 +37,11 @@ newtype SubmitButton = SubmitButton { sbFieldName :: String }
 instance SnapFieldName SubmitButton where
   fieldName = fromString . sbFieldName
 
+newtype FieldName = FieldName String
+
+instance SnapFieldName FieldName where
+  fieldName (FieldName f) = fromString f
+
 -- * Component names
 
 instance SnapFieldName LoginField where
@@ -265,6 +270,10 @@ instance SnapClassName TableClassName where
 
 evaulationClassTable = TableClassName "evaulation-table"
 submissionListTable = TableClassName "submission-list-table"
+groupSubmissionTable = TableClassName "group-submission-table"
+userSubmissionTable = TableClassName "user-submission-table"
+assignmentTable = TableClassName "assignment-table"
+
 
 data DivClassName = DivClassName {
     divClass :: String
@@ -323,7 +332,7 @@ fieldList = map fieldName $ join [
 
 classList :: [String]
 classList = map className [
-    SCN evaulationClassTable
+    SCN evaulationClassTable, SCN groupSubmissionTable, SCN assignmentTable
   , SCN submissionListTable, SCN submissionListDiv, SCN datePickerClass, SCN minuteSpinnerClass
   , SCN hourSpinnerClass
   ]

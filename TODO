@@ -51,7 +51,8 @@ Terminology:
 + Appropiate page is shown on error
   + Error page and handler
   + Remove other error page chunks
-- Webdriver tests for the new design
+/ Webdriver tests for the new design
+  - Investigate the (!!) runtime error
 
 + Create log file automatically: log/useractions.log
 - Log successful actions on registration

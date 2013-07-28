@@ -53,14 +53,14 @@ Executable Bead
 --                 transformers, HUnit, test-framework, test-framework-hunit,
 --                 test-framework-quickcheck2, QuickCheck, unix, deepseq
 
---Executable WebDriver
---  if flag(Tests)
---    Buildable: True
---  else
---    Buildable: False
---  Main-is: WebDriverMain.hs
---  HS-Source-Dirs: src, snaplets/fay/src, test
---  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
---                 transformers, network >= 2.4.1.0 , webdriver
+Executable BeadEnd2EndTests
+  if flag(Tests)
+    Buildable: True
+  else
+    Buildable: False
+  Main-is: WebDriverMain.hs
+  HS-Source-Dirs: src, snaplets/fay/src, test
+  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
+                 transformers, network >= 2.4.1.0 , webdriver
 
 
