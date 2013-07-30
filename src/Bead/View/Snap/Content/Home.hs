@@ -114,7 +114,7 @@ htmlSubmissionTable i18n (i,s)
       H.br
 
 -- Non empty table
-htmlSubmissionTable i18n (i,s) = table tableId (className userSubmissionTable) # informationalTable $ do
+htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) # informationalTable $ do
   headLine (stCourse s)
   assignmentLine (stAssignments s)
   mapM_ userLine (stUserLines s)

@@ -52,7 +52,8 @@ Terminology:
   + Error page and handler
   + Remove other error page chunks
 / Webdriver tests for the new design
-  - Investigate the (!!) runtime error
+  + Investigate the (!!) runtime error
+  - Test percentage evaulation type
 
 + Create log file automatically: log/useractions.log
 - Log successful actions on registration

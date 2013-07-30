@@ -339,6 +339,7 @@ instance PageAction AssignmentData where
         click i
         e  <- findElem (ById . fromString $ "ui-datepicker-div")
         dp <- failsOnNothing "No datepicker is found" (datepicker e)
+        nextMonth dp
         selectDay 28 dp
 
 
@@ -365,7 +366,7 @@ instance PageAction GroupRegData where
 
 findAssignmentLine :: String -> String -> Test Element
 findAssignmentLine gName aName = do
-  as <- filterM assignmentLine =<< rows =<< tableById availableAssignmentsTable
+  as <- filterM assignmentLine =<< (liftM tail . rows) =<< tableById availableAssignmentsTable
   when (null as) . failed . join $ ["No assignment link was found: ", gName, " ", aName]
   when (length as > 1) . failed . join $ ["More than one assignment were found: ", gName, " ", aName]
   return . head $ as
@@ -374,12 +375,14 @@ findAssignmentLine gName aName = do
     assignmentLine :: Element -> Test Bool
     assignmentLine e = do
       cells <- mapM getText =<< findElemsFrom e (ByTag "td")
-      return $ ((cells !! 1) == (fromString gName)) && ((cells !! 3) == (fromString aName))
+      return $
+        ((at cells 1 ("Group name is not found: " ++ gName)) == (fromString gName)) &&
+        ((at cells 3 ("Assignment name is not found: " ++ aName)) == (fromString aName))
 
 rowLink :: Element -> Int -> Test Element
 rowLink e i = do
   cells <- findElemsFrom e (ByTag "td")
-  findElemFrom (cells !! i) (ByTag "a")
+  findElemFrom (at cells i "Row link, tag a is not found") (ByTag "a")
 
 clickNewSolution :: String -> String -> Test ()
 clickNewSolution gName aName = click =<< link =<< findAssignmentLine gName aName
@@ -421,7 +424,7 @@ instance PageObject SubmissionListData where
 instance PageAction SubmissionListData where
   action s = do
     rs <- rows =<< tableById submissionTableName
-    click =<< link (rs !! (slNo s))
+    click =<< link (at rs (slNo s) "Submission list data")
     where
       link e = rowLink e 0
 
@@ -467,7 +470,7 @@ instance PageAction SelectSubmissionData where
     rs <- rows t
     r <- failsOnNothing "Student was not found" $ findM isStudentRow rs
     ls <- findElemsFrom r (ByTag "a")
-    click (ls !! (sNo s))
+    click (at ls (sNo s) "Select submission is not found")
     where
       isGroup t = do
         hs <- headerCells t
@@ -481,7 +484,7 @@ instance PageAction SelectSubmissionData where
           False -> do
             cs <- findElemsFrom e (ByTag "td")
             when (null cs) $ failed "No cell was found in the student's row"
-            ((fromString . sStudent $ s) ==) <$> getText (cs !! 0)
+            ((fromString . sStudent $ s) ==) <$> getText (at cs 0 "Student text is not found")
 
 -- * User's submission
 
@@ -503,7 +506,7 @@ instance PageAction UserSubmissionsData where
            "No user's submission table"
            (tableByClass userSubmissionTable)
     rs <- filterM (fmap not . isHeader) =<< rows t
-    click =<< findElemFrom (rs !! (usNo u)) (ByTag "a")
+    click =<< findElemFrom (at rs (usNo u) "User submissions data") (ByTag "a")
 
 -- * Evaulation
 
@@ -556,3 +559,8 @@ createSelect field msg = (failsOnNothing msg . select) =<< (findField field)
 
 createTextInput :: (SnapFieldName f) => f -> String -> Test TextInput
 createTextInput field msg = (failsOnNothing msg . textInput) =<< (findField field)
+
+at :: [a] -> Int -> String -> a
+at xs p msg
+  | p < length xs = xs !! p
+  | otherwise = error msg

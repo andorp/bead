@@ -3,6 +3,8 @@ module Test.WebDriver.Support.DatePicker (
   , datepickerFold
   , datepicker
   , selectDay
+  , prevMonth
+  , nextMonth
   ) where
 
 import Control.Monad ((>=>))
@@ -46,5 +48,13 @@ calendarTable = datepickerFold (find (ByClass . fromString $ "ui-datepicker-cale
 -- Selects a day in the actual month
 selectDay :: (WebDriver wd) => Day -> DatePicker -> wd ()
 selectDay d p = calendarTable p >>= (find (ByLinkText . fromString . show $ d) >=> click)
+
+-- Selects the next month
+nextMonth :: (WebDriver wd) => DatePicker -> wd ()
+nextMonth = datepickerFold (find (ByClass . fromString $ "ui-datepicker-next") >=> click)
+
+-- Selects the previous month
+prevMonth :: (WebDriver wd) => DatePicker -> wd ()
+prevMonth = datepickerFold (find (ByClass . fromString $ "ui-datepicker-prev") >=> click)
 
 find selector element = findElemFrom element selector
