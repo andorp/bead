@@ -50,19 +50,35 @@ courseAdminPage = withUserState $ \s -> do
 
 courseAdminContent :: PageData -> Pagelet
 courseAdminContent info = onlyHtml $ mkI18NHtml $ \i -> do
-  H.p $ H.h3 (translate i "New group for the course")
+  H.h3 (translate i "New group for the course")
   H.p $ nonEmpty (courses info) (translate i "No courses were found") $
         (postForm (routeOf P.CreateGroup) `withId` (evFormId createGroupHook)) $ do
+          (translate i "Select a course")
+          H.br
           valueTextSelection (fieldName courseKeyInfo) (courses info)
           inputPagelet emptyGroup
           submitButton (fieldName createGroupBtn) (i "Create Group")
-  H.p $ H.h3 (translate i "Assign teacher to the group")
+  H.h3 (translate i "Assign teacher to the group")
   H.p $ nonEmpty (groups info)      (translate i "No groups were found") $
         nonEmpty (groupAdmins info) (translate i "No group admins were found") $
         postForm (routeOf P.AssignProfessor) $ do
-          valueTextSelection (fieldName selectedGroup) (groups info)
-          valueTextSelection (fieldName selectedProfessor) (groupAdmins info)
+          table
+            (header (translate i "Group") (translate i "Group Admin"))
+            (selections
+               (valueTextSelection (fieldName selectedGroup) (groups info))
+               (valueTextSelection (fieldName selectedProfessor) (groupAdmins info)))
+          H.br
           submitButton (fieldName assignGroupAdminBtn) (i "Assign")
+  where
+    table h l = H.table # (centerTable <> border 1 "solid" "black") $ do h; l
+
+    header h1 h2 = H.tr $ do
+      H.th h1
+      H.th h2
+
+    selections s1 s2 = H.tr $ do
+      H.td s1
+      H.td s2
 
 -- * Create group
 
