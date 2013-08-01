@@ -310,9 +310,10 @@ authorize p o = do
     Left EmptyRole ->
       errorPage "User is not logged in."
 
-    Left RegRole -> case (p,o) == (P_Create, P_User) of
-      True  -> return ()
-      False -> errorPage $ join [
+    Left RegRole -> case (p,o) of
+      (P_Create, P_User) -> return ()
+      (P_Open,   P_User) -> return ()
+      _ -> errorPage $ join [
           "Registration tries to reach other authentication "
         , show p, " ", show o
         ]
@@ -339,11 +340,18 @@ logErrorMessage = logMessage ERROR
 -- | Log a message through the log subsystem
 logMessage :: LogLevel -> String -> UserStory ()
 logMessage level msg = do
-  state  <- CMS.get
-  let u = str . user $ state
-      t = token $ state
-  user   <- CMS.gets (str . user)
-  CMR.asks logger >>= (\lgr -> (liftIO $ log lgr level $ join [user, " ", t, " ", msg, "."]))
+  CMS.get >>=
+    userStateFold
+      userNotLoggedIn
+      registration
+      loggedIn
+  where
+    logMsg preffix =
+      CMR.asks logger >>= (\lgr -> (liftIO $ log lgr level $ join [preffix, " ", msg, "."]))
+
+    userNotLoggedIn    = logMsg "Not logged in user!"
+    registration       = logMsg "Registration"
+    loggedIn u _ _ _ t = logMsg (join [str u, " ", t])
 
 -- | Change user state, if the user state is logged in
 changeUserState :: (UserState -> UserState) -> UserStory ()

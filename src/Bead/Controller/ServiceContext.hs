@@ -41,6 +41,14 @@ data UserState
   , token :: String
   } deriving (Show)
 
+userStateFold
+ :: a -> a -> (Username -> Page -> String -> Role -> String -> a)
+ -> UserState
+ -> a
+userStateFold n _ _ UserNotLoggedIn = n
+userStateFold _ r _ Registration    = r
+userStateFold _ _ f (UserState u p n r t) = f u p n r t
+
 userRole :: UserState -> Either OutsideRole Role
 userRole UserNotLoggedIn = Left EmptyRole
 userRole Registration    = Left RegRole

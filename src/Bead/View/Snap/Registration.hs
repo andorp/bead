@@ -64,7 +64,9 @@ createAdminUser persist usersdb name password = do
 
 -- * User registration handler
 
-data RegError = RegError LogLevel String
+data RegError
+  = RegError LogLevel String
+  | RegErrorUserExist Username
 
 instance Error RegError where
   noMsg      = RegError DEBUG ""
@@ -84,12 +86,22 @@ registration = method GET handleForm <|> method POST handleFormSubmit
     -- better access to the user
     handleFormSubmit = do
       regResult <- runErrorT $ do
+        -- Check if the user does not exist in the system
+        uname <- readParameter regUsernamePrm
+        when (isNothing uname) $ throwError (RegError ERROR "Username is not found in the request parameters")
+        let username = fromJust uname
+        context <- lift $ withTop serviceContext $ getServiceContext
+        exist   <- liftIO $ S.runUserStory context Registration (S.doesUserExist username)
+        case exist of
+          Left _          -> throwError (RegError ERROR "User story failed")
+          Right (True, _) -> throwError (RegErrorUserExist username)
+          _               -> return ()
+
         -- Register the user in the Snap auth module
         lift $ registerUser
           (fieldName loginUsername)
           (fieldName loginPassword)
         -- Register the user in the service context module
-        uname      <- readParameter regUsernamePrm -- (fieldName loginUsername)
         passwBS    <- readParameter regPasswordPrm -- (fieldName loginPassword)
         email      <- readParameter regEmailPrm    -- (fieldName regEmailAddress)
         fullname   <- getParam (fieldName regFullName)
@@ -106,7 +118,6 @@ registration = method GET handleForm <|> method POST handleFormSubmit
                 , u_email = e
                 , u_name = unpack f
                 }
-            context     <- lift $ withTop serviceContext $ getServiceContext
             createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameMap T.pack u)
             when (isNothing createdUser) $ throwError (RegError ERROR "User was not created at the first stage")
             let user = fromJust createdUser
@@ -120,11 +131,14 @@ registration = method GET handleForm <|> method POST handleFormSubmit
 
           _ -> throwError (RegError ERROR "Username, email, or family name was not provided by the form")
       case regResult of
-        Left (RegError lvl msg) -> withTop serviceContext $ logMessage lvl msg
-        Right _                 -> return ()
-      -- It does not matter what happens we redirect to the "/" page
-      redirect "/"
-      where
+        Left (RegErrorUserExist username) ->
+          do withTop serviceContext $ logMessage INFO $ (usernameMap ("User already exist: "++) username)
+             redirect "/"
+        Left (RegError lvl msg) ->
+          do withTop serviceContext $ logMessage lvl msg
+             redirect "/"
+        Right _ ->
+          do redirect "/"
 
 -- * Blaze
 
