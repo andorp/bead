@@ -33,6 +33,9 @@ noSqlDirPersist = Persist {
   , administratedCourses = nAdministratedCourses
   , administratedGroups = nAdministratedGroups
 
+  , saveUserReg = nSaveUserReg
+  , loadUserReg = nLoadUserReg
+
   , saveCourse    = nSaveCourse
   , courseKeys    = nCourseKeys
   , filterCourses = nFilterCourses
@@ -106,6 +109,20 @@ nInitPersistence = mapM_ createDirWhenDoesNotExist persistenceDirs
     createDirWhenDoesNotExist d = do
       existDir <- doesDirectoryExist d
       unless existDir . createDirectory $ d
+
+nSaveUserReg :: UserRegistration -> TIO UserRegKey
+nSaveUserReg u = do
+  dirName <- createTmpDir userRegDataDir "ur"
+  let userRegKey = UserRegKey . takeBaseName $ dirName
+  save dirName u
+  return userRegKey
+
+nLoadUserReg :: UserRegKey -> TIO UserRegistration
+nLoadUserReg u = do
+  let p = userRegDirPath u
+  isU <- isUserRegDir p
+  unless isU . throwEx . userError . join $ [str u, " user registration does not exist."]
+  liftM snd $ tLoadUserReg p
 
 nSaveUser :: User -> Password -> TIO ()
 nSaveUser usr pwd = do
@@ -195,6 +212,9 @@ courseDirPath (CourseKey c) = joinPath [courseDataDir, c]
 groupDirPath :: GroupKey -> FilePath
 groupDirPath (GroupKey g) = joinPath [groupDataDir, g]
 
+userRegDirPath :: UserRegKey -> FilePath
+userRegDirPath = userRegKeyFold $ \u -> joinPath [userRegDataDir, u]
+
 nLoadCourse :: CourseKey -> TIO Course
 nLoadCourse c = do
   let p = courseDirPath c
@@ -206,6 +226,9 @@ nLoadCourse c = do
 
 tLoadCourse :: FilePath -> TIO (CourseKey, Course)
 tLoadCourse = tLoadPersistenceObject CourseKey
+
+tLoadUserReg :: FilePath -> TIO (UserRegKey, UserRegistration)
+tLoadUserReg = tLoadPersistenceObject UserRegKey
 
 nGroupKeysOfCourse :: CourseKey -> TIO [GroupKey]
 nGroupKeysOfCourse c = do
@@ -489,6 +512,9 @@ nCourseKeys =
 
 isCourseDir :: FilePath -> TIO Bool
 isCourseDir = isCorrectDirStructure courseDirStructure
+
+isUserRegDir :: FilePath -> TIO Bool
+isUserRegDir = isCorrectDirStructure userRegDirStructure
 
 nFilterCourses :: (CourseKey -> Course -> Bool) -> TIO [(CourseKey, Course)]
 nFilterCourses f = filterDirectory courseDataDir isCourseDir tLoadCourse (filter (uncurry f))

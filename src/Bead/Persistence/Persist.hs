@@ -45,6 +45,10 @@ data Persist = Persist {
   , administratedCourses :: Username -> TIO [(CourseKey, Course)]
   , administratedGroups  :: Username -> TIO [(GroupKey, Group)]
 
+  -- Registration
+  , saveUserReg   :: UserRegistration -> TIO UserRegKey
+  , loadUserReg   :: UserRegKey -> TIO UserRegistration
+
   -- Course Persistence
   , saveCourse        :: Course -> TIO CourseKey
   , courseKeys        :: TIO [CourseKey]
@@ -340,3 +344,4 @@ reason (Right x) = Right x
 
 runPersist :: TIO a -> IO (Erroneous a)
 runPersist = liftM reason . atomically
+

@@ -255,7 +255,7 @@ class AsPassword p where
   asPassword :: p -> Password
 
 newtype Email = Email String
-  deriving (Eq, Ord)
+  deriving (Eq, Ord, Read)
 
 emailMap :: (String -> a) -> Email -> a
 emailMap f (Email e) = f e
@@ -295,6 +295,21 @@ mkUserDescription u = UserDesc {
     ud_username = u_username u
   , ud_fullname = u_name u
   }
+
+-- | User awaiting for registration
+data UserRegistration = UserRegistration {
+    reg_username :: String
+  , reg_email    :: String
+  , reg_name     :: String -- User's full name
+  , reg_token    :: String -- Token for identification
+  , reg_timeout  :: UTCTime
+  } deriving (Eq, Show, Read)
+
+userRegistrationFold
+  :: (String -> String -> String -> String -> UTCTime -> a)
+  -> UserRegistration
+  -> a
+userRegistrationFold f (UserRegistration u e n t d) = f u e n t d
 
 -- * Data storage
 

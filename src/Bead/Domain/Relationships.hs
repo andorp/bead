@@ -140,6 +140,15 @@ assignmentKeyMap f (AssignmentKey x) = f x
 newtype UserKey = UserKey String
   deriving (Eq, Ord, Show)
 
+newtype UserRegKey = UserRegKey String
+  deriving (Eq, Ord, Show)
+
+userRegKeyFold :: (String -> a) -> UserRegKey -> a
+userRegKeyFold f (UserRegKey x) = f x
+
+instance Str UserRegKey where
+  str = userRegKeyFold id
+
 newtype CommentKey = CommentKey String
   deriving (Eq, Ord, Show)
 

@@ -39,6 +39,7 @@ submissionDir = "submission"
 evaulationDir = "evaulation"
 commentDir    = "comment"
 openSubmissionDir = "open-submission"
+userRegDir = "user-registration"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
@@ -48,6 +49,7 @@ submissionDataDir = joinPath [dataDir, submissionDir]
 evaulationDataDir = joinPath [dataDir, evaulationDir]
 commentDataDir    = joinPath [dataDir, commentDir]
 openSubmissionDataDir = joinPath [dataDir, openSubmissionDir]
+userRegDataDir = joinPath [dataDir, userRegDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -60,6 +62,7 @@ persistenceDirs = [
   , evaulationDataDir
   , commentDataDir
   , openSubmissionDataDir
+  , userRegDataDir
   ]
 
 class DirName d where
@@ -281,6 +284,10 @@ instance Save User where
                 save     d (u_email u)
                 saveName d (u_name  u)
 
+instance Save UserRegistration where
+  save d u = do createStructureDirs d userRegDirStructure
+                fileSave d "userreg" (show u)
+
 -- * Load instances
 
 instance Load Role where
@@ -368,6 +375,9 @@ instance Load User where
       , u_email = email
       , u_name = name
       }
+
+instance Load UserRegistration where
+  load d = fileLoad d "userreg" readMaybe
 
 -- * Update instances
 
@@ -464,6 +474,11 @@ commentDirStructure = DirStructure {
   , directories = ["submission"]
   }
 
+userRegDirStructure = DirStructure {
+    files = ["userreg"]
+  , directories = []
+  }
+
 -- * Encoding
 
 ordEncode :: String -> String
@@ -502,6 +517,7 @@ dirStructures = [
   , assignmentDirStructure
   , evaulationDirStructure
   , commentDirStructure
+  , userRegDirStructure
   ]
 
 unitTests = UnitTests [

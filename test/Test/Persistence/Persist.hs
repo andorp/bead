@@ -22,6 +22,8 @@ testDecoratedPersist a q = Persist {
   , updateUser   = updateUser q
   , doesUserExist = doesUserExist q
   , userDescription = userDescription q
+  , saveUserReg = saveUserReg q
+  , loadUserReg = loadUserReg q
   , userSubmissions = \u ak -> do
       ks <- userSubmissions q u ak
       mapM (testSubmissionKey a) ks

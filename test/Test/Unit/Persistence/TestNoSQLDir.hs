@@ -32,6 +32,7 @@ tests = testGroup "Persistence tests" [
   , test_create_load_exercise
   , test_create_user
   , test_create_group_user
+  , testUserRegSaveAndLoad
   , clean_up
   ]
 
@@ -92,6 +93,13 @@ test_create_user = testCase "Create user" $ do
   liftE $ updateUser persist user2
   user3 <- liftE $ loadUser persist uname
   assertBool "Updating and loading user has failed" (user3 == user2)
+
+testUserRegSaveAndLoad = testCase "Save and Load User regisistration" $ do
+  now <- getCurrentTime
+  let u = UserRegistration "username" "e@e.com" "Family name" "token" now
+  key <- liftE $ saveUserReg persist u
+  u'  <- liftE $ loadUserReg persist key
+  assertBool "Loaded user registration info differs from saved" (u == u')
 
 test_create_group_user = testCase "Create Course and Group with a user" $ do
   let username = Username "ursula"
@@ -199,6 +207,7 @@ testHasLastSubmission ak u sk = do
   mKey <- liftE $ lastSubmission persist ak u
   assertBool "Submission was not found" (isJust mKey)
   assertBool "Submission was different" (sk == fromJust mKey)
+
 
 clean_up = testCase "Cleaning up" $ do
   -- We use background knowledge, to clean up
