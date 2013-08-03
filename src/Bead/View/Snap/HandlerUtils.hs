@@ -4,6 +4,7 @@ module Bead.View.Snap.HandlerUtils (
   , withUserState
   , runStory  -- For logged in user
   , runStoryE -- For logged in user
+  , registrationStory
   , getParameter
   , getJSONParam
   , i18nE
@@ -157,6 +158,13 @@ runStoryE story = do
   case x of
     Left e  -> throwError . strMsg . S.userErrorMsg $ e
     Right y -> return y
+
+-- Runs a UserStory in the registration context
+registrationStory :: S.UserStory a -> Handler App b (Either S.UserError a)
+registrationStory s = withTop serviceContext getServiceContext >>=
+  \context -> liftIO $ (forgetUserState <$> S.runUserStory context Registration s)
+  where
+    forgetUserState = either Left (Right . fst)
 
 -- | Runs a user story for authenticated user and saves the new user state
 --   into the service context

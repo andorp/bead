@@ -2,6 +2,8 @@
 module Bead.View.Snap.Registration (
     registration
   , createAdminUser
+  , registrationRequest
+  , finalizeRegistration
   ) where
 
 -- Bead imports
@@ -24,6 +26,7 @@ import Bead.View.Snap.Content hiding (
 
 import Data.Maybe (fromJust, isNothing)
 import Data.String (fromString)
+import Data.Time
 import qualified Data.Text as T
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as B
@@ -118,7 +121,7 @@ registration = method GET handleForm <|> method POST handleFormSubmit
                 , u_email = e
                 , u_name = unpack f
                 }
-            createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameMap T.pack u)
+            createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameFold T.pack u)
             when (isNothing createdUser) $ throwError (RegError ERROR "User was not created at the first stage")
             let user = fromJust createdUser
                 mpwd = passwordFromAuthUser user
@@ -132,7 +135,7 @@ registration = method GET handleForm <|> method POST handleFormSubmit
           _ -> throwError (RegError ERROR "Username, email, or family name was not provided by the form")
       case regResult of
         Left (RegErrorUserExist username) ->
-          do withTop serviceContext $ logMessage INFO $ (usernameMap ("User already exist: "++) username)
+          do withTop serviceContext $ logMessage INFO $ (usernameFold ("User already exist: "++) username)
              redirect "/"
         Left (RegError lvl msg) ->
           do withTop serviceContext $ logMessage lvl msg
@@ -159,3 +162,183 @@ registrationForm postAction = do
       tableLine "Email address:" $ textInput (fieldName regEmailAddress)   20 Nothing ! A.required ""
       tableLine "Full name:"     $ textInput (fieldName regFullName)       20 Nothing ! A.required ""
     submitButton (fieldName regSubmitBtn) "Register"
+
+-- * New registration method
+
+{-
+User registration request
+- On GET request it renders the HTML registration form with
+  username, email address, and full name input fields, that
+  has the proper JavaScript validation method.
+- On POST request it validates the input fields.
+  It the input field values are incorrect renders the error page, otherwise
+  runs the User story to create a UserRegistration
+  data in the persistence layer, after send the information via email
+-}
+registrationRequest :: Handler App App ()
+registrationRequest = method GET renderForm <|> method POST saveUserRegData where
+
+  -- Creates a timeout days later than the given time
+  timeout :: Integer -> UTCTime -> UTCTime
+  timeout days = addUTCTime (fromInteger (60 * 60 * 24 * days))
+
+  -- Sends the email with the given registration address to the given email
+  sendEmail :: String -> Email -> IO ()
+  sendEmail req address = putStrLn req -- TODO
+
+  createUserRegData :: Username -> Email -> String -> IO UserRegistration
+  createUserRegData user email name = do
+    now <- getCurrentTime
+    -- TODO random token
+    return $ UserRegistration {
+      reg_username = usernameFold id user
+    , reg_email    = emailFold    id email
+    , reg_name     = name
+    , reg_token    = "token"
+    , reg_timeout  = timeout 2 now
+    }
+
+  renderForm = blaze $ dynamicTitleAndHead "Registration" $ do
+    H.h1 "Register a new user"
+    postForm "/reg_request" ! (A.id . formId $ regForm) $ do
+      table (fieldName registrationTable) (fieldName registrationTable) $ do
+        tableLine "Username:" $ textInput (name regUsernamePrm)      20 Nothing ! A.required ""
+        tableLine "Email address:" $ textInput (name regEmailPrm)    20 Nothing ! A.required ""
+        tableLine "Full name:"     $ textInput (name regFullNamePrm) 20 Nothing ! A.required ""
+      submitButton (fieldName regSubmitBtn) "Register"
+    linkToPageWithText P.Login "Go back to the home page"
+
+  saveUserRegData = do
+    u <- readParameter regUsernamePrm
+    e <- readParameter regEmailPrm
+    f <- readParameter regFullNamePrm
+
+    case (u,e,f) of
+      (Just username, Just email, Just fullname) -> do
+        userRegData <- liftIO $ createUserRegData username email fullname
+        result <- registrationStory (S.createUserReg userRegData)
+        case result of
+          Left _ -> blaze $ "User registration data was not saved in the persistence"
+          Right key -> do
+            liftIO $ sendEmail (createUserRegAddress key userRegData) email
+            redirect "/"
+      _ -> blaze $ "Some request parameter is missing"
+
+  createUserRegAddress :: UserRegKey -> UserRegistration -> String
+  createUserRegAddress _ _ = "USER REG ADDRESS"
+
+{-
+Registration finalization
+- On GET request: The user gets and email from the BE-AD this email contains
+  the necessary code and token in for to finalize the registration
+  The system reads the UserREgistration data and decides that the registration
+  can go on, this depends on the factor, the first, that the user is not registered yet
+  and the registration time limit has not passed yet.
+  If the registration is not permitted the system renders the error page, otherwise
+  a page where the user can enter the desired password. The password field is validated
+  by JavaScript.
+- On POST request the desired password is validated by server side too, if the validation
+  is passed than the user registration happens. If any error occurs during the registration
+  an error page is shown, otherwise the page is redirected to "/"
+-}
+finalizeRegistration :: Handler App App ()
+finalizeRegistration = method GET renderForm <|> method POST createStudent where
+
+  readRegParameters = do
+    username <- readParameter regUsernamePrm
+    key      <- readParameter regUserRegKeyPrm
+    token    <- readParameter regTokenPrm
+    case (key, token, username) of
+      (Just k, Just t, Just u) -> return $ Just (k,t,u)
+      _                        -> return $ Nothing
+
+  renderForm = do
+    values <- readRegParameters
+
+    case values of
+      Nothing -> blaze $ "No registration parameters are found" -- TODO
+      Just (key, token, username) -> do
+        result <- registrationStory (S.loadUserReg key)
+        case result of
+          Left e -> blaze $ "Some error happened!!!" -- TODO
+          Right userRegData -> do
+            -- TODO: Check username and token values
+            now <- liftIO $ getCurrentTime
+            case (reg_timeout userRegData < now) of
+              True -> blaze $ "The registration opportunitiy has time out, please start it over"
+              False -> do
+                blaze $ dynamicTitleAndHead "Registration" $ do
+                  H.h1 "Register a new user"
+                  postForm "reg_final" ! (A.id . formId $ regForm) $ do
+                    table (fieldName registrationTable) (fieldName registrationTable) $ do
+                      tableLine "Password:" $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
+                    hiddenParam regUserRegKeyPrm key
+                    hiddenParam regTokenPrm      token
+                    hiddenParam regUsernamePrm   username
+                    submitButton (fieldName regSubmitBtn) "Register"
+                  linkToPageWithText P.Login "Go back to the home page"
+
+  hiddenParam parameter value = hiddenInput (name parameter) (encode parameter value)
+
+  createStudent = do
+    values <- readRegParameters
+    pwd    <- readParameter regPasswordPrm
+    case (values, pwd) of
+      (Nothing,_) -> blaze $ "No registraion parameters are found" -- TODO
+      (Just (key, token, username), Just password) -> do
+        result <- registrationStory (S.loadUserReg key)
+        case result of
+          Left e -> blaze $ "Some error happened!!!" -- TODO
+          Right userRegData -> do
+            now <- liftIO getCurrentTime
+            -- TODO: Check username and token values (are the same as in the persistence)
+            case (reg_timeout userRegData < now) of
+              True -> blaze $ "The registration opportunitiy has time out, please start it over"
+              False -> do
+                result <- withTop auth $ createNewUser userRegData password
+                undefined
+    undefined
+
+  log lvl msg = withTop serviceContext $ logMessage lvl msg
+
+  redirection (Left (RegErrorUserExist username)) =
+      do log INFO (usernameFold ("User already exist: "++) username)
+         redirect "/"
+  redirection (Left (RegError lvl msg)) =
+      do log lvl msg
+         redirect "/"
+  redirection (Right ()) =
+      do log INFO "Everything went fine, the user is created"
+         redirect "/"
+
+createNewUser :: UserRegistration -> String -> Handler App (AuthManager App) (Either RegError ())
+createNewUser reg password = runErrorT $ do
+  -- Check if the user is exist already
+  userExistence <- checkFailure =<< lift (registrationStory (S.doesUserExist username))
+  when userExistence . throwError $ (RegErrorUserExist username)
+
+  -- Registers the user in the Snap authentication module
+  lift $ registerUser (B.pack $ name regUsernamePrm) (B.pack $ name regPasswordPrm)
+  let user = User { u_role = Student, u_username = username, u_email = email, u_name = fullname }
+
+  -- Check if the Snap Auth registration went fine
+  createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameFold T.pack username)
+  when (isNothing createdUser) $ throwError (RegError ERROR "User was not created in the Snap Auth module")
+  let snapAuthUser = fromJust createdUser
+  when (isNothing . passwordFromAuthUser $ snapAuthUser) $ throwError (RegError ERROR "Snap Auth: no password is created")
+  let snapAuthPwd = fromJust . passwordFromAuthUser $ snapAuthUser
+
+  -- Creates the user in the persistence layer
+  checkFailure =<< lift (registrationStory (S.createUser user snapAuthPwd))
+  return ()
+
+  where
+    username = Username . reg_username $ reg
+    email    = Email . reg_email $ reg
+    fullname = reg_name reg
+
+    -- Checks if the result of a story is failure, in the case of failure
+    -- it throws an exception, otherwise lift's the result into the monadic
+    -- calculation
+    checkFailure (Left _)  = throwError (RegError ERROR "User story failed")
+    checkFailure (Right x) = return x

@@ -324,7 +324,7 @@ fieldList = map fieldName $ join [
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
-  , SFN evaulationPercentageDiv
+  , SFN evaulationPercentageDiv, SFN regUserRegKey, SFN regToken
 
   , SFI regForm, SFI loginForm
   ], (map SFN P.allPages)

@@ -56,6 +56,8 @@ routes = join
     [ ("/",         index)
     , ("/logout",   logoutAndResetRoute)
     , ("/new_user", with auth $ registration)
+    , ("/reg_request", registrationRequest)
+    , ("/reg_final", finalizeRegistration)
     , ("/fay", with fayContext fayServe)
     ]
     -- Add all pages with template names and handlers

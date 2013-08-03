@@ -234,8 +234,8 @@ data Authorization = Authorization {
 newtype Username = Username String
   deriving (Eq, Ord)
 
-usernameMap :: (String -> a) -> Username -> a
-usernameMap f (Username u) = f u
+usernameFold :: (String -> a) -> Username -> a
+usernameFold f (Username u) = f u
 
 class AsUsername c where
   asUsername :: c -> Username
@@ -258,8 +258,8 @@ class AsPassword p where
 newtype Email = Email String
   deriving (Eq, Ord, Read)
 
-emailMap :: (String -> a) -> Email -> a
-emailMap f (Email e) = f e
+emailFold :: (String -> a) -> Email -> a
+emailFold f (Email e) = f e
 
 parseEmail :: String -> Maybe Email
 parseEmail = Just . Email

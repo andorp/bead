@@ -126,7 +126,7 @@ rolePrm = Parameter {
 
 customUsernamePrm :: String -> Parameter Username
 customUsernamePrm field = Parameter {
-    encode = usernameMap id
+    encode = usernameFold id
   , decode = Just . Username
   , name = field
   , decodeError = ("Invalid username is given: "++)
@@ -138,7 +138,7 @@ usernamePrm = customUsernamePrm (fieldName usernameField)
 
 emailPrm :: String -> Parameter Email
 emailPrm field = validateBy isEmailAddress $ Parameter {
-    encode = emailMap id
+    encode = emailFold id
   , decode = parseEmail
   , name = field
   , decodeError = ("Invalid email is given: "++)
@@ -156,6 +156,21 @@ regPasswordPrm = validateBy isPassword $ stringParameter (fieldName loginPasswor
 
 regUsernamePrm :: Parameter Username
 regUsernamePrm = validateBy isUsername $ customUsernamePrm (fieldName loginUsername)
+
+regFullNamePrm :: Parameter String
+regFullNamePrm = stringParameter (fieldName regFullName) "Full Name"
+
+regUserRegKeyPrm :: Parameter UserRegKey
+regUserRegKeyPrm = Parameter {
+    encode = userRegKeyFold id
+  , decode = Just . UserRegKey
+  , name = (fieldName regUserRegKey)
+  , decodeError = ("Invalid value is given for User RegistrationKey: "++)
+  , notFound = "User Registration Key is not found"
+  }
+
+regTokenPrm :: Parameter String
+regTokenPrm = stringParameter (fieldName regToken) "Registration Token"
 
 -- Creates a new parameter where the the decode function first
 -- validates a parameter with the given validator
