@@ -84,6 +84,7 @@ tests = testGroup "User Stories" [
   , loginAndLogout
   , courseTest
   , courseAndGroupAssignmentTest
+  , saveAndLoadUserReg
   , cleanUpPersist
   ]
 
@@ -94,6 +95,13 @@ initPersist = testCase "Initalizing persistence layer" $ do
   setUp <- isPersistenceSetUp noSqlDirPersist
   assertBool "Setting up persistence was failed" setUp
 
+saveAndLoadUserReg = testCase "Save and load user reg data" $ do
+  c <- context
+  now <- getCurrentTime
+  let u = UserRegistration "username" "e@e.com" "Family Name" "token" now
+  (key,Registration) <- runStory c Registration $ U.createUserReg u
+  (u', Registration)  <- runStory c Registration $ U.loadUserReg key
+  assertBool "Saved and load user registration differs" (u' == u)
 
 cleanUpPersist = testCase "Cleaning up persistence" $ do
   removeDirectoryRecursive "data"

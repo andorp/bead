@@ -166,6 +166,17 @@ create descriptor saver object = do
   logMessage INFO $ descriptor object key
   return key
 
+createUserReg :: UserRegistration -> UserStory UserRegKey
+createUserReg u = logAction INFO "Creates user registration" $ do
+  create descriptor saveUserReg u
+  where
+    descriptor x _ = reg_username x
+
+loadUserReg :: UserRegKey -> UserStory UserRegistration
+loadUserReg k = logAction INFO "Loading user registration" $ do
+  authorize P_Open P_UserReg
+  withPersist $ flip R.loadUserReg k
+
 -- | Creates a new course
 createCourse :: Course -> UserStory CourseKey
 createCourse ck = logAction INFO "creates course" $ do
@@ -310,10 +321,9 @@ authorize p o = do
     Left EmptyRole ->
       errorPage "User is not logged in."
 
-    Left RegRole -> case (p,o) of
-      (P_Create, P_User) -> return ()
-      (P_Open,   P_User) -> return ()
-      _ -> errorPage $ join [
+    Left RegRole -> case elem (p,o) regPermObjects of
+      True  -> return ()
+      False -> errorPage $ join [
           "Registration tries to reach other authentication "
         , show p, " ", show o
         ]
@@ -324,6 +334,11 @@ authorize p o = do
           "Authorization is required: ", show r, " "
         , show p, " ", show o
         ]
+  where
+    regPermObjects = [
+        (P_Create, P_User),    (P_Open, P_User)
+      , (P_Create, P_UserReg), (P_Open, P_UserReg)
+      ]
 
 -- | Checks if the user is authorized for a given operation
 isAuthorized :: Permission -> PermissionObject -> UserStory Bool

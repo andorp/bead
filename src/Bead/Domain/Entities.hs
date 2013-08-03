@@ -202,6 +202,7 @@ canDelete = flip elem [P_Delete]
 -- | Permissions are allowed on the following objects
 data PermissionObject
   = P_Assignment
+  | P_UserReg
   | P_Submission
   | P_Evaulation
   | P_Comment
@@ -325,6 +326,9 @@ instance PermissionObj Course where
 
 instance PermissionObj Assignment where
   permissionObject _ = P_Assignment
+
+instance PermissionObj UserRegistration where
+  permissionObject _ = P_UserReg
 
 -- * Read instances
 
