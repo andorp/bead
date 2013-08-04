@@ -6,6 +6,7 @@ module Bead.View.Snap.RouteOf (
   , ReqParamValue(..)
   , routeOf
   , routeWithParams
+  , requestRoute
 #ifdef TEST
   , invariants
   , unitTests
@@ -62,6 +63,11 @@ routeOf = r where
 routeWithParams :: (IsString s) => Page -> [ReqParam] -> s
 routeWithParams p rs = fromString . join $
   [routeOf p, "?"] ++ (intersperse "&" (map queryStringParam rs))
+
+-- Creates a request route from the given route and the given request parameters
+requestRoute :: (IsString s) => String -> [ReqParam] -> s
+requestRoute route rs = fromString . join $
+  [route, "?"] ++ (intersperse "&" (map queryStringParam rs))
 
 #ifdef TEST
 

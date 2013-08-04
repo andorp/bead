@@ -16,6 +16,8 @@ import Bead.View.Snap.Application
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.DataBridge
+import Bead.View.Snap.ErrorPage (errorPageWithTitle)
+import Bead.View.Snap.RouteOf (requestRoute)
 import qualified Bead.Persistence.Persist as P (Persist(..), runPersist)
 
 import Bead.View.Snap.Content hiding (
@@ -225,7 +227,13 @@ registrationRequest = method GET renderForm <|> method POST saveUserRegData wher
       _ -> blaze $ "Some request parameter is missing"
 
   createUserRegAddress :: UserRegKey -> UserRegistration -> String
-  createUserRegAddress _ _ = "USER REG ADDRESS"
+  createUserRegAddress key reg =
+    -- TODO: Add the correct address of the server
+    requestRoute "http://127.0.0.1:8000/reg_final"
+                 [ requestParameter regUserRegKeyPrm key
+                 , requestParameter regTokenPrm      (reg_token reg)
+                 , requestParameter regUsernamePrm   (Username . reg_username $ reg)
+                 ]
 
 {-
 Registration finalization
@@ -256,27 +264,34 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     values <- readRegParameters
 
     case values of
-      Nothing -> blaze $ "No registration parameters are found" -- TODO
+      Nothing -> errorPageWithTitle "Registration" "No registration parameters are found"
       Just (key, token, username) -> do
-        result <- registrationStory (S.loadUserReg key)
+        result <- registrationStory $ do
+                    userReg   <- S.loadUserReg key
+                    existence <- S.doesUserExist username
+                    return (userReg, existence)
         case result of
-          Left e -> blaze $ "Some error happened!!!" -- TODO
-          Right userRegData -> do
+          Left e -> errorPageWithTitle "Registration" ("Some error happened: " ++ show e)
+          Right (userRegData,exist) -> do
             -- TODO: Check username and token values
             now <- liftIO $ getCurrentTime
-            case (reg_timeout userRegData < now) of
-              True -> blaze $ "The registration opportunitiy has time out, please start it over"
-              False -> do
-                blaze $ dynamicTitleAndHead "Registration" $ do
-                  H.h1 "Register a new user"
-                  postForm "reg_final" ! (A.id . formId $ regForm) $ do
-                    table (fieldName registrationTable) (fieldName registrationTable) $ do
-                      tableLine "Password:" $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
-                    hiddenParam regUserRegKeyPrm key
-                    hiddenParam regTokenPrm      token
-                    hiddenParam regUsernamePrm   username
-                    submitButton (fieldName regSubmitBtn) "Register"
-                  linkToPageWithText P.Login "Go back to the home page"
+            case (reg_timeout userRegData < now, exist) of
+              (True , _) -> errorPageWithTitle
+                "Registration"
+                "The registration opportunitiy has timed out, please start it over"
+              (False, True) -> errorPageWithTitle
+                "Registraion"
+                "The user already exists"
+              (False, False) -> blaze $ dynamicTitleAndHead "Registration" $ do
+                H.h1 "Register a new user"
+                postForm "reg_final" ! (A.id . formId $ regForm) $ do
+                  table (fieldName registrationTable) (fieldName registrationTable) $ do
+                    tableLine "Password:" $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
+                  hiddenParam regUserRegKeyPrm key
+                  hiddenParam regTokenPrm      token
+                  hiddenParam regUsernamePrm   username
+                  submitButton (fieldName regSubmitBtn) "Register"
+                linkToPageWithText P.Login "Go back to the home page"
 
   hiddenParam parameter value = hiddenInput (name parameter) (encode parameter value)
 
@@ -296,8 +311,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
               True -> blaze $ "The registration opportunitiy has time out, please start it over"
               False -> do
                 result <- withTop auth $ createNewUser userRegData password
-                undefined
-    undefined
+                redirect "/"
 
   log lvl msg = withTop serviceContext $ logMessage lvl msg
 

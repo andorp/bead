@@ -11,6 +11,7 @@ import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Validators
+import Bead.View.Snap.RouteOf
 
 {-
 Parameters are the data bridge between the Server side and the Client side.
@@ -31,6 +32,20 @@ data Parameter a = Parameter {
     -- The error message when the parameter is not present
   , notFound    :: String
   }
+
+parameterFold
+  :: ((a -> String) -> (String -> Maybe a) -> String -> (String -> String) -> String -> b)
+  -> Parameter a
+  -> b
+parameterFold f (Parameter encode decode name decodeError notFound) =
+  f encode decode name decodeError notFound
+
+-- Creates a request parameter value encoding the given value with the
+-- given parameter
+requestParameter :: Parameter a -> a -> ReqParam
+requestParameter p x = parameterFold createValue p
+  where
+    createValue encode _ name _ _ = ReqParam (name, encode x)
 
 stringParameter :: String -> String -> Parameter String
 stringParameter fieldName paramName = Parameter {
