@@ -36,6 +36,7 @@ Flag Tests
 
 Executable Bead
   Main-is: SnapMain.hs
+  CPP-Options: -DEMAIL_REGISTRATION
   HS-Source-Dirs: src, snaplets/fay/src
   Build-Depends: snap, snap-core, snap-server, lens, blaze-html >= 0.5,
                  snap-blaze, snaplet-fay == 0.3.2.0, fay-jquery, bytestring,
@@ -62,5 +63,4 @@ Executable BeadEnd2EndTests
   HS-Source-Dirs: src, snaplets/fay/src, test
   Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
                  transformers, network >= 2.4.1.0 , webdriver
-
 

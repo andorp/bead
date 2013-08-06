@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.PageHandlers (
     routes
   ) where
@@ -55,9 +56,12 @@ routes = join
   [ -- Add login handlers
     [ ("/",         index)
     , ("/logout",   logoutAndResetRoute)
-    , ("/new_user", with auth $ registration)
+#ifdef EMAIL_REGISTRATION
     , ("/reg_request", registrationRequest)
     , ("/reg_final", finalizeRegistration)
+#else
+    , ("/new_user", with auth $ registration)
+#endif
     , ("/fay", with fayContext fayServe)
     ]
     -- Add all pages with template names and handlers

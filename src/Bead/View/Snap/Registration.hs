@@ -1,9 +1,13 @@
 {-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.Registration (
-    registration
-  , createAdminUser
+    createAdminUser
+#ifdef EMAIL_REGISTRATION
   , registrationRequest
   , finalizeRegistration
+#else
+  , registration
+#endif
   ) where
 
 -- Bead imports
@@ -82,6 +86,7 @@ readParameter param = do
   reqParam <- getParam . B.pack . name $ param
   return (reqParam >>= decode param . B.unpack)
 
+#ifndef EMAIL_REGISTRATION
 registration :: Handler App (AuthManager App) ()
 registration = method GET handleForm <|> method POST handleFormSubmit
   where
@@ -165,6 +170,7 @@ registrationForm postAction = do
       tableLine "Full name:"     $ textInput (fieldName regFullName)       20 Nothing ! A.required ""
     submitButton (fieldName regSubmitBtn) "Register"
 
+#else
 -- * New registration method
 
 {-
@@ -356,3 +362,5 @@ createNewUser reg password = runErrorT $ do
     -- calculation
     checkFailure (Left _)  = throwError (RegError ERROR "User story failed")
     checkFailure (Right x) = return x
+
+#endif

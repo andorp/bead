@@ -111,7 +111,6 @@ hookRegistrationForm = void $ do
         remove messages
         andM
           [ validateField isUsername uname
-          , validateField isPassword pwd
           , validateField isEmailAddress email
           ]
 

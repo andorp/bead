@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.Login (
     login
   , loginSubmit
@@ -116,7 +117,11 @@ loginPage err = withTitleAndHead "Login" content
             err
       H.p $ do
         "Don't have a login yet? "
+#ifdef EMAIL_REGISTRATION
+        H.a ! A.href "/reg_request" $ "Create new user"
+#else
         H.a ! A.href "/new_user" $ "Create new user"
+#endif
 
 -- Keeps only the authentication failures which are
 -- visible for the user
