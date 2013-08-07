@@ -19,6 +19,7 @@ import Bead.View.Snap.Application as A
 import Bead.View.Snap.Dictionary (Dictionaries)
 import Bead.View.Snap.PageHandlers (routes)
 import Bead.View.Snap.Registration (createAdminUser)
+import Bead.View.Snap.ErrorPage (msgErrorPage)
 import Bead.View.Snap.DataDir
 
 import System.FilePath ((</>))
@@ -47,6 +48,7 @@ appInit config user s d = makeSnaplet "bead" description dataDir $ do
   fs <- nestSnaplet "fay" fayContext $ initFay
 
   addRoutes routes
+  wrapSite (<|> msgErrorPage "Invalid address")
 
   return $ App sm as ss ds fs
   where
