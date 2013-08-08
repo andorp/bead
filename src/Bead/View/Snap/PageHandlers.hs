@@ -8,6 +8,7 @@ module Bead.View.Snap.PageHandlers (
 
 import Prelude hiding (id)
 import qualified Prelude as P
+import Bead.Configuration (Config(..))
 import Bead.Domain.Types
 import Bead.Domain.Entities as E
 import Bead.Controller.ServiceContext hiding (serviceContext)
@@ -42,7 +43,7 @@ import qualified Control.Monad.Error as CME
 
 -- Snap and Blaze imports
 
-import Snap hiding (get)
+import Snap hiding (Config(..), get)
 import Snap.Blaze (blaze)
 import Snap.Snaplet.Auth as A
 import Snap.Snaplet.Fay
@@ -51,13 +52,13 @@ import Snap.Util.FileServe (serveDirectory)
 
 -- * Route table
 
-routes :: [(ByteString, Handler App App ())]
-routes = join
+routes :: Config -> [(ByteString, Handler App App ())]
+routes config = join
   [ -- Add login handlers
     [ ("/",         index)
     , ("/logout",   logoutAndResetRoute)
 #ifdef EMAIL_REGISTRATION
-    , ("/reg_request", registrationRequest)
+    , ("/reg_request", registrationRequest config)
     , ("/reg_final", finalizeRegistration)
 #else
     , ("/new_user", with auth $ registration)

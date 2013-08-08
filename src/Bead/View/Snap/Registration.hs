@@ -16,6 +16,7 @@ import Bead.Controller.Logging as L
 
 import qualified Bead.Controller.UserStories as S
 import qualified Bead.Controller.Pages as P (Page(Login))
+import Bead.Configuration (Config(..))
 import Bead.View.Snap.Application
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
@@ -36,10 +37,11 @@ import Data.Time
 import qualified Data.Text as T
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as B
+import Network.Mail.Mime
 
 -- Snap and Blaze imports
 
-import Snap hiding (get)
+import Snap hiding (Config(..), get)
 import Snap.Snaplet.Auth as A
 import Snap.Snaplet.Auth.Backends.JsonFile (mkJsonAuthMgr)
 
@@ -183,8 +185,8 @@ User registration request
   runs the User story to create a UserRegistration
   data in the persistence layer, after send the information via email
 -}
-registrationRequest :: Handler App App ()
-registrationRequest = method GET renderForm <|> method POST saveUserRegData where
+registrationRequest :: Config -> Handler App App ()
+registrationRequest config = method GET renderForm <|> method POST saveUserRegData where
 
   -- Creates a timeout days later than the given time
   timeout :: Integer -> UTCTime -> UTCTime
@@ -192,7 +194,14 @@ registrationRequest = method GET renderForm <|> method POST saveUserRegData wher
 
   -- Sends the email with the given registration address to the given email
   sendEmail :: String -> Email -> IO ()
-  sendEmail req address = putStrLn req -- TODO
+  sendEmail req address = do
+    let from = Address (Just "noreply") ("noreply@bead.com")
+        to   = Address Nothing (emailFold fromString address)
+        subject = fromString "BE-AD Registraion email"
+        plain   = fromString req
+        html    = fromString ""
+    mail <- simpleMail to from subject plain html []
+    renderSendMail mail
 
   createUserRegData :: Username -> Email -> String -> IO UserRegistration
   createUserRegData user email name = do
@@ -235,7 +244,7 @@ registrationRequest = method GET renderForm <|> method POST saveUserRegData wher
   createUserRegAddress :: UserRegKey -> UserRegistration -> String
   createUserRegAddress key reg =
     -- TODO: Add the correct address of the server
-    requestRoute "http://127.0.0.1:8000/reg_final"
+    requestRoute (join [emailHostname config, "/reg_final"])
                  [ requestParameter regUserRegKeyPrm key
                  , requestParameter regTokenPrm      (reg_token reg)
                  , requestParameter regUsernamePrm   (Username . reg_username $ reg)

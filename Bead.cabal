@@ -43,7 +43,7 @@ Executable Bead
                  MonadCatchIO-transformers, blaze-html, xmlhtml, text, aeson,
                  blaze-markup, temporary, deepseq, mtl, directory, filepath,
                  transformers, time, containers, base, fay == 0.14.5.0,
-                 unix
+                 unix, mime-mail
 
 
 --Executable Test

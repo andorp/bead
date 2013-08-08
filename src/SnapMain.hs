@@ -45,7 +45,8 @@ main = do
       putStrLn $ substProgName progName usage
     Right tasks -> do
       newAdminUser <- interpretTasks tasks
-      startService defaultConfiguration newAdminUser
+      config <- readConfiguration "bead.config"
+      startService config newAdminUser
 
 interpretTasks :: [InitTask] -> IO (Maybe (String, String))
 interpretTasks tasks = case elem CreateAdmin tasks of

@@ -49,7 +49,7 @@ module Bead.View.Snap.Content (
   , module Bead.View.Snap.Fay.JSON.ServerSide
   ) where
 
-import Snap hiding (empty, get, route, (<$>))
+import Snap hiding (Config(..), empty, get, route, (<$>))
 import Snap.Blaze (blaze)
 import Data.ByteString.Char8 (ByteString, unpack)
 import Data.Monoid ((<>))
