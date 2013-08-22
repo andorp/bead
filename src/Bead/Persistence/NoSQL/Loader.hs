@@ -8,7 +8,7 @@ import Bead.Domain.Relationships
 import Control.Monad.Transaction.TIO
 
 import Control.DeepSeq (deepseq)
-import Control.Monad (liftM, filterM)
+import Control.Monad (liftM, filterM, unless)
 
 import Data.Char (ord)
 import Data.Maybe (maybe)
@@ -18,7 +18,7 @@ import System.FilePath (joinPath)
 import System.IO
 import System.IO.Temp (createTempDirectory, openTempFile)
 import System.Directory
-import System.Posix.Files (createSymbolicLink, removeLink, readSymbolicLink)
+import System.Posix.Files (createSymbolicLink, removeLink, readSymbolicLink, fileExist)
 import Control.Exception as E
 import Control.Monad (join, when)
 
@@ -175,7 +175,12 @@ createTmpDir :: FilePath -> String -> TIO FilePath
 createTmpDir f t = stepM (createTempDirectory f t) (return ()) removeDirectory
 
 createLink :: FilePath -> FilePath -> TIO ()
-createLink exist link = step (createSymbolicLink exist link) (removeLink link)
+createLink exist link = step (createSymbolicLinkSafely exist link) (removeLink link)
+
+-- | Create a symbolic link 'l' if the link does not exist already.
+createSymbolicLinkSafely f l = do
+  exist <- fileExist l
+  unless exist $ createSymbolicLink f l
 
 removeSymLink :: FilePath -> TIO ()
 removeSymLink link = do
@@ -183,7 +188,7 @@ removeSymLink link = do
             removeLink link
             return f)
         (return ())
-        (\f -> createSymbolicLink f link >> return ())
+        (\f -> createSymbolicLinkSafely f link >> return ())
   return ()
 
 removeDir :: FilePath -> TIO ()

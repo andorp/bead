@@ -29,7 +29,7 @@ data Assignment = Assignment {
   , assignmentStart :: UTCTime
   , assignmentEnd   :: UTCTime
   -- TODO: Number of maximum tries
-  } deriving (Eq)
+  } deriving (Eq, Show)
 
 -- | Produces True if the given time is between the start-end time of the assignment
 isActivePeriod :: Assignment -> UTCTime -> Bool
@@ -87,7 +87,7 @@ evaulateResults (PctEval cfg) = fmap (flip calculateEvaulation cfg) . allPercent
 data Evaulation = Evaulation {
     evaulationResult  :: EvaulationResult
   , writtenEvaulation :: String
-  } deriving (Eq)
+  } deriving (Eq, Show)
 
 resultString :: EvaulationResult -> String
 resultString (BinEval (Binary Passed)) = "Passed"

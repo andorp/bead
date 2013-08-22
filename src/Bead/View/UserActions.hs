@@ -9,31 +9,22 @@ import qualified Bead.Controller.UserStories as Story
 import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.Logging as L
 
-type Action = UserState -> IO UserAction
-
 -- | The user can preform the following actions on the user interface
 data UserAction
   -- Navigation
   = Logout
-  | SelectCourse Encrypted
-  | SelectGroup Encrypted
-  | Login Username Password
-  | ChangePage P.Page
   | LogMessage String
 
   -- Profiling
-  | Profile
   | ChangePwd Password Password Password
 
   -- Group
   | CreateGroup CourseKey Group
-  | DeleteGroup Encrypted
   | SubscribeToGroup GroupKey
   | CreateProfessor Username GroupKey
 
   -- Course
   | CreateCourse Course
-  | DeleteCourse Encrypted
   | CreateCourseAdmin Username CourseKey
 
   -- Assignment
@@ -60,8 +51,6 @@ data UserAction
 -- | UserStory correspondence to the given action
 userStoryFor :: UserAction -> Story.UserStory ()
 userStoryFor Logout             = Story.logout
-userStoryFor Profile            = Story.changePage P.Profile
-userStoryFor (ChangePage p)     = Story.changePage p
 userStoryFor (ChangePwd o n n') = Story.changePassword o n n'
 userStoryFor (CreateUser u p)   = Story.createUser u p
 userStoryFor (LogMessage m)     = Story.logErrorMessage m

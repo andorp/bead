@@ -162,8 +162,7 @@ nPersonalInfo uname pwd = do
   case userExist of
     False -> throwEx . userError $ "User doesn't exist: " ++ show uname
     True -> do
-      let ePwd = encodePwd pwd
-          dirname = dirName uname
+      let dirname = dirName uname
       role       <- load dirname
       familyName <- loadName dirname
       return (role, familyName)
