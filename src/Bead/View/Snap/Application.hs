@@ -10,9 +10,12 @@ import Control.Lens.TH
 import Data.IORef
 import qualified Data.Map as Map
 
+import Data.String (fromString)
 import qualified Data.Text as DT
 import qualified Text.XmlHtml as X
+import Network.Mail.Mime
 
+import Bead.Domain.Entities
 import Bead.View.Snap.Dictionary
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.Controller.ServiceContext
@@ -56,6 +59,44 @@ getDictionary l = do
   m <- liftIO . readIORef $ ref
   return $ Map.lookup l m
 
+-- * Email sending spanplet
+
+type Subject = String
+type Message = String
+
+-- Email sender function get a string and en email address
+-- and sends the email to the address
+type EmailSender = Email -> Subject -> Message -> IO ()
+
+-- SendEmailContext is a reference to the email sender function, we keep only
+-- one of the email senders.
+newtype SendEmailContext = SendEmailContext (IORef EmailSender)
+
+emailSenderSnaplet :: SnapletInit a SendEmailContext
+emailSenderSnaplet = makeSnaplet
+  "Email sending"
+  "A snaplet providing email sender functionality"
+  Nothing $ liftIO $ do
+    ref <- newIORef sender
+    return $! SendEmailContext ref
+  where
+    sender :: Email -> String -> String -> IO ()
+    sender address sub msg = do
+      let from = Address (Just "noreply") "noreply@bead.com"
+          to   = Address Nothing (emailFold fromString address)
+          subject = fromString sub
+          plain   = fromString msg
+          html    = fromString ""
+      mail <- simpleMail to from subject plain html []
+      renderSendMail mail
+
+-- Send email with subject to the given address
+sendEmail :: Email -> Subject -> Message -> Handler b SendEmailContext ()
+sendEmail address sub msg = do
+  SendEmailContext ref <- get
+  send <- liftIO . readIORef $ ref
+  liftIO $ send address sub msg
+
 -- * Application
 
 data App = App {
@@ -63,6 +104,7 @@ data App = App {
   , _auth           :: Snaplet (AuthManager App)
   , _serviceContext :: Snaplet SnapletServiceContext
   , _dictionaryContext :: Snaplet DictionaryContext
+  , _sendEmailContext   :: Snaplet SendEmailContext
   , _fayContext     :: Snaplet Fay
   }
 

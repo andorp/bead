@@ -192,17 +192,6 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
   timeout :: Integer -> UTCTime -> UTCTime
   timeout days = addUTCTime (fromInteger (60 * 60 * 24 * days))
 
-  -- Sends the email with the given registration address to the given email
-  sendEmail :: String -> Email -> IO ()
-  sendEmail req address = do
-    let from = Address (Just "noreply") ("noreply@bead.com")
-        to   = Address Nothing (emailFold fromString address)
-        subject = fromString "BE-AD Registraion email"
-        plain   = fromString req
-        html    = fromString ""
-    mail <- simpleMail to from subject plain html []
-    renderSendMail mail
-
   createUserRegData :: Username -> Email -> String -> IO UserRegistration
   createUserRegData user email name = do
     now <- getCurrentTime
@@ -237,7 +226,11 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
         case result of
           Left _ -> blaze $ "User registration data was not saved in the persistence"
           Right key -> do
-            liftIO $ sendEmail (createUserRegAddress key userRegData) email
+             -- TODO: Send the email template
+            withTop sendEmailContext $
+              sendEmail email
+                        "BE-AD Registration email"
+                        (createUserRegAddress key userRegData)
             redirect "/"
       _ -> blaze $ "Some request parameter is missing"
 
