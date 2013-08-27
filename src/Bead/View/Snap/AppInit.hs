@@ -47,12 +47,14 @@ appInit config user s d = makeSnaplet "bead" description dataDir $ do
 
   se <- nestSnaplet "sendemail" sendEmailContext emailSenderSnaplet
 
+  rp <- nestSnaplet "randompassword" randomPasswordContext passwordGeneratorSnaplet
+
   fs <- nestSnaplet "fay" fayContext $ initFay
 
   addRoutes (routes config)
   wrapSite (<|> msgErrorPage "Invalid address")
 
-  return $ App sm as ss ds se fs
+  return $ App sm as ss ds se rp fs
   where
     description = "The BEAD website"
 

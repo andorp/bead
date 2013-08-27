@@ -14,6 +14,7 @@ import Data.String (fromString)
 import qualified Data.Text as DT
 import qualified Text.XmlHtml as X
 import Network.Mail.Mime
+import System.Random
 
 import Bead.Domain.Entities
 import Bead.View.Snap.Dictionary
@@ -97,6 +98,59 @@ sendEmail address sub msg = do
   send <- liftIO . readIORef $ ref
   liftIO $ send address sub msg
 
+-- * Password generation
+
+-- PasswordGeneratorContext is a reference to the password generator computation,
+-- we keep only one of it
+newtype PasswordGeneratorContext = PasswordGeneratorContext (IORef (IO String))
+
+passwordGeneratorSnaplet :: SnapletInit a PasswordGeneratorContext
+passwordGeneratorSnaplet = makeSnaplet
+  "Password generation"
+  "A snaplet providing password generation functionality"
+  Nothing $ liftIO $ do
+    pwdGen <- createPasswordGenerator
+    ref <- newIORef pwdGen
+    return $! PasswordGeneratorContext ref
+
+-- Generates a new password string
+getRandomPassword :: Handler b PasswordGeneratorContext String
+getRandomPassword = do
+  PasswordGeneratorContext ref <- get
+  gen <- liftIO . readIORef $ ref
+  liftIO gen
+
+-- Creates a password generator that generates 12 length passwords containing
+-- upper, lowercase letters, and digits.
+createPasswordGenerator :: IO (IO String)
+createPasswordGenerator = do
+  std <- newStdGen
+  stdRef <- newIORef std
+  let nextValue = do
+        s <- readIORef stdRef
+        let (x,s') = random s
+        writeIORef stdRef s'
+        return x
+
+  let passwordGenerator = replicateM 12 $ do
+        type_ <- fmap (`mod` 3) nextValue
+        case type_ of
+          0 -> fmap lowerCase nextValue
+          1 -> fmap upperCase nextValue
+          2 -> fmap digit     nextValue
+
+  return passwordGenerator
+
+  where
+    lowerCase :: Int -> Char
+    lowerCase n = ['a'..'z'] !! (mod n 26)
+
+    upperCase :: Int -> Char
+    upperCase n = ['A'..'Z'] !! (mod n 26)
+
+    digit :: Int -> Char
+    digit n = ['0'..'9'] !! (mod n 10)
+
 -- * Application
 
 data App = App {
@@ -105,6 +159,7 @@ data App = App {
   , _serviceContext :: Snaplet SnapletServiceContext
   , _dictionaryContext :: Snaplet DictionaryContext
   , _sendEmailContext   :: Snaplet SendEmailContext
+  , _randomPasswordContext :: Snaplet PasswordGeneratorContext
   , _fayContext     :: Snaplet Fay
   }
 
