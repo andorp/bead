@@ -99,6 +99,10 @@ changePage p = do
     pageAsPermObj P.Administration = P_AdminPage
     pageAsPermObj _                = P_PlainPage
 
+resetPassword :: Username -> Password -> UserStory ()
+resetPassword usr pwd = logAction INFO ("Reset users password. Username: " ++ show usr) $
+  withPersist $ \p -> resetPwd p usr pwd
+
 -- | The user changes his/her password
 changePassword :: Password -> Password -> Password -> UserStory ()
 changePassword old new new'

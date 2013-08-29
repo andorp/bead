@@ -36,6 +36,7 @@ data Persist = Persist {
   , canUserLogin  :: Username -> Password -> TIO Bool
   , personalInfo  :: Username -> Password -> TIO (Role, String)
   , updatePwd     :: Username -> Password -> Password -> TIO ()
+  , resetPwd      :: Username -> Password -> TIO ()
   , filterUsers   :: (User -> Bool) -> TIO [User]
   , loadUser      :: Username -> TIO User
   , updateUser    :: User -> TIO ()

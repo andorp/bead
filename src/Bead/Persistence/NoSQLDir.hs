@@ -24,6 +24,7 @@ noSqlDirPersist = Persist {
   , canUserLogin  = nCanUserLogin
   , personalInfo  = nPersonalInfo
   , updatePwd     = nUpdatePwd
+  , resetPwd      = nResetPwd
   , filterUsers   = nFilterUsers
   , loadUser      = nLoadUser
   , updateUser    = nUpdateUser
@@ -194,6 +195,13 @@ nUpdatePwd uname oldPwd newPwd = do
       case ePwd == oldEPwd of
         False -> throwEx . userError $ "Invalid password"
         True  -> savePwd dirname $ encodePwd newPwd
+
+nResetPwd :: Username -> Password -> TIO ()
+nResetPwd u p = do
+  userExist <- nDoesUserExist u
+  case userExist of
+    False -> throwEx $ userError $ "User does not exist: " ++ show u
+    True  -> savePwd (dirName u) (encodePwd p)
 
 nAdministratedCourses :: Username -> TIO [(CourseKey, Course)]
 nAdministratedCourses u = do

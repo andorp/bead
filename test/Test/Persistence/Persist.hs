@@ -17,6 +17,7 @@ testDecoratedPersist a q = Persist {
   , canUserLogin = canUserLogin q
   , personalInfo = personalInfo q
   , updatePwd    = updatePwd q
+  , resetPwd     = resetPwd q
   , filterUsers  = filterUsers q
   , loadUser     = loadUser q
   , updateUser   = updateUser q
