@@ -122,6 +122,9 @@ loginPage err = withTitleAndHead "Login" content
 #else
         H.a ! A.href "/new_user" $ "Create new user"
 #endif
+        H.br
+        "Forgotten password? "
+        H.a ! A.href "/reset_pwd" $ "Click here"
 
 -- Keeps only the authentication failures which are
 -- visible for the user

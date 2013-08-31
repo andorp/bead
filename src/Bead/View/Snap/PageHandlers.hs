@@ -23,6 +23,7 @@ import Bead.View.Snap.HandlerUtils as HU
 
 import Bead.View.Snap.Login as L
 import Bead.View.Snap.Registration
+import Bead.View.Snap.ResetPassword
 import Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import Bead.View.Snap.Content.All
 import Bead.View.Snap.ErrorPage
@@ -57,6 +58,7 @@ routes config = join
   [ -- Add login handlers
     [ ("/",         index)
     , ("/logout",   logoutAndResetRoute)
+    , ("/reset_pwd",resetPasswordPage)
 #ifdef EMAIL_REGISTRATION
     , ("/reg_request", registrationRequest config)
     , ("/reg_final", finalizeRegistration)

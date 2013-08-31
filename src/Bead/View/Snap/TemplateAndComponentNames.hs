@@ -49,6 +49,7 @@ instance SnapFieldName LoginField where
 
 loginSubmitBtn = SubmitButton "login-submit"
 regSubmitBtn   = SubmitButton "reg-submit"
+pwdSubmitBtn   = SubmitButton "pwd-submit"
 regGroupSubmitBtn = SubmitButton "reg-group-submit"
 createGroupBtn    = SubmitButton "crt-group-submit"
 createCourseBtn = SubmitButton "crt-course-submit"
@@ -251,6 +252,7 @@ instance SnapFieldName TableName where
 availableAssignmentsTable = TableName "available-assignments"
 submissionTableName = TableName "submission-table"
 registrationTable = TableName "reg-form-table"
+resetPasswordTable = TableName "rst-pwd-table"
 
 -- * Template names
 
@@ -324,7 +326,8 @@ fieldList = map fieldName $ join [
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
-  , SFN evaulationPercentageDiv, SFN regUserRegKey, SFN regToken
+  , SFN evaulationPercentageDiv, SFN regUserRegKey, SFN regToken, SFN pwdSubmitBtn
+  , SFN resetPasswordTable
 
   , SFI regForm, SFI loginForm
   ], (map SFN P.allPages)
