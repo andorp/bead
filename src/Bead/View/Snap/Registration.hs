@@ -292,9 +292,10 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                 "The user already exists"
               (False, False) -> blaze $ dynamicTitleAndHead "Registration" $ do
                 H.h1 "Register a new user"
-                postForm "reg_final" ! (A.id . formId $ regForm) $ do
+                postForm "reg_final" ! (A.id . formId $ regFinalForm) $ do
                   table (fieldName registrationTable) (fieldName registrationTable) $ do
                     tableLine "Password:" $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
+                    tableLine "Password again:" $ passwordInput (name regPasswordAgainPrm) 20 Nothing ! A.required ""
                   hiddenParam regUserRegKeyPrm key
                   hiddenParam regTokenPrm      token
                   hiddenParam regUsernamePrm   username

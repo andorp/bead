@@ -27,6 +27,7 @@ data LoginField = LoginField { lcFieldName :: String }
 
 loginUsername = LoginField "login"
 loginPassword = LoginField "password"
+regPasswordAgain = LoginField "password_again"
 
 data RegistrationComp = RegComp { rFieldName :: String }
 
@@ -39,4 +40,4 @@ data FormId = FormId { rFormId :: String }
 
 loginForm = FormId "login-form"
 regForm = FormId "reg-form"
-
+regFinalForm = FormId "reg-final-form"

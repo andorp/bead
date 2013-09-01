@@ -26,6 +26,8 @@ onload = do
   hookDatetimePickerDiv endDateTimeHook
   hookPercentageDiv evaulationPctHook pctValue
   hookRegistrationForm
+  hookPasswordField (rFormId regFinalForm)
+  hookSamePasswords (rFormId regFinalForm)
 
 pctValue :: String -> String
 pctValue = toEvResultJSON . percentageResult . parseDouble
@@ -98,6 +100,57 @@ numberField i min max = do
                when (x <  min) $ setVal (show min) t
                when (x >= max) $ setVal (show max) t
 
+makeMessage removable msg = select (
+  "<br><snap style=\"font-size: smaller\" class=\"" ++
+  removable ++ "\">"
+  ++ msg ++
+  "</span>")
+
+validateField :: FieldValidator -> JQuery -> String -> Fay Bool
+validateField f e rm = do
+  v <- getVal e
+  validate f v
+    (return True)
+    (\m -> do span <- makeMessage rm (message f)
+              after span e
+              return False)
+
+-- Checks if the page contains password field
+-- and hook it with the validator for submit event.
+hookPasswordField :: String -> Fay ()
+hookPasswordField formId = void $ do
+  form <- select . cssId $ formId
+  pwd <- select . cssId . lcFieldName $ loginPassword
+  let validatorPwd = do
+        messages <- select . cssClass $ removable
+        remove messages
+        validateField isPassword pwd removable
+  onSubmit validatorPwd form
+  where
+    removable = "password_error"
+
+-- Checks if the form has a password and a password again field
+-- and hook that the two values must be the same for submit event.
+hookSamePasswords :: String -> Fay ()
+hookSamePasswords formId = void $ do
+  form     <- select . cssId $ formId
+  pwd      <- select . cssId . lcFieldName $ loginPassword
+  pwdAgain <- select . cssId . lcFieldName $ regPasswordAgain
+  let validator = do
+        messages <- select . cssClass $ removable
+        remove messages
+        password      <- getVal pwd
+        passwordAgain <- getVal pwdAgain
+        case (password == passwordAgain) of
+          True -> return True
+          False -> do
+            span <- makeMessage removable "Given passwords are differents"
+            after span pwdAgain
+            return False
+  onSubmit validator form
+  where
+    removable = "same_password_error"
+
 hookRegistrationForm :: Fay ()
 hookRegistrationForm = void $ do
   regForm <- select . cssId . rFormId $ regForm
@@ -110,27 +163,13 @@ hookRegistrationForm = void $ do
         messages <- select . cssClass $ removable
         remove messages
         andM
-          [ validateField isUsername uname
-          , validateField isEmailAddress email
+          [ validateField isUsername     uname removable
+          , validateField isEmailAddress email removable
           ]
 
   onSubmit validator regForm
   where
-    validateField :: FieldValidator -> JQuery -> Fay Bool
-    validateField f e = do
-      v <- getVal e
-      validate f v
-        (return True)
-        (\m -> do span <- makeMessage m
-                  after span e
-                  return False)
-
     removable = "regremovable"
-    makeMessage msg = select (
-      "<br><snap style=\"font-size: smaller\" class=\"" ++
-      removable ++ "\">"
-      ++ msg ++
-      "</span>")
 
 hookEvaulationTypeForm :: EvaulationHook -> Fay ()
 hookEvaulationTypeForm hook = do

@@ -169,6 +169,9 @@ regEmailPrm = emailPrm (fieldName regEmailAddress)
 regPasswordPrm :: Parameter String
 regPasswordPrm = validateBy isPassword $ stringParameter (fieldName loginPassword) "Password"
 
+regPasswordAgainPrm :: Parameter String
+regPasswordAgainPrm = validateBy isPassword $ stringParameter (fieldName regPasswordAgain) "Password Again"
+
 regUsernamePrm :: Parameter Username
 regUsernamePrm = validateBy isUsername $ customUsernamePrm (fieldName loginUsername)
 
