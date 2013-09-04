@@ -69,7 +69,7 @@ loginSubmit = do
             Nothing -> do logMessage ERROR "No password was given"
                           A.logout
             Just passwFromAuth -> do
-              result <- liftIO $ S.runUserStory context UserNotLoggedIn (S.login unameFromAuth passwFromAuth token)
+              result <- liftIO $ S.runUserStory context UserNotLoggedIn (S.login unameFromAuth token)
               case result of
                 Left err -> do
                   logMessage ERROR $ "Error happened processing user story: " ++ show err

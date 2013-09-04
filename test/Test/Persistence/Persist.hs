@@ -14,10 +14,7 @@ type Assert = String -> TIO ()
 testDecoratedPersist :: Assert -> Persist -> Persist
 testDecoratedPersist a q = Persist {
     saveUser     = saveUser q
-  , canUserLogin = canUserLogin q
   , personalInfo = personalInfo q
-  , updatePwd    = updatePwd q
-  , resetPwd     = resetPwd q
   , filterUsers  = filterUsers q
   , loadUser     = loadUser q
   , updateUser   = updateUser q

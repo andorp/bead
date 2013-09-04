@@ -64,14 +64,14 @@ runUserStory context userState
 -- | The user logs in with a given username and password
 --   QUESTION: Is there multiple login for the given user?
 --   ANSWER:   No, the user can log in once at a time
-login :: Username -> Password -> String -> UserStory ()
-login username password token = do
+login :: Username -> String -> UserStory ()
+login username token = do
   usrContainer <- CMR.asks userContainer
-  validUser    <- withPersist $ \p -> R.canUserLogin p username password
+  validUser <- withPersist $ flip R.doesUserExist username
   notLoggedIn  <- liftIO $ isUserLoggedIn usrContainer (userToken (username, token))
   case (validUser, notLoggedIn) of
     (True, False) -> do
-      loadUserData username password token P.Home
+      loadUserData username token P.Home
       s <- userState
       liftIO $ userLogsIn usrContainer (userToken s) s
     (True , True)  -> errorPage "The user is logged in somewhere else"
@@ -99,27 +99,24 @@ changePage p = do
     pageAsPermObj P.Administration = P_AdminPage
     pageAsPermObj _                = P_PlainPage
 
-resetPassword :: Username -> Password -> UserStory ()
-resetPassword usr pwd = logAction INFO ("Reset users password. Username: " ++ show usr) $
-  withPersist $ \p -> resetPwd p usr pwd
-
 -- | The user changes his/her password
-changePassword :: Password -> Password -> Password -> UserStory ()
-changePassword old new new'
-  | new /= new' = do
-      logErrorMessage "Password does not match"
-      errorPage "Password does not match"
-  | otherwise = do
-      username    <- CMS.gets user
-      withPersist $ \p -> updatePwd p username old new
+changedPassword :: Password -> UserStory ()
+changedPassword = passwordCata
+  (\pwd -> logAction INFO ("Changes password to encrypted: " ++ pwd) $ return ())
 
 -- | The authorized user creates a new user
-createUser :: User -> Password -> UserStory ()
-createUser newUser newPassword = do
+createUser :: User -> UserStory ()
+createUser newUser = do
   authorize P_Create P_User
-  withPersist $ \p -> saveUser p newUser newPassword
+  withPersist $ \p -> saveUser p newUser
   logger      <- CMR.asks logger
   liftIO $ log logger INFO $ "User is created: " ++ show (u_username newUser)
+
+-- Updates the current user email address and full name in the persistence layer
+updateEmailAndFullName :: Email -> String -> UserStory ()
+updateEmailAndFullName email name = logAction INFO ("updates email address and fullname") $ do
+  user <- currentUser
+  withPersist $ flip R.updateUser user { u_email = email, u_name = name }
 
 updateUser :: User -> UserStory ()
 updateUser u = logAction INFO ("updates user " ++ (str . u_username $ u)) $ do
@@ -135,6 +132,12 @@ selectUsers f = logAction INFO "selects some users" $ do
 loadUser :: Username -> UserStory User
 loadUser u = logAction INFO "Loading user information" $ do
   authorize P_Open P_User
+  withPersist $ flip R.loadUser u
+
+-- The UserStroy calculation returns the current user's profile data
+currentUser :: UserStory User
+currentUser = logAction INFO "Load the current user's data" $ do
+  u <- user <$> userState
   withPersist $ flip R.loadUser u
 
 -- | The authorized user logically deletes the given user
@@ -380,9 +383,9 @@ changeUserState f = do
     UserNotLoggedIn -> return ()
     state' -> CMS.put (f state')
 
-loadUserData :: Username -> Password -> String -> Page -> UserStory ()
-loadUserData uname pwd t p = do
-  (userRole, userFamilyName) <- withPersist $ \p -> personalInfo p uname pwd
+loadUserData :: Username -> String -> Page -> UserStory ()
+loadUserData uname t p = do
+  (userRole, userFamilyName) <- withPersist $ \p -> personalInfo p uname
   CMS.put UserState {
               user = uname
             , page = p

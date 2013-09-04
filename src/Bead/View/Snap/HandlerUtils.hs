@@ -14,6 +14,7 @@ module Bead.View.Snap.HandlerUtils (
   , setInSessionE
   , setReqParamInSession
   , sessionToken
+  , userState
   , logout
   , HandlerError(..)
   , ContentHandlerError
@@ -83,7 +84,7 @@ logMessage lvl msg = do
 sessionToken :: Handler App b String
 sessionToken = T.unpack <$> (withTop sessionManager $ csrfToken)
 
-userState :: HandlerError App b UserState
+userState :: (Error e) => ErrorT e (Handler App b) UserState
 userState = do
   context   <- lift $ withTop serviceContext $ getServiceContext
   mUsername <- lift $ withTop sessionManager $ usernameFromSession

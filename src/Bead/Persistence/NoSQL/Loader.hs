@@ -444,7 +444,7 @@ getCreatedTime :: DirPath -> TIO UTCTime
 getCreatedTime d = fileLoad d "created" readMaybe
 
 userDirStructure = DirStructure {
-    files       = ["email", "name", "password", "role", "username"]
+    files       = ["email", "name", "role", "username"]
   , directories = ["course", "group" ,"courseadmin" ,"groupadmin", "submissions"]
   }
 

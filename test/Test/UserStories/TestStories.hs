@@ -108,12 +108,12 @@ cleanUpPersist = testCase "Cleaning up persistence" $ do
 
 register = testCase "User registration" $ do
   c <- context
-  runStory c adminUserState $ createUser student "user"
+  runStory c adminUserState $ createUser student
   return ()
 
 loginAndLogout = testCase "Login And Logout" $ do
   c <- context
-  (_,state) <- runStory c UserNotLoggedIn $ login (Username "student") "user" "token"
+  (_,state) <- runStory c UserNotLoggedIn $ login (Username "student") "token"
   assertUserState state student
   (_,state) <- runStory c state $ logout
   case state of
@@ -147,9 +147,9 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
       c2  = E.Course "MA" "MA-DESC" binaryEvalConfig
       g1  = E.Group  "G1" "G1-DESC" binaryEvalConfig
       g2  = E.Group  "G2" "G2-DESC" $ percentageEvalConfig (PctConfig 0.4)
-  runStory c adminUserState $ createUser adminUser "password"
-  runStory c adminUserState $ createUser student2 "password"
-  (_,l) <- runStory c UserNotLoggedIn $ login (E.Username "admin") "password" "token"
+  runStory c adminUserState $ createUser adminUser
+  runStory c adminUserState $ createUser student2
+  (_,l) <- runStory c UserNotLoggedIn $ login (E.Username "admin") "token"
   ((a1,a2,as,ck2,gk2),_) <- runStory c l $ do
     ck1 <- createCourse c1
     ck2 <- createCourse c2
@@ -163,7 +163,7 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
     return (a1,a2,as,ck2,gk2)
   let as' = map fst as
   assertBool "Assignment does not found in the assignment list" ([a1,a2] == as' || [a2,a1] == as')
-  (_,ul) <- runStory c UserNotLoggedIn $ login (E.Username "student2") "password" "token"
+  (_,ul) <- runStory c UserNotLoggedIn $ login (E.Username "student2") "token"
   ((uc,ug),_) <- runStory c ul $ do
     subscribeToGroup  gk2
     uc <- U.isUserInCourse ck2

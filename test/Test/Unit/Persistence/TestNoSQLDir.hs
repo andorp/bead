@@ -59,7 +59,7 @@ test_create_exercise = testCase "Save an exercise" $ do
       , u_name     = "Student"
       }
       password = "password"
-  liftE $ saveUser persist user password
+  liftE $ saveUser persist user
   let s = Submission {
         solution = "Solution"
       , solutionPostDate = end
@@ -83,8 +83,7 @@ test_create_user = testCase "Create user" $ do
       , u_email    = Email "ursula@gmail.com"
       , u_name     = "Ursula"
       }
-      password = "password"
-  liftE $ saveUser persist user password
+  liftE $ saveUser persist user
   us <- liftE $ filterUsers persist (const True)
   assertBool "The filter did not find the user" (length us > 0)
   user1 <- liftE $ loadUser persist uname
@@ -124,7 +123,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool "Registered user is not found" isInGroup
   isInCourse <- liftE $ isUserInCourse persist username ck
   assertBool "Registered user is not found" isInCourse
-  liftE $ saveUser persist adminUser password
+  liftE $ saveUser persist adminUser
   liftE $ createCourseAdmin persist admin ck
   cs <- liftE $ administratedCourses persist admin
   assertBool "Course is not found in administrated courses" (elem ck (map fst cs))

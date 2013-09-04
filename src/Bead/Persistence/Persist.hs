@@ -32,11 +32,8 @@ import Control.Monad.Transaction.TIO
 
 data Persist = Persist {
   -- User Persistence
-    saveUser      :: User -> Password -> TIO ()
-  , canUserLogin  :: Username -> Password -> TIO Bool
-  , personalInfo  :: Username -> Password -> TIO (Role, String)
-  , updatePwd     :: Username -> Password -> Password -> TIO ()
-  , resetPwd      :: Username -> Password -> TIO ()
+    saveUser      :: User -> TIO ()
+  , personalInfo  :: Username -> TIO (Role, String)
   , filterUsers   :: (User -> Bool) -> TIO [User]
   , loadUser      :: Username -> TIO User
   , updateUser    :: User -> TIO ()

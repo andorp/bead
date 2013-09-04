@@ -255,6 +255,9 @@ type Password = String
 class AsPassword p where
   asPassword :: p -> Password
 
+passwordCata :: (String -> a) -> Password -> a
+passwordCata f p = f p
+
 newtype Email = Email String
   deriving (Eq, Ord, Read)
 
@@ -277,6 +280,9 @@ email = Right . Email
 -- TODO: throw exception if email string is unacceptable
 email' :: String -> Email
 email' = Email
+
+emailCata :: (String -> a) -> Email -> a
+emailCata f (Email e) = f e
 
 -- | Logged in user
 data User = User {

@@ -61,6 +61,8 @@ submitSolutionBtn = SubmitButton "submit-solution-btn"
 commentBtn = SubmitButton "comment-submit-btn"
 saveChangesBtn = SubmitButton "save-changes-btn"
 assignGroupAdminBtn = SubmitButton "asg-group-admin-submit"
+changeProfileBtn = SubmitButton "change-profile"
+changePasswordBtn = SubmitButton "change-password"
 
 instance SnapFieldName RegistrationComp where
   fieldName = fromString . rFieldName
@@ -137,6 +139,15 @@ userEmailField = UserEmailField "useremail"
 userRoleField  = UserRoleField "userrole"
 userFamilyNameField = UserFamilyNameField "userfamilyname"
 
+newtype ChangePwdField = ChangePwdField { cpf :: String }
+
+oldPasswordField = ChangePwdField "old-password-field"
+newPasswordField = ChangePwdField "new-password-field"
+newPasswordAgainField = ChangePwdField "new-password-again-field"
+
+instance SnapFieldName ChangePwdField where
+  fieldName = fromString . cpf
+
 menuId :: P.Page -> String
 menuId P.Login          = "link-login"
 menuId P.Logout         = "link-logout"
@@ -161,6 +172,7 @@ menuId P.AssignProfessor = "link-assign-professor"
 menuId P.NewGroupAssignment  = "link-new-group-assignment"
 menuId P.NewCourseAssignment = "link-new-course-assignment"
 menuId P.ModifyAssignment = "link-modify-assignment"
+menuId P.ChangePassword = "link-change-password"
 
 instance SnapFieldName P.Page where
   fieldName = fromString . menuId
@@ -253,6 +265,8 @@ availableAssignmentsTable = TableName "available-assignments"
 submissionTableName = TableName "submission-table"
 registrationTable = TableName "reg-form-table"
 resetPasswordTable = TableName "rst-pwd-table"
+profileTable = TableName "profile-table"
+changePasswordTable = TableName "change-password-table"
 
 -- * Template names
 
@@ -275,7 +289,6 @@ submissionListTable = TableClassName "submission-list-table"
 groupSubmissionTable = TableClassName "group-submission-table"
 userSubmissionTable = TableClassName "user-submission-table"
 assignmentTable = TableClassName "assignment-table"
-
 
 data DivClassName = DivClassName {
     divClass :: String
@@ -322,12 +335,13 @@ fieldList = map fieldName $ join [
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
   , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
-  , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField
+  , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField, SFN profileTable
+  , SFN changePasswordTable, SFN oldPasswordField, SFN newPasswordField, SFN newPasswordAgainField
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
   , SFN evaulationPercentageDiv, SFN regUserRegKey, SFN regToken, SFN pwdSubmitBtn
-  , SFN resetPasswordTable, SFN regPasswordAgain
+  , SFN resetPasswordTable, SFN regPasswordAgain, SFN changeProfileBtn, SFN changePasswordBtn
 
   , SFI regForm, SFI loginForm, SFI regFinalForm
   ], (map SFN P.allPages)

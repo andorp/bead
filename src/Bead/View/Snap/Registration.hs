@@ -70,7 +70,7 @@ createAdminUser persist usersdb name password = do
     Nothing -> error "No user was created"
     Just u' -> case passwordFromAuthUser u' of
       Nothing  -> error "No password was given"
-      Just pwd -> P.runPersist $ P.saveUser persist usr pwd
+      Just pwd -> P.runPersist $ P.saveUser persist usr
   return ()
 
 -- * User registration handler
@@ -352,7 +352,7 @@ createNewUser reg password = runErrorT $ do
   let snapAuthPwd = fromJust . passwordFromAuthUser $ snapAuthUser
 
   -- Creates the user in the persistence layer
-  checkFailure =<< lift (registrationStory (S.createUser user snapAuthPwd))
+  checkFailure =<< lift (registrationStory (S.createUser user))
   return ()
 
   where

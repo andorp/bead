@@ -21,10 +21,7 @@ import Data.List (sortBy)
 -- | Simple directory and file based NoSQL persistence implementation
 noSqlDirPersist = Persist {
     saveUser      = nSaveUser
-  , canUserLogin  = nCanUserLogin
   , personalInfo  = nPersonalInfo
-  , updatePwd     = nUpdatePwd
-  , resetPwd      = nResetPwd
   , filterUsers   = nFilterUsers
   , loadUser      = nLoadUser
   , updateUser    = nUpdateUser
@@ -125,17 +122,15 @@ nLoadUserReg u = do
   unless isU . throwEx . userError . join $ [str u, " user registration does not exist."]
   liftM snd $ tLoadUserReg p
 
-nSaveUser :: User -> Password -> TIO ()
-nSaveUser usr pwd = do
+nSaveUser :: User -> TIO ()
+nSaveUser usr = do
   userExist <- isThereAUser (u_username usr)
   case userExist of
     True -> throwEx $ userError $ "The user already exists: " ++ show (u_username usr)
     False -> do
-      let ePwd = encodePwd pwd
-          dirname = dirName usr
+      let dirname = dirName usr
       createDir dirname
       save    dirname usr
-      savePwd dirname ePwd
 
 isThereAUser :: Username -> TIO Bool
 isThereAUser uname = hasNoRollback $ do
@@ -145,28 +140,13 @@ isThereAUser uname = hasNoRollback $ do
     False -> return False
     True  -> isCorrectStructure dirname userDirStructure
 
-nCanUserLogin :: Username -> Password -> TIO Bool
-nCanUserLogin uname pwd = do
-  exists <- nDoesUserExist uname
-  case exists of
-    False -> return False
-    True  -> do
-      ePwd <- loadPwd . dirName $ uname
-      return (ePwd == (encodePwd pwd))
-
 nDoesUserExist :: Username -> TIO Bool
 nDoesUserExist = hasNoRollback . doesDirectoryExist . dirName
 
-nPersonalInfo :: Username -> Password -> TIO (Role, String)
-nPersonalInfo uname pwd = do
-  userExist <- isThereAUser uname
-  case userExist of
-    False -> throwEx . userError $ "User doesn't exist: " ++ show uname
-    True -> do
-      let dirname = dirName uname
-      role       <- load dirname
-      familyName <- loadName dirname
-      return (role, familyName)
+nPersonalInfo :: Username -> TIO (Role, String)
+nPersonalInfo uname = do
+  user <- nLoadUser uname
+  return (u_role user, u_name user)
 
 isUserDir :: FilePath -> TIO Bool
 isUserDir = isCorrectDirStructure userDirStructure
@@ -182,26 +162,6 @@ nUserDescription = liftM mkUserDescription . nLoadUser
 
 nUpdateUser :: User -> TIO ()
 nUpdateUser user = update (dirName . u_username $ user) user
-
-nUpdatePwd :: Username -> Password -> Password -> TIO ()
-nUpdatePwd uname oldPwd newPwd = do
-  userExist <- nCanUserLogin uname oldPwd
-  case userExist of
-    False -> throwEx $ userError $ "Invalid user and/or password combination: " ++ show uname
-    True -> do
-      let ePwd = encodePwd oldPwd
-          dirname = dirName uname
-      oldEPwd <- loadPwd dirname
-      case ePwd == oldEPwd of
-        False -> throwEx . userError $ "Invalid password"
-        True  -> savePwd dirname $ encodePwd newPwd
-
-nResetPwd :: Username -> Password -> TIO ()
-nResetPwd u p = do
-  userExist <- nDoesUserExist u
-  case userExist of
-    False -> throwEx $ userError $ "User does not exist: " ++ show u
-    True  -> savePwd (dirName u) (encodePwd p)
 
 nAdministratedCourses :: Username -> TIO [(CourseKey, Course)]
 nAdministratedCourses u = do

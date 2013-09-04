@@ -9,7 +9,7 @@ module Bead.View.Snap.Content.All (
 import Bead.Controller.Pages (Page)
 import Bead.View.Snap.Content (Content(..), emptyContent)
 import Bead.View.Snap.Content.Home (home)
-import Bead.View.Snap.Content.Profile (profile)
+import Bead.View.Snap.Content.Profile (profile, changePassword)
 import Bead.View.Snap.Content.CourseAdmin (courseAdmin, createGroup, assignProfessor)
 import Bead.View.Snap.Content.Administration (administration, assignCourseAdmin)
 import Bead.View.Snap.Content.EvaulationTable (evaulationTable)
@@ -53,6 +53,7 @@ content P.AssignProfessor = assignProfessor
 content P.NewGroupAssignment  = newGroupAssignment
 content P.NewCourseAssignment = newCourseAssignment
 content P.ModifyAssignment    = modifyAssignment
+content P.ChangePassword = changePassword
 
 #ifdef TEST
 

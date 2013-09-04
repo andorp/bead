@@ -172,6 +172,15 @@ regPasswordPrm = validateBy isPassword $ stringParameter (fieldName loginPasswor
 regPasswordAgainPrm :: Parameter String
 regPasswordAgainPrm = validateBy isPassword $ stringParameter (fieldName regPasswordAgain) "Password Again"
 
+oldPasswordPrm :: Parameter String
+oldPasswordPrm = validateBy isPassword $ stringParameter (fieldName oldPasswordField) "Old password"
+
+newPasswordPrm :: Parameter String
+newPasswordPrm = validateBy isPassword $ stringParameter (fieldName newPasswordField) "New password"
+
+newPasswordAgainPrm :: Parameter String
+newPasswordAgainPrm = validateBy isPassword $ stringParameter (fieldName newPasswordAgainField) "New password "
+
 regUsernamePrm :: Parameter Username
 regUsernamePrm = validateBy isUsername $ customUsernamePrm (fieldName loginUsername)
 

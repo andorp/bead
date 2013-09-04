@@ -61,6 +61,7 @@ instance SessionStore P.Page where
     s P.NewGroupAssignment  = "NewGroupAssignment"
     s P.NewCourseAssignment = "NewCourseAssignment"
     s P.ModifyAssignment = "ModifyAssignment"
+    s P.ChangePassword = "ChangePassword"
 
 instance SessionRestore P.Page where
   restoreFromSession kv = case L.lookup pageSessionKey kv of
@@ -88,6 +89,7 @@ instance SessionRestore P.Page where
     Just "NewCourseAssignment" -> Just P.NewCourseAssignment
     Just "NewGroupAssignment" -> Just P.NewGroupAssignment
     Just "ModifyAssignment" -> Just P.ModifyAssignment
+    Just "ChangePassword" -> Just P.ChangePassword
     Just _              -> Nothing
 
 -- * Session Key Values for Username
@@ -171,6 +173,13 @@ usernameFromAuthUser = E.Username . (T.unpack) . A.userLogin
 
 passwordFromAuthUser :: AuthUser -> Maybe E.Password
 passwordFromAuthUser = fmap asPassword . userPassword
+
+authPasswordCata :: (ByteString -> a) -> (ByteString -> a) -> A.Password -> a
+authPasswordCata clear _   (A.ClearText t) = clear   t
+authPasswordCata _ encrypt (A.Encrypted e) = encrypt e
+
+convertPassword :: A.Password -> String
+convertPassword = authPasswordCata unpack unpack
 
 instance AsUsername ByteString where
   asUsername = E.Username . unpack

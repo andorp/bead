@@ -16,7 +16,8 @@ data UserAction
   | LogMessage String
 
   -- Profiling
-  | ChangePwd Password Password Password
+  | ChangedPwd Password
+  | ChangeEmailAndFullName Email String
 
   -- Group
   | CreateGroup CourseKey Group
@@ -43,7 +44,7 @@ data UserAction
   | SubmissionComment SubmissionKey Comment
 
   -- Administration
-  | CreateUser User Password
+  | CreateUser User
   | UpdateUser User
   -- etc
   deriving (Eq)
@@ -51,8 +52,9 @@ data UserAction
 -- | UserStory correspondence to the given action
 userStoryFor :: UserAction -> Story.UserStory ()
 userStoryFor Logout             = Story.logout
-userStoryFor (ChangePwd o n n') = Story.changePassword o n n'
-userStoryFor (CreateUser u p)   = Story.createUser u p
+userStoryFor (ChangedPwd n)     = Story.changedPassword n
+userStoryFor (ChangeEmailAndFullName e n) = Story.updateEmailAndFullName e n
+userStoryFor (CreateUser u)     = Story.createUser u
 userStoryFor (LogMessage m)     = Story.logErrorMessage m
 userStoryFor (CreateCourse c)   = Story.createCourse c >> return ()
 userStoryFor (CreateGroup ck g) = Story.createGroup ck g >> return ()

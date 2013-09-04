@@ -1,25 +1,60 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Content.Profile (
-    profile
+    profile, changePassword
   ) where
 
 import Control.Monad (liftM)
+import Data.String
 
-import Bead.Controller.ServiceContext (UserState(..))
-import Bead.View.Snap.Pagelets
-import Bead.View.Snap.Content
-
-import Text.Blaze.Html5 (Html)
+import Snap.Snaplet.Auth hiding (currentUser)
+import Text.Blaze.Html5 (Html,(!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A
+
+import Bead.Controller.Pages (Page(..))
+import Bead.Controller.ServiceContext
+import Bead.Controller.UserStories (currentUser)
+import Bead.Domain.Entities
+import Bead.View.Snap.Content
+import qualified Bead.View.Snap.DataBridge as B
+import Bead.View.Snap.HandlerUtils (userState)
+import Bead.View.Snap.Pagelets
+import Bead.View.Snap.ResetPassword
+import Bead.View.Snap.Style
+import Bead.View.Snap.Session (convertPassword)
 
 profile :: Content
-profile = getContentHandler profilePage
+profile = getPostContentHandler profilePage changeEmailAndFullName
 
 profilePage :: GETContentHandler
 profilePage = withUserState $ \s -> do
-  renderPagelet $ withUserFrame s (profileContent)
+  user <- runStoryE currentUser
+  renderPagelet $ withUserFrame s (profileContent user)
 
-profileContent :: Pagelet
-profileContent = onlyHtml $ mkI18NHtml $ \i -> do
-  H.p $ (translate i "Full name")
-  H.p $ (translate i "Password section")
+changeEmailAndFullName :: POSTContentHandler
+changeEmailAndFullName = ChangeEmailAndFullName
+  <$> getParameter regEmailPrm
+  <*> getParameter regFullNamePrm
+
+profileContent :: User -> Pagelet
+profileContent user = onlyHtml $ mkI18NHtml $ \i -> do
+  postForm (routeOf Profile) $ do
+    table (fieldName profileTable) (fieldName profileTable) # centerTable $ do
+      tableLine (i "Email address: ") $ textInput (B.name regEmailPrm) 20 (emailCata Just $ u_email user) ! A.required ""
+      tableLine (i "Full name: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
+    submitButton (fieldName changeProfileBtn) (i "Save")
+  postForm (routeOf ChangePassword) $ do
+    table (fieldName changePasswordTable) (fieldName changePasswordTable) # centerTable $ do
+      tableLine (i "Old Password: ") $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
+      tableLine (i "New Password: ") $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
+      tableLine (i "New Password Again: ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
+    submitButton (fieldName changePasswordBtn) (i "Change")
+
+changePassword :: Content
+changePassword = postContentHandler $ do
+  oldPwd <- getParameter oldPasswordPrm
+  newPwd <- getParameter newPasswordPrm
+  checkCurrentAuthPassword oldPwd
+  updateCurrentAuthPassword newPwd
+  newPwdEnc <- encryptPwd newPwd
+  return . ChangedPwd . convertPassword $ newPwdEnc

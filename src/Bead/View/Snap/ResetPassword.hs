@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.ResetPassword (
     resetPasswordPage
+  , updateCurrentAuthPassword
+  , checkCurrentAuthPassword
+  , encryptPwd
+  , loadAuthUser
   ) where
 
 import Control.Monad.Trans.Error
@@ -21,7 +25,7 @@ import Bead.View.Snap.Application
 import Bead.View.Snap.Content hiding (name)
 import Bead.View.Snap.DataBridge
 import Bead.View.Snap.ErrorPage (errorPageWithTitle)
-import Bead.View.Snap.HandlerUtils (registrationStory)
+import Bead.View.Snap.HandlerUtils (registrationStory, userState)
 import Bead.View.Snap.Session (passwordFromAuthUser)
 import Bead.View.Snap.Style
 
@@ -35,20 +39,14 @@ resetPassword u = do
   checkUserInAuth
   checkUserInPersistence
   password <- randomPassword
-  user <- loadUser
+  user <- loadAuthUser u
   encryptedPwd <- encryptPwd password
   updateUser user { userPassword = Just encryptedPwd }
-  resetPasswordInPersistence
   email password
   where
-    username :: (IsString s) => Username -> s
-    username = usernameFold fromString
-
-    encryptPwd = liftIO . encryptPassword . ClearText . fromString
-
     checkUserInAuth = do
-      exist    <- lift . withTop auth $ usernameExists (username u)
-      unless exist . throwError $ "User does not exist: " ++ (username u)
+      exist    <- lift . withTop auth $ usernameExists (usernameStr u)
+      unless exist . throwError $ "User does not exist: " ++ (usernameStr u)
 
     checkUserInPersistence =
       (lift $ registrationStory $ S.doesUserExist u) >>=
@@ -56,24 +54,6 @@ resetPassword u = do
              (\e -> unless e $ throwError "User is not in persistence")
 
     randomPassword = lift . withTop randomPasswordContext $ getRandomPassword
-
-    loadUser = do
-      usr <- lift . withTop auth $ withBackend $ \r -> liftIO $ lookupByLogin r (username u)
-      when (isNothing usr) $ throwError "User is not in the authentication"
-      return . fromJust $ usr
-
-    updateUser usr =
-      (lift $ withTop auth $ withBackend $ \r -> liftIO $ save r usr) >>=
-      either (throwError . show) return
-
-    resetPasswordInPersistence = do
-      user <- loadUser
-      pwd <- maybe
-         (throwError "No password was saved for the user")
-         return
-         (passwordFromAuthUser user)
-      (lift $ registrationStory $ S.resetPassword u pwd) >>=
-        (either (throwError . show) return)
 
     loadUserFromPersistence =
       (lift $ registrationStory $ S.loadUser u) >>=
@@ -85,6 +65,42 @@ resetPassword u = do
         sendEmail address
                   "BE-AD Password reset"
                   pwd
+
+usernameStr :: (IsString s) => Username -> s
+usernameStr = usernameFold fromString
+
+loadAuthUser :: (Error e) => Username -> ErrorT e (Handler App a) AuthUser
+loadAuthUser u = do
+  usr <- lift . withTop auth $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameStr u)
+  when (isNothing usr) $ throwError $ strMsg "User is not in the authentication"
+  return . fromJust $ usr
+
+updateUser :: (Error e) => AuthUser -> ErrorT e (Handler App a) AuthUser
+updateUser usr =
+  (lift $ withTop auth $ withBackend $ \r -> liftIO $ save r usr) >>=
+  either (throwError . strMsg . show) return
+
+encryptPwd :: (Error e) => String -> ErrorT e (Handler App a) A.Password
+encryptPwd = liftIO . encryptPassword . ClearText . fromString
+
+-- Check if the current auth password is the same as the given one
+-- If they are different an error is thrown.
+checkCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
+checkCurrentAuthPassword pwd = do
+  name <- user <$> userState
+  usr  <- loadAuthUser name
+  encPwd <- encryptPwd pwd
+  unless (Just encPwd /= userPassword usr) $
+    throwError . strMsg $ "Invalid password was given"
+
+-- Update the currently logged in user's password in the authentication module
+updateCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
+updateCurrentAuthPassword password = do
+  name <- user <$> userState
+  usr <- loadAuthUser name
+  encPwd <- encryptPwd password
+  updateUser (usr { userPassword = Just encPwd })
+  return ()
 
 resetPasswordPage :: Handler App App ()
 resetPasswordPage = method GET resetPasswordGET <|> method POST resetPasswordPOST

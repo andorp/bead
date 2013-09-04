@@ -54,6 +54,7 @@ data Page
   | CreateGroup
   | AssignCourseAdmin
   | AssignProfessor
+  | ChangePassword
   -- etc ...
   deriving (Eq, Ord, Enum, Show)
 
@@ -78,7 +79,7 @@ pageTransition s = nub $ p s ++ [s, Error, Logout] where
   p SubmissionList   = [Home, SubmissionDetails]
   p SubmissionDetails = [Home, SubmissionList]
   p Administration   = [Home, CreateCourse, UserDetails, AssignCourseAdmin]
-  p Profile          = [Home]
+  p Profile          = [Home, ChangePassword]
   p UserSubmissions  = [Home, ModifyEvaulation, Evaulation]
   p ModifyEvaulation = [Home, EvaulationTable]
   p UserDetails      = [Administration]
@@ -91,6 +92,7 @@ pageTransition s = nub $ p s ++ [s, Error, Logout] where
   p AssignCourseAdmin = [Administration]
   p CreateGroup       = [CourseAdmin]
   p AssignProfessor   = [CourseAdmin]
+  p ChangePassword    = [Profile]
 
 reachable :: Page -> Page -> Bool
 reachable p q = elem q $ pageTransition p
@@ -98,6 +100,7 @@ reachable p q = elem q $ pageTransition p
 regularPages = [
     Home
   , Profile
+  , ChangePassword
   , Error
   , Submission
   , SubmissionList
@@ -151,6 +154,7 @@ nonMenuPages = [
   , NewCourseAssignment
   , ModifyAssignment
   , UserSubmissions
+  , ChangePassword
   ]
 
 allowedPages :: E.Role -> [Page]
@@ -192,6 +196,7 @@ parentPage AssignProfessor = CourseAdmin
 parentPage NewGroupAssignment  = NewGroupAssignment
 parentPage NewCourseAssignment = NewCourseAssignment
 parentPage ModifyAssignment    = Home
+parentPage ChangePassword      = Profile
 
 #ifdef TEST
 
