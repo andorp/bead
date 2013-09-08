@@ -19,6 +19,7 @@ import System.Random
 import Bead.Domain.Entities
 import Bead.View.Snap.Dictionary
 import Bead.View.Snap.TemplateAndComponentNames
+import Bead.View.Snap.EmailTemplate
 import Bead.Controller.ServiceContext
 
 -- * Mini snaplet : Service context
@@ -69,16 +70,34 @@ type Message = String
 -- and sends the email to the address
 type EmailSender = Email -> Subject -> Message -> IO ()
 
+-- Collection of email templates
+data EmailTemplates = EmailTemplates {
+    regTemplate          :: EmailTemplate RegTemplate
+  , forgottenPwdTemplate :: EmailTemplate ForgottenPassword
+  }
+
+class Template g => GetEmailTemplate g where
+  getEmailTemplate :: EmailTemplates -> EmailTemplate g
+
+instance GetEmailTemplate RegTemplate where
+  getEmailTemplate = regTemplate
+
+instance GetEmailTemplate ForgottenPassword where
+  getEmailTemplate = forgottenPwdTemplate
+
 -- SendEmailContext is a reference to the email sender function, we keep only
 -- one of the email senders.
-newtype SendEmailContext = SendEmailContext (IORef EmailSender)
+newtype SendEmailContext = SendEmailContext (IORef (EmailSender, EmailTemplates))
 
 emailSenderSnaplet :: SnapletInit a SendEmailContext
 emailSenderSnaplet = makeSnaplet
   "Email sending"
   "A snaplet providing email sender functionality"
   Nothing $ liftIO $ do
-    ref <- newIORef sender
+    reg <- registration      "email/registration"
+    pwd <- forgottenPassword "email/forgottenpwd"
+    let emailTemplates = EmailTemplates reg pwd
+    ref <- newIORef (sender, emailTemplates)
     return $! SendEmailContext ref
   where
     sender :: Email -> String -> String -> IO ()
@@ -94,8 +113,17 @@ emailSenderSnaplet = makeSnaplet
 -- Send email with subject to the given address
 sendEmail :: Email -> Subject -> Message -> Handler b SendEmailContext ()
 sendEmail address sub msg = do
+  SendEmailContext ref  <- get
+  (send,_) <- liftIO . readIORef $ ref
+  liftIO $ send address sub msg
+
+sendEmailTemplate
+  :: (GetEmailTemplate t, Template t)
+  => Email -> Subject -> t -> Handler b SendEmailContext ()
+sendEmailTemplate address sub t = do
   SendEmailContext ref <- get
-  send <- liftIO . readIORef $ ref
+  (send, templates) <- liftIO . readIORef $ ref
+  msg <- liftIO . runEmailTemplate (getEmailTemplate templates) $ t
   liftIO $ send address sub msg
 
 -- * Password generation
