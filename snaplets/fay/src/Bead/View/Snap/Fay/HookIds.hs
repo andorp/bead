@@ -1,5 +1,7 @@
 module Bead.View.Snap.Fay.HookIds where
 
+import Prelude
+
 data HookId = HookId { hookId :: String }
 
 createCourseForm = HookId "create-course-form"

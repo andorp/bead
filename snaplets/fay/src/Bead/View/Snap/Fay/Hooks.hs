@@ -1,5 +1,7 @@
 module Bead.View.Snap.Fay.Hooks where
 
+import Prelude
+
 import Bead.View.Snap.Fay.HookIds
 
 data EvaulationHook = EvaulationHook {

@@ -41,12 +41,12 @@ Executable Bead
   Main-is: SnapMain.hs
   CPP-Options: -DEMAIL_REGISTRATION
   HS-Source-Dirs: src, snaplets/fay/src
-  Build-Depends: snap, snap-core, snap-server, lens, blaze-html >= 0.5,
-                 snap-blaze, snaplet-fay == 0.3.2.0, fay-jquery, bytestring,
+  Build-Depends: snap, snap-core, snap-server, lens, blaze-html,
+                 snap-blaze, snaplet-fay, fay-jquery, fay-text, bytestring,
                  MonadCatchIO-transformers, blaze-html, xmlhtml, text, aeson,
                  blaze-markup, temporary, deepseq, mtl, directory, filepath,
-                 transformers, time, containers, base, fay == 0.14.5.0,
-                 unix, mime-mail, random, hastache, syb
+                 transformers, time, containers, base, fay,
+                 unix, mime-mail, random, hastache, syb, pandoc
 
 
 --Executable Test
@@ -66,5 +66,5 @@ Executable BeadEnd2EndTests
   Main-is: WebDriverMain.hs
   HS-Source-Dirs: src, snaplets/fay/src, test
   Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
-                 transformers, network >= 2.4.1.0 , webdriver
+                 transformers, network, webdriver
 

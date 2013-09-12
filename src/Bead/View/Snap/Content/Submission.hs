@@ -20,6 +20,10 @@ import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
+import Text.Pandoc.Options (def)
+import Text.Pandoc.Readers.Markdown (readMarkdown)
+import Text.Pandoc.Writers.HTML (writeHtml)
+
 submission :: Content
 submission = getPostContentHandler submissionPage submissionPostHandler
 
@@ -68,8 +72,11 @@ submissionContent p = onlyHtml $ mkI18NHtml $ \i -> do
     hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
   H.h2 (translate i "Description")
   H.div # assignmentTextDiv $ H.pre # assignmentTextPre $
-    (fromString . assignmentName . asValue $ p)
+    markdownAssignment . asValue $ p
+    -- (fromString . assignmentDesc . asValue $ p)
 
+markdownAssignment :: Assignment -> Html
+markdownAssignment = writeHtml def . readMarkdown def . assignmentDesc
 
 invalidAssignment :: Pagelet
 invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->

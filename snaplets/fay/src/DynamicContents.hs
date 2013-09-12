@@ -1,4 +1,5 @@
 {-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE OverloadedStrings #-}
 module DynamicContents where
 
 {- FAY compiled module -}
@@ -8,6 +9,7 @@ import Prelude
 import Data.Data
 import JQuery hiding (filter, validate)
 import Fay.JQueryUI
+import Fay.Text
 
 import Bead.Domain.Shared.Evaulation
 import Bead.View.Snap.Fay.Hooks
@@ -62,7 +64,7 @@ hookDatetimePickerDiv hook = void $ do
     createTimeInput = "<input type=\"text\" size=\"2\" value=\"0\"/>"
     newLine = "<br/>"
 
-    datetime d h m = d ++ " " ++ (twoDigits h) ++ ":" ++ (twoDigits m) ++ ":00"
+    datetime d h m = fromString $ (unpack d) ++ " " ++ (twoDigits (unpack h)) ++ ":" ++ (twoDigits (unpack m)) ++ ":00"
 
 twoDigits [d] = ['0',d]
 twoDigits ds  = ds
@@ -77,7 +79,7 @@ hookPercentageDiv hook f = void $ do
   let changeHiddenInput e = void $ do
         t <- targetElement e
         val <- getVal t
-        setVal (f . double $ val) input
+        setVal (fromString . f . double . unpack $ val) input
   numberField pctInput 0 100
   pctSpinner changeHiddenInput pctInput
   where
@@ -86,21 +88,21 @@ hookPercentageDiv hook f = void $ do
 
 numberField :: JQuery -> Int -> Int -> Fay ()
 numberField i min max = do
-  setVal (printInt min) i
+  setVal (fromString . printInt $ min) i
   flip keyup i $ \e -> void $ do
     t <- targetElement e
     val <- getVal t
-    setVal (filter isDigit val) t
+    setVal (fromString $ filter isDigit (unpack val)) t
   flip change i $ \e -> void $ do
     t <- targetElement e
     val <- getVal t
-    case val of
+    case (unpack val) of
       [] -> void $ setVal "0" t
       v  -> do let x = parseInt v
-               when (x <  min) $ setVal (show min) t
-               when (x >= max) $ setVal (show max) t
+               when (x <  min) $ setVal (fromString . show $ min) t
+               when (x >= max) $ setVal (fromString . show $ max) t
 
-makeMessage removable msg = select (
+makeMessage removable msg = select . fromString $ (
   "<br><snap style=\"font-size: smaller\" class=\"" ++
   removable ++ "\">"
   ++ msg ++
@@ -109,7 +111,7 @@ makeMessage removable msg = select (
 validateField :: FieldValidator -> JQuery -> String -> Fay Bool
 validateField f e rm = do
   v <- getVal e
-  validate f v
+  validate f (unpack v)
     (return True)
     (\m -> do span <- makeMessage rm (message f)
               after span e
@@ -201,20 +203,20 @@ hookEvaulationTypeForm hook = do
     setEvalLimit e = do
       t <- targetElement e
       v <- getVal t
-      let pct = "0." ++ (twoDigits v)
+      let pct = "0." ++ (twoDigits (unpack v))
       setEvaulationValue (PctEval pct)
 
     setEvaulationValue :: EvaulationData () String -> Fay ()
-    setEvaulationValue c = void $ select (cssId . evHiddenValueId $ hook) >>= setVal (value c)
+    setEvaulationValue c = void $ select (cssId . evHiddenValueId $ hook) >>= setVal (fromString . value $ c)
       where
         value (BinEval ()) = "BinEval ()"
         value (PctEval d) = "PctEval " ++ d
 
-cssId :: String -> String
-cssId i = '#':i
+cssId :: String -> Text
+cssId i = fromString ('#':i)
 
-cssClass :: String -> String
-cssClass c = '.':c
+cssClass :: String -> Text
+cssClass c = fromString ('.':c)
 
 -- * Helpers
 
