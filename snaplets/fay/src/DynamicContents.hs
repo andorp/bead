@@ -1,5 +1,4 @@
 {-# LANGUAGE EmptyDataDecls #-}
-{-# LANGUAGE OverloadedStrings #-}
 module DynamicContents where
 
 {- FAY compiled module -}
@@ -60,9 +59,9 @@ hookDatetimePickerDiv hook = void $ do
   change createDateTime hour
   change createDateTime min
   where
-    createDateInput = "<input type=\"text\" size=\"10\" required readonly />"
-    createTimeInput = "<input type=\"text\" size=\"2\" value=\"0\"/>"
-    newLine = "<br/>"
+    createDateInput = fromString "<input type=\"text\" size=\"10\" required readonly />"
+    createTimeInput = fromString "<input type=\"text\" size=\"2\" value=\"0\"/>"
+    newLine = fromString "<br/>"
 
     datetime d h m = fromString $ (unpack d) ++ " " ++ (twoDigits (unpack h)) ++ ":" ++ (twoDigits (unpack m)) ++ ":00"
 
@@ -73,9 +72,9 @@ hookPercentageDiv :: PercentageHook -> (String -> String) -> Fay ()
 hookPercentageDiv hook f = void $ do
   div <- select . cssId . ptDivId $ hook
   input <- select. cssId . ptHiddenInputId $ hook
-  pctInput <- select "<input type=\"text\" size=\"3\" required />"
+  pctInput <- select (fromString "<input type=\"text\" size=\"3\" required />")
   appendTo div pctInput
-  select "<span class=\"evtremoveable\">&#37;</span>" >>= appendTo div
+  select (fromString "<span class=\"evtremoveable\">&#37;</span>") >>= appendTo div
   let changeHiddenInput e = void $ do
         t <- targetElement e
         val <- getVal t
@@ -97,7 +96,7 @@ numberField i min max = do
     t <- targetElement e
     val <- getVal t
     case (unpack val) of
-      [] -> void $ setVal "0" t
+      [] -> void $ setVal (fromString "0") t
       v  -> do let x = parseInt v
                when (x <  min) $ setVal (fromString . show $ min) t
                when (x >= max) $ setVal (fromString . show $ max) t
@@ -184,17 +183,17 @@ hookEvaulationTypeForm hook = do
     changeFormContent form e = void $ do
       t <- target e
       v <- decodeEvalType <$> selectedValue t
-      findSelector ".evtremoveable" form >>= remove
+      findSelector (fromString ".evtremoveable") form >>= remove
       case v of
         (BinEval _) -> setEvaulationValue (BinEval ())
         (PctEval _) -> addPercentageField form
 
     addPercentageField :: JQuery -> Fay ()
     addPercentageField form = void $ do
-      pctInput <- select "<input type=\"text\" id=\"percentage\" class=\"evtremoveable\" size=\"3\" required />"
+      pctInput <- select (fromString "<input type=\"text\" id=\"percentage\" class=\"evtremoveable\" size=\"3\" required />")
       div <- findSelector (cssId . evSelectionDivId $ hook) form
       appendTo div pctInput
-      select "<span class=\"evtremoveable\">&#37;</span>" >>= appendTo div
+      select (fromString "<span class=\"evtremoveable\">&#37;</span>") >>= appendTo div
       numberField pctInput 0 100
       pctSpinner setEvalLimit pctInput
       change setEvalLimit pctInput
