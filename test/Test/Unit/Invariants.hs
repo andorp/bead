@@ -32,6 +32,7 @@ import qualified Bead.View.Snap.Pagelets as VP (invariants)
 import qualified Bead.View.Snap.Session as VS (invariants, unitTests)
 import qualified Bead.View.Snap.TemplateAndComponentNames as TC (unitTests)
 import qualified Bead.View.Snap.Validators as V (assertEmailAddress)
+import qualified Bead.View.Snap.EmailTemplate as E (unitTests)
 import Bead.View.Snap.Content.Home
 import Bead.Configuration (initTaskAssertions)
 
@@ -40,6 +41,10 @@ import Control.Monad (join)
 unitTestGroup :: String -> UnitTests -> Test
 unitTestGroup name (UnitTests ts) = testGroup name
   $ map (\(desc, testcase) -> testCase desc (assertBool desc testcase)) ts
+
+ioUnitTestGroup :: String -> UnitTestsM IO -> Test
+ioUnitTestGroup name (UnitTestsM ts) = testGroup name
+  $ map (\(desc, testcase) -> testCase desc (testcase >>= assertBool desc)) ts
 
 invariantsGroup :: (Show i, Arbitrary i) => String -> Invariants i -> Test
 invariantsGroup name (Invariants is) = testGroup name
@@ -78,11 +83,10 @@ tests = [
   , unitTestGroup   "RouteOf unit tests" R.unitTests
   , unitTestGroup   "Page unit tests" P.unitTests
   , unitTestGroup   "Template and components" TC.unitTests
+  , ioUnitTestGroup "Email template tests" E.unitTests
   , assertionTestGroup "Email address" V.assertEmailAddress
   , assertionTestGroup "Home page binary results" sumBinaryResultTests
   , assertionTestGroup "Home page percentage results" sumPercentageResultTests
   , assertionTestGroup "Home page calc results" calculateSubmissionResultTests
   , assertionTestGroup "Command line and configuration" initTaskAssertions
   ]
-
-

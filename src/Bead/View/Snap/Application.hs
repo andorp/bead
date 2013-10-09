@@ -76,13 +76,15 @@ data EmailTemplates = EmailTemplates {
   , forgottenPwdTemplate :: EmailTemplate ForgottenPassword
   }
 
-class Template g => GetEmailTemplate g where
+-- Each type has in the Email templates has a getter
+-- function, indexed by the given type
+class Template g => EmailTemplateContainer g where
   getEmailTemplate :: EmailTemplates -> EmailTemplate g
 
-instance GetEmailTemplate RegTemplate where
+instance EmailTemplateContainer RegTemplate where
   getEmailTemplate = regTemplate
 
-instance GetEmailTemplate ForgottenPassword where
+instance EmailTemplateContainer ForgottenPassword where
   getEmailTemplate = forgottenPwdTemplate
 
 -- SendEmailContext is a reference to the email sender function, we keep only
@@ -118,7 +120,7 @@ sendEmail address sub msg = do
   liftIO $ send address sub msg
 
 sendEmailTemplate
-  :: (GetEmailTemplate t, Template t)
+  :: (EmailTemplateContainer t, Template t)
   => Email -> Subject -> t -> Handler b SendEmailContext ()
 sendEmailTemplate address sub t = do
   SendEmailContext ref <- get

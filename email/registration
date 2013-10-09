@@ -1,0 +1,7 @@
+You are registering with the {{regUsername}} username.
+
+If your registration is valid, please click on the following link:
+{{regUrl}}
+
+Best Regards,
+The BE-AD team

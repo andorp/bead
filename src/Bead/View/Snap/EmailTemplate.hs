@@ -1,13 +1,17 @@
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.EmailTemplate
   ( EmailTemplate
   , emailTemplate
   , runEmailTemplate
-  , RegTemplate
-  , ForgottenPassword
+  , RegTemplate(..)
+  , ForgottenPassword(..)
   , Template
   , registration
   , forgottenPassword
+#ifdef TEST
+  , unitTests
+#endif
   ) where
 
 import Data.Data
@@ -17,6 +21,11 @@ import Text.Hastache
 import Text.Hastache.Context
 
 import System.IO
+
+#ifdef TEST
+import Bead.Invariants (UnitTestsM(..))
+#endif
+
 
 -- Email template is a function to an IO String computation
 -- Interpretation: The email template is applied to a value
@@ -67,3 +76,16 @@ registration = fileTemplate
 
 forgottenPassword :: FilePath -> IO (EmailTemplate ForgottenPassword)
 forgottenPassword = fileTemplate
+
+#ifdef TEST
+
+unitTests = UnitTestsM [
+    ("Registration template",
+        do found <- runEmailTemplate (emailTemplate "n {{regUsername}} u {{regUrl}}") (RegTemplate "n" "u")
+           return (found == "n n u u"))
+  , ("Forgotten password template",
+        do found <- runEmailTemplate (emailTemplate "u {{restoreUrl}}") (ForgottenPassword "u")
+           return (found == "u u"))
+  ]
+
+#endif

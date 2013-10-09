@@ -23,6 +23,7 @@ import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.DataBridge
 import Bead.View.Snap.ErrorPage (errorPageWithTitle)
 import Bead.View.Snap.RouteOf (requestRoute)
+import Bead.View.Snap.EmailTemplate
 import qualified Bead.Persistence.Persist as P (Persist(..), runPersist)
 
 import Bead.View.Snap.Content hiding (
@@ -228,9 +229,14 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
           Right key -> do
              -- TODO: Send the email template
             withTop sendEmailContext $
-              sendEmail email
-                        "BE-AD Registration email"
-                        (createUserRegAddress key userRegData)
+
+              sendEmailTemplate
+                email
+                "BE-AD Registration email"
+                RegTemplate {
+                    regUsername = reg_username userRegData
+                  , regUrl = createUserRegAddress key userRegData
+                  }
             redirect "/"
       _ -> blaze $ "Some request parameter is missing"
 
