@@ -25,6 +25,7 @@ import Bead.View.Snap.Application
 import Bead.View.Snap.Content hiding (name)
 import Bead.View.Snap.DataBridge
 import Bead.View.Snap.ErrorPage (errorPageWithTitle)
+import Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
 import Bead.View.Snap.HandlerUtils (registrationStory, userState)
 import Bead.View.Snap.Session (passwordFromAuthUser)
 import Bead.View.Snap.Style
@@ -62,9 +63,10 @@ resetPassword u = do
     email pwd = do
       address <- fmap u_email loadUserFromPersistence
       lift $ withTop sendEmailContext $
-        sendEmail address
-                  "BE-AD Password reset"
-                  pwd
+        sendEmail
+          address
+          "BE-AD Password reset"
+          ForgottenPassword { restoreUrl = pwd }
 
 usernameStr :: (IsString s) => Username -> s
 usernameStr = usernameFold fromString

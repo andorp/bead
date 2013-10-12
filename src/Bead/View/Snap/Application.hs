@@ -112,20 +112,16 @@ emailSenderSnaplet = makeSnaplet
       mail <- simpleMail to from subject plain html []
       renderSendMail mail
 
--- Send email with subject to the given address
-sendEmail :: Email -> Subject -> Message -> Handler b SendEmailContext ()
-sendEmail address sub msg = do
-  SendEmailContext ref  <- get
-  (send,_) <- liftIO . readIORef $ ref
-  liftIO $ send address sub msg
-
-sendEmailTemplate
+-- Send email with a subject to the given address, using the right
+-- template to the given values
+-- E.g: Registration or ForgottenPassword
+sendEmail
   :: (EmailTemplateContainer t, Template t)
   => Email -> Subject -> t -> Handler b SendEmailContext ()
-sendEmailTemplate address sub t = do
+sendEmail address sub value = do
   SendEmailContext ref <- get
   (send, templates) <- liftIO . readIORef $ ref
-  msg <- liftIO . runEmailTemplate (getEmailTemplate templates) $ t
+  msg <- liftIO . runEmailTemplate (getEmailTemplate templates) $ value
   liftIO $ send address sub msg
 
 -- * Password generation

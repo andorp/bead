@@ -230,7 +230,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
              -- TODO: Send the email template
             withTop sendEmailContext $
 
-              sendEmailTemplate
+              sendEmail
                 email
                 "BE-AD Registration email"
                 RegTemplate {
