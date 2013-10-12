@@ -13,8 +13,6 @@ import qualified Text.Blaze.Html5.Attributes as A
 import Bead.View.Snap.I18N (I18NHtml, translate)
 import qualified Bead.View.Snap.I18N as I18N
 
-import Text.CSS
-
 import Bead.Domain.Types (Str(..))
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
@@ -33,17 +31,13 @@ import Bead.Invariants (Invariants(..))
 
 data Pagelet = Pagelet {
     struct :: I18NHtml
-  , style  :: Css
   }
 
-emptyPagelet  = Pagelet { struct = return () , style = return () }
-onlyHtml h = Pagelet { struct = h, style = return () }
+emptyPagelet  = Pagelet { struct = return () }
+onlyHtml h = Pagelet { struct = h }
 
 structMap :: (I18NHtml -> I18NHtml) -> Pagelet -> Pagelet
 structMap f p = p { struct = f . struct $ p }
-
-styleMap :: (Css -> Css) -> Pagelet -> Pagelet
-styleMap f p = p { style = f . style $ p }
 
 css :: String -> Html
 css c = H.link ! A.type_ "text/css" ! A.href (fromString c) ! A.rel "stylesheet"
@@ -73,8 +67,7 @@ runPagelet p i = document (css "inside.css") (translate i . struct $ p)
 runDynamicPagelet :: Pagelet -> I18N -> Html
 runDynamicPagelet p i =
   dynamicDocument
-    (do css "inside.css"
-        H.style ! A.type_ "text/css" $ fromString $ renderCSS (style p))
+    (css "inside.css")
     (translate i . struct $ p)
 
 class BlazeTemplate b where
