@@ -140,13 +140,6 @@ currentUser = logAction INFO "Load the current user's data" $ do
   u <- user <$> userState
   withPersist $ flip R.loadUser u
 
--- | The authorized user logically deletes the given user
---   QUESTION: What to do if the deleted user are logged in when the deletion does happen?
---   ANSWER: During his active session he can made authorized changes, after logging out
---           he will be not able to relogin.
-deleteUser :: Username -> UserStory ()
-deleteUser = error "deleteUser: undefined"
-
 administratedCourses :: UserStory [(CourseKey, Course)]
 administratedCourses = logAction INFO "selects adminstrated courses" $ do
   authorize P_Open P_Course
@@ -219,14 +212,6 @@ createGroupProfessor u gk = logAction INFO "sets user as a professor of a group"
   authorize P_Open   P_User
   withPersist $ \p -> R.createGroupProfessor p u gk
 
--- | Logically deletes an existing cousrse
-deleteCourse :: CourseKey -> UserStory ()
-deleteCourse = error "deleteCourse: undefined"
-
--- | Updates the course information
-updateCourse :: CourseKey -> Course -> UserStory ()
-updateCourse = error "updateCourse: undefined"
-
 -- | Adds a new group to the given course
 createGroup :: CourseKey -> Group -> UserStory GroupKey
 createGroup ck g = logAction INFO ("creats group " ++ show (groupName g)) $ do
@@ -268,14 +253,6 @@ attendedGroups = logAction INFO "selects courses attended in" $ do
   withPersist $ \p -> do
     ks <- R.userGroups p uname
     mapM (R.groupDescription p) ks
-
--- | Deletes logically the given course
-deleteGroup :: GroupKey -> UserStory ()
-deleteGroup = error "deleteGroup: undefined"
-
--- | Updates the group information
-updateGroup :: GroupKey -> Group -> UserStory ()
-updateGroup = error "updateGroup: undefined"
 
 createGroupAssignment :: GroupKey -> Assignment -> UserStory AssignmentKey
 createGroupAssignment gk a = logAction INFO msg $ do
@@ -346,10 +323,6 @@ authorize p o = do
         (P_Create, P_User),    (P_Open, P_User)
       , (P_Create, P_UserReg), (P_Open, P_UserReg)
       ]
-
--- | Checks if the user is authorized for a given operation
-isAuthorized :: Permission -> PermissionObject -> UserStory Bool
-isAuthorized = error "isAuthorized: undefined"
 
 -- | No operational User Story
 noOperation :: UserStory ()
