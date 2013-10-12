@@ -31,6 +31,9 @@ data Assignment = Assignment {
   -- TODO: Number of maximum tries
   } deriving (Eq, Show)
 
+assignmentCata f (Assignment name desc tcs type_ start end) =
+  f name desc tcs type_ start end
+
 -- | Produces True if the given time is between the start-end time of the assignment
 isActivePeriod :: Assignment -> UTCTime -> Bool
 isActivePeriod a t = and [start <= t, t <= end]

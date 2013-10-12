@@ -13,6 +13,7 @@ import Bead.Controller.UserStories (submissionListDesc)
 import Bead.Controller.Pages as P (Page(SubmissionList, SubmissionDetails))
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
+import Bead.View.Snap.Markdown
 import Bead.View.Snap.Content.Utils
 import Bead.Domain.Relationships
 
@@ -52,7 +53,7 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
     mapM_ submissionLine (slSubmissions . smList $ p)
   H.h2 $ (translate i "Assignment")
   H.div # assignmentTextDiv $ H.pre # assignmentTextPre $
-    (fromString . slAssignmentText . smList $ p)
+    (markdownToHtml . slAssignmentText . smList $ p)
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft        $ fromString t
