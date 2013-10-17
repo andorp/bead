@@ -41,9 +41,11 @@ import Bead.View.Snap.RouteOf (ReqParam(..))
 import Data.String (IsString(..))
 import Data.Maybe (isNothing, fromJust)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
 import qualified Data.List as L
 import Control.Monad.Error
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.UTF8  as BU
 
 -- Snap and Blaze imports
 
@@ -132,7 +134,7 @@ getParameter :: Parameter a -> HandlerError App b a
 getParameter param = do
   reqParam <- getParam . B.pack . name $ param
   when (isNothing reqParam) . throwError . strMsg . notFound $ param
-  let v     = B.unpack . fromJust $ reqParam
+  let v     = T.unpack . TE.decodeUtf8 . fromJust $ reqParam
       value = decode param v
   when (isNothing value) . throwError . strMsg . decodeError param $ v
   return . fromJust $ value

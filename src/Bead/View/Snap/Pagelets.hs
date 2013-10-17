@@ -49,6 +49,7 @@ document :: Html -> Html -> Html
 document headers body = H.docTypeHtml $ do
   H.head $ do
     H.title "Bead"
+    H.meta ! A.charset "UTF-8"
     headers
     css "header.css"
   H.body $ body
@@ -164,10 +165,10 @@ required h = h ! A.required ""
 -- * Form
 
 postForm :: String -> Html -> Html
-postForm action = H.form ! A.method "post" ! A.action (fromString action)
+postForm action = H.form ! A.method "post" ! A.action (fromString action) ! A.acceptCharset "UTF-8"
 
 getForm :: String -> Html -> Html
-getForm action = H.form ! A.method "get" ! A.action (fromString action)
+getForm action = H.form ! A.method "get" ! A.action (fromString action) ! A.acceptCharset "UTF-8"
 
 -- * Table
 table :: String -> String -> Html -> Html

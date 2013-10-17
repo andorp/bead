@@ -120,6 +120,7 @@ fileSave :: DirPath -> FilePath -> String -> TIO ()
 fileSave d f s = step
     (do let fname = joinPath [d,f]
         handler <- openFile fname WriteMode
+        hSetEncoding handler utf8
         hPutStr handler s
         hClose handler
         return ())
@@ -132,6 +133,7 @@ fileLoad d f reader = step
     (do let fname = joinPath [d,f]
         exist <- doesFileExist fname
         h <- openFile fname ReadMode
+        hSetEncoding h utf8
         s <- hGetContents h
         s `deepseq` hClose h
         case reader s of
@@ -153,6 +155,7 @@ fileUpdate d f c = do
       action = do
         let fname = joinPath [d,f]
         h <- openFile fname ReadMode
+        hSetEncoding h utf8
         s <- hGetContents h
         s `deepseq` hClose h
         writeFile fname c

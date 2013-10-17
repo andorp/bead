@@ -45,7 +45,7 @@ Executable Bead
                  snap-blaze, snaplet-fay, fay-jquery, fay-text, bytestring,
                  MonadCatchIO-transformers, blaze-html, xmlhtml, text, aeson,
                  blaze-markup, temporary, deepseq, mtl, directory, filepath,
-                 transformers, time, containers, base, fay,
+                 transformers, time, containers, base, fay, utf8-string,
                  unix, mime-mail, random, hastache, syb, pandoc
 
 
