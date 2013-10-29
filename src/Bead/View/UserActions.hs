@@ -17,7 +17,7 @@ data UserAction
 
   -- Profiling
   | ChangedPwd Password
-  | ChangeEmailAndFullName Email String
+  | ChangeUserDetails Email String TimeZone
 
   -- Group
   | CreateGroup CourseKey Group
@@ -53,7 +53,6 @@ data UserAction
 userStoryFor :: UserAction -> Story.UserStory ()
 userStoryFor Logout             = Story.logout
 userStoryFor (ChangedPwd n)     = Story.changedPassword n
-userStoryFor (ChangeEmailAndFullName e n) = Story.updateEmailAndFullName e n
 userStoryFor (CreateUser u)     = Story.createUser u
 userStoryFor (LogMessage m)     = Story.logErrorMessage m
 userStoryFor (CreateCourse c)   = Story.createCourse c >> return ()
@@ -69,5 +68,12 @@ userStoryFor (NewSubmission ak s)    = Story.submitSolution ak s >> return ()
 userStoryFor (NewEvaulation sk e)    = Story.newEvaulation sk e
 userStoryFor (ModifyEvaulation ek e) = Story.modifyEvaulation ek e
 userStoryFor (SubmissionComment sk c) = Story.createComment sk c
+
+-- Saves the email, fullname and timezone in the persistence layer
+-- and set the user's timezone in the service context
+userStoryFor (ChangeUserDetails e n t) =
+  do Story.changeUserDetails e n t
+     Story.setTimeZone t
+
 userStoryFor _                      = Story.logMessage L.DEBUG "No story was selected"
 -- etc ...

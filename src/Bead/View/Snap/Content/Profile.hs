@@ -24,17 +24,18 @@ import Bead.View.Snap.Style
 import Bead.View.Snap.Session (convertPassword)
 
 profile :: Content
-profile = getPostContentHandler profilePage changeEmailAndFullName
+profile = getPostContentHandler profilePage changeUserDetails
 
 profilePage :: GETContentHandler
 profilePage = withUserState $ \s -> do
   user <- runStoryE currentUser
   renderPagelet $ withUserFrame s (profileContent user)
 
-changeEmailAndFullName :: POSTContentHandler
-changeEmailAndFullName = ChangeEmailAndFullName
+changeUserDetails :: POSTContentHandler
+changeUserDetails = ChangeUserDetails
   <$> getParameter regEmailPrm
   <*> getParameter regFullNamePrm
+  <*> getParameter userTimeZonePrm
 
 profileContent :: User -> Pagelet
 profileContent user = onlyHtml $ mkI18NHtml $ \i -> do
@@ -42,6 +43,7 @@ profileContent user = onlyHtml $ mkI18NHtml $ \i -> do
     table (fieldName profileTable) (fieldName profileTable) # centerTable $ do
       tableLine (i "Email address: ") $ textInput (B.name regEmailPrm) 20 (emailCata Just $ u_email user) ! A.required ""
       tableLine (i "Full name: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
+      tableLine (i "Time zone: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
     submitButton (fieldName changeProfileBtn) (i "Save")
   postForm (routeOf ChangePassword) $ do
     table (fieldName changePasswordTable) (fieldName changePasswordTable) # centerTable $ do

@@ -130,6 +130,7 @@ data UserField
   | UserEmailField { uFieldName :: String }
   | UserRoleField  { uFieldName :: String }
   | UserFamilyNameField { uFieldName :: String }
+  | UserTimeZoneField { uFieldName :: String }
 
 instance SnapFieldName UserField where
   fieldName = fromString . uFieldName
@@ -138,6 +139,7 @@ usernameField  = UserField "username"
 userEmailField = UserEmailField "useremail"
 userRoleField  = UserRoleField "userrole"
 userFamilyNameField = UserFamilyNameField "userfamilyname"
+userTimeZoneField = UserTimeZoneField "usertimezone"
 
 newtype ChangePwdField = ChangePwdField { cpf :: String }
 
@@ -342,6 +344,7 @@ fieldList = map fieldName $ join [
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
   , SFN evaulationPercentageDiv, SFN regUserRegKey, SFN regToken, SFN pwdSubmitBtn
   , SFN resetPasswordTable, SFN regPasswordAgain, SFN changeProfileBtn, SFN changePasswordBtn
+  , SFN userTimeZoneField
 
   , SFI regForm, SFI loginForm, SFI regFinalForm
   ], (map SFN P.allPages)

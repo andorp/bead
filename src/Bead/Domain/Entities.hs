@@ -287,13 +287,33 @@ email' = Email
 emailCata :: (String -> a) -> Email -> a
 emailCata f (Email e) = f e
 
+data TimeZone
+  = UTC
+  | CET
+  | CEST
+  deriving (Show, Read, Eq, Ord, Enum)
+
+timeZoneCata utc cet cest t = case t of
+  UTC -> utc
+  CET -> cet
+  CEST -> cest
+
 -- | Logged in user
 data User = User {
     u_role     :: Role
   , u_username :: Username
   , u_email    :: Email
   , u_name     :: String
+  , u_timezone :: TimeZone
   } deriving (Eq, Ord, Show)
+
+userCata f (User role username email name timezone) =
+  f role username email name timezone
+
+newtype PersonalInfo = PersonalInfo (Role, String, TimeZone)
+
+personalInfoCata f (PersonalInfo (role, name, timezone))
+  = f role name timezone
 
 data UserDesc = UserDesc {
     ud_username :: Username

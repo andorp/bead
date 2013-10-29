@@ -259,6 +259,10 @@ instance (SelectionValue v, SelectionText t) => SelectionValue (v,t) where
 instance (SelectionValue v, SelectionText t) => SelectionText (v,t) where
   selectionText (_,t) = selectionText t
 
+defValueTextSelection :: (Eq s, SelectionValue s, SelectionText s) => String -> s -> [s] -> Html
+defValueTextSelection name def = selection name . mapM_ option' where
+  option' x = option (selectionValue x) (selectionText x) (x == def)
+
 valueTextSelection :: (SelectionValue s, SelectionText s) => String -> [s] -> Html
 valueTextSelection name = selection name . mapM_ option'
   where
@@ -266,6 +270,11 @@ valueTextSelection name = selection name . mapM_ option'
 
 enumSelection :: (Enum e, SelectionValue e, SelectionText e) => String -> e -> Html
 enumSelection name start = valueTextSelection name [start .. ]
+
+-- Creates a selection with a given name attribute and a default value
+-- as the actively selected one.
+defEnumSelection :: (Eq e, Enum e, SelectionValue e, SelectionText e) => String -> e -> Html
+defEnumSelection name def = defValueTextSelection name def [toEnum 0 .. ]
 
 valueSelection :: (o -> (String, String)) -> String -> [o] -> Html
 valueSelection f n = selection n . mapM_ option'
@@ -297,6 +306,12 @@ instance SelectionText AssignmentType where
 
 instance SelectionValue AssignmentType where
   selectionValue = show
+
+instance SelectionValue TimeZone where
+  selectionValue = show
+
+instance SelectionText TimeZone where
+  selectionText = show
 
 evalSelectionDiv :: EvaulationHook -> Html
 evalSelectionDiv h = (H.div `withId` (evSelectionDivId h)) $ empty

@@ -65,6 +65,7 @@ createAdminUser persist usersdb name password = do
     , u_username = Username name
     , u_email = Email ""
     , u_name = ""
+    , u_timezone = UTC
     }
   createdUser <- lookupByLogin mgr (T.pack name)
   case createdUser of
@@ -130,6 +131,7 @@ registration = method GET handleForm <|> method POST handleFormSubmit
                 , u_username = u
                 , u_email = e
                 , u_name = unpack f
+                , u_timezone = UTC
                 }
             createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameFold T.pack u)
             when (isNothing createdUser) $ throwError (RegError ERROR "User was not created at the first stage")
@@ -348,7 +350,13 @@ createNewUser reg password = runErrorT $ do
 
   -- Registers the user in the Snap authentication module
   lift $ registerUser (B.pack $ name regUsernamePrm) (B.pack $ name regPasswordPrm)
-  let user = User { u_role = Student, u_username = username, u_email = email, u_name = fullname }
+  let user = User {
+      u_role = Student
+    , u_username = username
+    , u_email = email
+    , u_name = fullname
+    , u_timezone = UTC
+    }
 
   -- Check if the Snap Auth registration went fine
   createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameFold T.pack username)

@@ -9,6 +9,9 @@ import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.Domain.Evaulation
 
+import Bead.Controller.ServiceContext (UserState(..))
+import qualified Bead.Controller.UserStories as Story (userState)
+
 import Bead.View.Snap.Application (App(..))
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.HandlerUtils
@@ -103,6 +106,7 @@ instance GetValueHandler User where
     <*> getValue -- username
     <*> getParameter userEmailPrm
     <*> getParameter (stringParameter (fieldName userFamilyNameField) "Full name")
+    <*> getParameter userTimeZonePrm
 
 instance InputPagelet User where
   inputPagelet u = table "user-detail-table" "user-detail-table" $ do
@@ -118,13 +122,15 @@ instance GetValueHandler AssignmentKey where
   getValue = getParameter assignmentKeyPrm
 
 instance GetValueHandler Assignment where
-  getValue = Assignment
-    <$> getParameter (stringParameter (fieldName assignmentNameField) "Assignment Name")
-    <*> getParameter (stringParameter (fieldName assignmentDescField) "Assignment Description")
-    <*> getParameter (stringParameter (fieldName assignmentTCsField) "Assignment Tests")
-    <*> getParameter assignmentTypePrm
-    <*> getParameter assignmentStartPrm
-    <*> getParameter assignmentEndPrm
+  getValue = do
+    timeZone <- timezone <$> runStoryE Story.userState
+    Assignment
+      <$> getParameter (stringParameter (fieldName assignmentNameField) "Assignment Name")
+      <*> getParameter (stringParameter (fieldName assignmentDescField) "Assignment Description")
+      <*> getParameter (stringParameter (fieldName assignmentTCsField) "Assignment Tests")
+      <*> getParameter assignmentTypePrm
+      <*> getParameter (assignmentStartPrm timeZone)
+      <*> getParameter (assignmentEndPrm   timeZone)
 
 -- * Combined input fields
 

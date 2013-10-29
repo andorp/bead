@@ -39,15 +39,17 @@ data UserState
   , name :: String
   , role :: Role
   , token :: String
+  , timezone :: TimeZone
   } deriving (Show)
 
-userStateFold
- :: a -> a -> (Username -> Page -> String -> Role -> String -> a)
- -> UserState
- -> a
-userStateFold n _ _ UserNotLoggedIn = n
-userStateFold _ r _ Registration    = r
-userStateFold _ _ f (UserState u p n r t) = f u p n r t
+userStateCata
+  userNotLoggedIn
+  registration
+  userState
+  s = case s of
+    UserNotLoggedIn -> userNotLoggedIn
+    Registration -> registration
+    UserState u p n r t tz -> userState u p n r t tz
 
 userRole :: UserState -> Either OutsideRole Role
 userRole UserNotLoggedIn = Left EmptyRole
@@ -77,7 +79,6 @@ actualPage :: UserState -> Page
 actualPage UserNotLoggedIn = Login
 actualPage u               = page u
 
-
 data UserContainer a = UserContainer {
     isUserLoggedIn :: UsrToken -> IO Bool
   , userLogsIn     :: UsrToken -> a -> IO ()
@@ -106,22 +107,22 @@ scRunPersist sc m =
 ioUserContainer :: IO (UserContainer a)
 ioUserContainer = do
   v <- newMVar Map.empty
-  
+
   let mvIsUserLoggedIn name = modifyMVar v $ \m -> do
         let isMember = Map.member name m
         return (m, isMember)
-    
+
       mvUserLogsIn name val = modifyMVar v $ \m -> do
         -- Performace: Do not copy the whole value, again
         -- and again, just the reference to it.
         ref <- Ref.newIORef val
         let m' = Map.insert name ref m
         return (m', ())
-      
+
       mvUserLogsOut name = modifyMVar v $ \m -> do
         let m' = Map.delete name m
         return (m', ())
-  
+
       mvUserData name = modifyMVar v $ \m -> do
         x <- case Map.lookup name m of
           Nothing  -> return Nothing
@@ -133,7 +134,7 @@ ioUserContainer = do
           Nothing  -> return ()
           Just ref -> Ref.modifyIORef ref f
         return (m, ())
-        
+
   return UserContainer {
       isUserLoggedIn = mvIsUserLoggedIn
     , userLogsIn     = mvUserLogsIn

@@ -245,6 +245,9 @@ instance Save Username where
 instance Save Email where
   save d (Email e) = fileSave d "email" e
 
+instance Save TimeZone where
+  save d = fileSave d "timezone" . show
+
 instance Save Assignment where
   save d e = do
     createStructureDirs d assignmentDirStructure
@@ -286,11 +289,13 @@ instance Save Group where
                 fileSave d "evalcfg" (show . groupEvalConfig $ g)
 
 instance Save User where
-  save d u = do createStructureDirs d userDirStructure
-                save     d (u_role u)
-                save     d (u_username u)
-                save     d (u_email u)
-                saveName d (u_name  u)
+  save d = userCata $ \role username email name timezone -> do
+    createStructureDirs d userDirStructure
+    save d role
+    save d username
+    save d email
+    saveName d name
+    save d timezone
 
 instance Save UserRegistration where
   save d u = do createStructureDirs d userRegDirStructure
@@ -306,6 +311,9 @@ instance Load Username where
 
 instance Load Email where
   load d = fileLoad d "email" (same . email')
+
+instance Load TimeZone where
+  load d = fileLoad d "timezone" readMaybe
 
 instance Load Assignment where
   load d = do
@@ -377,17 +385,22 @@ instance Load User where
     uname <- load d
     email <- load d
     name  <- loadName d
+    zone  <- load d
     return $ User {
         u_role = role
       , u_username = uname
       , u_email = email
       , u_name = name
+      , u_timezone = zone
       }
 
 instance Load UserRegistration where
   load d = fileLoad d "userreg" readMaybe
 
 -- * Update instances
+
+instance Update TimeZone where
+  update d = fileUpdate d "timezone" . show
 
 instance Update Role where
   update d r = fileUpdate d "role" (show r)
@@ -399,11 +412,12 @@ instance Update Email where
   update d (Email e) = fileUpdate d "email" e
 
 instance Update User where
-  update d u = do
-    update d (u_username u)
-    update d (u_role     u)
-    update d (u_email    u)
-    updateName d (u_name u)
+  update d = userCata $ \username role email name timezone -> do
+    update d username
+    update d role
+    update d email
+    updateName d name
+    update d timezone
 
 instance Update Evaulation where
   update d e = do

@@ -143,10 +143,11 @@ isThereAUser uname = hasNoRollback $ do
 nDoesUserExist :: Username -> TIO Bool
 nDoesUserExist = hasNoRollback . doesDirectoryExist . dirName
 
-nPersonalInfo :: Username -> TIO (Role, String)
+nPersonalInfo :: Username -> TIO PersonalInfo -- (Role, String)
 nPersonalInfo uname = do
   user <- nLoadUser uname
-  return (u_role user, u_name user)
+  return $ flip userCata user $ \role _ _ name timezone ->
+    PersonalInfo (role, name, timezone)
 
 isUserDir :: FilePath -> TIO Bool
 isUserDir = isCorrectDirStructure userDirStructure

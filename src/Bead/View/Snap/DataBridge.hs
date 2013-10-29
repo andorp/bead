@@ -224,8 +224,21 @@ readablePrm field name = Parameter {
 assignmentTypePrm :: Parameter AssignmentType
 assignmentTypePrm = readablePrm (fieldName assignmentTypeField) "Assignment Type"
 
-assignmentStartPrm :: Parameter UTCTime
-assignmentStartPrm = readablePrm (fieldName assignmentStartField) "Assignment Start"
+utcTimeParam :: TimeZone -> String -> String -> Parameter UTCTime
+utcTimeParam timezone field name = Parameter {
+    encode = show
+  , decode = readMaybe . addTimePostFix
+  , name = field
+  , decodeError = (\v -> "Invalid value is given for, " ++ name ++ " " ++ v)
+  , notFound = name ++ " is not found"
+  } where
+      addTimePostFix s = (s++(timeZoneCata " UTC" " CET" " CEST" timezone))
 
-assignmentEndPrm :: Parameter UTCTime
-assignmentEndPrm = readablePrm (fieldName assignmentEndField) "Assignment End"
+assignmentStartPrm :: TimeZone -> Parameter UTCTime
+assignmentStartPrm t = utcTimeParam t (fieldName assignmentStartField) "Assignment Start"
+
+assignmentEndPrm :: TimeZone -> Parameter UTCTime
+assignmentEndPrm t = utcTimeParam t (fieldName assignmentEndField) "Assignment End"
+
+userTimeZonePrm :: Parameter TimeZone
+userTimeZonePrm = readablePrm (fieldName userTimeZoneField) "User time zone"

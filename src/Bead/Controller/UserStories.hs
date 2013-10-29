@@ -112,11 +112,15 @@ createUser newUser = do
   logger      <- CMR.asks logger
   liftIO $ log logger INFO $ "User is created: " ++ show (u_username newUser)
 
--- Updates the current user email address and full name in the persistence layer
-updateEmailAndFullName :: Email -> String -> UserStory ()
-updateEmailAndFullName email name = logAction INFO ("updates email address and fullname") $ do
+-- Updates the timezone of the current user
+setTimeZone :: TimeZone -> UserStory ()
+setTimeZone tz = changeUserState $ \userState -> userState { timezone = tz }
+
+-- Updates the current user email address and full name in the persistence
+changeUserDetails :: Email -> String -> TimeZone -> UserStory ()
+changeUserDetails email name timezone = logAction INFO ("updates email address, fullname and timezone") $ do
   user <- currentUser
-  withPersist $ flip R.updateUser user { u_email = email, u_name = name }
+  withPersist $ flip R.updateUser user { u_email = email, u_name = name , u_timezone = timezone }
 
 updateUser :: User -> UserStory ()
 updateUser u = logAction INFO ("updates user " ++ (str . u_username $ u)) $ do
@@ -336,7 +340,7 @@ logErrorMessage = logMessage ERROR
 logMessage :: LogLevel -> String -> UserStory ()
 logMessage level msg = do
   CMS.get >>=
-    userStateFold
+    userStateCata
       userNotLoggedIn
       registration
       loggedIn
@@ -346,7 +350,7 @@ logMessage level msg = do
 
     userNotLoggedIn    = logMsg "Not logged in user!"
     registration       = logMsg "Registration"
-    loggedIn u _ _ _ t = logMsg (join [str u, " ", t])
+    loggedIn u _ _ _ t _ = logMsg (join [str u, " ", t])
 
 -- | Change user state, if the user state is logged in
 changeUserState :: (UserState -> UserState) -> UserStory ()
@@ -358,14 +362,16 @@ changeUserState f = do
 
 loadUserData :: Username -> String -> Page -> UserStory ()
 loadUserData uname t p = do
-  (userRole, userFamilyName) <- withPersist $ \p -> personalInfo p uname
-  CMS.put UserState {
-              user = uname
-            , page = p
-            , name = userFamilyName
-            , role = userRole
-            , token = t
-            }
+  info <- withPersist $ \p -> personalInfo p uname
+  flip personalInfoCata info $ \r n tz -> do
+    CMS.put $ UserState {
+        user = uname
+      , page = p
+      , name = n
+      , role = r
+      , token = t
+      , timezone = tz
+      }
 
 userState :: UserStory UserState
 userState = CMS.get

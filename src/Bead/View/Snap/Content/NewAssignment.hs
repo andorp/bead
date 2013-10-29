@@ -36,11 +36,12 @@ data PageData
   | PD_Group      [(GroupKey, Group)]
   | PD_Assignment (AssignmentKey, Assignment)
 
-pageDataMap f _ _ (PD_Course x)     = f x
-pageDataMap _ g _ (PD_Group  x)     = g x
-pageDataMap _ _ h (PD_Assignment x) = h x
+pageDataCata course group assignment p = case p of
+  PD_Course x -> course x
+  PD_Group  x -> group x
+  PD_Assignment x -> assignment x
 
-isEmptyData = pageDataMap null null (const False)
+isEmptyData = pageDataCata null null (const False)
 
 -- * Course Assignment
 
@@ -80,10 +81,10 @@ postModifyAssignment = ModifyAssignment <$> getValue <*> getValue
 newAssignmentContent :: PageData -> Pagelet
 newAssignmentContent pd
   | isEmptyData pd = onlyHtml $ mkI18NHtml $ \i -> do
-      H.p $ pageDataMap (const . translate i $ "You are not an admin for any course")
-                        (const . translate i $ "You are not an admin for any groups")
-                        (const . translate i $ "This assignment is not created by you")
-                        pd
+      H.p $ pageDataCata (const . translate i $ "You are not an admin for any course")
+                         (const . translate i $ "You are not an admin for any groups")
+                         (const . translate i $ "This assignment is not created by you")
+                         pd
 newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page $ pd) $ H.div ! formDiv $ do
   H.div ! slimLeftCell  $ H.b $ (translate i "Assignment title")
   H.div ! slimRightCell $ textInput (fieldName assignmentNameField) 10 (amap assignmentName pd) ! fillDiv
@@ -110,9 +111,9 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
   H.div ! leftCell $ do
     H.p $ (translate i "Select automated evaulation method")
     H.p $ do
-      pageDataMap (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
+      pageDataCata (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
       H.br
-      pageDataMap
+      pageDataCata
         (valueTextSelection (fieldName selectedCourse))
         (valueTextSelection (fieldName selectedGroup))
         (hiddenInput (fieldName assignmentKeyField) . paramValue  . fst)
@@ -120,7 +121,7 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
     H.p $ submitButton (fieldName saveSubmitBtn) (i "Save")
     where
       page :: PageData -> Page
-      page = pageDataMap
+      page = pageDataCata
                    (const P.NewCourseAssignment)
                    (const P.NewGroupAssignment)
                    (const P.ModifyAssignment)
