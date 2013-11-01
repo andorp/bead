@@ -39,6 +39,12 @@ isEmailAddress = FieldValidator {
   , message   = "Invalid email address"
   }
 
+isDateTime :: FieldValidator
+isDateTime = FieldValidator {
+    validator = dateTime
+  , message   = "Invalid date and time"
+  }
+
 isDigit :: Char -> Bool
 isDigit c = elem c "0123456789"
 
@@ -75,6 +81,12 @@ emailAddress (c:cs) = isAlpha c && isEmailBody cs
     isEmailRest (c:cs)
       | isEmailChar c = isEmailRest cs
       | otherwise     = False
+
+dateTime :: String -> Bool
+dateTime s = case s of
+  [y1,y2,y3,y4,'-',m1,m2,'-',d1,d2,' ',hr1,hr2,':',mn1,mn2,':',sc1,sc2] ->
+    all isDigit [y1,y2,y3,y4,m1,m2,d1,d2,hr1,hr2,mn1,mn2,sc1,sc2]
+  _ -> False
 
 #ifndef FAY
 assertEmailAddress = [

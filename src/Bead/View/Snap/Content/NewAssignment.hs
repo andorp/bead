@@ -85,7 +85,7 @@ newAssignmentContent pd
                          (const . translate i $ "You are not an admin for any groups")
                          (const . translate i $ "This assignment is not created by you")
                          pd
-newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page $ pd) $ H.div ! formDiv $ do
+newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page $ pd) `withId` (hookId assignmentForm) $ H.div ! formDiv $ do
   H.div ! slimLeftCell  $ H.b $ (translate i "Assignment title")
   H.div ! slimRightCell $ textInput (fieldName assignmentNameField) 10 (amap assignmentName pd) ! fillDiv
   H.div ! leftCell $ do

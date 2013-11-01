@@ -25,6 +25,7 @@ onload = do
   hookEvaulationTypeForm createGroupHook
   hookDatetimePickerDiv startDateTimeHook
   hookDatetimePickerDiv endDateTimeHook
+  hookAssignmentForm (hookId assignmentForm) startDateTimeHook endDateTimeHook
   hookPercentageDiv evaulationPctHook pctValue
   hookRegistrationForm
   hookPasswordField (rFormId regFinalForm)
@@ -33,15 +34,18 @@ onload = do
 pctValue :: String -> String
 pctValue = toEvResultJSON . percentageResult . parseDouble
 
+-- Attaches a datepicker and hour and minute input fields
+-- to the given hook
 hookDatetimePickerDiv :: DateTimePickerHook -> Fay ()
 hookDatetimePickerDiv hook = void $ do
   div   <- select . cssId . dtDivId $ hook
   input <- select . cssId . dtHiddenInputId $ hook
-  date  <- select createDateInput
+  date  <- select . createDateInput $ dtDatePickerId hook
   datepicker date
   hour <- select createTimeInput
   min <- select createTimeInput
   br  <- select newLine
+  appendTo div br
   appendTo div date
   appendTo div br
   appendTo div hour
@@ -59,7 +63,7 @@ hookDatetimePickerDiv hook = void $ do
   change createDateTime hour
   change createDateTime min
   where
-    createDateInput = fromString "<input type=\"text\" size=\"10\" required readonly />"
+    createDateInput id = fromString ("<input id=\"" ++ id  ++ "\" type=\"text\" size=\"10\" required readonly />")
     createTimeInput = fromString "<input type=\"text\" size=\"2\" value=\"0\"/>"
     newLine = fromString "<br/>"
 
@@ -102,19 +106,41 @@ numberField i min max = do
                when (x >= max) $ setVal (fromString . show $ max) t
 
 makeMessage removable msg = select . fromString $ (
-  "<br><snap style=\"font-size: smaller\" class=\"" ++
+  "<br class=\"" ++ removable ++ "\"><snap style=\"font-size: smaller\" class=\"" ++
   removable ++ "\">"
   ++ msg ++
   "</span>")
 
-validateField :: FieldValidator -> JQuery -> String -> Fay Bool
-validateField f e rm = do
-  v <- getVal e
-  validate f (unpack v)
+-- Validate a field with a given field validator, and places
+-- a message with a given class, after the given place
+validateField :: FieldValidator -> JQuery -> JQuery -> String -> Fay Bool
+validateField validator field place removable = do
+  v <- getVal field
+  validate validator (unpack v)
     (return True)
-    (\m -> do span <- makeMessage rm (message f)
-              after span e
+    (\m -> do span <- makeMessage removable (message validator)
+              after span place
               return False)
+
+-- Hooks the assignment form with a validator, that runs on the submit of the
+-- form. The two dates must be selected properly, otherwise the form
+-- can't be submitted.
+hookAssignmentForm :: String -> DateTimePickerHook -> DateTimePickerHook -> Fay ()
+hookAssignmentForm formId startHook endHook = void $ do
+  form <- select $ cssId formId
+  start <- select . cssId $ dtHiddenInputId startHook
+  end <- select . cssId $ dtHiddenInputId endHook
+  startErrMsgPos <- select . cssId $ dtDatePickerId startHook
+  endErrMsgPos <- select . cssId $ dtDatePickerId endHook
+  let validateForm = do
+        messages <- select . cssClass $ removeable
+        remove messages
+        start <- validateField isDateTime start startErrMsgPos removeable
+        end   <- validateField isDateTime end   endErrMsgPos   removeable
+        return (start && end)
+  onSubmit validateForm form
+  where
+    removeable = "datetimeerror"
 
 -- Checks if the page contains password field
 -- and hook it with the validator for submit event.
@@ -125,7 +151,7 @@ hookPasswordField formId = void $ do
   let validatorPwd = do
         messages <- select . cssClass $ removable
         remove messages
-        validateField isPassword pwd removable
+        validateField isPassword pwd pwd removable
   onSubmit validatorPwd form
   where
     removable = "password_error"
@@ -164,8 +190,8 @@ hookRegistrationForm = void $ do
         messages <- select . cssClass $ removable
         remove messages
         andM
-          [ validateField isUsername     uname removable
-          , validateField isEmailAddress email removable
+          [ validateField isUsername     uname uname removable
+          , validateField isEmailAddress email email removable
           ]
 
   onSubmit validator regForm

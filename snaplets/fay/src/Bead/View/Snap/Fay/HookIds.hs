@@ -6,6 +6,7 @@ data HookId = HookId { hookId :: String }
 
 createCourseForm = HookId "create-course-form"
 createGroupForm = HookId "create-group-form"
+assignmentForm = HookId "assignment-form"
 evaulationTypeSelection = HookId "eval-type-selection"
 evaulationTypeValue = HookId "eval-type-value"
 evalTypeSelectionDiv = HookId "eval-type-selection-div"
@@ -15,6 +16,8 @@ endDateDivId = HookId "end-date-div"
 
 assignmentStartField = HookId "asg-start"
 assignmentEndField = HookId "asg-end"
+assignmentStartDateField = HookId "asg-start-date"
+assignmentEndDateField = HookId "asg-end-date"
 
 evaulationPercentageDiv = HookId "evaulation-pct-div"
 evaulationResultField = HookId "evaulation-result"

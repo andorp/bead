@@ -339,12 +339,13 @@ fieldList = map fieldName $ join [
   , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
   , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField, SFN profileTable
   , SFN changePasswordTable, SFN oldPasswordField, SFN newPasswordField, SFN newPasswordAgainField
+  , SFN assignmentStartDateField, SFN assignmentEndDateField
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
   , SFN evaulationPercentageDiv, SFN regUserRegKey, SFN regToken, SFN pwdSubmitBtn
   , SFN resetPasswordTable, SFN regPasswordAgain, SFN changeProfileBtn, SFN changePasswordBtn
-  , SFN userTimeZoneField
+  , SFN userTimeZoneField, SFN assignmentForm
 
   , SFI regForm, SFI loginForm, SFI regFinalForm
   ], (map SFN P.allPages)

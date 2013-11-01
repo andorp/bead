@@ -30,16 +30,19 @@ createGroupHook = EvaulationHook {
 data DateTimePickerHook = DateTimePickerHook {
     dtDivId         :: String
   , dtHiddenInputId :: String
+  , dtDatePickerId  :: String
   }
 
 startDateTimeHook = DateTimePickerHook {
     dtDivId = hookId startDateDivId
   , dtHiddenInputId = hookId assignmentStartField
+  , dtDatePickerId = hookId assignmentStartDateField
   }
 
 endDateTimeHook = DateTimePickerHook {
     dtDivId = hookId endDateDivId
   , dtHiddenInputId = hookId assignmentEndField
+  , dtDatePickerId = hookId assignmentEndDateField
   }
 
 
