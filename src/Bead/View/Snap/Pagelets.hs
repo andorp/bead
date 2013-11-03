@@ -94,6 +94,7 @@ withUserFrame s = structMap withUserFrame'
     withUserFrame' content = I18N.liftH2 $ \i -> do
       H.div ! A.id "header" $ pageHeader s
       H.div ! A.id "menu" $ navigationMenu s
+      H.div ! A.id "status" $ pageStatus s
       H.div ! A.id "content" $ translate i content
 
 -- * Basic building blocks
@@ -235,6 +236,12 @@ pageHeader s = do
   where
     title u@(UserState {}) = linkText . page $ u
     title _ = ""
+
+pageStatus :: UserState -> Html
+pageStatus = maybe noMessage message . status
+  where
+    noMessage = return ()
+    message m = H.span (fromString m)
 
 -- * Picklist
 

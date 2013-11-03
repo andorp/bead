@@ -203,15 +203,25 @@ evalHandlerError onError onSuccess h = do
     Left e  -> onError e
     Right s -> onSuccess s
 
+-- Runs the handler and clears the status message, is any error occurs
+-- the onError handler is run, in both cases returns information about
+-- the successfullness.
 runGETHandler
   :: (ContentHandlerError -> Handler App App ())
   -> HandlerError App App ()
   -> Handler App App HandlerResult
-runGETHandler onError
+runGETHandler onError handler
   = evalHandlerError
       (hfailure . onError)
       (\_ -> return HSuccess)
+      (do handler
+          runStoryE S.clearStatusMessage)
 
+-- Runs the 'h' handler if no error occurs during the run of the handler
+-- calculates the parent page for the given 'p', and runs the attached userstory
+-- from the calculated user action
+-- and redirects at the end, otherwise runs the onError handler
+-- in both ways returns information about the successfulness.
 runPOSTHandler
   :: (ContentHandlerError -> Handler App App ())
   -> P.Page

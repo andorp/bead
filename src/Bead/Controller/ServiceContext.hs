@@ -1,5 +1,22 @@
 {-# LANGUAGE FlexibleInstances #-}
-module Bead.Controller.ServiceContext where
+module Bead.Controller.ServiceContext (
+    UsrToken
+  , UserToken(..)
+  , UserState(..)
+  , userStateCata
+  , userNotLoggedIn
+  , userRole
+  , getStatus
+  , setStatus
+  , clearStatus
+  , InRole(..)
+  , actualPage
+  , UserContainer(..)
+  , ServiceContext(..)
+  , serviceContext
+  , scRunPersist
+  , ioUserContainer
+  ) where
 
 import Bead.Domain.Types
 import Bead.Domain.Entities
@@ -16,10 +33,6 @@ import Control.Concurrent.MVar
 import Control.Monad (liftM)
 import Control.Monad.Transaction.TIO (TIO)
 
-type CourseName = String
-type GroupName  = String
-
-
 newtype UsrToken = UsrToken (Username, String)
   deriving (Show, Eq, Ord)
 
@@ -29,7 +42,6 @@ class UserToken u where
 instance UserToken (Username, String) where
   userToken (u,t) = UsrToken (u,t)
 
--- TODO: UTF8 named strings
 data UserState
   = UserNotLoggedIn
   | Registration
@@ -40,6 +52,7 @@ data UserState
   , role :: Role
   , token :: String
   , timezone :: TimeZone
+  , status :: Maybe String
   } deriving (Show)
 
 userStateCata
@@ -49,12 +62,28 @@ userStateCata
   s = case s of
     UserNotLoggedIn -> userNotLoggedIn
     Registration -> registration
-    UserState u p n r t tz -> userState u p n r t tz
+    UserState u p n r t tz s -> userState u p n r t tz s
+
+userNotLoggedIn :: UserState
+userNotLoggedIn = UserNotLoggedIn
 
 userRole :: UserState -> Either OutsideRole Role
 userRole UserNotLoggedIn = Left EmptyRole
 userRole Registration    = Left RegRole
 userRole s@(UserState{}) = Right . role $ s
+
+-- Produces a new user state from the old one, setting
+-- the status message to the given one
+setStatus msg = userStateCata UserNotLoggedIn Registration userState where
+  userState u p n r t tz _ = UserState u p n r t tz (Just msg)
+
+-- Produces the status message of the UserState, otherwise Nothing
+getStatus = userStateCata Nothing Nothing status where
+  status _ _ _ _ _ _ s = s
+
+-- Produces a new status expect that the status message is cleared.
+clearStatus = userStateCata UserNotLoggedIn Registration userState where
+  userState u p n r t tz _ = UserState u p n r t tz Nothing
 
 instance UserToken UserState where
   userToken UserNotLoggedIn = error "Impossible: userToken UserNotLoggedIn"
@@ -142,11 +171,3 @@ ioUserContainer = do
     , userData       = mvUserData
     , modifyUserData = mvModifyUserData
     }
-
-mockUserContainer = UserContainer {
-    isUserLoggedIn = \_ -> return False
-  , userLogsIn  = \_ _ -> return ()
-  , userLogsOut = \_ -> return ()
-  , userData    = \_ -> return Nothing
-  , modifyUserData = \_ _ -> return ()
-  }

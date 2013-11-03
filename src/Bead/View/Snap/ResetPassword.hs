@@ -69,7 +69,7 @@ resetPassword u = do
           ForgottenPassword { restoreUrl = pwd }
 
 usernameStr :: (IsString s) => Username -> s
-usernameStr = usernameFold fromString
+usernameStr = usernameCata fromString
 
 loadAuthUser :: (Error e) => Username -> ErrorT e (Handler App a) AuthUser
 loadAuthUser u = do
@@ -90,10 +90,9 @@ encryptPwd = liftIO . encryptPassword . ClearText . fromString
 checkCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
 checkCurrentAuthPassword pwd = do
   name <- user <$> userState
-  usr  <- loadAuthUser name
-  encPwd <- encryptPwd pwd
-  unless (Just encPwd /= userPassword usr) $
-    throwError . strMsg $ "Invalid password was given"
+  result <- lift $ withTop auth $
+    loginByUsername (usernameCata fromString name) (ClearText $ fromString pwd) False
+  when (isLeft result) . throwError $ strMsg "Invalid password"
 
 -- Update the currently logged in user's password in the authentication module
 updateCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
@@ -158,3 +157,9 @@ readParameter :: (MonadSnap m) => Parameter a -> m (Maybe a)
 readParameter param = do
   reqParam <- getParam . fromString . name $ param
   return (reqParam >>= decode param . B.unpack)
+
+-- * Helpers
+
+isLeft :: Either a b -> Bool
+isLeft (Left _)  = True
+isLeft (Right _) = False

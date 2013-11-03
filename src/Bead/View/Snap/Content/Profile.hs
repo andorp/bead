@@ -58,5 +58,4 @@ changePassword = postContentHandler $ do
   newPwd <- getParameter newPasswordPrm
   checkCurrentAuthPassword oldPwd
   updateCurrentAuthPassword newPwd
-  newPwdEnc <- encryptPwd newPwd
-  return . ChangedPwd . convertPassword $ newPwdEnc
+  return . StatusMessage $ "Password has been changed."

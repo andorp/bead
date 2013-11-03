@@ -123,12 +123,18 @@ data Course = Course {
   , courseEvalConfig :: EvaulationConfig
   } deriving (Eq, Show)
 
+courseCata course config (Course name desc cfg)
+  = course name desc (config cfg)
+
 -- | Groups are registered under the courses
 data Group = Group {
     groupName  :: String
   , groupDesc  :: String
   , groupEvalConfig :: EvaulationConfig
   } deriving (Eq, Show)
+
+groupCata group config (Group name desc cfg)
+  = group name desc (config cfg)
 
 -- | Workflows can happen to exams
 data Workflow
@@ -237,8 +243,8 @@ data Authorization = Authorization {
 newtype Username = Username String
   deriving (Eq, Ord)
 
-usernameFold :: (String -> a) -> Username -> a
-usernameFold f (Username u) = f u
+usernameCata :: (String -> a) -> Username -> a
+usernameCata f (Username u) = f u
 
 class AsUsername c where
   asUsername :: c -> Username

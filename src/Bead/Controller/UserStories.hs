@@ -83,7 +83,7 @@ logout = do
   state <- userState
   users <- CMR.asks userContainer
   liftIO $ userLogsOut users (userToken state)
-  CMS.put UserNotLoggedIn
+  CMS.put userNotLoggedIn
 
 doesUserExist :: Username -> UserStory Bool
 doesUserExist u = logAction INFO ("searches after user " ++ show u) $ do
@@ -99,11 +99,6 @@ changePage p = do
     pageAsPermObj P.Administration = P_AdminPage
     pageAsPermObj _                = P_PlainPage
 
--- | The user changes his/her password
-changedPassword :: Password -> UserStory ()
-changedPassword = passwordCata
-  (\pwd -> logAction INFO ("Changes password to encrypted: " ++ pwd) $ return ())
-
 -- | The authorized user creates a new user
 createUser :: User -> UserStory ()
 createUser newUser = do
@@ -114,13 +109,16 @@ createUser newUser = do
 
 -- Updates the timezone of the current user
 setTimeZone :: TimeZone -> UserStory ()
-setTimeZone tz = changeUserState $ \userState -> userState { timezone = tz }
+setTimeZone tz = do
+  changeUserState $ \userState -> userState { timezone = tz }
+  putStatusMessage $ join ["Time zone has been set to ", show tz, "."]
 
 -- Updates the current user email address and full name in the persistence
 changeUserDetails :: Email -> String -> TimeZone -> UserStory ()
 changeUserDetails email name timezone = logAction INFO ("updates email address, fullname and timezone") $ do
   user <- currentUser
   withPersist $ flip R.updateUser user { u_email = email, u_name = name , u_timezone = timezone }
+  putStatusMessage "User's details have been changed"
 
 updateUser :: User -> UserStory ()
 updateUser u = logAction INFO ("updates user " ++ (str . u_username $ u)) $ do
@@ -183,9 +181,11 @@ loadUserReg k = logAction INFO "Loading user registration" $ do
 
 -- | Creates a new course
 createCourse :: Course -> UserStory CourseKey
-createCourse ck = logAction INFO "creates course" $ do
+createCourse course = logAction INFO "creates course" $ do
   authorize P_Create P_Course
-  create descriptor saveCourse ck
+  key <- create descriptor saveCourse course
+  putStatusMessage $ join ["'", courseName course, "' has been created."]
+  return key
   where
     descriptor course _ =
       printf "Course is created: %s"
@@ -209,18 +209,26 @@ createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
   authorize P_Create P_CourseAdmin
   authorize P_Open   P_User
   withPersist $ \p -> R.createCourseAdmin p u ck
+  putStatusMessage $ join [user u, " is course admin now."]
+  where
+    user = usernameCata id
 
 createGroupProfessor :: Username -> GroupKey -> UserStory ()
 createGroupProfessor u gk = logAction INFO "sets user as a professor of a group" $ do
   authorize P_Create P_Professor
   authorize P_Open   P_User
   withPersist $ \p -> R.createGroupProfessor p u gk
+  putStatusMessage $ join [user u, " is group admin now."]
+  where
+    user = usernameCata id
 
 -- | Adds a new group to the given course
 createGroup :: CourseKey -> Group -> UserStory GroupKey
 createGroup ck g = logAction INFO ("creats group " ++ show (groupName g)) $ do
   authorize P_Create P_Group
-  withPersist $ \p -> R.saveGroup p ck g
+  key <- withPersist $ \p -> R.saveGroup p ck g
+  putStatusMessage $ join ["'", groupName g, "' has been created."]
+  return key
 
 loadGroup :: GroupKey -> UserStory Group
 loadGroup gk = logAction INFO ("loads group " ++ show gk) $ do
@@ -249,6 +257,7 @@ subscribeToGroup gk = logAction INFO ("subscribes to the group " ++ (show gk)) $
   withPersist $ \p -> do
     ck <- R.courseOfGroup p gk
     R.subscribe p (user state) ck gk
+  putStatusMessage "Subscribed."
 
 attendedGroups :: UserStory [(GroupKey, GroupDesc)]
 attendedGroups = logAction INFO "selects courses attended in" $ do
@@ -262,19 +271,27 @@ createGroupAssignment :: GroupKey -> Assignment -> UserStory AssignmentKey
 createGroupAssignment gk a = logAction INFO msg $ do
   authorize P_Open   P_Group
   authorize P_Create P_Assignment
-  create descriptor (\p -> saveGroupAssignment p gk) a
+  ak <- create descriptor (\p -> saveGroupAssignment p gk) a
+  statusMsg a
+  return ak
   where
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for group " ++ show gk
+    statusMsg = assignmentCata $ \name _ _ _ _ _ ->
+      putStatusMessage $ "'" ++ name ++ "' group assignment is created."
 
 createCourseAssignment :: CourseKey -> Assignment -> UserStory AssignmentKey
 createCourseAssignment ck a = logAction INFO msg $ do
   authorize P_Open P_Course
   authorize P_Create P_Assignment
-  create descriptor (\p -> saveCourseAssignment p ck) a
+  ak <- create descriptor (\p -> saveCourseAssignment p ck) a
+  statusMsg a
+  return ak
   where
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for course " ++ show ck
+    statusMsg = assignmentCata $ \name _ _ _ _ _ ->
+      putStatusMessage $ "'" ++ name ++ "' course assignment is created."
 
 selectAssignments :: (AssignmentKey -> Assignment -> Bool) -> UserStory [(AssignmentKey, Assignment)]
 selectAssignments f = logAction INFO "selects some assignments" $ do
@@ -286,6 +303,14 @@ loadAssignment :: AssignmentKey -> UserStory Assignment
 loadAssignment k = logAction INFO ("loads assignment " ++ show k) $ do
   authorize P_Open P_Assignment
   withPersist $ flip R.loadAssignment k
+
+-- Puts the given status message to the actual user state
+putStatusMessage :: String -> UserStory ()
+putStatusMessage = changeUserState . setStatus
+
+-- Clears the status message of the user
+clearStatusMessage :: UserStory ()
+clearStatusMessage = changeUserState clearStatus
 
 errorPage :: String -> UserStory ()
 errorPage s = do
@@ -350,7 +375,8 @@ logMessage level msg = do
 
     userNotLoggedIn    = logMsg "Not logged in user!"
     registration       = logMsg "Registration"
-    loggedIn u _ _ _ t _ = logMsg (join [str u, " ", t])
+    loggedIn u _ _ _ t _ _ = logMsg (join [str u, " ", t])
+
 
 -- | Change user state, if the user state is logged in
 changeUserState :: (UserState -> UserState) -> UserStory ()
@@ -371,6 +397,7 @@ loadUserData uname t p = do
       , role = r
       , token = t
       , timezone = tz
+      , status = Nothing
       }
 
 userState :: UserStory UserState

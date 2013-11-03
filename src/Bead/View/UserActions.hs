@@ -14,9 +14,9 @@ data UserAction
   -- Navigation
   = Logout
   | LogMessage String
+  | StatusMessage String
 
   -- Profiling
-  | ChangedPwd Password
   | ChangeUserDetails Email String TimeZone
 
   -- Group
@@ -52,9 +52,9 @@ data UserAction
 -- | UserStory correspondence to the given action
 userStoryFor :: UserAction -> Story.UserStory ()
 userStoryFor Logout             = Story.logout
-userStoryFor (ChangedPwd n)     = Story.changedPassword n
 userStoryFor (CreateUser u)     = Story.createUser u
 userStoryFor (LogMessage m)     = Story.logErrorMessage m
+userStoryFor (StatusMessage m)  = Story.putStatusMessage m
 userStoryFor (CreateCourse c)   = Story.createCourse c >> return ()
 userStoryFor (CreateGroup ck g) = Story.createGroup ck g >> return ()
 userStoryFor (UpdateUser u)     = Story.updateUser u

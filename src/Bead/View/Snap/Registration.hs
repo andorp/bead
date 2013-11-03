@@ -200,7 +200,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     now <- getCurrentTime
     -- TODO random token
     return $ UserRegistration {
-      reg_username = usernameFold id user
+      reg_username = usernameCata id user
     , reg_email    = emailFold    id email
     , reg_name     = name
     , reg_token    = "token"
@@ -333,7 +333,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
   log lvl msg = withTop serviceContext $ logMessage lvl msg
 
   redirection (Left (RegErrorUserExist username)) =
-      do log INFO (usernameFold ("User already exist: "++) username)
+      do log INFO (usernameCata ("User already exist: "++) username)
          redirect "/"
   redirection (Left (RegError lvl msg)) =
       do log lvl msg
@@ -359,7 +359,7 @@ createNewUser reg password = runErrorT $ do
     }
 
   -- Check if the Snap Auth registration went fine
-  createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameFold T.pack username)
+  createdUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameCata T.pack username)
   when (isNothing createdUser) $ throwError (RegError ERROR "User was not created in the Snap Auth module")
   let snapAuthUser = fromJust createdUser
   when (isNothing . passwordFromAuthUser $ snapAuthUser) $ throwError (RegError ERROR "Snap Auth: no password is created")

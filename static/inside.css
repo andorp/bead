@@ -23,6 +23,13 @@ textarea {
   resize: none;
 }
 
+#status {
+  border-color: black;
+  border-width: 1px;
+  border-style: solid;
+  text-align: center;
+}
+
 #menu {
   border-color: black;
   border-width: 1px;

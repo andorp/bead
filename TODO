@@ -10,7 +10,7 @@ Terminology:
   the unallowed keys from the session
 / Simple HTML DSL (Creating some primities)
 + i18n for the generated HTML output
-- Pandoc interpreted input exercise input fields
++ Pandoc interpreted input exercise input fields
 + Change FamilyName to FullName
 + Parameters for WebDriver executable
 - User error codes: Snap layer, UserStory
@@ -30,14 +30,14 @@ Terminology:
 + Remove Create Group Assignment form Home for Course Admin
 + Print text only for empty assignment tables
 + Change CourseAdmin text in navigational menu
-- Create Profile page (where you can change your password)
++ Create Profile page (where you can change your password)
 + Force logged out message
 + Invalid password, username error message
 + Session timeout
-- Email registration
++ Email registration
 - Auto Test Cases for assignments
 - MD5 sum in the persistence layer
-- Sending messages for the users
++ Sending messages for the users
 - Optional assignment
 + Print numbers of passed assignment for the binary evaluation in the submission table
 + Print the result of the percentage evaulation in the submission table
@@ -45,8 +45,8 @@ Terminology:
 - Print and download the uploaded files
 - More helpful text on the course and course admin assignment section
 + File logging
-- Assignment creation start field should be required
-- Assignment creation end   field should be required
++ Assignment creation start field should be required
++ Assignment creation end   field should be required
 + New comments div
 + Appropiate page is shown on error
   + Error page and handler
@@ -77,6 +77,8 @@ Terminology:
 - Show or hide evaulation values in the user submission page for the group admin
 - Server configuration in data
 + Write ifdef TEST where tests are in the files
-- Collect all common CSS style attributes into Sytle.hs
-- Color the header fields gray of the table
+/ Collect all common CSS style attributes into Sytle.hs
+/ Color the header fields gray of the table
 
+- +/- evaulation of a student without submission
+- Course admin / Group admin can restrict the registration for a course/group

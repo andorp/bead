@@ -141,7 +141,7 @@ rolePrm = Parameter {
 
 customUsernamePrm :: String -> Parameter Username
 customUsernamePrm field = Parameter {
-    encode = usernameFold id
+    encode = usernameCata id
   , decode = Just . Username
   , name = field
   , decodeError = ("Invalid username is given: "++)
