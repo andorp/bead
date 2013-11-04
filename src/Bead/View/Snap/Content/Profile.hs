@@ -29,7 +29,7 @@ profile = getPostContentHandler profilePage changeUserDetails
 profilePage :: GETContentHandler
 profilePage = withUserState $ \s -> do
   user <- runStoryE currentUser
-  renderPagelet $ withUserFrame s (profileContent user)
+  renderDynamicPagelet $ withUserFrame s (profileContent user)
 
 changeUserDetails :: POSTContentHandler
 changeUserDetails = ChangeUserDetails
@@ -45,7 +45,7 @@ profileContent user = onlyHtml $ mkI18NHtml $ \i -> do
       tableLine (i "Full name: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
       tableLine (i "Time zone: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
     submitButton (fieldName changeProfileBtn) (i "Save")
-  postForm (routeOf ChangePassword) $ do
+  postForm (routeOf ChangePassword) `withId` (rFormId changePwdForm) $ do
     table (fieldName changePasswordTable) (fieldName changePasswordTable) # centerTable $ do
       tableLine (i "Old Password: ") $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
       tableLine (i "New Password: ") $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""

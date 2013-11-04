@@ -34,6 +34,12 @@ loginUsername = LoginField "login"
 loginPassword = LoginField "password"
 regPasswordAgain = LoginField "password_again"
 
+newtype ChangePwdField = ChangePwdField { cpf :: String }
+
+oldPasswordField = ChangePwdField "old-password-field"
+newPasswordField = ChangePwdField "new-password-field"
+newPasswordAgainField = ChangePwdField "new-password-again-field"
+
 data RegistrationComp = RegComp { rFieldName :: String }
 
 regFullName     = RegComp "reg_full_name"
@@ -46,3 +52,4 @@ data FormId = FormId { rFormId :: String }
 loginForm = FormId "login-form"
 regForm = FormId "reg-form"
 regFinalForm = FormId "reg-final-form"
+changePwdForm = FormId "change-password-form"

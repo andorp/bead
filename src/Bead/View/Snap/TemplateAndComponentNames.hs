@@ -141,12 +141,6 @@ userRoleField  = UserRoleField "userrole"
 userFamilyNameField = UserFamilyNameField "userfamilyname"
 userTimeZoneField = UserTimeZoneField "usertimezone"
 
-newtype ChangePwdField = ChangePwdField { cpf :: String }
-
-oldPasswordField = ChangePwdField "old-password-field"
-newPasswordField = ChangePwdField "new-password-field"
-newPasswordAgainField = ChangePwdField "new-password-again-field"
-
 instance SnapFieldName ChangePwdField where
   fieldName = fromString . cpf
 
@@ -345,7 +339,7 @@ fieldList = map fieldName $ join [
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
   , SFN evaulationPercentageDiv, SFN regUserRegKey, SFN regToken, SFN pwdSubmitBtn
   , SFN resetPasswordTable, SFN regPasswordAgain, SFN changeProfileBtn, SFN changePasswordBtn
-  , SFN userTimeZoneField, SFN assignmentForm
+  , SFN userTimeZoneField, SFN assignmentForm, SFI changePwdForm
 
   , SFI regForm, SFI loginForm, SFI regFinalForm
   ], (map SFN P.allPages)

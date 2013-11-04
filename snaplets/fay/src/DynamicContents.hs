@@ -28,8 +28,10 @@ onload = do
   hookAssignmentForm (hookId assignmentForm) startDateTimeHook endDateTimeHook
   hookPercentageDiv evaulationPctHook pctValue
   hookRegistrationForm
-  hookPasswordField (rFormId regFinalForm)
-  hookSamePasswords (rFormId regFinalForm)
+  hookPasswordField (rFormId regFinalForm) (lcFieldName loginPassword)
+  hookSamePasswords (rFormId regFinalForm) (lcFieldName loginPassword) (lcFieldName regPasswordAgain)
+  hookPasswordField (rFormId changePwdForm) (cpf oldPasswordField)
+  hookSamePasswords (rFormId changePwdForm) (cpf newPasswordField) (cpf newPasswordAgainField)
 
 pctValue :: String -> String
 pctValue = toEvResultJSON . percentageResult . parseDouble
@@ -144,10 +146,10 @@ hookAssignmentForm formId startHook endHook = void $ do
 
 -- Checks if the page contains password field
 -- and hook it with the validator for submit event.
-hookPasswordField :: String -> Fay ()
-hookPasswordField formId = void $ do
+hookPasswordField :: String -> String -> Fay ()
+hookPasswordField formId password = void $ do
   form <- select . cssId $ formId
-  pwd <- select . cssId . lcFieldName $ loginPassword
+  pwd <- select $ cssId password
   let validatorPwd = do
         messages <- select . cssClass $ removable
         remove messages
@@ -158,11 +160,11 @@ hookPasswordField formId = void $ do
 
 -- Checks if the form has a password and a password again field
 -- and hook that the two values must be the same for submit event.
-hookSamePasswords :: String -> Fay ()
-hookSamePasswords formId = void $ do
+hookSamePasswords :: String -> String -> String -> Fay ()
+hookSamePasswords formId password1 password2 = void $ do
   form     <- select . cssId $ formId
-  pwd      <- select . cssId . lcFieldName $ loginPassword
-  pwdAgain <- select . cssId . lcFieldName $ regPasswordAgain
+  pwd      <- select $ cssId password1
+  pwdAgain <- select $ cssId password2
   let validator = do
         messages <- select . cssClass $ removable
         remove messages
