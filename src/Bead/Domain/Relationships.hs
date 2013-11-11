@@ -87,6 +87,7 @@ data SubmissionInfo
   = Submission_Not_Found
   | Submission_Unevaulated
   | Submission_Result EvaulationKey EvaulationResult
+  deriving (Show)
 
 submissionInfoMap :: a -> a -> (EvaulationKey -> EvaulationResult -> a) -> SubmissionInfo -> a
 submissionInfoMap n _ _ Submission_Not_Found    = n
@@ -105,7 +106,7 @@ data SubmissionTableInfo = SubmissionTableInfo {
   , stAssignments :: [AssignmentKey] -- Cronologically ordered list of assignments
   , stUsers       :: [Username]      -- Alphabetically ordered list of usernames
   , stUserLines   :: [(UserDesc, Maybe Result, [(AssignmentKey, SubmissionInfo)])]
-  }
+  } deriving (Show)
 
 submissionTableInfoPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment)
@@ -117,13 +118,14 @@ checkSubmissionTableInfo _ = True
 
 data EvaulatedWith
   = EvHand
+  deriving (Show)
 
 data UserSubmissionDesc = UserSubmissionDesc {
     usCourse         :: String
   , usAssignmentName :: String
   , usStudent        :: String
   , usSubmissions :: [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)]
-  }
+  } deriving (Show)
 
 userSubmissionDescPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment), (P_Open, P_Submission)
