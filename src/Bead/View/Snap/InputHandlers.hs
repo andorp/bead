@@ -8,6 +8,7 @@ import Bead.Domain.Types (Str(..), readMaybe, readMsg)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.Domain.Evaulation
+import qualified Bead.View.Snap.DataBridge as B
 
 import Bead.Controller.ServiceContext (UserState(..))
 import qualified Bead.Controller.UserStories as Story (userState)
@@ -113,6 +114,7 @@ instance InputPagelet User where
     tableLine "User's role'"    $ required $ inputPagelet (fmap u_role u)
     tableLine "User's email"    $ required $ textInput (fieldName userEmailField)      20 (fmap (str . u_email) u)
     tableLine "User's fullname" $ required $ textInput (fieldName userFamilyNameField) 20 (fmap u_name u)
+    tableLine "User's timezone" $ required $ defEnumSelection (B.name userTimeZonePrm) (maybe UTC u_timezone u)
     when (isJust u) . hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username . fromJust $ u
 
 emptyAssignment :: Maybe Assignment
