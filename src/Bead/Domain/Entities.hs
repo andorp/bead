@@ -10,6 +10,7 @@ import Bead.Invariants (Invariants(..), UnitTests(..))
 import Data.Char (toLower)
 import Data.Time (UTCTime(..))
 import Control.Monad (join)
+import Text.Printf (printf)
 
 -- * Course, exams, exercises, solutions
 
@@ -97,8 +98,8 @@ resultString (BinEval (Binary Passed)) = "Passed"
 resultString (BinEval (Binary Failed)) = "Failed"
 resultString (PctEval p) =
   case point p of
-    Nothing -> error "evaulationComment impossible situation"
-    Just q  -> "Percentage: " ++ show q
+    Nothing -> "No evaulation result, some internal error happened!"
+    Just q  -> printf "%3.2f%%" (100.0 * q)
 
 evaulationComment :: UTCTime -> Evaulation -> Comment
 evaulationComment t e = Comment {
@@ -106,7 +107,7 @@ evaulationComment t e = Comment {
   , commentDate = t
   } where
      c = join [
-           writtenEvaulation e, ", "
+           writtenEvaulation e, "\r\n"
          , resultString . evaulationResult $ e
          ]
 
