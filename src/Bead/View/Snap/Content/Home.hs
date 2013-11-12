@@ -72,7 +72,7 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
   when (or [hasCourses d, hasGroups d]) $ H.p $ do
     H.h3 $ (translate i18n "Submission table")
     htmlSubmissionTables i18n (sTables d)
-  when (isStudent s) $ H.p $ do
+  H.p $ do
     H.h3 $ (translate i18n "Student's menu")
     availableAssignments i18n (assignments d)
 
