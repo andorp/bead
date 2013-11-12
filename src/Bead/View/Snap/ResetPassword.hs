@@ -37,23 +37,12 @@ import Bead.View.Snap.Style
 -- indicating the reason.
 resetPassword :: Username -> ErrorT String (Handler App a) ()
 resetPassword u = do
-  checkUserInAuth
-  checkUserInPersistence
   password <- randomPassword
   user <- loadAuthUser u
   encryptedPwd <- encryptPwd password
   updateUser user { userPassword = Just encryptedPwd }
   email password
   where
-    checkUserInAuth = do
-      exist    <- lift . withTop auth $ usernameExists (usernameStr u)
-      unless exist . throwError $ "User does not exist: " ++ (usernameStr u)
-
-    checkUserInPersistence =
-      (lift $ registrationStory $ S.doesUserExist u) >>=
-      either (throwError . show)
-             (\e -> unless e $ throwError "User is not in persistence")
-
     randomPassword = lift . withTop randomPasswordContext $ getRandomPassword
 
     loadUserFromPersistence =
@@ -68,13 +57,30 @@ resetPassword u = do
           "BE-AD Password reset"
           ForgottenPassword { restoreUrl = pwd }
 
+-- Universal error message for every type of error
+-- in such case the attacker could deduce minimal
+-- amount of information
+errorMsg :: String
+errorMsg = "Invalid username and/or password"
+
+checkUserInAuth :: Username -> ErrorT String (Handler App a) ()
+checkUserInAuth u = do
+  exist    <- lift . withTop auth $ usernameExists (usernameStr u)
+  unless exist $ throwError errorMsg
+
+checkUserInPersistence :: Username -> ErrorT String (Handler App a) ()
+checkUserInPersistence u =
+  (lift $ registrationStory $ S.doesUserExist u) >>=
+  either (throwError . show)
+         (\e -> unless e $ throwError errorMsg)
+
 usernameStr :: (IsString s) => Username -> s
 usernameStr = usernameCata fromString
 
 loadAuthUser :: (Error e) => Username -> ErrorT e (Handler App a) AuthUser
 loadAuthUser u = do
   usr <- lift . withTop auth $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameStr u)
-  when (isNothing usr) $ throwError $ strMsg "User is not in the authentication"
+  when (isNothing usr) $ throwError $ strMsg errorMsg
   return . fromJust $ usr
 
 updateUser :: (Error e) => AuthUser -> ErrorT e (Handler App a) AuthUser
@@ -135,15 +141,13 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
   e <- readParameter regEmailPrm
   case (u,e) of
     (Just username, Just email) -> do
+      checkUserInAuth username
+      checkUserInPersistence username
       user <- loadUser username
-      when (email /= (u_email user)) $ throwError $
-        "Username or email address was not valid: " ++ show email ++ " " ++ show (u_email user)
+      when (email /= (u_email user)) $ throwError errorMsg
       resetPassword username
-      blaze $ dynamicTitleAndHead "Reset Password" $ do
-        "Please check your emails"
-        H.br
-        linkToPageWithText P.Login "Go back to the login page"
-    _ -> throwError "Username or email address was not given"
+      lift pageContent
+    _ -> throwError errorMsg
   where
     renderErrorPage :: Handler App App (Either String ()) -> Handler App App ()
     renderErrorPage m = m >>=
@@ -152,6 +156,13 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
     loadUser u =
       (lift $ registrationStory $ S.loadUser u) >>=
         (either (throwError . show) return)
+
+
+pageContent :: (Handler App a) ()
+pageContent = blaze $ dynamicTitleAndHead "Reset Password" $ do
+  "Please check your emails"
+  H.br
+  linkToPageWithText P.Login "Go back to the login page"
 
 readParameter :: (MonadSnap m) => Parameter a -> m (Maybe a)
 readParameter param = do
