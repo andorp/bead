@@ -36,6 +36,7 @@ import Data.Maybe (fromJust, isNothing)
 import Data.String (fromString)
 import Data.Time
 import qualified Data.Text as T
+import Data.Text.Encoding (decodeUtf8)
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as B
 import Network.Mail.Mime
@@ -88,7 +89,7 @@ instance Error RegError where
 readParameter :: (MonadSnap m) => Parameter a -> m (Maybe a)
 readParameter param = do
   reqParam <- getParam . B.pack . name $ param
-  return (reqParam >>= decode param . B.unpack)
+  return (reqParam >>= decode param . T.unpack . decodeUtf8)
 
 #ifndef EMAIL_REGISTRATION
 registration :: Handler App (AuthManager App) ()
