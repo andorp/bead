@@ -23,6 +23,7 @@ import Data.Time (UTCTime)
 import Data.List (nub, sortBy)
 import Data.Map (Map(..))
 import qualified Data.Map as Map
+import Data.Time (getCurrentTime)
 
 import Control.Applicative ((<$>))
 import Control.Arrow ((&&&))
@@ -184,12 +185,18 @@ courseNameAndAdmins p ak = do
   return (name, adminNames)
 
 
-
 submissionListDesc :: Persist -> Username -> AssignmentKey -> TIO SubmissionListDesc
 submissionListDesc p u ak = do
   (name, adminNames) <- courseNameAndAdmins p ak
   asg <- loadAssignment p ak
-  statuses <- mapM submissionStatus =<< userSubmissions p u ak
+  now <- hasNoRollback getCurrentTime
+
+  -- User submissions should not shown for urn typed assignments, after that the end
+  -- period
+  statuses <- case (assignmentEnd asg < now) of
+    True  -> mapM submissionStatus =<< userSubmissions p u ak
+    False -> return []
+
   return SubmissionListDesc {
     slGroup = name
   , slTeacher = adminNames
