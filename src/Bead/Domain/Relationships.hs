@@ -89,10 +89,10 @@ data SubmissionInfo
   | Submission_Result EvaulationKey EvaulationResult
   deriving (Show)
 
-submissionInfoMap :: a -> a -> (EvaulationKey -> EvaulationResult -> a) -> SubmissionInfo -> a
-submissionInfoMap n _ _ Submission_Not_Found    = n
-submissionInfoMap _ u _ Submission_Unevaulated  = u
-submissionInfoMap _ _ f (Submission_Result k r) = f k r
+submissionInfoCata notFound unevaulated result s = case s of
+  Submission_Not_Found   -> notFound
+  Submission_Unevaulated -> unevaulated
+  Submission_Result k r  -> result k r
 
 siEvaulationKey :: SubmissionInfo -> Maybe EvaulationKey
 siEvaulationKey Submission_Not_Found     = Nothing
@@ -116,15 +116,11 @@ submissionTableInfoPermissions = ObjectPermissions [
 checkSubmissionTableInfo :: SubmissionTableInfo -> Bool
 checkSubmissionTableInfo _ = True
 
-data EvaulatedWith
-  = EvHand
-  deriving (Show)
-
 data UserSubmissionDesc = UserSubmissionDesc {
     usCourse         :: String
   , usAssignmentName :: String
   , usStudent        :: String
-  , usSubmissions :: [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)]
+  , usSubmissions :: [(SubmissionKey, UTCTime, SubmissionInfo)]
   } deriving (Show)
 
 userSubmissionDescPermissions = ObjectPermissions [

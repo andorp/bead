@@ -158,7 +158,7 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
         coloredCell = color s
 
         color =
-          submissionInfoMap
+          submissionInfoCata
             (dataCell noStyle)        -- Not Found
             (dataCell unevaulatedStyle) -- Unevulated
             (const resultCell)        -- Result
@@ -228,7 +228,7 @@ calcEvaluationResult selectResult calculateResult
 
     -- Filters only the evaulation results
     filterEvaulation :: [SubmissionInfo] -> [EvaulationResult]
-    filterEvaulation = catMaybes . map (submissionInfoMap Nothing Nothing result)
+    filterEvaulation = catMaybes . map (submissionInfoCata Nothing Nothing result)
 
     -- Checks if no error is found.
     -- Produces (Left "error") when at least one element has an error,

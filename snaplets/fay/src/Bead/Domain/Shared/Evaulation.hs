@@ -9,6 +9,10 @@ import Data.Data
 data Result = Passed | Failed
   deriving (Eq, Show, Read, Data, Typeable)
 
+resultCata passed failed r = case r of
+  Passed -> passed
+  Failed -> failed
+
 -- Represents the evaulation type for an assignment
 data EvaulationData b p
   = BinEval b

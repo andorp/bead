@@ -325,7 +325,7 @@ userSubmissionDesc p u ak = do
   submissions <- flip mapM keys $ \sk -> do
     time  <- solutionPostDate <$> loadSubmission p sk
     sinfo <- submissionInfo p sk
-    return (sk, time, sinfo, EvHand)
+    return (sk, time, sinfo)
 
   return UserSubmissionDesc {
     usCourse         = crName

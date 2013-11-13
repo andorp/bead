@@ -6,6 +6,7 @@ module Bead.View.Snap.Content.UserSubmissions (
 import Bead.View.Snap.Content
 import Bead.Domain.Types (Str(..))
 import Bead.Domain.Entities (Email(..), roles)
+import Bead.Domain.Shared.Evaulation
 import qualified Bead.Controller.UserStories as U (userSubmissions)
 import Bead.Controller.Pages as P (Page(ModifyEvaulation, Evaulation))
 
@@ -14,6 +15,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import Data.String (fromString)
 import Data.Time (UTCTime)
+import Text.Printf (printf)
 
 userSubmissions :: Content
 userSubmissions = getContentHandler userSubmissionPage
@@ -50,7 +52,7 @@ userSubmissionHtml u = onlyHtml $ mkI18NHtml $ \i18n -> do
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft        $ fromString t
 
-submissionTable :: I18N -> [(SubmissionKey, UTCTime, SubmissionInfo, EvaulatedWith)] -> Html
+submissionTable :: I18N -> [(SubmissionKey, UTCTime, SubmissionInfo)] -> Html
 submissionTable i18n s = do
   table "submission-table" (className userSubmissionTable) # informationalTable $ do
     headerLine
@@ -59,20 +61,21 @@ submissionTable i18n s = do
   where
     headerLine = H.tr $ do
       (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ "Date of submission"
-      (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ "Evaulated By"
-      (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ ""
+      (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ "Results"
 
-    submissionLine (sk,t,si,ev) = H.tr $ do
+    submissionLine (sk,t,si) = H.tr $ do
       H.td # informationalCell $ sbmLink si sk t
       H.td # informationalCell $ fromString $ i18n $ submissionInfo si
-      H.td # informationalCell $ fromString $ i18n $ evaulatedWith  ev
 
     submissionInfo :: SubmissionInfo -> String
-    submissionInfo Submission_Not_Found   = "Not Found"
-    submissionInfo Submission_Unevaulated = "Unevaulated"
-    submissionInfo (Submission_Result _ _) = "Result"
+    submissionInfo = submissionInfoCata
+      "Not Found"
+      "Unevaulated"
+      (const (evaluationDataMap bin pct))
 
-    evaulatedWith EvHand = "By Hand"
+    bin (Binary b) = resultCata (i18n "Passed") (i18n "Failed") b
+    pct (Percentage (Scores [x])) = printf "%3.2f%%" (100 * x)
+    pct (Percentage _) = "Error: ???%"
 
     sbmLink si sk t = case siEvaulationKey si of
       Nothing -> link
