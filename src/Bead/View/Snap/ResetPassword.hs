@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.ResetPassword (
     resetPasswordPage
+  , setUserPassword
   , updateCurrentAuthPassword
   , checkCurrentAuthPassword
   , encryptPwd
@@ -30,56 +31,74 @@ import Bead.View.Snap.HandlerUtils (registrationStory, userState)
 import Bead.View.Snap.Session (passwordFromAuthUser)
 import Bead.View.Snap.Style
 
--- Generates a new random password for the given user
--- and saves it to the persistence layer and the authentication
--- and sends the email to the given user.
--- The handler calculates unit if everything went fine, otherwise a string
--- indicating the reason.
-resetPassword :: Username -> ErrorT String (Handler App a) ()
+-- Generates a new random password for the given user. If the user does
+-- not exist it thows an error
+resetPassword :: (Error e) => Username -> ErrorT e (Handler App a) ()
 resetPassword u = do
-  password <- randomPassword
   user <- loadAuthUser u
+  password <- randomPassword
   encryptedPwd <- encryptPwd password
   updateUser user { userPassword = Just encryptedPwd }
-  email password
+  emailPasswordToUser u password
   where
     randomPassword = lift . withTop randomPasswordContext $ getRandomPassword
 
-    loadUserFromPersistence =
-      (lift $ registrationStory $ S.loadUser u) >>=
-      (either (throwError . show) return)
+-- Saves the users password it to the persistence layer and the authentication
+-- and sends the email to the given user.
+-- The handler returns a status message that should be displayed to the user.
+setUserPassword :: (Error e) => Username -> String -> ErrorT e (Handler App a) String
+setUserPassword u password = do
+  let username = usernameCata id u
+  authUser <- getAuthUser u
+  case authUser of
+    Nothing -> return $ concat ["The ", username, " does not exist."]
+    Just user -> do
+      encryptedPwd <- encryptPwd password
+      updateUser user { userPassword = Just encryptedPwd }
+      emailPasswordToUser u password
+      return $ concat ["The password for ", username, " is set."]
 
-    email pwd = do
-      address <- fmap u_email loadUserFromPersistence
-      lift $ withTop sendEmailContext $
-        sendEmail
-          address
-          "BE-AD Password reset"
-          ForgottenPassword { restoreUrl = pwd }
+emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (Handler App a) ()
+emailPasswordToUser user pwd = do
+  address <- fmap u_email loadUserFromPersistence
+  lift $ withTop sendEmailContext $
+    sendEmail
+      address
+      "BE-AD Password reset"
+      ForgottenPassword { restoreUrl = pwd }
+  where
+    loadUserFromPersistence =
+      (lift $ registrationStory $ S.loadUser user) >>=
+      (either (throwError . strMsg . show) return)
+
 
 -- Universal error message for every type of error
 -- in such case the attacker could deduce minimal
 -- amount of information
-errorMsg :: String
-errorMsg = "Invalid username and/or password"
+errorMsg :: (Error e) => e
+errorMsg = strMsg "Invalid username and/or password"
 
-checkUserInAuth :: Username -> ErrorT String (Handler App a) ()
+checkUserInAuth :: (Error e) => Username -> ErrorT e (Handler App a) ()
 checkUserInAuth u = do
   exist    <- lift . withTop auth $ usernameExists (usernameStr u)
   unless exist $ throwError errorMsg
 
-checkUserInPersistence :: Username -> ErrorT String (Handler App a) ()
+checkUserInPersistence :: (Error e) => Username -> ErrorT e (Handler App a) ()
 checkUserInPersistence u =
   (lift $ registrationStory $ S.doesUserExist u) >>=
-  either (throwError . show)
+  either (throwError . strMsg . show)
          (\e -> unless e $ throwError errorMsg)
 
 usernameStr :: (IsString s) => Username -> s
 usernameStr = usernameCata fromString
 
+getAuthUser :: (Error e) => Username -> ErrorT e (Handler App a) (Maybe AuthUser)
+getAuthUser u =
+  lift . withTop auth $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameStr u)
+
 loadAuthUser :: (Error e) => Username -> ErrorT e (Handler App a) AuthUser
 loadAuthUser u = do
-  usr <- lift . withTop auth $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameStr u)
+  usr <- getAuthUser u
   when (isNothing usr) $ throwError $ strMsg errorMsg
   return . fromJust $ usr
 

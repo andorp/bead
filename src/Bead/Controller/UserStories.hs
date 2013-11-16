@@ -8,7 +8,8 @@ import Bead.Domain.Types
 import Bead.Controller.ServiceContext
 import Bead.Controller.Logging  as L
 import Bead.Controller.Pages    as P
-import Bead.Persistence.Persist as R
+import Bead.Persistence.Persist (Persist(..))
+import qualified Bead.Persistence.Persist as R
 
 import Control.Applicative
 import Control.Monad (when, unless)
@@ -141,6 +142,12 @@ currentUser :: UserStory User
 currentUser = logAction INFO "Load the current user's data" $ do
   u <- user <$> userState
   withPersist $ flip R.loadUser u
+
+-- Produces true if the given user is the student of the actual one
+courseOrGroupStudent :: Username -> UserStory Bool
+courseOrGroupStudent student = logAction INFO
+  (concat ["Student ", str student, " of the actual user"])
+  ((elem student . concatMap stUsers) <$> submissionTables)
 
 administratedCourses :: UserStory [(CourseKey, Course)]
 administratedCourses = logAction INFO "selects adminstrated courses" $ do
@@ -484,7 +491,7 @@ userAssignments = logAction INFO "lists assignments" $ do
 submissionDescription :: SubmissionKey -> UserStory SubmissionDesc
 submissionDescription sk = logAction INFO msg $ do
   authPerms submissionDescPermissions
-  withPersist $ \p -> submissionDesc p sk
+  withPersist $ \p -> R.submissionDesc p sk
   where
     msg = "loads submission infomation for " ++ show sk
 
@@ -520,7 +527,7 @@ newEvaulation sk e = logAction INFO ("saves new evaulation for " ++ show sk) $ d
   authorize P_Create P_Evaulation
   now <- liftIO $ getCurrentTime
   withUserAndPersist $ \u p -> do
-    a <- isAdminedSubmission p u sk
+    a <- R.isAdminedSubmission p u sk
     when a $ do
       R.saveEvaulation p sk e
       R.removeFromOpened p sk
@@ -532,8 +539,8 @@ modifyEvaulation ek e = logAction INFO ("modifies evaulation " ++ show ek) $ do
   authorize P_Modify P_Evaulation
   now <- liftIO $ getCurrentTime
   withUserAndPersist $ \u p -> do
-    sk <- submissionOfEvaulation p ek
-    a <- isAdminedSubmission p u sk
+    sk <- R.submissionOfEvaulation p ek
+    a <- R.isAdminedSubmission p u sk
     when a $ do
       R.modifyEvaulation p ek e
       saveComment p sk (evaulationComment now e)
@@ -544,7 +551,7 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
   authorize P_Open   P_Submission
   authorize P_Create P_Comment
   withUserAndPersist $ \u p -> do
-    can <- canUserCommentOn p u sk
+    can <- R.canUserCommentOn p u sk
     when can $ do
       saveComment p sk c
       return ()
@@ -597,7 +604,7 @@ withPersist :: (Persist -> TIO a) -> UserStory a
 withPersist m = do
   mp <- CMR.asks persist
   x <- liftIO $ modifyMVar mp $ \p -> do
-         ea <- runPersist (m p)
+         ea <- R.runPersist (m p)
          return (p,ea)
   case x of
     Left e -> CME.throwError $ strMsg e

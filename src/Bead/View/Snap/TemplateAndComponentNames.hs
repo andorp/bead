@@ -169,6 +169,7 @@ menuId P.NewGroupAssignment  = "link-new-group-assignment"
 menuId P.NewCourseAssignment = "link-new-course-assignment"
 menuId P.ModifyAssignment = "link-modify-assignment"
 menuId P.ChangePassword = "link-change-password"
+menuId P.SetUserPassword = "link-set-user-password"
 
 instance SnapFieldName P.Page where
   fieldName = fromString . menuId
@@ -334,12 +335,13 @@ fieldList = map fieldName $ join [
   , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField, SFN profileTable
   , SFN changePasswordTable, SFN oldPasswordField, SFN newPasswordField, SFN newPasswordAgainField
   , SFN assignmentStartDateField, SFN assignmentEndDateField
+  , SFN studentNewPwdField, SFN studentNewPwdAgainField
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
   , SFN evaulationPercentageDiv, SFN regUserRegKey, SFN regToken, SFN pwdSubmitBtn
   , SFN resetPasswordTable, SFN regPasswordAgain, SFN changeProfileBtn, SFN changePasswordBtn
-  , SFN userTimeZoneField, SFN assignmentForm, SFI changePwdForm
+  , SFN userTimeZoneField, SFN assignmentForm, SFI changePwdForm, SFI setStudentPwdForm
 
   , SFI regForm, SFI loginForm, SFI regFinalForm
   ], (map SFN P.allPages)

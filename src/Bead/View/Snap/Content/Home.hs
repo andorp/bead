@@ -61,17 +61,21 @@ homePage = withUserState $ \s ->
 homeContent :: HomePageData -> Pagelet
 homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
   let s = userState d
+      courseAdmin = hasCourses d
+      groupAdmin  = hasGroups  d
   when (isAdmin s) $ H.p $ do
     H.h3 $ (translate i18n "Admin's menu")
-  when (hasCourses d) $ H.p $ do
+  when (courseAdmin) $ H.p $ do
     H.h3 $ (translate i18n "Course Admin's menu")
     linkToPage P.NewCourseAssignment
-  when (hasGroups d) $ H.p $ do
+  when (groupAdmin) $ H.p $ do
     H.h3 $ (translate i18n "Teacher's menu")
     linkToPage P.NewGroupAssignment
-  when (or [hasCourses d, hasGroups d]) $ H.p $ do
+  when (courseAdmin || groupAdmin) $ H.p $ do
     H.h3 $ (translate i18n "Submission table")
     htmlSubmissionTables i18n (sTables d)
+    H.h3 $ (translate i18n "Manage user's password")
+    linkToPage P.SetUserPassword
   H.p $ do
     H.h3 $ (translate i18n "Student's menu")
     availableAssignments i18n (assignments d)

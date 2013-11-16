@@ -39,6 +39,8 @@ newtype ChangePwdField = ChangePwdField { cpf :: String }
 oldPasswordField = ChangePwdField "old-password-field"
 newPasswordField = ChangePwdField "new-password-field"
 newPasswordAgainField = ChangePwdField "new-password-again-field"
+studentNewPwdField = ChangePwdField "new-stn-pwd-field"
+studentNewPwdAgainField = ChangePwdField "new-stn-pwd-again-field"
 
 data RegistrationComp = RegComp { rFieldName :: String }
 
@@ -53,3 +55,5 @@ loginForm = FormId "login-form"
 regForm = FormId "reg-form"
 regFinalForm = FormId "reg-final-form"
 changePwdForm = FormId "change-password-form"
+setStudentPwdForm = FormId "set-student-ped-form"
+

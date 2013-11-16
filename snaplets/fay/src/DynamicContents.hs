@@ -28,10 +28,11 @@ onload = do
   hookAssignmentForm (hookId assignmentForm) startDateTimeHook endDateTimeHook
   hookPercentageDiv evaulationPctHook pctValue
   hookRegistrationForm
-  hookPasswordField (rFormId regFinalForm) (lcFieldName loginPassword)
   hookSamePasswords (rFormId regFinalForm) (lcFieldName loginPassword) (lcFieldName regPasswordAgain)
+  hookPasswordField (rFormId regFinalForm) (lcFieldName loginPassword)
   hookPasswordField (rFormId changePwdForm) (cpf oldPasswordField)
   hookSamePasswords (rFormId changePwdForm) (cpf newPasswordField) (cpf newPasswordAgainField)
+  hookSamePasswords (rFormId setStudentPwdForm) (cpf studentNewPwdField) (cpf studentNewPwdAgainField)
 
 pctValue :: String -> String
 pctValue = toEvResultJSON . percentageResult . parseDouble
@@ -177,6 +178,7 @@ hookSamePasswords formId password1 password2 = void $ do
             after span pwdAgain
             return False
   onSubmit validator form
+  putStrLn "There were some password fields hooked."
   where
     removable = "same_password_error"
 

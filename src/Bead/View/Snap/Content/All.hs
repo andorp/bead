@@ -22,6 +22,7 @@ import Bead.View.Snap.Content.GroupRegistration (groupRegistration)
 import Bead.View.Snap.Content.CreateCourse (createCourse)
 import Bead.View.Snap.Content.UserDetails (userDetails)
 import Bead.View.Snap.Content.UserSubmissions (userSubmissions)
+import Bead.View.Snap.Content.SetUserPassword (setUserPassword)
 
 import qualified Bead.Controller.Pages as P
 
@@ -54,6 +55,7 @@ content P.NewGroupAssignment  = newGroupAssignment
 content P.NewCourseAssignment = newCourseAssignment
 content P.ModifyAssignment    = modifyAssignment
 content P.ChangePassword = changePassword
+content P.SetUserPassword = setUserPassword
 
 #ifdef TEST
 

@@ -211,6 +211,7 @@ linkText P.NewGroupAssignment  = fromString "Create a New Group Assignment"
 linkText P.NewCourseAssignment = fromString "Create a New Course Assignment"
 linkText P.ModifyAssignment = fromString "Modify Assignment"
 linkText P.ChangePassword = fromString "Change Password"
+linkText P.SetUserPassword = fromString "Set students password"
 
 linkToPage :: P.Page -> Html
 linkToPage g = H.a ! A.href (routeOf g) ! A.id (fieldName g) $ linkText g

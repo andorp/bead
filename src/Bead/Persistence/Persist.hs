@@ -244,6 +244,8 @@ isAdminedSubmission p u sk = return True
 canUserCommentOn :: Persist -> Username -> SubmissionKey -> TIO Bool
 canUserCommentOn p u sk = return True
 
+-- Returns all the submissions of the users for the groups and courses that the
+-- user administrates
 submissionTables :: Persist -> Username -> TIO [SubmissionTableInfo]
 submissionTables p u = do
   courseTables <- mapM (courseSubmissionTableInfo p . fst) =<< administratedCourses p u

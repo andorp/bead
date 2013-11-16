@@ -48,13 +48,14 @@ data Page
   | GroupRegistration
   | UserDetails
   | UserSubmissions
-  
+
   -- Only Post handlers
   | CreateCourse
   | CreateGroup
   | AssignCourseAdmin
   | AssignProfessor
   | ChangePassword
+  | SetUserPassword
   -- etc ...
   deriving (Eq, Ord, Enum, Show)
 
@@ -70,7 +71,8 @@ pageTransition s = nub $ p s ++ [s, Error, Logout] where
   p Error            = []
   p Home = [ Logout, CourseAdmin, EvaulationTable, NewGroupAssignment, NewCourseAssignment
            , Submission, SubmissionList, GroupRegistration, Administration, Profile
-           , UserSubmissions, SubmissionDetails, ModifyAssignment --TODO
+           , UserSubmissions, SubmissionDetails, ModifyAssignment
+           , SetUserPassword --TODO
            ]
   p CourseAdmin      = [Home, CreateGroup, AssignProfessor]
   p EvaulationTable  = [Home, Evaulation, ModifyEvaulation]
@@ -93,6 +95,7 @@ pageTransition s = nub $ p s ++ [s, Error, Logout] where
   p CreateGroup       = [CourseAdmin]
   p AssignProfessor   = [CourseAdmin]
   p ChangePassword    = [Profile]
+  p SetUserPassword   = [Home]
 
 reachable :: Page -> Page -> Bool
 reachable p q = elem q $ pageTransition p
@@ -115,6 +118,7 @@ professorPages = [
   , NewGroupAssignment
   , ModifyAssignment
   , UserSubmissions
+  , SetUserPassword
   ]
 
 courseAdminPages = [
@@ -127,6 +131,7 @@ courseAdminPages = [
   , NewCourseAssignment
   , ModifyAssignment
   , UserSubmissions
+  , SetUserPassword
   ]
 
 adminPages = [
@@ -155,6 +160,7 @@ nonMenuPages = [
   , ModifyAssignment
   , UserSubmissions
   , ChangePassword
+  , SetUserPassword
   ]
 
 allowedPages :: E.Role -> [Page]
@@ -197,6 +203,7 @@ parentPage NewGroupAssignment  = NewGroupAssignment
 parentPage NewCourseAssignment = NewCourseAssignment
 parentPage ModifyAssignment    = Home
 parentPage ChangePassword      = Profile
+parentPage SetUserPassword     = Home
 
 #ifdef TEST
 

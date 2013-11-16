@@ -179,7 +179,13 @@ newPasswordPrm :: Parameter String
 newPasswordPrm = validateBy isPassword $ stringParameter (fieldName newPasswordField) "New password"
 
 newPasswordAgainPrm :: Parameter String
-newPasswordAgainPrm = validateBy isPassword $ stringParameter (fieldName newPasswordAgainField) "New password "
+newPasswordAgainPrm = validateBy isPassword $ stringParameter (fieldName newPasswordAgainField) "New password again"
+
+studentNewPwdPrm :: Parameter String
+studentNewPwdPrm = validateBy isPassword $ stringParameter (fieldName studentNewPwdField) "Student's new password"
+
+studentNewPwdAgainPrm :: Parameter String
+studentNewPwdAgainPrm = validateBy isPassword $ stringParameter (fieldName studentNewPwdAgainField) "Student's new password "
 
 regUsernamePrm :: Parameter Username
 regUsernamePrm = validateBy isUsername $ customUsernamePrm (fieldName loginUsername)

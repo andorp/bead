@@ -60,6 +60,7 @@ routeOf = r where
   r NewCourseAssignment  = fromString "/new-course-assignment"
   r ModifyAssignment = fromString "/modify-assignment"
   r ChangePassword = fromString "/change-password"
+  r SetUserPassword = fromString "/set-user-password"
 
 routeWithParams :: (IsString s) => Page -> [ReqParam] -> s
 routeWithParams p rs = fromString . join $

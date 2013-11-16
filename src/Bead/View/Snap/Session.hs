@@ -62,6 +62,7 @@ instance SessionStore P.Page where
     s P.NewCourseAssignment = "NewCourseAssignment"
     s P.ModifyAssignment = "ModifyAssignment"
     s P.ChangePassword = "ChangePassword"
+    s P.SetUserPassword = "SetUserPassword"
 
 instance SessionRestore P.Page where
   restoreFromSession kv = case L.lookup pageSessionKey kv of
@@ -90,6 +91,7 @@ instance SessionRestore P.Page where
     Just "NewGroupAssignment" -> Just P.NewGroupAssignment
     Just "ModifyAssignment" -> Just P.ModifyAssignment
     Just "ChangePassword" -> Just P.ChangePassword
+    Just "SetUserPassword" -> Just P.SetUserPassword
     Just _              -> Nothing
 
 -- * Session Key Values for Username
