@@ -57,6 +57,7 @@ test_create_exercise = testCase "Save an exercise" $ do
       , u_username = uname
       , u_email    = Email "student@gmail.com"
       , u_name     = "Student"
+      , u_timezone = UTC
       }
       password = "password"
   liftE $ saveUser persist user
@@ -82,6 +83,7 @@ test_create_user = testCase "Create user" $ do
       , u_username = uname
       , u_email    = Email "ursula@gmail.com"
       , u_name     = "Ursula"
+      , u_timezone = UTC
       }
   liftE $ saveUser persist user
   us <- liftE $ filterUsers persist (const True)
@@ -108,6 +110,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
         , u_username = admin
         , u_email = Email "admin@gmail.com"
         , u_name = "admin"
+        , u_timezone = UTC
         }
       password = "password"
   ck <- liftE $ saveCourse persist (Course "name" "desc" binaryEvalConfig)

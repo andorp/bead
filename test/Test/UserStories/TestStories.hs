@@ -44,6 +44,7 @@ student = User {
   , u_username = (Username "student")
   , u_email = Email "student@university.com"
   , u_name = "Stu Dent"
+  , u_timezone = UTC
   }
 
 student2 = User {
@@ -51,6 +52,7 @@ student2 = User {
   , u_username = (Username "student2")
   , u_email = Email "student@university.com"
   , u_name = "Stu Dent"
+  , u_timezone = UTC
   }
 
 
@@ -59,6 +61,7 @@ adminUser = User {
   , u_username = (Username "admin")
   , u_email = Email "admin@university.com"
   , u_name = "Admin"
+  , u_timezone = UTC
   }
 
 -- * Test Tooles

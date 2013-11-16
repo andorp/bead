@@ -497,7 +497,7 @@ submissionTablesTest = do
       assertTrue (stNumberOfAssignments t >= 0) "Number of assignments was negative"
       assertNonEmpty (show . stEvalConfig $ t) "Evaulation config was empty"
       assertTrue (length (stAssignments t) >= 0) "Invalid assignment list"
-      forM (stUsers t) $ usernameFold (\u -> assertNonEmpty u "Username was empty")
+      forM (stUsers t) $ usernameCata (\u -> assertNonEmpty u "Username was empty")
       assertTrue (length (stUserLines t) >= 0) "Invalid user line number"
 
 -- The user can have submissions for the given assignment, and information can be
@@ -518,10 +518,10 @@ userSubmissionDescTest = do
     assertNonEmpty (usStudent desc) "Student name was empty"
     ss <- runPersistCmd $ userSubmissions persist u a
     assertEquals
-      (Set.fromList ss) (Set.fromList (map fst4 (usSubmissions desc)))
+      (Set.fromList ss) (Set.fromList (map fst3 (usSubmissions desc)))
       "Submission numbers were different"
   where
-    fst4 (a,_,_,_) = a
+    fst3 (a,_,_) = a
 
 -- All the saved course must have a key and these
 -- course keys must be listed

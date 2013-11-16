@@ -1,7 +1,10 @@
 module Main where
 
 import Control.Monad (join)
+import System.Environment (getArgs)
+
 import Test.Framework (defaultMain)
+
 
 -- Test cases
 
@@ -10,14 +13,24 @@ import qualified Test.Unit.Invariants
 import qualified Test.UserStories.TestStories
 import qualified Test.Quick.Persistence
 
-tests = join [
-     Test.Unit.Invariants.tests
-   , [ Test.UserStories.TestStories.tests ,
-       Test.Unit.Persistence.TestNoSQLDir.tests
-     , Test.Quick.Persistence.tests
-     , Test.Quick.Persistence.massTests
-     , Test.Quick.Persistence.complexTests
-     ]
-   ]
+tests args =
+  join [
+      (present "unit" Test.Unit.Invariants.tests)
+    , (present "persist-unit"
+         [ Test.UserStories.TestStories.tests
+         , Test.Unit.Persistence.TestNoSQLDir.tests
+         ])
+    , (present "persist-quick"
+         [ Test.Quick.Persistence.tests
+         , Test.Quick.Persistence.massTests
+         , Test.Quick.Persistence.complexTests
+         ])
+    ]
+  where
+    present a xs =
+      if (elem a args)
+        then xs
+        else []
 
-main = defaultMain tests
+main = defaultMain (tests ["unit", "persist-unit", "persist-quick2"])
+

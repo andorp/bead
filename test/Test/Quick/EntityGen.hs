@@ -46,11 +46,12 @@ familyNames = do
   last <- word
   return $ join [first, " ", last]
 
-users = User
-  <$> roleGen
-  <*> usernames
-  <*> emails
-  <*> familyNames
+users = userAna
+  roleGen
+  usernames
+  emails
+  familyNames
+  (return UTC)
 
 userAndEPwds = do
   user <- users

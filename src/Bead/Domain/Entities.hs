@@ -10,6 +10,7 @@ import Bead.Invariants (Invariants(..), UnitTests(..))
 import Data.Char (toLower)
 import Data.Time (UTCTime(..))
 import Control.Monad (join)
+import Control.Applicative ((<$>), (<*>))
 import Text.Printf (printf)
 
 -- * Course, exams, exercises, solutions
@@ -316,6 +317,13 @@ data User = User {
 
 userCata f (User role username email name timezone) =
   f role username email name timezone
+
+userAna role username email name timezone = User
+  <$> role
+  <*> username
+  <*> email
+  <*> name
+  <*> timezone
 
 newtype PersonalInfo = PersonalInfo (Role, String, TimeZone)
 
