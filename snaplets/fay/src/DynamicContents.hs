@@ -109,7 +109,7 @@ numberField i min max = do
                when (x >= max) $ setVal (fromString . show $ max) t
 
 makeMessage removable msg = select . fromString $ (
-  "<br class=\"" ++ removable ++ "\"><snap style=\"font-size: smaller\" class=\"" ++
+  "<br class=\"" ++ removable ++ "\"><snap style=\"font-size: smaller;color: red\" class=\"" ++
   removable ++ "\">"
   ++ msg ++
   "</span>")
