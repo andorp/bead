@@ -45,7 +45,7 @@ appInit config user s d = makeSnaplet "bead" description dataDir $ do
 
   ds <- nestSnaplet "dictionary" dictionaryContext $ dictionarySnaplet d
 
-  se <- nestSnaplet "sendemail" sendEmailContext emailSenderSnaplet
+  se <- nestSnaplet "sendemail" sendEmailContext (emailSenderSnaplet config)
 
   rp <- nestSnaplet "randompassword" randomPasswordContext passwordGeneratorSnaplet
 

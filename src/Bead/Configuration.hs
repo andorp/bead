@@ -3,7 +3,7 @@ module Bead.Configuration (
     InitTask(..)
   , Config(..)
   , defaultConfiguration
-  , configFold
+  , configCata
   , initTasks
   , Usage
   , substProgName
@@ -46,6 +46,8 @@ data Config = Config {
   , sessionTimeout :: Second
     -- The hostname of the server, this hostname is placed in the registration emails
   , emailHostname :: Hostname
+    -- The value for from field for every email sent by the system
+  , emailFromAddress :: String
   } deriving (Eq, Show, Read)
 
 -- The defualt system parameters
@@ -53,10 +55,11 @@ defaultConfiguration = Config {
     userActionLogFile = joinPath ["log", "useractions.log"]
   , sessionTimeout    = 1200
   , emailHostname     = "http://127.0.0.1:8000"
+  , emailFromAddress  = "noreply@bead.org"
   }
 
-configFold :: (FilePath -> Int -> String -> a) -> Config -> a
-configFold f (Config l s h) = f l s h
+configCata f (Config useraction timeout host from) =
+  f useraction timeout host from
 
 readConfiguration :: FilePath -> IO Config
 readConfiguration path = do

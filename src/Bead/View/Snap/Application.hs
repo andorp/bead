@@ -1,7 +1,7 @@
 {-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
 module Bead.View.Snap.Application where
 
-import Snap
+import Snap hiding (Config(..))
 import Snap.Snaplet
 import Snap.Snaplet.Session
 import Snap.Snaplet.Auth
@@ -16,6 +16,7 @@ import qualified Text.XmlHtml as X
 import Network.Mail.Mime
 import System.Random
 
+import Bead.Configuration (Config(..))
 import Bead.Domain.Entities
 import Bead.View.Snap.Dictionary
 import Bead.View.Snap.TemplateAndComponentNames
@@ -63,8 +64,8 @@ getDictionary l = do
 
 -- * Email sending spanplet
 
-type Subject = String
-type Message = String
+type Subject = String -- The subject of an email message
+type Message = String -- The content of an email message
 
 -- Email sender function get a string and en email address
 -- and sends the email to the address
@@ -91,8 +92,8 @@ instance EmailTemplateContainer ForgottenPassword where
 -- one of the email senders.
 newtype SendEmailContext = SendEmailContext (IORef (EmailSender, EmailTemplates))
 
-emailSenderSnaplet :: SnapletInit a SendEmailContext
-emailSenderSnaplet = makeSnaplet
+emailSenderSnaplet :: Config -> SnapletInit a SendEmailContext
+emailSenderSnaplet config = makeSnaplet
   "Email sending"
   "A snaplet providing email sender functionality"
   Nothing $ liftIO $ do
@@ -102,9 +103,9 @@ emailSenderSnaplet = makeSnaplet
     ref <- newIORef (sender, emailTemplates)
     return $! SendEmailContext ref
   where
-    sender :: Email -> String -> String -> IO ()
+    sender :: Email -> Subject -> Message -> IO ()
     sender address sub msg = do
-      let from = Address (Just "noreply") "noreply@bead.com"
+      let from = Address Nothing (fromString $ emailFromAddress config)
           to   = Address Nothing (emailFold fromString address)
           subject = fromString sub
           plain   = fromString msg
