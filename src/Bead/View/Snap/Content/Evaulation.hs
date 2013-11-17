@@ -136,3 +136,4 @@ title   = A.style "width: 100%"
 leftInfo = A.style "float: left; width: 28%; height: 100%"
 rightText = A.style "float: right; width: 68%; height: 100%"
 fillDiv = A.style "width: 98%; height: 98%"
+

@@ -19,6 +19,7 @@ import Bead.Domain.Relationships
 import qualified Bead.Controller.Pages as P
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.View.Snap.RouteOf
+import Bead.View.Snap.Style
 import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
@@ -94,7 +95,7 @@ withUserFrame s = structMap withUserFrame'
     withUserFrame' content = I18N.liftH2 $ \i -> do
       H.div ! A.id "header" $ pageHeader s
       H.div ! A.id "menu" $ navigationMenu s
-      H.div ! A.id "status" $ pageStatus s
+      pageStatus s
       H.div ! A.id "content" $ translate i content
 
 -- * Basic building blocks
@@ -242,7 +243,7 @@ pageStatus :: UserState -> Html
 pageStatus = maybe noMessage message . status
   where
     noMessage = return ()
-    message m = H.span (fromString m)
+    message m = H.div ! A.id "status" # backgroundColor "yellow" $ H.span $ (fromString m)
 
 -- * Picklist
 
