@@ -148,7 +148,6 @@ data Workflow
 
 -- * Authorization and authentication
 
-
 -- | Login roles
 data Role
   = Student
@@ -157,7 +156,26 @@ data Role
   | Admin
   deriving (Eq, Ord, Enum)
 
+roleCata
+  student
+  professor
+  courseAdmin
+  admin
+  r = case r of
+    Student     -> student
+    Professor   -> professor
+    CourseAdmin -> courseAdmin
+    Admin       -> admin
+
 roles = [Student, Professor, CourseAdmin, Admin]
+
+-- Decides if the given role can admninstrate groups
+-- Returns True if yes, otherwise False
+groupAdmin = roleCata
+  False
+  True
+  True
+  False
 
 data OutsideRole
   = EmptyRole

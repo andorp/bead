@@ -224,8 +224,15 @@ createGroupProfessor :: Username -> GroupKey -> UserStory ()
 createGroupProfessor u gk = logAction INFO "sets user as a professor of a group" $ do
   authorize P_Create P_Professor
   authorize P_Open   P_User
-  withPersist $ \p -> R.createGroupProfessor p u gk
-  putStatusMessage $ join [user u, " is group admin now."]
+  groupAdminSetted <- withPersist $ \p -> do
+    info <- R.personalInfo p u
+    flip personalInfoCata info $ \role _name _tz ->
+      if (groupAdmin role)
+        then R.createGroupProfessor p u gk >> return True
+        else return False
+  if groupAdminSetted
+    then putStatusMessage $ join [user u, " is group admin now."]
+    else CME.throwError . strMsg . join $ [user u, " can't be group admin."]
   where
     user = usernameCata id
 

@@ -4,7 +4,7 @@ import Test.WebDriver.PageObject
 import Test.WebDriver.SitePages
 import Test.WebDriver.UserStories
 
-import Bead.Domain.Entities
+import Bead.Domain.Entities hiding (groupAdmin)
 import Bead.Domain.Evaulation as E
 
 admin       = LoginData "a" "a"

@@ -42,7 +42,7 @@ courseAdminPage = withUserState $ \s -> do
       }
   renderDynamicPagelet $ withUserFrame s (courseAdminContent pageData)
   where
-    professor = (Professor ==) . u_role
+    professor = groupAdmin . u_role
 
     loadGroup' gk = do
       g <- loadGroup gk
