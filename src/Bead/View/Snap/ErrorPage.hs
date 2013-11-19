@@ -28,6 +28,8 @@ errorPage = contentHandlerErrorMap (blaze . (page "Error"))
 msgErrorPage :: String -> Handler App b ()
 msgErrorPage = blaze . (page "Error") . Just
 
+-- Produces a handler that renders the error page, with the
+-- given title and message for the user
 errorPageWithTitle :: String -> String -> Handler App b ()
 errorPageWithTitle title = blaze . (page title) . Just
 

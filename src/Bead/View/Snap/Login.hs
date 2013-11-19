@@ -16,6 +16,7 @@ import Bead.View.Snap.Dictionary (Language(..))
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.Pagelets
+import Bead.View.Snap.ErrorPage (errorPageWithTitle)
 
 import Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import Bead.View.Snap.Content.All
@@ -77,6 +78,7 @@ loginSubmit = do
                   liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
                   A.logout
                   withTop sessionManager $ commitSession
+                  errorPageWithTitle "Login" "Some internal error happened. Please notify the system administrator"
                 Right (val,userState) -> do
                   initSessionValues (page userState) unameFromAuth
                   withTop sessionManager $ commitSession
