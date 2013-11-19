@@ -607,6 +607,8 @@ withPersist m = do
          ea <- R.runPersist (m p)
          return (p,ea)
   case x of
-    Left e -> CME.throwError $ strMsg e
+    Left e -> do
+      logMessage ERROR ("Persistence error: " ++ e)
+      CME.throwError $ strMsg e
     Right x -> return x
 
