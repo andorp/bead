@@ -79,7 +79,7 @@ submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
     (fromString . sdStatus $ sm)
   H.p $ do
     H.h4 (translate i "Submission text: ")
-    (fromString . sdSubmission $ sm)
+    H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
   H.p $ do
     H.h4 (translate i "New comment")
     postForm (routeOf P.SubmissionDetails) $ do

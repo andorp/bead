@@ -107,6 +107,19 @@ assignmentTextPre = mconcat [
   , textAlign  "left"
   ]
 
+submissionTextDiv = mconcat [
+    marginLeft 0
+  , background "lightgray"
+  ]
+
+submissionTextPre = mconcat [
+    whiteSpace "pre-wrap"
+  , wordWrap   "break-word"
+  , padding    ".5em"
+  , textAlign  "left"
+  ]
+
+
 commentTextDiv = assignmentTextDiv
 
 commentTextPre = assignmentTextPre
