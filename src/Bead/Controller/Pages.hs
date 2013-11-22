@@ -129,6 +129,7 @@ courseAdminPages = [
   , Evaulation
   , ModifyEvaulation
   , NewCourseAssignment
+  , NewGroupAssignment
   , ModifyAssignment
   , UserSubmissions
   , SetUserPassword
