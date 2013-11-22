@@ -3,6 +3,7 @@ module Bead.View.Snap.Content.Submission (
     submission
   ) where
 
+import Data.List (intersperse)
 import Data.Time
 import Data.String (fromString)
 import Control.Monad (liftM)
@@ -27,16 +28,17 @@ submission = getPostContentHandler submissionPage submissionPostHandler
 data PageData = PageData {
     asKey   :: AssignmentKey
   , asValue :: Assignment
+  , asDesc  :: AssignmentDesc
   }
 
 submissionPage :: GETContentHandler
 submissionPage = withUserState $ \s -> do
+  let render p = renderPagelet $ withUserFrame s p
   ak <- getParameter assignmentKeyPrm
-  usersAssignment ak $ \assignment ->
-    renderPagelet . withUserFrame s $
-      case assignment of
-        Nothing -> invalidAssignment
-        Just a  -> submissionContent (PageData { asKey = ak, asValue = a })
+  userAssignmentForSubmission
+    ak
+    (\desc asg -> render $ submissionContent (PageData { asKey = ak, asValue = asg, asDesc = desc }))
+    (render invalidAssignment)
 
 submissionPostHandler :: POSTContentHandler
 submissionPostHandler =
@@ -57,10 +59,10 @@ submissionContent p = onlyHtml $ mkI18NHtml $ \i -> do
         H.table $ do
           H.tr $ do
             H.td $ H.b $ (translate i "Course: ")
-            H.td $ "TODO"
+            H.td $ (fromString . aGroup $ asDesc p)
           H.tr $ do
             H.td $ H.b $ (translate i "Teacher: ")
-            H.td $ "TODO"
+            H.td $ (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
           H.tr $ do
             H.td $ H.b $ (translate i "Assignment: ")
             H.td $ (fromString . assignmentName . asValue $ p)

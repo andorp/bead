@@ -1,6 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Content.Utils where
 
+import Data.List (find)
+import Data.Maybe (maybe)
+
+import Bead.Domain.Relationships (AssignmentDesc)
 import Bead.View.Snap.Content
 import Bead.Controller.UserStories
 
@@ -18,6 +22,26 @@ usersObject objectKeys keyLoader key onKeyFound =
       False -> return Nothing
       True  -> Just <$> keyLoader key
   ) >>= onKeyFound
+
+-- Produces a handler that runs the the fuund handler if the given
+-- assignment key is associated with the current user, otherwise
+-- runs the notFound handler
+userAssignmentForSubmission
+  :: AssignmentKey
+  -> (AssignmentDesc -> Assignment -> HandlerError App App b)
+  -> (HandlerError App App b)
+  -> HandlerError App App b
+userAssignmentForSubmission key found notFound = do
+  action <- runStoryE $ do
+    ks <- userAssignments
+    maybe
+      (return notFound)
+      foundAssignment
+      (findAssignmentKey ks)
+  action
+  where
+    foundAssignment (ak,desc) = (loadAssignment ak) >>= return . found desc
+    findAssignmentKey = find (\(k,_v) -> (k==key))
 
 usersAssignment
   :: AssignmentKey
