@@ -126,13 +126,15 @@ instance GetValueHandler AssignmentKey where
 instance GetValueHandler Assignment where
   getValue = do
     timeZone <- timezone <$> runStoryE Story.userState
-    Assignment
-      <$> getParameter (stringParameter (fieldName assignmentNameField) "Assignment Name")
-      <*> getParameter (stringParameter (fieldName assignmentDescField) "Assignment Description")
-      <*> getParameter (stringParameter (fieldName assignmentTCsField) "Assignment Tests")
-      <*> getParameter assignmentTypePrm
-      <*> getParameter (assignmentStartPrm timeZone)
-      <*> getParameter (assignmentEndPrm   timeZone)
+    assignmentAna
+      (getParameter (stringParameter (fieldName assignmentNameField) "Assignment Name"))
+      (getParameter (stringParameter (fieldName assignmentDescField) "Assignment Description"))
+      (getParameter (stringParameter (fieldName assignmentTCsField) "Assignment Tests"))
+      (getParameter assignmentTypePrm)
+      (getParameter (assignmentStartPrm timeZone))
+      (return timeZone)
+      (getParameter (assignmentEndPrm   timeZone))
+      (return timeZone)
 
 -- * Combined input fields
 

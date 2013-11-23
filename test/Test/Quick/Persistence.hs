@@ -680,14 +680,13 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Every submission has a description" $ submissionDetailsDescTest
   , testCase "Submission tables" $ submissionTablesTest
   , testCase "The user can have submissions and information" $ userSubmissionDescTest
-  , testCase "The all the saved courses must have a key" $ courseKeysTest
+  , testCase "All the saved courses must have a key" $ courseKeysTest
   , testCase "All the saved assignments must have a key" $ assignmentKeyTest
   , testCase "All the saved submissions must have a key" $ filterSubmissionsTest
   , testCase "Users must be able to change password and reamain loginable" $ updatePwdTest
   , testCase "Modified assignments must be untouched after loading them" $ modifyAssignmentsTest
   , testCase "Modified evaulations must be untouched after loading them" $ modifyEvaulationTest
   , testCase "Users can not login in using invalid password" $ userCanLoginTest
-
   , cleanUpPersistence
   ]
 

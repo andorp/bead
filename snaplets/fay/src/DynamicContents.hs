@@ -55,6 +55,12 @@ hookDatetimePickerDiv hook = void $ do
   appendTo div min
   numberField hour 0 23
   numberField min  0 59
+  defDate <- select . cssId . dtDefaultDate $ hook
+  defHour <- select . cssId . dtDefaultHour $ hook
+  defMin  <- select . cssId . dtDefaultMin  $ hook
+  copy defDate date
+  copy defHour hour
+  copy defMin  min
   let createDateTime e = void $ do
         d <- getVal date
         h <- getVal hour
@@ -71,6 +77,10 @@ hookDatetimePickerDiv hook = void $ do
     newLine = fromString "<br/>"
 
     datetime d h m = fromString $ (unpack d) ++ " " ++ (twoDigits (unpack h)) ++ ":" ++ (twoDigits (unpack m)) ++ ":00"
+
+    copy from to = do
+      x <- getVal from
+      setVal x to
 
 twoDigits [d] = ['0',d]
 twoDigits ds  = ds

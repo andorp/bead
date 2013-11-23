@@ -9,6 +9,7 @@ import Bead.Invariants (Invariants(..), UnitTests(..))
 
 import Data.Char (toLower)
 import Data.Time (UTCTime(..))
+import qualified Data.Time as Time
 import Control.Monad (join)
 import Control.Applicative ((<$>), (<*>))
 import Text.Printf (printf)
@@ -29,12 +30,17 @@ data Assignment = Assignment {
   , assignmentTCs  :: String
   , assignmentType :: AssignmentType
   , assignmentStart :: UTCTime
+  , assignmentStartTimeZone :: TimeZone
   , assignmentEnd   :: UTCTime
+  , assignmentEndTimeZone :: TimeZone
   -- TODO: Number of maximum tries
   } deriving (Eq, Show)
 
-assignmentCata f (Assignment name desc tcs type_ start end) =
-  f name desc tcs type_ start end
+assignmentCata f (Assignment name desc tcs type_ start starttz end endtz) =
+  f name desc tcs type_ start starttz end endtz
+
+assignmentAna name desc tcs type_ start starttz end endtz =
+  Assignment <$> name <*> desc <*> tcs <*> type_ <*> start <*> starttz <*> end <*> endtz
 
 -- | Produces True if the given time is between the start-end time of the assignment
 isActivePeriod :: Assignment -> UTCTime -> Bool
@@ -324,6 +330,13 @@ timeZoneCata utc cet cest t = case t of
   CET -> cet
   CEST -> cest
 
+-- Produces a TimeZone value defined in the
+-- Data.Time module
+dataTimeZone = timeZoneCata
+  Time.utc
+  (Time.hoursToTimeZone 1)
+  (Time.hoursToTimeZone 2)
+
 -- | Logged in user
 data User = User {
     u_role     :: Role
@@ -419,7 +432,9 @@ assignmentTests =
         , assignmentTCs  = "test"
         , assignmentType = Normal
         , assignmentStart = read "2010-10-10 12:00:00 UTC"
+        , assignmentStartTimeZone = UTC
         , assignmentEnd   = read "2010-11-10 12:00:00 UTC"
+        , assignmentEndTimeZone = UTC
         }
       before  = read "2010-09-10 12:00:00 UTC"
       between = read "2010-10-20 12:00:00 UTC"

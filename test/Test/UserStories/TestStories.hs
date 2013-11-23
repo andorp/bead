@@ -144,8 +144,8 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
   c <- context
   str <- getCurrentTime
   end <- getCurrentTime
-  let ca = E.Assignment "cname" "cexercise" "ctest" Normal str end
-      ga = E.Assignment "gname" "gexercise" "gtest" Normal str end
+  let ca = E.Assignment "cname" "cexercise" "ctest" Normal str UTC end UTC
+      ga = E.Assignment "gname" "gexercise" "gtest" Normal str UTC end UTC
       c1  = E.Course "FP" "FP-DESC" binaryEvalConfig
       c2  = E.Course "MA" "MA-DESC" binaryEvalConfig
       g1  = E.Group  "G1" "G1-DESC" binaryEvalConfig

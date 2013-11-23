@@ -15,22 +15,23 @@ import qualified Test.Quick.Persistence
 
 tests args =
   join [
-      (present "unit" Test.Unit.Invariants.tests)
-    , (present "persist-unit"
+      (ifPresent "unit" Test.Unit.Invariants.tests)
+    , (ifPresent "persist-unit"
          [ Test.UserStories.TestStories.tests
          , Test.Unit.Persistence.TestNoSQLDir.tests
          ])
-    , (present "persist-quick"
+    , (ifPresent "persist-quick"
          [ Test.Quick.Persistence.tests
          , Test.Quick.Persistence.massTests
          , Test.Quick.Persistence.complexTests
          ])
     ]
   where
-    present a xs =
+    ifPresent a xs =
       if (elem a args)
         then xs
         else []
 
-main = defaultMain (tests ["unit", "persist-unit", "persist-quick2"])
+main = defaultMain (tests ["unit", "persist-unit", "persist-quick"])
+
 

@@ -21,6 +21,7 @@ module Bead.View.Snap.Content (
   , i18nE
   , renderPagelet
   , renderDynamicPagelet
+  , userTimeZone
   , withUserState
   , withUserStateAndFrame
   , GETContentHandler

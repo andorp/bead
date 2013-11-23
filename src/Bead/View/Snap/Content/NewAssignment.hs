@@ -7,7 +7,11 @@ module Bead.View.Snap.Content.NewAssignment (
 
 import Control.Monad (liftM)
 import Data.Either (either)
+import Data.Time (UTCTime, getCurrentTime)
+import qualified Data.Time as Time
+import Data.String (fromString)
 
+import Bead.Domain.Entities (dataTimeZone)
 import Bead.Controller.Pages (Page)
 import qualified Bead.Controller.Pages as P (Page(..))
 import Bead.Controller.ServiceContext (UserState(..))
@@ -16,6 +20,7 @@ import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 import Bead.View.UserActions (UserAction(CreateGroupAssignment, CreateCourseAssignment))
 
+import Text.Printf (printf)
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A (id, style)
@@ -32,23 +37,27 @@ modifyAssignment :: Content
 modifyAssignment = getPostContentHandler modifyAssignmentPage postModifyAssignment
 
 data PageData
-  = PD_Course     [(CourseKey, Course)]
-  | PD_Group      [(GroupKey, Group)]
-  | PD_Assignment (AssignmentKey, Assignment)
+  = PD_Course     (Time.TimeZone, UTCTime, [(CourseKey, Course)])
+  | PD_Group      (Time.TimeZone, UTCTime, [(GroupKey, Group)])
+  | PD_Assignment (Time.TimeZone, AssignmentKey, Assignment)
+  -- TODO: Calculate the time differences and shows the values in
+  -- the actual time zone
 
 pageDataCata course group assignment p = case p of
   PD_Course x -> course x
   PD_Group  x -> group x
   PD_Assignment x -> assignment x
 
-isEmptyData = pageDataCata null null (const False)
+isEmptyData = pageDataCata (null . trd) (null . trd) (const False)
 
 -- * Course Assignment
 
 newCourseAssignmentPage :: GETContentHandler
 newCourseAssignmentPage = withUserState $ \s -> do
   cs <- runStoryE S.administratedCourses
-  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Course cs))
+  now <- liftIO $ getCurrentTime
+  tz <- dataTimeZone <$> userTimeZone
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Course (tz,now,cs)))
 
 postCourseAssignment :: POSTContentHandler
 postCourseAssignment = CreateCourseAssignment
@@ -59,8 +68,10 @@ postCourseAssignment = CreateCourseAssignment
 
 newGroupAssignmentPage :: GETContentHandler
 newGroupAssignmentPage = withUserState $ \s -> do
+  now <- liftIO $ getCurrentTime
   gs <- runStoryE S.administratedGroups
-  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Group gs))
+  tz <- dataTimeZone <$> userTimeZone
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Group (tz,now,gs)))
 
 postGroupAssignment :: POSTContentHandler
 postGroupAssignment = CreateGroupAssignment
@@ -73,7 +84,8 @@ modifyAssignmentPage :: GETContentHandler
 modifyAssignmentPage = withUserState $ \s -> do
   ak <- getValue
   as <- runStoryE (S.loadAssignment ak)
-  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Assignment (ak,as)))
+  tz <- dataTimeZone <$> userTimeZone
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Assignment (tz,ak,as)))
 
 postModifyAssignment :: POSTContentHandler
 postModifyAssignment = ModifyAssignment <$> getValue <*> getValue
@@ -93,11 +105,17 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
     H.div ! A.id (fieldName startDateDivId) $ do
        translate i "Start date"
        H.br
-       hiddenInput (fieldName assignmentStartField) ""
+       hiddenInput (fieldName assignmentStartDefaultDate) (fromString startDefDate)
+       hiddenInput (fieldName assignmentStartDefaultHour) (fromString startDefHour)
+       hiddenInput (fieldName assignmentStartDefaultMin)  (fromString startDefMin)
+       hiddenInput (fieldName assignmentStartField) (fromString $ concat [startDefDate, " ", startDefHour, ":", startDefMin, ":00"])
     H.div ! A.id (fieldName endDateDivId) $ do
        translate i "End date"
        H.br
-       hiddenInput (fieldName assignmentEndField) ""
+       hiddenInput (fieldName assignmentEndDefaultDate) (fromString endDefDate)
+       hiddenInput (fieldName assignmentEndDefaultHour) (fromString endDefHour)
+       hiddenInput (fieldName assignmentEndDefaultMin)  (fromString endDefMin)
+       hiddenInput (fieldName assignmentEndField) (fromString $ concat [endDefDate, " ", endDefHour, ":", endDefMin, ":00"])
   H.div ! rightCell $ do
     H.b $ (translate i "Description text block / Description files")
     textAreaInput (fieldName assignmentDescField) (amap assignmentDesc pd) ! fillDiv
@@ -114,9 +132,9 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
       pageDataCata (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
       H.br
       pageDataCata
-        (valueTextSelection (fieldName selectedCourse))
-        (valueTextSelection (fieldName selectedGroup))
-        (hiddenInput (fieldName assignmentKeyField) . paramValue  . fst)
+        (valueTextSelection (fieldName selectedCourse) . trd)
+        (valueTextSelection (fieldName selectedGroup)  . trd)
+        (hiddenInput (fieldName assignmentKeyField) . paramValue  . snd3)
         pd
     H.p $ submitButton (fieldName saveSubmitBtn) (i "Save")
     where
@@ -127,8 +145,34 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
                    (const P.ModifyAssignment)
 
       amap :: (Assignment -> a) -> PageData -> Maybe a
-      amap f (PD_Assignment (_,a)) = Just . f $ a
+      amap f (PD_Assignment (_,_,a)) = Just . f $ a
       amap _ _                     = Nothing
+
+      timezone = pageDataCata
+        fst3
+        fst3
+        fst3
+        pd
+
+      date t =
+        let localTime = Time.utcToLocalTime timezone t
+            timeOfDay = Time.localTimeOfDay localTime
+        in ( show $ Time.localDay         localTime
+           , printf "%02d" $ Time.todHour timeOfDay
+           , printf "%02d" $ Time.todMin  timeOfDay
+           )
+
+      (startDefDate, startDefHour, startDefMin) = date $ pageDataCata
+        snd3
+        snd3
+        (assignmentStart . trd)
+        pd
+
+      (endDefDate, endDefHour, endDefMin) = date $ pageDataCata
+        snd3
+        snd3
+        (assignmentEnd . trd)
+        pd
 
 -- CSS Section
 
@@ -138,3 +182,9 @@ leftCell      = A.style "float: left;  width:30%; height: 30%"
 rightCell     = A.style "float: right; width:68%; height: 44%"
 fillDiv       = A.style "width: 98%; height: 90%"
 formDiv       = A.style "width: 100%; height: 600px"
+
+-- Helper
+
+fst3 (a,b,c) = a
+snd3 (a,b,c) = b
+trd  (a,b,c) = c

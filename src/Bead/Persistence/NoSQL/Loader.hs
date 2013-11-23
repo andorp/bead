@@ -249,14 +249,16 @@ instance Save TimeZone where
   save d = fileSave d "timezone" . show
 
 instance Save Assignment where
-  save d e = do
+  save d = assignmentCata $ \name desc tcs type_ start starttz end endtz -> do
     createStructureDirs d assignmentDirStructure
-    saveName d (assignmentName e)
-    fileSave d "description" (assignmentDesc e)
-    fileSave d "testcases"   (assignmentTCs  e)
-    fileSave d "type"        (show . assignmentType $ e)
-    fileSave d "start"       (show . assignmentStart $ e)
-    fileSave d "end"         (show . assignmentEnd $ e)
+    saveName d name
+    fileSave d "description" desc
+    fileSave d "testcases"   tcs
+    fileSave d "type"        (show type_)
+    fileSave d "start"       (show start)
+    fileSave d "starttz"     (show starttz)
+    fileSave d "end"         (show end)
+    fileSave d "endtz"       (show endtz)
 
 instance Save Submission where
   save d s = do
@@ -316,21 +318,15 @@ instance Load TimeZone where
   load d = fileLoad d "timezone" readMaybe
 
 instance Load Assignment where
-  load d = do
-    name <- loadName d
-    desc <- fileLoad d "description" same
-    tcs  <- fileLoad d "testcases" same
-    t    <- fileLoad d "type"  readMaybe
-    s    <- fileLoad d "start" readMaybe
-    e    <- fileLoad d "end"   readMaybe
-    return $ Assignment {
-        assignmentName = name
-      , assignmentDesc = desc
-      , assignmentTCs  = tcs
-      , assignmentType = t
-      , assignmentStart = s
-      , assignmentEnd   = e
-      }
+  load d = assignmentAna
+      (loadName d)
+      (fileLoad d "description" same)
+      (fileLoad d "testcases" same)
+      (fileLoad d "type"  readMaybe)
+      (fileLoad d "start" readMaybe)
+      (fileLoad d "starttz" readMaybe)
+      (fileLoad d "end"   readMaybe)
+      (fileLoad d "endtz" readMaybe)
 
 instance Load Submission where
   load d = do
@@ -425,13 +421,15 @@ instance Update Evaulation where
     fileUpdate d "result"      (show . evaulationResult $ e)
 
 instance Update Assignment where
-  update d a = do
-    updateName d (assignmentName a)
-    fileUpdate d "type"  (show . assignmentType  $ a)
-    fileUpdate d "start" (show . assignmentStart $ a)
-    fileUpdate d "end"   (show . assignmentEnd   $ a)
-    fileUpdate d "description" (assignmentDesc a)
-    fileUpdate d "testcases"   (assignmentTCs  a)
+  update d = assignmentCata $ \name desc tcs type_ start starttz end endtz -> do
+    updateName d name
+    fileUpdate d "description" desc
+    fileUpdate d "testcases"   tcs
+    fileUpdate d "type"        (show type_)
+    fileUpdate d "start"       (show start)
+    fileUpdate d "starttz"     (show starttz)
+    fileUpdate d "end"         (show end)
+    fileUpdate d "endtz"       (show endtz)
 
 -- * Dir Structures
 
@@ -467,7 +465,7 @@ userDirStructure = DirStructure {
 
 assignmentDirStructure = DirStructure {
     files = [ "name", "description", "testcases"
-            , "type", "start", "end", created ]
+            , "type", "start", "starttz", "end", "endtz", created ]
   , directories = ["group", "course", "submission"]
   }
 

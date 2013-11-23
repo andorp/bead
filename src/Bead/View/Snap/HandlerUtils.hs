@@ -15,6 +15,7 @@ module Bead.View.Snap.HandlerUtils (
   , setReqParamInSession
   , sessionToken
   , userState
+  , userTimeZone
   , logout
   , HandlerError(..)
   , ContentHandlerError
@@ -25,6 +26,7 @@ module Bead.View.Snap.HandlerUtils (
 
 -- Bead imports
 
+import Bead.Domain.Entities (TimeZone)
 import Bead.Controller.ServiceContext hiding (serviceContext, name)
 import Bead.Controller.Logging as L
 import qualified Bead.Controller.Pages as P
@@ -103,6 +105,10 @@ userState = do
           lift $ logMessage ERROR "No data found for the user"
           throwError . strMsg $ "No data found for the user"
         Just ud -> return ud
+
+-- Produces a handler that returns the user's actual time zone
+userTimeZone :: (Error e) => ErrorT e (Handler App b) TimeZone
+userTimeZone = timezone <$> userState
 
 -- TODO: Show some error
 errorPageHandler :: T.Text -> Handler App b ()

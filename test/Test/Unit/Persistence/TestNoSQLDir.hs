@@ -49,7 +49,7 @@ test_initialize_persistence = testCase "Initialize NoSQLDir persistence layer" $
 test_create_exercise = testCase "Save an exercise" $ do
   str <- getCurrentTime
   end <- getCurrentTime
-  let assignment = Assignment "Title" "This is an exercise" "This is the test" Normal str end
+  let assignment = Assignment "Title" "This is an exercise" "This is the test" Normal str UTC end UTC
   ek <- liftE $ saveAssignment persist assignment
   let uname = Username "student"
       user = User {
@@ -71,7 +71,7 @@ test_create_exercise = testCase "Save an exercise" $ do
 test_create_load_exercise = testCase "Create and load exercise" $ do
   str <- getCurrentTime
   end <- getCurrentTime
-  k <- liftE $ saveAssignment persist (Assignment "Title" "This is an exercise" "This is the test" Normal str end)
+  k <- liftE $ saveAssignment persist (Assignment "Title" "This is an exercise" "This is the test" Normal str UTC end UTC)
   ks <- liftE $ filterAssignment persist (\_ _ -> True)
   assertBool "Readed list of exercises was empty" (length ks > 0)
   assertBool "Written key was not in the list" (elem k (map fst ks))
@@ -135,8 +135,8 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool "Group is not found in administrated groups" (elem gk (map fst gs))
   str <- getCurrentTime
   end <- getCurrentTime
-  let gAssignment = Assignment "GroupAssignment" "Assignment" "Test" Normal str end
-      cAssignment = Assignment "CourseAssignment" "Assignment" "Test" Urn str end
+  let gAssignment = Assignment "GroupAssignment" "Assignment" "Test" Normal str UTC end UTC
+      cAssignment = Assignment "CourseAssignment" "Assignment" "Test" Urn str UTC end UTC
   cak <- liftE $ saveCourseAssignment persist ck cAssignment
   cask <- liftE $ courseAssignments persist ck
   assertBool "Course does not have the assignment" (elem cak cask)

@@ -15,7 +15,13 @@ startDateDivId = HookId "start-date-div"
 endDateDivId = HookId "end-date-div"
 
 assignmentStartField = HookId "asg-start"
+assignmentStartDefaultDate = HookId "asg-start-def-date"
+assignmentStartDefaultHour = HookId "asg-start-def-hour"
+assignmentStartDefaultMin = HookId "asg-start-def-min"
 assignmentEndField = HookId "asg-end"
+assignmentEndDefaultDate = HookId "asg-end-def-date"
+assignmentEndDefaultHour = HookId "asg-end-def-hour"
+assignmentEndDefaultMin = HookId "asg-end-def-min"
 assignmentStartDateField = HookId "asg-start-date"
 assignmentEndDateField = HookId "asg-end-date"
 

@@ -97,13 +97,17 @@ groups = Group
   <*> groupDescs
   <*> evalConfigs
 
-assignments start end = Assignment
-  <$> assignmentNames
-  <*> assignmentDescs
-  <*> assignmentTCss
-  <*> assignmentTypeGen
-  <*> (return start)
-  <*> (return end)
+timeZones = elements [UTC, CET, CEST]
+
+assignments start end = assignmentAna
+  assignmentNames
+  assignmentDescs
+  assignmentTCss
+  assignmentTypeGen
+  (return start)
+  timeZones
+  (return end)
+  timeZones
 
 assignmentNames = manyWords
 

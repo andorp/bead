@@ -31,18 +31,27 @@ data DateTimePickerHook = DateTimePickerHook {
     dtDivId         :: String
   , dtHiddenInputId :: String
   , dtDatePickerId  :: String
+  , dtDefaultDate   :: String
+  , dtDefaultHour   :: String
+  , dtDefaultMin    :: String
   }
 
 startDateTimeHook = DateTimePickerHook {
     dtDivId = hookId startDateDivId
   , dtHiddenInputId = hookId assignmentStartField
   , dtDatePickerId = hookId assignmentStartDateField
+  , dtDefaultDate = hookId assignmentStartDefaultDate
+  , dtDefaultHour = hookId assignmentStartDefaultHour
+  , dtDefaultMin  = hookId assignmentStartDefaultMin
   }
 
 endDateTimeHook = DateTimePickerHook {
     dtDivId = hookId endDateDivId
   , dtHiddenInputId = hookId assignmentEndField
   , dtDatePickerId = hookId assignmentEndDateField
+  , dtDefaultDate = hookId assignmentEndDefaultDate
+  , dtDefaultHour = hookId assignmentEndDefaultHour
+  , dtDefaultMin  = hookId assignmentEndDefaultMin
   }
 
 
