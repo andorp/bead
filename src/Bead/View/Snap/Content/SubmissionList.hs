@@ -53,19 +53,19 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
       firstCol (i "Teacher")
       secondCol (join . slTeacher . smList $ p)
   H.h3 (translate i "Submission list")
-  table (fieldName submissionTableName) (className submissionListTable) $
+  table (fieldName submissionTableName) (className submissionListTable) # informationalTable $
     mapM_ submissionLine (slSubmissions . smList $ p)
   H.h2 $ (translate i "Assignment")
   H.div # assignmentTextDiv $ H.pre # assignmentTextPre $
     (markdownToHtml . slAssignmentText . smList $ p)
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
-    secondCol t = H.td # textAlignLeft        $ fromString t
+    secondCol t = H.td # textAlignLeft $ fromString t
     submissionLine (sk, time, status, t) = H.tr $ do
-      H.td $ link
+      H.td # informationalCell $ link
         (routeWithParams P.SubmissionDetails [requestParam (asKey p), requestParam sk])
         (fromString . show $ time)
-      H.td (fromString status)
+      H.td # informationalCell $ (fromString status)
 
 invalidAssignment :: Pagelet
 invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->

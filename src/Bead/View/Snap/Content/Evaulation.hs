@@ -122,15 +122,15 @@ inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
     [(Passed, i "Passed"), (Failed, i "Failed")]
   where
     valueAndText :: (Result, String) -> (String, String)
-    valueAndText (v,n) = (errorOnNothing . encodeToFay . EvResult . mkEvalResult . Binary $ v, n)
-
-    errorOnNothing (Just x) = x
-    errorOnNothing Nothing  = error "Error in encoding Binary input result"
+    valueAndText (v,n) = (errorOnNothing . encodeToFay . EvResult . mkEvalResult $ Binary v, n)
 
 -- When the page is dynamic the percentage spinner is hooked on the field
 inputEvalResult (PctEval cfg) = mkI18NHtml $ \i -> do
-  -- TODO: field validation
-  hiddenInput (fieldName evaulationResultField) ""
+  hiddenInput
+    (fieldName evaulationResultField)
+    (fromString . errorOnNothing . encodeToFay . EvResult . mkEvalResult . Percentage $ Scores [0.0])
+
+errorOnNothing = maybe (error "Error is encoding input result") id
 
 -- CSS Section
 
