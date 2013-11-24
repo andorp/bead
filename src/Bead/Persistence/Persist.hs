@@ -166,6 +166,7 @@ submissionDesc p sk = do
   , eSolution = s
   , eConfig = c
   , eAssignmentTitle = assignmentName asg
+  , eAssignmentDesc  = assignmentDesc asg
   , eComments = cs
   }
 

@@ -502,7 +502,7 @@ submissionDescription sk = logAction INFO msg $ do
   where
     msg = "loads submission infomation for " ++ show sk
 
-openSubmissions :: UserStory [SubmissionKey]
+openSubmissions :: UserStory [(SubmissionKey, SubmissionDesc)]
 openSubmissions = logAction INFO ("lists unevaulated submissions") $ do
   authorize P_Open P_Submission
   withUserAndPersist $ \uname p -> do
@@ -511,10 +511,13 @@ openSubmissions = logAction INFO ("lists unevaulated submissions") $ do
     cas <- concat <$> mapM (courseAssignments p) cs
     gas <- concat <$> mapM (groupAssignments p) gs
     let as = nub (cas ++ gas)
-        adminFor (_,a) = elem a as
+        adminFor (_,a,_) = elem a as
     nonEvaulated <- R.openedSubmissions p
     assignments  <- mapM (assignmentOfSubmission p) nonEvaulated
-    return $ map fst $ filter adminFor $ zip nonEvaulated assignments
+    descriptions <- mapM (R.submissionDesc p) nonEvaulated
+    return $ map select $ filter adminFor $ zip3 nonEvaulated assignments descriptions
+  where
+    select (a,_,c) = (a,c)
 
 submissionListDesc :: AssignmentKey -> UserStory SubmissionListDesc
 submissionListDesc ak = logAction INFO ("lists submissions for assignment " ++ show ak) $ do
