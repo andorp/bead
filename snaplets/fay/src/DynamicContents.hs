@@ -21,12 +21,12 @@ main = addOnLoad onload
 
 onload :: Fay ()
 onload = do
-  hookEvaulationTypeForm createCourseHook
-  hookEvaulationTypeForm createGroupHook
+  hookPercentageDiv evaulationPctHook pctValue
+  hookEvaluationTypeForm createCourseHook
+  hookEvaluationTypeForm createGroupHook
   hookDatetimePickerDiv startDateTimeHook
   hookDatetimePickerDiv endDateTimeHook
   hookAssignmentForm (hookId assignmentForm) startDateTimeHook endDateTimeHook
-  hookPercentageDiv evaulationPctHook pctValue
   hookRegistrationForm
   hookSamePasswords (rFormId regFinalForm) (lcFieldName loginPassword) (lcFieldName regPasswordAgain)
   hookPasswordField (rFormId regFinalForm) (lcFieldName loginPassword)
@@ -41,36 +41,40 @@ pctValue = toEvResultJSON . percentageResult . parseDouble
 -- to the given hook
 hookDatetimePickerDiv :: DateTimePickerHook -> Fay ()
 hookDatetimePickerDiv hook = void $ do
-  div   <- select . cssId . dtDivId $ hook
-  input <- select . cssId . dtHiddenInputId $ hook
-  date  <- select . createDateInput $ dtDatePickerId hook
-  datepicker date
-  hour <- select createTimeInput
-  min <- select createTimeInput
-  br  <- select newLine
-  appendTo div br
-  appendTo div date
-  appendTo div br
-  appendTo div hour
-  appendTo div min
-  numberField hour 0 23
-  numberField min  0 59
-  defDate <- select . cssId . dtDefaultDate $ hook
-  defHour <- select . cssId . dtDefaultHour $ hook
-  defMin  <- select . cssId . dtDefaultMin  $ hook
-  copy defDate date
-  copy defHour hour
-  copy defMin  min
-  let createDateTime e = void $ do
-        d <- getVal date
-        h <- getVal hour
-        m <- getVal min
-        setVal (datetime d h m) input
-  hourSpinner createDateTime hour
-  minuteSpinner createDateTime min
-  change createDateTime date
-  change createDateTime hour
-  change createDateTime min
+  let pickerDiv = dtDivId $ hook
+  div   <- select . cssId $ pickerDiv -- dtDivId $ hook
+  existDiv <- exists div
+  when existDiv $ do
+    input <- select . cssId . dtHiddenInputId $ hook
+    date  <- select . createDateInput $ dtDatePickerId hook
+    datepicker date
+    hour <- select createTimeInput
+    min <- select createTimeInput
+    br  <- select newLine
+    appendTo div br
+    appendTo div date
+    appendTo div br
+    appendTo div hour
+    appendTo div min
+    numberField hour 0 23
+    numberField min  0 59
+    defDate <- select . cssId . dtDefaultDate $ hook
+    defHour <- select . cssId . dtDefaultHour $ hook
+    defMin  <- select . cssId . dtDefaultMin  $ hook
+    copy defDate date
+    copy defHour hour
+    copy defMin  min
+    let createDateTime e = void $ do
+          d <- getVal date
+          h <- getVal hour
+          m <- getVal min
+          setVal (datetime d h m) input
+    hourSpinner createDateTime hour
+    minuteSpinner createDateTime min
+    change createDateTime date
+    change createDateTime hour
+    change createDateTime min
+    putStrLn $ "Date picker " ++ pickerDiv ++ " is loaded."
   where
     createDateInput id = fromString ("<input id=\"" ++ id  ++ "\" type=\"text\" size=\"10\" required readonly />")
     createTimeInput = fromString "<input type=\"text\" size=\"2\" value=\"0\"/>"
@@ -88,16 +92,19 @@ twoDigits ds  = ds
 hookPercentageDiv :: PercentageHook -> (String -> String) -> Fay ()
 hookPercentageDiv hook f = void $ do
   div <- select . cssId . ptDivId $ hook
-  input <- select. cssId . ptHiddenInputId $ hook
-  pctInput <- select (fromString "<input type=\"text\" size=\"3\" required />")
-  appendTo div pctInput
-  select (fromString "<span class=\"evtremoveable\">&#37;</span>") >>= appendTo div
-  let changeHiddenInput e = void $ do
-        t <- targetElement e
-        val <- getVal t
-        setVal (fromString . f . double . unpack $ val) input
-  numberField pctInput 0 100
-  pctSpinner changeHiddenInput pctInput
+  existDiv <- exists div
+  when existDiv $ do
+    input <- select. cssId . ptHiddenInputId $ hook
+    pctInput <- select (fromString "<input type=\"text\" size=\"3\" required />")
+    appendTo div pctInput
+    select (fromString "<span class=\"evtremoveable\">&#37;</span>") >>= appendTo div
+    let changeHiddenInput e = void $ do
+          t <- targetElement e
+          val <- getVal t
+          setVal (fromString . f . double . unpack $ val) input
+    numberField pctInput 0 100
+    pctSpinner changeHiddenInput pctInput
+    putStrLn "Percentage div is loaded."
   where
     double "100" = "1.0"
     double n = "0." ++ twoDigits n
@@ -141,17 +148,19 @@ validateField validator field place removable = do
 hookAssignmentForm :: String -> DateTimePickerHook -> DateTimePickerHook -> Fay ()
 hookAssignmentForm formId startHook endHook = void $ do
   form <- select $ cssId formId
-  start <- select . cssId $ dtHiddenInputId startHook
-  end <- select . cssId $ dtHiddenInputId endHook
-  startErrMsgPos <- select . cssId $ dtDatePickerId startHook
-  endErrMsgPos <- select . cssId $ dtDatePickerId endHook
-  let validateForm = do
-        messages <- select . cssClass $ removeable
-        remove messages
-        start <- validateField isDateTime start startErrMsgPos removeable
-        end   <- validateField isDateTime end   endErrMsgPos   removeable
-        return (start && end)
-  onSubmit validateForm form
+  existForm <- exists form
+  when existForm $ do
+    start <- select . cssId $ dtHiddenInputId startHook
+    end <- select . cssId $ dtHiddenInputId endHook
+    startErrMsgPos <- select . cssId $ dtDatePickerId startHook
+    endErrMsgPos <- select . cssId $ dtDatePickerId endHook
+    let validateForm = do
+          messages <- select . cssClass $ removeable
+          remove messages
+          start <- validateField isDateTime start startErrMsgPos removeable
+          end   <- validateField isDateTime end   endErrMsgPos   removeable
+          return (start && end)
+    onSubmit validateForm form
   where
     removeable = "datetimeerror"
 
@@ -160,12 +169,15 @@ hookAssignmentForm formId startHook endHook = void $ do
 hookPasswordField :: String -> String -> Fay ()
 hookPasswordField formId password = void $ do
   form <- select . cssId $ formId
-  pwd <- select $ cssId password
-  let validatorPwd = do
-        messages <- select . cssClass $ removable
-        remove messages
-        validateField isPassword pwd pwd removable
-  onSubmit validatorPwd form
+  existForm <- exists form
+  when existForm $ do
+    pwd <- select $ cssId password
+    let validatorPwd = do
+          messages <- select . cssClass $ removable
+          remove messages
+          validateField isPassword pwd pwd removable
+    onSubmit validatorPwd form
+    putStrLn "Password field is loaded."
   where
     removable = "password_error"
 
@@ -173,50 +185,59 @@ hookPasswordField formId password = void $ do
 -- and hook that the two values must be the same for submit event.
 hookSamePasswords :: String -> String -> String -> Fay ()
 hookSamePasswords formId password1 password2 = void $ do
-  form     <- select . cssId $ formId
-  pwd      <- select $ cssId password1
-  pwdAgain <- select $ cssId password2
-  let validator = do
-        messages <- select . cssClass $ removable
-        remove messages
-        password      <- getVal pwd
-        passwordAgain <- getVal pwdAgain
-        case (password == passwordAgain) of
-          True -> return True
-          False -> do
-            span <- makeMessage removable "Given passwords are differents"
-            after span pwdAgain
-            return False
-  onSubmit validator form
-  putStrLn "There were some password fields hooked."
+  form      <- select . cssId $ formId
+  existForm <- exists form
+  when existForm $ do
+    pwd      <- select $ cssId password1
+    pwdAgain <- select $ cssId password2
+    let validator = do
+          messages <- select . cssClass $ removable
+          remove messages
+          password      <- getVal pwd
+          passwordAgain <- getVal pwdAgain
+          case (password == passwordAgain) of
+            True -> return True
+            False -> do
+              span <- makeMessage removable "Given passwords are differents"
+              after span pwdAgain
+              return False
+    onSubmit validator form
+    putStrLn "Same password fields are loaded."
   where
     removable = "same_password_error"
 
 hookRegistrationForm :: Fay ()
 hookRegistrationForm = void $ do
   regForm <- select . cssId . rFormId $ regForm
-  uname <- select . cssId . lcFieldName $ loginUsername
-  pwd   <- select . cssId . lcFieldName $ loginPassword
-  email <- select . cssId . rFieldName $ regEmailAddress
-  fname <- select . cssId . rFieldName $ regFullName
+  existForm <- exists regForm
+  when existForm $ do
+    uname <- select . cssId . lcFieldName $ loginUsername
+    pwd   <- select . cssId . lcFieldName $ loginPassword
+    email <- select . cssId . rFieldName $ regEmailAddress
+    fname <- select . cssId . rFieldName $ regFullName
 
-  let validator = do
-        messages <- select . cssClass $ removable
-        remove messages
-        andM
-          [ validateField isUsername     uname uname removable
-          , validateField isEmailAddress email email removable
-          ]
+    let validator = do
+          messages <- select . cssClass $ removable
+          remove messages
+          andM
+            [ validateField isUsername     uname uname removable
+            , validateField isEmailAddress email email removable
+            ]
 
-  onSubmit validator regForm
+    onSubmit validator regForm
+    putStrLn "Registration form is loaded."
   where
     removable = "regremovable"
 
-hookEvaulationTypeForm :: EvaulationHook -> Fay ()
-hookEvaulationTypeForm hook = do
-  form <- select . cssId . evFormId $ hook
-  selection <- select . cssId . evSelectionId $ hook
-  change (changeFormContent form) selection
+hookEvaluationTypeForm :: EvaulationHook -> Fay ()
+hookEvaluationTypeForm hook = do
+  let formId = evFormId hook
+  form <- select . cssId $ formId
+  existForm <- exists form
+  when existForm $ do
+    selection <- select . cssId . evSelectionId $ hook
+    change (changeFormContent form) selection
+    putStrLn $ "Evaluation form " ++ formId ++ " is loaded."
 
   where
     changeFormContent :: JQuery -> Event -> Fay ()
@@ -275,6 +296,9 @@ sValue = ffi "%1.spinner(\"value\")"
 
 targetElement :: Event -> Fay JQuery
 targetElement e = target e >>= selectElement
+
+exists :: JQuery -> Fay Bool
+exists = ffi "(%1.length != 0)"
 
 -- * Javascript helpers
 
