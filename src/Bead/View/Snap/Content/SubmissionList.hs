@@ -35,9 +35,13 @@ submissionListPage = withUserState $ \s -> do
   usersAssignment ak $ \assignment -> do
     case assignment of
       Nothing -> renderPagelet . withUserFrame s $ invalidAssignment
-      Just  _ -> do
-        sl <- runStoryE (submissionListDesc ak)
-        renderPagelet . withUserFrame s $ submissionListContent (PageData { asKey = ak, smList = sl })
+      Just asg -> do
+        now <- liftIO getCurrentTime
+        case (assignmentStart asg > now) of
+          True  -> renderPagelet . withUserFrame s $ assignmentNotStartedYet
+          False -> do
+            sl <- runStoryE (submissionListDesc ak)
+            renderPagelet . withUserFrame s $ submissionListContent (PageData { asKey = ak, smList = sl })
 
 submissionListContent :: PageData -> Pagelet
 submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (className submissionListDiv) $ do
@@ -67,3 +71,6 @@ invalidAssignment :: Pagelet
 invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->
   (translate i "You have tried to open an assignment that not belongs to you")
 
+assignmentNotStartedYet :: Pagelet
+assignmentNotStartedYet = onlyHtml $ mkI18NHtml $ \i ->
+  (translate i "You have tried to open an assignment that has not started yet")

@@ -23,7 +23,7 @@ usersObject objectKeys keyLoader key onKeyFound =
       True  -> Just <$> keyLoader key
   ) >>= onKeyFound
 
--- Produces a handler that runs the the fuund handler if the given
+-- Produces a handler that runs the the found handler if the given
 -- assignment key is associated with the current user, otherwise
 -- runs the notFound handler
 userAssignmentForSubmission
