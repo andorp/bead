@@ -90,7 +90,7 @@ groupNames = manyWords
 
 groupDescs = manyWords
 
-groupUsers' = liftM (map username) (listOf1 word)
+groupUsers' = liftM (map Username) (listOf1 word)
 
 groups = Group
   <$> groupNames
