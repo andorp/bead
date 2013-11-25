@@ -142,7 +142,7 @@ rolePrm = Parameter {
 customUsernamePrm :: String -> Parameter Username
 customUsernamePrm field = Parameter {
     encode = usernameCata id
-  , decode = Just . Username
+  , decode = Just . Username . map toLower
   , name = field
   , decodeError = ("Invalid username is given: "++)
   , notFound    = "Username is not found"
@@ -150,6 +150,9 @@ customUsernamePrm field = Parameter {
 
 usernamePrm :: Parameter Username
 usernamePrm = customUsernamePrm (fieldName usernameField)
+
+loginUsernamePrm :: Parameter Username
+loginUsernamePrm = customUsernamePrm (fieldName loginUsername)
 
 emailPrm :: String -> Parameter Email
 emailPrm field = validateBy isEmailAddress $ Parameter {
@@ -171,6 +174,9 @@ regPasswordPrm = validateBy isPassword $ stringParameter (fieldName loginPasswor
 
 regPasswordAgainPrm :: Parameter String
 regPasswordAgainPrm = validateBy isPassword $ stringParameter (fieldName regPasswordAgain) "Password Again"
+
+loginPasswordPrm :: Parameter String
+loginPasswordPrm = validateBy isPassword $ stringParameter (fieldName loginPassword) "Login password"
 
 oldPasswordPrm :: Parameter String
 oldPasswordPrm = validateBy isPassword $ stringParameter (fieldName oldPasswordField) "Old password"

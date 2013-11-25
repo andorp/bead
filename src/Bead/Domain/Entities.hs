@@ -267,7 +267,7 @@ data Authorization = Authorization {
   }
 
 newtype Username = Username String
-  deriving (Eq, Ord)
+  deriving (Eq, Read, Ord)
 
 usernameCata :: (String -> a) -> Username -> a
 usernameCata f (Username u) = f u
@@ -277,10 +277,6 @@ class AsUsername c where
 
 instance Str Username where
   str (Username u) = u
-
--- | The username is case insensitive because of practical reasons
-username :: String -> Username
-username = Username . (map toLower)
 
 -- | Username 'factory'
 type FormatedUsername = String -> Erroneous Username
@@ -404,11 +400,6 @@ instance PermissionObj Assignment where
 
 instance PermissionObj UserRegistration where
   permissionObject _ = P_UserReg
-
--- * Read instances
-
-instance Read Username where
-  readsPrec _ s = [(username s,[])]
 
 -- * Show instances
 

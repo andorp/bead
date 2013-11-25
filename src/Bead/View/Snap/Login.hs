@@ -16,13 +16,14 @@ import Bead.View.Snap.Dictionary (Language(..))
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.Pagelets
-import Bead.View.Snap.ErrorPage (errorPageWithTitle)
+import Bead.View.Snap.ErrorPage (errorPageWithTitle, errorPage)
 
 import Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import Bead.View.Snap.Content.All
 
 -- Haskell imports
 
+import Data.Either (either)
 import Data.String
 import Data.ByteString.Char8 hiding (index)
 import qualified Data.Text as T
@@ -48,44 +49,43 @@ import qualified Text.Blaze.Html5.Attributes as A
 login :: Maybe AuthFailure -> Handler App (AuthManager App) ()
 login authError = blaze $ loginPage authError
 
--- TODO: Handle multiple login attempts correctly
--- One user should just log in at once.
 loginSubmit :: Handler App b ()
-loginSubmit = do
-  withTop auth $ loginUser
-    (fieldName loginUsername)
-    (fieldName loginPassword)
-    Nothing (login . visibleFailure) $ do
-      um <- currentUser
-      case um of
-        Nothing -> do
-          logMessage ERROR $ "User is not logged during login submittion process"
-          withTop sessionManager $ commitSession
-        Just authUser -> do
-          context <- withTop serviceContext getServiceContext
-          token   <- sessionToken
-          let unameFromAuth = usernameFromAuthUser authUser
-              mpasswFromAuth = passwordFromAuthUser authUser
-          case mpasswFromAuth of
-            Nothing -> do logMessage ERROR "No password was given"
-                          A.logout
-            Just passwFromAuth -> do
-              result <- liftIO $ S.runUserStory context UserNotLoggedIn (S.login unameFromAuth token)
-              case result of
-                Left err -> do
-                  logMessage ERROR $ "Error happened processing user story: " ++ show err
-                  -- Service context authentication
-                  liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
-                  A.logout
-                  withTop sessionManager $ commitSession
-                  errorPageWithTitle "Login" "Some internal error happened. Please notify the system administrator"
-                Right (val,userState) -> do
-                  initSessionValues (page userState) unameFromAuth
-                  withTop sessionManager $ commitSession
-                  redirect "/"
-
+loginSubmit = withTop auth $ handleError $ runErrorT $ do
+  user <- getParameter loginUsernamePrm
+  pwd  <- getParameter loginPasswordPrm
+  loggedIn <- lift $ loginByUsername
+    (usernameCata T.pack user)
+    (ClearText . pack $ pwd)
+    False
+  case loggedIn of
+    Left failure -> lift $ login $ visibleFailure $ failure
+    Right authUser -> lift $ do
+      context <- withTop serviceContext getServiceContext
+      token   <- sessionToken
+      let unameFromAuth = usernameFromAuthUser authUser
+          mpasswFromAuth = passwordFromAuthUser authUser
+      case mpasswFromAuth of
+        Nothing -> do logMessage ERROR "No password was given"
+                      A.logout
+        Just passwFromAuth -> do
+          result <- liftIO $ S.runUserStory context UserNotLoggedIn (S.login unameFromAuth token)
+          case result of
+            Left err -> do
+              logMessage ERROR $ "Error happened processing user story: " ++ show err
+              -- Service context authentication
+              liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
+              A.logout
+              withTop sessionManager $ commitSession
+              errorPageWithTitle "Login" "Some internal error happened. Please notify the system administrator"
+            Right (val,userState) -> do
+              initSessionValues (page userState) unameFromAuth
+              withTop sessionManager $ commitSession
+              redirect "/"
+  return ()
   where
-    err = Just . T.pack $ "Unknown user or password"
+    handleError m = do
+      x <- m
+      either errorPage (const $ return ()) x
 
     initSessionValues :: P.Page -> Username -> Handler App b ()
     initSessionValues page username = do
@@ -94,7 +94,6 @@ loginSubmit = do
         setLanguageInSession (Language "en")
         setUsernameInSession username
         setActPageInSession  page
-
       withTop serviceContext $ do
         logMessage DEBUG $ "Username is set in session to: " ++ show username
         logMessage DEBUG $ "User's actual page is set in session to: " ++ show page

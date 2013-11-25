@@ -5,7 +5,7 @@ import System.Console.GetOpt
 import System.Directory (doesDirectoryExist)
 import System.Environment (getArgs, getProgName)
 import System.FilePath (FilePath, joinPath)
-import System.IO (hFlush, stdout)
+import System.IO (hFlush, hSetEcho, stdout, stdin)
 
 import Bead.Configuration
 import Bead.Controller.ServiceContext as S
@@ -21,6 +21,7 @@ import qualified Bead.Persistence.NoSQLDir as P
 import Snap hiding (Config(..))
 import Snap.Snaplet
 
+import Data.Char (toLower)
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -38,6 +39,7 @@ c logger = do
 -- the service with the given config
 main :: IO ()
 main = do
+  hSetEcho stdin True
   args <- getArgs
   case initTasks args of
     Left usage -> do
@@ -55,12 +57,22 @@ interpretTasks tasks = case elem CreateAdmin tasks of
 
 readAdminUser :: IO (String, String)
 readAdminUser = do
-  putStrLn "Creating admin user"
+  putStrLn "Creating admin user, all characters are converted to lower case."
   putStr "Admin user: " >> hFlush stdout
-  usr <- getLine
+  usr <- fmap (map toLower) getLine
+  hSetEcho stdin False
   putStr "Password: " >> hFlush stdout
   pwd <- getLine
-  return (usr, pwd)
+  putStrLn ""
+  putStr "Password again: " >> hFlush stdout
+  pwd2 <- getLine
+  putStrLn ""
+  hSetEcho stdin True
+  case pwd == pwd2 of
+    True  -> return (usr, pwd)
+    False -> do
+      putStrLn "Passwords do not match!"
+      readAdminUser
 
 startService :: Config -> Maybe (String, String) -> IO ()
 startService config newAdminUser = do
@@ -78,4 +90,3 @@ startService config newAdminUser = do
 
   serveSnaplet defaultConfig (appInit config newAdminUser context dictionaries)
   stopLogger userActionLogs
-

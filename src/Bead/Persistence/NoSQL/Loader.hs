@@ -309,7 +309,7 @@ instance Load Role where
   load d = fileLoad d "role" (maybe (error "Role parsing was failed") same . parseRole)
 
 instance Load Username where
-  load d = fileLoad d "username" (same . username)
+  load d = fileLoad d "username" (same . Username)
 
 instance Load Email where
   load d = fileLoad d "email" (same . email')
