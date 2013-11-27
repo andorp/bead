@@ -142,11 +142,14 @@ rolePrm = Parameter {
 customUsernamePrm :: String -> Parameter Username
 customUsernamePrm field = Parameter {
     encode = usernameCata id
-  , decode = Just . Username . map toLower
+  , decode = fmap (Username . map toLower) . sixLength
   , name = field
   , decodeError = ("Invalid username is given: "++)
   , notFound    = "Username is not found"
-  }
+  } where
+    sixLength xs = case length xs of
+      6 -> Just xs
+      _ -> Nothing
 
 usernamePrm :: Parameter Username
 usernamePrm = customUsernamePrm (fieldName usernameField)
