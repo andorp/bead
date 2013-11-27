@@ -23,8 +23,8 @@ validate f v onValid onFail
 
 isUsername :: FieldValidator
 isUsername = FieldValidator {
-    validator = not . null
-  , message   = "Empty username"
+    validator = \xs -> ((length xs) == 6) && (all isAlphaNum xs)
+  , message   = "Must be a neptun code"
   }
 
 isPassword :: FieldValidator
@@ -59,6 +59,12 @@ toLower c =
 
 isAlpha :: Char -> Bool
 isAlpha c = elem (toLower c) "qwertzuiopasdfghjklyxcvbnm"
+
+isAlphaNum :: Char -> Bool
+isAlphaNum c =
+  if (isAlpha c)
+     then True
+     else (isDigit c)
 
 emailAddress :: String -> Bool
 emailAddress []     = False

@@ -224,11 +224,12 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     f <- readParameter regFullNamePrm
 
     case (u,e,f) of
+      (Nothing, _, _) -> errorPageWithTitle "Registration" "Username error"
       (Just username, Just email, Just fullname) -> do
         userRegData <- liftIO $ createUserRegData username email fullname
         result <- registrationStory (S.createUserReg userRegData)
         case result of
-          Left _ -> blaze $ "User registration data was not saved in the persistence"
+          Left _ -> errorPageWithTitle "Registration" "User registration data was not saved in the persistence"
           Right key -> do
              -- TODO: Send the email template
             withTop sendEmailContext $
@@ -241,7 +242,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
                   , regUrl = createUserRegAddress key userRegData
                   }
             redirect "/"
-      _ -> blaze $ "Some request parameter is missing"
+      _ -> errorPageWithTitle "Registration" "Some request parameter is missing"
 
   createUserRegAddress :: UserRegKey -> UserRegistration -> String
   createUserRegAddress key reg =
@@ -317,16 +318,16 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     values <- readRegParameters
     pwd    <- readParameter regPasswordPrm
     case (values, pwd) of
-      (Nothing,_) -> blaze $ "No registraion parameters are found" -- TODO
+      (Nothing,_) -> errorPageWithTitle "Registration" "No registraion parameters are found" -- TODO
       (Just (key, token, username), Just password) -> do
         result <- registrationStory (S.loadUserReg key)
         case result of
-          Left e -> blaze $ "Some error happened!!!" -- TODO
+          Left e -> errorPageWithTitle "Registration" "Some internal error happened!!!" -- TODO
           Right userRegData -> do
             now <- liftIO getCurrentTime
             -- TODO: Check username and token values (are the same as in the persistence)
             case (reg_timeout userRegData < now) of
-              True -> blaze $ "The registration opportunitiy has time out, please start it over"
+              True -> errorPageWithTitle "Registration" "The registration opportunity has timed out, please start it over"
               False -> do
                 result <- withTop auth $ createNewUser userRegData password
                 redirect "/"
