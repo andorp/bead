@@ -17,7 +17,7 @@ import Bead.Controller.Pages (Page(Login))
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.Pagelets (
-    linkToPageWithText, withTitleAndHead
+    link, withTitleAndHead
   )
 
 -- | Produces an error page showing the reason of an error, and redirects to
@@ -40,5 +40,5 @@ page t e = withTitleAndHead t $ do
     H.br
     maybe (return ()) fromString e
   H.div $
-    linkToPageWithText Login "Go back to login page"
+    link "/" "Go back to login page"
 
