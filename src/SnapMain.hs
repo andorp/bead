@@ -41,14 +41,9 @@ main :: IO ()
 main = do
   hSetEcho stdin True
   args <- getArgs
-  case initTasks args of
-    Left usage -> do
-      progName <- getProgName
-      putStrLn $ substProgName progName usage
-    Right tasks -> do
-      newAdminUser <- interpretTasks tasks
-      config <- readConfiguration "bead.config"
-      startService config newAdminUser
+  config <- readConfiguration "bead.config"
+  newAdminUser <- either (const $ return Nothing) interpretTasks (initTasks args)
+  startService config newAdminUser
 
 interpretTasks :: [InitTask] -> IO (Maybe (String, String))
 interpretTasks tasks = case elem CreateAdmin tasks of
