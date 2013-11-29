@@ -114,11 +114,11 @@ setTimeZone tz = do
   changeUserState $ \userState -> userState { timezone = tz }
   putStatusMessage $ join ["Time zone has been set to ", show tz, "."]
 
--- Updates the current user email address and full name in the persistence
-changeUserDetails :: Email -> String -> TimeZone -> UserStory ()
-changeUserDetails email name timezone = logAction INFO ("updates email address, fullname and timezone") $ do
+-- Updates the current user's full name and timezone in the persistence layer
+changeUserDetails :: String -> TimeZone -> UserStory ()
+changeUserDetails name timezone = logAction INFO ("changes fullname and timezone") $ do
   user <- currentUser
-  withPersist $ flip R.updateUser user { u_email = email, u_name = name , u_timezone = timezone }
+  withPersist $ flip R.updateUser user { u_name = name , u_timezone = timezone }
   putStatusMessage "User's details have been changed"
 
 updateUser :: User -> UserStory ()

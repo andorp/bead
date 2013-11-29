@@ -33,15 +33,14 @@ profilePage = withUserState $ \s -> do
 
 changeUserDetails :: POSTContentHandler
 changeUserDetails = ChangeUserDetails
-  <$> getParameter regEmailPrm
-  <*> getParameter regFullNamePrm
+  <$> getParameter regFullNamePrm
   <*> getParameter userTimeZonePrm
 
 profileContent :: User -> Pagelet
 profileContent user = onlyHtml $ mkI18NHtml $ \i -> do
   postForm (routeOf Profile) $ do
     table (fieldName profileTable) (fieldName profileTable) # centerTable $ do
-      tableLine (i "Email address: ") $ textInput (B.name regEmailPrm) 20 (emailCata Just $ u_email user) ! A.required ""
+      tableLine (i "Email address: ") (emailCata (H.small . H.b . fromString) $ u_email user)
       tableLine (i "Full name: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
       tableLine (i "Time zone: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
     submitButton (fieldName changeProfileBtn) (i "Save")

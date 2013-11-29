@@ -17,7 +17,7 @@ data UserAction
   | StatusMessage String
 
   -- Profiling
-  | ChangeUserDetails Email String TimeZone
+  | ChangeUserDetails String TimeZone
 
   -- Group
   | CreateGroup CourseKey Group
@@ -71,8 +71,8 @@ userStoryFor (SubmissionComment sk c) = Story.createComment sk c
 
 -- Saves the email, fullname and timezone in the persistence layer
 -- and set the user's timezone in the service context
-userStoryFor (ChangeUserDetails e n t) =
-  do Story.changeUserDetails e n t
+userStoryFor (ChangeUserDetails n t) =
+  do Story.changeUserDetails n t
      Story.setTimeZone t
 
 userStoryFor _                      = Story.logMessage L.DEBUG "No story was selected"
