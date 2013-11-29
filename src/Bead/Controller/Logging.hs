@@ -6,6 +6,7 @@ data LogLevel
   = DEBUG
   | INFO
   | ERROR
+  deriving (Show)
 
 data Logger = Logger {
     log :: LogLevel -> String -> IO ()

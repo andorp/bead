@@ -1,9 +1,11 @@
 module Bead.View.Snap.Logger where
 
-import Data.ByteString.Char8
+import Data.Time
+import Data.ByteString.Char8 (pack)
 
 import System.FilePath (dropFileName)
 import System.Directory (createDirectoryIfMissing)
+import System.Locale (defaultTimeLocale)
 
 import qualified System.FastLogger       as S
 import qualified Bead.Controller.Logging as L
@@ -22,9 +24,14 @@ createSnapLogger logFile = do
   createDirectoryIfMissing True $ dropFileName logFile
   l <- S.newLogger logFile
 
-  let logger lvl msg = S.logMsg l (pack msg)
+  let logger lvl msg = (logMessage lvl msg) >>= (S.logMsg l . pack)
 
   return $ SnapLogger {
       snapLogger = L.Logger logger
     , stopLogger = S.stopLogger l
     }
+
+  where
+    logMessage lvl msg = do
+      now <- getCurrentTime
+      return $ concat ["[", formatTime defaultTimeLocale "%c" now, "] ", show lvl, " - ", msg]
