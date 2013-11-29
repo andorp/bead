@@ -147,7 +147,7 @@ resetPasswordGET = renderForm
           tableLine "Username:"       $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
           tableLine "Email address: " $ textInput (name regEmailPrm)    20 Nothing ! A.required ""
         submitButton (fieldName pwdSubmitBtn) "Reset Password"
-      linkToPageWithText P.Login "Go back to the login page"
+      linkToRoute "Go back to the login page"
 
 {- Reset password POST handler
 Reads out the parameters for the username and the email address, checks
@@ -181,7 +181,7 @@ pageContent :: (Handler App a) ()
 pageContent = blaze $ dynamicTitleAndHead "Reset Password" $ do
   "Please check your emails"
   H.br
-  linkToPageWithText P.Login "Go back to the login page"
+  linkToRoute "Go back to the login page"
 
 readParameter :: (MonadSnap m) => Parameter a -> m (Maybe a)
 readParameter param = do

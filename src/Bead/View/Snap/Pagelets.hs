@@ -223,6 +223,9 @@ linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ f
 link :: String -> String -> Html
 link r t = H.a ! A.href (fromString r) $ fromString t
 
+linkToRoute :: String -> Html
+linkToRoute = link "/"
+
 navigationMenu :: UserState -> Html
 navigationMenu s = do
   H.ul $ mapM_ (H.li . linkToPage) $ P.menuPages (role s) (page s)

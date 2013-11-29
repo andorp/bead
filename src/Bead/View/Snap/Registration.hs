@@ -164,7 +164,7 @@ newUser = dynamicTitleAndHead "Registration" content
     content = do
       H.h1 $ "Register a new user"
       registrationForm "/new_user"
-      linkToPageWithText P.Login "Go back to the login page"
+      linkToRoute "Go back to the login page"
 
 registrationForm :: String -> Html
 registrationForm postAction = do
@@ -216,7 +216,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
         tableLine "Email address:" $ textInput (name regEmailPrm)    20 Nothing ! A.required ""
         tableLine "Full name:"     $ textInput (name regFullNamePrm) 20 Nothing ! A.required ""
       submitButton (fieldName regSubmitBtn) "Register"
-    linkToPageWithText P.Login "Go back to the home page"
+    linkToRoute "Go back to the home page"
 
   saveUserRegData = do
     u <- readParameter regUsernamePrm
@@ -310,7 +310,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                   hiddenParam regTokenPrm      token
                   hiddenParam regUsernamePrm   username
                   submitButton (fieldName regSubmitBtn) "Register"
-                linkToPageWithText P.Login "Go back to the home page"
+                linkToRoute "Go back to the home page"
 
   hiddenParam parameter value = hiddenInput (name parameter) (encode parameter value)
 
