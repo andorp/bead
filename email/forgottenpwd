@@ -1,5 +1,8 @@
-Your password is:
-{{restoreUrl}}
+Dear {{fpUsername}},
+
+Your new password is:
+
+  {{fpNewPassword}}
 
 Best Regards,
 The BE-AD team

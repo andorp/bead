@@ -58,7 +58,8 @@ data RegTemplate = RegTemplate {
   } deriving (Data, Typeable)
 
 data ForgottenPassword = ForgottenPassword {
-    restoreUrl :: String
+    fpUsername    :: String
+  , fpNewPassword :: String
   } deriving (Data, Typeable)
 
 class (Data t, Typeable t) => Template t
@@ -84,8 +85,8 @@ unitTests = UnitTestsM [
         do found <- runEmailTemplate (emailTemplate "n {{regUsername}} u {{regUrl}}") (RegTemplate "n" "u")
            return (found == "n n u u"))
   , ("Forgotten password template",
-        do found <- runEmailTemplate (emailTemplate "u {{restoreUrl}}") (ForgottenPassword "u")
-           return (found == "u u"))
+        do found <- runEmailTemplate (emailTemplate "n {{fpUsername}} p {{fpNewPassword}}") (ForgottenPassword "n" "p")
+           return (found == "n n p p"))
   ]
 
 #endif

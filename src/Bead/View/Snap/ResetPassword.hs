@@ -65,7 +65,7 @@ emailPasswordToUser user pwd = do
     sendEmail
       address
       "BE-AD Password reset"
-      ForgottenPassword { restoreUrl = pwd }
+      ForgottenPassword { fpUsername = show user, fpNewPassword = pwd }
   where
     loadUserFromPersistence =
       (lift $ registrationStory $ S.loadUser user) >>=
