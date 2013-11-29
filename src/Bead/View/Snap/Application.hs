@@ -12,6 +12,9 @@ import qualified Data.Map as Map
 
 import Data.String (fromString)
 import qualified Data.Text as DT
+import qualified Data.Text.Encoding as DT
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Encoding as LT
 import qualified Text.XmlHtml as X
 import Network.Mail.Mime
 import System.Random
@@ -92,6 +95,19 @@ instance EmailTemplateContainer ForgottenPassword where
 -- one of the email senders.
 newtype SendEmailContext = SendEmailContext (IORef (EmailSender, EmailTemplates))
 
+verySimpleMail :: Address -> Address -> DT.Text -> LT.Text -> IO Mail
+verySimpleMail to from subject plainBody = return Mail
+        { mailFrom = from
+        , mailTo   = [to]
+        , mailCc   = []
+        , mailBcc  = []
+        , mailHeaders = [ ("Subject", subject) ]
+        , mailParts =
+            [[ Part "text/plain; charset=utf-8" QuotedPrintableText Nothing []
+             $ LT.encodeUtf8 plainBody
+            ]]
+        }
+
 emailSenderSnaplet :: Config -> SnapletInit a SendEmailContext
 emailSenderSnaplet config = makeSnaplet
   "Email sending"
@@ -109,8 +125,7 @@ emailSenderSnaplet config = makeSnaplet
           to   = Address Nothing (emailFold fromString address)
           subject = fromString sub
           plain   = fromString msg
-          html    = fromString ""
-      mail <- simpleMail to from subject plain html []
+      mail <- verySimpleMail to from subject plain
       renderSendMail mail
 
 -- Send email with a subject to the given address, using the right
