@@ -71,7 +71,7 @@ emailAddress []     = False
 emailAddress (c:cs) = isAlpha c && isEmailBody cs
   where
     isSpecial :: Char -> Bool
-    isSpecial c = elem c "._,!"
+    isSpecial c = elem c "._,!-():;<>[\\]"
 
     isEmailChar :: Char -> Bool
     isEmailChar c = or [isAlpha c, isDigit c, isSpecial c]
