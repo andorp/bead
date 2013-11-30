@@ -83,8 +83,14 @@ emptyRole = Nothing
 instance InputPagelet Role where
   inputPagelet q = selection (fieldName userRoleField) $ mapM_ (roleOptions q) roles
     where
-      roleOptions Nothing   r = option (show r) (show r) False
-      roleOptions (Just q') r = option (show r) (show r) (q' == r)
+      roleOptions Nothing   r = option (show r) (roleLabel r) False
+      roleOptions (Just q') r = option (show r) (roleLabel r) (q' == r)
+
+      roleLabel = roleCata
+        "Admin'"
+        "Course admin'"
+        "Group admin'"
+        "Student'"
 
 instance GetValueHandler Role where
   getValue = getParameter rolePrm
