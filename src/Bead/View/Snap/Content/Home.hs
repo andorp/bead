@@ -16,6 +16,7 @@ import Control.Monad (join, when, liftM)
 import Control.Monad.Identity
 import Control.Monad.Trans.Error
 
+import Bead.Domain.Entities as E (Role(..))
 import Bead.Domain.Evaulation
 import Bead.Domain.Relationships (AssignmentDesc(..))
 import Bead.Controller.ServiceContext (UserState(..))
@@ -61,17 +62,18 @@ homePage = withUserState $ \s ->
 homeContent :: HomePageData -> Pagelet
 homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
   let s = userState d
-      courseAdmin = hasCourses d
-      groupAdmin  = hasGroups  d
+      r = role s
+      hasCourse = hasCourses d
+      hasGroup  = hasGroups d
   when (isAdmin s) $ H.p $ do
     H.h3 $ (translate i18n "Admin's menu")
-  when (courseAdmin) $ H.p $ do
+  when (courseAdminUser r) $ H.p $ do
     H.h3 $ (translate i18n "Course Admin's menu")
     linkToPage P.NewCourseAssignment
-  when (groupAdmin) $ H.p $ do
+  when (groupAdminUser r) $ H.p $ do
     H.h3 $ (translate i18n "Teacher's menu")
     linkToPage P.NewGroupAssignment
-  when (courseAdmin || groupAdmin) $ H.p $ do
+  when ((courseAdminUser r && hasCourse) || (groupAdminUser r && hasGroup)) $ H.p $ do
     H.h3 $ (translate i18n "Submission table")
     htmlSubmissionTables i18n (sTables d)
     H.h3 $ (translate i18n "Manage user's password")
@@ -79,6 +81,9 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
   H.p $ do
     H.h3 $ (translate i18n "Student's menu")
     availableAssignments i18n (assignments d)
+  where
+    courseAdminUser = (==E.CourseAdmin)
+    groupAdminUser  = (==E.Professor)
 
 availableAssignments :: I18N -> [(AssignmentKey,AssignmentDesc)] -> Html
 availableAssignments i18n [] = do
