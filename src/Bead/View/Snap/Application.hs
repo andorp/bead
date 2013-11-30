@@ -10,6 +10,7 @@ import Control.Lens.TH
 import Data.IORef
 import qualified Data.Map as Map
 
+import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.String (fromString)
 import qualified Data.Text as DT
 import qualified Data.Text.Encoding as DT
@@ -103,8 +104,8 @@ verySimpleMail to from subject plainBody = return Mail
         , mailBcc  = []
         , mailHeaders = [ ("Subject", subject) ]
         , mailParts =
-            [[ Part "text/plain; charset=utf-8" QuotedPrintableText Nothing []
-             $ LT.encodeUtf8 plainBody
+            [[ Part "text/plain; charset=UTF-8" Base64 Nothing []
+             $ BL.pack . LT.unpack $ plainBody
             ]]
         }
 
