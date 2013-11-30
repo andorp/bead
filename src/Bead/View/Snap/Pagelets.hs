@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Bead.View.Snap.Pagelets where
 
 import Data.Maybe (isJust, fromJust)
@@ -270,6 +272,15 @@ instance (SelectionValue v, SelectionText t) => SelectionValue (v,t) where
 
 instance (SelectionValue v, SelectionText t) => SelectionText (v,t) where
   selectionText (_,t) = selectionText t
+
+instance (SelectionValue v, SelectionText t) => SelectionValue (v,x,t) where
+  selectionValue (v,_,_) = selectionValue v
+
+instance (SelectionValue v, SelectionText t) => SelectionText (v,x,t) where
+  selectionText (_,_,t) = selectionText t
+
+instance SelectionText String where
+  selectionText = id
 
 defValueTextSelection :: (Eq s, SelectionValue s, SelectionText s) => String -> s -> [s] -> Html
 defValueTextSelection name def = selection name . mapM_ option' where

@@ -12,6 +12,7 @@ module Bead.Persistence.Persist (
   , userSubmissionDesc
   , courseOrGroupOfAssignment
   , courseNameAndAdmins
+  , administratedGroupsWithCourseName
   ) where
 
 import Bead.Domain.Types (Erroneous)
@@ -27,7 +28,7 @@ import Data.Time (getCurrentTime)
 
 import Control.Applicative ((<$>))
 import Control.Arrow ((&&&))
-import Control.Monad (mapM, liftM, liftM2)
+import Control.Monad (mapM, liftM, liftM2, forM)
 import Control.Exception (IOException)
 import Control.Monad.Transaction.TIO
 
@@ -138,12 +139,27 @@ courseOrGroupOfAssignment p ak = do
         Just ck -> return . Left $ ck
         Nothing -> error $ "Impossible: No course or groupkey was found for the assignment:" ++ show ak
 
+administratedGroupsWithCourseName :: Persist -> Username -> TIO [(GroupKey, Group, String)]
+administratedGroupsWithCourseName p u = do
+  gs <- administratedGroups p u
+  forM gs $ \(gk,g) -> do
+    fn <- fullGroupName p gk
+    return (gk,g,fn)
+
+-- Produces a full name for a group including the name of the course.
+fullGroupName :: Persist -> GroupKey -> TIO String
+fullGroupName p gk = do
+  ck <- courseOfGroup p gk
+  course <- loadCourse p ck
+  group <- loadGroup p gk
+  return $ concat [(courseName course), " - ", (groupName group)]
+
 groupDescription :: Persist -> GroupKey -> TIO (GroupKey, GroupDesc)
 groupDescription p gk = do
-  g  <- loadGroup p gk
+  name <- fullGroupName p gk
   admins <- mapM (userDescription p) =<< (groupAdmins p gk)
   let gd = GroupDesc {
-    gName   = groupName g
+    gName   = name
   , gAdmins = map ud_fullname admins
   }
   return (gk,gd)
@@ -158,7 +174,10 @@ submissionDesc p sk = do
   cgk <- courseOrGroupOfAssignment p ak
   (c,gr) <- case cgk of
     Left ck  -> (courseEvalConfig &&& courseName) <$> loadCourse p ck
-    Right gk -> (groupEvalConfig  &&& groupName)  <$> loadGroup  p gk
+    Right gk -> do
+      cfg  <- groupEvalConfig <$> loadGroup p gk
+      name <- fullGroupName p gk
+      return (cfg, name)
   cs  <- mapM (loadComment p) =<< (commentsOfSubmission p sk)
   return SubmissionDesc {
     eGroup    = gr
@@ -179,7 +198,7 @@ courseNameAndAdmins p ak = do
       admins <- courseAdmins p ck
       return (name, admins)
     Right gk -> do
-      name   <- groupName  <$> loadGroup  p gk
+      name   <- fullGroupName p gk
       admins <- groupAdmins p gk
       return (name, admins)
   adminNames <- mapM (fmap ud_fullname . userDescription p) admins
@@ -276,7 +295,8 @@ groupSubmissionTableInfo :: Persist -> GroupKey -> TIO SubmissionTableInfo
 groupSubmissionTableInfo p gk = do
   assignments <- groupAssignments p gk
   usernames   <- subscribedToGroup p gk
-  (name,evalCfg) <- (groupName &&& groupEvalConfig) <$> loadGroup p gk
+  name <- fullGroupName p gk
+  evalCfg <- groupEvalConfig <$> loadGroup p gk
   submissionTableInfo p name evalCfg assignments usernames
 
 courseSubmissionTableInfo :: Persist -> CourseKey -> TIO SubmissionTableInfo
@@ -355,7 +375,7 @@ userSubmissionDesc p u ak = do
   courseOrGroup <- courseOrGroupOfAssignment p ak
   crName <- case courseOrGroup of
               Left  ck -> courseName <$> loadCourse p ck
-              Right gk -> groupName  <$> loadGroup  p gk
+              Right gk -> fullGroupName p gk
   student <- ud_fullname <$> userDescription p u
   keys    <- userSubmissions p u ak
   -- Calculate the submission information list

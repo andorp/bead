@@ -38,7 +38,7 @@ modifyAssignment = getPostContentHandler modifyAssignmentPage postModifyAssignme
 
 data PageData
   = PD_Course     (Time.TimeZone, UTCTime, [(CourseKey, Course)])
-  | PD_Group      (Time.TimeZone, UTCTime, [(GroupKey, Group)])
+  | PD_Group      (Time.TimeZone, UTCTime, [(GroupKey, Group, String)])
   | PD_Assignment (Time.TimeZone, AssignmentKey, Assignment)
   -- TODO: Calculate the time differences and shows the values in
   -- the actual time zone

@@ -155,11 +155,12 @@ administratedCourses = logAction INFO "selects adminstrated courses" $ do
   u <- CMS.gets user
   withPersist $ flip R.administratedCourses u
 
-administratedGroups :: UserStory [(GroupKey, Group)]
+-- Produces a list of group keys, group and the full name of the group
+administratedGroups :: UserStory [(GroupKey, Group, String)]
 administratedGroups = logAction INFO "selects administrated groups" $ do
   authorize P_Open P_Group
   u <- CMS.gets user
-  withPersist $ flip R.administratedGroups u
+  withPersist $ flip R.administratedGroupsWithCourseName u
 
 -- | The 'create' function is an abstract function
 --   for other creators like, createCourse and createExercise
