@@ -33,7 +33,7 @@ userAssignmentForSubmission
   -> HandlerError App App b
 userAssignmentForSubmission key found notFound = do
   action <- runStoryE $ do
-    ks <- userAssignments
+    ks <- (maybe [] id) <$> userAssignments
     maybe
       (return notFound)
       foundAssignment

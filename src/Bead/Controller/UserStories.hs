@@ -442,11 +442,14 @@ availableGroups = logAction INFO "lists available assignments" $ do
   where
     each _ _ = True
 
+-- Produces a list that contains the assignments for the actual user,
+-- if the user is not subscribed to a course or group the list
+-- will be empty.
 userAssignmentKeys :: UserStory [AssignmentKey]
 userAssignmentKeys = logAction INFO "lists its assignments" $ do
   authorize P_Open P_Assignment
   uname <- CMS.gets user
-  withPersist $ \p -> R.userAssignmentKeys p uname
+  withPersist $ \p -> (R.userAssignmentKeyList p uname)
 
 userSubmissionKeys :: AssignmentKey -> UserStory [SubmissionKey]
 userSubmissionKeys ak = logAction INFO msg $ do
@@ -468,14 +471,14 @@ loadSubmission sk = logAction INFO ("loads submission " ++ show sk) $ do
   authorize P_Open P_Submission
   withPersist $ \p -> R.loadSubmission p sk
 
-userAssignments :: UserStory [(AssignmentKey, AssignmentDesc)]
+userAssignments :: UserStory (Maybe [(AssignmentKey, AssignmentDesc)])
 userAssignments = logAction INFO "lists assignments" $ do
   authorize P_Open P_Assignment
   authorize P_Open P_Course
   authorize P_Open P_Group
   now <- liftIO getCurrentTime
-  withUserAndPersist $
-    \u p -> catMaybes <$> (mapM (createDesc p now) =<< R.userAssignmentKeys p u)
+  withUserAndPersist $ \u p -> do
+    maybe (return Nothing) (fmap (Just . catMaybes) . (mapM (createDesc p now))) =<< (R.userAssignmentKeys p u)
 
   where
 

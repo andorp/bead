@@ -2,6 +2,7 @@ module Bead.Persistence.Persist (
     Persist(..)
   , runPersist
   , userAssignmentKeys
+  , userAssignmentKeyList
   , submissionDesc
   , submissionListDesc
   , submissionDetailsDesc
@@ -120,13 +121,23 @@ data Persist = Persist {
 
 -- * Combined Persistence Tasks
 
-userAssignmentKeys :: Persist -> Username -> TIO [AssignmentKey]
+-- Produces a Just Assignment list, if the user is registered for some courses,
+-- otherwise Nothing.
+userAssignmentKeys :: Persist -> Username -> TIO (Maybe [AssignmentKey])
 userAssignmentKeys p u = do
   gs <- userGroups p u
   cs <- userCourses p u
-  asg <- concat <$> (mapM (groupAssignments p)  (nub gs))
-  asc <- concat <$> (mapM (courseAssignments p) (nub cs))
-  return . nub $ (asg ++ asc)
+  case (cs,gs) of
+    ([],[]) -> return Nothing
+    _       -> do
+      asg <- concat <$> (mapM (groupAssignments p)  (nub gs))
+      asc <- concat <$> (mapM (courseAssignments p) (nub cs))
+      return . Just $ nub (asg ++ asc)
+
+-- Produces the assignment key list for the user, it the user
+-- is not registered in any course the result is the empty list
+userAssignmentKeyList :: Persist -> Username -> TIO [AssignmentKey]
+userAssignmentKeyList p u = (maybe [] id) <$> (userAssignmentKeys p u)
 
 courseOrGroupOfAssignment :: Persist -> AssignmentKey -> TIO (Either CourseKey GroupKey)
 courseOrGroupOfAssignment p ak = do

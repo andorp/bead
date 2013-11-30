@@ -45,7 +45,9 @@ data HomePageData = HomePageData {
     userState   :: UserState
   , hasCourses  :: Bool -- True if the user has administrated courses
   , hasGroups   :: Bool -- True if the user has administrated groups
-  , assignments :: [(AssignmentKey, AssignmentDesc)]
+    -- Nothing means that the user is not registrated in any
+    -- courses
+  , assignments :: Maybe [(AssignmentKey, AssignmentDesc)]
   , sTables     :: [SubmissionTableInfo]
   }
 
@@ -85,10 +87,12 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
     courseAdminUser = (==E.CourseAdmin)
     groupAdminUser  = (==E.Professor)
 
-availableAssignments :: I18N -> [(AssignmentKey,AssignmentDesc)] -> Html
-availableAssignments i18n [] = do
-  translate i18n "There is no assignments for you, please register in a course and group"
-availableAssignments i18n as = do
+availableAssignments :: I18N -> Maybe [(AssignmentKey,AssignmentDesc)] -> Html
+availableAssignments i18n Nothing = do
+  translate i18n "You are not registered for any course, please pick up a course."
+availableAssignments i18n (Just []) = do
+  translate i18n "There is no assignments published until now."
+availableAssignments i18n (Just as) = do
   table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
     headerLine
     mapM_ assignmentLine as
