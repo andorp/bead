@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings  #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE CPP #-}
 module Bead.View.Snap.Registration (
     createAdminUser
@@ -241,7 +241,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
                     regUsername = reg_username userRegData
                   , regUrl = createUserRegAddress key userRegData
                   }
-            redirect "/"
+            pageContent
       _ -> errorPageWithTitle "Registration" "Some request parameter is missing"
 
   createUserRegAddress :: UserRegKey -> UserRegistration -> String
@@ -334,15 +334,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
 
   log lvl msg = withTop serviceContext $ logMessage lvl msg
 
-  redirection (Left (RegErrorUserExist username)) =
-      do log INFO (usernameCata ("User already exist: "++) username)
-         redirect "/"
-  redirection (Left (RegError lvl msg)) =
-      do log lvl msg
-         redirect "/"
-  redirection (Right ()) =
-      do log INFO "Everything went fine, the user is created"
-         redirect "/"
+
 
 createNewUser :: UserRegistration -> String -> Handler App (AuthManager App) (Either RegError ())
 createNewUser reg password = runErrorT $ do
@@ -381,5 +373,11 @@ createNewUser reg password = runErrorT $ do
     -- calculation
     checkFailure (Left _)  = throwError (RegError ERROR "User story failed")
     checkFailure (Right x) = return x
+
+pageContent :: Handler App a ()
+pageContent = blaze $ dynamicTitleAndHead "Registration" $ do
+  "Please check your emails"
+  H.br
+  linkToRoute "Go back to the login page"
 
 #endif
