@@ -76,7 +76,7 @@ copyDataContext = do
 
 -- | Copy and update files if missing or outdated, skip the ones
 -- from the outdate check that names are the same as in the skipped list
-copyFiles :: [String] -> FilePath -> FilePath -> IO ()
+copyFiles :: [FilePath] -> FilePath -> FilePath -> IO ()
 copyFiles skips src dst = do
   dstExist <- doesDirectoryExist dst
   unless dstExist $ createDirectory dst
@@ -90,9 +90,11 @@ copyFiles skips src dst = do
       then copyFiles skips srcPath dstPath
       else do
         dstFileExist <- doesFileExist dstPath
-        doCopy <- if (dstFileExist && (name `notElem` skips)) then do
-                       srcDate <- getModificationTime srcPath
-                       dstDate <- getModificationTime dstPath
-                       return $ dstDate < srcDate
-                     else return True
-        when doCopy $ copyFile srcPath dstPath
+        when (not dstFileExist || name `notElem` skips) $ do
+          doCopy <- if dstFileExist
+            then do
+              srcDate <- getModificationTime srcPath
+              dstDate <- getModificationTime dstPath
+              return $ dstDate < srcDate
+            else return True
+          when doCopy $ copyFile srcPath dstPath
