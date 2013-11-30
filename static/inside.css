@@ -24,16 +24,10 @@ textarea {
 }
 
 #status {
-  border-color: black;
-  border-width: 1px;
-  border-style: solid;
   text-align: center;
 }
 
 #menu {
-  border-color: black;
-  border-width: 1px;
-  border-style: solid;
   text-align: center;
 }
 
@@ -52,9 +46,6 @@ textarea {
 }
 
 #content {
-  border-color: black;
-  border-width: 1px;
-  border-style: solid;
   margin-left: auto;
   margin-right: auto;
   width: 70%;
