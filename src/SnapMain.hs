@@ -14,6 +14,7 @@ import Bead.View.Snap.AppInit
 import Bead.View.Snap.Dictionary (Dictionaries)
 import Bead.View.Snap.DictionaryLoader (loadDictionaries)
 import Bead.View.Snap.Logger
+import Bead.View.Snap.Validators hiding (toLower)
 import Bead.Persistence.Persist (initPersistence, isPersistenceSetUp)
 import qualified Bead.Controller.Logging as L
 import qualified Bead.Persistence.NoSQLDir as P
@@ -53,8 +54,8 @@ interpretTasks tasks = case elem CreateAdmin tasks of
 readAdminUser :: IO (String, String)
 readAdminUser = do
   putStrLn "Creating admin user, all characters are converted to lower case."
-  putStr "Admin user: " >> hFlush stdout
-  usr <- fmap (map toLower) getLine
+  putStrLn "Username must be in the neptun code format."
+  usr <- readUsername
   hSetEcho stdin False
   putStr "Password: " >> hFlush stdout
   pwd <- getLine
@@ -68,6 +69,18 @@ readAdminUser = do
     False -> do
       putStrLn "Passwords do not match!"
       readAdminUser
+  where
+    readUsername = do
+      putStr "Admin User: " >> hFlush stdout
+      usr <- fmap (map toLower) getLine
+      validate
+        isUsername
+        usr
+        -- Valid username
+        (return usr)
+        -- Invalid username
+        (\msg -> do putStrLn $ "Username format is invalid! " ++ msg
+                    readUsername)
 
 startService :: Config -> Maybe (String, String) -> IO ()
 startService config newAdminUser = do
