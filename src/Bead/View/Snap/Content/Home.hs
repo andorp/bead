@@ -81,6 +81,8 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
     availableAssignments i18n (assignments d)
 
 availableAssignments :: I18N -> [(AssignmentKey,AssignmentDesc)] -> Html
+availableAssignments i18n [] = do
+  translate i18n "There is no assignments for you, please register in a course and group"
 availableAssignments i18n as = do
   table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
     headerLine
