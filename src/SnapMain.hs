@@ -41,7 +41,7 @@ main :: IO ()
 main = do
   hSetEcho stdin True
   args <- getArgs
-  config <- readConfiguration "bead.config"
+  config <- readConfiguration beadConfigFileName
   newAdminUser <- either (const $ return Nothing) interpretTasks (initTasks args)
   startService config newAdminUser
 

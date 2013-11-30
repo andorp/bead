@@ -1,5 +1,8 @@
 {-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
-module Bead.View.Snap.AppInit (appInit) where
+module Bead.View.Snap.AppInit (
+    appInit
+  , beadConfigFileName
+  ) where
 
 import Snap hiding (Config(..))
 import Snap.Snaplet
@@ -25,6 +28,8 @@ import Bead.View.Snap.DataDir
 import System.FilePath ((</>))
 import System.Directory
 
+beadConfigFileName :: String
+beadConfigFileName = "bead.config"
 
 appInit :: Config -> Maybe (String, String) -> ServiceContext -> Dictionaries -> SnapletInit App App
 appInit config user s d = makeSnaplet "bead" description dataDir $ do
@@ -66,12 +71,13 @@ copyDataContext :: Initializer b v ()
 copyDataContext = do
   reference <- liftIO referenceDataDir
   dataDir   <- getSnapletFilePath
-  liftIO $ copyFiles reference dataDir
+  liftIO $ copyFiles [beadConfigFileName] reference dataDir
   return ()
 
--- | Copy files if missing or outdated
-copyFiles :: FilePath -> FilePath -> IO ()
-copyFiles src dst = do
+-- | Copy and update files if missing or outdated, skip the ones
+-- from the outdate check that names are the same as in the skipped list
+copyFiles :: [String] -> FilePath -> FilePath -> IO ()
+copyFiles skips src dst = do
   dstExist <- doesDirectoryExist dst
   unless dstExist $ createDirectory dst
   contents <- getDirectoryContents src
@@ -81,10 +87,10 @@ copyFiles src dst = do
         dstPath = dst </> name
     isDirectory <- doesDirectoryExist srcPath
     if isDirectory
-      then copyFiles srcPath dstPath
+      then copyFiles skips srcPath dstPath
       else do
         dstFileExist <- doesFileExist dstPath
-        doCopy <- if dstFileExist then do
+        doCopy <- if (dstFileExist && (name `notElem` skips)) then do
                        srcDate <- getModificationTime srcPath
                        dstDate <- getModificationTime dstPath
                        return $ dstDate < srcDate
