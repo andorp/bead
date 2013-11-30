@@ -192,16 +192,21 @@ submissionListDesc p u ak = do
   asg <- loadAssignment p ak
   now <- hasNoRollback getCurrentTime
 
-  -- User submissions should not shown for urn typed assignments, after that the end
+  -- User submissions should not shown for urn typed assignments, only after the end
   -- period
-  statuses <- case (assignmentEnd asg < now) of
-    True  -> mapM submissionStatus =<< userSubmissions p u ak
-    False -> return []
+  submissions <- assignmentTypeCata
+    -- Normal assignment
+    (mapM submissionStatus =<< userSubmissions p u ak)
+    -- Urn assignment
+    (case (assignmentEnd asg < now) of
+       True  -> mapM submissionStatus =<< userSubmissions p u ak
+       False -> return [])
+    (assignmentType asg)
 
   return SubmissionListDesc {
     slGroup = name
   , slTeacher = adminNames
-  , slSubmissions = statuses
+  , slSubmissions = submissions
   , slAssignmentText = assignmentDesc asg
   }
   where

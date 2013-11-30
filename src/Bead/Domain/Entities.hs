@@ -21,6 +21,13 @@ data AssignmentType
   | Urn
   deriving (Show, Eq, Read, Enum)
 
+assignmentTypeCata
+  normal
+  urn
+  a = case a of
+    Normal -> normal
+    Urn    -> urn
+
 assignmentTypes = [Normal, Urn]
 
 -- | Assignment for the student
