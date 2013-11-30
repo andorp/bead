@@ -87,10 +87,10 @@ instance InputPagelet Role where
       roleOptions (Just q') r = option (show r) (roleLabel r) (q' == r)
 
       roleLabel = roleCata
-        "Admin'"
-        "Course admin'"
-        "Group admin'"
         "Student'"
+        "Group admin'"
+        "Course admin'"
+        "Admin'"
 
 instance GetValueHandler Role where
   getValue = getParameter rolePrm
