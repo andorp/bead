@@ -70,8 +70,6 @@ administrationContent info = onlyHtml $ mkI18NHtml $ \i18n -> do
     getForm (routeOf P.UserDetails) $ do
       inputPagelet emptyUsername
       submitButton (fieldName selectBtn) (i18n "Select")
-  H.div $ do
-    H.h3 $ (translate i18n "Change password for a given user")
 
 -- Add Course Admin
 
