@@ -236,10 +236,22 @@ submissionDetailsDesc p sk = do
   , sdComments   = cs
   }
 
--- TODO
 -- | Checks if the assignment of the submission is adminstrated by the user
 isAdminedSubmission :: Persist -> Username -> SubmissionKey -> TIO Bool
-isAdminedSubmission p u sk = return True
+isAdminedSubmission p u sk = do
+  -- Assignment of the submission
+  ak <- assignmentOfSubmission p sk
+
+  -- Assignment Course Key
+  ack <- either return (courseOfGroup p) =<< (courseOrGroupOfAssignment p ak)
+
+  -- All administrated courses
+  groupCourses <- mapM (courseOfGroup p . fst) =<< (administratedGroups p u)
+  courses <- map fst <$> administratedCourses p u
+  let allCourses = nub (groupCourses ++ courses)
+
+  return $ elem ack allCourses
+
 
 -- TODO
 canUserCommentOn :: Persist -> Username -> SubmissionKey -> TIO Bool
@@ -250,8 +262,10 @@ canUserCommentOn p u sk = return True
 submissionTables :: Persist -> Username -> TIO [SubmissionTableInfo]
 submissionTables p u = do
   courseTables <- mapM (courseSubmissionTableInfo p . fst) =<< administratedCourses p u
-  groupTables  <- mapM (groupSubmissionTableInfo  p . fst) =<< administratedGroups  p u
-  return $ courseTables ++ groupTables
+  groups <- administratedGroups p u
+  groupTables  <- mapM (groupSubmissionTableInfo  p . fst) groups
+  courseOfGroupTables <- mapM (courseSubmissionTableInfoForGroupAdmin p . fst) groups
+  return $ courseTables ++ courseOfGroupTables ++ groupTables
 
 groupSubmissionTableInfo :: Persist -> GroupKey -> TIO SubmissionTableInfo
 groupSubmissionTableInfo p gk = do
@@ -265,6 +279,14 @@ courseSubmissionTableInfo p ck = do
   assignments <- courseAssignments p ck
   usernames   <- subscribedToCourse p ck
   (name,evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
+  submissionTableInfo p name evalCfg assignments usernames
+
+courseSubmissionTableInfoForGroupAdmin :: Persist -> GroupKey -> TIO SubmissionTableInfo
+courseSubmissionTableInfoForGroupAdmin p gk = do
+  ck <- courseOfGroup p gk
+  usernames <- subscribedToGroup p gk
+  assignments <- courseAssignments p ck
+  (name, evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
   submissionTableInfo p name evalCfg assignments usernames
 
 submissionTableInfo
