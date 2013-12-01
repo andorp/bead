@@ -61,7 +61,7 @@ data SubmissionListDesc = SubmissionListDesc {
     slGroup   :: String
   , slTeacher :: [String]
   , slSubmissions :: [(SubmissionKey, UTCTime, Status, EvaluatedBy)]
-  , slAssignmentText :: String
+  , slAssignment :: Assignment
   }
 
 submissionListDescPermissions = ObjectPermissions [
@@ -72,7 +72,7 @@ submissionListDescPermissions = ObjectPermissions [
 data SubmissionDetailsDesc = SubmissionDetailsDesc {
     sdGroup :: String
   , sdTeacher :: [String]
-  , sdAssignment :: String
+  , sdAssignment :: Assignment
   , sdStatus :: String
   , sdSubmission :: String
   , sdComments :: [Comment]

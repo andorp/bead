@@ -15,6 +15,7 @@ import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 import Bead.View.Snap.Markdown
 import Bead.View.Snap.Content.Utils
+import Bead.Domain.Entities
 import Bead.Domain.Relationships
 
 import Text.Blaze.Html5 (Html, (!))
@@ -45,26 +46,34 @@ submissionListPage = withUserState $ \s -> do
 
 submissionListContent :: PageData -> Pagelet
 submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (className submissionListDiv) $ do
-  H.table # centerTable $ do
+  H.table $ do
     H.tr $ do
-      firstCol  (i "Group / Course")
+      firstCol  (i "Group / Course:")
       secondCol (slGroup . smList $ p)
     H.tr $ do
-      firstCol (i "Teacher")
+      firstCol (i "Teacher:")
       secondCol (join . slTeacher . smList $ p)
-  H.h3 (translate i "Submission list")
-  table (fieldName submissionTableName) (className submissionListTable) # informationalTable $
-    mapM_ submissionLine (slSubmissions . smList $ p)
-  H.h2 $ (translate i "Assignment")
-  H.div # assignmentTextDiv $ H.pre # assignmentTextPre $
-    (markdownToHtml . slAssignmentText . smList $ p)
+    H.tr $ do
+      firstCol (i "Assignment:")
+      secondCol (assignmentName . slAssignment . smList $ p)
+  H.h2 $ (translate i "Assignment Text")
+  H.div # assignmentTextDiv $
+    (markdownToHtml . assignmentDesc . slAssignment . smList $ p)
+  let submissions = slSubmissions . smList $ p
+  H.h2 (translate i "List of Submissions")
+  if (not . null $ submissions)
+    then do
+      table (fieldName submissionTableName) (className submissionListTable) # informationalTable $
+        mapM_ submissionLine submissions
+    else do
+      translate i "No submissions yet."
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft $ fromString t
     submissionLine (sk, time, status, t) = H.tr $ do
       H.td # informationalCell $ link
         (routeWithParams P.SubmissionDetails [requestParam (asKey p), requestParam sk])
-        (fromString . show $ time)
+        (fromString . showDate $ time)
       H.td # informationalCell $ (fromString status)
 
 invalidAssignment :: Pagelet

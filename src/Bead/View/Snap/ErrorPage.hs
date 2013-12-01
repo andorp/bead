@@ -37,8 +37,9 @@ page :: String -> (Maybe String) -> Html
 page t e = withTitleAndHead t $ do
   H.div $ do
     H.h2 $ "Some error happened"
+    H.p $
+      maybe (return ()) fromString e
     H.br
-    maybe (return ()) fromString e
   H.div $
     link "/" "Go back to login page"
 

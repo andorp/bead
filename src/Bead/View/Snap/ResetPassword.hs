@@ -145,7 +145,6 @@ resetPasswordGET :: Handler App App ()
 resetPasswordGET = renderForm
   where
     renderForm = blaze $ dynamicTitleAndHead resetPasswordTitle $ do
-      H.h1 "Reset the password"
       postForm "/reset_pwd" $ do
         table (fieldName resetPasswordTable) (fieldName resetPasswordTable) # centerTable $ do
           tableLine "Username:"       $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
@@ -183,7 +182,7 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
 
 pageContent :: (Handler App a) ()
 pageContent = blaze $ dynamicTitleAndHead resetPasswordTitle $ do
-  "Please check your emails"
+  H.p $ "Please check your emails"
   H.br
   linkToRoute backToMain
 

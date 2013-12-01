@@ -23,7 +23,7 @@ import Bead.View.UserActions (UserAction(CreateGroupAssignment, CreateCourseAssi
 import Text.Printf (printf)
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A (id, style)
+import qualified Text.Blaze.Html5.Attributes as A (id, style, href)
 
 -- * Content Handlers
 
@@ -98,8 +98,10 @@ newAssignmentContent pd
                          (const . translate i $ "This assignment is not created by you")
                          pd
 newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page $ pd) `withId` (hookId assignmentForm) $ H.div ! formDiv $ do
-  H.div ! slimLeftCell  $ H.b $ (translate i "Assignment title")
-  H.div ! slimRightCell $ textInput (fieldName assignmentNameField) 10 (amap assignmentName pd) ! fillDiv
+  H.div ! slimRightCell $ do
+    H.b $ (translate i "Assignment title")
+    textInput (fieldName assignmentNameField) 10 (amap assignmentName pd) ! fillDiv
+    H.br
   H.div ! leftCell $ do
     H.b $ (translate i "Active period")
     H.div ! A.id (fieldName startDateDivId) $ do
@@ -119,19 +121,18 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
        hiddenInput (fieldName assignmentEndDefaultMin)  (fromString endDefMin)
        hiddenInput (fieldName assignmentEndField) (fromString $ concat [endDefDate, " ", endDefHour, ":", endDefMin, ":00"])
   H.div ! rightCell $ do
-    H.b $ (translate i "Description text block / Description files")
+    H.br
+    H.b $ (translate i "Description text")
     textAreaInput (fieldName assignmentDescField) (amap assignmentDesc pd) ! fillDiv
+    H.a ! A.href linkToPandocMarkdown $ do translate i "Markdown formatting"
+    translate i " may be used here."
   H.div ! leftCell $ do
     H.b $ (translate i "Assignment Type")
     H.br
     enumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
-  H.div ! rightCell $ do
-    H.b $ (translate i "Test Data text block / Test data files")
-    textAreaInput (fieldName assignmentTCsField) (amap assignmentTCs pd) ! fillDiv
-  H.div ! leftCell $ do
-    H.p $ (translate i "Select automated evaulation method")
+    H.br
     H.p $ do
-      pageDataCata (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
+      H.b $ pageDataCata (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
       H.br
       pageDataCata
         (valueTextSelection (fieldName selectedCourse) . trd)
@@ -139,7 +140,10 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
         (hiddenInput (fieldName assignmentKeyField) . paramValue  . snd3)
         pd
     H.p $ submitButton (fieldName saveSubmitBtn) (i "Save")
+
     where
+      linkToPandocMarkdown = "http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html"
+
       page :: PageData -> Page
       page = pageDataCata
                    (const P.NewCourseAssignment)

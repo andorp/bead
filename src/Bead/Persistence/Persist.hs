@@ -237,8 +237,8 @@ submissionListDesc p u ak = do
   return SubmissionListDesc {
     slGroup = name
   , slTeacher = adminNames
+  , slAssignment = asg
   , slSubmissions = submissions
-  , slAssignmentText = assignmentDesc asg
   }
   where
     submissionStatus sk = do
@@ -259,7 +259,7 @@ submissionDetailsDesc :: Persist -> SubmissionKey -> TIO SubmissionDetailsDesc
 submissionDetailsDesc p sk = do
   ak <- assignmentOfSubmission p sk
   (name, adminNames) <- courseNameAndAdmins p ak
-  asg <- assignmentDesc <$> loadAssignment p ak
+  asg <- loadAssignment p ak
   sol <- solution       <$> loadSubmission p sk
   cs  <- mapM (loadComment p) =<< (commentsOfSubmission p sk)
   s   <- submissionEvalStr p sk

@@ -135,7 +135,6 @@ instance GetValueHandler Assignment where
     assignmentAna
       (getParameter (stringParameter (fieldName assignmentNameField) "Assignment Name"))
       (getParameter (stringParameter (fieldName assignmentDescField) "Assignment Description"))
-      (getParameter (stringParameter (fieldName assignmentTCsField) "Assignment Tests"))
       (getParameter assignmentTypePrm)
       (getParameter (assignmentStartPrm timeZone))
       (return timeZone)

@@ -24,14 +24,17 @@ evaluationTablePage = withUserState $ \s -> do
   renderPagelet $ withUserFrame s (evaluationTableContent keys)
 
 evaluationTableContent :: [(SubmissionKey, SubmissionDesc)] -> Pagelet
-evaluationTableContent ks = onlyHtml $ mkI18NHtml $ \i -> do
-  H.p $ table "evaluation-table" (className evaluationClassTable) # informationalTable $ do
-    H.tr # grayBackground $ do
-      H.th (fromString $ i "Group")
-      H.th (fromString $ i "Student")
-      H.th (fromString $ i "Assignment")
-      H.th (fromString $ i "Link")
-    forM_ ks (submissionInfo i)
+evaluationTableContent ks = onlyHtml $ mkI18NHtml $ \i ->
+  if (null ks)
+    then (translate i "No unevaluated submissions.")
+    else do
+      H.p $ table "evaluation-table" (className evaluationClassTable) # informationalTable $ do
+        H.tr # grayBackground $ do
+          H.th (fromString $ i "Group")
+          H.th (fromString $ i "Student")
+          H.th (fromString $ i "Assignment")
+          H.th (fromString $ i "Link")
+        forM_ ks (submissionInfo i)
 
 submissionInfo i (key, desc) = H.tr $ do
   H.td . fromString . eGroup $ desc

@@ -185,7 +185,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool "Group name was different" (slGroup sld == "gname")
   assertBool "Admins was different" (slTeacher sld == ["admin"])
   assertBool "There was different number od submissions" (length (slSubmissions sld) == 1)
-  assertBool "Assignment text was different" (slAssignmentText sld == "Assignment")
+  assertBool "Assignment text was different" (assignmentDesc $ slAssignment sld == "Assignment")
 
   return ()
 

@@ -39,13 +39,14 @@ changeUserDetails = ChangeUserDetails
 profileContent :: User -> Pagelet
 profileContent user = onlyHtml $ mkI18NHtml $ \i -> do
   postForm (routeOf Profile) $ do
-    table (fieldName profileTable) (fieldName profileTable) # centerTable $ do
+    table (fieldName profileTable) (fieldName profileTable) $ do
       tableLine (i "Email address: ") (emailCata (H.small . H.b . fromString) $ u_email user)
       tableLine (i "Full name: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
       tableLine (i "Time zone: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
     submitButton (fieldName changeProfileBtn) (i "Save")
+  H.br
   postForm (routeOf ChangePassword) `withId` (rFormId changePwdForm) $ do
-    table (fieldName changePasswordTable) (fieldName changePasswordTable) # centerTable $ do
+    table (fieldName changePasswordTable) (fieldName changePasswordTable) $ do
       tableLine (i "Old Password: ") $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
       tableLine (i "New Password: ") $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
       tableLine (i "New Password Again: ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""

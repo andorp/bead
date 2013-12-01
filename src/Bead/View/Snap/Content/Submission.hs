@@ -51,27 +51,24 @@ submissionPostHandler =
 submissionContent :: PageData -> Pagelet
 submissionContent p = onlyHtml $ mkI18NHtml $ \i -> do
   postForm (routeOf P.Submission) $ H.div ! formDiv $ do
-    H.div ! title $ H.p $ H.b $ (translate i "Solution")
-    H.div ! leftInput $ do
-      textAreaInput (fieldName submissionTextField) Nothing ! fillDiv
-    H.div ! rightInfo $ do
-      H.p $ do
-        H.table $ do
-          H.tr $ do
-            H.td $ H.b $ (translate i "Course: ")
-            H.td $ (fromString . aGroup $ asDesc p)
-          H.tr $ do
-            H.td $ H.b $ (translate i "Teacher: ")
-            H.td $ (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
-          H.tr $ do
-            H.td $ H.b $ (translate i "Assignment: ")
-            H.td $ (fromString . assignmentName . asValue $ p)
-        H.br
-        submitButton (fieldName submitSolutionBtn) (i "Submit")
+    H.table $ do
+      H.tr $ do
+        H.td $ H.b $ (translate i "Course: ")
+        H.td $ (fromString . aGroup $ asDesc p)
+      H.tr $ do
+        H.td $ H.b $ (translate i "Teacher: ")
+        H.td $ (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
+      H.tr $ do
+        H.td $ H.b $ (translate i "Assignment: ")
+        H.td $ (fromString . assignmentName . asValue $ p)
+    H.h2 (translate i "Description")
+    H.div # assignmentTextDiv $
+      markdownToHtml . assignmentDesc . asValue $ p
+    H.h2 $ (translate i "Solution")
+    H.div $ do
+      textAreaInput (fieldName submissionTextField) Nothing ! A.rows "25" ! A.cols "80"
+    submitButton (fieldName submitSolutionBtn) (i "Submit")
     hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
-  H.h2 (translate i "Description")
-  H.div # assignmentTextDiv $ H.pre # assignmentTextPre $
-    markdownToHtml . assignmentDesc . asValue $ p
 
 invalidAssignment :: Pagelet
 invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->

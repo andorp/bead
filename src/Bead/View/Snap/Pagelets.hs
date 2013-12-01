@@ -51,7 +51,7 @@ js j = H.script ! A.src (fromString j) $ empty
 document :: Html -> Html -> Html
 document headers body = H.docTypeHtml $ do
   H.head $ do
-    H.title "Bead"
+    H.title "BE-AD"
     H.meta ! A.charset "UTF-8"
     headers
     css "header.css"
@@ -81,7 +81,7 @@ titleAndHead :: (Html -> Html -> Html) -> String -> Html -> Html
 titleAndHead doc title content = doc
   (css "screen.css")
   (do H.div ! A.id "header" $ do
-        H.div ! A.id "logo" $ "Bead"
+        H.div ! A.id "logo" $ "BE-AD"
         H.div ! A.id "title" $ (fromString title)
       H.div ! A.id "content" $ content)
 
@@ -96,7 +96,6 @@ withUserFrame s = structMap withUserFrame'
   where
     withUserFrame' content = I18N.liftH2 $ \i -> do
       H.div ! A.id "header" $ pageHeader s
-      H.div ! A.id "menu" $ navigationMenu s
       pageStatus s
       H.div ! A.id "content" $ translate i content
 
@@ -234,9 +233,13 @@ navigationMenu s = do
 
 pageHeader :: UserState -> Html
 pageHeader s = do
-  H.div ! A.id "logo" $ "Bead"
+  H.div ! A.id "logo" $ "BE-AD"
   H.div ! A.id "user" $ do
     fromString . str . user $ s
+    H.br
+    linkToPage P.Home
+    H.br
+    linkToPage P.Profile
     H.br
     linkToPage P.Logout
   H.div ! A.id "title" $ title s

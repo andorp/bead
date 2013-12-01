@@ -28,7 +28,7 @@ textarea {
 }
 
 #menu {
-  text-align: center;
+  text-align: left;
 }
 
 #menu ul {
@@ -48,8 +48,8 @@ textarea {
 #content {
   margin-left: auto;
   margin-right: auto;
-  width: 70%;
-  text-align: center;
+  width: 75%;
+  text-align: left;
 }
 
 .create-course-table,
@@ -59,7 +59,7 @@ textarea {
 .user-detail-table,
 .submission-list-table
 {
-  margin-left: auto;
+  margin-left: 10px;
   margin-right: auto;
 }
 

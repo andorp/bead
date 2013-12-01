@@ -169,7 +169,6 @@ newUser :: Html
 newUser = dynamicTitleAndHead registrationTitle content
   where
     content = do
-      H.h1 $ "Register a new user"
       registrationForm "/new_user"
       linkToRoute backToMain
 
@@ -216,7 +215,6 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     }
 
   renderForm = blaze $ dynamicTitleAndHead registrationTitle $ do
-    H.h1 "Register a new user"
     postForm "/reg_request" ! (A.id . formId $ regForm) $ do
       table (fieldName registrationTable) (fieldName registrationTable) $ do
         tableLine "Username:" $ textInput (name regUsernamePrm)      20 Nothing ! A.required ""

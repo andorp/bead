@@ -249,11 +249,10 @@ instance Save TimeZone where
   save d = fileSave d "timezone" . show
 
 instance Save Assignment where
-  save d = assignmentCata $ \name desc tcs type_ start starttz end endtz -> do
+  save d = assignmentCata $ \name desc type_ start starttz end endtz -> do
     createStructureDirs d assignmentDirStructure
     saveName d name
     fileSave d "description" desc
-    fileSave d "testcases"   tcs
     fileSave d "type"        (show type_)
     fileSave d "start"       (show start)
     fileSave d "starttz"     (show starttz)
@@ -321,7 +320,6 @@ instance Load Assignment where
   load d = assignmentAna
       (loadName d)
       (fileLoad d "description" same)
-      (fileLoad d "testcases" same)
       (fileLoad d "type"  readMaybe)
       (fileLoad d "start" readMaybe)
       (fileLoad d "starttz" readMaybe)
@@ -421,10 +419,9 @@ instance Update Evaluation where
     fileUpdate d "result"      (show . evaluationResult $ e)
 
 instance Update Assignment where
-  update d = assignmentCata $ \name desc tcs type_ start starttz end endtz -> do
+  update d = assignmentCata $ \name desc type_ start starttz end endtz -> do
     updateName d name
     fileUpdate d "description" desc
-    fileUpdate d "testcases"   tcs
     fileUpdate d "type"        (show type_)
     fileUpdate d "start"       (show start)
     fileUpdate d "starttz"     (show starttz)
@@ -464,7 +461,7 @@ userDirStructure = DirStructure {
   }
 
 assignmentDirStructure = DirStructure {
-    files = [ "name", "description", "testcases"
+    files = [ "name", "description"
             , "type", "start", "starttz", "end", "endtz", created ]
   , directories = ["group", "course", "submission"]
   }

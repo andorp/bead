@@ -5,7 +5,7 @@ module Bead.View.Snap.Content.UserSubmissions (
 
 import Bead.View.Snap.Content
 import Bead.Domain.Types (Str(..))
-import Bead.Domain.Entities (Email(..), roles)
+import Bead.Domain.Entities (Email(..), roles, showDate)
 import Bead.Domain.Shared.Evaluation
 import qualified Bead.Controller.UserStories as U (userSubmissions)
 import Bead.Controller.Pages as P (Page(ModifyEvaluation, Evaluation))
@@ -46,7 +46,7 @@ userSubmissionHtml u = onlyHtml $ mkI18NHtml $ \i18n -> do
       firstCol  . i18n $ "Student:"
       secondCol . usStudent $ u
   H.p $ do
-    H.h3 . fromString . i18n $ "Submitted Solutions: "
+    H.h3 . fromString . i18n $ "Submitted Solutions"
     submissionTable i18n . usSubmissions $ u
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
@@ -80,8 +80,8 @@ submissionTable i18n s = do
     sbmLink si sk t = case siEvaluationKey si of
       Nothing -> link
         (routeWithParams P.Evaluation [requestParam sk])
-        (fromString . show $ t)
+        (fromString . showDate $ t)
       Just ek -> link
         (routeWithParams P.ModifyEvaluation [requestParam sk,requestParam ek] )
-        (show t)
+        (showDate t)
 

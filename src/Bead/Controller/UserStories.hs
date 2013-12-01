@@ -292,7 +292,7 @@ createGroupAssignment gk a = logAction INFO msg $ do
   where
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for group " ++ show gk
-    statusMsg = assignmentCata $ \name _ _ _ _ _ _ _ ->
+    statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
       putStatusMessage $ "'" ++ name ++ "' group assignment is created."
 
 createCourseAssignment :: CourseKey -> Assignment -> UserStory AssignmentKey
@@ -305,7 +305,7 @@ createCourseAssignment ck a = logAction INFO msg $ do
   where
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for course " ++ show ck
-    statusMsg = assignmentCata $ \name _ _ _ _ _ _ _ ->
+    statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
       putStatusMessage $ "'" ++ name ++ "' course assignment is created."
 
 selectAssignments :: (AssignmentKey -> Assignment -> Bool) -> UserStory [(AssignmentKey, Assignment)]

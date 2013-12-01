@@ -67,7 +67,7 @@ groupsAlreadyRegistered i18n ds =
         H.td # informationalCell $ fromString $ join $ intersperse " " as
 
 groupsForTheUser :: I18N -> [(GroupKey, GroupDesc)] -> Html
-groupsForTheUser i18n gs = nonEmpty gs (fromString . i18n $ "No groups were found") $
+groupsForTheUser i18n gs = nonEmpty gs (fromString . i18n $ "No groups available for you") $
   postForm (routeOf P.GroupRegistration) $ do
     selection (fieldName groupRegistrationField) $ do
       mapM_ (\(gk,gd) -> option (paramValue gk) (descriptive gd) False) gs

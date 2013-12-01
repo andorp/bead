@@ -9,6 +9,7 @@ import Data.String (fromString)
 import Text.Blaze.Html5 (Html, Attribute, (!))
 import Text.Blaze.Internal (Attributable)
 import qualified Text.Blaze.Html5.Attributes as A
+import Text.Printf
 
 -- Represents CSS style elements
 newtype StyleElement = StyleElement [String]
@@ -85,7 +86,7 @@ informationalTable = mconcat [
     borderColor "gray"
   , borderWidth 1
   , borderStyle "inset"
-  , marginLeftAuto
+  , marginLeft 10
   , marginRightAuto
   ]
 

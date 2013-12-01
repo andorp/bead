@@ -33,9 +33,9 @@ setUsrPwd = do
       return $ StatusMessage msg
 
 setUserPasswordContent :: Pagelet
-setUserPasswordContent = onlyHtml $ mkI18NHtml $ \i -> do
+setUserPasswordContent = onlyHtml $ mkI18NHtml $ \i -> H.div # textAlign "left" $ do
   postForm (routeOf SetUserPassword) `withId` (rFormId setStudentPwdForm) $ do
-    table (fieldName changePasswordTable) (fieldName changePasswordTable) # centerTable $ do
+    table (fieldName changePasswordTable) (fieldName changePasswordTable) $ do
       tableLine (i "Username: ") $ textInput (B.name usernamePrm) 20 Nothing ! A.required ""
       tableLine (i "New Password: ") $ passwordInput (B.name studentNewPwdPrm) 20 Nothing ! A.required ""
       tableLine (i "New Password again: ") $ passwordInput (B.name studentNewPwdAgainPrm) 20 Nothing ! A.required ""

@@ -9,9 +9,11 @@ import Bead.Invariants (Invariants(..), UnitTests(..))
 
 import Data.Char (toLower)
 import Data.Time (UTCTime(..), timeZoneName)
+import Data.Time.Format (formatTime)
 import qualified Data.Time as Time
 import Control.Monad (join)
 import Control.Applicative ((<$>), (<*>))
+import System.Locale (defaultTimeLocale)
 import Text.Printf (printf)
 
 -- * Course, exams, exercises, solutions
@@ -34,7 +36,6 @@ assignmentTypes = [Normal, Urn]
 data Assignment = Assignment {
     assignmentName :: String
   , assignmentDesc :: String
-  , assignmentTCs  :: String
   , assignmentType :: AssignmentType
   , assignmentStart :: UTCTime
   , assignmentStartTimeZone :: TimeZone
@@ -43,11 +44,11 @@ data Assignment = Assignment {
   -- TODO: Number of maximum tries
   } deriving (Eq, Show)
 
-assignmentCata f (Assignment name desc tcs type_ start starttz end endtz) =
-  f name desc tcs type_ start starttz end endtz
+assignmentCata f (Assignment name desc type_ start starttz end endtz) =
+  f name desc type_ start starttz end endtz
 
-assignmentAna name desc tcs type_ start starttz end endtz =
-  Assignment <$> name <*> desc <*> tcs <*> type_ <*> start <*> starttz <*> end <*> endtz
+assignmentAna name desc type_ start starttz end endtz =
+  Assignment <$> name <*> desc <*> type_ <*> start <*> starttz <*> end <*> endtz
 
 -- | Produces True if the given time is between the start-end time of the assignment
 isActivePeriod :: Assignment -> UTCTime -> Bool
@@ -343,6 +344,9 @@ dataTimeZone = timeZoneCata
     hoursToNamedTimeZone hours name =
       (\t -> t { timeZoneName = name }) $ Time.hoursToTimeZone hours
 
+showDate :: UTCTime -> String
+showDate = formatTime defaultTimeLocale "%F, %T (%Z)"
+
 -- | Logged in user
 data User = User {
     u_role     :: Role
@@ -430,7 +434,6 @@ assignmentTests =
   let a = Assignment {
           assignmentName = "name"
         , assignmentDesc = "desc"
-        , assignmentTCs  = "test"
         , assignmentType = Normal
         , assignmentStart = read "2010-10-10 12:00:00 UTC"
         , assignmentStartTimeZone = UTC

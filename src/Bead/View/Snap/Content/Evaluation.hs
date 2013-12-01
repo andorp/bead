@@ -101,10 +101,8 @@ evaluationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   H.div $ H.h2 $ (translate i "Submitted solution")
   H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
     (fromString . eSolution $ sd)
-  H.div $ H.h2 $ (fromString $ eAssignmentTitle sd)
-  H.div # assignmentTextDiv $ H.pre # assignmentTextPre $ do
-    (fromString . eAssignmentDesc $ sd)
-  translate i . commentsDiv . eComments $ sd
+  when (not . null $ eComments sd) $ do
+    translate i . commentsDiv . eComments $ sd
 
   where
     defaultEvalCfg :: EvaluationResult

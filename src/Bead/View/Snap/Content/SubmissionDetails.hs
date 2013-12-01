@@ -66,29 +66,32 @@ submissionDetailsPostHandler = do
 submissionDetailsContent :: PageData -> Pagelet
 submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
   let sm = smDetails p
-  H.p $ do
-    H.h4 (translate i "Group / Course: ")
-    (fromString . sdGroup $ sm)
-  H.p $ do
-    H.h4 (translate i "Teacher: ")
-    (fromString . join . intersperse ", " . sdTeacher $ sm)
-  H.h2 $ (translate i "Assignment: ")
-  H.div # assignmentTextDiv $ H.pre # assignmentTextPre $ fromString . sdAssignment $ sm
-  H.p $ do
-    H.h4 (translate i "Status: ")
-    (fromString . sdStatus $ sm)
-  H.p $ do
-    H.h4 (translate i "Submission text: ")
-    H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
-  H.p $ do
-    H.h4 (translate i "New comment")
-    postForm (routeOf P.SubmissionDetails) $ do
-      H.div ! formDiv $ do
-        textAreaInput (fieldName commentValueField) Nothing ! fillDiv
-        hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
-        hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
-      submitButton (fieldName commentBtn) (i "Comment")
-  translate i . commentsDiv . sdComments $ sm
+  H.table $ do
+    H.tr $ do
+      H.td # textAlignRight $ H.b $ fromString (i "Group / Course:")
+      H.td $ fromString (sdGroup $ sm)
+    H.tr $ do
+      H.td # textAlignRight $ H.b $ fromString (i "Teacher:")
+      H.td $ fromString (join . intersperse ", " . sdTeacher $ sm)
+    H.tr $ do
+      H.td # textAlignRight $ H.b $ fromString (i "Assignment:")
+      H.td $ fromString (assignmentName . sdAssignment $ sm)
+  H.h2 $ (translate i "Assignment Text")
+  H.div # assignmentTextDiv $ fromString . assignmentDesc $ sdAssignment $ sm
+  H.h2 (translate i "Submission Text")
+  H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
+  H.h2 $ (translate i "Evaluation")
+  (fromString . sdStatus $ sm)
+  when (not . null $ sdComments sm) $ do
+    translate i . commentsDiv $ sdComments sm
+  H.hr
+  H.h2 (translate i "New comment")
+  postForm (routeOf P.SubmissionDetails) $ do
+    H.div ! formDiv $ do
+      textAreaInput (fieldName commentValueField) Nothing ! fillDiv
+      hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
+      hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
+    submitButton (fieldName commentBtn) (i "Submit")
 
 invalidSubmission :: Pagelet
 invalidSubmission = onlyHtml $ mkI18NHtml $ \i ->

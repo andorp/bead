@@ -51,23 +51,24 @@ courseAdminPage = withUserState $ \s -> do
       return (gk,g)
 
 courseAdminContent :: PageData -> Pagelet
-courseAdminContent info = onlyHtml $ mkI18NHtml $ \i -> do
+courseAdminContent info = onlyHtml $ mkI18NHtml $ \i -> H.div # textAlign "left" $ do
   H.h3 (translate i "New group for the course")
   H.p $ nonEmpty (courses info) (translate i "No courses were found") $
         (postForm (routeOf P.CreateGroup) `withId` (evFormId createGroupHook)) $ do
-          (translate i "Select a course")
+          H.b $ (translate i "Course")
           H.br
           valueTextSelection (fieldName courseKeyInfo) (courses info)
           -- Help message for the percentage
           H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $
             fromString (i "The minimum percentage that the students need to reach")
           inputPagelet emptyGroup
+          H.br
           submitButton (fieldName createGroupBtn) (i "Create Group")
   H.h3 (translate i "Assign teacher to the group")
   H.p $ nonEmpty (groups info)      (translate i "No groups were found") $
         nonEmpty (groupAdmins info) (translate i "No group admins were found") $
         postForm (routeOf P.AssignGroupAdmin) $ do
-          table
+          H.table $ do
             (header (translate i "Group") (translate i "Group Admin"))
             (selections
                (valueTextSelection (fieldName selectedGroup) (groups info))
@@ -75,8 +76,6 @@ courseAdminContent info = onlyHtml $ mkI18NHtml $ \i -> do
           H.br
           submitButton (fieldName assignGroupAdminBtn) (i "Assign")
   where
-    table h l = H.table # (centerTable <> border 1 "solid" "black") $ do h; l
-
     header h1 h2 = H.tr $ do
       H.th h1
       H.th h2

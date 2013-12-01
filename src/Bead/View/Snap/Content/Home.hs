@@ -32,7 +32,7 @@ import Bead.Controller.UserStories (
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A (class_, style, colspan)
+import qualified Text.Blaze.Html5.Attributes as A (class_, style, id, colspan)
 
 #ifdef TEST
 import Bead.Invariants
@@ -61,28 +61,42 @@ homePage = withUserState $ \s ->
           <*> userAssignments
           <*> submissionTables))
 
+navigation :: [P.Page] -> Html
+navigation links = H.div ! A.id "menu" $ H.ul $ mapM_ linkToPage links
+
 homeContent :: HomePageData -> Pagelet
-homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
+homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> H.div # textAlign "left" $ do
   let s = userState d
       r = role s
       hasCourse = hasCourses d
       hasGroup  = hasGroups d
   when (isAdmin s) $ H.p $ do
     H.h3 $ (translate i18n "Admin's menu")
+    navigation [P.Administration]
+    H.hr
   when (courseAdminUser r) $ H.p $ do
     H.h3 $ (translate i18n "Course Admin's menu")
-    linkToPage P.NewCourseAssignment
+    when (not hasCourse) $ do
+      translate i18n "You are a course admin, but you do not have a course yet."
   when (groupAdminUser r) $ H.p $ do
     H.h3 $ (translate i18n "Teacher's menu")
-    linkToPage P.NewGroupAssignment
-  when ((courseAdminUser r && hasCourse) || (groupAdminUser r && hasGroup)) $ H.p $ do
-    H.h3 $ (translate i18n "Submission table")
-    htmlSubmissionTables i18n (sTables d)
-    H.h3 $ (translate i18n "Manage user's password")
-    linkToPage P.SetUserPassword
+    when (not hasGroup) $ do
+      translate i18n "You are a group admin, but you do not have a group yet."
+  when ((courseAdminUser r) || (groupAdminUser r)) $ do
+    when (hasCourse || hasGroup) $ H.p $ do
+      htmlSubmissionTables i18n (sTables d)
+  when (courseAdminUser r && hasCourse) $ H.p $ do
+    navigation $ [ P.CourseAdmin, NewCourseAssignment] ++
+                 (if hasGroup then [P.NewGroupAssignment] else []) ++
+                 [ P.EvaluationTable, P.SetUserPassword ]
+    H.hr
+  when (groupAdminUser r && hasGroup) $ H.p $ do
+    navigation [P.NewGroupAssignment, P.EvaluationTable, P.SetUserPassword]
+    H.hr
+  H.h3 $ (translate i18n "Student's menu")
   H.p $ do
-    H.h3 $ (translate i18n "Student's menu")
     availableAssignments i18n (assignments d)
+    navigation [P.GroupRegistration]
   where
     courseAdminUser = (==E.CourseAdmin)
     groupAdminUser  = (==E.GroupAdmin)
