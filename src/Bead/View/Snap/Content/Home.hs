@@ -191,10 +191,20 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
 -- Produces the result of the submissions. The selected evaluation method depends
 -- on the given configuration.
 calculateSubmissionResult :: [SubmissionInfo] -> EvaluationConfig -> Either String Result
-calculateSubmissionResult si =
-  evaluationDataMap
-    (const (sumBinaryResult si))
-    (flip sumPercentageResult si)
+calculateSubmissionResult si e =
+  case results of
+    [] -> (Left "No results")
+    rs -> evaluationDataMap
+            (const (sumBinaryResult rs))
+            (flip sumPercentageResult rs)
+            e
+  where
+    results = filter evaluated si
+
+    evaluated = submissionInfoCata
+                  False -- not found
+                  False -- unevaulated
+                  (\_ _ -> True) -- result
 
 -- Produces the result of a user's submission list for a binary evaluation.
 -- Returns (Right result) when there is no error in the submission set, otherwise (Left "Reason")

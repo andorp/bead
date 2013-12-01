@@ -345,7 +345,9 @@ submissionTableInfo p courseName evalCfg as usernames = do
   ulines <- flip mapM usernames $ \u -> do
     ud  <- userDescription p u
     asi <- mapM (submissionInfo' u) as
-    let result = calculateResult . map snd $ asi
+    let result = case asi of
+                   [] -> Nothing
+                   _  -> calculateResult . map snd $ asi
     return (ud, result, asi)
 
   return SubmissionTableInfo {
