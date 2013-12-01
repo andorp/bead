@@ -6,6 +6,7 @@ module Bead.View.Snap.Content.CourseAdmin (
   ) where
 
 import Control.Monad (liftM)
+import Data.String (fromString)
 
 import Bead.Controller.Pages as P (Page(..))
 import Bead.Controller.ServiceContext (UserState(..))
@@ -15,8 +16,9 @@ import Bead.View.Snap.Content
 import Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
 
-import Text.Blaze.Html5 (Html)
+import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A
 
 courseAdmin :: Content
 courseAdmin = getContentHandler courseAdminPage
@@ -56,6 +58,9 @@ courseAdminContent info = onlyHtml $ mkI18NHtml $ \i -> do
           (translate i "Select a course")
           H.br
           valueTextSelection (fieldName courseKeyInfo) (courses info)
+          -- Help message for the percentage
+          H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $
+            fromString (i "The minimum percentage that the students need to reach")
           inputPagelet emptyGroup
           submitButton (fieldName createGroupBtn) (i "Create Group")
   H.h3 (translate i "Assign teacher to the group")

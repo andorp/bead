@@ -94,7 +94,7 @@ hookPercentageDiv hook f = void $ do
   div <- select . cssId . ptDivId $ hook
   existDiv <- exists div
   when existDiv $ do
-    input <- select. cssId . ptHiddenInputId $ hook
+    input <- select . cssId . ptHiddenInputId $ hook
     pctInput <- select (fromString "<input type=\"text\" size=\"3\" required />")
     appendTo div pctInput
     select (fromString "<span class=\"evtremoveable\">&#37;</span>") >>= appendTo div
@@ -251,8 +251,12 @@ hookEvaluationTypeForm hook = do
 
     addPercentageField :: JQuery -> Fay ()
     addPercentageField form = void $ do
-      pctInput <- select (fromString "<input type=\"text\" id=\"percentage\" class=\"evtremoveable\" size=\"3\" required />")
       div <- findSelector (cssId . evSelectionDivId $ hook) form
+      msgSpan <- select . cssId $ evHelpMessageId hook
+      msgValue <- getText msgSpan
+      msg <- select (fromString ("<span class=\"evtremoveable\">" ++ (unpack msgValue) ++ "</span><br class=\"evtremoveable\">"))
+      appendTo div msg
+      pctInput <- select (fromString "<input type=\"text\" id=\"percentage\" class=\"evtremoveable\" size=\"3\" required />")
       appendTo div pctInput
       select (fromString "<span class=\"evtremoveable\">&#37;</span>") >>= appendTo div
       numberField pctInput 0 100

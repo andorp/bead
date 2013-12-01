@@ -28,6 +28,8 @@ assignmentEndDateField = HookId "asg-end-date"
 evaulationPercentageDiv = HookId "evaulation-pct-div"
 evaulationResultField = HookId "evaulation-result"
 
+pctHelpMessage = HookId "pct-help-message"
+
 data HookClass = HookClass { hookClass :: String }
 
 datePickerClass = HookClass "datepicker"

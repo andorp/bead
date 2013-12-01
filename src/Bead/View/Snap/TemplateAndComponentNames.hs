@@ -337,7 +337,7 @@ fieldList = map fieldName $ join [
   , SFN assignmentStartDateField, SFN assignmentEndDateField
   , SFN assignmentStartDefaultDate, SFN assignmentStartDefaultHour, SFN assignmentStartDefaultMin
   , SFN assignmentEndDefaultDate, SFN assignmentEndDefaultHour, SFN assignmentEndDefaultMin
-  , SFN studentNewPwdField, SFN studentNewPwdAgainField
+  , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage
 
   , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId

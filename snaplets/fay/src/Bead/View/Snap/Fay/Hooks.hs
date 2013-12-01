@@ -9,6 +9,7 @@ data EvaulationHook = EvaulationHook {
   , evSelectionId   :: String
   , evHiddenValueId :: String
   , evSelectionDivId :: String
+  , evHelpMessageId  :: String
   }
 
 createCourseHook = EvaulationHook {
@@ -16,6 +17,7 @@ createCourseHook = EvaulationHook {
   , evSelectionId   = hookId evaulationTypeSelection
   , evHiddenValueId = hookId evaulationTypeValue
   , evSelectionDivId = hookId evalTypeSelectionDiv
+  , evHelpMessageId  = hookId pctHelpMessage
   }
 
 createGroupHook = EvaulationHook {
@@ -23,9 +25,8 @@ createGroupHook = EvaulationHook {
   , evSelectionId = hookId evaulationTypeSelection
   , evHiddenValueId = hookId evaulationTypeValue
   , evSelectionDivId = hookId evalTypeSelectionDiv
+  , evHelpMessageId  = hookId pctHelpMessage
   }
-
-
 
 data DateTimePickerHook = DateTimePickerHook {
     dtDivId         :: String

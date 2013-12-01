@@ -5,6 +5,7 @@ module Bead.View.Snap.Content.Administration (
   ) where
 
 import Control.Monad (liftM)
+import Data.String (fromString)
 
 import Bead.Domain.Entities (User(..), Role(..))
 import Bead.Controller.Pages as P (Page(CreateCourse, UserDetails, AssignCourseAdmin))
@@ -15,8 +16,9 @@ import Bead.View.Snap.Content
 import Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
 
-import Text.Blaze.Html5 (Html)
+import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A
 
 administration :: Content
 administration = getContentHandler administrationPage
@@ -55,6 +57,9 @@ administrationContent info = onlyHtml $ mkI18NHtml $ \i18n -> do
     H.h3 $ (translate i18n "New Course")
     (postForm (routeOf P.CreateCourse) `withId` (evFormId createCourseHook)) $ do
       inputPagelet emptyCourse
+      -- Help message for the percentage
+      H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $ fromString
+        (i18n "The minimum percentage that the students need to reach")
       submitButton (fieldName createCourseBtn) (i18n "Create Course")
   H.div $ do
     H.h3 $ (translate i18n "Add course admin to the course")
