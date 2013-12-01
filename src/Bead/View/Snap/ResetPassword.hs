@@ -28,6 +28,7 @@ import Bead.View.Snap.DataBridge
 import Bead.View.Snap.ErrorPage (errorPageWithTitle)
 import Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
 import Bead.View.Snap.HandlerUtils (registrationStory, userState)
+import Bead.View.Snap.Registration (backToMain)
 import Bead.View.Snap.Session (passwordFromAuthUser)
 import Bead.View.Snap.Style
 
@@ -131,6 +132,9 @@ updateCurrentAuthPassword password = do
 resetPasswordPage :: Handler App App ()
 resetPasswordPage = method GET resetPasswordGET <|> method POST resetPasswordPOST
 
+resetPasswordTitle :: String
+resetPasswordTitle = "Reset Password"
+
 {- Reset password GET handler
 Renders the password reset request page. The page contains
 two input fields for the user's name and the user's email
@@ -140,14 +144,14 @@ and submit the requests.
 resetPasswordGET :: Handler App App ()
 resetPasswordGET = renderForm
   where
-    renderForm = blaze $ dynamicTitleAndHead "Reset Password" $ do
+    renderForm = blaze $ dynamicTitleAndHead resetPasswordTitle $ do
       H.h1 "Reset the password"
       postForm "/reset_pwd" $ do
         table (fieldName resetPasswordTable) (fieldName resetPasswordTable) # centerTable $ do
           tableLine "Username:"       $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
           tableLine "Email address: " $ textInput (name regEmailPrm)    20 Nothing ! A.required ""
         submitButton (fieldName pwdSubmitBtn) "Reset Password"
-      linkToRoute "Go back to the login page"
+      linkToRoute backToMain
 
 {- Reset password POST handler
 Reads out the parameters for the username and the email address, checks
@@ -170,7 +174,7 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
   where
     renderErrorPage :: Handler App App (Either String ()) -> Handler App App ()
     renderErrorPage m = m >>=
-       (either (errorPageWithTitle "Reset Password") return)
+       (either (errorPageWithTitle resetPasswordTitle) return)
 
     loadUser u =
       (lift $ registrationStory $ S.loadUser u) >>=
@@ -178,10 +182,10 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
 
 
 pageContent :: (Handler App a) ()
-pageContent = blaze $ dynamicTitleAndHead "Reset Password" $ do
+pageContent = blaze $ dynamicTitleAndHead resetPasswordTitle $ do
   "Please check your emails"
   H.br
-  linkToRoute "Go back to the login page"
+  linkToRoute backToMain
 
 readParameter :: (MonadSnap m) => Parameter a -> m (Maybe a)
 readParameter param = do

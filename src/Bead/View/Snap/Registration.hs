@@ -8,6 +8,7 @@ module Bead.View.Snap.Registration (
 #else
   , registration
 #endif
+  , backToMain
   ) where
 
 -- Bead imports
@@ -91,6 +92,12 @@ readParameter param = do
   reqParam <- getParam . B.pack . name $ param
   return (reqParam >>= decode param . T.unpack . decodeUtf8)
 
+backToMain :: String
+backToMain = "Go back to the login page"
+
+registrationTitle :: String
+registrationTitle = "Registration"
+
 #ifndef EMAIL_REGISTRATION
 registration :: Handler App (AuthManager App) ()
 registration = method GET handleForm <|> method POST handleFormSubmit
@@ -159,12 +166,12 @@ registration = method GET handleForm <|> method POST handleFormSubmit
 -- * Blaze
 
 newUser :: Html
-newUser = dynamicTitleAndHead "Registration" content
+newUser = dynamicTitleAndHead registrationTitle content
   where
     content = do
       H.h1 $ "Register a new user"
       registrationForm "/new_user"
-      linkToRoute "Go back to the login page"
+      linkToRoute backToMain
 
 registrationForm :: String -> Html
 registrationForm postAction = do
@@ -208,7 +215,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     , reg_timeout  = timeout 2 now
     }
 
-  renderForm = blaze $ dynamicTitleAndHead "Registration" $ do
+  renderForm = blaze $ dynamicTitleAndHead registrationTitle $ do
     H.h1 "Register a new user"
     postForm "/reg_request" ! (A.id . formId $ regForm) $ do
       table (fieldName registrationTable) (fieldName registrationTable) $ do
@@ -216,7 +223,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
         tableLine "Email address:" $ textInput (name regEmailPrm)    20 Nothing ! A.required ""
         tableLine "Full name:"     $ textInput (name regFullNamePrm) 20 Nothing ! A.required ""
       submitButton (fieldName regSubmitBtn) "Register"
-    linkToRoute "Go back to the home page"
+    linkToRoute backToMain
 
   saveUserRegData = do
     u <- readParameter regUsernamePrm
@@ -224,12 +231,12 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     f <- readParameter regFullNamePrm
 
     case (u,e,f) of
-      (Nothing, _, _) -> errorPageWithTitle "Registration" "Username error"
+      (Nothing, _, _) -> errorPageWithTitle registrationTitle "Username error"
       (Just username, Just email, Just fullname) -> do
         userRegData <- liftIO $ createUserRegData username email fullname
         result <- registrationStory (S.createUserReg userRegData)
         case result of
-          Left _ -> errorPageWithTitle "Registration" "User registration data was not saved in the persistence"
+          Left _ -> errorPageWithTitle registrationTitle "User registration data was not saved in the persistence"
           Right key -> do
              -- TODO: Send the email template
             withTop sendEmailContext $
@@ -242,7 +249,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
                   , regUrl = createUserRegAddress key userRegData
                   }
             pageContent
-      _ -> errorPageWithTitle "Registration" "Some request parameter is missing"
+      _ -> errorPageWithTitle registrationTitle "Some request parameter is missing"
 
   createUserRegAddress :: UserRegKey -> UserRegistration -> String
   createUserRegAddress key reg =
@@ -282,25 +289,25 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     values <- readRegParameters
 
     case values of
-      Nothing -> errorPageWithTitle "Registration" "No registration parameters are found"
+      Nothing -> errorPageWithTitle registrationTitle "No registration parameters are found"
       Just (key, token, username) -> do
         result <- registrationStory $ do
                     userReg   <- S.loadUserReg key
                     existence <- S.doesUserExist username
                     return (userReg, existence)
         case result of
-          Left e -> errorPageWithTitle "Registration" ("Some error happened: " ++ show e)
+          Left e -> errorPageWithTitle registrationTitle ("Some error happened: " ++ show e)
           Right (userRegData,exist) -> do
             -- TODO: Check username and token values
             now <- liftIO $ getCurrentTime
             case (reg_timeout userRegData < now, exist) of
               (True , _) -> errorPageWithTitle
-                "Registration"
+                registrationTitle
                 "The registration opportunitiy has timed out, please start it over"
               (False, True) -> errorPageWithTitle
-                "Registraion"
+                registrationTitle
                 "The user already exists"
-              (False, False) -> blaze $ dynamicTitleAndHead "Registration" $ do
+              (False, False) -> blaze $ dynamicTitleAndHead registrationTitle $ do
                 H.h1 "Register a new user"
                 postForm "reg_final" ! (A.id . formId $ regFinalForm) $ do
                   table (fieldName registrationTable) (fieldName registrationTable) $ do
@@ -310,7 +317,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                   hiddenParam regTokenPrm      token
                   hiddenParam regUsernamePrm   username
                   submitButton (fieldName regSubmitBtn) "Register"
-                linkToRoute "Go back to the home page"
+                linkToRoute backToMain
 
   hiddenParam parameter value = hiddenInput (name parameter) (encode parameter value)
 
@@ -318,16 +325,16 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     values <- readRegParameters
     pwd    <- readParameter regPasswordPrm
     case (values, pwd) of
-      (Nothing,_) -> errorPageWithTitle "Registration" "No registraion parameters are found" -- TODO
+      (Nothing,_) -> errorPageWithTitle registrationTitle "No registraion parameters are found" -- TODO
       (Just (key, token, username), Just password) -> do
         result <- registrationStory (S.loadUserReg key)
         case result of
-          Left e -> errorPageWithTitle "Registration" "Some internal error happened!!!" -- TODO
+          Left e -> errorPageWithTitle registrationTitle "Some internal error happened!!!" -- TODO
           Right userRegData -> do
             now <- liftIO getCurrentTime
             -- TODO: Check username and token values (are the same as in the persistence)
             case (reg_timeout userRegData < now) of
-              True -> errorPageWithTitle "Registration" "The registration opportunity has timed out, please start it over"
+              True -> errorPageWithTitle registrationTitle "The registration opportunity has timed out, please start it over"
               False -> do
                 result <- withTop auth $ createNewUser userRegData password
                 redirect "/"
@@ -375,9 +382,9 @@ createNewUser reg password = runErrorT $ do
     checkFailure (Right x) = return x
 
 pageContent :: Handler App a ()
-pageContent = blaze $ dynamicTitleAndHead "Registration" $ do
+pageContent = blaze $ dynamicTitleAndHead registrationTitle $ do
   "Please check your emails"
   H.br
-  linkToRoute "Go back to the login page"
+  linkToRoute backToMain
 
 #endif
