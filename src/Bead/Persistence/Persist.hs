@@ -25,6 +25,7 @@ import Data.Time (UTCTime)
 import Data.List (nub, sortBy)
 import Data.Map (Map(..))
 import qualified Data.Map as Map
+import Data.Maybe (catMaybes)
 import Data.Time (getCurrentTime)
 
 import Control.Applicative ((<$>))
@@ -296,10 +297,11 @@ canUserCommentOn p u sk = return True
 -- user administrates
 submissionTables :: Persist -> Username -> TIO [SubmissionTableInfo]
 submissionTables p u = do
-  courseTables <- mapM (courseSubmissionTableInfo p . fst) =<< administratedCourses p u
-  groups <- administratedGroups p u
-  groupTables  <- mapM (groupSubmissionTableInfo  p . fst) groups
-  courseOfGroupTables <- mapM (courseSubmissionTableInfoForGroupAdmin p . fst) groups
+  courseKeys <- map fst <$> administratedCourses p u
+  courseTables <- mapM (courseSubmissionTableInfo p) courseKeys
+  groupKeys <- map fst <$> administratedGroups p u
+  groupTables  <- mapM (groupSubmissionTableInfo p) groupKeys
+  courseOfGroupTables <- catMaybes <$> mapM (courseSubmissionTableInfoForGroupAdmin p courseKeys) groupKeys
   return $ courseTables ++ courseOfGroupTables ++ groupTables
 
 groupSubmissionTableInfo :: Persist -> GroupKey -> TIO SubmissionTableInfo
@@ -317,13 +319,18 @@ courseSubmissionTableInfo p ck = do
   (name,evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
   submissionTableInfo p name evalCfg assignments usernames
 
-courseSubmissionTableInfoForGroupAdmin :: Persist -> GroupKey -> TIO SubmissionTableInfo
-courseSubmissionTableInfoForGroupAdmin p gk = do
+-- Produces a submission table information, which is Just info, for the courses expect that the user is already
+-- administrates, otherwise Nothing
+courseSubmissionTableInfoForGroupAdmin :: Persist -> [CourseKey] -> GroupKey -> TIO (Maybe SubmissionTableInfo)
+courseSubmissionTableInfoForGroupAdmin p cks gk = do
   ck <- courseOfGroup p gk
-  usernames <- subscribedToGroup p gk
-  assignments <- courseAssignments p ck
-  (name, evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
-  submissionTableInfo p name evalCfg assignments usernames
+  if elem ck cks
+    then return Nothing
+    else do
+      usernames <- subscribedToGroup p gk
+      assignments <- courseAssignments p ck
+      (name, evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
+      Just <$> submissionTableInfo p name evalCfg assignments usernames
 
 submissionTableInfo
   :: Persist
