@@ -14,7 +14,7 @@ Data-Files:
   snaplets/fay/devel.cfg,
   snaplets/fay/src/Fay/JQueryUI.hs,
   snaplets/fay/src/DynamicContents.hs,
-  snaplets/fay/src/Bead/Domain/Shared/Evaulation.hs,
+  snaplets/fay/src/Bead/Domain/Shared/Evaluation.hs,
   snaplets/fay/src/Bead/View/Snap/Validators.hs,
   snaplets/fay/src/Bead/View/Snap/Fay/HookIds.hs,
   snaplets/fay/src/Bead/View/Snap/Fay/Hooks.hs,
@@ -61,13 +61,13 @@ Executable Bead
 --                 transformers, HUnit, test-framework, test-framework-hunit,
 --                 test-framework-quickcheck2, QuickCheck, unix, deepseq
 
-Executable BeadEnd2EndTests
-  if flag(Tests)
-    Buildable: True
-  else
-    Buildable: False
-  Main-is: WebDriverMain.hs
-  HS-Source-Dirs: src, snaplets/fay/src, test
-  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
-                 transformers, network, webdriver
+--Executable BeadEnd2EndTests
+--  if flag(Tests)
+--    Buildable: True
+--  else
+--    Buildable: False
+--  Main-is: WebDriverMain.hs
+--  HS-Source-Dirs: src, snaplets/fay/src, test
+--  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
+--                 transformers, network, webdriver
 
