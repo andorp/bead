@@ -313,7 +313,7 @@ userAssignmentKeyTests = do
     gas <- runPersistCmd $ groupAssignments persist gk
     cas <- runPersistCmd $ courseAssignments persist ck
     let uas = gas ++ cas
-    as <- runPersistCmd $ userAssignmentKeys persist u
+    as <- runPersistCmd $ fmap (maybe [] id) $ userAssignmentKeys persist u
     when (null as) $ assertTrue (null gas)
       "Group has assignment, but user does not see it"
     unless (or [null uas, null as]) $ assertTrue
