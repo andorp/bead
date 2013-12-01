@@ -32,7 +32,7 @@ import Bead.Controller.UserStories (
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A (class_, style)
+import qualified Text.Blaze.Html5.Attributes as A (class_, style, colspan)
 
 #ifdef TEST
 import Bead.Invariants
@@ -135,7 +135,7 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
   mapM_ userLine (stUserLines s)
   where
     tableId = join ["st", show i]
-    headLine = H.tr . H.th . fromString
+    headLine = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
     headerCell = H.th # (informationalCell <> grayBackground)
     dataCell r = H.td # (informationalCell <> r)
     assignmentLine as = H.tr $ do
