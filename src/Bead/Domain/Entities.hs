@@ -2,7 +2,7 @@
 module Bead.Domain.Entities where
 
 import Bead.Domain.Types
-import Bead.Domain.Evaulation
+import Bead.Domain.Evaluation
 #ifdef TEST
 import Bead.Invariants (Invariants(..), UnitTests(..))
 #endif
@@ -62,7 +62,7 @@ data Submission = Submission {
   , solutionPostDate :: UTCTime
   } deriving (Eq, Show)
 
--- | Comment on the text of exercise, on the evaulation
+-- | Comment on the text of exercise, on the evaluation
 data Comment = Comment {
     comment     :: String
   , commentDate :: UTCTime
@@ -72,57 +72,57 @@ type CourseName = String
 
 type UsersFullname = String
 
-type EvaulationResult = EvaulationData Binary Percentage
+type EvaluationResult = EvaluationData Binary Percentage
 
-type EvaulationConfig = EvaulationData () PctConfig
+type EvaluationConfig = EvaluationData () PctConfig
 
-binaryEvalConfig :: EvaulationConfig
+binaryEvalConfig :: EvaluationConfig
 binaryEvalConfig = BinEval ()
 
-percentageEvalConfig :: PctConfig -> EvaulationConfig
+percentageEvalConfig :: PctConfig -> EvaluationConfig
 percentageEvalConfig p = PctEval p
 
-class IsEvaulationResult e where
-  mkEvalResult :: e -> EvaulationResult
+class IsEvaluationResult e where
+  mkEvalResult :: e -> EvaluationResult
 
-instance IsEvaulationResult Binary where
+instance IsEvaluationResult Binary where
   mkEvalResult = BinEval
 
-instance IsEvaulationResult Percentage where
+instance IsEvaluationResult Percentage where
   mkEvalResult = PctEval
 
-allBinaryEval :: [EvaulationData b p] -> Maybe [b]
+allBinaryEval :: [EvaluationData b p] -> Maybe [b]
 allBinaryEval = sequence . map binaryEval
 
-allPercentEval :: [EvaulationData b p] -> Maybe [p]
+allPercentEval :: [EvaluationData b p] -> Maybe [p]
 allPercentEval = sequence . map percentEval
 
-evaulateResults :: EvaulationConfig -> [EvaulationResult] -> Maybe Result
-evaulateResults (BinEval cfg) = fmap (flip calculateEvaulation cfg) . allBinaryEval
-evaulateResults (PctEval cfg) = fmap (flip calculateEvaulation cfg) . allPercentEval
+evaluateResults :: EvaluationConfig -> [EvaluationResult] -> Maybe Result
+evaluateResults (BinEval cfg) = fmap (flip calculateEvaluation cfg) . allBinaryEval
+evaluateResults (PctEval cfg) = fmap (flip calculateEvaluation cfg) . allPercentEval
 
--- | Evaulation of a submission
-data Evaulation = Evaulation {
-    evaulationResult  :: EvaulationResult
-  , writtenEvaulation :: String
+-- | Evaluation of a submission
+data Evaluation = Evaluation {
+    evaluationResult  :: EvaluationResult
+  , writtenEvaluation :: String
   } deriving (Eq, Show)
 
-resultString :: EvaulationResult -> String
+resultString :: EvaluationResult -> String
 resultString (BinEval (Binary Passed)) = "Passed"
 resultString (BinEval (Binary Failed)) = "Failed"
 resultString (PctEval p) =
   case point p of
-    Nothing -> "No evaulation result, some internal error happened!"
+    Nothing -> "No evaluation result, some internal error happened!"
     Just q  -> printf "%3.2f%%" (100.0 * q)
 
-evaulationComment :: UTCTime -> Evaulation -> Comment
-evaulationComment t e = Comment {
+evaluationComment :: UTCTime -> Evaluation -> Comment
+evaluationComment t e = Comment {
     comment = c
   , commentDate = t
   } where
      c = join [
-           writtenEvaulation e, "\r\n"
-         , resultString . evaulationResult $ e
+           writtenEvaluation e, "\r\n"
+         , resultString . evaluationResult $ e
          ]
 
 newtype CourseCode = CourseCode String
@@ -135,7 +135,7 @@ instance Str CourseCode where
 data Course = Course {
     courseName :: String
   , courseDesc :: String
-  , courseEvalConfig :: EvaulationConfig
+  , courseEvalConfig :: EvaluationConfig
   } deriving (Eq, Show)
 
 courseCata course config (Course name desc cfg)
@@ -145,7 +145,7 @@ courseCata course config (Course name desc cfg)
 data Group = Group {
     groupName  :: String
   , groupDesc  :: String
-  , groupEvalConfig :: EvaulationConfig
+  , groupEvalConfig :: EvaluationConfig
   } deriving (Eq, Show)
 
 groupCata group config (Group name desc cfg)
@@ -164,23 +164,23 @@ data Workflow
 -- | Login roles
 data Role
   = Student
-  | Professor
+  | GroupAdmin
   | CourseAdmin
   | Admin
   deriving (Eq, Ord, Enum)
 
 roleCata
   student
-  professor
+  groupAdmin
   courseAdmin
   admin
   r = case r of
     Student     -> student
-    Professor   -> professor
+    GroupAdmin  -> groupAdmin
     CourseAdmin -> courseAdmin
     Admin       -> admin
 
-roles = [Student, Professor, CourseAdmin, Admin]
+roles = [Student, GroupAdmin, CourseAdmin, Admin]
 
 -- Decides if the given role can admninstrate groups
 -- Returns True if yes, otherwise False
@@ -197,14 +197,14 @@ data OutsideRole
 
 parseRole :: String -> Maybe Role
 parseRole "Student"      = Just Student
-parseRole "Professor"    = Just Professor
+parseRole "Group Admin"  = Just GroupAdmin
 parseRole "Course Admin" = Just CourseAdmin
 parseRole "Admin"        = Just Admin
 parseRole _              = Nothing
 
 instance Show Role where
   show Student     = "Student"
-  show Professor   = "Professor"
+  show GroupAdmin  = "Group Admin"
   show CourseAdmin = "Course Admin"
   show Admin       = "Admin"
 
@@ -215,13 +215,13 @@ atLeastCourseAdmin _           = False
 class InRole r where
   isAdmin       :: r -> Bool
   isCourseAdmin :: r -> Bool
-  isProfessor   :: r -> Bool
+  isGroupAdmin  :: r -> Bool
   isStudent     :: r -> Bool
 
 instance InRole Role where
   isAdmin       = (== Admin)
   isCourseAdmin = (>= CourseAdmin)
-  isProfessor   = (>= Professor)
+  isGroupAdmin  = (>= GroupAdmin)
   isStudent     = (== Student)
 
 -- * Permissions
@@ -246,11 +246,11 @@ data PermissionObject
   = P_Assignment
   | P_UserReg
   | P_Submission
-  | P_Evaulation
+  | P_Evaluation
   | P_Comment
   | P_Statistics
   | P_Password
-  | P_Professor
+  | P_GroupAdmin
   | P_User
   | P_Course
   | P_Group

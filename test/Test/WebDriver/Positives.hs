@@ -5,7 +5,7 @@ import Test.WebDriver.SitePages
 import Test.WebDriver.UserStories
 
 import Bead.Domain.Entities hiding (groupAdmin)
-import Bead.Domain.Evaulation as E
+import Bead.Domain.Evaluation as E
 
 admin       = LoginData "a" "a"
 courseAdmin = LoginData "c" "cccc"
@@ -19,7 +19,7 @@ positives url = [
   , mkTestCase "Course admin registration" $ registration url (RegistrationData "c" "cccc" "c@c.com" "c")
   , mkTestCase "Invalid login" $ invalidLogin url (LoginData "s" "e")
   , mkTestCase "Create course admin" $ changeUserRole url admin courseAdmin CourseAdmin
-  , mkTestCase "Group course admin"  $ changeUserRole url admin groupAdmin Professor
+  , mkTestCase "Group course admin"  $ changeUserRole url admin groupAdmin GroupAdmin
   , mkTestCase "Create course" $ adminCreatesCourse url admin (CourseData "ct-01" "desc" EvalBinary)
   , mkTestCase "Assign course admin" $ assignCourseAdmin  url admin "c" "ct-01"
   , mkTestCase "Group creation" $ cAdminCreateGroup  url courseAdmin (GroupData "ct-01" "g01" "g01" EvalBinary)
@@ -35,12 +35,12 @@ positives url = [
       })
   , mkTestCase "Student submits solution" $ studentSubmitsSolution url student "g01" "Assignment-01" "solution"
   , mkTestCase "Student comments on solution" $ studentCommentsOnSolution url student "g01" "Assignment-01" 0 "comment"
-  , mkTestCase "Group admin evaulates solution" $ gAdminEvaulateSubmission
+  , mkTestCase "Group admin evaluates solution" $ gAdminEvaluateSubmission
       url
       groupAdmin
       (SelectSubmissionData {sGroup = "g01", sStudent = "s", sNo = 0 })
       0
-      (EvaulationData { evMessage = "Good", evValue = BinEval (Binary E.Passed)})
+      (EvaluationData { evMessage = "Good", evValue = BinEval (Binary E.Passed)})
   , mkTestCase "Course admin creates assignment" $ cAdminCreatesAssignment url courseAdmin student (AssignmentData {
         aType = CourseAsg
       , aGroupOrCourse = "ct-01"
@@ -51,11 +51,11 @@ positives url = [
       })
   , mkTestCase "Student submits course solution" $ studentSubmitsSolution url student "ct-01" "Assignment-02" "solution2"
   , mkTestCase "Student comments on course solution" $ studentCommentsOnSolution url student "ct-01" "Assignment-02" 0 "comment2"
-  , mkTestCase "Course admin evaulates solution " $ cAdminEvaulateSubmission
+  , mkTestCase "Course admin evaluates solution " $ cAdminEvaluateSubmission
       url
       courseAdmin
       (SelectSubmissionData {sGroup = "ct-01", sStudent = "s", sNo = 0 })
       0
-      (EvaulationData { evMessage = "Good", evValue = BinEval (Binary E.Passed)})
+      (EvaluationData { evMessage = "Good", evValue = BinEval (Binary E.Passed)})
   ]
 

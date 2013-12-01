@@ -7,18 +7,18 @@ module Bead.Domain.RolePermission (
   ) where
 
 import Control.Monad (join)
-import Bead.Domain.Entities hiding (roles)
+import Bead.Domain.Entities hiding (roles, groupAdmin)
 #ifdef TEST
 import Bead.Invariants (Invariants(..))
 #endif
 
 permission :: Role -> Permission -> PermissionObject -> Bool
 permission Student     = student
-permission Professor   = roles [professor, student]
-permission CourseAdmin = roles [courseAdmin, professor, student]
-permission Admin       = roles [admin, courseAdmin, professor, student]
+permission GroupAdmin  = roles [groupAdmin, student]
+permission CourseAdmin = roles [courseAdmin, groupAdmin, student]
+permission Admin       = roles [admin, courseAdmin, groupAdmin, student]
 
-student, professor, courseAdmin, admin :: Permission -> PermissionObject -> Bool
+student, groupAdmin, courseAdmin, admin :: Permission -> PermissionObject -> Bool
 
 type Perm = Permission -> PermissionObject -> Bool
 
@@ -32,27 +32,27 @@ student P_Create o = elem o [P_Submission, P_Comment]
 student P_Modify o = elem o [P_Password]
 student P_Delete _ = False
 
--- * Professor
+-- * Group Admin
 
-professor P_Open   o = elem o [P_Assignment, P_Submission, P_Statistics, P_Group, P_PlainPage, P_Professor]
-professor P_Create o = elem o [P_Assignment, P_Evaulation]
-professor P_Modify o = elem o [P_Assignment, P_Password, P_Evaulation]
-professor P_Delete o = elem o [P_Assignment]
+groupAdmin P_Open   o = elem o [P_Assignment, P_Submission, P_Statistics, P_Group, P_PlainPage, P_GroupAdmin]
+groupAdmin P_Create o = elem o [P_Assignment, P_Evaluation]
+groupAdmin P_Modify o = elem o [P_Assignment, P_Password, P_Evaluation]
+groupAdmin P_Delete o = elem o [P_Assignment]
 
 -- * Course Admin
 
 courseAdmin P_Open   o = elem o
   [ P_Assignment, P_Submission, P_Statistics, P_Course, P_CourseAdmin, P_PlainPage, P_User ]
-courseAdmin P_Create o = elem o [P_Group, P_Assignment, P_CourseAdmin, P_Professor ]
-courseAdmin P_Modify o = elem o [P_Assignment, P_Password, P_CourseAdmin, P_Professor ]
-courseAdmin P_Delete o = elem o [P_Assignment, P_Professor]
+courseAdmin P_Create o = elem o [P_Group, P_Assignment, P_CourseAdmin, P_GroupAdmin ]
+courseAdmin P_Modify o = elem o [P_Assignment, P_Password, P_CourseAdmin, P_GroupAdmin ]
+courseAdmin P_Delete o = elem o [P_Assignment, P_GroupAdmin]
 
 -- * Admin
 
-admin P_Open   o = elem o [P_Assignment, P_Submission, P_Statistics, P_Course, P_CourseAdmin, P_Professor, P_AdminPage, P_PlainPage]
-admin P_Create o = elem o [P_Course, P_CourseAdmin, P_Professor, P_Group, P_User]
-admin P_Modify o = elem o [P_Course, P_CourseAdmin, P_Professor, P_Password, P_User]
-admin P_Delete o = elem o [P_Course, P_CourseAdmin, P_Professor]
+admin P_Open   o = elem o [P_Assignment, P_Submission, P_Statistics, P_Course, P_CourseAdmin, P_GroupAdmin, P_AdminPage, P_PlainPage]
+admin P_Create o = elem o [P_Course, P_CourseAdmin, P_GroupAdmin, P_Group, P_User]
+admin P_Modify o = elem o [P_Course, P_CourseAdmin, P_GroupAdmin, P_Password, P_User]
+admin P_Delete o = elem o [P_Course, P_CourseAdmin, P_GroupAdmin]
 
 #ifdef TEST
 

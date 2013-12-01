@@ -53,7 +53,7 @@ noSqlDirPersist = Persist {
   , userGroups    = nUserGroups
   , subscribe     = nSubscribe
   , groupAdmins   = nGroupAdmins
-  , createGroupProfessor = nCreateGroupProfessor
+  , createGroupAdmin    = nCreateGroupAdmin
   , subscribedToGroup   = nSubscribedToGroup
 
   , filterAssignment     = nFilterAssignment
@@ -76,17 +76,17 @@ noSqlDirPersist = Persist {
   , assignmentOfSubmission = nAssignmentOfSubmission
   , usernameOfSubmission   = nUsernameOfSubmission
   , filterSubmissions      = nFilterSubmissions
-  , evaulationOfSubmission = nEvaulationOfSubmission
+  , evaluationOfSubmission = nEvaluationOfSubmission
   , commentsOfSubmission   = nCommentsOfSubmission
 
   , placeToOpened     = nPlaceToOpened
   , removeFromOpened  = nRemoveFromOpened
   , openedSubmissions = nOpenedSubmission
 
-  , saveEvaulation = nSaveEvaulation
-  , loadEvaulation = nLoadEvaulation
-  , modifyEvaulation = nModifyEvaulation
-  , submissionOfEvaulation = nSubmissionOfEvaulation
+  , saveEvaluation = nSaveEvaluation
+  , loadEvaluation = nLoadEvaluation
+  , modifyEvaluation = nModifyEvaluation
+  , submissionOfEvaluation = nSubmissionOfEvaluation
 
   , saveComment = nSaveComment
   , loadComment = nLoadComment
@@ -261,8 +261,8 @@ nSubscribe username ck gk = do
   link gk username "group"
   link ck username "course"
 
-nCreateGroupProfessor :: Username -> GroupKey -> TIO ()
-nCreateGroupProfessor u gk = do
+nCreateGroupAdmin :: Username -> GroupKey -> TIO ()
+nCreateGroupAdmin u gk = do
   link u gk "admins"
   link gk u "groupadmin"
 
@@ -544,9 +544,9 @@ nUsernameOfSubmission :: SubmissionKey -> TIO Username
 nUsernameOfSubmission sk =
   objectIn' "No assignment was found for the " "user" Username isUserDir sk
 
-nEvaulationOfSubmission :: SubmissionKey -> TIO (Maybe EvaulationKey)
-nEvaulationOfSubmission =
-  objectIn "evaulation" EvaulationKey isEvaulationDir
+nEvaluationOfSubmission :: SubmissionKey -> TIO (Maybe EvaluationKey)
+nEvaluationOfSubmission =
+  objectIn "evaluation" EvaluationKey isEvaluationDir
 
 nFilterSubmissions :: (SubmissionKey -> Submission -> Bool) -> TIO [(SubmissionKey, Submission)]
 nFilterSubmissions f = filterDirectory submissionDataDir isSubmissionDir tLoadSubmission (filter (uncurry f))
@@ -602,43 +602,43 @@ nCommentsOfSubmission sk =
     (return . takeBaseName)
     (map CommentKey)
 
--- * Evaulation
+-- * Evaluation
 
-instance ForeignKey EvaulationKey where
-  referredPath (EvaulationKey e) = joinPath [evaulationDataDir, e]
-  baseName     (EvaulationKey e) = e
+instance ForeignKey EvaluationKey where
+  referredPath (EvaluationKey e) = joinPath [evaluationDataDir, e]
+  baseName     (EvaluationKey e) = e
 
-isEvaulationDir :: FilePath -> TIO Bool
-isEvaulationDir = isCorrectDirStructure evaulationDirStructure
+isEvaluationDir :: FilePath -> TIO Bool
+isEvaluationDir = isCorrectDirStructure evaluationDirStructure
 
-nSaveEvaulation :: SubmissionKey -> Evaulation -> TIO EvaulationKey
-nSaveEvaulation sk e = do
-  dirName <- createTmpDir evaulationDataDir "ev"
-  let evKey = EvaulationKey . takeBaseName $ dirName
+nSaveEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
+nSaveEvaluation sk e = do
+  dirName <- createTmpDir evaluationDataDir "ev"
+  let evKey = EvaluationKey . takeBaseName $ dirName
   save dirName e
-  link evKey sk "evaulation"
+  link evKey sk "evaluation"
   link sk evKey "submission"
   return evKey
 
-evaulationDirPath :: EvaulationKey -> FilePath
-evaulationDirPath (EvaulationKey e) = joinPath [evaulationDataDir, e]
+evaluationDirPath :: EvaluationKey -> FilePath
+evaluationDirPath (EvaluationKey e) = joinPath [evaluationDataDir, e]
 
-nLoadEvaulation :: EvaulationKey -> TIO Evaulation
-nLoadEvaulation e = do
-  let p = evaulationDirPath e
-  isE <- isEvaulationDir p
-  unless isE . throwEx . userError . join $ ["Evaulation does not exist."]
-  liftM snd . tLoadPersistenceObject EvaulationKey $ p
+nLoadEvaluation :: EvaluationKey -> TIO Evaluation
+nLoadEvaluation e = do
+  let p = evaluationDirPath e
+  isE <- isEvaluationDir p
+  unless isE . throwEx . userError . join $ ["Evaluation does not exist."]
+  liftM snd . tLoadPersistenceObject EvaluationKey $ p
 
-nModifyEvaulation :: EvaulationKey -> Evaulation -> TIO ()
-nModifyEvaulation ek e = do
-  let p = evaulationDirPath ek
-  isE <- isEvaulationDir p
-  unless isE . throwEx . userError . join $ ["Evaulation does not exist."]
+nModifyEvaluation :: EvaluationKey -> Evaluation -> TIO ()
+nModifyEvaluation ek e = do
+  let p = evaluationDirPath ek
+  isE <- isEvaluationDir p
+  unless isE . throwEx . userError . join $ ["Evaluation does not exist."]
   update p e
 
-nSubmissionOfEvaulation :: EvaulationKey -> TIO SubmissionKey
-nSubmissionOfEvaulation =
+nSubmissionOfEvaluation :: EvaluationKey -> TIO SubmissionKey
+nSubmissionOfEvaluation =
   objectIn' "No submission was found for " "submission" SubmissionKey isSubmissionDir
 
 -- * Comment
@@ -671,7 +671,7 @@ nLoadComment ck = do
 
 nSubmissionOfComment :: CommentKey -> TIO SubmissionKey
 nSubmissionOfComment =
-  objectIn' "No evaulation was found for " "submission" SubmissionKey isSubmissionDir
+  objectIn' "No evaluation was found for " "submission" SubmissionKey isSubmissionDir
 
 -- * Tools
 

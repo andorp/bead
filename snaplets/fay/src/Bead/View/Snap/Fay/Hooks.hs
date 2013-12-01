@@ -4,7 +4,7 @@ import Prelude
 
 import Bead.View.Snap.Fay.HookIds
 
-data EvaulationHook = EvaulationHook {
+data EvaluationHook = EvaluationHook {
     evFormId        :: String
   , evSelectionId   :: String
   , evHiddenValueId :: String
@@ -12,18 +12,18 @@ data EvaulationHook = EvaulationHook {
   , evHelpMessageId  :: String
   }
 
-createCourseHook = EvaulationHook {
+createCourseHook = EvaluationHook {
     evFormId        = hookId createCourseForm
-  , evSelectionId   = hookId evaulationTypeSelection
-  , evHiddenValueId = hookId evaulationTypeValue
+  , evSelectionId   = hookId evaluationTypeSelection
+  , evHiddenValueId = hookId evaluationTypeValue
   , evSelectionDivId = hookId evalTypeSelectionDiv
   , evHelpMessageId  = hookId pctHelpMessage
   }
 
-createGroupHook = EvaulationHook {
+createGroupHook = EvaluationHook {
     evFormId      = hookId createGroupForm
-  , evSelectionId = hookId evaulationTypeSelection
-  , evHiddenValueId = hookId evaulationTypeValue
+  , evSelectionId = hookId evaluationTypeSelection
+  , evHiddenValueId = hookId evaluationTypeValue
   , evSelectionDivId = hookId evalTypeSelectionDiv
   , evHelpMessageId  = hookId pctHelpMessage
   }
@@ -62,8 +62,8 @@ data PercentageHook = PercentageHook {
   , ptHiddenInputId :: String
   }
 
-evaulationPctHook = PercentageHook {
-    ptDivId = hookId evaulationPercentageDiv
-  , ptHiddenInputId = hookId evaulationResultField
+evaluationPctHook = PercentageHook {
+    ptDivId = hookId evaluationPercentageDiv
+  , ptHiddenInputId = hookId evaluationResultField
   }
 

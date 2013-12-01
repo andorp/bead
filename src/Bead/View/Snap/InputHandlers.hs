@@ -7,7 +7,7 @@ import Data.Time (UTCTime(..))
 import Bead.Domain.Types (Str(..), readMaybe, readMsg)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
-import Bead.Domain.Evaulation
+import Bead.Domain.Evaluation
 import qualified Bead.View.Snap.DataBridge as B
 
 import Bead.Controller.ServiceContext (UserState(..))
@@ -45,7 +45,7 @@ instance InputPagelet Group where
     table "create-group" "create-group-table" $ do
       tableLine "Group Name" $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
       tableLine "Group Desc" $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
-      tableLine "Group Eval" $ evaulationConfig (evSelectionId hook) (fmap groupEvalConfig g)
+      tableLine "Group Eval" $ evaluationConfig (evSelectionId hook) (fmap groupEvalConfig g)
     hiddenInputWithId (evHiddenValueId hook) ""
     evalSelectionDiv hook
 
@@ -73,7 +73,7 @@ instance InputPagelet Course where
     table "create-course" "create-course-table" $ do
       tableLine "Course Name" $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
       tableLine "Course Desc" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
-      tableLine "Course Eval" $ evaulationConfig (evSelectionId hook) (fmap courseEvalConfig c)
+      tableLine "Course Eval" $ evaluationConfig (evSelectionId hook) (fmap courseEvalConfig c)
     hiddenInputWithId (evHiddenValueId hook) ""
     evalSelectionDiv hook
 
@@ -144,13 +144,13 @@ instance GetValueHandler Assignment where
 
 -- * Combined input fields
 
-emptyEvaulationConfig :: Maybe (EvaulationData Binary Percentage)
-emptyEvaulationConfig = Nothing
+emptyEvaluationConfig :: Maybe (EvaluationData Binary Percentage)
+emptyEvaluationConfig = Nothing
 
 -- TODO
-evaulationConfig :: String -> Maybe EvaulationConfig -> Html
-evaulationConfig n v = do
-  valueSelection valueAndName n evaulationTypes
+evaluationConfig :: String -> Maybe EvaluationConfig -> Html
+evaluationConfig n v = do
+  valueSelection valueAndName n evaluationTypes
   where
     valueAndName e = (encodeEvalType e, name e)
 

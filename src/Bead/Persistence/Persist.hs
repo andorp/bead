@@ -72,7 +72,7 @@ data Persist = Persist {
   , userGroups    :: Username -> TIO [GroupKey]
   , subscribe     :: Username -> CourseKey -> GroupKey -> TIO ()
   , groupAdmins   :: GroupKey -> TIO [Username]
-  , createGroupProfessor :: Username -> GroupKey -> TIO ()
+  , createGroupAdmin  :: Username -> GroupKey -> TIO ()
   , subscribedToGroup    :: GroupKey -> TIO [Username]
 
   -- Assignment Persistence
@@ -96,7 +96,7 @@ data Persist = Persist {
   , assignmentOfSubmission :: SubmissionKey -> TIO AssignmentKey
   , usernameOfSubmission   :: SubmissionKey -> TIO Username
   , filterSubmissions :: (SubmissionKey -> Submission -> Bool) -> TIO [(SubmissionKey, Submission)]
-  , evaulationOfSubmission :: SubmissionKey -> TIO (Maybe EvaulationKey)
+  , evaluationOfSubmission :: SubmissionKey -> TIO (Maybe EvaluationKey)
   , commentsOfSubmission :: SubmissionKey -> TIO [CommentKey]
   , lastSubmission :: AssignmentKey -> Username -> TIO (Maybe SubmissionKey)
 
@@ -104,11 +104,11 @@ data Persist = Persist {
   , removeFromOpened  :: SubmissionKey -> TIO ()
   , openedSubmissions :: TIO [SubmissionKey]
 
-  -- Evaulation
-  , saveEvaulation :: SubmissionKey -> Evaulation -> TIO EvaulationKey
-  , loadEvaulation :: EvaulationKey -> TIO Evaulation
-  , modifyEvaulation :: EvaulationKey -> Evaulation -> TIO ()
-  , submissionOfEvaulation :: EvaulationKey -> TIO SubmissionKey
+  -- Evaluation
+  , saveEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
+  , loadEvaluation :: EvaluationKey -> TIO Evaluation
+  , modifyEvaluation :: EvaluationKey -> Evaluation -> TIO ()
+  , submissionOfEvaluation :: EvaluationKey -> TIO SubmissionKey
 
   -- Comment
   , saveComment :: SubmissionKey -> Comment -> TIO CommentKey
@@ -244,16 +244,16 @@ submissionListDesc p u ak = do
     submissionStatus sk = do
       time <- solutionPostDate <$> loadSubmission p sk
       s <- submissionEvalStr p sk
-      return (sk, time, s, "TODO: EvaulatedBy")
+      return (sk, time, s, "TODO: EvaluatedBy")
 
 submissionEvalStr :: Persist -> SubmissionKey -> TIO String
 submissionEvalStr p sk = do
-  mEk <- evaulationOfSubmission p sk
+  mEk <- evaluationOfSubmission p sk
   case mEk of
-    Nothing -> return "Not evaulated yet"
-    Just ek -> eString <$> loadEvaulation p ek
+    Nothing -> return "Not evaluated yet"
+    Just ek -> eString <$> loadEvaluation p ek
   where
-    eString = resultString . evaulationResult
+    eString = resultString . evaluationResult
 
 submissionDetailsDesc :: Persist -> SubmissionKey -> TIO SubmissionDetailsDesc
 submissionDetailsDesc p sk = do
@@ -335,7 +335,7 @@ courseSubmissionTableInfoForGroupAdmin p cks gk = do
 submissionTableInfo
   :: Persist
   -> String
-  -> EvaulationConfig
+  -> EvaluationConfig
   -> [AssignmentKey]
   -> [Username]
   -> TIO SubmissionTableInfo
@@ -371,7 +371,7 @@ submissionTableInfo p courseName evalCfg as usernames = do
                 Just sk -> submissionInfo p sk
       return (ak,s)
 
-    calculateResult = evaulateResults evalCfg . map sbmResult . filter hasResult
+    calculateResult = evaluateResults evalCfg . map sbmResult . filter hasResult
 
     hasResult (Submission_Result _ _) = True
     hasResult _                       = False
@@ -381,10 +381,10 @@ submissionTableInfo p courseName evalCfg as usernames = do
 
 submissionInfo :: Persist -> SubmissionKey -> TIO SubmissionInfo
 submissionInfo p sk = do
-  mEk <- evaulationOfSubmission p sk
+  mEk <- evaluationOfSubmission p sk
   case mEk of
-    Nothing -> return Submission_Unevaulated
-    Just ek -> (Submission_Result ek . evaulationResult) <$> loadEvaulation p ek
+    Nothing -> return Submission_Unevaluated
+    Just ek -> (Submission_Result ek . evaluationResult) <$> loadEvaluation p ek
 
 userSubmissionDesc :: Persist -> Username -> AssignmentKey -> TIO UserSubmissionDesc
 userSubmissionDesc p u ak = do

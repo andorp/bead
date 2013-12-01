@@ -21,11 +21,11 @@ instance RequestParam SubmissionKey where
 instance ReqParamValue GroupKey where
   paramValue (GroupKey g) = fromString g
 
-instance ReqParamValue EvaulationKey where
-  paramValue (EvaulationKey e) = fromString e
+instance ReqParamValue EvaluationKey where
+  paramValue (EvaluationKey e) = fromString e
 
-instance RequestParam EvaulationKey where
-  requestParam e = ReqParam (fieldName evaulationKeyField, paramValue e)
+instance RequestParam EvaluationKey where
+  requestParam e = ReqParam (fieldName evaluationKeyField, paramValue e)
 
 instance ReqParamValue Username where
   paramValue (Username u) = fromString u

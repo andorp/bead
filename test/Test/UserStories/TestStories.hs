@@ -10,7 +10,7 @@ import Bead.Controller.ServiceContext
 import Bead.Controller.Pages as P
 import Bead.Persistence.NoSQLDir
 import Bead.Persistence.Persist
-import Bead.Domain.Shared.Evaulation
+import Bead.Domain.Shared.Evaluation
 
 import Test.HUnit hiding (Test(..))
 import Test.Framework (Test(..), testGroup)

@@ -40,7 +40,7 @@ emailTemplateAna :: (b -> (a -> IO String)) -> b -> EmailTemplate a
 emailTemplateAna f x = EmailTemplate (f x)
 
 -- | Produces a IO String computation, that represents the
--- evaulated template substituting the given value into the
+-- evaluated template substituting the given value into the
 -- template
 runEmailTemplate :: EmailTemplate a -> a -> IO String
 runEmailTemplate template v = emailTemplateCata id template v

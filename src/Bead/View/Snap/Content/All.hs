@@ -10,10 +10,10 @@ import Bead.Controller.Pages (Page)
 import Bead.View.Snap.Content (Content(..), emptyContent)
 import Bead.View.Snap.Content.Home (home)
 import Bead.View.Snap.Content.Profile (profile, changePassword)
-import Bead.View.Snap.Content.CourseAdmin (courseAdmin, createGroup, assignProfessor)
+import Bead.View.Snap.Content.CourseAdmin (courseAdmin, createGroup, assignGroupAdmin)
 import Bead.View.Snap.Content.Administration (administration, assignCourseAdmin)
-import Bead.View.Snap.Content.EvaulationTable (evaulationTable)
-import Bead.View.Snap.Content.Evaulation (evaulation, modifyEvaulation)
+import Bead.View.Snap.Content.EvaluationTable (evaluationTable)
+import Bead.View.Snap.Content.Evaluation (evaluation, modifyEvaluation)
 import Bead.View.Snap.Content.NewAssignment (newCourseAssignment, newGroupAssignment, modifyAssignment)
 import Bead.View.Snap.Content.Submission (submission)
 import Bead.View.Snap.Content.SubmissionList (submissionList)
@@ -38,19 +38,19 @@ content P.Error  = emptyContent
 content P.Profile = profile
 content P.CourseAdmin = courseAdmin
 content P.Administration = administration
-content P.EvaulationTable = evaulationTable
-content P.Evaulation      = evaulation
+content P.EvaluationTable = evaluationTable
+content P.Evaluation      = evaluation
 content P.Submission      = submission
 content P.SubmissionList  = submissionList
 content P.UserSubmissions = userSubmissions
-content P.ModifyEvaulation = modifyEvaulation
+content P.ModifyEvaluation = modifyEvaluation
 content P.SubmissionDetails = submissionDetails
 content P.GroupRegistration = groupRegistration
 content P.CreateCourse = createCourse
 content P.UserDetails = userDetails
 content P.AssignCourseAdmin = assignCourseAdmin
 content P.CreateGroup = createGroup
-content P.AssignProfessor = assignProfessor
+content P.AssignGroupAdmin = assignGroupAdmin
 content P.NewGroupAssignment  = newGroupAssignment
 content P.NewCourseAssignment = newCourseAssignment
 content P.ModifyAssignment    = modifyAssignment

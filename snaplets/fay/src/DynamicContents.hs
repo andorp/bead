@@ -10,7 +10,7 @@ import JQuery hiding (filter, validate)
 import Fay.JQueryUI
 import Fay.Text
 
-import Bead.Domain.Shared.Evaulation
+import Bead.Domain.Shared.Evaluation
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Fay.JSON.ClientSide
@@ -21,7 +21,7 @@ main = addOnLoad onload
 
 onload :: Fay ()
 onload = do
-  hookPercentageDiv evaulationPctHook pctValue
+  hookPercentageDiv evaluationPctHook pctValue
   hookEvaluationTypeForm createCourseHook
   hookEvaluationTypeForm createGroupHook
   hookDatetimePickerDiv startDateTimeHook
@@ -229,7 +229,7 @@ hookRegistrationForm = void $ do
   where
     removable = "regremovable"
 
-hookEvaluationTypeForm :: EvaulationHook -> Fay ()
+hookEvaluationTypeForm :: EvaluationHook -> Fay ()
 hookEvaluationTypeForm hook = do
   let formId = evFormId hook
   form <- select . cssId $ formId
@@ -246,7 +246,7 @@ hookEvaluationTypeForm hook = do
       v <- decodeEvalType <$> selectedValue t
       findSelector (fromString ".evtremoveable") form >>= remove
       case v of
-        (BinEval _) -> setEvaulationValue (BinEval ())
+        (BinEval _) -> setEvaluationValue (BinEval ())
         (PctEval _) -> addPercentageField form
 
     addPercentageField :: JQuery -> Fay ()
@@ -268,10 +268,10 @@ hookEvaluationTypeForm hook = do
       t <- targetElement e
       v <- getVal t
       let pct = "0." ++ (twoDigits (unpack v))
-      setEvaulationValue (PctEval pct)
+      setEvaluationValue (PctEval pct)
 
-    setEvaulationValue :: EvaulationData () String -> Fay ()
-    setEvaulationValue c = void $ select (cssId . evHiddenValueId $ hook) >>= setVal (fromString . value $ c)
+    setEvaluationValue :: EvaluationData () String -> Fay ()
+    setEvaluationValue c = void $ select (cssId . evHiddenValueId $ hook) >>= setVal (fromString . value $ c)
       where
         value (BinEval ()) = "BinEval ()"
         value (PctEval d) = "PctEval " ++ d

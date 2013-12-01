@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-module Bead.Domain.Shared.Evaulation where
+module Bead.Domain.Shared.Evaluation where
 
 import Prelude
 import Data.Data
@@ -13,32 +13,32 @@ resultCata passed failed r = case r of
   Passed -> passed
   Failed -> failed
 
--- Represents the evaulation type for an assignment
-data EvaulationData b p
+-- Represents the evaluation type for an assignment
+data EvaluationData b p
   = BinEval b
   | PctEval p
   deriving (Eq, Show, Read, Data, Typeable)
 
-evaluationDataMap :: (b -> a) -> (p -> a) -> EvaulationData b p -> a
+evaluationDataMap :: (b -> a) -> (p -> a) -> EvaluationData b p -> a
 evaluationDataMap f _ (BinEval x) = f x
 evaluationDataMap _ f (PctEval x) = f x
 
-evaulationTypes :: [EvaulationData () ()]
-evaulationTypes = [BinEval (), PctEval ()]
+evaluationTypes :: [EvaluationData () ()]
+evaluationTypes = [BinEval (), PctEval ()]
 
-binaryEval :: EvaulationData b p -> Maybe b
+binaryEval :: EvaluationData b p -> Maybe b
 binaryEval (BinEval b) = Just b
 binaryEval _           = Nothing
 
-percentEval :: EvaulationData b p -> Maybe p
+percentEval :: EvaluationData b p -> Maybe p
 percentEval (PctEval p) = Just p
 percentEval _           = Nothing
 
-encodeEvalType :: EvaulationData a b -> String
+encodeEvalType :: EvaluationData a b -> String
 encodeEvalType (BinEval _) = "BinEval"
 encodeEvalType (PctEval _) = "PctEval"
 
-decodeEvalType :: String -> EvaulationData () ()
+decodeEvalType :: String -> EvaluationData () ()
 decodeEvalType "BinEval" = BinEval ()
 decodeEvalType "PctEval" = PctEval ()
 
@@ -55,7 +55,7 @@ data Percentage = Percentage (Scores Double)
   deriving (Eq, Show, Read, Data, Typeable)
 
 data EvResult = EvResult {
-    evResult :: EvaulationData Binary Percentage
+    evResult :: EvaluationData Binary Percentage
   } deriving (Eq, Show, Read, Data, Typeable)
 
 percentageResult :: Double -> EvResult

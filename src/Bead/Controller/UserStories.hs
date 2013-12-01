@@ -221,15 +221,15 @@ createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
   where
     user = usernameCata id
 
-createGroupProfessor :: Username -> GroupKey -> UserStory ()
-createGroupProfessor u gk = logAction INFO "sets user as a professor of a group" $ do
-  authorize P_Create P_Professor
+createGroupAdmin :: Username -> GroupKey -> UserStory ()
+createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $ do
+  authorize P_Create P_GroupAdmin
   authorize P_Open   P_User
   groupAdminSetted <- withPersist $ \p -> do
     info <- R.personalInfo p u
     flip personalInfoCata info $ \role _name _tz ->
       if (groupAdmin role)
-        then R.createGroupProfessor p u gk >> return True
+        then R.createGroupAdmin p u gk >> return True
         else return False
   if groupAdminSetted
     then putStatusMessage $ join [user u, " is group admin now."]
@@ -507,7 +507,7 @@ submissionDescription sk = logAction INFO msg $ do
     msg = "loads submission infomation for " ++ show sk
 
 openSubmissions :: UserStory [(SubmissionKey, SubmissionDesc)]
-openSubmissions = logAction INFO ("lists unevaulated submissions") $ do
+openSubmissions = logAction INFO ("lists unevaluated submissions") $ do
   authorize P_Open P_Submission
   withUserAndPersist $ \uname p -> do
     cs <- (map fst) <$> R.administratedCourses p uname
@@ -516,10 +516,10 @@ openSubmissions = logAction INFO ("lists unevaulated submissions") $ do
     gas <- concat <$> mapM (groupAssignments p) gs
     let as = nub (cas ++ gas)
         adminFor (_,a,_) = elem a as
-    nonEvaulated <- R.openedSubmissions p
-    assignments  <- mapM (assignmentOfSubmission p) nonEvaulated
-    descriptions <- mapM (R.submissionDesc p) nonEvaulated
-    return $ map select $ filter adminFor $ zip3 nonEvaulated assignments descriptions
+    nonEvaluated <- R.openedSubmissions p
+    assignments  <- mapM (assignmentOfSubmission p) nonEvaluated
+    descriptions <- mapM (R.submissionDesc p) nonEvaluated
+    return $ map select $ filter adminFor $ zip3 nonEvaluated assignments descriptions
   where
     select (a,_,c) = (a,c)
 
@@ -533,31 +533,31 @@ submissionTables = logAction INFO "lists submission tables" $ do
   authPerms submissionTableInfoPermissions
   withUserAndPersist $ \uname p -> R.submissionTables p uname
 
--- TODO: Check if the user can evaulates only submissions that
+-- TODO: Check if the user can evaluates only submissions that
 -- are submitted for the assignment created by the user
-newEvaulation :: SubmissionKey -> Evaulation -> UserStory ()
-newEvaulation sk e = logAction INFO ("saves new evaulation for " ++ show sk) $ do
+newEvaluation :: SubmissionKey -> Evaluation -> UserStory ()
+newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ do
   authorize P_Open   P_Submission
-  authorize P_Create P_Evaulation
+  authorize P_Create P_Evaluation
   now <- liftIO $ getCurrentTime
   withUserAndPersist $ \u p -> do
     a <- R.isAdminedSubmission p u sk
     when a $ do
-      R.saveEvaulation p sk e
+      R.saveEvaluation p sk e
       R.removeFromOpened p sk
-      R.saveComment p sk (evaulationComment now e)
+      R.saveComment p sk (evaluationComment now e)
       return ()
 
-modifyEvaulation :: EvaulationKey -> Evaulation -> UserStory ()
-modifyEvaulation ek e = logAction INFO ("modifies evaulation " ++ show ek) $ do
-  authorize P_Modify P_Evaulation
+modifyEvaluation :: EvaluationKey -> Evaluation -> UserStory ()
+modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
+  authorize P_Modify P_Evaluation
   now <- liftIO $ getCurrentTime
   withUserAndPersist $ \u p -> do
-    sk <- R.submissionOfEvaulation p ek
+    sk <- R.submissionOfEvaluation p ek
     a <- R.isAdminedSubmission p u sk
     when a $ do
-      R.modifyEvaulation p ek e
-      saveComment p sk (evaulationComment now e)
+      R.modifyEvaluation p ek e
+      saveComment p sk (evaluationComment now e)
       return ()
 
 createComment :: SubmissionKey -> Comment -> UserStory ()

@@ -6,7 +6,7 @@ import Data.Time (UTCTime(..))
 import Bead.Domain.Types (readMaybe)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
-import Bead.Domain.Shared.Evaulation
+import Bead.Domain.Shared.Evaluation
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
@@ -57,7 +57,7 @@ stringParameter fieldName paramName = Parameter {
   }
 
 evaluationValuePrm :: Parameter String
-evaluationValuePrm = stringParameter (fieldName evaulationValueField) "Evaluation Value"
+evaluationValuePrm = stringParameter (fieldName evaluationValueField) "Evaluation Value"
 
 customGroupKeyPrm :: String -> Parameter GroupKey
 customGroupKeyPrm field = Parameter {
@@ -106,28 +106,28 @@ submissionKeyPrm = Parameter {
   }
 
 -- Represents the SubmissionKey parameter
-evaluationKeyPrm :: Parameter EvaulationKey
+evaluationKeyPrm :: Parameter EvaluationKey
 evaluationKeyPrm = Parameter {
     encode = evaluationKeyMap id
-  , decode = Just . EvaulationKey
-  , name   = fieldName evaulationKeyField
+  , decode = Just . EvaluationKey
+  , name   = fieldName evaluationKeyField
   , decodeError = ("Invalid Evaluation Key is given: "++)
   , notFound    = "Evaluation Key is not found"
   }
 
-evalConfigPrm :: EvaulationHook -> Parameter EvaulationConfig
+evalConfigPrm :: EvaluationHook -> Parameter EvaluationConfig
 evalConfigPrm hook = Parameter {
     encode = show
   , decode = readEvalConfig
   , name   = evHiddenValueId hook
-  , decodeError = ("Invalid evaulation config is given: "++)
+  , decodeError = ("Invalid evaluation config is given: "++)
   , notFound = "Evaluation config is not found"
   }
   where
-    readEvalConfig :: String -> Maybe (EvaulationData () PctConfig)
+    readEvalConfig :: String -> Maybe (EvaluationData () PctConfig)
     readEvalConfig = fmap convert . readMaybe
       where
-        convert :: EvaulationData () Double -> EvaulationData () PctConfig
+        convert :: EvaluationData () Double -> EvaluationData () PctConfig
         convert = evaluationDataMap (BinEval . id) (PctEval . PctConfig)
 
 rolePrm :: Parameter Role

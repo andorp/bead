@@ -199,17 +199,17 @@ linkText P.CourseAdmin = fromString "Course Administration"
 linkText P.Submission  = fromString "Submission"
 linkText P.SubmissionList = fromString "Submission List"
 linkText P.UserSubmissions = fromString "User Submission"
-linkText P.ModifyEvaulation = fromString "Evaulation"
+linkText P.ModifyEvaluation = fromString "Evaluation"
 linkText P.SubmissionDetails = fromString "Submission Details"
 linkText P.Administration  = fromString "Administration"
-linkText P.Evaulation      = fromString "Evaulation"
-linkText P.EvaulationTable = fromString "Evaulation"
+linkText P.Evaluation      = fromString "Evaluation"
+linkText P.EvaluationTable = fromString "Evaluation"
 linkText P.GroupRegistration = fromString "Register For A Course / Group"
 linkText P.CreateCourse       = fromString "Create A course"
 linkText P.UserDetails = fromString "User's Detail"
 linkText P.AssignCourseAdmin = fromString "Add admin to the course"
 linkText P.CreateGroup = fromString "Create a Group"
-linkText P.AssignProfessor = fromString "Add professor to the group"
+linkText P.AssignGroupAdmin = fromString "Add group admin to the group"
 linkText P.NewGroupAssignment  = fromString "Create a New Group Assignment"
 linkText P.NewCourseAssignment = fromString "Create a New Course Assignment"
 linkText P.ModifyAssignment = fromString "Modify Assignment"
@@ -336,7 +336,7 @@ instance SelectionValue TimeZone where
 instance SelectionText TimeZone where
   selectionText = show
 
-evalSelectionDiv :: EvaulationHook -> Html
+evalSelectionDiv :: EvaluationHook -> Html
 evalSelectionDiv h = (H.div `withId` (evSelectionDivId h)) $ empty
 
 #ifdef TEST

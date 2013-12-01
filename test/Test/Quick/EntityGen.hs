@@ -2,7 +2,7 @@ module Test.Quick.EntityGen where
 
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
-import Bead.Domain.Shared.Evaulation
+import Bead.Domain.Shared.Evaluation
 import Bead.View.UserActions
 
 import Bead.Controller.UserStories (UserStory)
@@ -34,7 +34,7 @@ manyWords = do
 
 usernames = liftM Username word
 
-roleGen = elements [Student, Professor, CourseAdmin, Admin]
+roleGen = elements [Student, GroupAdmin, CourseAdmin, Admin]
 
 emails = do
   user <- word
@@ -131,14 +131,14 @@ solutionTexts = manyWords
 
 commentTexts = manyWords
 
-evaulations :: EvaulationConfig -> Gen Evaulation
-evaulations cfg = Evaulation
-  <$> evaulationResults cfg
-  <*> writtenEvaulations
+evaluations :: EvaluationConfig -> Gen Evaluation
+evaluations cfg = Evaluation
+  <$> evaluationResults cfg
+  <*> writtenEvaluations
 
-writtenEvaulations = manyWords
+writtenEvaluations = manyWords
 
-evaulationResults =
+evaluationResults =
   evaluationDataMap
     (const (BinEval <$> elements [Binary Passed, Binary Failed]))
     (const (PctEval . Percentage . Scores . (:[]) <$> percentage))

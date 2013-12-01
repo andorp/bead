@@ -96,8 +96,8 @@ instance InRole UserState where
   isCourseAdmin UserNotLoggedIn = False
   isCourseAdmin s = isCourseAdmin . role $ s
 
-  isProfessor   UserNotLoggedIn = False
-  isProfessor   s = isProfessor . role $ s
+  isGroupAdmin  UserNotLoggedIn = False
+  isGroupAdmin  s = isGroupAdmin . role $ s
 
   isStudent     UserNotLoggedIn = False
   isStudent     s = isStudent . role $ s

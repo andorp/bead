@@ -152,19 +152,19 @@ menuId P.Profile        = "link-profile"
 menuId P.Error          = "link-error"
 menuId P.Administration = "link-admin"
 menuId P.CourseAdmin    = "link-course-admin"
-menuId P.EvaulationTable = "link-evaulation-table"
-menuId P.Evaulation      = "link-evaulation"
+menuId P.EvaluationTable = "link-evaluation-table"
+menuId P.Evaluation      = "link-evaluation"
 menuId P.Submission      = "link-submission"
 menuId P.SubmissionList  = "link-submission-list"
 menuId P.UserSubmissions = "link-user-submissions"
-menuId P.ModifyEvaulation = "link-modify-evaulation"
+menuId P.ModifyEvaluation = "link-modify-evaluation"
 menuId P.SubmissionDetails = "link-submission-details"
 menuId P.GroupRegistration = "link-group-registration"
 menuId P.CreateCourse = "link-create-course"
 menuId P.UserDetails = "link-user-details"
 menuId P.AssignCourseAdmin = "link-assign-course-admin"
 menuId P.CreateGroup = "link-create-group"
-menuId P.AssignProfessor = "link-assign-professor"
+menuId P.AssignGroupAdmin = "link-assign-group-admin"
 menuId P.NewGroupAssignment  = "link-new-group-assignment"
 menuId P.NewCourseAssignment = "link-new-course-assignment"
 menuId P.ModifyAssignment = "link-modify-assignment"
@@ -202,14 +202,14 @@ selectedCourseAdmin = SelectedCourseAdmin "selected-course-admin"
 instance SnapFieldName AssignCourseAdminField where
   fieldName = fromString . acFieldName
 
-data AssignCourseProfessorField
-  = SelectedProfessor { cpFieldName :: String }
-  | SelectedGroup { cpFieldName :: String }
+data AssignCourseGroupAdminField
+  = SelectedGroupAdmin { cpFieldName :: String }
+  | SelectedGroup      { cpFieldName :: String }
 
 selectedGroup = SelectedGroup "selected-group"
-selectedProfessor = SelectedProfessor "selected-professor"
+selectedGroupAdmin = SelectedGroupAdmin "selected-group-admin"
 
-instance SnapFieldName AssignCourseProfessorField where
+instance SnapFieldName AssignCourseGroupAdminField where
   fieldName = fromString . cpFieldName
 
 data GroupRegistrationField
@@ -230,15 +230,15 @@ submissionKeyField  = SubmissionKeyField  "submission-key"
 instance SnapFieldName SubmissionField where
   fieldName = fromString . sfFieldName
 
-data EvaulationField
-  = EvaulationValueField { evFieldName :: String }
-  | EvaulationStateField { evFieldName :: String }
-  | EvaulationKeyField   { evFieldName :: String }
+data EvaluationField
+  = EvaluationValueField { evFieldName :: String }
+  | EvaluationStateField { evFieldName :: String }
+  | EvaluationKeyField   { evFieldName :: String }
 
-evaulationValueField = EvaulationValueField "evaulation"
-evaulationKeyField   = EvaulationKeyField "evaulation-key"
+evaluationValueField = EvaluationValueField "evaluation"
+evaluationKeyField   = EvaluationKeyField "evaluation-key"
 
-instance SnapFieldName EvaulationField where
+instance SnapFieldName EvaluationField where
   fieldName = fromString . evFieldName
 
 data CommentField
@@ -281,7 +281,7 @@ data TableClassName = TableClassName {
 instance SnapClassName TableClassName where
   className = fromString . tcName
 
-evaulationClassTable = TableClassName "evaulation-table"
+evaluationClassTable = TableClassName "evaluation-table"
 submissionListTable = TableClassName "submission-list-table"
 groupSubmissionTable = TableClassName "group-submission-table"
 userSubmissionTable = TableClassName "user-submission-table"
@@ -326,9 +326,9 @@ fieldList = map fieldName $ join [
   , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
   , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField
   , SFN userRoleField,  SFN loginSubmitBtn,  SFN assignmentDescField,    SFN assignmentTCsField
-  , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField, SFN evaulationValueField
-  , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaulationResultField
-  , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField,     SFN evaulationKeyField
+  , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField, SFN evaluationValueField
+  , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaluationResultField
+  , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField,     SFN evaluationKeyField
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
   , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
@@ -339,9 +339,9 @@ fieldList = map fieldName $ join [
   , SFN assignmentEndDefaultDate, SFN assignmentEndDefaultHour, SFN assignmentEndDefaultMin
   , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage
 
-  , SFN createCourseForm, SFN evaulationTypeSelection, SFN evaulationTypeValue, SFN startDateDivId
+  , SFN createCourseForm, SFN evaluationTypeSelection, SFN evaluationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
-  , SFN evaulationPercentageDiv, SFN regUserRegKey, SFN regToken, SFN pwdSubmitBtn
+  , SFN evaluationPercentageDiv, SFN regUserRegKey, SFN regToken, SFN pwdSubmitBtn
   , SFN resetPasswordTable, SFN regPasswordAgain, SFN changeProfileBtn, SFN changePasswordBtn
   , SFN userTimeZoneField, SFN assignmentForm, SFI changePwdForm, SFI setStudentPwdForm
 
@@ -351,7 +351,7 @@ fieldList = map fieldName $ join [
 
 classList :: [String]
 classList = map className [
-    SCN evaulationClassTable, SCN groupSubmissionTable, SCN assignmentTable
+    SCN evaluationClassTable, SCN groupSubmissionTable, SCN assignmentTable
   , SCN submissionListTable, SCN submissionListDiv, SCN datePickerClass, SCN minuteSpinnerClass
   , SCN hourSpinnerClass
   ]

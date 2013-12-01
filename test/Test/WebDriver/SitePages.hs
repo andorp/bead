@@ -8,7 +8,7 @@ import Test.WebDriver.Tools
 import Test.WebDriver.Support
 
 import Bead.Domain.Entities
-import Bead.Domain.Evaulation as E hiding (EvaulationData)
+import Bead.Domain.Evaluation as E hiding (EvaluationData)
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Fay.Hooks
@@ -135,7 +135,7 @@ selectUserToModify u = do
   (sendKeysStr u) <@> usernameField
   click <@> selectBtn
 
--- Represents an assignment evaulation type, that
+-- Represents an assignment evaluation type, that
 -- the user can select on the administration page
 data AssignmentEvalType
   = EvalBinary
@@ -232,7 +232,7 @@ checkGroupSelection g = checkSelectionVisibleText selectedGroup (gdGroupName g)
 
 setGroupAdmin :: String -> String -> Test ()
 setGroupAdmin groupAdmin g = do
-  users <- createSelect selectedProfessor "Group admin user field is not found"
+  users <- createSelect selectedGroupAdmin "Group admin user field is not found"
   groups <- createSelect selectedGroup "Group field is not found"
   selectByValue users (fromString groupAdmin)
   selectByVisibleText groups (fromString g)
@@ -455,10 +455,10 @@ data SelectSubmissionData = SelectSubmissionData {
 instance PageObject SelectSubmissionData where
   precondition = const $ do
     failsOnTrue
-      "No evaulation table was found"
+      "No evaluation table was found"
       (null <$> findElems (ByClass . className $ groupSubmissionTable))
     return True
-  failureMsg = const "Evaulation"
+  failureMsg = const "Evaluation"
 
 isHeader :: Element -> Test Bool
 isHeader e = (not . null) <$> findElemsFrom e (ByTag "th")
@@ -466,7 +466,7 @@ isHeader e = (not . null) <$> findElemsFrom e (ByTag "th")
 instance PageAction SelectSubmissionData where
   action s = do
     ts <- tables groupSubmissionTable
-    t <- failsOnNothing "No evaulation table was found for the group" $ findM isGroup ts
+    t <- failsOnNothing "No evaluation table was found for the group" $ findM isGroup ts
     rs <- rows t
     r <- failsOnNothing "Student was not found" $ findM isStudentRow rs
     ls <- findElemsFrom r (ByTag "a")
@@ -508,38 +508,38 @@ instance PageAction UserSubmissionsData where
     rs <- filterM (fmap not . isHeader) =<< rows t
     click =<< findElemFrom (at rs (usNo u) "User submissions data") (ByTag "a")
 
--- * Evaulation
+-- * Evaluation
 
-data EvaulationData = EvaulationData {
+data EvaluationData = EvaluationData {
     evMessage :: String
-  , evValue   :: EvaulationResult
+  , evValue   :: EvaluationResult
   }
 
-instance PageObject EvaulationData where
+instance PageObject EvaluationData where
   precondition = const $ do
-    failsOnFalse "Evaulation field was not found" (doesFieldExist evaulationValueField)
-    failsOnFalse "Evaulation result field was not found" (doesFieldExist evaulationResultField)
+    failsOnFalse "Evaluation field was not found" (doesFieldExist evaluationValueField)
+    failsOnFalse "Evaluation result field was not found" (doesFieldExist evaluationResultField)
     failsOnFalse "Save button was not found" (doesElementExist saveEvalBtn)
     return True
-  failureMsg = const "Evaulation page"
+  failureMsg = const "Evaluation page"
 
-instance PageAction EvaulationData where
+instance PageAction EvaluationData where
   action e = do
     setResult . evValue $ e
-    sendKeysStr (evMessage e) <@> evaulationValueField
+    sendKeysStr (evMessage e) <@> evaluationValueField
     click <@> saveEvalBtn
     where
       visible :: Binary -> String
       visible (Binary E.Passed) = "Passed"
       visible (Binary E.Failed) = "Failed"
 
-      setResult :: EvaulationResult -> Test ()
+      setResult :: EvaluationResult -> Test ()
       setResult (BinEval v) = do
-        r <- createSelect evaulationResultField "No result selection was found"
+        r <- createSelect evaluationResultField "No result selection was found"
         selectByVisibleText r (fromString . visible $ v)
 
       setResult p@(PctEval cfg) = do
-        t <- createTextInput evaulationResultField "No result input was found"
+        t <- createTextInput evaluationResultField "No result input was found"
         clearTextInput t
         enterText (fromString . show $ p) t
 

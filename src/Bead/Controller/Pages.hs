@@ -36,9 +36,9 @@ data Page
   | Error
   | Administration
   | CourseAdmin
-  | EvaulationTable
-  | Evaulation
-  | ModifyEvaulation
+  | EvaluationTable
+  | Evaluation
+  | ModifyEvaluation
   | NewGroupAssignment
   | NewCourseAssignment
   | ModifyAssignment
@@ -53,7 +53,7 @@ data Page
   | CreateCourse
   | CreateGroup
   | AssignCourseAdmin
-  | AssignProfessor
+  | AssignGroupAdmin
   | ChangePassword
   | SetUserPassword
   -- etc ...
@@ -69,21 +69,21 @@ pageTransition Logout = [Login, Logout]
 pageTransition Login = [Login, Home]
 pageTransition s = nub $ p s ++ [s, Error, Logout] where
   p Error            = []
-  p Home = [ Logout, CourseAdmin, EvaulationTable, NewGroupAssignment, NewCourseAssignment
+  p Home = [ Logout, CourseAdmin, EvaluationTable, NewGroupAssignment, NewCourseAssignment
            , Submission, SubmissionList, GroupRegistration, Administration, Profile
            , UserSubmissions, SubmissionDetails, ModifyAssignment
            , SetUserPassword --TODO
            ]
-  p CourseAdmin      = [Home, CreateGroup, AssignProfessor]
-  p EvaulationTable  = [Home, Evaulation, ModifyEvaulation]
-  p Evaulation       = [Home, EvaulationTable]
+  p CourseAdmin      = [Home, CreateGroup, AssignGroupAdmin]
+  p EvaluationTable  = [Home, Evaluation, ModifyEvaluation]
+  p Evaluation       = [Home, EvaluationTable]
   p Submission       = [Home, SubmissionList]
   p SubmissionList   = [Home, SubmissionDetails]
   p SubmissionDetails = [Home, SubmissionList]
   p Administration   = [Home, CreateCourse, UserDetails, AssignCourseAdmin]
   p Profile          = [Home, ChangePassword]
-  p UserSubmissions  = [Home, ModifyEvaulation, Evaulation]
-  p ModifyEvaulation = [Home, EvaulationTable]
+  p UserSubmissions  = [Home, ModifyEvaluation, Evaluation]
+  p ModifyEvaluation = [Home, EvaluationTable]
   p UserDetails      = [Administration]
   p GroupRegistration = [Home]
   p NewGroupAssignment = [Home, NewGroupAssignment]
@@ -93,7 +93,7 @@ pageTransition s = nub $ p s ++ [s, Error, Logout] where
   p CreateCourse      = [Administration]
   p AssignCourseAdmin = [Administration]
   p CreateGroup       = [CourseAdmin]
-  p AssignProfessor   = [CourseAdmin]
+  p AssignGroupAdmin  = [CourseAdmin]
   p ChangePassword    = [Profile]
   p SetUserPassword   = [Home]
 
@@ -111,10 +111,10 @@ regularPages = [
   , GroupRegistration
   ]
 
-professorPages = [
-    EvaulationTable
-  , Evaulation
-  , ModifyEvaulation
+groupAdminPages = [
+    EvaluationTable
+  , Evaluation
+  , ModifyEvaluation
   , NewGroupAssignment
   , ModifyAssignment
   , UserSubmissions
@@ -124,10 +124,10 @@ professorPages = [
 courseAdminPages = [
     CourseAdmin
   , CreateGroup
-  , AssignProfessor
-  , EvaulationTable
-  , Evaulation
-  , ModifyEvaulation
+  , AssignGroupAdmin
+  , EvaluationTable
+  , Evaluation
+  , ModifyEvaluation
   , NewCourseAssignment
   , NewGroupAssignment
   , ModifyAssignment
@@ -151,11 +151,11 @@ nonMenuPages = [
   , SubmissionList
   , SubmissionDetails
   , UserDetails
-  , Evaulation
-  , ModifyEvaulation
+  , Evaluation
+  , ModifyEvaluation
   , AssignCourseAdmin
   , CreateGroup
-  , AssignProfessor
+  , AssignGroupAdmin
   , NewGroupAssignment
   , NewCourseAssignment
   , ModifyAssignment
@@ -166,7 +166,7 @@ nonMenuPages = [
 
 allowedPages :: E.Role -> [Page]
 allowedPages E.Student     =                     regularPages
-allowedPages E.Professor   = professorPages   ++ regularPages
+allowedPages E.GroupAdmin  = groupAdminPages  ++ regularPages
 allowedPages E.CourseAdmin = courseAdminPages ++ regularPages
 allowedPages E.Admin       = adminPages       ++ regularPages
 
@@ -186,9 +186,9 @@ parentPage Logout         = Logout
 parentPage Profile        = Profile
 parentPage Home           = Home
 parentPage CourseAdmin    = Home
-parentPage EvaulationTable = Home
-parentPage Evaulation      = EvaulationTable
-parentPage ModifyEvaulation = EvaulationTable
+parentPage EvaluationTable = Home
+parentPage Evaluation      = EvaluationTable
+parentPage ModifyEvaluation = EvaluationTable
 parentPage Submission      = Home
 parentPage SubmissionList  = Home
 parentPage UserSubmissions = Home
@@ -199,7 +199,7 @@ parentPage UserDetails  = Administration
 parentPage CreateCourse = Administration
 parentPage AssignCourseAdmin = Administration
 parentPage CreateGroup     = CourseAdmin
-parentPage AssignProfessor = CourseAdmin
+parentPage AssignGroupAdmin = CourseAdmin
 parentPage NewGroupAssignment  = NewGroupAssignment
 parentPage NewCourseAssignment = NewCourseAssignment
 parentPage ModifyAssignment    = Home
@@ -219,7 +219,7 @@ invariants = Invariants [
 
 unitTests = UnitTests [
     ("Regular, Admin and NonMenu pages should cover all pages",
-     Set.fromList (join [regularPages, professorPages, courseAdminPages, adminPages, nonMenuPages]) ==
+     Set.fromList (join [regularPages, groupAdminPages, courseAdminPages, adminPages, nonMenuPages]) ==
      Set.fromList allPages)
   ]
 #endif

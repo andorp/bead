@@ -4,7 +4,7 @@ module Bead.Domain.Relationships where
 
 import Bead.Domain.Types
 import Bead.Domain.Entities
-import Bead.Domain.Evaulation
+import Bead.Domain.Evaluation
 
 -- Haskell imports
 
@@ -42,7 +42,7 @@ data SubmissionDesc = SubmissionDesc {
     eGroup    :: String
   , eStudent  :: String
   , eSolution :: String
-  , eConfig   :: EvaulationConfig
+  , eConfig   :: EvaluationConfig
   , eAssignmentTitle :: String
   , eAssignmentDesc  :: String
   , eComments :: [Comment]
@@ -55,12 +55,12 @@ submissionDescPermissions = ObjectPermissions [
   ]
 
 type Status = String
-type EvaulatedBy = String
+type EvaluatedBy = String
 
 data SubmissionListDesc = SubmissionListDesc {
     slGroup   :: String
   , slTeacher :: [String]
-  , slSubmissions :: [(SubmissionKey, UTCTime, Status, EvaulatedBy)]
+  , slSubmissions :: [(SubmissionKey, UTCTime, Status, EvaluatedBy)]
   , slAssignmentText :: String
   }
 
@@ -86,24 +86,24 @@ submissionDetailsDescPermissions = ObjectPermissions [
 
 data SubmissionInfo
   = Submission_Not_Found
-  | Submission_Unevaulated
-  | Submission_Result EvaulationKey EvaulationResult
+  | Submission_Unevaluated
+  | Submission_Result EvaluationKey EvaluationResult
   deriving (Show)
 
-submissionInfoCata notFound unevaulated result s = case s of
+submissionInfoCata notFound unevaluated result s = case s of
   Submission_Not_Found   -> notFound
-  Submission_Unevaulated -> unevaulated
+  Submission_Unevaluated -> unevaluated
   Submission_Result k r  -> result k r
 
-siEvaulationKey :: SubmissionInfo -> Maybe EvaulationKey
-siEvaulationKey Submission_Not_Found     = Nothing
-siEvaulationKey Submission_Unevaulated   = Nothing
-siEvaulationKey (Submission_Result ek _) = Just ek
+siEvaluationKey :: SubmissionInfo -> Maybe EvaluationKey
+siEvaluationKey Submission_Not_Found     = Nothing
+siEvaluationKey Submission_Unevaluated   = Nothing
+siEvaluationKey (Submission_Result ek _) = Just ek
 
 data SubmissionTableInfo = SubmissionTableInfo {
     stCourse   :: String
   , stNumberOfAssignments :: Int
-  , stEvalConfig  :: EvaulationConfig
+  , stEvalConfig  :: EvaluationConfig
   , stAssignments :: [AssignmentKey] -- Cronologically ordered list of assignments
   , stUsers       :: [Username]      -- Alphabetically ordered list of usernames
   , stUserLines   :: [(UserDesc, Maybe Result, [(AssignmentKey, SubmissionInfo)])]
@@ -172,11 +172,11 @@ newtype GroupKey = GroupKey String
 groupKeyMap :: (String -> a) -> GroupKey -> a
 groupKeyMap f (GroupKey g) = f g
 
-newtype EvaulationKey = EvaulationKey String
+newtype EvaluationKey = EvaluationKey String
   deriving (Eq, Ord, Show)
 
-evaluationKeyMap :: (String -> a) -> EvaulationKey -> a
-evaluationKeyMap f (EvaulationKey e) = f e
+evaluationKeyMap :: (String -> a) -> EvaluationKey -> a
+evaluationKeyMap f (EvaluationKey e) = f e
 
 -- * Str instances
 

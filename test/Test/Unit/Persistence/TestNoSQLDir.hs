@@ -11,8 +11,8 @@ import Test.Persistence.Persist
 
 import Bead.Domain.Types (Erroneous)
 import Bead.Domain.Entities
-import Bead.Domain.Shared.Evaulation
-import Bead.Domain.Evaulation
+import Bead.Domain.Shared.Evaluation
+import Bead.Domain.Evaluation
 import Bead.Domain.Relationships
 import Bead.Persistence.Persist
 import Bead.Persistence.NoSQLDir
@@ -130,7 +130,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   liftE $ createCourseAdmin persist admin ck
   cs <- liftE $ administratedCourses persist admin
   assertBool "Course is not found in administrated courses" (elem ck (map fst cs))
-  liftE $ createGroupProfessor persist admin gk
+  liftE $ createGroupAdmin persist admin gk
   gs <- liftE $ administratedGroups persist admin
   assertBool "Group is not found in administrated groups" (elem gk (map fst gs))
   str <- getCurrentTime
@@ -171,12 +171,12 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   uss <- liftE $ userSubmissions persist username gak
   assertBool "Submission is not in the users' submission" (elem sk uss)
 
-  let ev = Evaulation (BinEval (Binary Passed)) "Good"
-  evKey <- liftE $ saveEvaulation persist sk ev
-  ev1 <- liftE $ loadEvaulation persist evKey
-  assertBool "Evaulation was not loaded correctly" (ev == ev1)
-  ev_sk <- liftE $ submissionOfEvaulation persist evKey
-  assertBool "Submission key was different for the evaulation" (sk == ev_sk)
+  let ev = Evaluation (BinEval (Binary Passed)) "Good"
+  evKey <- liftE $ saveEvaluation persist sk ev
+  ev1 <- liftE $ loadEvaluation persist evKey
+  assertBool "Evaluation was not loaded correctly" (ev == ev1)
+  ev_sk <- liftE $ submissionOfEvaluation persist evKey
+  assertBool "Submission key was different for the evaluation" (sk == ev_sk)
   liftE $ removeFromOpened persist sk
 
   testComment sk

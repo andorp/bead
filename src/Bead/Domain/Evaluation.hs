@@ -1,33 +1,33 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-module Bead.Domain.Evaulation (
-    Evaulate(..)
-  , calculateEvaulation
+module Bead.Domain.Evaluation (
+    Evaluate(..)
+  , calculateEvaluation
   , score
   , percentage
   , point
-  , module Bead.Domain.Shared.Evaulation
+  , module Bead.Domain.Shared.Evaluation
   ) where
 
 import Control.Monad.Reader
 import Data.Monoid
 
-import Bead.Domain.Shared.Evaulation
+import Bead.Domain.Shared.Evaluation
 
-class Monoid m => Evaulate m e where
-  evaulate :: m -> e -> Result
+class Monoid m => Evaluate m e where
+  evaluate :: m -> e -> Result
 
-calculateEvaulation :: Evaulate m e => [m] -> e -> Result
-calculateEvaulation [] _ = Failed
-calculateEvaulation ms e = evaulate (mconcat ms) e
+calculateEvaluation :: Evaluate m e => [m] -> e -> Result
+calculateEvaluation [] _ = Failed
+calculateEvaluation ms e = evaluate (mconcat ms) e
 
 instance Monoid Binary where
   mempty = Binary Passed
   (Binary Passed) `mappend` (Binary Passed) = Binary Passed
   _               `mappend` _               = Binary Failed
 
-instance Evaulate Binary () where
-  evaulate (Binary Passed) _ = Passed
-  evaulate (Binary Failed) _ = Failed
+instance Evaluate Binary () where
+  evaluate (Binary Passed) _ = Passed
+  evaluate (Binary Failed) _ = Failed
 
 score :: a -> Scores a
 score x = Scores [x]
@@ -47,8 +47,8 @@ instance Monoid Percentage where
   mempty = Percentage mempty
   mappend (Percentage p) (Percentage q) = Percentage (mappend p q)
 
-instance Evaulate Percentage PctConfig where
-  evaulate (Percentage s) c =
+instance Evaluate Percentage PctConfig where
+  evaluate (Percentage s) c =
     case unScores s of
       [] -> Failed
       cs -> if ((sum cs) / (fromIntegral . length $ cs) >= (pLimit c))

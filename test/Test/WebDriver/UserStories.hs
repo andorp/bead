@@ -91,11 +91,11 @@ cAdminCreatesAssignment url courseAdmin student aData = do
       (aGroupOrCourse aData)
       (aName aData)
 
-cAdminEvaulateSubmission
+cAdminEvaluateSubmission
   :: String -> LoginData
-  -> SelectSubmissionData -> Int -> EvaulationData
+  -> SelectSubmissionData -> Int -> EvaluationData
   -> Test ()
-cAdminEvaulateSubmission url courseAdmin s noOfSbm e = do
+cAdminEvaluateSubmission url courseAdmin s noOfSbm e = do
   loginUser url courseAdmin $ do
     page s
     page (UserSubmissionsData noOfSbm)
@@ -114,11 +114,11 @@ gAdminCreatesAssignment url groupAdmin student aData = do
       (aGroupOrCourse aData)
       (aName aData)
 
-gAdminEvaulateSubmission
+gAdminEvaluateSubmission
   :: String -> LoginData
-  -> SelectSubmissionData -> Int -> EvaulationData
+  -> SelectSubmissionData -> Int -> EvaluationData
   -> Test ()
-gAdminEvaulateSubmission url groupAdmin s noOfSbm e = do
+gAdminEvaluateSubmission url groupAdmin s noOfSbm e = do
   loginUser url groupAdmin $ do
     page s
     page (UserSubmissionsData noOfSbm)

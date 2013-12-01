@@ -44,20 +44,20 @@ instance SessionStore P.Page where
     s P.Error      = "Error"
     s P.Profile    = "Profile"
     s P.CourseAdmin = "CourseAdmin"
-    s P.EvaulationTable = "EvaulationTable"
-    s P.Evaulation      = "Evaulation"
+    s P.EvaluationTable = "EvaluationTable"
+    s P.Evaluation      = "Evaluation"
     s P.Submission      = "Submission"
     s P.SubmissionList  = "SubmissionList"
     s P.UserSubmissions = "UserSubmissions"
     s P.SubmissionDetails = "SubmissionDetails"
-    s P.ModifyEvaulation  = "ModifyEvaulation"
+    s P.ModifyEvaluation  = "ModifyEvaluation"
     s P.Administration   = "Administration"
     s P.GroupRegistration = "GroupRegistration"
     s P.CreateCourse = "CreateCourse"
     s P.UserDetails = "UserDetails"
     s P.AssignCourseAdmin = "AssignCourseAdmin"
     s P.CreateGroup = "CreateGroup"
-    s P.AssignProfessor = "AssignProfessor"
+    s P.AssignGroupAdmin = "AssignGroupAdmin"
     s P.NewGroupAssignment  = "NewGroupAssignment"
     s P.NewCourseAssignment = "NewCourseAssignment"
     s P.ModifyAssignment = "ModifyAssignment"
@@ -73,20 +73,20 @@ instance SessionRestore P.Page where
     Just "Error"      -> Just P.Error
     Just "Profile"    -> Just P.Profile
     Just "CourseAdmin" -> Just P.CourseAdmin
-    Just "EvaulationTable" -> Just P.EvaulationTable
-    Just "Evaulation"      -> Just P.Evaulation
+    Just "EvaluationTable" -> Just P.EvaluationTable
+    Just "Evaluation"      -> Just P.Evaluation
     Just "Submission"      -> Just P.Submission
     Just "SubmissionList"  -> Just P.SubmissionList
     Just "UserSubmissions" -> Just P.UserSubmissions
     Just "SubmissionDetails" -> Just P.SubmissionDetails
-    Just "ModifyEvaulation"  -> Just P.ModifyEvaulation
+    Just "ModifyEvaluation"  -> Just P.ModifyEvaluation
     Just "Administration"   -> Just P.Administration
     Just "GroupRegistration" -> Just P.GroupRegistration
     Just "CreateCourse" -> Just P.CreateCourse
     Just "UserDetails"  -> Just P.UserDetails
     Just "AssignCourseAdmin" -> Just P.AssignCourseAdmin
     Just "CreateGroup"  -> Just P.CreateGroup
-    Just "AssignProfessor" -> Just P.AssignProfessor
+    Just "AssignGroupAdmin" -> Just P.AssignGroupAdmin
     Just "NewCourseAssignment" -> Just P.NewCourseAssignment
     Just "NewGroupAssignment" -> Just P.NewGroupAssignment
     Just "ModifyAssignment" -> Just P.ModifyAssignment

@@ -6,9 +6,9 @@ module Bead.View.Snap.Content.UserSubmissions (
 import Bead.View.Snap.Content
 import Bead.Domain.Types (Str(..))
 import Bead.Domain.Entities (Email(..), roles)
-import Bead.Domain.Shared.Evaulation
+import Bead.Domain.Shared.Evaluation
 import qualified Bead.Controller.UserStories as U (userSubmissions)
-import Bead.Controller.Pages as P (Page(ModifyEvaulation, Evaulation))
+import Bead.Controller.Pages as P (Page(ModifyEvaluation, Evaluation))
 
 import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
@@ -70,18 +70,18 @@ submissionTable i18n s = do
     submissionInfo :: SubmissionInfo -> String
     submissionInfo = submissionInfoCata
       "Not Found"
-      "Unevaulated"
+      "Unevaluated"
       (const (evaluationDataMap bin pct))
 
     bin (Binary b) = resultCata (i18n "Passed") (i18n "Failed") b
     pct (Percentage (Scores [x])) = printf "%3.2f%%" (100 * x)
     pct (Percentage _) = "Error: ???%"
 
-    sbmLink si sk t = case siEvaulationKey si of
+    sbmLink si sk t = case siEvaluationKey si of
       Nothing -> link
-        (routeWithParams P.Evaulation [requestParam sk])
+        (routeWithParams P.Evaluation [requestParam sk])
         (fromString . show $ t)
       Just ek -> link
-        (routeWithParams P.ModifyEvaulation [requestParam sk,requestParam ek] )
+        (routeWithParams P.ModifyEvaluation [requestParam sk,requestParam ek] )
         (show t)
 

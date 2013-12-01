@@ -1,12 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bead.View.Snap.Content.EvaulationTable (
-    evaulationTable
+module Bead.View.Snap.Content.EvaluationTable (
+    evaluationTable
   ) where
 
 import Control.Monad (liftM)
 import Data.String (fromString)
 
-import Bead.Controller.Pages as P (Page(Evaulation))
+import Bead.Controller.Pages as P (Page(Evaluation))
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.UserStories (openSubmissions)
 import Bead.View.Snap.Pagelets
@@ -15,17 +15,17 @@ import Bead.View.Snap.Content
 import Text.Blaze.Html5 (Html)
 import qualified Text.Blaze.Html5 as H
 
-evaulationTable :: Content
-evaulationTable = getContentHandler evaulationTablePage
+evaluationTable :: Content
+evaluationTable = getContentHandler evaluationTablePage
 
-evaulationTablePage :: GETContentHandler
-evaulationTablePage = withUserState $ \s -> do
+evaluationTablePage :: GETContentHandler
+evaluationTablePage = withUserState $ \s -> do
   keys <- runStoryE (openSubmissions)
-  renderPagelet $ withUserFrame s (evaulationTableContent keys)
+  renderPagelet $ withUserFrame s (evaluationTableContent keys)
 
-evaulationTableContent :: [(SubmissionKey, SubmissionDesc)] -> Pagelet
-evaulationTableContent ks = onlyHtml $ mkI18NHtml $ \i -> do
-  H.p $ table "evaulation-table" (className evaulationClassTable) # informationalTable $ do
+evaluationTableContent :: [(SubmissionKey, SubmissionDesc)] -> Pagelet
+evaluationTableContent ks = onlyHtml $ mkI18NHtml $ \i -> do
+  H.p $ table "evaluation-table" (className evaluationClassTable) # informationalTable $ do
     H.tr # grayBackground $ do
       H.th (fromString $ i "Group")
       H.th (fromString $ i "Student")
@@ -37,4 +37,4 @@ submissionInfo i (key, desc) = H.tr $ do
   H.td . fromString . eGroup $ desc
   H.td . fromString . eStudent $ desc
   H.td . fromString . eAssignmentTitle $ desc
-  H.td $ link (routeWithParams P.Evaulation [requestParam key]) (i "Submission")
+  H.td $ link (routeWithParams P.Evaluation [requestParam key]) (i "Submission")

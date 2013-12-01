@@ -2,7 +2,7 @@
 module Bead.View.Snap.Content.CourseAdmin (
     courseAdmin
   , createGroup
-  , assignProfessor
+  , assignGroupAdmin
   ) where
 
 import Control.Monad (liftM)
@@ -36,7 +36,7 @@ courseAdminPage = withUserState $ \s -> do
     gs <- do courseAndGroupKeys <- mapM (loadCourse . fst) cs
              let gks = join . map snd $ courseAndGroupKeys
              mapM loadGroup' gks
-    ps <- selectUsers professor
+    ps <- selectUsers group_admin
     return PageData {
         courses    = cs
       , groups     = gs
@@ -44,7 +44,7 @@ courseAdminPage = withUserState $ \s -> do
       }
   renderDynamicPagelet $ withUserFrame s (courseAdminContent pageData)
   where
-    professor = groupAdmin . u_role
+    group_admin = groupAdmin . u_role
 
     loadGroup' gk = do
       g <- loadGroup gk
@@ -66,12 +66,12 @@ courseAdminContent info = onlyHtml $ mkI18NHtml $ \i -> do
   H.h3 (translate i "Assign teacher to the group")
   H.p $ nonEmpty (groups info)      (translate i "No groups were found") $
         nonEmpty (groupAdmins info) (translate i "No group admins were found") $
-        postForm (routeOf P.AssignProfessor) $ do
+        postForm (routeOf P.AssignGroupAdmin) $ do
           table
             (header (translate i "Group") (translate i "Group Admin"))
             (selections
                (valueTextSelection (fieldName selectedGroup) (groups info))
-               (valueTextSelection (fieldName selectedProfessor) (groupAdmins info)))
+               (valueTextSelection (fieldName selectedGroupAdmin) (groupAdmins info)))
           H.br
           submitButton (fieldName assignGroupAdminBtn) (i "Assign")
   where
@@ -96,12 +96,12 @@ submitGroup = do
   group     <- getValue
   return $ UA.CreateGroup courseKey group
 
--- * Assign Professor to a group
+-- * Assign GroupAdmin to a group
 
-assignProfessor :: Content
-assignProfessor = postContentHandler submitProfessor
+assignGroupAdmin :: Content
+assignGroupAdmin = postContentHandler submitGroupAdmin
 
-submitProfessor :: POSTContentHandler
-submitProfessor = UA.CreateProfessor
-  <$> getParameter (customUsernamePrm (fieldName selectedProfessor))
+submitGroupAdmin :: POSTContentHandler
+submitGroupAdmin = UA.CreateGroupAdmin
+  <$> getParameter (customUsernamePrm (fieldName selectedGroupAdmin))
   <*> getParameter (customGroupKeyPrm (fieldName selectedGroup))

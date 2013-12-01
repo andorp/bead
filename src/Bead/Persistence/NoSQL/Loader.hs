@@ -36,7 +36,7 @@ courseDir   = "course"
 assignmentDir = "assignment"
 groupDir    = "group"
 submissionDir = "submission"
-evaulationDir = "evaulation"
+evaluationDir = "evaluation"
 commentDir    = "comment"
 openSubmissionDir = "open-submission"
 userRegDir = "user-registration"
@@ -46,7 +46,7 @@ userDataDir     = joinPath [dataDir, userDir]
 groupDataDir    = joinPath [dataDir, groupDir]
 assignmentDataDir = joinPath [dataDir, assignmentDir]
 submissionDataDir = joinPath [dataDir, submissionDir]
-evaulationDataDir = joinPath [dataDir, evaulationDir]
+evaluationDataDir = joinPath [dataDir, evaluationDir]
 commentDataDir    = joinPath [dataDir, commentDir]
 openSubmissionDataDir = joinPath [dataDir, openSubmissionDir]
 userRegDataDir = joinPath [dataDir, userRegDir]
@@ -59,7 +59,7 @@ persistenceDirs = [
   , assignmentDataDir
   , groupDataDir
   , submissionDataDir
-  , evaulationDataDir
+  , evaluationDataDir
   , commentDataDir
   , openSubmissionDataDir
   , userRegDataDir
@@ -108,8 +108,8 @@ instance DirName CourseKey where
 instance DirName SubmissionKey where
   dirName (SubmissionKey sk) = joinPath [submissionDataDir, sk]
 
-instance DirName EvaulationKey where
-  dirName (EvaulationKey ek) = joinPath [evaulationDataDir, ek]
+instance DirName EvaluationKey where
+  dirName (EvaluationKey ek) = joinPath [evaluationDataDir, ek]
 
 instance DirName CommentKey where
   dirName (CommentKey ck) = joinPath [commentDataDir, ck]
@@ -266,11 +266,11 @@ instance Save Submission where
     fileSave d "solution" (solution s)
     fileSave d "date"     (show . solutionPostDate $ s)
 
-instance Save Evaulation where
+instance Save Evaluation where
   save d e = do
-    createStructureDirs d evaulationDirStructure
-    fileSave d "evaulation" (writtenEvaulation e)
-    fileSave d "result" (show . evaulationResult $ e)
+    createStructureDirs d evaluationDirStructure
+    fileSave d "evaluation" (writtenEvaluation e)
+    fileSave d "result" (show . evaluationResult $ e)
 
 instance Save Comment where
   save d c = do
@@ -337,13 +337,13 @@ instance Load Submission where
       , solutionPostDate = p
       }
 
-instance Load Evaulation where
+instance Load Evaluation where
   load d = do
-    e <- fileLoad d "evaulation" same
+    e <- fileLoad d "evaluation" same
     r <- fileLoad d "result" readMaybe
-    return Evaulation {
-      writtenEvaulation = e
-    , evaulationResult  = r
+    return Evaluation {
+      writtenEvaluation = e
+    , evaluationResult  = r
     }
 
 instance Load Comment where
@@ -415,10 +415,10 @@ instance Update User where
     updateName d name
     update d timezone
 
-instance Update Evaulation where
+instance Update Evaluation where
   update d e = do
-    fileUpdate d "evaulation" (writtenEvaulation e)
-    fileUpdate d "result"      (show . evaulationResult $ e)
+    fileUpdate d "evaluation" (writtenEvaluation e)
+    fileUpdate d "result"      (show . evaluationResult $ e)
 
 instance Update Assignment where
   update d = assignmentCata $ \name desc tcs type_ start starttz end endtz -> do
@@ -471,7 +471,7 @@ assignmentDirStructure = DirStructure {
 
 submissionDirStructure = DirStructure {
     files = ["solution", "date"]
-  , directories = ["assignment", "user", "evaulation", "comment"]
+  , directories = ["assignment", "user", "evaluation", "comment"]
   }
 
 courseDirStructure = DirStructure {
@@ -484,8 +484,8 @@ groupDirStructure = DirStructure {
   , directories = ["users", "course", "admins", "assignments"]
   }
 
-evaulationDirStructure = DirStructure {
-    files       = ["result", "evaulation"]
+evaluationDirStructure = DirStructure {
+    files       = ["result", "evaluation"]
   , directories = ["submission"]
   }
 
@@ -535,7 +535,7 @@ dirStructures = [
   , groupDirStructure
   , userDirStructure
   , assignmentDirStructure
-  , evaulationDirStructure
+  , evaluationDirStructure
   , commentDirStructure
   , userRegDirStructure
   ]

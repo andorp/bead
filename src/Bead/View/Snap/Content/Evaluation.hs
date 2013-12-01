@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bead.View.Snap.Content.Evaulation (
-    evaulation
-  , modifyEvaulation
+module Bead.View.Snap.Content.Evaluation (
+    evaluation
+  , modifyEvaluation
   ) where
 
 import Data.String (fromString)
@@ -9,45 +9,45 @@ import Control.Monad (liftM)
 
 import Bead.Domain.Types (readMsg)
 import Bead.Domain.Relationships (SubmissionDesc(..))
-import Bead.Controller.Pages as P(Page(Evaulation, ModifyEvaulation))
+import Bead.Controller.Pages as P(Page(Evaluation, ModifyEvaluation))
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.UserStories (submissionDescription)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content as C
 import Bead.View.Snap.Content.Comments
 
-import Bead.Domain.Evaulation
+import Bead.Domain.Evaluation
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A (id, class_, style)
 
-evaulation :: Content
-evaulation = getPostContentHandler evaulationPage evaulationPostHandler
+evaluation :: Content
+evaluation = getPostContentHandler evaluationPage evaluationPostHandler
 
-modifyEvaulation :: Content
-modifyEvaulation = getPostContentHandler modifyEvaulationPage modifyEvaulationPost
+modifyEvaluation :: Content
+modifyEvaluation = getPostContentHandler modifyEvaluationPage modifyEvaluationPost
 
 data PageData = PageData {
     sbmDesc :: SubmissionDesc
-  , sbmKey  :: Either EvaulationKey SubmissionKey
+  , sbmKey  :: Either EvaluationKey SubmissionKey
   }
 
 render (BinEval _) = renderPagelet
 render (PctEval _) = renderDynamicPagelet
 
-evaulationPage :: GETContentHandler
-evaulationPage = withUserState $ \s -> do
+evaluationPage :: GETContentHandler
+evaluationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
   sd <- runStoryE (submissionDescription sk)
   let pageData = PageData {
       sbmKey  = Right sk
     , sbmDesc = sd
     }
-  render (eConfig sd) $ withUserFrame s (evaulationContent pageData)
+  render (eConfig sd) $ withUserFrame s (evaluationContent pageData)
 
-modifyEvaulationPage :: GETContentHandler
-modifyEvaulationPage = withUserState $ \s -> do
+modifyEvaluationPage :: GETContentHandler
+modifyEvaluationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
   ek <- getParameter evaluationKeyPrm
   sd <- runStoryE (submissionDescription sk)
@@ -55,32 +55,32 @@ modifyEvaulationPage = withUserState $ \s -> do
     sbmKey  = Left ek
   , sbmDesc = sd
   }
-  render (eConfig sd) $ withUserFrame s (evaulationContent pageData)
+  render (eConfig sd) $ withUserFrame s (evaluationContent pageData)
 
-evaulationPostHandler :: POSTContentHandler
-evaulationPostHandler = do
+evaluationPostHandler :: POSTContentHandler
+evaluationPostHandler = do
   sk <- getParameter submissionKeyPrm
   ev <- getParameter evaluationValuePrm
-  er <- getJSONParam (fieldName evaulationResultField) "Evaulation result is not found"
-  let e = C.Evaulation {
-    evaulationResult = evResult er
-  , writtenEvaulation = ev
+  er <- getJSONParam (fieldName evaluationResultField) "Evaluation result is not found"
+  let e = C.Evaluation {
+    evaluationResult = evResult er
+  , writtenEvaluation = ev
   }
-  return $ NewEvaulation sk e
+  return $ NewEvaluation sk e
 
-modifyEvaulationPost :: POSTContentHandler
-modifyEvaulationPost = do
+modifyEvaluationPost :: POSTContentHandler
+modifyEvaluationPost = do
   ek <- getParameter evaluationKeyPrm
   ev <- getParameter evaluationValuePrm
-  er <- getJSONParam (fieldName evaulationResultField) "Evaulation result is not found"
-  let e = C.Evaulation {
-    evaulationResult = evResult er
-  , writtenEvaulation = ev
+  er <- getJSONParam (fieldName evaluationResultField) "Evaluation result is not found"
+  let e = C.Evaluation {
+    evaluationResult = evResult er
+  , writtenEvaluation = ev
   }
-  return $ C.ModifyEvaulation ek e
+  return $ C.ModifyEvaluation ek e
 
-evaulationContent :: PageData -> Pagelet
-evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
+evaluationContent :: PageData -> Pagelet
+evaluationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   let sd = sbmDesc pd
   postForm (routeOf . evPage . sbmKey $ pd) $ H.div ! formDiv $ do
     H.div ! title $ H.h2 (translate i "Evaluation")
@@ -92,11 +92,11 @@ evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
         H.tr $ do
           H.td $ H.b $ (translate i "Student: ")
           H.td $ (fromString . eStudent $ sd)
-      H.div ! A.id (fieldName evaulationPercentageDiv) $
+      H.div ! A.id (fieldName evaluationPercentageDiv) $
         translate i . inputEvalResult . eConfig $ sd
       submitButton (fieldName saveEvalBtn) (i "Save Evaluation")
     H.div ! rightText $ do
-      textAreaInput (fieldName evaulationValueField) Nothing ! fillDiv
+      textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv
       hiddenKeyField . sbmKey $ pd
   H.div $ H.h2 $ (translate i "Submitted solution")
   H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
@@ -107,18 +107,18 @@ evaulationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   translate i . commentsDiv . eComments $ sd
 
   where
-    defaultEvalCfg :: EvaulationResult
+    defaultEvalCfg :: EvaluationResult
     defaultEvalCfg = BinEval (Binary Passed)
 
-    hiddenKeyField (Left ek)  = hiddenInput (fieldName evaulationKeyField) (paramValue ek)
+    hiddenKeyField (Left ek)  = hiddenInput (fieldName evaluationKeyField) (paramValue ek)
     hiddenKeyField (Right sk) = hiddenInput (fieldName submissionKeyField) (paramValue sk)
 
-    evPage (Left  _) = P.ModifyEvaulation
-    evPage (Right _) = P.Evaulation
+    evPage (Left  _) = P.ModifyEvaluation
+    evPage (Right _) = P.Evaluation
 
-inputEvalResult :: EvaulationConfig -> I18NHtml
+inputEvalResult :: EvaluationConfig -> I18NHtml
 inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
-  valueSelection valueAndText (fieldName evaulationResultField) $
+  valueSelection valueAndText (fieldName evaluationResultField) $
     [(Passed, i "Passed"), (Failed, i "Failed")]
   where
     valueAndText :: (Result, String) -> (String, String)
@@ -127,7 +127,7 @@ inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
 -- When the page is dynamic the percentage spinner is hooked on the field
 inputEvalResult (PctEval cfg) = mkI18NHtml $ \i -> do
   hiddenInput
-    (fieldName evaulationResultField)
+    (fieldName evaluationResultField)
     (fromString . errorOnNothing . encodeToFay . EvResult . mkEvalResult . Percentage $ Scores [0.0])
 
 errorOnNothing = maybe (error "Error is encoding input result") id

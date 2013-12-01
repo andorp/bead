@@ -111,7 +111,7 @@ testDecoratedPersist a q = Persist {
       us <- groupAdmins q gk
       return us
 
-  , createGroupProfessor = createGroupProfessor q
+  , createGroupAdmin = createGroupAdmin q
 
   , subscribedToGroup = \gk -> do
       testGroupKey a gk
@@ -227,30 +227,30 @@ testDecoratedPersist a q = Persist {
 
   , openedSubmissions = openedSubmissions q
 
-  , evaulationOfSubmission = \sk -> do
+  , evaluationOfSubmission = \sk -> do
       testSubmissionKey a sk
-      mek <- evaulationOfSubmission q sk
-      when (isJust mek) $ testEvaulationKey a (fromJust mek)
+      mek <- evaluationOfSubmission q sk
+      when (isJust mek) $ testEvaluationKey a (fromJust mek)
       return mek
 
-  , saveEvaulation = \sk c -> do
+  , saveEvaluation = \sk c -> do
       testSubmissionKey a sk
-      ek <- saveEvaulation q sk c
-      testEvaulationKey a ek
+      ek <- saveEvaluation q sk c
+      testEvaluationKey a ek
       return ek
 
-  , loadEvaulation = \ek -> do
-      testEvaulationKey a ek
-      e <- loadEvaulation q ek
+  , loadEvaluation = \ek -> do
+      testEvaluationKey a ek
+      e <- loadEvaluation q ek
       return e
 
-  , modifyEvaulation = \ek e -> do
-      testEvaulationKey a ek
-      modifyEvaulation q ek e
+  , modifyEvaluation = \ek e -> do
+      testEvaluationKey a ek
+      modifyEvaluation q ek e
 
-  , submissionOfEvaulation = \ek -> do
-      testEvaulationKey a ek
-      sk <- submissionOfEvaulation q ek
+  , submissionOfEvaluation = \ek -> do
+      testEvaluationKey a ek
+      sk <- submissionOfEvaluation q ek
       testSubmissionKey a sk
       return sk
 
@@ -298,8 +298,8 @@ testAssignmentKey a (AssignmentKey ak) = checkKeyString ak a $ "AssignmentKey wa
 testSubmissionKey :: Assert -> SubmissionKey -> TIO ()
 testSubmissionKey a (SubmissionKey sk) = checkKeyString sk a $ "SubmissionKey was invalid: " ++ sk
 
-testEvaulationKey :: Assert -> EvaulationKey -> TIO ()
-testEvaulationKey a (EvaulationKey ek) = checkKeyString ek a $ "EvaulationKey was invalid: " ++ ek
+testEvaluationKey :: Assert -> EvaluationKey -> TIO ()
+testEvaluationKey a (EvaluationKey ek) = checkKeyString ek a $ "EvaluationKey was invalid: " ++ ek
 
 testCommentKey :: Assert -> CommentKey -> TIO ()
 testCommentKey a (CommentKey ck) = checkKeyString ck a $ "CommentKey was invalid: " ++ ck

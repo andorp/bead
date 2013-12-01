@@ -17,7 +17,7 @@ import Control.Monad.Identity
 import Control.Monad.Trans.Error
 
 import Bead.Domain.Entities as E (Role(..))
-import Bead.Domain.Evaulation
+import Bead.Domain.Evaluation
 import Bead.Domain.Relationships (AssignmentDesc(..))
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.Pages as P (Page(..))
@@ -85,7 +85,7 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> do
     availableAssignments i18n (assignments d)
   where
     courseAdminUser = (==E.CourseAdmin)
-    groupAdminUser  = (==E.Professor)
+    groupAdminUser  = (==E.GroupAdmin)
 
 availableAssignments :: I18N -> Maybe [(AssignmentKey,AssignmentDesc)] -> Html
 availableAssignments i18n Nothing = do
@@ -163,7 +163,7 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
       coloredCell $ link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]) (sc s)
       where
         sc Submission_Not_Found   = " "
-        sc Submission_Unevaulated = "."
+        sc Submission_Unevaluated = "."
         sc (Submission_Result _ r) = val r
 
         val (BinEval (Binary Passed)) = "1"
@@ -175,7 +175,7 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
         color =
           submissionInfoCata
             (dataCell noStyle)        -- Not Found
-            (dataCell unevaulatedStyle) -- Unevulated
+            (dataCell unevaluatedStyle) -- Unevulated
             (const resultCell)        -- Result
 
         resultCell (BinEval (Binary Passed)) = dataCell binaryPassedStyle
@@ -188,15 +188,15 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
 
 -- * Evaluation
 
--- Produces the result of the submissions. The selected evaulation method depends
+-- Produces the result of the submissions. The selected evaluation method depends
 -- on the given configuration.
-calculateSubmissionResult :: [SubmissionInfo] -> EvaulationConfig -> Either String Result
+calculateSubmissionResult :: [SubmissionInfo] -> EvaluationConfig -> Either String Result
 calculateSubmissionResult si =
   evaluationDataMap
     (const (sumBinaryResult si))
     (flip sumPercentageResult si)
 
--- Produces the result of a user's submission list for a binary evaulation.
+-- Produces the result of a user's submission list for a binary evaluation.
 -- Returns (Right result) when there is no error in the submission set, otherwise (Left "Reason")
 sumBinaryResult :: [SubmissionInfo] -> Either String Result
 sumBinaryResult = calcEvaluationResult binary calcBinaryResult
@@ -204,36 +204,36 @@ sumBinaryResult = calcEvaluationResult binary calcBinaryResult
     -- Checks if the result is a binary result
     -- Produces (Left "error") if the result is not a binary result
     -- otherwise (Right result)
-    binary :: EvaulationResult -> Either String Binary
+    binary :: EvaluationResult -> Either String Binary
     binary = evaluationDataMap Right (const . Left $ "Not a binary evaluation")
 
     calcBinaryResult :: [Binary] -> Result
-    calcBinaryResult bs = calculateEvaulation bs ()
+    calcBinaryResult bs = calculateEvaluation bs ()
 
--- Produces the result of a user's submission list for a percentage evaulation using
+-- Produces the result of a user's submission list for a percentage evaluation using
 -- the given config.
 -- Returns (Right result) when there is no error in the submission set, otherwise (Left "Reason")
 sumPercentageResult :: PctConfig -> [SubmissionInfo] -> Either String Result
 sumPercentageResult config = calcEvaluationResult percentage calcPercentageResult
   where
-    percentage :: EvaulationResult -> Either String Percentage
+    percentage :: EvaluationResult -> Either String Percentage
     percentage = evaluationDataMap
                    (const . Left $ "Not a percentage evaluation")
                    Right
 
     calcPercentageResult :: [Percentage] -> Result
-    calcPercentageResult ps = calculateEvaulation ps config
+    calcPercentageResult ps = calculateEvaluation ps config
 
 -- Produces the result of a user's submission list using the selectResult
 -- projection and the calculateResult function
 -- Returns (Right result) if the calculation is correct, otherwise (Left "reason")
 calcEvaluationResult
-  :: (EvaulationResult -> Either String result) -- Selects the correct result or produces an error msg
+  :: (EvaluationResult -> Either String result) -- Selects the correct result or produces an error msg
   -> ([result] -> Result) -- Aggregates the results calculating into the final result
   -> [SubmissionInfo]
   -> Either String Result
 calcEvaluationResult selectResult calculateResult
-  = right calculateResult . checkErrors . map selectResult . filterEvaulation
+  = right calculateResult . checkErrors . map selectResult . filterEvaluation
   where
     result = const Just
 
@@ -241,9 +241,9 @@ calcEvaluationResult selectResult calculateResult
     right f (Right x) = Right (f x)
     right _ (Left x)  = (Left x)
 
-    -- Filters only the evaulation results
-    filterEvaulation :: [SubmissionInfo] -> [EvaulationResult]
-    filterEvaulation = catMaybes . map (submissionInfoCata Nothing Nothing result)
+    -- Filters only the evaluation results
+    filterEvaluation :: [SubmissionInfo] -> [EvaluationResult]
+    filterEvaluation = catMaybes . map (submissionInfoCata Nothing Nothing result)
 
     -- Checks if no error is found.
     -- Produces (Left "error") when at least one element has an error,
@@ -257,7 +257,7 @@ calcEvaluationResult selectResult calculateResult
 
 binaryPassedStyle = backgroundColor "lightgreen"
 binaryFailedStyle = backgroundColor "red"
-unevaulatedStyle  = backgroundColor "gray"
+unevaluatedStyle  = backgroundColor "gray"
 summaryPassedStyle = backgroundColor "lightgreen"
 summaryFailedStyle = backgroundColor "red"
 summaryErrorStyle  = backgroundColor "yellow"

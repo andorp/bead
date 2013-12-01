@@ -136,7 +136,7 @@ saveAndLoadComment = do
   sk' <- runPersistCmd $ submissionOfComment persist ck
   assertEquals sk sk' "Submission keys were different"
 
-evaulationConfigForSubmission sk = do
+evaluationConfigForSubmission sk = do
   ak <- runPersistCmd $ assignmentOfSubmission persist sk
   s <- runPersistCmd $ loadSubmission persist sk
   key <- runPersistCmd $ courseOrGroupOfAssignment persist ak
@@ -145,11 +145,11 @@ evaulationConfigForSubmission sk = do
     (runPersistCmd . fmap groupEvalConfig  . loadGroup  persist)
     key
 
-evaulationGroupSaveAndLoad = do
+evaluationGroupSaveAndLoad = do
   (ak, u, sk) <- saveAndLoadSubmission
-  cfg <- evaulationConfigForSubmission sk
+  cfg <- evaluationConfigForSubmission sk
   saveAndLoadIdenpotent
-    "Evaulation" (saveEvaulation persist sk) (loadEvaulation persist) (Gen.evaulations cfg)
+    "Evaluation" (saveEvaluation persist sk) (loadEvaluation persist) (Gen.evaluations cfg)
 
 success n = stdArgs { maxSuccess = n, chatty = False }
 
@@ -251,15 +251,15 @@ submissions n us as = do
     run $ insertListRef list ((u,ak),sk)
   listInRef list
 
--- Generate and store the given number of evaulations, for the randomly selected
--- submission, and returns all the created evaulation keys
-evaulations n ss = do
+-- Generate and store the given number of evaluations, for the randomly selected
+-- submission, and returns all the created evaluation keys
+evaluations n ss = do
   list <- createListRef
   quick n $ do
     sk <- pick $ elements ss
-    cfg <- evaulationConfigForSubmission sk
-    ek <- saveAndLoadIdenpotent "Evaulation"
-      (saveEvaulation persist sk) (loadEvaulation persist) (Gen.evaulations cfg)
+    cfg <- evaluationConfigForSubmission sk
+    ek <- saveAndLoadIdenpotent "Evaluation"
+      (saveEvaluation persist sk) (loadEvaluation persist) (Gen.evaluations cfg)
     run $ insertListRef list ek
   listInRef list
 
@@ -271,7 +271,7 @@ massPersistenceTest = do
   let as = gas ++ cas
   us <- users 300
   ss <- submissionKeys <$> submissions 500 us as
-  evaulations 400 ss
+  evaluations 400 ss
   return ()
 
 
@@ -349,7 +349,7 @@ groupDescriptionTest = do
   quick 300 $ do
     groupAdmin <- pick $ elements us
     gk         <- pick $ elements gs
-    runPersistCmd $ createGroupProfessor persist groupAdmin gk
+    runPersistCmd $ createGroupAdmin persist groupAdmin gk
     groupAdmins <- runPersistCmd $ groupAdmins persist gk
     assertTrue (elem groupAdmin groupAdmins) "Group admin was not in the group admins"
   quick 500 $ do
@@ -417,8 +417,8 @@ submissionListDescTest = do
     assertNonEmpty (slAssignmentText desc) "Assignment was empty"
     assertEmpty (slTeacher desc) "There was teachers to the group"
 
--- Allways the last evaulation is valid for the submission.
-lastEvaulationTest = do
+-- Allways the last evaluation is valid for the submission.
+lastEvaluationTest = do
   reinitPersistence
   cs <- courses 100
   gs <- groups 200 cs
@@ -445,7 +445,7 @@ createCourseAdmins n us cs = quick n $ do
 createGroupAdmins n us gs = quick n $ do
   u <- pick $ elements us
   g <- pick $ elements gs
-  runPersistCmd $ createGroupProfessor persist u g
+  runPersistCmd $ createGroupAdmin persist u g
 
 -- Every submission has a description, this description must be loaded
 submissionDetailsDescTest = do
@@ -495,7 +495,7 @@ submissionTablesTest = do
     forM ts $ \t -> do
       assertNonEmpty (stCourse t) "Course name was empty"
       assertTrue (stNumberOfAssignments t >= 0) "Number of assignments was negative"
-      assertNonEmpty (show . stEvalConfig $ t) "Evaulation config was empty"
+      assertNonEmpty (show . stEvalConfig $ t) "Evaluation config was empty"
       assertTrue (length (stAssignments t) >= 0) "Invalid assignment list"
       forM (stUsers t) $ usernameCata (\u -> assertNonEmpty u "Username was empty")
       assertTrue (length (stUserLines t) >= 0) "Invalid user line number"
@@ -609,22 +609,22 @@ modifyAssignmentsTest = do
     a1 <- runPersistCmd $ loadAssignment persist ak
     assertEquals a a1 "Modified and loaded assignments were differents"
 
--- Modified evaulations must be untouched after loading them
-modifyEvaulationTest = do
+-- Modified evaluations must be untouched after loading them
+modifyEvaluationTest = do
   cs <- courses 100
   gs <- groups 300 cs
   as <- courseAndGroupAssignments 200 200 cs gs
   us <- users 200
   ss <- submissionKeys <$> (submissions 400 us as)
-  es <- evaulations 600 ss
+  es <- evaluations 600 ss
   quick 1000 $ do
     ek <- pick $ elements es
-    sk <- runPersistCmd $ submissionOfEvaulation persist ek
-    cfg <- evaulationConfigForSubmission sk
-    e <- pick $ Gen.evaulations cfg
-    runPersistCmd $ modifyEvaulation persist ek e
-    e1 <- runPersistCmd $ loadEvaulation persist ek
-    assertEquals e e1 "Modified and loaded evaulations were different"
+    sk <- runPersistCmd $ submissionOfEvaluation persist ek
+    cfg <- evaluationConfigForSubmission sk
+    e <- pick $ Gen.evaluations cfg
+    runPersistCmd $ modifyEvaluation persist ek e
+    e1 <- runPersistCmd $ loadEvaluation persist ek
+    assertEquals e e1 "Modified and loaded evaluations were different"
 
 runPersistCmd :: TIO a -> PropertyM IO a
 runPersistCmd m = do
@@ -658,7 +658,7 @@ tests = testGroup "Persistence Layer QuickCheck properties" [
   , testProperty "Submission Save and Load" $ monadicIO saveAndLoadSubmission
   , testProperty "Assignment and user of submission" $ monadicIO assignmentAndUserOfSubmission
   , testProperty "Comment save and load" $ monadicIO saveAndLoadComment -- }
-  , testProperty "Evaulation save and load" $ monadicIO evaulationGroupSaveAndLoad
+  , testProperty "Evaluation save and load" $ monadicIO evaluationGroupSaveAndLoad
   , cleanUpPersistence
   ]
 
@@ -676,7 +676,7 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Every submission has some kind of description" $ submissionDescTest
   , testCase "Every assignment course must have a name and admins" $ courseNameAndAdminsTest
   , testCase "Every assignment and an associated user has a submission list" $ submissionListDescTest
-  , testCase "Allways the last evaulation is valid for the submission" $ lastEvaulationTest
+  , testCase "Allways the last evaluation is valid for the submission" $ lastEvaluationTest
   , testCase "Every submission has a description" $ submissionDetailsDescTest
   , testCase "Submission tables" $ submissionTablesTest
   , testCase "The user can have submissions and information" $ userSubmissionDescTest
@@ -685,7 +685,7 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "All the saved submissions must have a key" $ filterSubmissionsTest
   , testCase "Users must be able to change password and reamain loginable" $ updatePwdTest
   , testCase "Modified assignments must be untouched after loading them" $ modifyAssignmentsTest
-  , testCase "Modified evaulations must be untouched after loading them" $ modifyEvaulationTest
+  , testCase "Modified evaluations must be untouched after loading them" $ modifyEvaluationTest
   , testCase "Users can not login in using invalid password" $ userCanLoginTest
   , cleanUpPersistence
   ]
