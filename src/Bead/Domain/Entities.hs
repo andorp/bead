@@ -8,7 +8,7 @@ import Bead.Invariants (Invariants(..), UnitTests(..))
 #endif
 
 import Data.Char (toLower)
-import Data.Time (UTCTime(..))
+import Data.Time (UTCTime(..), timeZoneName)
 import qualified Data.Time as Time
 import Control.Monad (join)
 import Control.Applicative ((<$>), (<*>))
@@ -337,8 +337,11 @@ timeZoneCata utc cet cest t = case t of
 -- Data.Time module
 dataTimeZone = timeZoneCata
   Time.utc
-  (Time.hoursToTimeZone 1)
-  (Time.hoursToTimeZone 2)
+  (hoursToNamedTimeZone 1 "CET")
+  (hoursToNamedTimeZone 2 "CEST")
+  where
+    hoursToNamedTimeZone hours name =
+      (\t -> t { timeZoneName = name }) $ Time.hoursToTimeZone hours
 
 -- | Logged in user
 data User = User {

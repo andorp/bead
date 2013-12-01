@@ -104,6 +104,7 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
     H.b $ (translate i "Active period")
     H.div ! A.id (fieldName startDateDivId) $ do
        translate i "Start date"
+       fromString $ concat [" (", Time.timeZoneName timezone, ")"]
        H.br
        hiddenInput (fieldName assignmentStartDefaultDate) (fromString startDefDate)
        hiddenInput (fieldName assignmentStartDefaultHour) (fromString startDefHour)
@@ -111,6 +112,7 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
        hiddenInput (fieldName assignmentStartField) (fromString $ concat [startDefDate, " ", startDefHour, ":", startDefMin, ":00"])
     H.div ! A.id (fieldName endDateDivId) $ do
        translate i "End date"
+       fromString $ concat [" (", Time.timeZoneName timezone, ")"]
        H.br
        hiddenInput (fieldName assignmentEndDefaultDate) (fromString endDefDate)
        hiddenInput (fieldName assignmentEndDefaultHour) (fromString endDefHour)
