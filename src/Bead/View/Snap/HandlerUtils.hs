@@ -22,6 +22,7 @@ module Bead.View.Snap.HandlerUtils (
   , ContentHandlerError
   , contentHandlerError
   , contentHandlerErrorMap
+  , contentHandlerErrorMsg
   , module Control.Monad.Error
   ) where
 
@@ -78,6 +79,8 @@ contentHandlerError = ContentHandlerError . Just
 
 contentHandlerErrorMap :: (Maybe String -> a) -> ContentHandlerError -> a
 contentHandlerErrorMap f (ContentHandlerError x) = f x
+
+contentHandlerErrorMsg = contentHandlerErrorMap (maybe "Unknown message" id)
 
 type HandlerError a b c = ErrorT ContentHandlerError (Handler a b) c
 

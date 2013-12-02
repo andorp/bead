@@ -83,9 +83,8 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
               redirect "/"
   return ()
   where
-    handleError m = do
-      x <- m
-      either errorPage (const $ return ()) x
+    handleError m =
+      m >>= (either (login . Just . AuthError . contentHandlerErrorMsg) (const $ return ()))
 
     initSessionValues :: P.Page -> Username -> Handler App b ()
     initSessionValues page username = do
