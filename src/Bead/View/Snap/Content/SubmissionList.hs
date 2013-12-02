@@ -28,6 +28,7 @@ submissionList = getContentHandler submissionListPage
 data PageData = PageData {
     asKey :: AssignmentKey
   , smList :: SubmissionListDesc
+  , uTime :: UTCTime -> LocalTime
   }
 
 submissionListPage :: GETContentHandler
@@ -42,7 +43,9 @@ submissionListPage = withUserState $ \s -> do
           True  -> renderPagelet . withUserFrame s $ assignmentNotStartedYet
           False -> do
             sl <- runStoryE (submissionListDesc ak)
-            renderPagelet . withUserFrame s $ submissionListContent (PageData { asKey = ak, smList = sl })
+            tc <- usersTimeZoneConverter
+            renderPagelet . withUserFrame s $
+              submissionListContent (PageData { asKey = ak, smList = sl, uTime = tc })
 
 submissionListContent :: PageData -> Pagelet
 submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (className submissionListDiv) $ do
@@ -73,7 +76,7 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
     submissionLine (sk, time, status, t) = H.tr $ do
       H.td # informationalCell $ link
         (routeWithParams P.SubmissionDetails [requestParam (asKey p), requestParam sk])
-        (fromString . showDate $ time)
+        (fromString . showDate $ (uTime p) time)
       H.td # informationalCell $ (fromString status)
 
 invalidAssignment :: Pagelet

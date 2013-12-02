@@ -19,6 +19,8 @@ data AssignmentDesc = AssignmentDesc {
   , aTitle    :: String
   , aGroup    :: String
   , aTeachers :: [String]
+  -- DeadLine for the assignment in UTC
+  , aEndDate  :: UTCTime
   }
 
 assignmentDescPermissions = ObjectPermissions [

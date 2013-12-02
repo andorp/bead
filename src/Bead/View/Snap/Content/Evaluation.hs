@@ -5,6 +5,7 @@ module Bead.View.Snap.Content.Evaluation (
   ) where
 
 import Data.String (fromString)
+import Data.Time (UTCTime, LocalTime)
 import Control.Monad (liftM)
 
 import Bead.Domain.Types (readMsg)
@@ -31,6 +32,7 @@ modifyEvaluation = getPostContentHandler modifyEvaluationPage modifyEvaluationPo
 data PageData = PageData {
     sbmDesc :: SubmissionDesc
   , sbmKey  :: Either EvaluationKey SubmissionKey
+  , userTime :: UTCTime -> LocalTime
   }
 
 render (BinEval _) = renderPagelet
@@ -40,9 +42,11 @@ evaluationPage :: GETContentHandler
 evaluationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
   sd <- runStoryE (submissionDescription sk)
+  tc <- usersTimeZoneConverter
   let pageData = PageData {
       sbmKey  = Right sk
     , sbmDesc = sd
+    , userTime = tc
     }
   render (eConfig sd) $ withUserFrame s (evaluationContent pageData)
 
@@ -51,9 +55,11 @@ modifyEvaluationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
   ek <- getParameter evaluationKeyPrm
   sd <- runStoryE (submissionDescription sk)
+  tc <- usersTimeZoneConverter
   let pageData = PageData {
     sbmKey  = Left ek
   , sbmDesc = sd
+  , userTime = tc
   }
   render (eConfig sd) $ withUserFrame s (evaluationContent pageData)
 
@@ -82,6 +88,7 @@ modifyEvaluationPost = do
 evaluationContent :: PageData -> Pagelet
 evaluationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   let sd = sbmDesc pd
+      tc = userTime pd
   postForm (routeOf . evPage . sbmKey $ pd) $ H.div ! formDiv $ do
     H.div ! title $ H.h2 (translate i "Evaluation")
     H.div ! leftInfo $ do
@@ -102,7 +109,7 @@ evaluationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
     (fromString . eSolution $ sd)
   when (not . null $ eComments sd) $ do
-    translate i . commentsDiv . eComments $ sd
+    translate i . commentsDiv tc . eComments $ sd
 
   where
     defaultEvalCfg :: EvaluationResult

@@ -12,6 +12,7 @@ import Numeric (showHex)
 import Data.Maybe (catMaybes)
 import Data.List (intersperse)
 import Data.String (fromString)
+import Data.Time
 import Control.Monad (join, when, liftM)
 import Control.Monad.Identity
 import Control.Monad.Trans.Error
@@ -41,6 +42,8 @@ import Bead.Invariants
 home :: Content
 home = getContentHandler homePage
 
+type TimeConverter = UTCTime -> LocalTime
+
 data HomePageData = HomePageData {
     userState   :: UserState
   , hasCourses  :: Bool -- True if the user has administrated courses
@@ -49,17 +52,22 @@ data HomePageData = HomePageData {
     -- courses
   , assignments :: Maybe [(AssignmentKey, AssignmentDesc)]
   , sTables     :: [SubmissionTableInfo]
+    -- The convertes function that convert a given utc time into the users local
+    -- timezone
+  , timeConverter :: TimeConverter
   }
 
 homePage :: GETContentHandler
-homePage = withUserState $ \s ->
+homePage = withUserState $ \s -> do
+  converter <- usersTimeZoneConverter
   (renderPagelet . withUserFrame s . homeContent) =<<
     (runStoryE
        (HomePageData s
           <$> ((not . null) <$> administratedCourses)
           <*> ((not . null) <$> administratedGroups)
           <*> userAssignments
-          <*> submissionTables))
+          <*> submissionTables
+          <*> (return converter)))
 
 navigation :: [P.Page] -> Html
 navigation links = H.div ! A.id "menu" $ H.ul $ mapM_ linkToPage links
@@ -95,18 +103,18 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> H.div # textAlign "left" $ do
     H.hr
   H.h3 $ (translate i18n "Student's menu")
   H.p $ do
-    availableAssignments i18n (assignments d)
+    availableAssignments (timeConverter d) i18n (assignments d)
     navigation [P.GroupRegistration]
   where
     courseAdminUser = (==E.CourseAdmin)
     groupAdminUser  = (==E.GroupAdmin)
 
-availableAssignments :: I18N -> Maybe [(AssignmentKey,AssignmentDesc)] -> Html
-availableAssignments i18n Nothing = do
+availableAssignments :: TimeConverter -> I18N -> Maybe [(AssignmentKey,AssignmentDesc)] -> Html
+availableAssignments _ i18n Nothing = do
   translate i18n "You are not registered for any course, please pick up a course."
-availableAssignments i18n (Just []) = do
+availableAssignments _ i18n (Just []) = do
   translate i18n "There is no assignments published until now."
-availableAssignments i18n (Just as) = do
+availableAssignments timeconverter i18n (Just as) = do
   table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
     headerLine
     mapM_ assignmentLine as
@@ -118,6 +126,7 @@ availableAssignments i18n (Just as) = do
       headerCell "Course"
       headerCell "Teachers"
       headerCell "Assignment"
+      headerCell "Deadline"
     assignmentLine (k,a) = H.tr $ do
       case aActive a of
         True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (i18n "New submission")
@@ -125,6 +134,7 @@ availableAssignments i18n (Just as) = do
       dataCell (fromString . aGroup $ a)
       dataCell (fromString . join . intersperse ", " . aTeachers $ a)
       dataCell $ link (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
+      dataCell (fromString . showDate . timeconverter $ aEndDate a)
 
 htmlSubmissionTables :: I18N -> [SubmissionTableInfo] -> Html
 htmlSubmissionTables i18n xs = mapM_ (htmlSubmissionTable i18n) . zip [1..] $ xs

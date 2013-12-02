@@ -496,6 +496,7 @@ userAssignments = logAction INFO "lists assignments" $ do
           , aTitle  = assignmentName a
           , aTeachers = adminNames
           , aGroup  = name
+          , aEndDate = assignmentEnd a
           }
           return $ Just (ak, desc)
 

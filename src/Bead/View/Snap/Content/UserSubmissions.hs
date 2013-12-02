@@ -14,8 +14,10 @@ import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import Data.String (fromString)
-import Data.Time (UTCTime)
+import Data.Time (UTCTime, LocalTime)
 import Text.Printf (printf)
+
+type UserTime = UTCTime -> LocalTime
 
 userSubmissions :: Content
 userSubmissions = getContentHandler userSubmissionPage
@@ -27,14 +29,16 @@ userSubmissionPage = withUserState $ \s -> do
   mDesc <- runStoryE $ U.userSubmissions username aKey
   case mDesc of
     Nothing -> renderPagelet $ withUserFrame s unauthorized
-    Just  d -> renderPagelet $ withUserFrame s (userSubmissionHtml d)
+    Just  d -> do
+      tc <- usersTimeZoneConverter
+      renderPagelet $ withUserFrame s (userSubmissionHtml tc d)
 
 unauthorized :: Pagelet
 unauthorized = onlyHtml $ mkI18NHtml $ const $
   "You have tried to reach a submission that not belongs to your groups"
 
-userSubmissionHtml :: UserSubmissionDesc -> Pagelet
-userSubmissionHtml u = onlyHtml $ mkI18NHtml $ \i18n -> do
+userSubmissionHtml :: UserTime -> UserSubmissionDesc -> Pagelet
+userSubmissionHtml ut u = onlyHtml $ mkI18NHtml $ \i18n -> do
   H.table # centerTable $ do
     H.tr $ do
       firstCol  . i18n $ "Course:"
@@ -47,13 +51,13 @@ userSubmissionHtml u = onlyHtml $ mkI18NHtml $ \i18n -> do
       secondCol . usStudent $ u
   H.p $ do
     H.h3 . fromString . i18n $ "Submitted Solutions"
-    submissionTable i18n . usSubmissions $ u
+    submissionTable ut i18n . usSubmissions $ u
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft        $ fromString t
 
-submissionTable :: I18N -> [(SubmissionKey, UTCTime, SubmissionInfo)] -> Html
-submissionTable i18n s = do
+submissionTable :: UserTime -> I18N -> [(SubmissionKey, UTCTime, SubmissionInfo)] -> Html
+submissionTable userTime i18n s = do
   table "submission-table" (className userSubmissionTable) # informationalTable $ do
     headerLine
     mapM_ submissionLine s
@@ -80,8 +84,8 @@ submissionTable i18n s = do
     sbmLink si sk t = case siEvaluationKey si of
       Nothing -> link
         (routeWithParams P.Evaluation [requestParam sk])
-        (fromString . showDate $ t)
+        (fromString . showDate $ userTime t)
       Just ek -> link
         (routeWithParams P.ModifyEvaluation [requestParam sk,requestParam ek] )
-        (showDate t)
+        (showDate $ userTime t)
 

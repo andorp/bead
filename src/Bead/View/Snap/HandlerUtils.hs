@@ -16,6 +16,7 @@ module Bead.View.Snap.HandlerUtils (
   , sessionToken
   , userState
   , userTimeZone
+  , usersTimeZoneConverter
   , logout
   , HandlerError(..)
   , ContentHandlerError
@@ -26,7 +27,7 @@ module Bead.View.Snap.HandlerUtils (
 
 -- Bead imports
 
-import Bead.Domain.Entities (TimeZone)
+import Bead.Domain.Entities (TimeZone, dataTimeZone)
 import Bead.Controller.ServiceContext hiding (serviceContext, name)
 import Bead.Controller.Logging as L
 import qualified Bead.Controller.Pages as P
@@ -41,6 +42,8 @@ import Bead.View.Snap.RouteOf (ReqParam(..))
 -- Haskell imports
 
 import Data.String (IsString(..))
+import Data.Time (UTCTime, LocalTime)
+import qualified Data.Time as Time
 import Data.Maybe (isNothing, fromJust)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
@@ -109,6 +112,12 @@ userState = do
 -- Produces a handler that returns the user's actual time zone
 userTimeZone :: (Error e) => ErrorT e (Handler App b) TimeZone
 userTimeZone = timezone <$> userState
+
+-- Produces the given UTCTime into ZonedTime in the user's timezone
+usersTimeZoneConverter :: (Error e) => ErrorT e (Handler App b) (UTCTime -> LocalTime)
+usersTimeZoneConverter = do
+  tz <- dataTimeZone <$> userTimeZone
+  return $ Time.utcToLocalTime tz
 
 -- TODO: Show some error
 errorPageHandler :: T.Text -> Handler App b ()

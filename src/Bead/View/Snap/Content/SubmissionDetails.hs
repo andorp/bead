@@ -3,7 +3,7 @@ module Bead.View.Snap.Content.SubmissionDetails (
     submissionDetails
   ) where
 
-import Data.Time (UTCTime, getCurrentTime)
+import Data.Time (UTCTime, LocalTime, getCurrentTime)
 import Data.List (intersperse)
 import Data.String (fromString)
 import Control.Monad (liftM)
@@ -31,6 +31,7 @@ data PageData = PageData {
     smKey :: SubmissionKey
   , aKey  :: AssignmentKey
   , smDetails :: SubmissionDetailsDesc
+  , uTime :: UTCTime -> LocalTime
   }
 
 submissionDetailsPage :: GETContentHandler
@@ -42,11 +43,13 @@ submissionDetailsPage = withUserState $ \s -> do
       Nothing -> renderPagelet . withUserFrame s $ invalidSubmission
       Just sm -> do
         sd <- runStoryE $ submissionDetailsDesc sk
+        tc <- usersTimeZoneConverter
         renderPagelet . withUserFrame s $
           submissionDetailsContent PageData {
               smKey = sk
             , aKey  = ak
             , smDetails = sd
+            , uTime = tc
             }
 
 submissionDetailsPostHandler :: POSTContentHandler
@@ -66,6 +69,7 @@ submissionDetailsPostHandler = do
 submissionDetailsContent :: PageData -> Pagelet
 submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
   let sm = smDetails p
+      tc = uTime p
   H.table $ do
     H.tr $ do
       H.td # textAlignRight $ H.b $ fromString (i "Group / Course:")
@@ -83,7 +87,7 @@ submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
   H.h2 $ (translate i "Evaluation")
   (fromString . sdStatus $ sm)
   when (not . null $ sdComments sm) $ do
-    translate i . commentsDiv $ sdComments sm
+    translate i . commentsDiv tc $ sdComments sm
   H.hr
   H.h2 (translate i "New comment")
   postForm (routeOf P.SubmissionDetails) $ do

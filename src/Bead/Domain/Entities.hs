@@ -8,7 +8,7 @@ import Bead.Invariants (Invariants(..), UnitTests(..))
 #endif
 
 import Data.Char (toLower)
-import Data.Time (UTCTime(..), timeZoneName)
+import Data.Time (UTCTime(..), LocalTime, timeZoneName)
 import Data.Time.Format (formatTime)
 import qualified Data.Time as Time
 import Control.Monad (join)
@@ -344,8 +344,8 @@ dataTimeZone = timeZoneCata
     hoursToNamedTimeZone hours name =
       (\t -> t { timeZoneName = name }) $ Time.hoursToTimeZone hours
 
-showDate :: UTCTime -> String
-showDate = formatTime defaultTimeLocale "%F, %T (%Z)"
+showDate :: LocalTime -> String
+showDate = formatTime defaultTimeLocale "%F, %T"
 
 -- | Logged in user
 data User = User {
