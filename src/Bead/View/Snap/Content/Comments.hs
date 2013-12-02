@@ -13,15 +13,13 @@ import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-type UserTime = (UTCTime -> LocalTime)
-
-commentsDiv :: UserTime -> [Comment] -> I18NHtml
+commentsDiv :: UserTimeConverter -> [Comment] -> I18NHtml
 commentsDiv t cs = mkI18NHtml $ \i -> do
   H.div ! A.id "comments" $ do
     H.h2 (translate i "Comments")
     mapM_ (commentPar t) cs
 
-commentPar :: UserTime -> Comment -> Html
+commentPar :: UserTimeConverter -> Comment -> Html
 commentPar t c = H.div # commentTextDiv $ do
   H.p # textAlign "left" $ fromString . showDate . t . commentDate $ c
   H.pre # commentTextPre $ fromString . comment $ c

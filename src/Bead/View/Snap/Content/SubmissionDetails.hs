@@ -31,7 +31,7 @@ data PageData = PageData {
     smKey :: SubmissionKey
   , aKey  :: AssignmentKey
   , smDetails :: SubmissionDetailsDesc
-  , uTime :: UTCTime -> LocalTime
+  , uTime :: UserTimeConverter
   }
 
 submissionDetailsPage :: GETContentHandler
@@ -80,6 +80,9 @@ submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
     H.tr $ do
       H.td # textAlignRight $ H.b $ fromString (i "Assignment:")
       H.td $ fromString (assignmentName . sdAssignment $ sm)
+    H.tr $ do
+      H.td # textAlignRight $ H.b $ fromString (i "Deadline:")
+      H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
   H.h2 $ (translate i "Assignment Text")
   H.div # assignmentTextDiv $ fromString . assignmentDesc $ sdAssignment $ sm
   H.h2 (translate i "Submission Text")

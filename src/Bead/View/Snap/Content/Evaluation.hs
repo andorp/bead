@@ -32,7 +32,7 @@ modifyEvaluation = getPostContentHandler modifyEvaluationPage modifyEvaluationPo
 data PageData = PageData {
     sbmDesc :: SubmissionDesc
   , sbmKey  :: Either EvaluationKey SubmissionKey
-  , userTime :: UTCTime -> LocalTime
+  , userTime :: UserTimeConverter
   }
 
 render (BinEval _) = renderPagelet

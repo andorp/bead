@@ -29,15 +29,18 @@ data PageData = PageData {
     asKey   :: AssignmentKey
   , asValue :: Assignment
   , asDesc  :: AssignmentDesc
+  , asTimeConv :: UserTimeConverter
   }
 
 submissionPage :: GETContentHandler
 submissionPage = withUserState $ \s -> do
   let render p = renderPagelet $ withUserFrame s p
   ak <- getParameter assignmentKeyPrm
+  ut <- usersTimeZoneConverter
   userAssignmentForSubmission
     ak
-    (\desc asg -> render $ submissionContent (PageData { asKey = ak, asValue = asg, asDesc = desc }))
+    (\desc asg -> render $ submissionContent
+       (PageData { asKey = ak, asValue = asg, asDesc = desc, asTimeConv = ut }))
     (render invalidAssignment)
 
 submissionPostHandler :: POSTContentHandler
@@ -61,6 +64,9 @@ submissionContent p = onlyHtml $ mkI18NHtml $ \i -> do
       H.tr $ do
         H.td $ H.b $ (translate i "Assignment: ")
         H.td $ (fromString . assignmentName . asValue $ p)
+      H.tr $ do
+        H.td $ H.b $ (translate i "Deadline: ")
+        H.td $ (fromString . showDate . (asTimeConv p) . assignmentEnd $ asValue p)
     H.h2 (translate i "Description")
     H.div # assignmentTextDiv $
       markdownToHtml . assignmentDesc . asValue $ p

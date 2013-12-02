@@ -28,7 +28,7 @@ submissionList = getContentHandler submissionListPage
 data PageData = PageData {
     asKey :: AssignmentKey
   , smList :: SubmissionListDesc
-  , uTime :: UTCTime -> LocalTime
+  , uTime :: UserTimeConverter
   }
 
 submissionListPage :: GETContentHandler
@@ -59,6 +59,9 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
     H.tr $ do
       firstCol (i "Assignment:")
       secondCol (assignmentName . slAssignment . smList $ p)
+    H.tr $ do
+      firstCol (i "Deadline:")
+      secondCol (showDate . (uTime p) . assignmentEnd . slAssignment $ smList p)
   H.h2 $ (translate i "Assignment Text")
   H.div # assignmentTextDiv $
     (markdownToHtml . assignmentDesc . slAssignment . smList $ p)

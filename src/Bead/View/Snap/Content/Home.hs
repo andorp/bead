@@ -42,8 +42,6 @@ import Bead.Invariants
 home :: Content
 home = getContentHandler homePage
 
-type TimeConverter = UTCTime -> LocalTime
-
 data HomePageData = HomePageData {
     userState   :: UserState
   , hasCourses  :: Bool -- True if the user has administrated courses
@@ -54,7 +52,7 @@ data HomePageData = HomePageData {
   , sTables     :: [SubmissionTableInfo]
     -- The convertes function that convert a given utc time into the users local
     -- timezone
-  , timeConverter :: TimeConverter
+  , timeConverter :: UserTimeConverter
   }
 
 homePage :: GETContentHandler
@@ -109,7 +107,7 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> H.div # textAlign "left" $ do
     courseAdminUser = (==E.CourseAdmin)
     groupAdminUser  = (==E.GroupAdmin)
 
-availableAssignments :: TimeConverter -> I18N -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> Html
+availableAssignments :: UserTimeConverter -> I18N -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> Html
 availableAssignments _ i18n Nothing = do
   translate i18n "You are not registered for any course, please pick up a course."
 availableAssignments _ i18n (Just []) = do

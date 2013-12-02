@@ -17,8 +17,6 @@ import Data.String (fromString)
 import Data.Time (UTCTime, LocalTime)
 import Text.Printf (printf)
 
-type UserTime = UTCTime -> LocalTime
-
 userSubmissions :: Content
 userSubmissions = getContentHandler userSubmissionPage
 
@@ -37,7 +35,7 @@ unauthorized :: Pagelet
 unauthorized = onlyHtml $ mkI18NHtml $ const $
   "You have tried to reach a submission that not belongs to your groups"
 
-userSubmissionHtml :: UserTime -> UserSubmissionDesc -> Pagelet
+userSubmissionHtml :: UserTimeConverter -> UserSubmissionDesc -> Pagelet
 userSubmissionHtml ut u = onlyHtml $ mkI18NHtml $ \i18n -> do
   H.table # centerTable $ do
     H.tr $ do
@@ -56,7 +54,7 @@ userSubmissionHtml ut u = onlyHtml $ mkI18NHtml $ \i18n -> do
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft        $ fromString t
 
-submissionTable :: UserTime -> I18N -> [(SubmissionKey, UTCTime, SubmissionInfo)] -> Html
+submissionTable :: UserTimeConverter -> I18N -> [(SubmissionKey, UTCTime, SubmissionInfo)] -> Html
 submissionTable userTime i18n s = do
   table "submission-table" (className userSubmissionTable) # informationalTable $ do
     headerLine

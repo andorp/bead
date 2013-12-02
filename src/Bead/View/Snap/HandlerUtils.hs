@@ -20,6 +20,7 @@ module Bead.View.Snap.HandlerUtils (
   , logout
   , HandlerError(..)
   , ContentHandlerError
+  , UserTimeConverter
   , contentHandlerError
   , contentHandlerErrorMap
   , contentHandlerErrorMsg
@@ -116,8 +117,12 @@ userState = do
 userTimeZone :: (Error e) => ErrorT e (Handler App b) TimeZone
 userTimeZone = timezone <$> userState
 
+-- Represents a functions that converts a given utctime into
+-- the user's timezone
+type UserTimeConverter = UTCTime -> LocalTime
+
 -- Produces the given UTCTime into ZonedTime in the user's timezone
-usersTimeZoneConverter :: (Error e) => ErrorT e (Handler App b) (UTCTime -> LocalTime)
+usersTimeZoneConverter :: (Error e) => ErrorT e (Handler App b) UserTimeConverter
 usersTimeZoneConverter = do
   tz <- dataTimeZone <$> userTimeZone
   return $ Time.utcToLocalTime tz

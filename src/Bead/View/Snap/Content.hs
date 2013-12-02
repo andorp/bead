@@ -33,6 +33,7 @@ module Bead.View.Snap.Content (
   , RequestParam(..)
   , ReqParamValue(..)
   , Html
+  , UserTimeConverter
   , module Snap
   , module Data.ByteString.Char8
   , module Data.Monoid
