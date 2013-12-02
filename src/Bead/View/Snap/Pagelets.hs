@@ -53,6 +53,7 @@ document headers body = H.docTypeHtml $ do
   H.head $ do
     H.title "BE-AD"
     H.meta ! A.charset "UTF-8"
+    H.link ! A.rel "shortcut icon" ! A.href "icon.ico"
     headers
     css "header.css"
   H.body $ body

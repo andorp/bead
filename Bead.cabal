@@ -28,6 +28,7 @@ Data-Files:
   static/screen.css,
   static/images/*.png,
   static/images/*.gif,
+  static/icon.ico,
 
   cookie
 
