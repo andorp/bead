@@ -76,7 +76,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
               liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
               A.logout
               withTop sessionManager $ commitSession
-              errorPageWithTitle "Login" "Some internal error happened. Please notify the system administrator"
+              errorPageWithTitle "Bejelentkezés" "Belső hiba történt, jelezd az üzemeltetőknek!"
             Right (val,userState) -> do
               initSessionValues (page userState) unameFromAuth
               withTop sessionManager $ commitSession
@@ -103,12 +103,12 @@ userForm :: String -> Html
 userForm act = do
   postForm act $ do
     table (formId loginForm) (formId loginForm) $ do
-      tableLine "Login:" (textInput (fieldName loginUsername) 20 Nothing ! A.required "")
-      tableLine "Password:" (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
-    submitButton (fieldName loginSubmitBtn) "Login"
+      tableLine "NEPTUN:" (textInput (fieldName loginUsername) 20 Nothing ! A.required "")
+      tableLine "Jelszó:" (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
+    submitButton (fieldName loginSubmitBtn) "Bejelentkezés"
 
 loginPage :: Maybe AuthFailure -> Html
-loginPage err = withTitleAndHead "Login" content
+loginPage err = withTitleAndHead "Bejelentkezés" content
   where
     content = do
       userForm "/login"
@@ -116,20 +116,18 @@ loginPage err = withTitleAndHead "Login" content
             ((H.p ! A.style "font-size: smaller") . fromString . show)
             err
       H.p $ do
-        "Don't have a login yet? "
 #ifdef EMAIL_REGISTRATION
-        H.a ! A.href "/reg_request" $ "Create new user"
+        H.a ! A.href "/reg_request" $ "Regisztráció"
 #else
-        H.a ! A.href "/new_user" $ "Create new user"
+        H.a ! A.href "/new_user" $ "Regisztráció"
 #endif
         H.br
-        "Forgotten password? "
-        H.a ! A.href "/reset_pwd" $ "Click here"
+        H.a ! A.href "/reset_pwd" $ "Elfelejtett jelszó"
 
 -- Keeps only the authentication failures which are
 -- visible for the user
 visibleFailure :: AuthFailure -> Maybe AuthFailure
 visibleFailure (AuthError e)     = Just (AuthError e)
-visibleFailure IncorrectPassword = Just IncorrectPassword
-visibleFailure UserNotFound      = Just UserNotFound
+visibleFailure IncorrectPassword = Just (AuthError "Hibás jelszó!")
+visibleFailure UserNotFound      = Just (AuthError "A felhasználó nem található!")
 visibleFailure _ = Nothing

@@ -36,10 +36,10 @@ errorPageWithTitle title = blaze . (page title) . Just
 page :: String -> (Maybe String) -> Html
 page t e = withTitleAndHead t $ do
   H.div $ do
-    H.h2 $ "Some error happened"
+    H.h2 $ "Valami hiba történt... :-)"
     H.p $
       maybe (return ()) fromString e
     H.br
   H.div $
-    link "/" "Go back to login page"
+    link "/" "Vissza a bejelentkezésehez"
 

@@ -33,22 +33,22 @@ userSubmissionPage = withUserState $ \s -> do
 
 unauthorized :: Pagelet
 unauthorized = onlyHtml $ mkI18NHtml $ const $
-  "You have tried to reach a submission that not belongs to your groups"
+  "Olyan megoldást próbáltál meg elérni, amelyik nem tartozik hozzád!"
 
 userSubmissionHtml :: UserTimeConverter -> UserSubmissionDesc -> Pagelet
 userSubmissionHtml ut u = onlyHtml $ mkI18NHtml $ \i18n -> do
   H.table # centerTable $ do
     H.tr $ do
-      firstCol  . i18n $ "Course:"
+      firstCol  . i18n $ "Tárgy:"
       secondCol . usCourse $ u
     H.tr $ do
-      firstCol  . i18n $ "Assignment:"
+      firstCol  . i18n $ "Feladat:"
       secondCol . usAssignmentName $ u
     H.tr $ do
-      firstCol  . i18n $ "Student:"
+      firstCol  . i18n $ "Hallgató:"
       secondCol . usStudent $ u
   H.p $ do
-    H.h3 . fromString . i18n $ "Submitted Solutions"
+    H.h3 . fromString . i18n $ "Beadott megoldások"
     submissionTable ut i18n . usSubmissions $ u
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
@@ -62,8 +62,8 @@ submissionTable userTime i18n s = do
 
   where
     headerLine = H.tr $ do
-      (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ "Date of submission"
-      (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ "Results"
+      (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ "Beküldés dátuma"
+      (H.th # (informationalCell <> grayBackground)) . fromString . i18n $ "Értékelés"
 
     submissionLine (sk,t,si) = H.tr $ do
       H.td # informationalCell $ sbmLink si sk t
@@ -71,11 +71,11 @@ submissionTable userTime i18n s = do
 
     submissionInfo :: SubmissionInfo -> String
     submissionInfo = submissionInfoCata
-      "Not Found"
-      "Unevaluated"
+      "Nem található"
+      "Nem értékelt"
       (const (evaluationDataMap bin pct))
 
-    bin (Binary b) = resultCata (i18n "Passed") (i18n "Failed") b
+    bin (Binary b) = resultCata (i18n "Elfogadott") (i18n "Elutasított") b
     pct (Percentage (Scores [x])) = printf "%3.2f%%" (100 * x)
     pct (Percentage _) = "Error: ???%"
 

@@ -41,6 +41,7 @@ import qualified Control.Monad.CatchIO as CMC
 import qualified Control.Exception as CE
 import Control.Monad.Trans (lift)
 import qualified Control.Monad.Error as CME
+import Text.Printf (printf)
 
 -- Snap and Blaze imports
 
@@ -96,7 +97,7 @@ userIsLoggedInFilter inside outside onError = do
   sessionVer <- withTop sessionManager $ getSessionVersion
   case sessionVer of
     -- Session timed out
-    Nothing -> onError "Session timed out"
+    Nothing -> onError "Lejárt a munkamenet!"
     -- Active session
     Just _ -> do
       e <- CME.runErrorT loggedInFilter
@@ -120,18 +121,16 @@ userIsLoggedInFilter inside outside onError = do
       sessionVer     <- lift . withTop sessionManager $ getSessionVersion
 
       -- Guards: invalid session version or invalid user
-      when (sessionVer /= (Just sessionVersion)) . CME.throwError . strMsg $ "Invalid session version was found"
-      when (isNothing serverSideUser)            . CME.throwError . strMsg $ "Unknown user from session"
+      when (sessionVer /= (Just sessionVersion)) . CME.throwError . strMsg $ "Nem megfelelő a munkamenet verziója!"
+      when (isNothing serverSideUser)            . CME.throwError . strMsg $ "Ismeretlen felhasználó!"
 
       -- Username and page from session
       let unameFromAuth = usernameFromAuthUser . fromJust $ serverSideUser
       usernameFromSession <- lift . withTop sessionManager $ usernameFromSession
 
       -- Guard: invalid user in session
-      when (usernameFromSession /= (Just unameFromAuth)) . CME.throwError . strMsg  $ join [
-              "hLoggedIn: invalid username from session ", show unameFromAuth
-            , ", ", show usernameFromSession
-            ]
+      when (usernameFromSession /= (Just unameFromAuth)) . CME.throwError . strMsg $
+        printf "Hibás felhasználó a munkamenetben: %s, %s." (show unameFromAuth) (show usernameFromSession)
 
       -- Guard: Is user logged in?
       context <- lift . withTop serviceContext $ getServiceContext
@@ -139,18 +138,16 @@ userIsLoggedInFilter inside outside onError = do
       let users = userContainer context
           usrToken = userToken (unameFromAuth, tkn)
       isLoggedIn <- lift (liftIO $ users `isUserLoggedIn` usrToken)
-      unless (isLoggedIn) . CME.throwError . strMsg  $ "User is not logged in persistence"
+      unless (isLoggedIn) . CME.throwError . strMsg  $ "A felhasználó a szerveren nincs bejelentkezve!"
 
       -- Guard: User's actul page differs from the one that is stored on the server
       pageFromSession <- lift . withTop sessionManager $ actPageFromSession
       mUserData       <- lift . liftIO $ userData users usrToken -- unameFromAuth
       when (isNothing mUserData) . CME.throwError . strMsg  $
-        "No user data was found for the user " ++ show unameFromAuth
-      when (Just (page (fromJust mUserData)) /= pageFromSession) . CME.throwError . strMsg  $ join [
-          "Page stored in session and in server differs: ",
-          "Server Side:", show (page (fromJust mUserData)), " <=> ",
-          "Client Side:", show pageFromSession
-        ]
+        printf "Nem található a felhasználóhoz adat: %s" (show unameFromAuth)
+      when (Just (page (fromJust mUserData)) /= pageFromSession) . CME.throwError . strMsg $
+        printf "Nem egyezik a szerveren és a munkamenetben tárolt oldal: %s (szerver) <=> %s (kliens)"
+          (show $ page $ fromJust mUserData) (show pageFromSession)
 
       -- Correct user is logged in, run the handler and save the data
       result <- lift inside
@@ -160,7 +157,7 @@ userIsLoggedInFilter inside outside onError = do
           mUserData <- lift (liftIO $ users `userData` usrToken)
 
           when (isNothing mUserData) . CME.throwError . contentHandlerError $
-            "No user data was found for the user " ++ show unameFromAuth
+            printf "Nem található adat a felhasználóhoz: %s" (show unameFromAuth)
 
           lift $ (CMC.catch
                     (withTop sessionManager . setActPageInSession . page . fromJust $ mUserData)
@@ -175,7 +172,7 @@ redirectToActPage = do
     case pageInSession == Just (page uState) of
       False -> do
         lift $ logMessage ERROR $ "Actual page data stored in session and in the server differ"
-        throwError . strMsg $ "Actual page data stored in session and in the server differ"
+        throwError . strMsg $ "A munkamenetben és a szerveren tárolt adatok nem egyeznek meg!"
       True ->  redirect . routeOf . page $ uState
 
 -- | Represents the result of a GET or POST handler

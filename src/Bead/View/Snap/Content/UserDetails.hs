@@ -38,11 +38,11 @@ userDetailForm :: User -> Pagelet
 userDetailForm u = onlyHtml $ mkI18NHtml $ \i18n -> do
   postForm (routeOf P.UserDetails) $ do
     inputPagelet . defaultValue $ u
-    submitButton (fieldName saveChangesBtn) (i18n "Save changes")
+    submitButton (fieldName saveChangesBtn) (i18n "Mentés")
 
 userDoesNotExist :: Username -> Pagelet
 userDoesNotExist username = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ do
-    translate i "User does not exist:"
+    translate i "Nem létező felhasználó:"
     fromString . str $ username
 

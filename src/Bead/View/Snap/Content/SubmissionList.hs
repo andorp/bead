@@ -51,28 +51,28 @@ submissionListContent :: PageData -> Pagelet
 submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (className submissionListDiv) $ do
   H.table $ do
     H.tr $ do
-      firstCol  (i "Group / Course:")
+      firstCol  (i "Tárgy, csoport:")
       secondCol (slGroup . smList $ p)
     H.tr $ do
-      firstCol (i "Teacher:")
+      firstCol (i "Oktató:")
       secondCol (join . slTeacher . smList $ p)
     H.tr $ do
-      firstCol (i "Assignment:")
+      firstCol (i "Feladat:")
       secondCol (assignmentName . slAssignment . smList $ p)
     H.tr $ do
-      firstCol (i "Deadline:")
+      firstCol (i "Határidő:")
       secondCol (showDate . (uTime p) . assignmentEnd . slAssignment $ smList p)
-  H.h2 $ (translate i "Assignment Text")
+  H.h2 $ (translate i "Részletes leírás")
   H.div # assignmentTextDiv $
     (markdownToHtml . assignmentDesc . slAssignment . smList $ p)
   let submissions = slSubmissions . smList $ p
-  H.h2 (translate i "List of Submissions")
+  H.h2 (translate i "Beadott megoldások")
   if (not . null $ submissions)
     then do
       table (fieldName submissionTableName) (className submissionListTable) # informationalTable $
         mapM_ submissionLine submissions
     else do
-      translate i "No submissions yet."
+      translate i "Nincsenek még beadott megoldások."
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft $ fromString t
@@ -84,8 +84,8 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
 
 invalidAssignment :: Pagelet
 invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->
-  (translate i "You have tried to open an assignment that not belongs to you")
+  (translate i "Olyan feladatot próbáltál megnyitni, amelyik nem hozzád tartozik!")
 
 assignmentNotStartedYet :: Pagelet
 assignmentNotStartedYet = onlyHtml $ mkI18NHtml $ \i ->
-  (translate i "You have tried to open an assignment that has not started yet")
+  (translate i "Olyan feladatot próbáltál megnyitni, amelyik nem érhető el!")

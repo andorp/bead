@@ -67,7 +67,7 @@ evaluationPostHandler :: POSTContentHandler
 evaluationPostHandler = do
   sk <- getParameter submissionKeyPrm
   ev <- getParameter evaluationValuePrm
-  er <- getJSONParam (fieldName evaluationResultField) "Evaluation result is not found"
+  er <- getJSONParam (fieldName evaluationResultField) "Nem található értékelés!"
   let e = C.Evaluation {
     evaluationResult = evResult er
   , writtenEvaluation = ev
@@ -78,7 +78,7 @@ modifyEvaluationPost :: POSTContentHandler
 modifyEvaluationPost = do
   ek <- getParameter evaluationKeyPrm
   ev <- getParameter evaluationValuePrm
-  er <- getJSONParam (fieldName evaluationResultField) "Evaluation result is not found"
+  er <- getJSONParam (fieldName evaluationResultField) "Nem található értékelés!"
   let e = C.Evaluation {
     evaluationResult = evResult er
   , writtenEvaluation = ev
@@ -90,22 +90,22 @@ evaluationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   let sd = sbmDesc pd
       tc = userTime pd
   postForm (routeOf . evPage . sbmKey $ pd) $ H.div ! formDiv $ do
-    H.div ! title $ H.h2 (translate i "Evaluation")
+    H.div ! title $ H.h2 (translate i "Értékelés")
     H.div ! leftInfo $ do
       H.table $ do
         H.tr $ do
-          H.td $ H.b $ (translate i "Course, Group: ")
+          H.td $ H.b $ (translate i "Tárgy, csoport: ")
           H.td $ (fromString . eGroup $ sd)
         H.tr $ do
-          H.td $ H.b $ (translate i "Student: ")
+          H.td $ H.b $ (translate i "Hallgató: ")
           H.td $ (fromString . eStudent $ sd)
       H.div ! A.id (fieldName evaluationPercentageDiv) $
         translate i . inputEvalResult . eConfig $ sd
-      submitButton (fieldName saveEvalBtn) (i "Save Evaluation")
+      submitButton (fieldName saveEvalBtn) (i "Mentés")
     H.div ! rightText $ do
       textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv
       hiddenKeyField . sbmKey $ pd
-  H.div $ H.h2 $ (translate i "Submitted solution")
+  H.div $ H.h2 $ (translate i "Beadott megoldás")
   H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
     (fromString . eSolution $ sd)
   when (not . null $ eComments sd) $ do
@@ -124,7 +124,7 @@ evaluationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
 inputEvalResult :: EvaluationConfig -> I18NHtml
 inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
   valueSelection valueAndText (fieldName evaluationResultField) $
-    [(Passed, i "Passed"), (Failed, i "Failed")]
+    [(Passed, i "Elfogadott"), (Failed, i "Elutasított")]
   where
     valueAndText :: (Result, String) -> (String, String)
     valueAndText (v,n) = (errorOnNothing . encodeToFay . EvResult . mkEvalResult $ Binary v, n)
@@ -135,7 +135,7 @@ inputEvalResult (PctEval cfg) = mkI18NHtml $ \i -> do
     (fieldName evaluationResultField)
     (fromString . errorOnNothing . encodeToFay . EvResult . mkEvalResult . Percentage $ Scores [0.0])
 
-errorOnNothing = maybe (error "Error is encoding input result") id
+errorOnNothing = maybe (error "Hiba a bemenet kódolásában!") id
 
 -- CSS Section
 

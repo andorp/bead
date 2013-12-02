@@ -40,17 +40,17 @@ profileContent :: User -> Pagelet
 profileContent user = onlyHtml $ mkI18NHtml $ \i -> do
   postForm (routeOf Profile) $ do
     table (fieldName profileTable) (fieldName profileTable) $ do
-      tableLine (i "Email address: ") (emailCata (H.small . H.b . fromString) $ u_email user)
-      tableLine (i "Full name: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
-      tableLine (i "Time zone: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
-    submitButton (fieldName changeProfileBtn) (i "Save")
+      tableLine (i "Email cím: ") (emailCata (H.small . H.b . fromString) $ u_email user)
+      tableLine (i "Teljes név: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
+      tableLine (i "Időzóna: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
+    submitButton (fieldName changeProfileBtn) (i "Mentés")
   H.br
   postForm (routeOf ChangePassword) `withId` (rFormId changePwdForm) $ do
     table (fieldName changePasswordTable) (fieldName changePasswordTable) $ do
-      tableLine (i "Old Password: ") $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
-      tableLine (i "New Password: ") $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
-      tableLine (i "New Password Again: ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
-    submitButton (fieldName changePasswordBtn) (i "Change")
+      tableLine (i "Régi jelszó: ") $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
+      tableLine (i "Új jelszó: ") $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
+      tableLine (i "Új jelszó (ismét): ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
+    submitButton (fieldName changePasswordBtn) (i "Csere")
 
 changePassword :: Content
 changePassword = postContentHandler $ do
@@ -58,4 +58,4 @@ changePassword = postContentHandler $ do
   newPwd <- getParameter newPasswordPrm
   checkCurrentAuthPassword oldPwd
   updateCurrentAuthPassword newPwd
-  return . StatusMessage $ "Password has been changed."
+  return . StatusMessage $ "A jelszó megváltozott!"

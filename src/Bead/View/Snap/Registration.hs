@@ -41,6 +41,7 @@ import Data.Text.Encoding (decodeUtf8)
 import qualified Data.List as L
 import qualified Data.ByteString.Char8 as B
 import Network.Mail.Mime
+import Text.Printf (printf)
 
 -- Snap and Blaze imports
 
@@ -71,9 +72,9 @@ createAdminUser persist usersdb name password = do
     }
   createdUser <- lookupByLogin mgr (T.pack name)
   case createdUser of
-    Nothing -> error "No user was created"
+    Nothing -> error "Nem jött létre felhasználó!"
     Just u' -> case passwordFromAuthUser u' of
-      Nothing  -> error "No password was given"
+      Nothing  -> error "Nem lett jelszó megadva!"
       Just pwd -> P.runPersist $ P.saveUser persist usr
   return ()
 
@@ -93,10 +94,10 @@ readParameter param = do
   return (reqParam >>= decode param . T.unpack . decodeUtf8)
 
 backToMain :: String
-backToMain = "Go back to the login page"
+backToMain = "Vissza a bejelentkezéshez"
 
 registrationTitle :: String
-registrationTitle = "Registration"
+registrationTitle = "Regisztráció"
 
 #ifndef EMAIL_REGISTRATION
 registration :: Handler App (AuthManager App) ()
@@ -176,11 +177,11 @@ registrationForm :: String -> Html
 registrationForm postAction = do
   postForm postAction ! (A.id . formId $ regForm) $ do
     table (fieldName registrationTable) (fieldName registrationTable) $ do
-      tableLine "Username:"      $ textInput (fieldName loginUsername)     20 Nothing ! A.required ""
-      tableLine "Password:"      $ passwordInput (fieldName loginPassword) 20 Nothing ! A.required ""
-      tableLine "Email address:" $ textInput (fieldName regEmailAddress)   20 Nothing ! A.required ""
-      tableLine "Full name:"     $ textInput (fieldName regFullName)       20 Nothing ! A.required ""
-    submitButton (fieldName regSubmitBtn) "Register"
+      tableLine "NEPTUN:"      $ textInput (fieldName loginUsername)     20 Nothing ! A.required ""
+      tableLine "Jelszó:"      $ passwordInput (fieldName loginPassword) 20 Nothing ! A.required ""
+      tableLine "Email cím:"   $ textInput (fieldName regEmailAddress)   20 Nothing ! A.required ""
+      tableLine "Teljes név:"  $ textInput (fieldName regFullName)       20 Nothing ! A.required ""
+    submitButton (fieldName regSubmitBtn) "Regisztráció"
 
 #else
 -- * New registration method
@@ -217,10 +218,10 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
   renderForm = blaze $ dynamicTitleAndHead registrationTitle $ do
     postForm "/reg_request" ! (A.id . formId $ regForm) $ do
       table (fieldName registrationTable) (fieldName registrationTable) $ do
-        tableLine "Username:" $ textInput (name regUsernamePrm)      20 Nothing ! A.required ""
-        tableLine "Email address:" $ textInput (name regEmailPrm)    20 Nothing ! A.required ""
-        tableLine "Full name:"     $ textInput (name regFullNamePrm) 20 Nothing ! A.required ""
-      submitButton (fieldName regSubmitBtn) "Register"
+        tableLine "NEPTUN:"     $ textInput (name regUsernamePrm)      20 Nothing ! A.required ""
+        tableLine "Email cím:"  $ textInput (name regEmailPrm)    20 Nothing ! A.required ""
+        tableLine "Teljes név:" $ textInput (name regFullNamePrm) 20 Nothing ! A.required ""
+      submitButton (fieldName regSubmitBtn) "Regisztráció"
     linkToRoute backToMain
 
   saveUserRegData = do
@@ -229,25 +230,25 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     f <- readParameter regFullNamePrm
 
     case (u,e,f) of
-      (Nothing, _, _) -> errorPageWithTitle registrationTitle "Username error"
+      (Nothing, _, _) -> errorPageWithTitle registrationTitle "Hibás NEPTUN-kód"
       (Just username, Just email, Just fullname) -> do
         userRegData <- liftIO $ createUserRegData username email fullname
         result <- registrationStory (S.createUserReg userRegData)
         case result of
-          Left _ -> errorPageWithTitle registrationTitle "User registration data was not saved in the persistence"
+          Left _ -> errorPageWithTitle registrationTitle "A regisztráció nem lett elmentve!"
           Right key -> do
              -- TODO: Send the email template
             withTop sendEmailContext $
 
               sendEmail
                 email
-                "BE-AD Registration email"
+                "BE-AD: Regisztráció"
                 RegTemplate {
                     regUsername = reg_username userRegData
                   , regUrl = createUserRegAddress key userRegData
                   }
             pageContent
-      _ -> errorPageWithTitle registrationTitle "Some request parameter is missing"
+      _ -> errorPageWithTitle registrationTitle "Valamelyik request paraméter hiányzik!"
 
   createUserRegAddress :: UserRegKey -> UserRegistration -> String
   createUserRegAddress key reg =
@@ -287,34 +288,33 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     values <- readRegParameters
 
     case values of
-      Nothing -> errorPageWithTitle registrationTitle "No registration parameters are found"
+      Nothing -> errorPageWithTitle registrationTitle "Nincsenek regisztrációs paraméterek!"
       Just (key, token, username) -> do
         result <- registrationStory $ do
                     userReg   <- S.loadUserReg key
                     existence <- S.doesUserExist username
                     return (userReg, existence)
         case result of
-          Left e -> errorPageWithTitle registrationTitle ("Some error happened: " ++ show e)
+          Left e -> errorPageWithTitle registrationTitle $ printf "Valami hiba történt: %s" (show e)
           Right (userRegData,exist) -> do
             -- TODO: Check username and token values
             now <- liftIO $ getCurrentTime
             case (reg_timeout userRegData < now, exist) of
               (True , _) -> errorPageWithTitle
                 registrationTitle
-                "The registration opportunitiy has timed out, please start it over"
+                "A regisztrációs token lejárt, regisztrálj újra!"
               (False, True) -> errorPageWithTitle
                 registrationTitle
-                "The user already exists"
+                "Ez a felhasználó már létezik!"
               (False, False) -> blaze $ dynamicTitleAndHead registrationTitle $ do
-                H.h1 "Register a new user"
                 postForm "reg_final" ! (A.id . formId $ regFinalForm) $ do
                   table (fieldName registrationTable) (fieldName registrationTable) $ do
-                    tableLine "Password:" $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
-                    tableLine "Password again:" $ passwordInput (name regPasswordAgainPrm) 20 Nothing ! A.required ""
+                    tableLine "Jelszó:" $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
+                    tableLine "Jelszó (ismét):" $ passwordInput (name regPasswordAgainPrm) 20 Nothing ! A.required ""
                   hiddenParam regUserRegKeyPrm key
                   hiddenParam regTokenPrm      token
                   hiddenParam regUsernamePrm   username
-                  submitButton (fieldName regSubmitBtn) "Register"
+                  submitButton (fieldName regSubmitBtn) "Regisztráció"
                 linkToRoute backToMain
 
   hiddenParam parameter value = hiddenInput (name parameter) (encode parameter value)
@@ -323,16 +323,16 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     values <- readRegParameters
     pwd    <- readParameter regPasswordPrm
     case (values, pwd) of
-      (Nothing,_) -> errorPageWithTitle registrationTitle "No registraion parameters are found" -- TODO
+      (Nothing,_) -> errorPageWithTitle registrationTitle "Nincsenek regisztrációs paraméterek!" -- TODO
       (Just (key, token, username), Just password) -> do
         result <- registrationStory (S.loadUserReg key)
         case result of
-          Left e -> errorPageWithTitle registrationTitle "Some internal error happened!!!" -- TODO
+          Left e -> errorPageWithTitle registrationTitle "Valamilyen belső hiba történt!" -- TODO
           Right userRegData -> do
             now <- liftIO getCurrentTime
             -- TODO: Check username and token values (are the same as in the persistence)
             case (reg_timeout userRegData < now) of
-              True -> errorPageWithTitle registrationTitle "The registration opportunity has timed out, please start it over"
+              True -> errorPageWithTitle registrationTitle "A regisztrációs token már lejárt, regisztrálj újra!"
               False -> do
                 result <- withTop auth $ createNewUser userRegData password
                 redirect "/"
@@ -381,7 +381,7 @@ createNewUser reg password = runErrorT $ do
 
 pageContent :: Handler App a ()
 pageContent = blaze $ dynamicTitleAndHead registrationTitle $ do
-  "Please check your emails"
+  H.p $ "A regisztrációs tokent elküldtük levélben, nézd meg a leveleidet!"
   H.br
   linkToRoute backToMain
 

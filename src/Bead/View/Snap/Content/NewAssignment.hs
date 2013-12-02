@@ -93,19 +93,19 @@ postModifyAssignment = ModifyAssignment <$> getValue <*> getValue
 newAssignmentContent :: PageData -> Pagelet
 newAssignmentContent pd
   | isEmptyData pd = onlyHtml $ mkI18NHtml $ \i -> do
-      H.p $ pageDataCata (const . translate i $ "You are not an admin for any course")
-                         (const . translate i $ "You are not an admin for any groups")
-                         (const . translate i $ "This assignment is not created by you")
+      H.p $ pageDataCata (const . translate i $ "Nem vagy felelőse egyik tárgynak sem!")
+                         (const . translate i $ "Nem vagy oktatója egyetlen csoportnak sem!")
+                         (const . translate i $ "Ezt a feladatot más hozta létre!")
                          pd
 newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page $ pd) `withId` (hookId assignmentForm) $ H.div ! formDiv $ do
   H.div ! slimRightCell $ do
-    H.b $ (translate i "Assignment title")
+    H.b $ (translate i "Cím")
     textInput (fieldName assignmentNameField) 10 (amap assignmentName pd) ! fillDiv
     H.br
   H.div ! leftCell $ do
-    H.b $ (translate i "Active period")
+    H.b $ (translate i "Beadás ideje")
     H.div ! A.id (fieldName startDateDivId) $ do
-       translate i "Start date"
+       translate i "Kezdés"
        fromString $ concat [" (", Time.timeZoneName timezone, ")"]
        H.br
        hiddenInput (fieldName assignmentStartDefaultDate) (fromString startDefDate)
@@ -113,7 +113,7 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
        hiddenInput (fieldName assignmentStartDefaultMin)  (fromString startDefMin)
        hiddenInput (fieldName assignmentStartField) (fromString $ concat [startDefDate, " ", startDefHour, ":", startDefMin, ":00"])
     H.div ! A.id (fieldName endDateDivId) $ do
-       translate i "End date"
+       translate i "Befejezés"
        fromString $ concat [" (", Time.timeZoneName timezone, ")"]
        H.br
        hiddenInput (fieldName assignmentEndDefaultDate) (fromString endDefDate)
@@ -122,24 +122,24 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
        hiddenInput (fieldName assignmentEndField) (fromString $ concat [endDefDate, " ", endDefHour, ":", endDefMin, ":00"])
   H.div ! rightCell $ do
     H.br
-    H.b $ (translate i "Description text")
+    H.b $ (translate i "Szöveges leírás")
     textAreaInput (fieldName assignmentDescField) (amap assignmentDesc pd) ! fillDiv
-    H.a ! A.href linkToPandocMarkdown $ do translate i "Markdown formatting"
-    translate i " may be used here."
+    H.a ! A.href linkToPandocMarkdown $ do translate i "Markdown formázás"
+    translate i " használható."
   H.div ! leftCell $ do
-    H.b $ (translate i "Assignment Type")
+    H.b $ (translate i "Típus")
     H.br
     enumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
     H.br
     H.p $ do
-      H.b $ pageDataCata (const (translate i "Course")) (const (translate i "Group")) (const (translate i "")) pd
+      H.b $ pageDataCata (const (translate i "Tárgy")) (const (translate i "Csoport")) (const (translate i "")) pd
       H.br
       pageDataCata
         (valueTextSelection (fieldName selectedCourse) . trd)
         (valueTextSelection (fieldName selectedGroup)  . trd)
         (hiddenInput (fieldName assignmentKeyField) . paramValue  . snd3)
         pd
-    H.p $ submitButton (fieldName saveSubmitBtn) (i "Save")
+    H.p $ submitButton (fieldName saveSubmitBtn) (i "Mentés")
 
     where
       linkToPandocMarkdown = "http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html"

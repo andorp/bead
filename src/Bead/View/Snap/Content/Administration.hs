@@ -54,27 +54,27 @@ administrationPage = withUserState $ \s -> do
 administrationContent :: PageInfo -> Pagelet
 administrationContent info = onlyHtml $ mkI18NHtml $ \i18n -> do
   H.div $ do
-    H.h3 $ (translate i18n "New Course")
+    H.h3 $ (translate i18n "Új tárgy")
     (postForm (routeOf P.CreateCourse) `withId` (evFormId createCourseHook)) $ do
       inputPagelet emptyCourse
       -- Help message for the percentage
       H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $ fromString
-        (i18n "The minimum percentage that the students need to reach")
-      submitButton (fieldName createCourseBtn) (i18n "Create Course")
+        (i18n "A hallgatók által minimálisan teljesítendő százalék")
+      submitButton (fieldName createCourseBtn) (i18n "Létrehozás")
   H.div $ do
-    H.h3 $ (translate i18n "Add course admin to the course")
-    nonEmpty (courses info)      (translate i18n "No courses were found") $
-      nonEmpty (courseAdmins info) (translate i18n "No course admins were found") $
+    H.h3 $ (translate i18n "Oktató hozzárendelése a tárgyhoz")
+    nonEmpty (courses info) (translate i18n "Nincsenek tárgyak!") $
+      nonEmpty (courseAdmins info) (translate i18n "Nincsenek oktatók!") $
         postForm (routeOf P.AssignCourseAdmin) $ do
           valueTextSelection (fieldName selectedCourse) (courses info)
           valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
           H.br
-          submitButton (fieldName assignBtn) (i18n "Assign")
+          submitButton (fieldName assignBtn) (i18n "Hozzárendelés")
   H.div $ do
-    H.h3 $ (translate i18n "Modify user's account")
+    H.h3 $ (translate i18n "Felhasználó adatainak módosítása")
     getForm (routeOf P.UserDetails) $ do
       inputPagelet emptyUsername
-      submitButton (fieldName selectBtn) (i18n "Select")
+      submitButton (fieldName selectBtn) (i18n "Kiválasztás")
 
 -- Add Course Admin
 

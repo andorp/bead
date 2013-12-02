@@ -43,16 +43,16 @@ instance InputPagelet Group where
   inputPagelet g = do
     let hook = createGroupHook
     table "create-group" "create-group-table" $ do
-      tableLine "Group Name" $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
-      tableLine "Group Desc" $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
-      tableLine "Group Eval" $ evaluationConfig (evSelectionId hook) (fmap groupEvalConfig g)
+      tableLine "Név" $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
+      tableLine "Leírás" $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
+      tableLine "Értékelés" $ evaluationConfig (evSelectionId hook) (fmap groupEvalConfig g)
     hiddenInputWithId (evHiddenValueId hook) ""
     evalSelectionDiv hook
 
 instance GetValueHandler Group where
   getValue = Group
-      <$> getParameter (stringParameter (fieldName groupNameField) "Group name")
-      <*> getParameter (stringParameter (fieldName groupDescField) "Group description")
+      <$> getParameter (stringParameter (fieldName groupNameField) "Csoport neve")
+      <*> getParameter (stringParameter (fieldName groupDescField) "Csoport leírása")
       <*> getParameter (evalConfigPrm createGroupHook)
 
 instance GetValueHandler CourseKey where
@@ -60,8 +60,8 @@ instance GetValueHandler CourseKey where
 
 instance GetValueHandler Course where
   getValue = Course
-    <$> getParameter (stringParameter (fieldName courseNameField) "Course name")
-    <*> getParameter (stringParameter (fieldName courseDescField) "Course description")
+    <$> getParameter (stringParameter (fieldName courseNameField) "Tárgy neve")
+    <*> getParameter (stringParameter (fieldName courseDescField) "Tárgy leírása")
     <*> getParameter (evalConfigPrm createCourseHook)
 
 emptyCourse :: Maybe Course
@@ -71,9 +71,9 @@ instance InputPagelet Course where
   inputPagelet c = do
     let hook = createCourseHook
     table "create-course" "create-course-table" $ do
-      tableLine "Course Name" $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
-      tableLine "Course Desc" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
-      tableLine "Course Eval" $ evaluationConfig (evSelectionId hook) (fmap courseEvalConfig c)
+      tableLine "Név" $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
+      tableLine "Leírás" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
+      tableLine "Értékelés" $ evaluationConfig (evSelectionId hook) (fmap courseEvalConfig c)
     hiddenInputWithId (evHiddenValueId hook) ""
     evalSelectionDiv hook
 
@@ -87,10 +87,10 @@ instance InputPagelet Role where
       roleOptions (Just q') r = option (show r) (roleLabel r) (q' == r)
 
       roleLabel = roleCata
-        "Student'"
-        "Group admin'"
-        "Course admin'"
-        "Admin'"
+        "Hallgató"
+        "Oktató"
+        "Tárgyfelelős"
+        "Rendszergazda"
 
 instance GetValueHandler Role where
   getValue = getParameter rolePrm
@@ -112,15 +112,15 @@ instance GetValueHandler User where
     <$> getValue -- role
     <*> getValue -- username
     <*> getParameter userEmailPrm
-    <*> getParameter (stringParameter (fieldName userFamilyNameField) "Full name")
+    <*> getParameter (stringParameter (fieldName userFamilyNameField) "Teljes név")
     <*> getParameter userTimeZonePrm
 
 instance InputPagelet User where
   inputPagelet u = table "user-detail-table" "user-detail-table" $ do
-    tableLine "User's role'"    $ required $ inputPagelet (fmap u_role u)
-    tableLine "User's email"    $ required $ textInput (fieldName userEmailField)      20 (fmap (str . u_email) u)
-    tableLine "User's fullname" $ required $ textInput (fieldName userFamilyNameField) 20 (fmap u_name u)
-    tableLine "User's timezone" $ required $ defEnumSelection (B.name userTimeZonePrm) (maybe UTC u_timezone u)
+    tableLine "Szerepkör"  $ required $ inputPagelet (fmap u_role u)
+    tableLine "Email cím"  $ required $ textInput (fieldName userEmailField)      20 (fmap (str . u_email) u)
+    tableLine "Teljes név" $ required $ textInput (fieldName userFamilyNameField) 20 (fmap u_name u)
+    tableLine "Időzóna"    $ required $ defEnumSelection (B.name userTimeZonePrm) (maybe UTC u_timezone u)
     when (isJust u) . hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username . fromJust $ u
 
 emptyAssignment :: Maybe Assignment
@@ -133,8 +133,8 @@ instance GetValueHandler Assignment where
   getValue = do
     timeZone <- timezone <$> runStoryE Story.userState
     assignmentAna
-      (getParameter (stringParameter (fieldName assignmentNameField) "Assignment Name"))
-      (getParameter (stringParameter (fieldName assignmentDescField) "Assignment Description"))
+      (getParameter (stringParameter (fieldName assignmentNameField) "Név"))
+      (getParameter (stringParameter (fieldName assignmentDescField) "Leírás"))
       (getParameter assignmentTypePrm)
       (getParameter (assignmentStartPrm timeZone))
       (return timeZone)
@@ -153,8 +153,8 @@ evaluationConfig n v = do
   where
     valueAndName e = (encodeEvalType e, name e)
 
-    name (BinEval ()) = "Binary"
-    name (PctEval ()) = "Percentage"
+    name (BinEval ()) = "Kétállapotú"
+    name (PctEval ()) = "Százalékos"
 
 -- TODO
 dateInput :: String -> Maybe UTCTime -> Html

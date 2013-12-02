@@ -112,14 +112,14 @@ createUser newUser = do
 setTimeZone :: TimeZone -> UserStory ()
 setTimeZone tz = do
   changeUserState $ \userState -> userState { timezone = tz }
-  putStatusMessage $ join ["Time zone has been set to ", show tz, "."]
+  putStatusMessage $ printf "Az időzóna %s lett." (show tz)
 
 -- Updates the current user's full name and timezone in the persistence layer
 changeUserDetails :: String -> TimeZone -> UserStory ()
 changeUserDetails name timezone = logAction INFO ("changes fullname and timezone") $ do
   user <- currentUser
   withPersist $ flip R.updateUser user { u_name = name , u_timezone = timezone }
-  putStatusMessage "User's details have been changed"
+  putStatusMessage "A beállítások megváltoztak."
 
 updateUser :: User -> UserStory ()
 updateUser u = logAction INFO ("updates user " ++ (str . u_username $ u)) $ do
@@ -192,7 +192,7 @@ createCourse :: Course -> UserStory CourseKey
 createCourse course = logAction INFO "creates course" $ do
   authorize P_Create P_Course
   key <- create descriptor saveCourse course
-  putStatusMessage $ join ["'", courseName course, "' has been created."]
+  putStatusMessage $ printf "A(z) '%s' tárgy létrejött." (courseName course)
   return key
   where
     descriptor course _ =
@@ -217,7 +217,7 @@ createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
   authorize P_Create P_CourseAdmin
   authorize P_Open   P_User
   withPersist $ \p -> R.createCourseAdmin p u ck
-  putStatusMessage $ join [user u, " is course admin now."]
+  putStatusMessage $ printf "%s most már tárgyfelelős." (user u)
   where
     user = usernameCata id
 
@@ -232,8 +232,8 @@ createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $
         then R.createGroupAdmin p u gk >> return True
         else return False
   if groupAdminSetted
-    then putStatusMessage $ join [user u, " is group admin now."]
-    else CME.throwError . strMsg . join $ [user u, " can't be group admin."]
+    then putStatusMessage $ printf "%s most már oktató." (user u)
+    else CME.throwError . strMsg $ printf "%s nem lehet oktató!" (user u)
   where
     user = usernameCata id
 
@@ -242,7 +242,7 @@ createGroup :: CourseKey -> Group -> UserStory GroupKey
 createGroup ck g = logAction INFO ("creats group " ++ show (groupName g)) $ do
   authorize P_Create P_Group
   key <- withPersist $ \p -> R.saveGroup p ck g
-  putStatusMessage $ join ["'", groupName g, "' has been created."]
+  putStatusMessage $ printf "A(z) '%s' csoport létrejött." (groupName g)
   return key
 
 loadGroup :: GroupKey -> UserStory Group
@@ -272,7 +272,7 @@ subscribeToGroup gk = logAction INFO ("subscribes to the group " ++ (show gk)) $
   withPersist $ \p -> do
     ck <- R.courseOfGroup p gk
     R.subscribe p (user state) ck gk
-  putStatusMessage "Subscribed."
+  putStatusMessage "Sikeresen regisztráltál a csoportba!"
 
 attendedGroups :: UserStory [(GroupKey, GroupDesc)]
 attendedGroups = logAction INFO "selects courses attended in" $ do
@@ -293,7 +293,7 @@ createGroupAssignment gk a = logAction INFO msg $ do
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for group " ++ show gk
     statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
-      putStatusMessage $ "'" ++ name ++ "' group assignment is created."
+      putStatusMessage $ printf "Létrejött a(z) '%s' című csoportszintű feladat." name
 
 createCourseAssignment :: CourseKey -> Assignment -> UserStory AssignmentKey
 createCourseAssignment ck a = logAction INFO msg $ do
@@ -306,7 +306,7 @@ createCourseAssignment ck a = logAction INFO msg $ do
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for course " ++ show ck
     statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
-      putStatusMessage $ "'" ++ name ++ "' course assignment is created."
+      putStatusMessage $ printf "Létrejött a(z) '%s' című tárgyszintű feladat." name
 
 selectAssignments :: (AssignmentKey -> Assignment -> Bool) -> UserStory [(AssignmentKey, Assignment)]
 selectAssignments f = logAction INFO "selects some assignments" $ do

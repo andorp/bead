@@ -1,7 +1,14 @@
-You are registering with the {{regUsername}} username.
+Kedves leendő felhasználó!
 
-If your registration is valid, please click on the following link:
-{{regUrl}}
+Ezt a levelet azért kapod, mert valaki ezzel az e-mail címmel szeretne a BE-AD
+rendszerbe regisztrálni, "{{regUsername}}" néven.  Kérjük, erősítsd meg ezt a
+szándékot azzal, hogy követed az alábbi linket.
 
-Best Regards,
-The BE-AD team
+    {{regUrl}}
+
+Üdvözlettel:
+Az Adminisztrátorok
+
+UI: Amennyiben ezt a levelet tévedésből kaptad volna meg, vagy már nem kívánsz
+    regisztrálni a rendszerbe, úgy nyugodtan hagyd csak figyelmen kívül.
+

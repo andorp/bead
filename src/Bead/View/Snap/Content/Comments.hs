@@ -16,7 +16,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 commentsDiv :: UserTimeConverter -> [Comment] -> I18NHtml
 commentsDiv t cs = mkI18NHtml $ \i -> do
   H.div ! A.id "comments" $ do
-    H.h2 (translate i "Comments")
+    H.h2 (translate i "Hozzászólások")
     mapM_ (commentPar t) cs
 
 commentPar :: UserTimeConverter -> Comment -> Html

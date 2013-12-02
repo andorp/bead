@@ -52,29 +52,29 @@ courseAdminPage = withUserState $ \s -> do
 
 courseAdminContent :: PageData -> Pagelet
 courseAdminContent info = onlyHtml $ mkI18NHtml $ \i -> H.div # textAlign "left" $ do
-  H.h3 (translate i "New group for the course")
-  H.p $ nonEmpty (courses info) (translate i "No courses were found") $
+  H.h3 (translate i "Új csoport létrehozása a tárgyhoz")
+  H.p $ nonEmpty (courses info) (translate i "Nincsenek tárgyak!") $
         (postForm (routeOf P.CreateGroup) `withId` (evFormId createGroupHook)) $ do
-          H.b $ (translate i "Course")
+          H.b $ (translate i "Tárgy")
           H.br
           valueTextSelection (fieldName courseKeyInfo) (courses info)
           -- Help message for the percentage
           H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $
-            fromString (i "The minimum percentage that the students need to reach")
+            fromString (i "A hallgatók által minimálisan teljesítendő százalék")
           inputPagelet emptyGroup
           H.br
-          submitButton (fieldName createGroupBtn) (i "Create Group")
-  H.h3 (translate i "Assign teacher to the group")
-  H.p $ nonEmpty (groups info)      (translate i "No groups were found") $
-        nonEmpty (groupAdmins info) (translate i "No group admins were found") $
+          submitButton (fieldName createGroupBtn) (i "Csoport létrehozása")
+  H.h3 (translate i "Oktató hozzárendelése a csoporthoz")
+  H.p $ nonEmpty (groups info) (translate i "Nincsenek csoportok!") $
+        nonEmpty (groupAdmins info) (translate i "Nincsenek oktatók!") $
         postForm (routeOf P.AssignGroupAdmin) $ do
           H.table $ do
-            (header (translate i "Group") (translate i "Group Admin"))
+            (header (translate i "Csoport") (translate i "Oktató"))
             (selections
                (valueTextSelection (fieldName selectedGroup) (groups info))
                (valueTextSelection (fieldName selectedGroupAdmin) (groupAdmins info)))
           H.br
-          submitButton (fieldName assignGroupAdminBtn) (i "Assign")
+          submitButton (fieldName assignGroupAdminBtn) (i "Hozzárendelés")
   where
     header h1 h2 = H.tr $ do
       H.th h1

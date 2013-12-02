@@ -26,13 +26,13 @@ evaluationTablePage = withUserState $ \s -> do
 evaluationTableContent :: [(SubmissionKey, SubmissionDesc)] -> Pagelet
 evaluationTableContent ks = onlyHtml $ mkI18NHtml $ \i ->
   if (null ks)
-    then (translate i "No unevaluated submissions.")
+    then (translate i "Nincsenek nem értékelt megoldások.")
     else do
       H.p $ table "evaluation-table" (className evaluationClassTable) # informationalTable $ do
         H.tr # grayBackground $ do
-          H.th (fromString $ i "Group")
-          H.th (fromString $ i "Student")
-          H.th (fromString $ i "Assignment")
+          H.th (fromString $ i "Csoport")
+          H.th (fromString $ i "Hallgató")
+          H.th (fromString $ i "Feladat")
           H.th (fromString $ i "Link")
         forM_ ks (submissionInfo i)
 
@@ -40,4 +40,4 @@ submissionInfo i (key, desc) = H.tr $ do
   H.td . fromString . eGroup $ desc
   H.td . fromString . eStudent $ desc
   H.td . fromString . eAssignmentTitle $ desc
-  H.td $ link (routeWithParams P.Evaluation [requestParam key]) (i "Submission")
+  H.td $ link (routeWithParams P.Evaluation [requestParam key]) (i "Megoldás")

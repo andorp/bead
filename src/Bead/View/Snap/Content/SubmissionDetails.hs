@@ -56,7 +56,7 @@ submissionDetailsPostHandler :: POSTContentHandler
 submissionDetailsPostHandler = do
   ak <- getParameter assignmentKeyPrm
   sk <- getParameter submissionKeyPrm
-  c  <- getParameter (stringParameter (fieldName commentValueField) "Comment")
+  c  <- getParameter (stringParameter (fieldName commentValueField) "Hozzászólás")
   now <- liftIO $ getCurrentTime
   usersSubmission ak sk $ \s -> do
     return $ case s of
@@ -72,37 +72,37 @@ submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
       tc = uTime p
   H.table $ do
     H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Group / Course:")
+      H.td # textAlignRight $ H.b $ fromString (i "Tárgy, csoport:")
       H.td $ fromString (sdGroup $ sm)
     H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Teacher:")
+      H.td # textAlignRight $ H.b $ fromString (i "Oktató:")
       H.td $ fromString (join . intersperse ", " . sdTeacher $ sm)
     H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Assignment:")
+      H.td # textAlignRight $ H.b $ fromString (i "Feladat:")
       H.td $ fromString (assignmentName . sdAssignment $ sm)
     H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Deadline:")
+      H.td # textAlignRight $ H.b $ fromString (i "Határidő:")
       H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
-  H.h2 $ (translate i "Assignment Text")
+  H.h2 $ (translate i "Részletes leírás")
   H.div # assignmentTextDiv $ fromString . assignmentDesc $ sdAssignment $ sm
-  H.h2 (translate i "Submission Text")
+  H.h2 (translate i "Megoldás szövege")
   H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
-  H.h2 $ (translate i "Evaluation")
+  H.h2 $ (translate i "Értékelés")
   (fromString . sdStatus $ sm)
   when (not . null $ sdComments sm) $ do
     translate i . commentsDiv tc $ sdComments sm
   H.hr
-  H.h2 (translate i "New comment")
+  H.h2 (translate i "Új hozzászólás")
   postForm (routeOf P.SubmissionDetails) $ do
     H.div ! formDiv $ do
       textAreaInput (fieldName commentValueField) Nothing ! fillDiv
       hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
       hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
-    submitButton (fieldName commentBtn) (i "Submit")
+    submitButton (fieldName commentBtn) (i "Beküld")
 
 invalidSubmission :: Pagelet
 invalidSubmission = onlyHtml $ mkI18NHtml $ \i ->
-  (translate i "You have tried to open a submission that not belongs to you")
+  (translate i "Olyan megoldást próbáltál megnyitni, amelyik nem hozzád tartozik!")
 
 -- CSS Section
 

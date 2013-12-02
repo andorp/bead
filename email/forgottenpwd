@@ -1,8 +1,12 @@
-Dear {{fpUsername}},
+Kedves {{userName}}!
 
-Your new password is:
+A jelszavad átállítását kérted, ezért most generáltunk (és beállítottunk) neked
+egy új jelszót, amely a következő:
 
-  {{fpNewPassword}}
+    {{newPassword}}
 
-Best Regards,
-The BE-AD team
+Kérjük, jelentkezz be ezen jelszó használatával és változtasd meg minél
+hamarabb!
+
+Üdvözlettel:
+Az Adminisztrátorok

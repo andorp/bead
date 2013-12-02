@@ -18,6 +18,7 @@ import Snap.Snaplet.Auth as A
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import Text.Printf (printf)
 
 import Bead.Domain.Entities
 import qualified Bead.Controller.UserStories as S
@@ -52,12 +53,12 @@ setUserPassword u password = do
   let username = usernameCata id u
   authUser <- getAuthUser u
   case authUser of
-    Nothing -> return $ concat ["The ", username, " does not exist."]
+    Nothing -> return $ printf "A(z) %s felhasználó nem létezik!" username
     Just user -> do
       encryptedPwd <- encryptPwd password
       updateUser user { userPassword = Just encryptedPwd }
       emailPasswordToUser u password
-      return $ concat ["The password for ", username, " is set."]
+      return $ printf "%s részére be lett állítva a jelszó." username
 
 emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (Handler App a) ()
 emailPasswordToUser user pwd = do
@@ -65,7 +66,7 @@ emailPasswordToUser user pwd = do
   lift $ withTop sendEmailContext $
     sendEmail
       address
-      "BE-AD Password reset"
+      "BE-AD: Elfelejtett jelszó"
       ForgottenPassword { fpUsername = show user, fpNewPassword = pwd }
   where
     loadUserFromPersistence =
@@ -77,7 +78,7 @@ emailPasswordToUser user pwd = do
 -- in such case the attacker could deduce minimal
 -- amount of information
 errorMsg :: (Error e) => e
-errorMsg = strMsg "Invalid username and/or password"
+errorMsg = strMsg "Hibás NEPTUN azonosító vagy jelszó!"
 
 checkUserInAuth :: (Error e) => Username -> ErrorT e (Handler App a) ()
 checkUserInAuth u = do
@@ -118,7 +119,7 @@ checkCurrentAuthPassword pwd = do
   name <- user <$> userState
   result <- lift $ withTop auth $
     loginByUsername (usernameCata fromString name) (ClearText $ fromString pwd) False
-  when (isLeft result) . throwError $ strMsg "Invalid password"
+  when (isLeft result) . throwError $ strMsg "Hibás jelszó!"
 
 -- Update the currently logged in user's password in the authentication module
 updateCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
@@ -133,7 +134,7 @@ resetPasswordPage :: Handler App App ()
 resetPasswordPage = method GET resetPasswordGET <|> method POST resetPasswordPOST
 
 resetPasswordTitle :: String
-resetPasswordTitle = "Reset Password"
+resetPasswordTitle = "Elfelejtett jelszó"
 
 {- Reset password GET handler
 Renders the password reset request page. The page contains
@@ -147,9 +148,9 @@ resetPasswordGET = renderForm
     renderForm = blaze $ dynamicTitleAndHead resetPasswordTitle $ do
       postForm "/reset_pwd" $ do
         table (fieldName resetPasswordTable) (fieldName resetPasswordTable) # centerTable $ do
-          tableLine "Username:"       $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
-          tableLine "Email address: " $ textInput (name regEmailPrm)    20 Nothing ! A.required ""
-        submitButton (fieldName pwdSubmitBtn) "Reset Password"
+          tableLine "NEPTUN:"    $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
+          tableLine "Email cím:" $ textInput (name regEmailPrm)    20 Nothing ! A.required ""
+        submitButton (fieldName pwdSubmitBtn) "Új jelszó"
       linkToRoute backToMain
 
 {- Reset password POST handler
@@ -182,7 +183,7 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
 
 pageContent :: (Handler App a) ()
 pageContent = blaze $ dynamicTitleAndHead resetPasswordTitle $ do
-  H.p $ "Please check your emails"
+  H.p $ "Az új jelszót levélben kiküldtük, nézd meg a leveleidet!"
   H.br
   linkToRoute backToMain
 

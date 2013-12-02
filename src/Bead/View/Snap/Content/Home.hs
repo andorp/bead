@@ -77,17 +77,17 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> H.div # textAlign "left" $ do
       hasCourse = hasCourses d
       hasGroup  = hasGroups d
   when (isAdmin s) $ H.p $ do
-    H.h3 $ (translate i18n "Admin's menu")
+    H.h3 $ (translate i18n "Rendszergazdai feladatok")
     navigation [P.Administration]
     H.hr
   when (courseAdminUser r) $ H.p $ do
-    H.h3 $ (translate i18n "Course Admin's menu")
+    H.h3 $ (translate i18n "Tárgyfelelősi feladatok")
     when (not hasCourse) $ do
-      translate i18n "You are a course admin, but you do not have a course yet."
+      translate i18n "Még nincsenek tárgyak."
   when (groupAdminUser r) $ H.p $ do
-    H.h3 $ (translate i18n "Teacher's menu")
+    H.h3 $ (translate i18n "Oktatói feladatok")
     when (not hasGroup) $ do
-      translate i18n "You are a group admin, but you do not have a group yet."
+      translate i18n "Még nincsenek csoportok."
   when ((courseAdminUser r) || (groupAdminUser r)) $ do
     when (hasCourse || hasGroup) $ H.p $ do
       htmlSubmissionTables i18n (sTables d)
@@ -99,7 +99,7 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> H.div # textAlign "left" $ do
   when (groupAdminUser r && hasGroup) $ H.p $ do
     navigation [P.NewGroupAssignment, P.EvaluationTable, P.SetUserPassword]
     H.hr
-  H.h3 $ (translate i18n "Student's menu")
+  H.h3 $ (translate i18n "Hallgatói feladatok")
   H.p $ do
     availableAssignments (timeConverter d) i18n (assignments d)
     navigation [P.GroupRegistration]
@@ -109,9 +109,9 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> H.div # textAlign "left" $ do
 
 availableAssignments :: UserTimeConverter -> I18N -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> Html
 availableAssignments _ i18n Nothing = do
-  translate i18n "You are not registered for any course, please pick up a course."
+  translate i18n "Még nincsenek felvett tárgyaid, vegyél fel tárgyakat!"
 availableAssignments _ i18n (Just []) = do
-  translate i18n "There is no assignments published until now."
+  translate i18n "Még nincsenek kiírva feladatok."
 availableAssignments timeconverter i18n (Just as) = do
   table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
     headerLine
@@ -122,20 +122,20 @@ availableAssignments timeconverter i18n (Just as) = do
     headerCell t = H.th # (informationalCell <> grayBackground) $ fromString $ i18n t
     headerLine = H.tr $ do
       headerCell ""
-      headerCell "Course"
-      headerCell "Teachers"
-      headerCell "Assignment"
-      headerCell "Deadline"
-      headerCell "Evaluation"
+      headerCell "Tárgy"
+      headerCell "Oktató"
+      headerCell "Feladat"
+      headerCell "Határidő"
+      headerCell "Értékelés"
     assignmentLine (k,a,s) = H.tr $ do
       case aActive a of
-        True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (i18n "New submission")
-        False -> dataCell "Inactive"
+        True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (i18n "Új megoldás")
+        False -> dataCell "Lezárva"
       dataCell (fromString . aGroup $ a)
       dataCell (fromString . join . intersperse ", " . aTeachers $ a)
       dataCell $ link (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
       dataCell (fromString . showDate . timeconverter $ aEndDate a)
-      (coloredSubmissionCell dataCell' (H.td) fromString "Not submitted" "Unevaluated" "Passed" "Failed" s)
+      (coloredSubmissionCell dataCell' (H.td) fromString "Nincs megoldás" "Nem értékelt" "Elfogadott" "Elutasított" s)
 
 htmlSubmissionTables :: I18N -> [SubmissionTableInfo] -> Html
 htmlSubmissionTables i18n xs = mapM_ (htmlSubmissionTable i18n) . zip [1..] $ xs
@@ -148,7 +148,7 @@ htmlSubmissionTable :: I18N -> (Int,SubmissionTableInfo) -> Html
 -- Empty table
 htmlSubmissionTable i18n (i,s)
   | and [null . stAssignments $ s, null . stUsers $ s] = H.p $ do
-      translate i18n "Assignments and users are not registered for the group:"
+      translate i18n "Nincsenek feladatok vagy hallgatók a csoporthoz:"
       H.br
       fromString . stCourse $ s
       H.br
@@ -164,10 +164,10 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
     headerCell = H.th # (informationalCell <> grayBackground)
     dataCell r = H.td # (informationalCell <> r)
     assignmentLine as = H.tr $ do
-      headerCell $ (translate i18n "Name")
-      headerCell $ (translate i18n "Username")
+      headerCell $ (translate i18n "Név")
+      headerCell $ (translate i18n "NEPTUN")
       mapM_ (headerCell . modifyAssignmentLink) . zip [1..] $ as
-      headerCell $ (translate i18n "Passed")
+      headerCell $ (translate i18n "Összesítés")
 
     modifyAssignmentLink (i,ak) =
       link (routeWithParams P.ModifyAssignment [requestParam ak])
@@ -181,8 +181,8 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
       mapM_ (submissionCell username) $ as
       case calculateSubmissionResult submissionInfos (stEvalConfig s) of
         Left  e      -> dataCell summaryErrorStyle  $ fromString e
-        Right Passed -> dataCell summaryPassedStyle $ fromString (i18n "Passed")
-        Right Failed -> dataCell summaryFailedStyle $ fromString (i18n "Failed")
+        Right Passed -> dataCell summaryPassedStyle $ fromString (i18n "Elfogadott")
+        Right Failed -> dataCell summaryFailedStyle $ fromString (i18n "Elutasított")
 
     submissionCell u (ak,s) =
       coloredSubmissionCell
@@ -238,7 +238,7 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated passed fai
 calculateSubmissionResult :: [SubmissionInfo] -> EvaluationConfig -> Either String Result
 calculateSubmissionResult si e =
   case results of
-    [] -> (Left "No results")
+    [] -> (Left "Nem összesíthető")
     rs -> evaluationDataMap
             (const (sumBinaryResult rs))
             (flip sumPercentageResult rs)
@@ -260,7 +260,7 @@ sumBinaryResult = calcEvaluationResult binary calcBinaryResult
     -- Produces (Left "error") if the result is not a binary result
     -- otherwise (Right result)
     binary :: EvaluationResult -> Either String Binary
-    binary = evaluationDataMap Right (const . Left $ "Not a binary evaluation")
+    binary = evaluationDataMap Right (const . Left $ "Nem kétértékű értékelés")
 
     calcBinaryResult :: [Binary] -> Result
     calcBinaryResult bs = calculateEvaluation bs ()
@@ -273,7 +273,7 @@ sumPercentageResult config = calcEvaluationResult percentage calcPercentageResul
   where
     percentage :: EvaluationResult -> Either String Percentage
     percentage = evaluationDataMap
-                   (const . Left $ "Not a percentage evaluation")
+                   (const . Left $ "Nem százalékos értékelés")
                    Right
 
     calcPercentageResult :: [Percentage] -> Result

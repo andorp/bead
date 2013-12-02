@@ -45,20 +45,20 @@ groupRegistrationPage = withUserState $ \s -> do
 groupRegistrationContent :: GroupRegData -> Pagelet
 groupRegistrationContent desc = onlyHtml $ mkI18NHtml $ \i -> do
   H.p $ do
-    H.h3 $ (translate i "Registered groups")
+    H.h3 $ (translate i "Felvett csoportok")
     groupsAlreadyRegistered i (groupsRegistered desc)
   H.p $ do
-    H.h3 $ (translate i "Course / Group selection")
+    H.h3 $ (translate i "Tárgy és csoport kiválasztása")
     groupsForTheUser i (groups desc)
 
 groupsAlreadyRegistered :: I18N -> [(GroupKey, GroupDesc)] -> Html
 groupsAlreadyRegistered i18n ds =
   nonEmpty ds
-    (fromString . i18n $ "There are no attended groups on")
+    (fromString . i18n $ "Nincsenek felvett tárgyak.")
     (H.table # informationalTable $ do
       H.tr $ do
-        H.th # (grayBackground <> informationalCell) $ fromString $ i18n $ "Groups"
-        H.th # (grayBackground <> informationalCell) $ fromString $ i18n $ "Teachers"
+        H.th # (grayBackground <> informationalCell) $ fromString $ i18n $ "Csoportok"
+        H.th # (grayBackground <> informationalCell) $ fromString $ i18n $ "Oktatók"
       mapM_ (groupLine . snd) ds)
   where
     groupLine = groupDescFold $ \n as -> do
@@ -67,12 +67,12 @@ groupsAlreadyRegistered i18n ds =
         H.td # informationalCell $ fromString $ join $ intersperse " " as
 
 groupsForTheUser :: I18N -> [(GroupKey, GroupDesc)] -> Html
-groupsForTheUser i18n gs = nonEmpty gs (fromString . i18n $ "No groups available for you") $
+groupsForTheUser i18n gs = nonEmpty gs (fromString . i18n $ "Nincsenek elérhető csoportok.") $
   postForm (routeOf P.GroupRegistration) $ do
     selection (fieldName groupRegistrationField) $ do
       mapM_ (\(gk,gd) -> option (paramValue gk) (descriptive gd) False) gs
     H.br
-    submitButton (fieldName regGroupSubmitBtn) (i18n "Register")
+    submitButton (fieldName regGroupSubmitBtn) (i18n "Felvesz")
 
   where
     descriptive :: GroupDesc -> String

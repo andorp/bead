@@ -48,7 +48,7 @@ submissionPostHandler =
   NewSubmission
     <$> getParameter assignmentKeyPrm
     <*> (E.Submission
-           <$> getParameter (stringParameter (fieldName submissionTextField) "Submission text")
+           <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege")
            <*> liftIO getCurrentTime)
 
 submissionContent :: PageData -> Pagelet
@@ -56,29 +56,29 @@ submissionContent p = onlyHtml $ mkI18NHtml $ \i -> do
   postForm (routeOf P.Submission) $ H.div ! formDiv $ do
     H.table $ do
       H.tr $ do
-        H.td $ H.b $ (translate i "Course: ")
+        H.td $ H.b $ (translate i "Tárgy: ")
         H.td $ (fromString . aGroup $ asDesc p)
       H.tr $ do
-        H.td $ H.b $ (translate i "Teacher: ")
+        H.td $ H.b $ (translate i "Oktató: ")
         H.td $ (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
       H.tr $ do
-        H.td $ H.b $ (translate i "Assignment: ")
+        H.td $ H.b $ (translate i "Feladat: ")
         H.td $ (fromString . assignmentName . asValue $ p)
       H.tr $ do
-        H.td $ H.b $ (translate i "Deadline: ")
+        H.td $ H.b $ (translate i "Határidő: ")
         H.td $ (fromString . showDate . (asTimeConv p) . assignmentEnd $ asValue p)
-    H.h2 (translate i "Description")
+    H.h2 (translate i "Leírás")
     H.div # assignmentTextDiv $
       markdownToHtml . assignmentDesc . asValue $ p
-    H.h2 $ (translate i "Solution")
+    H.h2 $ (translate i "Megoldás")
     H.div $ do
       textAreaInput (fieldName submissionTextField) Nothing ! A.rows "25" ! A.cols "80"
-    submitButton (fieldName submitSolutionBtn) (i "Submit")
+    submitButton (fieldName submitSolutionBtn) (i "Beküld")
     hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
 
 invalidAssignment :: Pagelet
 invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->
-  (translate i "You have tried to open an assignment that not belongs to you")
+  (translate i "Olyan feladatot próbáltál megnyitni, amely nem hozzád tartozik!")
 
 -- CSS Section
 
