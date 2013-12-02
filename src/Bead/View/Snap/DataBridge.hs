@@ -173,29 +173,38 @@ userEmailPrm = emailPrm (fieldName userEmailField)
 regEmailPrm :: Parameter Email
 regEmailPrm = emailPrm (fieldName regEmailAddress)
 
+passwordPrm :: String -> String -> Parameter String
+passwordPrm fieldName paramName = Parameter {
+    encode = id
+  , decode = Just . id
+  , name = fieldName
+  , decodeError = const "Invalid password"
+  , notFound    = join [paramName, " is not found."]
+  }
+
 regPasswordPrm :: Parameter String
-regPasswordPrm = validateBy isPassword $ stringParameter (fieldName loginPassword) "Password"
+regPasswordPrm = validateBy isPassword $ passwordPrm (fieldName loginPassword) "Password"
 
 regPasswordAgainPrm :: Parameter String
-regPasswordAgainPrm = validateBy isPassword $ stringParameter (fieldName regPasswordAgain) "Password Again"
+regPasswordAgainPrm = validateBy isPassword $ passwordPrm (fieldName regPasswordAgain) "Password Again"
 
 loginPasswordPrm :: Parameter String
-loginPasswordPrm = validateBy isPassword $ stringParameter (fieldName loginPassword) "Login password"
+loginPasswordPrm = validateBy isPassword $ passwordPrm (fieldName loginPassword) "Login password"
 
 oldPasswordPrm :: Parameter String
-oldPasswordPrm = validateBy isPassword $ stringParameter (fieldName oldPasswordField) "Old password"
+oldPasswordPrm = validateBy isPassword $ passwordPrm (fieldName oldPasswordField) "Old password"
 
 newPasswordPrm :: Parameter String
-newPasswordPrm = validateBy isPassword $ stringParameter (fieldName newPasswordField) "New password"
+newPasswordPrm = validateBy isPassword $ passwordPrm (fieldName newPasswordField) "New password"
 
 newPasswordAgainPrm :: Parameter String
-newPasswordAgainPrm = validateBy isPassword $ stringParameter (fieldName newPasswordAgainField) "New password again"
+newPasswordAgainPrm = validateBy isPassword $ passwordPrm (fieldName newPasswordAgainField) "New password again"
 
 studentNewPwdPrm :: Parameter String
-studentNewPwdPrm = validateBy isPassword $ stringParameter (fieldName studentNewPwdField) "Student's new password"
+studentNewPwdPrm = validateBy isPassword $ passwordPrm (fieldName studentNewPwdField) "Student's new password"
 
 studentNewPwdAgainPrm :: Parameter String
-studentNewPwdAgainPrm = validateBy isPassword $ stringParameter (fieldName studentNewPwdAgainField) "Student's new password "
+studentNewPwdAgainPrm = validateBy isPassword $ passwordPrm (fieldName studentNewPwdAgainField) "Student's new password "
 
 regUsernamePrm :: Parameter Username
 regUsernamePrm = validateBy isUsername $ customUsernamePrm (fieldName loginUsername)
