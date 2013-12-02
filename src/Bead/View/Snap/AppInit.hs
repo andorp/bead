@@ -31,6 +31,9 @@ import System.Directory
 beadConfigFileName :: String
 beadConfigFileName = "bead.config"
 
+iconFileName :: String
+iconFileName = "icon.ico"
+
 appInit :: Config -> Maybe (String, String) -> ServiceContext -> Dictionaries -> SnapletInit App App
 appInit config user s d = makeSnaplet "bead" description dataDir $ do
 
@@ -71,7 +74,8 @@ copyDataContext :: Initializer b v ()
 copyDataContext = do
   reference <- liftIO referenceDataDir
   dataDir   <- getSnapletFilePath
-  liftIO $ copyFiles [beadConfigFileName] reference dataDir
+  let skips = [beadConfigFileName, iconFileName]
+  liftIO $ copyFiles skips reference dataDir
   return ()
 
 -- | Copy and update files if missing or outdated, skip the ones
