@@ -471,21 +471,23 @@ loadSubmission sk = logAction INFO ("loads submission " ++ show sk) $ do
   authorize P_Open P_Submission
   withPersist $ \p -> R.loadSubmission p sk
 
-userAssignments :: UserStory (Maybe [(AssignmentKey, AssignmentDesc)])
+-- Produces a list of assignments and information about the submissions for the
+-- described assignment
+userAssignments :: UserStory (Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)])
 userAssignments = logAction INFO "lists assignments" $ do
   authorize P_Open P_Assignment
   authorize P_Open P_Course
   authorize P_Open P_Group
   now <- liftIO getCurrentTime
   withUserAndPersist $ \u p -> do
-    maybe (return Nothing) (fmap (Just . catMaybes) . (mapM (createDesc p now))) =<< (R.userAssignmentKeys p u)
+    maybe (return Nothing) (fmap (Just . catMaybes) . (mapM (createDesc p u now))) =<< (R.userAssignmentKeys p u)
 
   where
 
     -- Produces the assignment description if the assignment is active
     --   Nothing if the Urn assignment is not in the active state
-    createDesc :: Persist -> UTCTime -> AssignmentKey -> TIO (Maybe (AssignmentKey, AssignmentDesc))
-    createDesc p now ak = do
+    createDesc :: Persist -> Username -> UTCTime -> AssignmentKey -> TIO (Maybe (AssignmentKey, AssignmentDesc, SubmissionInfo))
+    createDesc p u now ak = do
       a <- R.loadAssignment p ak
       case and [assignmentType a == Urn, now < assignmentStart a] of
         True -> return Nothing
@@ -498,7 +500,8 @@ userAssignments = logAction INFO "lists assignments" $ do
           , aGroup  = name
           , aEndDate = assignmentEnd a
           }
-          return $ Just (ak, desc)
+          si <- R.userLastSubmissionInfo p u ak
+          return $ Just (ak, desc, si)
 
 submissionDescription :: SubmissionKey -> UserStory SubmissionDesc
 submissionDescription sk = logAction INFO msg $ do

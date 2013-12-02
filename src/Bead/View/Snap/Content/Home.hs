@@ -50,7 +50,7 @@ data HomePageData = HomePageData {
   , hasGroups   :: Bool -- True if the user has administrated groups
     -- Nothing means that the user is not registrated in any
     -- courses
-  , assignments :: Maybe [(AssignmentKey, AssignmentDesc)]
+  , assignments :: Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)]
   , sTables     :: [SubmissionTableInfo]
     -- The convertes function that convert a given utc time into the users local
     -- timezone
@@ -109,7 +109,7 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> H.div # textAlign "left" $ do
     courseAdminUser = (==E.CourseAdmin)
     groupAdminUser  = (==E.GroupAdmin)
 
-availableAssignments :: TimeConverter -> I18N -> Maybe [(AssignmentKey,AssignmentDesc)] -> Html
+availableAssignments :: TimeConverter -> I18N -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> Html
 availableAssignments _ i18n Nothing = do
   translate i18n "You are not registered for any course, please pick up a course."
 availableAssignments _ i18n (Just []) = do
@@ -120,6 +120,7 @@ availableAssignments timeconverter i18n (Just as) = do
     mapM_ assignmentLine as
   where
     dataCell = H.td # informationalCell
+    dataCell' r = H.td # (informationalCell <> r)
     headerCell t = H.th # (informationalCell <> grayBackground) $ fromString $ i18n t
     headerLine = H.tr $ do
       headerCell ""
@@ -127,7 +128,8 @@ availableAssignments timeconverter i18n (Just as) = do
       headerCell "Teachers"
       headerCell "Assignment"
       headerCell "Deadline"
-    assignmentLine (k,a) = H.tr $ do
+      headerCell "Evaluation"
+    assignmentLine (k,a,s) = H.tr $ do
       case aActive a of
         True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (i18n "New submission")
         False -> dataCell "Inactive"
@@ -135,6 +137,7 @@ availableAssignments timeconverter i18n (Just as) = do
       dataCell (fromString . join . intersperse ", " . aTeachers $ a)
       dataCell $ link (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
       dataCell (fromString . showDate . timeconverter $ aEndDate a)
+      (coloredSubmissionCell dataCell' (H.td) fromString "Not submitted" "Unevaluated" "Passed" "Failed" s)
 
 htmlSubmissionTables :: I18N -> [SubmissionTableInfo] -> Html
 htmlSubmissionTables i18n xs = mapM_ (htmlSubmissionTable i18n) . zip [1..] $ xs
@@ -184,31 +187,51 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
         Right Failed -> dataCell summaryFailedStyle $ fromString (i18n "Failed")
 
     submissionCell u (ak,s) =
-      coloredCell $ link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]) (sc s)
-      where
-        sc Submission_Not_Found   = " "
-        sc Submission_Unevaluated = "."
-        sc (Submission_Result _ r) = val r
+      coloredSubmissionCell
+        dataCell
+        (H.td)
+        (link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]))
+        " "
+        "."
+        "1"
+        "0"
+        s
 
-        val (BinEval (Binary Passed)) = "1"
-        val (BinEval (Binary Failed)) = "0"
-        val (PctEval (Percentage (Scores [p]))) = percent p
+-- Create a table cell for the evaulation value, where
+-- simpleCell is the combinator for the non RGB colored cells
+-- rgbCell is a cell combinator where the rgb value will be set
+-- content how the computed text value is wrapped
+-- notFound text for the non evaulated submission
+-- unevaluated text for the unevaluated submission
+-- passed message for the passed binary evaulation
+-- failed message for the failed binary evaulation
+-- s the submission information itself
+coloredSubmissionCell simpleCell rgbCell content notFound unevaluated passed failed s =
+  coloredCell $ content (sc s)
+  where
+    sc Submission_Not_Found   = notFound
+    sc Submission_Unevaluated = unevaluated
+    sc (Submission_Result _ r) = val r
 
-        coloredCell = color s
+    val (BinEval (Binary Passed)) = passed
+    val (BinEval (Binary Failed)) = failed
+    val (PctEval (Percentage (Scores [p]))) = percent p
 
-        color =
-          submissionInfoCata
-            (dataCell noStyle)        -- Not Found
-            (dataCell unevaluatedStyle) -- Unevulated
-            (const resultCell)        -- Result
+    coloredCell = color s
 
-        resultCell (BinEval (Binary Passed)) = dataCell binaryPassedStyle
-        resultCell (BinEval (Binary Failed)) = dataCell binaryFailedStyle
-        resultCell p@(PctEval {}) = withRGBClass (EvResult p) H.td
+    color =
+      submissionInfoCata
+        (simpleCell noStyle)        -- Not Found
+        (simpleCell unevaluatedStyle) -- Unevulated
+        (const resultCell)        -- Result
 
-        percent x = join [show . round $ (100 * x), "%"]
+    resultCell (BinEval (Binary Passed)) = simpleCell binaryPassedStyle
+    resultCell (BinEval (Binary Failed)) = simpleCell binaryFailedStyle
+    resultCell p@(PctEval {}) = withRGBClass (EvResult p) rgbCell
 
-        withRGBClass r = maybe id (\pct html -> html ! (A.style . fromString . colorStyle . pctCellColor $ pct)) (percentValue r)
+    percent x = join [show . round $ (100 * x), "%"]
+
+    withRGBClass r = maybe id (\pct html -> html ! (A.style . fromString . colorStyle . pctCellColor $ pct)) (percentValue r)
 
 -- * Evaluation
 

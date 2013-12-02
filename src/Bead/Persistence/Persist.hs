@@ -11,6 +11,7 @@ module Bead.Persistence.Persist (
   , canUserCommentOn
   , submissionTables
   , userSubmissionDesc
+  , userLastSubmissionInfo
   , courseOrGroupOfAssignment
   , courseNameAndAdmins
   , administratedGroupsWithCourseName
@@ -366,12 +367,9 @@ submissionTableInfo p courseName evalCfg as usernames = do
       t <- assignmentCreatedTime p k
       return (t,k)
 
-    submissionInfo' u ak = do
-      s <- do mSk <- lastSubmission p ak u
-              case mSk of
-                Nothing -> return Submission_Not_Found
-                Just sk -> submissionInfo p sk
-      return (ak,s)
+    submissionInfo' u ak = addKey <$> (userLastSubmissionInfo p u ak)
+      where
+        addKey s = (ak,s)
 
     calculateResult = evaluateResults evalCfg . map sbmResult . filter hasResult
 
@@ -387,6 +385,11 @@ submissionInfo p sk = do
   case mEk of
     Nothing -> return Submission_Unevaluated
     Just ek -> (Submission_Result ek . evaluationResult) <$> loadEvaluation p ek
+
+-- Produces information of the last submission for the given user and assignment
+userLastSubmissionInfo :: Persist -> Username -> AssignmentKey -> TIO SubmissionInfo
+userLastSubmissionInfo p u ak =
+  (maybe (return Submission_Not_Found) (submissionInfo p)) =<< (lastSubmission p ak u)
 
 userSubmissionDesc :: Persist -> Username -> AssignmentKey -> TIO UserSubmissionDesc
 userSubmissionDesc p u ak = do

@@ -40,8 +40,8 @@ userAssignmentForSubmission key found notFound = do
       (findAssignmentKey ks)
   action
   where
-    foundAssignment (ak,desc) = (loadAssignment ak) >>= return . found desc
-    findAssignmentKey = find (\(k,_v) -> (k==key))
+    foundAssignment (ak,desc,_) = (loadAssignment ak) >>= return . found desc
+    findAssignmentKey = find (\(k,_v,_s) -> (k==key))
 
 usersAssignment
   :: AssignmentKey
