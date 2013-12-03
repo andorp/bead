@@ -1,9 +1,9 @@
-Kedves {{userName}}!
+Kedves {{fpUsername}}!
 
 A jelszavad átállítását kérted, ezért most generáltunk (és beállítottunk) neked
 egy új jelszót, amely a következő:
 
-    {{newPassword}}
+    {{fpNewPassword}}
 
 Kérjük, jelentkezz be ezen jelszó használatával és változtasd meg minél
 hamarabb!
