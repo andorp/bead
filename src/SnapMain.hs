@@ -22,7 +22,7 @@ import qualified Bead.Persistence.NoSQLDir as P
 import Snap hiding (Config(..))
 import Snap.Snaplet
 
-import Data.Char (toLower)
+import Data.Char (toUpper)
 import Data.Map (Map)
 import qualified Data.Map as Map
 
@@ -72,7 +72,7 @@ readAdminUser = do
   where
     readUsername = do
       putStr "Admin User: " >> hFlush stdout
-      usr <- fmap (map toLower) getLine
+      usr <- fmap (map toUpper) getLine
       validate
         isUsername
         usr

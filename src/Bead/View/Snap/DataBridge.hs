@@ -1,6 +1,7 @@
 module Bead.View.Snap.DataBridge where
 
 import Control.Monad (join)
+import Data.Char (toUpper)
 import Data.Time (UTCTime(..))
 import Text.Printf (printf)
 
@@ -150,7 +151,7 @@ customUsernamePrm field = Parameter {
   } where
     decodeUsr xs =
       if (validator isUsername xs)
-         then (Just $ Username xs)
+         then (Just $ Username $ map toUpper xs)
          else Nothing
 
 usernamePrm :: Parameter Username
