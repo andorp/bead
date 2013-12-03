@@ -198,7 +198,7 @@ hookSamePasswords formId password1 password2 = void $ do
           case (password == passwordAgain) of
             True -> return True
             False -> do
-              span <- makeMessage removable "Given passwords are differents"
+              span <- makeMessage removable "A jelszavak nem egyeznek!"
               after span pwdAgain
               return False
     onSubmit validator form

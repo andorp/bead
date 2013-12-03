@@ -24,25 +24,25 @@ validate f v onValid onFail
 isUsername :: FieldValidator
 isUsername = FieldValidator {
     validator = \xs -> ((length xs) == 6) && (all isAlphaNum xs)
-  , message   = "Must be a neptun code"
+  , message   = "NEPTUN-kódot kell megadni!"
   }
 
 isPassword :: FieldValidator
 isPassword = FieldValidator {
     validator = (>=4) . length
-  , message   = "Less than 4 characters"
+  , message   = "4 karakternél hosszabbnak kell lennie!"
   }
 
 isEmailAddress :: FieldValidator
 isEmailAddress = FieldValidator {
     validator = emailAddress
-  , message   = "Invalid email address"
+  , message   = "Nem fogadható el email címnek!"
   }
 
 isDateTime :: FieldValidator
 isDateTime = FieldValidator {
     validator = dateTime
-  , message   = "Invalid date and time"
+  , message   = "Hibás dátum vagy idő!"
   }
 
 isDigit :: Char -> Bool
