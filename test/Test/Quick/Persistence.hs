@@ -414,7 +414,7 @@ submissionListDescTest = do
     a <- pick $ elements as
     desc <- runPersistCmd $ submissionListDesc persist u a
     assertNonEmpty (slGroup desc) "Group was empty"
-    assertNonEmpty (slAssignmentText desc) "Assignment was empty"
+    assertNonEmpty (assignmentDesc $ slAssignment desc) "Assignment was empty"
     assertEmpty (slTeacher desc) "There was teachers to the group"
 
 -- Allways the last evaluation is valid for the submission.
@@ -462,7 +462,7 @@ submissionDetailsDescTest = do
     desc <- runPersistCmd $ submissionDetailsDesc persist sk
     assertNonEmpty (sdGroup desc) "Group name was empty"
     forM (sdTeacher desc) $ \t -> assertNonEmpty t "Admin name was empty"
-    assertNonEmpty (sdAssignment desc) "Description was empty"
+    assertNonEmpty (assignmentDesc $ sdAssignment desc) "Description was empty"
     assertNonEmpty (sdStatus desc) "Status was empty"
     assertNonEmpty (sdSubmission desc) "Submission text was empty"
     forM (sdComments desc) $ \c -> assertNonEmpty (comment c) "Comment was empty"

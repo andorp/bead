@@ -102,7 +102,6 @@ timeZones = elements [UTC, CET, CEST]
 assignments start end = assignmentAna
   assignmentNames
   assignmentDescs
-  assignmentTCss
   assignmentTypeGen
   (return start)
   timeZones

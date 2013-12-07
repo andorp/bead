@@ -144,8 +144,8 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
   c <- context
   str <- getCurrentTime
   end <- getCurrentTime
-  let ca = E.Assignment "cname" "cexercise" "ctest" Normal str UTC end UTC
-      ga = E.Assignment "gname" "gexercise" "gtest" Normal str UTC end UTC
+  let ca = E.Assignment "cname" "cexercise" Normal str UTC end UTC
+      ga = E.Assignment "gname" "gexercise" Normal str UTC end UTC
       c1  = E.Course "FP" "FP-DESC" binaryEvalConfig
       c2  = E.Course "MA" "MA-DESC" binaryEvalConfig
       g1  = E.Group  "G1" "G1-DESC" binaryEvalConfig
@@ -164,7 +164,7 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
     subscribeToGroup gk2
     as <- fmap (maybe [] id) userAssignments
     return (a1,a2,as,ck2,gk2)
-  let as' = map fst as
+  let as' = map fst3 as
   assertBool "Assignment does not found in the assignment list" ([a1,a2] == as' || [a2,a1] == as')
   (_,ul) <- runStory c UserNotLoggedIn $ login (E.Username "student2") "token"
   ((uc,ug),_) <- runStory c ul $ do
@@ -174,3 +174,8 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
     return (uc,ug)
   assertBool "User is not registered in course" (uc == True)
   assertBool "User is not registered in group" (elem gk2 (map fst ug))
+
+-- * Helpers
+
+fst3 :: (a,b,c) -> a
+fst3 (a,_,_) = a
