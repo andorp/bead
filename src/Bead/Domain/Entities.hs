@@ -8,10 +8,11 @@ import Bead.Invariants (Invariants(..), UnitTests(..))
 #endif
 
 import Data.Char (toLower)
+import Data.List (findIndex)
 import Data.Time (UTCTime(..), LocalTime, timeZoneName)
 import Data.Time.Format (formatTime)
 import qualified Data.Time as Time
-import Control.Monad (join)
+import Control.Monad
 import Control.Applicative ((<$>), (<*>))
 import System.Locale (defaultTimeLocale)
 import Text.Printf (printf)
@@ -420,9 +421,64 @@ instance PermissionObj UserRegistration where
 instance Show Username where
   show (Username u) = u
 
+-- * Ordering
+
+-- Hungarian related charecter comparing, for special characters
+-- uses the given list otherwise the normal comparism is called
+-- capitals and non capitals are different characters
+class CompareHun c where
+  compareHun :: c -> c -> Ordering
+
+instance CompareHun Char where
+  compareHun c c' = maybe (compare c c') id $ mplus
+    (do x <- idxSmall c
+        y <- idxSmall c'
+        return (compare x y))
+    (do x <- idxCapital c
+        y <- idxCapital c'
+        return (compare x y))
+    where
+      idxSmall   x = findIndex (x==) hunSmall
+      idxCapital x = findIndex (x==) hunCapital
+      hunSmall   = "aábcdeéfghiíjklmnoóöőpqrstuúüűvwxyz"
+      hunCapital = "AÁBCDEÉFGHIÍJKLMNOÓÖŐPQRSTUÚÜŰVWXYZ"
+
+instance CompareHun c => CompareHun [c] where
+  compareHun [] []    = EQ
+  compareHun [] (_:_) = LT
+  compareHun (_:_) [] = GT
+  compareHun (x:xs) (y:ys)
+    = case compareHun x y of
+        EQ -> compareHun xs ys
+        other -> other
+
+instance CompareHun Username where
+  compareHun (Username u) (Username u') = compareHun u u'
+
+instance CompareHun UserDesc where
+  compareHun (UserDesc u n) (UserDesc u' n') =
+    case compareHun u u' of
+      EQ -> compareHun n n'
+      other -> other
+
 #ifdef TEST
 
 -- * Invariants
+
+compareHunTests = UnitTests [
+    ("Small normal letters a-a", EQ == compareHun 'a' 'a')
+  , ("Small normal letters d-z", LT == compareHun 'd' 'z')
+  , ("Small normal letters z-a", GT == compareHun 'z' 'a')
+  , ("Capital normal letters A-A", EQ == compareHun 'A' 'A')
+  , ("Capital normal letters D-Z", LT == compareHun 'D' 'Z')
+  , ("Capital normal letters Z-A", GT == compareHun 'Z' 'A')
+  , ("Small accented letters á-á", EQ == compareHun 'á' 'á')
+  , ("Small accented letters é-ú", LT == compareHun 'é' 'ú')
+  , ("Small accented letters ű-á", GT == compareHun 'ű' 'á')
+  , ("Capital accented letters Á-Á", EQ == compareHun 'á' 'á')
+  , ("Capital accented letters É-Ú", LT == compareHun 'É' 'Ú')
+  , ("Capital accented letters Ű-Á", GT == compareHun 'Ű' 'Á')
+  ]
 
 roleInvariants = Invariants [
     ( "Showing roles must generate string parseable by parseRole",

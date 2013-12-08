@@ -9,8 +9,9 @@ module Bead.View.Snap.Content.Home (
   ) where
 
 import Numeric (showHex)
+import Data.Function (on)
 import Data.Maybe (catMaybes)
-import Data.List (intersperse)
+import Data.List (intersperse, sortBy)
 import Data.String (fromString)
 import Data.Time
 import Control.Monad (join, when, liftM)
@@ -64,7 +65,7 @@ homePage = withUserState $ \s -> do
           <$> ((not . null) <$> administratedCourses)
           <*> ((not . null) <$> administratedGroups)
           <*> userAssignments
-          <*> submissionTables
+          <*> (map sortUserLines <$> submissionTables)
           <*> (return converter)))
 
 navigation :: [P.Page] -> Html
@@ -331,6 +332,26 @@ colorStyle (RGB (r,g,b)) = join ["background-color:#", hex r, hex g, hex b]
     twoDigits ds  = ds
 
     hex x = twoDigits (showHex x "")
+
+-- * Tools
+
+-- Sorts the userlines alphabetically ordered in submissionTableInfo
+sortUserLines = submissionTableInfoCata
+  id -- course
+  id -- number
+  id -- config
+  id -- assignment
+  id -- assignments
+  id -- user
+  id -- users
+  id -- userline
+  sort -- userlines
+  SubmissionTableInfo
+  where
+   sort = sortBy (compareHun `on` fst3)
+
+fst3 :: (a,b,c) -> a
+fst3 (x,_,_) = x
 
 -- * Tests
 

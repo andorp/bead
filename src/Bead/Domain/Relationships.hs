@@ -111,6 +111,26 @@ data SubmissionTableInfo = SubmissionTableInfo {
   , stUserLines   :: [(UserDesc, Maybe Result, [(AssignmentKey, SubmissionInfo)])]
   } deriving (Show)
 
+submissionTableInfoCata
+  course
+  number
+  config
+  assignment
+  assignments
+  user
+  users
+  userline
+  userlines
+  tableInfo
+  t =
+    tableInfo
+      (course $ stCourse t)
+      (number $ stNumberOfAssignments t)
+      (config $ stEvalConfig t)
+      (assignments . map assignment $ stAssignments t)
+      (users . map user $ stUsers t)
+      (userlines . map userline $ stUserLines t)
+
 submissionTableInfoPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment)
   ]

@@ -24,7 +24,7 @@ import Test.Quick.RolePermissionGen
 
 import qualified Bead.View.Snap.RouteOf as R (invariants, unitTests)
 import qualified Bead.Controller.Pages as P (invariants, unitTests)
-import qualified Bead.Domain.Entities as E (roleInvariants, assignmentTests)
+import qualified Bead.Domain.Entities as E (roleInvariants, assignmentTests, compareHunTests)
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQL.Loader as L (unitTests)
 import qualified Bead.View.Snap.Content.All as VA (invariants)
@@ -80,6 +80,7 @@ tests = [
   , unitTestGroup   "Page Session Keys" VS.unitTests
   , invariantsGroup "Role invariants" E.roleInvariants
   , unitTestGroup   "Assignment active period" E.assignmentTests
+  , unitTestGroup   "Hungarian letter comparism" E.compareHunTests
   , unitTestGroup   "RouteOf unit tests" R.unitTests
   , unitTestGroup   "Page unit tests" P.unitTests
   , unitTestGroup   "Template and components" TC.unitTests
