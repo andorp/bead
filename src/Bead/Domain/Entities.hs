@@ -12,8 +12,8 @@ import Data.List (findIndex)
 import Data.Time (UTCTime(..), LocalTime, timeZoneName)
 import Data.Time.Format (formatTime)
 import qualified Data.Time as Time
-import Control.Monad
-import Control.Applicative ((<$>), (<*>))
+import Control.Monad (join)
+import Control.Applicative ((<$>), (<*>), (<|>))
 import System.Locale (defaultTimeLocale)
 import Text.Printf (printf)
 
@@ -430,13 +430,9 @@ class CompareHun c where
   compareHun :: c -> c -> Ordering
 
 instance CompareHun Char where
-  compareHun c c' = maybe (compare c c') id $ mplus
-    (do x <- idxSmall c
-        y <- idxSmall c'
-        return (compare x y))
-    (do x <- idxCapital c
-        y <- idxCapital c'
-        return (compare x y))
+  compareHun c c' = maybe (compare c c') id
+    ((compare <$> idxSmall   c <*> idxSmall   c') <|>
+     (compare <$> idxCapital c <*> idxCapital c'))
     where
       idxSmall   x = findIndex (x==) hunSmall
       idxCapital x = findIndex (x==) hunCapital
