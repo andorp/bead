@@ -44,13 +44,42 @@ Executable Bead
   Main-is: SnapMain.hs
   CPP-Options: -DEMAIL_REGISTRATION
   HS-Source-Dirs: src, snaplets/fay/src
-  Build-Depends: snap, snap-core, snap-server, lens, blaze-html,
-                 snap-blaze, snaplet-fay, fay-jquery, fay-text, bytestring,
-                 MonadCatchIO-transformers, blaze-html, xmlhtml, text, aeson,
-                 blaze-markup, temporary, deepseq, mtl, directory, filepath,
-                 transformers, time, containers, base, fay, utf8-string,
-                 unix, mime-mail, random, hastache, syb, pandoc, MissingH,
-                 old-locale
+  Build-Depends:
+    aeson,
+    base,
+    blaze-html,
+    blaze-markup,
+    bytestring,
+    containers,
+    clientsession,
+    deepseq,
+    directory,
+    fay,
+    fay-jquery,
+    fay-text,
+    filepath,
+    hastache,
+    lens,
+    mime-mail,
+    MissingH,
+    MonadCatchIO-transformers,
+    old-locale,
+    pandoc,
+    mtl,
+    random,
+    snap,
+    snap-core,
+    snap-server,
+    snap-blaze,
+    snaplet-fay,
+    syb,
+    temporary,
+    text,
+    time,
+    transformers,
+    utf8-string,
+    unix,
+    xmlhtml
 
 
 --Executable Test

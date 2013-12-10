@@ -9,7 +9,7 @@ import Snap.Snaplet
 import Snap.Snaplet.Session
 import Snap.Snaplet.Session.Backends.CookieSession
 import Snap.Snaplet.Auth
-import Snap.Snaplet.Auth.Backends.JsonFile
+import Snap.Snaplet.Auth.Backends.SafeJsonFile
 import Snap.Snaplet.Fay
 import Data.Maybe (maybe)
 import System.FilePath (joinPath)
@@ -47,7 +47,7 @@ appInit config user s d = makeSnaplet "bead" description dataDir $ do
           initCookieSessionManager "cookie" "session" (Just (sessionTimeout config))
 
   as <- nestSnaplet "auth" auth $
-          initJsonFileAuthManager defAuthSettings sessionManager "users.json"
+          initSafeJsonFileAuthManager defAuthSettings sessionManager "users.json"
 
   ss <- nestSnaplet "context" A.serviceContext $ contextSnaplet s
 
