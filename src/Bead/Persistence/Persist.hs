@@ -228,11 +228,11 @@ submissionListDesc p u ak = do
   -- period
   submissions <- assignmentTypeCata
     -- Normal assignment
-    (mapM submissionStatus =<< userSubmissions p u ak)
+    (Right <$> (mapM submissionStatus =<< userSubmissions p u ak))
     -- Urn assignment
     (case (assignmentEnd asg < now) of
-       True  -> mapM submissionStatus =<< userSubmissions p u ak
-       False -> return [])
+       True  -> Right <$> (mapM submissionStatus =<< userSubmissions p u ak)
+       False -> Left  <$> (mapM submissionTime =<< userSubmissions p u ak))
     (assignmentType asg)
 
   return SubmissionListDesc {
@@ -246,6 +246,8 @@ submissionListDesc p u ak = do
       time <- solutionPostDate <$> loadSubmission p sk
       s <- submissionEvalStr p sk
       return (sk, time, s, "TODO: EvaluatedBy")
+
+    submissionTime sk = solutionPostDate <$> loadSubmission p sk
 
 submissionEvalStr :: Persist -> SubmissionKey -> TIO String
 submissionEvalStr p sk = do

@@ -67,20 +67,32 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
     (markdownToHtml . assignmentDesc . slAssignment . smList $ p)
   let submissions = slSubmissions . smList $ p
   H.h2 (translate i "Beadott megoldások")
-  if (not . null $ submissions)
-    then do
-      table (fieldName submissionTableName) (className submissionListTable) # informationalTable $
-        mapM_ submissionLine submissions
-    else do
-      translate i "Nincsenek még beadott megoldások."
+  either (userSubmissionTimes i) (userSubmissionInfo i) submissions
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft $ fromString t
+
     submissionLine (sk, time, status, t) = H.tr $ do
       H.td # informationalCell $ link
         (routeWithParams P.SubmissionDetails [requestParam (asKey p), requestParam sk])
         (fromString . showDate $ (uTime p) time)
       H.td # informationalCell $ (fromString status)
+
+    submissionTimeLine time =
+      H.tr $ (H.td # informationalCell) $ (fromString . showDate $ (uTime p) time)
+
+    userSubmissionInfo  i = userSubmission i submissionLine
+    userSubmissionTimes i = userSubmission i submissionTimeLine
+
+    userSubmission i line submissions =
+      if (not $ null submissions)
+        then do
+          table (fieldName submissionTableName) (className submissionListTable) # informationalTable $
+            mapM_ line submissions
+        else do
+          translate i "Nincsenek még beadott megoldások."
+
+
 
 invalidAssignment :: Pagelet
 invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->

@@ -59,10 +59,30 @@ submissionDescPermissions = ObjectPermissions [
 type Status = String
 type EvaluatedBy = String
 
+-- List of the submissions made by a student for a given assignment
+type UserSubmissionInfo = [(SubmissionKey, UTCTime, Status, EvaluatedBy)]
+
+userSubmissionInfoCata
+  :: ([a] -> b)
+  -> ((SubmissionKey, UTCTime, Status, EvaluatedBy) -> a)
+  -> UserSubmissionInfo
+  -> b
+userSubmissionInfoCata list info us = list $ map info us
+
+-- List of the submission times made by a student for a given assignment
+type UserSubmissionTimes = [UTCTime]
+
+userSubmissionTimesCata
+  :: ([a] -> b)
+  -> (UTCTime -> a)
+  -> UserSubmissionTimes
+  -> b
+userSubmissionTimesCata list time s = list $ map time s
+
 data SubmissionListDesc = SubmissionListDesc {
     slGroup   :: String
   , slTeacher :: [String]
-  , slSubmissions :: [(SubmissionKey, UTCTime, Status, EvaluatedBy)]
+  , slSubmissions :: Either UserSubmissionTimes UserSubmissionInfo
   , slAssignment :: Assignment
   }
 
