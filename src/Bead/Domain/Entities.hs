@@ -453,8 +453,8 @@ instance CompareHun Username where
 
 instance CompareHun UserDesc where
   compareHun (UserDesc u n) (UserDesc u' n') =
-    case compareHun u u' of
-      EQ -> compareHun n n'
+    case compareHun n n' of
+      EQ -> compareHun u u'
       other -> other
 
 #ifdef TEST
