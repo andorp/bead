@@ -26,9 +26,9 @@ import Data.Char (toUpper)
 import Data.Map (Map)
 import qualified Data.Map as Map
 
-
-c :: L.Logger -> IO ServiceContext
-c logger = do
+-- Creates a service context that includes the given logger
+createContext :: L.Logger -> IO ServiceContext
+createContext logger = do
   userContainer <- ioUserContainer
   isPersistSetUp <- isPersistenceSetUp P.noSqlDirPersist
   case isPersistSetUp of
@@ -86,7 +86,7 @@ startService :: Config -> Maybe (String, String) -> IO ()
 startService config newAdminUser = do
   userActionLogs <- createSnapLogger . userActionLogFile $ config
 
-  context <- c (snapLogger userActionLogs)
+  context <- createContext (snapLogger userActionLogs)
 
   let dictionaryDir = "dic"
   dExist <- doesDirectoryExist dictionaryDir

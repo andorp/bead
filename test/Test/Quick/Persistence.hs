@@ -1,8 +1,4 @@
-module Test.Quick.Persistence (
-    tests
-  , massTests
-  , complexTests
-  ) where
+module Test.Quick.Persistence where
 
 import Control.Applicative ((<$>))
 import Control.Monad
@@ -115,6 +111,11 @@ multipleGroupsForCourse = do
   gks <- runPersistCmd $ groupKeysOfCourse persist ck
   assertEquals (Set.fromList gks) (Set.fromList [gk1,gk2]) "Groups key set were different"
 
+-- Tries to save and load a submission for a given user and assignment
+saveAndLoadSubmissionFor u ak =
+  saveAndLoadIdenpotent "Submission"
+    (saveSubmission persist ak u) (loadSubmission persist) (Gen.submissions startDate)
+
 saveAndLoadSubmission = do
   ak <- groupAssignmentSaveAndLoad
   u <- pick Gen.users
@@ -122,6 +123,8 @@ saveAndLoadSubmission = do
   sk <- saveAndLoadIdenpotent "Submission"
           (saveSubmission persist ak (u_username u)) (loadSubmission persist) (Gen.submissions startDate)
   return (ak,u,sk)
+
+
 
 assignmentAndUserOfSubmission = do
   (ak, u, sk) <- saveAndLoadSubmission
@@ -287,7 +290,7 @@ check m = do
 -- properties are hold.
 
 reinitPersistence = do
-  removeDirectoryRecursive "data"
+  whenM (doesDirectoryExist "data") (removeDirectoryRecursive "data")
   initPersistence persist
 
 courseAndGroupAssignments cn gn cs gs = do
@@ -723,3 +726,8 @@ assertNonEmpty _ _ = return ()
 assertEmpty :: (Monad m) => [a] -> String -> m ()
 assertEmpty [] _ = return ()
 assertEmpty _ msg = fail msg
+
+whenM :: (Monad m) => m Bool -> m () -> m ()
+whenM m a = do
+  x <- m
+  when x a

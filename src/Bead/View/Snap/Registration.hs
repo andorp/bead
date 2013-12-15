@@ -2,6 +2,7 @@
 {-# LANGUAGE CPP #-}
 module Bead.View.Snap.Registration (
     createAdminUser
+  , createUser
 #ifdef EMAIL_REGISTRATION
   , registrationRequest
   , finalizeRegistration
@@ -46,7 +47,7 @@ import Text.Printf (printf)
 -- Snap and Blaze imports
 
 import Snap hiding (Config(..), get)
-import Snap.Snaplet.Auth as A
+import Snap.Snaplet.Auth as A hiding (createUser)
 import Snap.Snaplet.Auth.Backends.JsonFile (mkJsonAuthMgr)
 
 import Text.Blaze (textTag)
@@ -54,8 +55,9 @@ import Text.Blaze.Html5 (Html, (!)) -- hiding (base, map, head, menu)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A hiding (title, rows, accept)
 
-createAdminUser :: P.Persist -> FilePath -> String -> String -> IO ()
-createAdminUser persist usersdb name password = do
+createUser :: P.Persist -> FilePath -> User -> String -> IO ()
+createUser persist usersdb user password = do
+  let name = usernameCata id $ u_username user
   mgr <- mkJsonAuthMgr usersdb
   pwd <- encryptPassword . ClearText . fromString $ password
   let authUser = defAuthUser {
@@ -63,6 +65,16 @@ createAdminUser persist usersdb name password = do
     , userPassword = Just pwd
     }
   save mgr authUser
+  createdUser <- lookupByLogin mgr (T.pack name)
+  case createdUser of
+    Nothing -> error "Nem jött létre felhasználó!"
+    Just u' -> case passwordFromAuthUser u' of
+      Nothing  -> error "Nem lett jelszó megadva!"
+      Just pwd -> P.runPersist $ P.saveUser persist user
+  return ()
+
+createAdminUser :: P.Persist -> FilePath -> String -> String -> IO ()
+createAdminUser persist usersdb name password =
   let usr = User {
       u_role = Admin
     , u_username = Username name
@@ -70,14 +82,7 @@ createAdminUser persist usersdb name password = do
     , u_name = ""
     , u_timezone = UTC
     }
-  createdUser <- lookupByLogin mgr (T.pack name)
-  case createdUser of
-    Nothing -> error "Nem jött létre felhasználó!"
-    Just u' -> case passwordFromAuthUser u' of
-      Nothing  -> error "Nem lett jelszó megadva!"
-      Just pwd -> P.runPersist $ P.saveUser persist usr
-  return ()
-
+  in createUser persist usersdb usr password
 -- * User registration handler
 
 data RegError

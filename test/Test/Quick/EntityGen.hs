@@ -31,8 +31,10 @@ manyWords = do
   where
     manyWords' = listOf1 $ elements $ ' ':['a' .. 'z']
 
-
-usernames = liftM Username word
+usernames = liftM Username (vectorOf 6 $ oneof [capital, digits])
+  where
+    capital = elements ['A' .. 'Z']
+    digits  = elements ['0' .. '9']
 
 roleGen = elements [Student, GroupAdmin, CourseAdmin, Admin]
 
