@@ -295,6 +295,8 @@ valueTextSelection name = selection name . mapM_ option'
   where
     option' s = option (selectionValue s) (selectionText s) False
 
+-- Creates a selection from enum values, starting enumeration from the
+-- given value
 enumSelection :: (Enum e, SelectionValue e, SelectionText e) => String -> e -> Html
 enumSelection name start = valueTextSelection name [start .. ]
 

@@ -129,7 +129,7 @@ newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page
   H.div ! leftCell $ do
     H.b $ (translate i "Típus")
     H.br
-    enumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
+    defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
     H.br
     H.p $ do
       H.b $ pageDataCata (const (translate i "Tárgy")) (const (translate i "Csoport")) (const (translate i "")) pd
