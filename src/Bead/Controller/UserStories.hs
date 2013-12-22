@@ -75,8 +75,8 @@ login username token = do
       loadUserData username token P.Home
       s <- userState
       liftIO $ userLogsIn usrContainer (userToken s) s
-    (True , True)  -> errorPage "The user is logged in somewhere else"
-    (False,    _)  -> errorPage "Invalid user and password combination"
+    (True , True)  -> errorPage "Ez a felhasználó máshonnan is be van jelentkezve"
+    (False,    _)  -> errorPage "Rossz jelszó vagy felhasználónév"
 
 -- | The user logs out
 logout :: UserStory ()
@@ -347,19 +347,19 @@ authorize p o = do
   case er of
 
     Left EmptyRole ->
-      errorPage "User is not logged in."
+      errorPage "A felhasználó nincs bejelentkezve"
 
     Left RegRole -> case elem (p,o) regPermObjects of
       True  -> return ()
       False -> errorPage $ join [
-          "Registration tries to reach other authentication "
+          "Regisztrációs folyamat hibás működése miatt más folyamatot akar elérni "
         , show p, " ", show o
         ]
 
     Right r -> case permission r p o of
       True  -> return ()
       False -> errorPage $ join [
-          "Authorization is required: ", show r, " "
+          "Azonosítás szükséges: ", show r, " "
         , show p, " ", show o
         ]
   where
@@ -432,7 +432,7 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
       a <- Bead.Controller.UserStories.loadAssignment ak
       now <- liftIO getCurrentTime
       unless (isActivePeriod a now) $
-        errorPage "Submission is closed for the assignment"
+        errorPage "A beküldési határidő lejárt"
 
 
 availableGroups :: UserStory [(GroupKey, GroupDesc)]
