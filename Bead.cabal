@@ -55,7 +55,7 @@ Executable Bead
     deepseq,
     directory,
     fay,
-    fay-jquery,
+    fay-jquery >= 0.5,
     fay-text,
     filepath,
     hastache,
