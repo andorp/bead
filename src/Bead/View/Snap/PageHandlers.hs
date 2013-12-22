@@ -229,7 +229,7 @@ runPOSTHandler onError p h
       (hfailure . onError)
       (\_ -> return HSuccess)
       (do userAction <- h
-          lift $ runStory $ do
+          runStoryE $ do
             userStoryFor userAction
             S.changePage . P.parentPage $ p
           lift $ with sessionManager $ (commitSession >> touchSession)

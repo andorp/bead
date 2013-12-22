@@ -328,9 +328,7 @@ clearStatusMessage :: UserStory ()
 clearStatusMessage = changeUserState clearStatus
 
 errorPage :: String -> UserStory ()
-errorPage s = do
-  liftIO . print $ s
-  CME.throwError $ UserError s
+errorPage s = CME.throwError $ UserError s
 
 -- * Low level user story functionality
 
