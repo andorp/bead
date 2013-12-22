@@ -40,6 +40,7 @@ profileContent :: User -> Pagelet
 profileContent user = onlyHtml $ mkI18NHtml $ \i -> do
   postForm (routeOf Profile) $ do
     table (fieldName profileTable) (fieldName profileTable) $ do
+      tableLine (i "Felhasználó: ") (usernameCata (H.small . H.b . fromString) $ u_username user)
       tableLine (i "Email cím: ") (emailCata (H.small . H.b . fromString) $ u_email user)
       tableLine (i "Teljes név: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
       tableLine (i "Időzóna: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
