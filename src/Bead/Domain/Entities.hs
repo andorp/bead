@@ -348,6 +348,13 @@ dataTimeZone = timeZoneCata
 showDate :: LocalTime -> String
 showDate = formatTime defaultTimeLocale "%F, %T"
 
+-- UserRegInfo is a User Registration Info that consists of
+-- a Username, a Password, an Email Address, a Full Name, and a time zone
+newtype UserRegInfo = UserRegInfo (String, String, String, String, TimeZone)
+
+userRegInfoCata f (UserRegInfo (username, password, email, fullName, timeZone))
+  = f username password email fullName timeZone
+
 -- | Logged in user
 data User = User {
     u_role     :: Role

@@ -9,6 +9,7 @@ import System.IO (hFlush, hSetEcho, stdout, stdin)
 
 import Bead.Configuration
 import Bead.Controller.ServiceContext as S
+import Bead.Domain.Entities (UserRegInfo(..), TimeZone(..))
 import Bead.View.Snap.Application
 import Bead.View.Snap.AppInit
 import Bead.View.Snap.Dictionary (Dictionaries)
@@ -46,32 +47,60 @@ main = do
   newAdminUser <- either (const $ return Nothing) interpretTasks (initTasks args)
   startService config newAdminUser
 
-interpretTasks :: [InitTask] -> IO (Maybe (String, String))
+interpretTasks :: [InitTask] -> IO AppInitTasks
 interpretTasks tasks = case elem CreateAdmin tasks of
   False -> return Nothing
   True  -> fmap Just readAdminUser
 
-readAdminUser :: IO (String, String)
+-- Read user information from stdin, validates the username, the passwords and email fields
+readAdminUser :: IO UserRegInfo
 readAdminUser = do
   putStrLn "Creating admin user, all characters are converted to lower case."
   putStrLn "Username must be in the neptun code format."
   usr <- readUsername
-  hSetEcho stdin False
-  putStr "Password: " >> hFlush stdout
-  pwd <- getLine
-  putStrLn ""
-  putStr "Password again: " >> hFlush stdout
-  pwd2 <- getLine
-  putStrLn ""
+  email <- readEmail
+  fullName <- readFullname
+  pwd      <- readPassword "Password: "
+  pwdAgain <- readPassword "Password Again: "
   hSetEcho stdin True
-  case pwd == pwd2 of
-    True  -> return (usr, pwd)
+  case pwd == pwdAgain of
+    -- All the validators are passed, the registration can be done
+    True  -> return (UserRegInfo (usr, pwd, email, fullName, UTC))
     False -> do
       putStrLn "Passwords do not match!"
       readAdminUser
   where
+    putStrFlush msg = putStr msg >> hFlush stdout
+
+    readFullname = do
+      putStrFlush "Full name: "
+      getLine
+
+    readPassword msg = do
+      putStrFlush msg
+      hSetEcho stdin False
+      pwd <- getLine
+      putStrLn ""
+      hSetEcho stdin True
+      validate
+        isPassword
+        pwd
+        (return pwd)
+        (\msg' -> do putStrLn msg'
+                     readPassword msg)
+
+    readEmail = do
+      putStrFlush "Email address: "
+      email <- getLine
+      validate
+        isEmailAddress
+        email
+        (return email) -- Valid email
+        (\msg -> do putStrLn msg
+                    readEmail)
+
     readUsername = do
-      putStr "Admin User: " >> hFlush stdout
+      putStrFlush "Admin User: "
       usr <- fmap (map toUpper) getLine
       validate
         isUsername
@@ -79,11 +108,11 @@ readAdminUser = do
         -- Valid username
         (return usr)
         -- Invalid username
-        (\msg -> do putStrLn $ "Username format is invalid! " ++ msg
+        (\msg -> do putStrLn msg
                     readUsername)
 
-startService :: Config -> Maybe (String, String) -> IO ()
-startService config newAdminUser = do
+startService :: Config -> AppInitTasks -> IO ()
+startService config appInitTasks = do
   userActionLogs <- createSnapLogger . userActionLogFile $ config
 
   context <- createContext (snapLogger userActionLogs)
@@ -96,5 +125,5 @@ startService config newAdminUser = do
 
   putStrLn $ "Found dictionaries: " ++ (show $ Map.keys dictionaries)
 
-  serveSnaplet defaultConfig (appInit config newAdminUser context dictionaries)
+  serveSnaplet defaultConfig (appInit config appInitTasks context dictionaries)
   stopLogger userActionLogs

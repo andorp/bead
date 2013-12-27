@@ -73,16 +73,17 @@ createUser persist usersdb user password = do
       Just pwd -> P.runPersist $ P.saveUser persist user
   return ()
 
-createAdminUser :: P.Persist -> FilePath -> String -> String -> IO ()
-createAdminUser persist usersdb name password =
-  let usr = User {
-      u_role = Admin
-    , u_username = Username name
-    , u_email = Email ""
-    , u_name = ""
-    , u_timezone = UTC
-    }
-  in createUser persist usersdb usr password
+createAdminUser :: P.Persist -> FilePath -> UserRegInfo -> IO ()
+createAdminUser persist usersdb = userRegInfoCata $
+  \name password email fullName timeZone ->
+    let usr = User {
+        u_role = Admin
+      , u_username = Username name
+      , u_email = Email email
+      , u_name = fullName
+      , u_timezone = timeZone
+      }
+    in createUser persist usersdb usr password
 -- * User registration handler
 
 data RegError

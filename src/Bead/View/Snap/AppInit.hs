@@ -2,6 +2,7 @@
 module Bead.View.Snap.AppInit (
     appInit
   , beadConfigFileName
+  , AppInitTasks
   ) where
 
 import Snap hiding (Config(..))
@@ -15,6 +16,7 @@ import Data.Maybe (maybe)
 import System.FilePath (joinPath)
 
 import Bead.Configuration (Config(..))
+import Bead.Domain.Entities (UserRegInfo)
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.Controller.ServiceContext as S
 
@@ -34,20 +36,28 @@ beadConfigFileName = "bead.config"
 iconFileName :: String
 iconFileName = "icon.ico"
 
-appInit :: Config -> Maybe (String, String) -> ServiceContext -> Dictionaries -> SnapletInit App App
+usersJson :: String
+usersJson = "users.json"
+
+-- During the initialization what other tasks need to be done.
+-- Just userRegInfo means that a new admin user should be craeted
+-- Nothing means there is no additional init task to be done.
+type AppInitTasks = Maybe UserRegInfo
+
+appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> Dictionaries -> SnapletInit App App
 appInit config user s d = makeSnaplet "bead" description dataDir $ do
 
   copyDataContext
 
   case user of
     Nothing        -> return ()
-    Just (usr,pwd) -> liftIO $ S.scRunPersist s $ \p -> createAdminUser p "users.json" usr pwd
+    Just userRegInfo -> liftIO $ S.scRunPersist s $ \p -> createAdminUser p usersJson userRegInfo
 
   sm <- nestSnaplet "session" sessionManager $
           initCookieSessionManager "cookie" "session" (Just (sessionTimeout config))
 
   as <- nestSnaplet "auth" auth $
-          initSafeJsonFileAuthManager defAuthSettings sessionManager "users.json"
+          initSafeJsonFileAuthManager defAuthSettings sessionManager usersJson
 
   ss <- nestSnaplet "context" A.serviceContext $ contextSnaplet s
 
