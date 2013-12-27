@@ -269,3 +269,6 @@ assignmentEndPrm t = utcTimeParam t (fieldName assignmentEndField) "Beküldés v
 
 userTimeZonePrm :: Parameter TimeZone
 userTimeZonePrm = readablePrm (fieldName userTimeZoneField) "Időzóna"
+
+regTimeZonePrm :: Parameter TimeZone
+regTimeZonePrm = readablePrm (fieldName regTimeZoneField) "Időzóna"

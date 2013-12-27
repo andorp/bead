@@ -36,7 +36,7 @@ import Bead.View.Snap.Content hiding (
 
 import Data.Maybe (fromJust, isNothing)
 import Data.String (fromString)
-import Data.Time
+import Data.Time hiding (TimeZone)
 import qualified Data.Text as T
 import Data.Text.Encoding (decodeUtf8)
 import qualified Data.List as L
@@ -317,6 +317,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                   table (fieldName registrationTable) (fieldName registrationTable) $ do
                     tableLine "Jelszó:" $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
                     tableLine "Jelszó (ismét):" $ passwordInput (name regPasswordAgainPrm) 20 Nothing ! A.required ""
+                    tableLine "Időzóna:" $ defEnumSelection (name regTimeZonePrm) UTC ! A.required ""
                   hiddenParam regUserRegKeyPrm key
                   hiddenParam regTokenPrm      token
                   hiddenParam regUsernamePrm   username
@@ -328,9 +329,10 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
   createStudent = do
     values <- readRegParameters
     pwd    <- readParameter regPasswordPrm
-    case (values, pwd) of
-      (Nothing,_) -> errorPageWithTitle registrationTitle "Nincsenek regisztrációs paraméterek!" -- TODO
-      (Just (key, token, username), Just password) -> do
+    tz     <- readParameter regTimeZonePrm
+    case (values, pwd, tz) of
+      (Nothing,_,_) -> errorPageWithTitle registrationTitle "Nincsenek regisztrációs paraméterek!" -- TODO
+      (Just (key, token, username), Just password, Just timezone) -> do
         result <- registrationStory (S.loadUserReg key)
         case result of
           Left e -> errorPageWithTitle registrationTitle "Valamilyen belső hiba történt!" -- TODO
@@ -340,15 +342,15 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
             case (reg_timeout userRegData < now) of
               True -> errorPageWithTitle registrationTitle "A regisztrációs token már lejárt, regisztrálj újra!"
               False -> do
-                result <- withTop auth $ createNewUser userRegData password
+                result <- withTop auth $ createNewUser userRegData password timezone
                 redirect "/"
 
   log lvl msg = withTop serviceContext $ logMessage lvl msg
 
 
 
-createNewUser :: UserRegistration -> String -> Handler App (AuthManager App) (Either RegError ())
-createNewUser reg password = runErrorT $ do
+createNewUser :: UserRegistration -> String -> TimeZone -> Handler App (AuthManager App) (Either RegError ())
+createNewUser reg password timezone = runErrorT $ do
   -- Check if the user is exist already
   userExistence <- checkFailure =<< lift (registrationStory (S.doesUserExist username))
   when userExistence . throwError $ (RegErrorUserExist username)
@@ -360,7 +362,7 @@ createNewUser reg password = runErrorT $ do
     , u_username = username
     , u_email = email
     , u_name = fullname
-    , u_timezone = UTC
+    , u_timezone = timezone
     }
 
   -- Check if the Snap Auth registration went fine

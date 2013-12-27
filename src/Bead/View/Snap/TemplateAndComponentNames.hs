@@ -320,7 +320,7 @@ instance SnapClassName SCN where
 
 fieldList :: [String]
 fieldList = map fieldName $ join [
-  [ SFN loginUsername,  SFN loginPassword,   SFN regFullName, SFN regEmailAddress
+  [ SFN loginUsername,  SFN loginPassword,   SFN regFullName, SFN regEmailAddress, SFN regTimeZoneField
   , SFN exerciseForm,   SFN exerciseKey,     SFN coursesForm,            SFN coursesKey
   , SFN courseFormInfo, SFN courseCodeField, SFN courseNameField,        SFN courseDescField
   , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
