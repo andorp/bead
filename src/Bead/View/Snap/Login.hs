@@ -116,11 +116,7 @@ loginPage err = withTitleAndHead "Bejelentkezés" content
             ((H.p ! A.style "font-size: smaller") . fromString . show)
             err
       H.p $ do
-#ifdef EMAIL_REGISTRATION
         H.a ! A.href "/reg_request" $ "Regisztráció"
-#else
-        H.a ! A.href "/new_user" $ "Regisztráció"
-#endif
         H.br
         H.a ! A.href "/reset_pwd" $ "Elfelejtett jelszó"
 

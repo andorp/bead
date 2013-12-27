@@ -1,4 +1,4 @@
 #!/bin/sh
 
-ghci -isrc -itest -isnaplets/fay/src -DGHCI -DTEST -DEMAIL_REGISTRATION
+ghci -isrc -itest -isnaplets/fay/src -DGHCI -DTEST
 
