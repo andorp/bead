@@ -225,6 +225,13 @@ linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ f
 link :: String -> String -> Html
 link r t = H.a ! A.href (fromString r) $ fromString t
 
+-- Produces a HTML-link with the given route text and title
+linkWithTitle :: String -> String -> String -> Html
+linkWithTitle route title text =
+  H.a ! A.href (fromString route)
+      ! A.title (fromString title)
+      $ fromString text
+
 linkToRoute :: String -> Html
 linkToRoute = link "/"
 

@@ -344,6 +344,7 @@ submissionTableInfo
   -> TIO SubmissionTableInfo
 submissionTableInfo p courseName evalCfg as usernames = do
   assignments <- sortAssignments as
+  assignmentNames <- loadAssignmentNames as
 
   ulines <- flip mapM usernames $ \u -> do
     ud  <- userDescription p u
@@ -360,6 +361,7 @@ submissionTableInfo p courseName evalCfg as usernames = do
   , stAssignments = assignments
   , stUsers       = usernames
   , stUserLines   = ulines
+  , stAssignmentNames = assignmentNames
   }
   where
     sortAssignments :: [AssignmentKey] -> TIO [AssignmentKey]
@@ -372,6 +374,12 @@ submissionTableInfo p courseName evalCfg as usernames = do
     submissionInfo' u ak = addKey <$> (userLastSubmissionInfo p u ak)
       where
         addKey s = (ak,s)
+
+    loadAssignmentNames as = Map.fromList <$> mapM loadAssignmentName as
+
+    loadAssignmentName a = do
+      name <- assignmentName <$> loadAssignment p a
+      return (a,name)
 
     calculateResult = evaluateResults evalCfg . map sbmResult . filter hasResult
 

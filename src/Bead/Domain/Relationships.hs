@@ -9,6 +9,7 @@ import Bead.Domain.Evaluation
 -- Haskell imports
 
 import Data.Time (UTCTime(..))
+import Data.Map (Map)
 
 -- * Relations
 
@@ -122,6 +123,9 @@ siEvaluationKey Submission_Not_Found     = Nothing
 siEvaluationKey Submission_Unevaluated   = Nothing
 siEvaluationKey (Submission_Result ek _) = Just ek
 
+-- Simple name for the assignment
+type AssignmentName = String
+
 data SubmissionTableInfo = SubmissionTableInfo {
     stCourse   :: String
   , stNumberOfAssignments :: Int
@@ -129,6 +133,7 @@ data SubmissionTableInfo = SubmissionTableInfo {
   , stAssignments :: [AssignmentKey] -- Cronologically ordered list of assignments
   , stUsers       :: [Username]      -- Alphabetically ordered list of usernames
   , stUserLines   :: [(UserDesc, Maybe Result, [(AssignmentKey, SubmissionInfo)])]
+  , stAssignmentNames :: Map AssignmentKey AssignmentName
   } deriving (Show)
 
 submissionTableInfoCata
@@ -141,6 +146,7 @@ submissionTableInfoCata
   users
   userline
   userlines
+  assignmentNames
   tableInfo
   t =
     tableInfo
@@ -150,6 +156,7 @@ submissionTableInfoCata
       (assignments . map assignment $ stAssignments t)
       (users . map user $ stUsers t)
       (userlines . map userline $ stUserLines t)
+      (assignmentNames $ stAssignmentNames t)
 
 submissionTableInfoPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment)

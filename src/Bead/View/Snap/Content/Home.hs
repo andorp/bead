@@ -11,6 +11,7 @@ module Bead.View.Snap.Content.Home (
 import Numeric (showHex)
 import Data.Function (on)
 import Data.Maybe (catMaybes)
+import qualified Data.Map as Map (lookup)
 import Data.List (intersperse, sortBy)
 import Data.String (fromString)
 import Data.Time
@@ -171,8 +172,10 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
       headerCell $ (translate i18n "Összesítés")
 
     modifyAssignmentLink (i,ak) =
-      link (routeWithParams P.ModifyAssignment [requestParam ak])
-           (show i)
+      linkWithTitle
+        (routeWithParams P.ModifyAssignment [requestParam ak])
+        (maybe "" id . Map.lookup ak $ stAssignmentNames s)
+        (show i)
 
     userLine (u, p, as) = H.tr $ do
       let username = ud_username u
@@ -346,6 +349,7 @@ sortUserLines = submissionTableInfoCata
   id -- users
   id -- userline
   sort -- userlines
+  id -- assignment names
   SubmissionTableInfo
   where
    sort = sortBy (compareHun `on` fst3)
