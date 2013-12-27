@@ -299,7 +299,7 @@ sValue :: JQuery -> Fay Int
 sValue = ffi "%1.spinner(\"value\")"
 
 targetElement :: Event -> Fay JQuery
-targetElement e = target e >>= select
+targetElement e = (target e) >>= selectElement
 
 exists :: JQuery -> Fay Bool
 exists = ffi "(%1.length != 0)"
