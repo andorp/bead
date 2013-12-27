@@ -79,6 +79,7 @@ createAdminUser persist usersdb = userRegInfoCata $
       , u_timezone = timeZone
       }
     in createUser persist usersdb usr password
+
 -- * User registration handler
 
 data RegError
@@ -138,31 +139,32 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
       submitButton (fieldName regSubmitBtn) "Regisztráció"
     linkToRoute backToMain
 
+
   saveUserRegData = do
     u <- readParameter regUsernamePrm
     e <- readParameter regEmailPrm
     f <- readParameter regFullNamePrm
 
-    case (u,e,f) of
-      (Nothing, _, _) -> errorPageWithTitle registrationTitle "Hibás NEPTUN-kód"
+    renderPage $ case (u,e,f) of
+      (Nothing, _, _) -> throwError "Hibás NEPTUN-kód"
       (Just username, Just email, Just fullname) -> do
-        userRegData <- liftIO $ createUserRegData username email fullname
-        result <- registrationStory (S.createUserReg userRegData)
-        case result of
-          Left _ -> errorPageWithTitle registrationTitle "A regisztráció nem lett elmentve!"
-          Right key -> do
-             -- TODO: Send the email template
-            withTop sendEmailContext $
-
-              sendEmail
-                email
-                "BE-AD: Regisztráció"
-                RegTemplate {
-                    regUsername = reg_username userRegData
-                  , regUrl = createUserRegAddress key userRegData
-                  }
-            pageContent
-      _ -> errorPageWithTitle registrationTitle "Valamelyik request paraméter hiányzik!"
+          exist <- lift $ registrationStory (S.doesUserExist username)
+          when (isLeft exist) $ throwError "A felhasználó adatainak lekérdezése nem megengedett"
+          when (fromRight exist) $ throwError "A felhasználó már létezik"
+          userRegData <- liftIO $ createUserRegData username email fullname
+          result <- lift $ registrationStory (S.createUserReg userRegData)
+          when (isLeft result) $ throwError "A regisztráció nem lett elmentve!"
+          let key = fromRight result
+          lift $ withTop sendEmailContext $
+            sendEmail
+              email
+              "BE-AD: Regisztráció"
+              RegTemplate {
+                  regUsername = reg_username userRegData
+                , regUrl = createUserRegAddress key userRegData
+                }
+          lift $ pageContent
+      _ -> throwError "Valamelyik request paraméter hiányzik!"
 
   createUserRegAddress :: UserRegKey -> UserRegistration -> String
   createUserRegAddress key reg =
@@ -172,6 +174,13 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
                  , requestParameter regTokenPrm      (reg_token reg)
                  , requestParameter regUsernamePrm   (Username . reg_username $ reg)
                  ]
+
+  -- Calculates the result of an (ErrorT String ...) transformator and
+  -- returns the (Right x) or renders the error page with the given error
+  -- message in (Left x)
+  renderPage m = do
+    x <- runErrorT m
+    either (errorPageWithTitle registrationTitle) return x
 
 {-
 Registration finalization
@@ -300,3 +309,15 @@ pageContent = blaze $ dynamicTitleAndHead registrationTitle $ do
   H.p $ "A regisztrációs tokent elküldtük levélben, nézd meg a leveleidet!"
   H.br
   linkToRoute backToMain
+
+-- * Tools
+
+-- Returns true if the given value is Left x, otherwise false
+isLeft :: Either a b -> Bool
+isLeft (Left _)  = True
+isLeft (Right _) = False
+
+-- Return the value from Right x otherwise throws a runtime error
+fromRight :: Either a b -> b
+fromRight (Right x) = x
+fromRight (Left _)  = error "fromRight: left found"
