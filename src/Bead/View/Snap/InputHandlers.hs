@@ -129,16 +129,21 @@ emptyAssignment = Nothing
 instance GetValueHandler AssignmentKey where
   getValue = getParameter assignmentKeyPrm
 
+-- The start date of the assignment should be placed before
+-- than the end date
 instance GetValueHandler Assignment where
   getValue = do
     timeZone <- timezone <$> runStoryE Story.userState
+    startDate <- getParameter (assignmentStartPrm timeZone)
+    endDate   <- getParameter (assignmentEndPrm timeZone)
+    when (endDate < startDate) . throwError $ strMsg "A feladat kezdetének dátuma később van mint a feladat vége"
     assignmentAna
       (getParameter (stringParameter (fieldName assignmentNameField) "Név"))
       (getParameter (stringParameter (fieldName assignmentDescField) "Leírás"))
       (getParameter assignmentTypePrm)
-      (getParameter (assignmentStartPrm timeZone))
+      (return startDate)
       (return timeZone)
-      (getParameter (assignmentEndPrm   timeZone))
+      (return endDate)
       (return timeZone)
 
 -- * Combined input fields

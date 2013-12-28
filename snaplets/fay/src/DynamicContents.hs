@@ -26,6 +26,8 @@ onload = do
   hookEvaluationTypeForm createGroupHook
   hookDatetimePickerDiv startDateTimeHook
   hookDatetimePickerDiv endDateTimeHook
+  connectStartEndDatePickers startDateTimeHook endDateTimeHook
+  connectStartEndHours startDateTimeHook endDateTimeHook
   hookAssignmentForm (hookId assignmentForm) startDateTimeHook endDateTimeHook
   hookRegistrationForm
   hookSamePasswords (rFormId regFinalForm) (lcFieldName loginPassword) (lcFieldName regPasswordAgain)
@@ -36,6 +38,68 @@ onload = do
 
 pctValue :: String -> String
 pctValue = toEvResultJSON . percentageResult . parseDouble
+
+connectStartEndDatePickers :: DateTimePickerHook -> DateTimePickerHook -> Fay ()
+connectStartEndDatePickers start end = void $ do
+  startId <- select . cssId $ dtDatePickerId start
+  endId <- select . cssId $ dtDatePickerId end
+  existStart <- exists startId
+  existEnd <- exists endId
+  when (existStart && existEnd) $ do
+    setMinDatePickers startId endId
+    setMaxDatePickers startId endId
+    putStrLn "Date pickers are connected"
+
+connectStartEndHours :: DateTimePickerHook -> DateTimePickerHook -> Fay ()
+connectStartEndHours start end = void $ do
+  startDate <- select . cssId $ dtDatePickerId start
+  startHour <- select . cssId $ dtHourPickerId start
+  startMin <- select . cssId $ dtMinPickerId start
+  endDate <- select . cssId $ dtDatePickerId end
+  endHour <- select . cssId $ dtHourPickerId end
+  endMin <- select . cssId $ dtMinPickerId end
+  existStartDate <- exists startDate
+  existStartHour <- exists startHour
+  existStartMin  <- exists startMin
+  existEndDate <- exists endDate
+  existEndHour <- exists endHour
+  existEndMin  <- exists endMin
+  let existAll = and [ existStartDate, existStartHour, existStartMin
+                     , existEndDate, existEndHour, existEndMin
+                     ]
+  when existAll $ do
+    let times = do
+          sd <- getVal startDate
+          sh <- getVal startHour
+          sm <- getVal startMin
+          ed <- getVal endDate
+          eh <- getVal endHour
+          em <- getVal endMin
+          return (sd,sh,sm,ed,eh,em)
+
+        -- Check is the start date and the end date is the same
+        -- The start hour and minute must be before than the end hour and min
+        checkStart e = void $ do
+          (sd,sh,sm,ed,eh,em) <- times
+          when (sd == ed) $ do
+            when (less eh sh) $ setVal eh startHour
+            when (eh == sh && less em sm) $ setVal em startMin
+
+        checkEnd e = void $ do
+          (sd,sh,sm,ed,eh,em) <- times
+          when (sd == ed) $ do
+            when (less eh sh) $ setVal sh endHour
+            when (eh == sh && less em sm) $ setVal sm endMin
+
+    spinStop   checkStart startHour
+    spinStop   checkStart startMin
+    spinStop   checkEnd   endHour
+    spinStop   checkEnd   endMin
+    spinChange checkStart startHour
+    spinChange checkStart startMin
+    spinChange checkEnd   endHour
+    spinChange checkEnd   endMin
+    putStrLn "Synchronization of hours and mins is hooked"
 
 -- Attaches a datepicker and hour and minute input fields
 -- to the given hook
@@ -48,8 +112,8 @@ hookDatetimePickerDiv hook = void $ do
     input <- select . cssId . dtHiddenInputId $ hook
     date  <- select . createDateInput $ dtDatePickerId hook
     datepicker date
-    hour <- select createTimeInput
-    min <- select createTimeInput
+    hour <- select . createTimeInput $ dtHourPickerId hook
+    min <- select . createTimeInput $ dtMinPickerId hook
     br  <- select newLine
     appendTo div br
     appendTo div date
@@ -76,8 +140,8 @@ hookDatetimePickerDiv hook = void $ do
     change createDateTime min
     putStrLn $ "Date picker " ++ pickerDiv ++ " is loaded."
   where
-    createDateInput id = fromString ("<input id=\"" ++ id  ++ "\" type=\"text\" size=\"10\" required readonly />")
-    createTimeInput = fromString "<input type=\"text\" size=\"2\" value=\"0\"/>"
+    createDateInput id = fromString ("<input id=\"" ++ id ++ "\" type=\"text\" size=\"10\" required readonly />")
+    createTimeInput id = fromString ("<input id=\"" ++ id ++ "\" type=\"text\" size=\"2\" value=\"0\"/>")
     newLine = fromString "<br/>"
 
     datetime d h m = fromString $ (unpack d) ++ " " ++ (twoDigits (unpack h)) ++ ":" ++ (twoDigits (unpack m)) ++ ":00"
@@ -323,3 +387,12 @@ parseDouble = ffi "parseFloat(%1)"
 
 printInt :: Int -> String
 printInt = ffi "%1.toString()"
+
+-- Returns true if the first text is greater in js than the second
+greater :: Text -> Text -> Bool
+greater = ffi "(%1) > (%2)"
+
+-- Returns true if the first text is less in js than the second
+less :: Text -> Text -> Bool
+less = ffi "(%1) < (%2)"
+

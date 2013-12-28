@@ -335,6 +335,8 @@ fieldList = map fieldName $ join [
   , SFN availableAssignmentsTable, SFN submissionTableName, SFN groupEvalField, SFN profileTable
   , SFN changePasswordTable, SFN oldPasswordField, SFN newPasswordField, SFN newPasswordAgainField
   , SFN assignmentStartDateField, SFN assignmentEndDateField
+  , SFN assignmentStartHourField, SFN assignmentStartMinField
+  , SFN assignmentEndHourField, SFN assignmentEndMinField
   , SFN assignmentStartDefaultDate, SFN assignmentStartDefaultHour, SFN assignmentStartDefaultMin
   , SFN assignmentEndDefaultDate, SFN assignmentEndDefaultHour, SFN assignmentEndDefaultMin
   , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage
