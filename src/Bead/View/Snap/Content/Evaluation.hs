@@ -41,7 +41,7 @@ render (PctEval _) = renderDynamicPagelet
 evaluationPage :: GETContentHandler
 evaluationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
-  sd <- runStoryE (submissionDescription sk)
+  sd <- userStory (submissionDescription sk)
   tc <- usersTimeZoneConverter
   let pageData = PageData {
       sbmKey  = Right sk
@@ -54,7 +54,7 @@ modifyEvaluationPage :: GETContentHandler
 modifyEvaluationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
   ek <- getParameter evaluationKeyPrm
-  sd <- runStoryE (submissionDescription sk)
+  sd <- userStory (submissionDescription sk)
   tc <- usersTimeZoneConverter
   let pageData = PageData {
     sbmKey  = Left ek

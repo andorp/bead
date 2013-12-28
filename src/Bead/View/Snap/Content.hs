@@ -17,7 +17,7 @@ module Bead.View.Snap.Content (
   , routeOf
   , routeWithParams
   , runStory
-  , runStoryE
+  , userStory
   , i18nE
   , renderPagelet
   , renderDynamicPagelet

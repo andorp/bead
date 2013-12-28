@@ -16,7 +16,7 @@ usersObject
   -> (Maybe v -> HandlerError App App a)
   -> HandlerError App App a
 usersObject objectKeys keyLoader key onKeyFound =
-  (runStoryE $ do
+  (userStory $ do
     ks <- objectKeys
     case elem key ks of
       False -> return Nothing
@@ -32,7 +32,7 @@ userAssignmentForSubmission
   -> (HandlerError App App b)
   -> HandlerError App App b
 userAssignmentForSubmission key found notFound = do
-  action <- runStoryE $ do
+  action <- userStory $ do
     ks <- (maybe [] id) <$> userAssignments
     maybe
       (return notFound)

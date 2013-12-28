@@ -42,7 +42,7 @@ submissionListPage = withUserState $ \s -> do
         case (assignmentStart asg > now) of
           True  -> renderPagelet . withUserFrame s $ assignmentNotStartedYet
           False -> do
-            sl <- runStoryE (submissionListDesc ak)
+            sl <- userStory (submissionListDesc ak)
             tc <- usersTimeZoneConverter
             renderPagelet . withUserFrame s $
               submissionListContent (PageData { asKey = ak, smList = sl, uTime = tc })

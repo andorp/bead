@@ -31,7 +31,7 @@ postGroupReg = SubscribeToGroup
 
 groupRegistrationPage :: GETContentHandler
 groupRegistrationPage = withUserState $ \s -> do
-  desc <- runStoryE $ do
+  desc <- userStory $ do
     as <- attendedGroups
     let attendedGroupKeys = map fst as
         newGroupForUser (gk,_) = not (elem gk attendedGroupKeys)

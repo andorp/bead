@@ -2,8 +2,8 @@
 module Bead.View.Snap.HandlerUtils (
     logMessage
   , withUserState
-  , runStory  -- For logged in user
-  , runStoryE -- For logged in user
+  , runStory
+  , userStory
   , registrationStory
   , getParameter
   , getJSONParam
@@ -178,8 +178,11 @@ setInSessionE :: String -> String -> HandlerError App b ()
 setInSessionE k v
   = lift . withTop sessionManager $ setInSession (T.pack k) (T.pack v)
 
-runStoryE :: S.UserStory a -> HandlerError App b a
-runStoryE story = do
+-- Runs a user story within a service context where the user is logged in
+-- and throws a handler error if the story has failed
+-- otherwise returns the computed value
+userStory :: S.UserStory a -> HandlerError App b a
+userStory story = do
   x <- lift . runStory $ story
   case x of
     Left e  -> throwError . strMsg . S.userErrorMsg $ e

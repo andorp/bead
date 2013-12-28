@@ -28,7 +28,7 @@ profile = getPostContentHandler profilePage changeUserDetails
 
 profilePage :: GETContentHandler
 profilePage = withUserState $ \s -> do
-  user <- runStoryE currentUser
+  user <- userStory currentUser
   renderDynamicPagelet $ withUserFrame s (profileContent user)
 
 changeUserDetails :: POSTContentHandler

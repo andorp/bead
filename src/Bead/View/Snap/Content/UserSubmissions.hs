@@ -24,7 +24,7 @@ userSubmissionPage :: GETContentHandler
 userSubmissionPage = withUserState $ \s -> do
   username <- getParameter usernamePrm
   aKey     <- getParameter assignmentKeyPrm
-  mDesc <- runStoryE $ U.userSubmissions username aKey
+  mDesc <- userStory $ U.userSubmissions username aKey
   case mDesc of
     Nothing -> renderPagelet $ withUserFrame s unauthorized
     Just  d -> do

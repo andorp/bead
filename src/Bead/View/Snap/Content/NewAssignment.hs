@@ -54,7 +54,7 @@ isEmptyData = pageDataCata (null . trd) (null . trd) (const False)
 
 newCourseAssignmentPage :: GETContentHandler
 newCourseAssignmentPage = withUserState $ \s -> do
-  cs <- runStoryE S.administratedCourses
+  cs <- userStory S.administratedCourses
   now <- liftIO $ getCurrentTime
   tz <- dataTimeZone <$> userTimeZone
   renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Course (tz,now,cs)))
@@ -69,7 +69,7 @@ postCourseAssignment = CreateCourseAssignment
 newGroupAssignmentPage :: GETContentHandler
 newGroupAssignmentPage = withUserState $ \s -> do
   now <- liftIO $ getCurrentTime
-  gs <- runStoryE S.administratedGroups
+  gs <- userStory S.administratedGroups
   tz <- dataTimeZone <$> userTimeZone
   renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Group (tz,now,gs)))
 
@@ -83,7 +83,7 @@ postGroupAssignment = CreateGroupAssignment
 modifyAssignmentPage :: GETContentHandler
 modifyAssignmentPage = withUserState $ \s -> do
   ak <- getValue
-  as <- runStoryE (S.loadAssignment ak)
+  as <- userStory (S.loadAssignment ak)
   tz <- dataTimeZone <$> userTimeZone
   renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Assignment (tz,ak,as)))
 

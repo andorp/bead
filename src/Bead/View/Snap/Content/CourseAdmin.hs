@@ -31,7 +31,7 @@ data PageData = PageData {
 
 courseAdminPage :: GETContentHandler
 courseAdminPage = withUserState $ \s -> do
-  pageData <- runStoryE $ do
+  pageData <- userStory $ do
     cs <- administratedCourses
     gs <- do courseAndGroupKeys <- mapM (loadCourse . fst) cs
              let gks = join . map snd $ courseAndGroupKeys

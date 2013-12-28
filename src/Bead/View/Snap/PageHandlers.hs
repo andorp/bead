@@ -208,7 +208,7 @@ runGETHandler onError handler
       (hfailure . onError)
       (\_ -> return HSuccess)
       (do handler
-          runStoryE S.clearStatusMessage)
+          userStory S.clearStatusMessage)
 
 -- Runs the 'h' handler if no error occurs during the run of the handler
 -- calculates the parent page for the given 'p', and runs the attached userstory
@@ -225,7 +225,7 @@ runPOSTHandler onError p h
       (hfailure . onError)
       (\_ -> return HSuccess)
       (do userAction <- h
-          runStoryE $ do
+          userStory $ do
             userStoryFor userAction
             S.changePage . P.parentPage $ p
           lift $ with sessionManager $ (commitSession >> touchSession)

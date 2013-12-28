@@ -31,8 +31,10 @@ data PageInfo = PageInfo {
 
 administrationPage :: GETContentHandler
 administrationPage = withUserState $ \s -> do
-  cs <- runStoryE (selectCourses each)
-  ausers <- runStoryE (selectUsers adminOrCourseAdmin)
+  (cs,ausers) <- userStory $ do
+    cs <- selectCourses each
+    ausers <- selectUsers adminOrCourseAdmin
+    return (cs,ausers)
   let info = PageInfo {
       courses = cs
     , admins = filter admin ausers

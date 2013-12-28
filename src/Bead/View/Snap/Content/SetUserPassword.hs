@@ -24,7 +24,7 @@ setUsrPwd :: POSTContentHandler
 setUsrPwd = do
   user <- getParameter usernamePrm
   newPwd <- getParameter studentNewPwdPrm
-  isStudentOfMe <- runStoryE (courseOrGroupStudent user)
+  isStudentOfMe <- userStory (courseOrGroupStudent user)
   case isStudentOfMe of
     False -> do
       let username = usernameCata id user

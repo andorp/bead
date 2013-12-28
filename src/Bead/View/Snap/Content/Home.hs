@@ -61,7 +61,7 @@ homePage :: GETContentHandler
 homePage = withUserState $ \s -> do
   converter <- usersTimeZoneConverter
   (renderPagelet . withUserFrame s . homeContent) =<<
-    (runStoryE
+    (userStory
        (HomePageData s
           <$> ((not . null) <$> administratedCourses)
           <*> ((not . null) <$> administratedGroups)

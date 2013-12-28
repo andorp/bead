@@ -42,7 +42,7 @@ submissionDetailsPage = withUserState $ \s -> do
     case submission of
       Nothing -> renderPagelet . withUserFrame s $ invalidSubmission
       Just sm -> do
-        sd <- runStoryE $ submissionDetailsDesc sk
+        sd <- userStory $ submissionDetailsDesc sk
         tc <- usersTimeZoneConverter
         renderPagelet . withUserFrame s $
           submissionDetailsContent PageData {

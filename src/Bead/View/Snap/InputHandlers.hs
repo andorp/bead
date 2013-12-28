@@ -133,7 +133,7 @@ instance GetValueHandler AssignmentKey where
 -- than the end date
 instance GetValueHandler Assignment where
   getValue = do
-    timeZone <- timezone <$> runStoryE Story.userState
+    timeZone <- timezone <$> userStory Story.userState
     startDate <- getParameter (assignmentStartPrm timeZone)
     endDate   <- getParameter (assignmentEndPrm timeZone)
     when (endDate < startDate) . throwError $ strMsg "A feladat kezdetének dátuma később van mint a feladat vége"

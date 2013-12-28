@@ -20,10 +20,10 @@ userDetails = getPostContentHandler userDetailPage userDataChange
 userDetailPage :: GETContentHandler
 userDetailPage = withUserState $ \s -> do
   username <- getParameter usernamePrm
-  exist    <- runStoryE . doesUserExist $ username
+  exist    <- userStory $ doesUserExist username
   case exist of
     True -> do
-      user     <- runStoryE . loadUser $ username
+      user     <- userStory $ loadUser username
       renderPagelet $ withUserFrame s (userDetailForm user)
 
     False -> renderPagelet $ withUserFrame s (userDoesNotExist username)
