@@ -178,17 +178,21 @@ createTmpDir :: FilePath -> String -> TIO FilePath
 createTmpDir f t = stepM (createTempDirectory f t) (return ()) removeDirectory
 
 createLink :: FilePath -> FilePath -> TIO ()
-createLink exist link = step (createSymbolicLinkSafely exist link) (removeLink link)
+createLink exist link = step (createSymbolicLinkSafely exist link) (removeLinkSafely link)
 
 -- | Create a symbolic link 'l' if the link does not exist already.
 createSymbolicLinkSafely f l = do
   exist <- fileExist l
   unless exist $ createSymbolicLink f l
 
+removeLinkSafely l = do
+  exist <- fileExist l
+  when exist $ removeLink l
+
 removeSymLink :: FilePath -> TIO ()
 removeSymLink link = do
   stepM (do f <- readSymbolicLink link
-            removeLink link
+            removeLinkSafely link
             return f)
         (return ())
         (\f -> createSymbolicLinkSafely f link >> return ())
@@ -272,10 +276,11 @@ instance Save Evaluation where
     fileSave d "result" (show . evaluationResult $ e)
 
 instance Save Comment where
-  save d c = do
+  save d = commentCata $ \comment date type_ -> do
     createStructureDirs d commentDirStructure
-    fileSave d "comment" (comment c)
-    fileSave d "date" (show . commentDate $ c)
+    fileSave d "comment" comment
+    fileSave d "date" (show date)
+    fileSave d "type" (show type_)
 
 instance Save Course where
   save d c = do createStructureDirs d courseDirStructure
@@ -345,13 +350,10 @@ instance Load Evaluation where
     }
 
 instance Load Comment where
-  load d = do
-    c <- fileLoad d "comment" same
-    e <- fileLoad d "date" readMaybe
-    return Comment {
-      comment     = c
-    , commentDate = e
-    }
+  load d = commentAna
+    (fileLoad d "comment" same)
+    (fileLoad d "date" readMaybe)
+    (fileLoad d "type" readMaybe)
 
 instance Load Course where
   load d = do desc <- loadDesc d
@@ -487,7 +489,7 @@ evaluationDirStructure = DirStructure {
   }
 
 commentDirStructure = DirStructure {
-    files = ["comment", "date"]
+    files = ["comment", "date", "type"]
   , directories = ["submission"]
   }
 

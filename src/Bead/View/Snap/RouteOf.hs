@@ -7,9 +7,37 @@ module Bead.View.Snap.RouteOf (
   , routeOf
   , routeWithParams
   , requestRoute
+  , RoutePath
+  , loginPath
+  , logoutPath
+  , homePath
+  , errorPath
+  , profilePath
+  , courseAdminPath
+  , modifyEvaluationPath
+  , evaluationTablePath
+  , evaluationPath
+  , submissionPath
+  , submissionListPath
+  , userSubmissionsPath
+  , submissionDetailsPath
+  , administrationPath
+  , groupRegistrationPath
+  , createCoursePath
+  , userDetailsPath
+  , assignCourseAdminPath
+  , createGroupPath
+  , assignGroupAdminPath
+  , newGroupAssignmentPath
+  , newCourseAssignmentPath
+  , modifyAssignmentPath
+  , changePasswordPath
+  , setUserPasswordPath
+  , commentFromEvaluationPath
+  , commentFromModifyEvaluationPath
+  , pageRoutePath
 #ifdef TEST
   , invariants
-  , unitTests
 #endif
   ) where
 
@@ -22,45 +50,142 @@ import Bead.Invariants (Invariants(..), UnitTests(..))
 #else
 import Bead.Controller.Pages
 #endif
+import Bead.View.Snap.RequestParams
 
-newtype ReqParam = ReqParam (String,String)
+-- Route Path represents the route in the HTTP request
+type RoutePath = String
 
-queryStringParam :: ReqParam -> String
-queryStringParam (ReqParam (k,v)) = join [k, "=", v]
+loginPath :: RoutePath
+loginPath = "/login"
 
-class ReqParamValue p where
-  paramValue :: (IsString s) => p -> s
+logoutPath :: RoutePath
+logoutPath = "/logout"
 
-class (ReqParamValue r) => RequestParam r where
-  requestParam :: r -> ReqParam
+homePath :: RoutePath
+homePath = "/home"
 
+errorPath :: RoutePath
+errorPath = "/error"
+
+profilePath :: RoutePath
+profilePath = "/profile"
+
+courseAdminPath :: RoutePath
+courseAdminPath = "/course-admin"
+
+modifyEvaluationPath :: RoutePath
+modifyEvaluationPath = "/modify-evaluation"
+
+evaluationTablePath :: RoutePath
+evaluationTablePath = "/evaluation-table"
+
+evaluationPath :: RoutePath
+evaluationPath = "/evaluation"
+
+submissionPath :: RoutePath
+submissionPath = "/submission"
+
+submissionListPath :: RoutePath
+submissionListPath = "/submission-list"
+
+userSubmissionsPath :: RoutePath
+userSubmissionsPath = "/user-submissions"
+
+submissionDetailsPath :: RoutePath
+submissionDetailsPath = "/submission-details"
+
+administrationPath :: RoutePath
+administrationPath = "/administration"
+
+groupRegistrationPath :: RoutePath
+groupRegistrationPath = "/group-registration"
+
+createCoursePath :: RoutePath
+createCoursePath = "/create-course"
+
+userDetailsPath :: RoutePath
+userDetailsPath = "/user-details"
+
+assignCourseAdminPath :: RoutePath
+assignCourseAdminPath = "/assign-course-admin"
+
+createGroupPath :: RoutePath
+createGroupPath = "/create-group"
+
+assignGroupAdminPath :: RoutePath
+assignGroupAdminPath = "/assign-group-admin"
+
+newGroupAssignmentPath :: RoutePath
+newGroupAssignmentPath = "/new-group-assignment"
+
+newCourseAssignmentPath :: RoutePath
+newCourseAssignmentPath = "/new-course-assignment"
+
+modifyAssignmentPath :: RoutePath
+modifyAssignmentPath = "/modify-assignment"
+
+changePasswordPath :: RoutePath
+changePasswordPath = "/change-password"
+
+setUserPasswordPath :: RoutePath
+setUserPasswordPath = "/set-user-password"
+
+commentFromEvaluationPath :: RoutePath
+commentFromEvaluationPath = "/comment-from-evaluation"
+
+commentFromModifyEvaluationPath :: RoutePath
+commentFromModifyEvaluationPath = "/comment-from-modify-evaluation"
+
+-- Returns a base path for the given page
+pageRoutePath :: Page -> RoutePath
+pageRoutePath = r where
+  r Login      = fromString loginPath
+  r Logout     = fromString logoutPath
+  r Home       = fromString homePath
+  r Error      = fromString errorPath
+  r Profile    = fromString profilePath
+  r CourseAdmin = fromString courseAdminPath
+  r (ModifyEvaluation _ _) = fromString modifyEvaluationPath
+  r EvaluationTable = fromString evaluationTablePath
+  r (Evaluation _)  = fromString evaluationPath
+  r Submission      = fromString submissionPath
+  r SubmissionList  = fromString submissionListPath
+  r UserSubmissions = fromString userSubmissionsPath
+  r SubmissionDetails = fromString submissionDetailsPath
+  r Administration   = fromString administrationPath
+  r GroupRegistration = fromString groupRegistrationPath
+  r CreateCourse = fromString createCoursePath
+  r UserDetails = fromString userDetailsPath
+  r AssignCourseAdmin = fromString assignCourseAdminPath
+  r CreateGroup = fromString createGroupPath
+  r AssignGroupAdmin = fromString assignGroupAdminPath
+  r NewGroupAssignment  = fromString newGroupAssignmentPath
+  r NewCourseAssignment  = fromString newCourseAssignmentPath
+  r ModifyAssignment = fromString modifyAssignmentPath
+  r ChangePassword = fromString changePasswordPath
+  r SetUserPassword = fromString setUserPasswordPath
+  r (CommentFromEvaluation _) = fromString commentFromEvaluationPath
+  r (CommentFromModifyEvaluation _ _) = fromString commentFromModifyEvaluationPath
+
+-- Calculates a request parameter list from the given page value
+pageRequestParams :: Page -> [ReqParam]
+pageRequestParams = r where
+  r (ModifyEvaluation sk ek)   = [requestParam sk, requestParam ek]
+  r (Evaluation sk)            = [requestParam sk]
+  r (CommentFromEvaluation ek) = [requestParam ek]
+  r (CommentFromModifyEvaluation ek sk) = [requestParam ek, requestParam sk]
+  r _ = []
+
+-- Calculates the full path from a page value, including the base path and the
+-- request parameters
 routeOf :: (IsString s) => Page -> s
-routeOf = r where
-  r Login      = fromString "/login"
-  r Logout     = fromString "/logout"
-  r Home       = fromString "/home"
-  r Error      = fromString "/error"
-  r Profile    = fromString "/profile"
-  r CourseAdmin = fromString "/course-admin"
-  r ModifyEvaluation = fromString "/modify-evaluation"
-  r EvaluationTable = fromString "/evaluation-table"
-  r Evaluation      = fromString "/evaluation"
-  r Submission      = fromString "/submission"
-  r SubmissionList  = fromString "/submission-list"
-  r UserSubmissions = fromString "/user-submissions"
-  r SubmissionDetails = fromString "/submission-details"
-  r Administration   = fromString "/administration"
-  r GroupRegistration = fromString "/group-registration"
-  r CreateCourse = fromString "/create-course"
-  r UserDetails = fromString "/user-details"
-  r AssignCourseAdmin = fromString "/assign-course-admin"
-  r CreateGroup = fromString "/create-group"
-  r AssignGroupAdmin = fromString "/assign-group-admin"
-  r NewGroupAssignment  = fromString "/new-group-assignment"
-  r NewCourseAssignment  = fromString "/new-course-assignment"
-  r ModifyAssignment = fromString "/modify-assignment"
-  r ChangePassword = fromString "/change-password"
-  r SetUserPassword = fromString "/set-user-password"
+routeOf p = queryString (pageRoutePath p) (pageRequestParams p)
+
+-- Produces a query string for a GET request from the given base name, and the
+-- given parameters
+queryString :: (IsString s) => String -> [ReqParam] -> s
+queryString base []     = fromString base
+queryString base params = fromString . join $ [base, "?"] ++ (intersperse "&" (map queryStringParam params))
 
 routeWithParams :: (IsString s) => Page -> [ReqParam] -> s
 routeWithParams p rs = fromString . join $
@@ -74,10 +199,6 @@ requestRoute route rs = fromString . join $
 #ifdef TEST
 
 -- * Invariants
-
-unitTests = UnitTests [
-    ("Routes must be differents", let rs = map routeOf allPages in (length rs == length (nub rs)) )
-  ]
 
 invariants = Invariants [
     ("RouteOf strings must not be empty", \p -> length (routeOf' p) > 0)

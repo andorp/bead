@@ -40,4 +40,4 @@ submissionInfo i (key, desc) = H.tr $ do
   H.td . fromString . eGroup $ desc
   H.td . fromString . eStudent $ desc
   H.td . fromString . eAssignmentTitle $ desc
-  H.td $ link (routeWithParams P.Evaluation [requestParam key]) (i "Megoldás")
+  H.td $ link (routeOf (P.Evaluation key)) (i "Megoldás")

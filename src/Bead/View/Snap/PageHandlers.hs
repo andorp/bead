@@ -18,6 +18,8 @@ import qualified Bead.Controller.UserStories as S
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.UserActions
 import Bead.View.Snap.Application
+import Bead.View.Snap.RouteOf
+import Bead.View.Snap.RequestParams
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils as HU
 
@@ -31,6 +33,8 @@ import Bead.View.Snap.ErrorPage
 -- Haskell imports
 
 import Data.Maybe
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.String (fromString)
 import qualified Data.Text as T
 import qualified Data.List as L
@@ -64,11 +68,14 @@ routes config = join
     , ("/reg_final", finalizeRegistration)
     , ("/fay", with fayContext fayServe)
     ]
-    -- Add all pages with template names and handlers
-  , L.map (routeOf &&& ((P.id &&& content) >>> handlePage)) P.allPages
+  , map toPathContentPair content
     -- Add static handlers
   , [ ("",          serveDirectory "static") ]
   ]
+  where
+    -- Ignores the predicate and creates a path, content pair
+    toPathContentPair = routeCata $ \path content ->
+      (fromString path,handlePage (path,content))
 
 -- * Handlers
 
@@ -249,30 +256,24 @@ logoutAndErrorPage msg = do
    * When a user submits information with a POST request, from the submitted information
    we calculate the appropiate user action and runs it
 -}
-handlePage :: (P.Page, Content) -> Handler App App ()
-handlePage (P.Login, _) = loginSubmit
-handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
+handlePage :: (RoutePath, Content) -> Handler App App ()
+handlePage (path,c)
+  | path == loginPath = loginSubmit
+handlePage (path,c) = do
+  mpage <- requestToPageHandler path
+  case mpage of
+    -- No Page value is calculated from the request
+    Nothing   -> logoutAndErrorPage "Invalid route in request"
+    -- Every parameter was found to create the Page value
+    Just page -> method GET (handleRenderPage page) <|> method POST (handleSubmitPage page)
   where
     failure, success :: (Monad m) => a -> m HandlerResult
     failure = const . return $ HFailure
     success = const . return $ HSuccess
     forgetResult h = h >> return ()
 
-    notAllowedPage = withUserState $ \s -> do
-      lift $ logMessage ERROR . join $ [
-          "Page transition is not allowed "
-        , show (page s), " -> ", show p
-        ]
-      lift $ logoutAndResetRoute
-
-    changePage h =
-      allowedPageByTransition p
-        (do lift $ runStory $ S.changePage p
-            h)
-        notAllowedPage
-
-    handleRenderPage :: Handler App App ()
-    handleRenderPage = userIsLoggedInFilter
+    handleRenderPage :: P.Page -> Handler App App ()
+    handleRenderPage p = userIsLoggedInFilter
 
       -- If the GET handler is not found for the given page, the logout action is
       -- required as the user tries to do some invalid operation.
@@ -289,18 +290,32 @@ handlePage (p,c) = method GET handleRenderPage <|> method POST handleSubmitPage
       -- Some internal error happened
       logoutAndErrorPage
 
-    handleSubmitPage :: Handler App App ()
-    handleSubmitPage = userIsLoggedInFilter
+      where
+        changePage h =
+          allowedPageByTransition p
+            ((lift $ runStory $ S.changePage p) >> h)
+            notAllowedPage
+
+        notAllowedPage = withUserState $ \s -> do
+          lift $ logMessage ERROR . join $ [
+              "Page transition is not allowed "
+            , show (page s), " -> ", show p
+            ]
+          lift $ logoutAndResetRoute
+
+
+    handleSubmitPage :: P.Page -> Handler App App ()
+    handleSubmitPage page = userIsLoggedInFilter
 
       -- If the POST handler is not found for the given page, logout action is
       -- required as the user tries to do some invalid operation
       (case post c of
          -- POST handler is not found
          Nothing -> hsuccess $ do
-           logMessage DEBUG $ "No POST handler found for " ++ show p
+           logMessage DEBUG $ "No POST handler found for " ++ show page
            logoutAndResetRoute
          -- POST handler is found
-         Just handlerUserAction -> runPOSTHandler errorPage p handlerUserAction
+         Just handlerUserAction -> runPOSTHandler errorPage page handlerUserAction
       )
 
       -- Not logged in user tires to post some data
@@ -314,8 +329,57 @@ allowedPageByTransition
 allowedPageByTransition p allowed restricted = withUserState $ \state ->
   let allow = and [
           P.reachable (page state) p
-        , elem p (P.allowedPages (role state))
+        , P.allowedPage (role state) p
         ]
   in case allow of
     False -> restricted
     True  -> allowed
+
+-- Creates a handler, that tries to calculate a Page value
+-- from the requested route and the parameters of the request uri
+requestToPageHandler :: RoutePath -> Handler App App (Maybe P.Page)
+requestToPageHandler path = requestToPage path <$> getParams
+
+-- Calculates a Just page if the route is a valid route path
+-- and all the parameters were given is the params for the
+-- routePath necesary for the Page value, otherwise Nothing
+requestToPage :: RoutePath -> Params -> Maybe P.Page
+requestToPage path params
+  | path == loginPath       = j P.Login
+  | path == logoutPath      = j P.Logout
+  | path == homePath        = j P.Home
+  | path == errorPath       = j P.Error
+  | path == profilePath     = j P.Profile
+  | path == courseAdminPath = j P.CourseAdmin
+  | path == modifyEvaluationPath = P.ModifyEvaluation <$> submissionKey <*> evaluationKey
+  | path == evaluationTablePath  = j P.EvaluationTable
+  | path == evaluationPath       = P.Evaluation <$> submissionKey
+  | path == submissionPath       = j P.Submission
+  | path == submissionListPath   = j P.SubmissionList
+  | path == userSubmissionsPath  = j P.UserSubmissions
+  | path == submissionDetailsPath = j P.SubmissionDetails
+  | path == administrationPath    = j P.Administration
+  | path == groupRegistrationPath = j P.GroupRegistration
+  | path == createCoursePath      = j P.CreateCourse
+  | path == userDetailsPath       = j P.UserDetails
+  | path == assignCourseAdminPath = j P.AssignCourseAdmin
+  | path == createGroupPath       = j P.CreateGroup
+  | path == assignGroupAdminPath  = j P.AssignGroupAdmin
+  | path == newGroupAssignmentPath  = j P.NewGroupAssignment
+  | path == newCourseAssignmentPath = j P.NewCourseAssignment
+  | path == modifyAssignmentPath    = j P.ModifyAssignment
+  | path == changePasswordPath      = j P.ChangePassword
+  | path == setUserPasswordPath     = j P.SetUserPassword
+  | path == commentFromEvaluationPath       = P.CommentFromEvaluation <$> submissionKey
+  | path == commentFromModifyEvaluationPath = P.CommentFromModifyEvaluation <$> submissionKey <*> evaluationKey
+  where
+    j = Just
+    submissionKey = (SubmissionKey . unpack) <$> value submissionKeyParamName
+    evaluationKey = (EvaluationKey . unpack) <$> value evaluationKeyParamName
+
+    -- Returns Just x if only one x corresponds to the key in the request params
+    -- otherwise Nothing
+    value key = Map.lookup key params >>= oneValue
+      where
+        oneValue [l] = Just l
+        oneValue _   = Nothing

@@ -21,7 +21,7 @@ module Bead.Controller.ServiceContext (
 import Bead.Domain.Types
 import Bead.Domain.Entities
 import Bead.Persistence.Persist
-import Bead.Controller.Pages
+import Bead.Controller.Pages (Page(..))
 import Bead.Controller.Logging
 
 import Data.Map (Map)

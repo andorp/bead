@@ -18,6 +18,7 @@ module Bead.View.Snap.Content (
   , routeWithParams
   , runStory
   , userStory
+  , userState
   , i18nE
   , renderPagelet
   , renderDynamicPagelet
@@ -29,6 +30,7 @@ module Bead.View.Snap.Content (
   , POSTContentHandler
   , HandlerError
   , UserState(..)
+  , userStateCata
   , ReqParam(..)
   , RequestParam(..)
   , ReqParamValue(..)
@@ -58,7 +60,7 @@ import Data.ByteString.Char8 (ByteString, unpack)
 import Data.Monoid ((<>))
 
 import Bead.Controller.Pages as P
-import Bead.Controller.ServiceContext (UserState(..))
+import Bead.Controller.ServiceContext (UserState(..), userStateCata)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.View.UserActions

@@ -124,9 +124,12 @@ submissions date = Submission
   <$> solutionTexts
   <*> (return date)
 
+commentTypes = elements [CT_Student, CT_GroupAdmin, CT_CourseAdmin, CT_Admin, CT_TestAgent]
+
 comments date = Comment
   <$> commentTexts
   <*> (return date)
+  <*> commentTypes
 
 solutionTexts = manyWords
 

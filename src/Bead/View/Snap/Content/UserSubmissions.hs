@@ -81,9 +81,9 @@ submissionTable userTime i18n s = do
 
     sbmLink si sk t = case siEvaluationKey si of
       Nothing -> link
-        (routeWithParams P.Evaluation [requestParam sk])
+        (routeOf (P.Evaluation sk))
         (fromString . showDate $ userTime t)
       Just ek -> link
-        (routeWithParams P.ModifyEvaluation [requestParam sk,requestParam ek] )
+        (routeOf (P.ModifyEvaluation sk ek))
         (showDate $ userTime t)
 

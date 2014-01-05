@@ -25,7 +25,7 @@ import Bead.Domain.Relationships (AssignmentDesc(..))
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.Pages as P (Page(..))
 import Bead.View.Snap.Pagelets
-import Bead.View.Snap.Content
+import Bead.View.Snap.Content hiding (userState)
 import Bead.Controller.UserStories (
     userAssignments
   , submissionTables

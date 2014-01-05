@@ -2,15 +2,17 @@
 module Bead.View.Snap.Content.Evaluation (
     evaluation
   , modifyEvaluation
+  , commentFromEvaluation
+  , commentFromModifyEvaluation
   ) where
 
 import Data.String (fromString)
-import Data.Time (UTCTime, LocalTime)
+import Data.Time (UTCTime, LocalTime, getCurrentTime)
 import Control.Monad (liftM)
 
 import Bead.Domain.Types (readMsg)
 import Bead.Domain.Relationships (SubmissionDesc(..))
-import Bead.Controller.Pages as P(Page(Evaluation, ModifyEvaluation))
+import Bead.Controller.Pages as P(Page(..))
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.UserStories (submissionDescription)
 import Bead.View.Snap.Pagelets
@@ -29,9 +31,25 @@ evaluation = getPostContentHandler evaluationPage evaluationPostHandler
 modifyEvaluation :: Content
 modifyEvaluation = getPostContentHandler modifyEvaluationPage modifyEvaluationPost
 
+-- Comment on the given evaluation page, the admin does not want to evaluate
+-- the submission, only places a comment
+commentFromEvaluation :: Content
+commentFromEvaluation = postContentHandler commentOnSubmissionHandler
+
+-- Comment on the given evaluation page, the admin does not want to
+-- modify the evaluation only places a comment
+commentFromModifyEvaluation :: Content
+commentFromModifyEvaluation = postContentHandler commentOnSubmissionHandler
+
+-- Page Data consitits of a description for a submission key, which contains
+-- the assignment key as well, the submission key, an evautation key, and
+-- the time converter for the actual user.
+-- If the evaluation key is Nothing means a new evaulation, otherwise
+-- the modification of a given evaulation is done
 data PageData = PageData {
     sbmDesc :: SubmissionDesc
-  , sbmKey  :: Either EvaluationKey SubmissionKey
+  , sbmSubmissionKey :: SubmissionKey
+  , sbmEvaluationKey :: Maybe EvaluationKey
   , userTime :: UserTimeConverter
   }
 
@@ -44,8 +62,9 @@ evaluationPage = withUserState $ \s -> do
   sd <- userStory (submissionDescription sk)
   tc <- usersTimeZoneConverter
   let pageData = PageData {
-      sbmKey  = Right sk
-    , sbmDesc = sd
+      sbmDesc = sd
+    , sbmSubmissionKey = sk
+    , sbmEvaluationKey = Nothing
     , userTime = tc
     }
   render (eConfig sd) $ withUserFrame s (evaluationContent pageData)
@@ -57,8 +76,9 @@ modifyEvaluationPage = withUserState $ \s -> do
   sd <- userStory (submissionDescription sk)
   tc <- usersTimeZoneConverter
   let pageData = PageData {
-    sbmKey  = Left ek
-  , sbmDesc = sd
+    sbmDesc = sd
+  , sbmSubmissionKey = sk
+  , sbmEvaluationKey = Just ek
   , userTime = tc
   }
   render (eConfig sd) $ withUserFrame s (evaluationContent pageData)
@@ -85,11 +105,38 @@ modifyEvaluationPost = do
   }
   return $ C.ModifyEvaluation ek e
 
+commentOnSubmissionHandler :: POSTContentHandler
+commentOnSubmissionHandler = do
+  mrole <- getRole <$> userState
+  case mrole of
+    Nothing -> return $ LogMessage "A felhasználó nincs bejelentkezve" -- Impossible
+    Just role -> do
+      sk <- getParameter submissionKeyPrm
+      ak <- getParameter assignmentKeyPrm
+      c  <- getParameter (stringParameter (fieldName commentValueField) "Hozzászólás")
+      now <- liftIO $ getCurrentTime
+      return $ SubmissionComment sk Comment {
+         comment = c
+       , commentDate = now
+       , commentType = roleToCommentType role
+       }
+  where
+    roleToCommentType = roleCata
+      CT_Student
+      CT_GroupAdmin
+      CT_CourseAdmin
+      CT_Admin
+
+    getRole = userStateCata
+      Nothing
+      Nothing
+      (\_username _page _name role _token _timezone _status -> Just role)
+
 evaluationContent :: PageData -> Pagelet
 evaluationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
   let sd = sbmDesc pd
       tc = userTime pd
-  postForm (routeOf . evPage . sbmKey $ pd) $ H.div ! formDiv $ do
+  postForm (routeOf . evPage $ maybeEvalKey) $ H.div ! formDiv $ do
     H.div ! title $ H.h2 (translate i "Értékelés")
     H.div ! leftInfo $ do
       H.table $ do
@@ -104,22 +151,25 @@ evaluationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
       submitButton (fieldName saveEvalBtn) (i "Mentés")
     H.div ! rightText $ do
       textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv
-      hiddenKeyField . sbmKey $ pd
   H.div $ H.h2 $ (translate i "Beadott megoldás")
   H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
     (fromString . eSolution $ sd)
   when (not . null $ eComments sd) $ do
     translate i . commentsDiv tc . eComments $ sd
-
+  -- Renders the comment area where the user can place a comment
+  translate i $ commentPostForm (commentPage maybeEvalKey) (eAssignmentKey sd)
   where
+    submissionKey = sbmSubmissionKey pd
+    maybeEvalKey  = sbmEvaluationKey pd
+
     defaultEvalCfg :: EvaluationResult
     defaultEvalCfg = BinEval (Binary Passed)
 
-    hiddenKeyField (Left ek)  = hiddenInput (fieldName evaluationKeyField) (paramValue ek)
-    hiddenKeyField (Right sk) = hiddenInput (fieldName submissionKeyField) (paramValue sk)
+    evPage (Just ek) = P.ModifyEvaluation submissionKey ek
+    evPage Nothing   = P.Evaluation submissionKey
 
-    evPage (Left  _) = P.ModifyEvaluation
-    evPage (Right _) = P.Evaluation
+    commentPage (Just ek) = P.CommentFromModifyEvaluation submissionKey ek
+    commentPage Nothing   = P.CommentFromEvaluation submissionKey
 
 inputEvalResult :: EvaluationConfig -> I18NHtml
 inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do

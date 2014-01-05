@@ -13,7 +13,7 @@ import Data.Time (UTCTime(..), LocalTime, timeZoneName)
 import Data.Time.Format (formatTime)
 import qualified Data.Time as Time
 import Control.Monad (join)
-import Control.Applicative ((<$>), (<*>), (<|>))
+import Control.Applicative
 import System.Locale (defaultTimeLocale)
 import Text.Printf (printf)
 
@@ -64,11 +64,54 @@ data Submission = Submission {
   , solutionPostDate :: UTCTime
   } deriving (Eq, Show)
 
+-- Comment type basically indicates that who left the comment,
+-- constructors are self explanatories
+data CommentType
+  = CT_Student
+  | CT_GroupAdmin
+  | CT_CourseAdmin
+  | CT_Admin
+  | CT_Evaluation
+  | CT_TestAgent
+  deriving (Show, Read, Eq)
+
+commentTypeCata
+  student
+  groupAdmin
+  courseAdmin
+  admin
+  evaluation
+  testAgent
+  c = case c of
+    CT_Student     -> student
+    CT_GroupAdmin  -> groupAdmin
+    CT_CourseAdmin -> courseAdmin
+    CT_Admin       -> admin
+    CT_Evaluation  -> evaluation
+    CT_TestAgent   -> testAgent
+
 -- | Comment on the text of exercise, on the evaluation
 data Comment = Comment {
     comment     :: String
   , commentDate :: UTCTime
+  , commentType :: CommentType
   } deriving (Eq, Show)
+
+commentCata f (Comment c d t) = f c d t
+
+commentAna comment date type_ = Comment <$> comment <*> date <*> type_
+
+-- Returns True if the comment can be displayed for the student
+-- otherwise false
+isStudentComment :: Comment -> Bool
+isStudentComment = commentCata $ \_comment _date -> student where
+  student = commentTypeCata
+    True  -- Student
+    True  -- Group Admin
+    True  -- Course Admin
+    False -- Admin
+    True  -- Evaluation
+    False -- Test Agent
 
 type CourseName = String
 
@@ -121,6 +164,7 @@ evaluationComment :: UTCTime -> Evaluation -> Comment
 evaluationComment t e = Comment {
     comment = c
   , commentDate = t
+  , commentType = CT_Evaluation
   } where
      c = join [
            writtenEvaluation e, "\r\n"

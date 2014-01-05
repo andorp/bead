@@ -153,11 +153,11 @@ menuId P.Error          = "link-error"
 menuId P.Administration = "link-admin"
 menuId P.CourseAdmin    = "link-course-admin"
 menuId P.EvaluationTable = "link-evaluation-table"
-menuId P.Evaluation      = "link-evaluation"
+menuId (P.Evaluation _)  = "link-evaluation"
 menuId P.Submission      = "link-submission"
 menuId P.SubmissionList  = "link-submission-list"
 menuId P.UserSubmissions = "link-user-submissions"
-menuId P.ModifyEvaluation = "link-modify-evaluation"
+menuId (P.ModifyEvaluation _ _) = "link-modify-evaluation"
 menuId P.SubmissionDetails = "link-submission-details"
 menuId P.GroupRegistration = "link-group-registration"
 menuId P.CreateCourse = "link-create-course"
@@ -170,6 +170,8 @@ menuId P.NewCourseAssignment = "link-new-course-assignment"
 menuId P.ModifyAssignment = "link-modify-assignment"
 menuId P.ChangePassword = "link-change-password"
 menuId P.SetUserPassword = "link-set-user-password"
+menuId (P.CommentFromEvaluation _) = "link-comment-from-evaluation"
+menuId (P.CommentFromModifyEvaluation _ _) = "link-comment-from-modify-evaluation"
 
 instance SnapFieldName P.Page where
   fieldName = fromString . menuId
@@ -348,7 +350,8 @@ fieldList = map fieldName $ join [
   , SFN userTimeZoneField, SFN assignmentForm, SFI changePwdForm, SFI setStudentPwdForm
 
   , SFI regForm, SFI loginForm, SFI regFinalForm
-  ], (map SFN P.allPages)
+  ]
+--  ], (map SFN P.allPages)
   ]
 
 classList :: [String]

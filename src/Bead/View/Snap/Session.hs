@@ -5,6 +5,7 @@ module Bead.View.Snap.Session where
 -- Bead imports
 
 import Bead.Domain.Entities as E
+import Bead.Domain.Relationships as R
 import qualified Bead.Controller.Pages as P
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.Dictionary (Language(..))
@@ -45,12 +46,12 @@ instance SessionStore P.Page where
     s P.Profile    = "Profile"
     s P.CourseAdmin = "CourseAdmin"
     s P.EvaluationTable = "EvaluationTable"
-    s P.Evaluation      = "Evaluation"
+    s (P.Evaluation (R.SubmissionKey s))  = join ["Evaluation:", s]
     s P.Submission      = "Submission"
     s P.SubmissionList  = "SubmissionList"
     s P.UserSubmissions = "UserSubmissions"
     s P.SubmissionDetails = "SubmissionDetails"
-    s P.ModifyEvaluation  = "ModifyEvaluation"
+    s (P.ModifyEvaluation (R.SubmissionKey s) (R.EvaluationKey e)) = join ["ModifyEvaluation:", s, ":", e]
     s P.Administration   = "Administration"
     s P.GroupRegistration = "GroupRegistration"
     s P.CreateCourse = "CreateCourse"
@@ -63,6 +64,8 @@ instance SessionStore P.Page where
     s P.ModifyAssignment = "ModifyAssignment"
     s P.ChangePassword = "ChangePassword"
     s P.SetUserPassword = "SetUserPassword"
+    s (P.CommentFromEvaluation (R.SubmissionKey s)) = join ["CommentFromEvaluation:", s]
+    s (P.CommentFromModifyEvaluation (R.SubmissionKey s) (R.EvaluationKey e)) = join ["CommentFromModifyEvaluation:", s, ":", e]
 
 instance SessionRestore P.Page where
   restoreFromSession kv = case L.lookup pageSessionKey kv of
@@ -74,12 +77,10 @@ instance SessionRestore P.Page where
     Just "Profile"    -> Just P.Profile
     Just "CourseAdmin" -> Just P.CourseAdmin
     Just "EvaluationTable" -> Just P.EvaluationTable
-    Just "Evaluation"      -> Just P.Evaluation
     Just "Submission"      -> Just P.Submission
     Just "SubmissionList"  -> Just P.SubmissionList
     Just "UserSubmissions" -> Just P.UserSubmissions
     Just "SubmissionDetails" -> Just P.SubmissionDetails
-    Just "ModifyEvaluation"  -> Just P.ModifyEvaluation
     Just "Administration"   -> Just P.Administration
     Just "GroupRegistration" -> Just P.GroupRegistration
     Just "CreateCourse" -> Just P.CreateCourse
@@ -92,7 +93,36 @@ instance SessionRestore P.Page where
     Just "ModifyAssignment" -> Just P.ModifyAssignment
     Just "ChangePassword" -> Just P.ChangePassword
     Just "SetUserPassword" -> Just P.SetUserPassword
-    Just _              -> Nothing
+    Just ts
+      | startsWith "CommentFromEvaluation:" ts ->
+          Just . P.CommentFromEvaluation . submissionKey $ dropPreffix "CommentFromEvaluation:" ts
+
+      | startsWith "CommentFromModifyEvaluation:" ts ->
+          let se = splitValues "CommentFromModifyEvaluation:" ts
+          in case se of
+              [s,e] -> Just $ P.CommentFromModifyEvaluation (submissionKey s) (evaluationKey e)
+              _     -> Nothing
+
+      | startsWith "Evaluation:" ts ->
+          Just . P.Evaluation . submissionKey $ dropPreffix "Evaluation:" ts
+
+      | startsWith "ModifyEvaluation:" ts ->
+          let se = splitValues "ModifyEvaluation:" ts
+          in case se of
+              [s,e] -> Just $ P.ModifyEvaluation (submissionKey s) (evaluationKey e)
+              _     -> Nothing
+
+    Just _ -> Nothing
+    where
+      submissionKey = R.SubmissionKey . T.unpack
+
+      evaluationKey = R.EvaluationKey . T.unpack
+
+      startsWith preffix t = preffix == (T.take (T.length preffix) t)
+
+      dropPreffix preffix t = T.drop (T.length preffix) t
+
+      splitValues preffix t = T.splitOn ":" $ dropPreffix preffix t
 
 -- * Session Key Values for Username
 

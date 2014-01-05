@@ -64,6 +64,7 @@ submissionDetailsPostHandler = do
       Just _  -> SubmissionComment sk Comment {
                      comment = c
                    , commentDate = now
+                   , commentType = CT_Student
                    }
 
 submissionDetailsContent :: PageData -> Pagelet
@@ -88,9 +89,10 @@ submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
   H.h2 (translate i "Megoldás szövege")
   H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
   H.h2 $ (translate i "Értékelés")
-  (fromString . sdStatus $ sm)
-  when (not . null $ sdComments sm) $ do
-    translate i . commentsDiv tc $ sdComments sm
+  (fromString $ sdStatus sm)
+  let studentComments = filter isStudentComment $ sdComments sm
+  when (not $ null studentComments) $ do
+    translate i $ commentsDiv tc studentComments
   H.hr
   H.h2 (translate i "Új hozzászólás")
   postForm (routeOf P.SubmissionDetails) $ do

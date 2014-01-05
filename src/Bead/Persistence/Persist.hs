@@ -197,6 +197,7 @@ submissionDesc p sk = do
   , eStudent  = u
   , eSolution = s
   , eConfig = c
+  , eAssignmentKey   = ak
   , eAssignmentTitle = assignmentName asg
   , eAssignmentDesc  = assignmentDesc asg
   , eComments = cs

@@ -46,6 +46,7 @@ data SubmissionDesc = SubmissionDesc {
   , eStudent  :: String
   , eSolution :: String
   , eConfig   :: EvaluationConfig
+  , eAssignmentKey   :: AssignmentKey
   , eAssignmentTitle :: String
   , eAssignmentDesc  :: String
   , eComments :: [Comment]

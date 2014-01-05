@@ -1,34 +1,63 @@
 module Test.Quick.PageGen where
 
 import Control.Monad (liftM)
+import Control.Applicative ((<$>),(<*>))
 
 import Bead.Controller.Pages
-import Bead.Domain.Entities (Role(..))
+import qualified Bead.Domain.Entities as E
+import Bead.Domain.Relationships
 
 import Test.QuickCheck.Gen
 import Test.QuickCheck.Arbitrary
 import Test.Quick.EnumGen
 import Test.Quick.RolePermissionGen
 
+showInt :: Int -> String
+showInt = show
+
+submissionKeyGen :: Gen SubmissionKey
+submissionKeyGen = SubmissionKey . showInt <$> choose (1,5000)
+
+evaluationKeyGen :: Gen EvaluationKey
+evaluationKeyGen = EvaluationKey . showInt <$> choose (1,5000)
 
 instance Arbitrary Page where
-  arbitrary = enumGenerator
+  arbitrary = pageGen submissionKeyGen evaluationKeyGen
 
-data MenuNavigation = MenuNavigation Role [Page]
-  deriving (Show)
+pageGen :: Gen SubmissionKey -> Gen EvaluationKey -> Gen Page
+pageGen submissionKey evaluationKey = oneof [
+    nonParametricPages
+  , parametricPages
+  ] where
+      nonParametricPages = elements [
+          Login
+        , Logout
+        , Home
+        , Profile
+        , Error
+        , Administration
+        , CourseAdmin
+        , EvaluationTable
+        , NewGroupAssignment
+        , NewCourseAssignment
+        , ModifyAssignment
+        , Submission
+        , SubmissionList
+        , SubmissionDetails
+        , GroupRegistration
+        , UserDetails
+        , UserSubmissions
+        , CreateCourse
+        , CreateGroup
+        , AssignCourseAdmin
+        , AssignGroupAdmin
+        , ChangePassword
+        , SetUserPassword
+        ]
 
-instance Arbitrary MenuNavigation where
-  arbitrary = do
-    r <- arbitrary
-    sized $ \n -> liftM (MenuNavigation r . take n) $ menuNavigation r Login
-
-genMenuNavigation :: Gen MenuNavigation
-genMenuNavigation = arbitrary
-
-menuStep :: Role -> Page -> Gen Page
-menuStep r = elements . filter (flip elem contentPages) . menuPages r
-
-menuNavigation :: Role -> Page -> Gen [Page]
-menuNavigation r p = do
-  p' <- menuStep r p
-  liftM (p:) $ menuNavigation r p'
+      parametricPages = oneof [
+          CommentFromEvaluation <$> submissionKey
+        , CommentFromModifyEvaluation <$> submissionKey <*> evaluationKey
+        , Evaluation <$> submissionKey
+        , ModifyEvaluation <$> submissionKey <*> evaluationKey
+        ]

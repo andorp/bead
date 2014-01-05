@@ -535,8 +535,6 @@ submissionTables = logAction INFO "lists submission tables" $ do
   authPerms submissionTableInfoPermissions
   withUserAndPersist $ \uname p -> R.submissionTables p uname
 
--- TODO: Check if the user can evaluates only submissions that
--- are submitted for the assignment created by the user
 newEvaluation :: SubmissionKey -> Evaluation -> UserStory ()
 newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ do
   authorize P_Open   P_Submission
