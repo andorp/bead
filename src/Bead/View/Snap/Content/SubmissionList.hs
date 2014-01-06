@@ -74,7 +74,7 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
 
     submissionLine (sk, time, status, t) = H.tr $ do
       H.td # informationalCell $ link
-        (routeWithParams P.SubmissionDetails [requestParam (asKey p), requestParam sk])
+        (routeOf $ P.SubmissionDetails (asKey p) sk)
         (fromString . showDate $ (uTime p) time)
       H.td # informationalCell $ (fromString status)
 

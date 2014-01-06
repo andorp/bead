@@ -95,11 +95,9 @@ submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
     translate i $ commentsDiv tc studentComments
   H.hr
   H.h2 (translate i "Új hozzászólás")
-  postForm (routeOf P.SubmissionDetails) $ do
+  postForm (routeOf $ P.SubmissionDetails (aKey p) (smKey p)) $ do
     H.div ! formDiv $ do
       textAreaInput (fieldName commentValueField) Nothing ! fillDiv
-      hiddenInput (fieldName assignmentKeyField) (paramValue . aKey  $ p)
-      hiddenInput (fieldName submissionKeyField) (paramValue . smKey $ p)
     submitButton (fieldName commentBtn) (i "Beküld")
 
 invalidSubmission :: Pagelet

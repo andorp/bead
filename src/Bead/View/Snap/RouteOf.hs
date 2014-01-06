@@ -151,7 +151,7 @@ pageRoutePath = r where
   r Submission      = fromString submissionPath
   r SubmissionList  = fromString submissionListPath
   r UserSubmissions = fromString userSubmissionsPath
-  r SubmissionDetails = fromString submissionDetailsPath
+  r (SubmissionDetails _ _) = fromString submissionDetailsPath
   r Administration   = fromString administrationPath
   r GroupRegistration = fromString groupRegistrationPath
   r CreateCourse = fromString createCoursePath
@@ -172,6 +172,7 @@ pageRequestParams :: Page -> [ReqParam]
 pageRequestParams = r where
   r (ModifyEvaluation sk ek)   = [requestParam sk, requestParam ek]
   r (Evaluation sk)            = [requestParam sk]
+  r (SubmissionDetails ak sk)  = [requestParam ak, requestParam sk]
   r (CommentFromEvaluation ek) = [requestParam ek]
   r (CommentFromModifyEvaluation ek sk) = [requestParam ek, requestParam sk]
   r _ = []

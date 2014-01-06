@@ -351,13 +351,16 @@ requestToPage path params
   | path == errorPath       = j P.Error
   | path == profilePath     = j P.Profile
   | path == courseAdminPath = j P.CourseAdmin
-  | path == modifyEvaluationPath = P.ModifyEvaluation <$> submissionKey <*> evaluationKey
+  | path == modifyEvaluationPath
+    = P.ModifyEvaluation <$> submissionKey <*> evaluationKey
   | path == evaluationTablePath  = j P.EvaluationTable
-  | path == evaluationPath       = P.Evaluation <$> submissionKey
+  | path == evaluationPath
+    = P.Evaluation <$> submissionKey
   | path == submissionPath       = j P.Submission
   | path == submissionListPath   = j P.SubmissionList
   | path == userSubmissionsPath  = j P.UserSubmissions
-  | path == submissionDetailsPath = j P.SubmissionDetails
+  | path == submissionDetailsPath
+    = P.SubmissionDetails <$> assignmentKey <*> submissionKey
   | path == administrationPath    = j P.Administration
   | path == groupRegistrationPath = j P.GroupRegistration
   | path == createCoursePath      = j P.CreateCourse
@@ -370,10 +373,13 @@ requestToPage path params
   | path == modifyAssignmentPath    = j P.ModifyAssignment
   | path == changePasswordPath      = j P.ChangePassword
   | path == setUserPasswordPath     = j P.SetUserPassword
-  | path == commentFromEvaluationPath       = P.CommentFromEvaluation <$> submissionKey
-  | path == commentFromModifyEvaluationPath = P.CommentFromModifyEvaluation <$> submissionKey <*> evaluationKey
+  | path == commentFromEvaluationPath
+    = P.CommentFromEvaluation <$> submissionKey
+  | path == commentFromModifyEvaluationPath
+    = P.CommentFromModifyEvaluation <$> submissionKey <*> evaluationKey
   where
     j = Just
+    assignmentKey = (AssignmentKey . unpack) <$> value assignmentKeyParamName
     submissionKey = (SubmissionKey . unpack) <$> value submissionKeyParamName
     evaluationKey = (EvaluationKey . unpack) <$> value evaluationKeyParamName
 

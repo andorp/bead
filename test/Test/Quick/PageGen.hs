@@ -12,23 +12,25 @@ import Test.QuickCheck.Arbitrary
 import Test.Quick.EnumGen
 import Test.Quick.RolePermissionGen
 
-showInt :: Int -> String
-showInt = show
 
-submissionKeyGen :: Gen SubmissionKey
-submissionKeyGen = SubmissionKey . showInt <$> choose (1,5000)
-
-evaluationKeyGen :: Gen EvaluationKey
-evaluationKeyGen = EvaluationKey . showInt <$> choose (1,5000)
 
 instance Arbitrary Page where
-  arbitrary = pageGen submissionKeyGen evaluationKeyGen
+  arbitrary = pageGen
 
-pageGen :: Gen SubmissionKey -> Gen EvaluationKey -> Gen Page
-pageGen submissionKey evaluationKey = oneof [
+pageGen :: Gen Page
+pageGen = oneof [
     nonParametricPages
   , parametricPages
   ] where
+      showInt :: Int -> String
+      showInt = show
+
+      assignmentKey = AssignmentKey . showInt <$> choose (1,5000)
+
+      submissionKey = SubmissionKey . showInt <$> choose (1,5000)
+
+      evaluationKey = EvaluationKey . showInt <$> choose (1,5000)
+
       nonParametricPages = elements [
           Login
         , Logout
@@ -43,7 +45,6 @@ pageGen submissionKey evaluationKey = oneof [
         , ModifyAssignment
         , Submission
         , SubmissionList
-        , SubmissionDetails
         , GroupRegistration
         , UserDetails
         , UserSubmissions
@@ -60,4 +61,5 @@ pageGen submissionKey evaluationKey = oneof [
         , CommentFromModifyEvaluation <$> submissionKey <*> evaluationKey
         , Evaluation <$> submissionKey
         , ModifyEvaluation <$> submissionKey <*> evaluationKey
+        , SubmissionDetails <$> assignmentKey <*> submissionKey
         ]

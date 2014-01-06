@@ -69,7 +69,7 @@ data Page
   | ModifyAssignment
   | Submission
   | SubmissionList
-  | SubmissionDetails
+  | SubmissionDetails R.AssignmentKey R.SubmissionKey
   | GroupRegistration
   | UserDetails
   | UserSubmissions
@@ -131,8 +131,8 @@ isSubmission _          = False
 isSubmissionList SubmissionList = True
 isSubmissionList _              = False
 
-isSubmissionDetails SubmissionDetails = True
-isSubmissionDetails _                 = False
+isSubmissionDetails (SubmissionDetails _ _) = True
+isSubmissionDetails _                       = False
 
 isGroupRegistration GroupRegistration = True
 isGroupRegistration _                 = False
@@ -189,7 +189,7 @@ pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
   p (Evaluation _)   = [isHome, isProfile, isEvaluationTable, isCommentFromEvaluation, isEvaluation]
   p Submission       = [isHome, isProfile, isSubmissionList, isSubmission]
   p SubmissionList   = [isHome, isProfile, isSubmissionDetails, isSubmissionList]
-  p SubmissionDetails = [isHome, isProfile, isSubmissionList, isSubmissionDetails]
+  p (SubmissionDetails _ _) = [isHome, isProfile, isSubmissionList, isSubmissionDetails]
   p Administration   = [isHome, isProfile, isCreateCourse, isUserDetails, isAssignCourseAdmin, isAdministration]
   p Profile          = [isHome, isChangePassword, isProfile]
   p UserSubmissions  = [isHome, isProfile, isModifyEvaluation, isEvaluation, isUserSubmissions]
@@ -323,7 +323,7 @@ parentPage (ModifyEvaluation _ _) = EvaluationTable
 parentPage Submission      = Home
 parentPage SubmissionList  = Home
 parentPage UserSubmissions = Home
-parentPage SubmissionDetails = Home
+parentPage (SubmissionDetails ak sk) = SubmissionDetails ak sk
 parentPage Administration  = Home
 parentPage GroupRegistration = Home
 parentPage UserDetails  = Administration

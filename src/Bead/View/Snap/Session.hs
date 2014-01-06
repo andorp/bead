@@ -50,7 +50,7 @@ instance SessionStore P.Page where
     s P.Submission      = "Submission"
     s P.SubmissionList  = "SubmissionList"
     s P.UserSubmissions = "UserSubmissions"
-    s P.SubmissionDetails = "SubmissionDetails"
+    s (P.SubmissionDetails (R.AssignmentKey a) (R.SubmissionKey s)) = join ["SubmissionDetails:", a, ":", s]
     s (P.ModifyEvaluation (R.SubmissionKey s) (R.EvaluationKey e)) = join ["ModifyEvaluation:", s, ":", e]
     s P.Administration   = "Administration"
     s P.GroupRegistration = "GroupRegistration"
@@ -80,7 +80,6 @@ instance SessionRestore P.Page where
     Just "Submission"      -> Just P.Submission
     Just "SubmissionList"  -> Just P.SubmissionList
     Just "UserSubmissions" -> Just P.UserSubmissions
-    Just "SubmissionDetails" -> Just P.SubmissionDetails
     Just "Administration"   -> Just P.Administration
     Just "GroupRegistration" -> Just P.GroupRegistration
     Just "CreateCourse" -> Just P.CreateCourse
@@ -103,6 +102,12 @@ instance SessionRestore P.Page where
               [s,e] -> Just $ P.CommentFromModifyEvaluation (submissionKey s) (evaluationKey e)
               _     -> Nothing
 
+      | startsWith "SubmissionDetails:" ts ->
+          let as = splitValues "SubmissionDetails:" ts
+          in case as of
+               [a,s] -> Just $ P.SubmissionDetails (assignmentKey a) (submissionKey s)
+               _     -> Nothing
+
       | startsWith "Evaluation:" ts ->
           Just . P.Evaluation . submissionKey $ dropPreffix "Evaluation:" ts
 
@@ -114,6 +119,8 @@ instance SessionRestore P.Page where
 
     Just _ -> Nothing
     where
+      assignmentKey = R.AssignmentKey . T.unpack
+
       submissionKey = R.SubmissionKey . T.unpack
 
       evaluationKey = R.EvaluationKey . T.unpack

@@ -6,7 +6,10 @@ import Bead.Domain.Entities (Username(..))
 import Bead.Domain.Relationships
 import Bead.View.Snap.TemplateAndComponentNames
 
--- Request Parameter Names
+-- Request Parameter Name Constants
+
+assignmentKeyParamName :: IsString s => s
+assignmentKeyParamName = fromString $ fieldName assignmentKeyField
 
 submissionKeyParamName :: IsString s => s
 submissionKeyParamName = fromString $ fieldName submissionKeyField
@@ -39,7 +42,7 @@ instance ReqParamValue AssignmentKey where
   paramValue (AssignmentKey a) = fromString a
 
 instance RequestParam AssignmentKey where
-  requestParam a = ReqParam (fieldName assignmentKeyField, paramValue a)
+  requestParam a = ReqParam (assignmentKeyParamName, paramValue a)
 
 instance ReqParamValue SubmissionKey where
   paramValue (SubmissionKey s) = fromString s
