@@ -44,8 +44,12 @@ submissionListPage = withUserState $ \s -> do
           False -> do
             sl <- userStory (submissionListDesc ak)
             tc <- usersTimeZoneConverter
-            renderPagelet . withUserFrame s $
-              submissionListContent (PageData { asKey = ak, smList = sl, uTime = tc })
+            renderPagelet . withUserFrame s .
+              submissionListContent $
+                PageData { asKey = ak
+                         , smList = sortSbmListDescendingByTime sl
+                         , uTime = tc 
+                         }
 
 submissionListContent :: PageData -> Pagelet
 submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (className submissionListDiv) $ do

@@ -13,6 +13,8 @@ import Bead.Controller.Pages as P (Page(ModifyEvaluation, Evaluation))
 import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import Data.Function (on)
+import Data.List (sortBy)
 import Data.String (fromString)
 import Data.Time (UTCTime, LocalTime)
 import Text.Printf (printf)
@@ -49,10 +51,14 @@ userSubmissionHtml ut u = onlyHtml $ mkI18NHtml $ \i18n -> do
       secondCol . usStudent $ u
   H.p $ do
     H.h3 . fromString . i18n $ "Beadott megoldások"
-    submissionTable ut i18n . usSubmissions $ u
+    submissionTable ut i18n . sortDescendingByTime . usSubmissions $ u
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft        $ fromString t
+
+    submissionTime (_submissionKey, time, _submissionInfo) = time
+
+    sortDescendingByTime = reverse . sortBy (compare `on` submissionTime)
 
 submissionTable :: UserTimeConverter -> I18N -> [(SubmissionKey, UTCTime, SubmissionInfo)] -> Html
 submissionTable userTime i18n s = do

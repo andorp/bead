@@ -8,8 +8,11 @@ import Bead.Domain.Evaluation
 
 -- Haskell imports
 
+import Data.Either (either)
+import Data.Function (on)
 import Data.Time (UTCTime(..))
 import Data.Map (Map)
+import Data.List as List
 
 -- * Relations
 
@@ -87,6 +90,18 @@ data SubmissionListDesc = SubmissionListDesc {
   , slSubmissions :: Either UserSubmissionTimes UserSubmissionInfo
   , slAssignment :: Assignment
   }
+
+-- Sorts the given submission list description into descending order, by
+-- the times of the given submissions
+sortSbmListDescendingByTime :: SubmissionListDesc -> SubmissionListDesc
+sortSbmListDescendingByTime s = s { slSubmissions = slSubmissions' }
+  where
+    userSubmissionTime (_submissionKey,time,_status,_evalatedBy) = time
+    sortSubmissionTime = reverse . List.sort
+    sortUserSubmissionInfo = reverse . List.sortBy (compare `on` userSubmissionTime)
+    slSubmissions' = either (Left . sortSubmissionTime)
+                            (Right . sortUserSubmissionInfo)
+                            (slSubmissions s)
 
 submissionListDescPermissions = ObjectPermissions [
     (P_Open, P_Group), (P_Open, P_Course)
