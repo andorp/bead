@@ -36,7 +36,6 @@ module Bead.Controller.Pages (
   , isCommentFromModifyEvaluation
 #ifdef TEST
   , invariants
-  , unitTests
 #endif
   ) where
 
@@ -267,6 +266,21 @@ adminPages = [
   , isAssignCourseAdmin
   ]
 
+-- Pages that can not be displayed only, modifies the
+-- persistented data somehow
+dataModificationPages = [
+    isCommentFromEvaluation
+  , isCommentFromModifyEvaluation
+  , isEvaluation
+  , isModifyEvaluation
+  ]
+
+-- Pages that not part of the site content
+nonActivePages = [
+    isLogin
+  , isLogout
+  ]
+
 menuPageList = [
     Home
   , Profile
@@ -331,17 +345,15 @@ parentPage (CommentFromModifyEvaluation sk ek) = ModifyEvaluation sk ek
 -- * Invariants
 
 invariants = Invariants [
-{-    -- For each page the following property is hold:
+    -- For each page the following property is hold:
     -- Every parent page of a page has a transition to the given page
-    ("Each parent page of a page has a transition to the given page", 
-      \p -> elem p $ pageTransition $ parentPage p) -}
-  ]
-
-unitTests = UnitTests [
-{-
-    ("Regular, Admin and NonMenu pages should cover all pages",
-     Set.fromList (join [regularPages, groupAdminPages, courseAdminPages, adminPages, nonMenuPages]) ==
-     Set.fromList allPages) -}
-  ]
+    ("Each parent page of a page has a transition to the given page",
+      \p -> pageTransition (parentPage p) p)
+  , ("Regular, Admin and NonMenu pages should cover all pages",
+      isPage (join [ regularPages, groupAdminPages, courseAdminPages
+                   , adminPages, dataModificationPages, menuPagePred
+                   , nonActivePages ]))
+  ] where
+      menuPagePred = [flip elem menuPageList]
 
 #endif

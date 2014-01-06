@@ -23,7 +23,7 @@ import Test.Quick.RolePermissionGen
 -- * Unit tests and invariants import from Bead modules
 
 import qualified Bead.View.Snap.RouteOf as R (invariants)
--- import qualified Bead.Controller.Pages as P (invariants, unitTests)
+import qualified Bead.Controller.Pages as P (invariants)
 import qualified Bead.Domain.Entities as E (roleInvariants, assignmentTests, compareHunTests)
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQL.Loader as L (unitTests)
@@ -71,7 +71,7 @@ assertionTestGroup name as = testGroup name
 
 tests = [
     invariantsGroup "Route Of" R.invariants
---  , invariantsGroup "Page invariants" P.invariants
+  , invariantsGroup "Page invariants" P.invariants
   , invariantsGroup "Role permission invariants" RP.invariants
   , invariantsGroup "Content handler definitions" VA.invariants
   , unitTestGroup   "NoSQL untilities" L.unitTests
@@ -81,7 +81,6 @@ tests = [
   , invariantsGroup "Role invariants" E.roleInvariants
   , unitTestGroup   "Assignment active period" E.assignmentTests
   , unitTestGroup   "Hungarian letter comparism" E.compareHunTests
---  , unitTestGroup   "Page unit tests" P.unitTests
   , unitTestGroup   "Template and components" TC.unitTests
   , ioUnitTestGroup "Email template tests" E.unitTests
   , assertionTestGroup "Email address" V.assertEmailAddress

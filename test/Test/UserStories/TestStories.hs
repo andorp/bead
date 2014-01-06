@@ -36,8 +36,9 @@ adminUserState = UserState {
   , name = "Admin"
   , role = E.Admin
   , token = "token"
+  , timezone = UTC
+  , status = Nothing
   }
-
 
 student = User {
     u_role = E.Student
