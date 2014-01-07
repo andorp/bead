@@ -17,6 +17,7 @@ import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.ErrorPage (errorPageWithTitle, errorPage)
+import Bead.View.Snap.I18N
 
 import Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import Bead.View.Snap.Content.All
@@ -99,7 +100,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
 
 -- * Blaze --
 
-userForm :: String -> Html
+userForm :: String -> I18NHtml
 userForm act = do
   postForm act $ do
     table (formId loginForm) (formId loginForm) $ do
@@ -107,7 +108,7 @@ userForm act = do
       tableLine "Jelszó:" (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
     submitButton (fieldName loginSubmitBtn) "Bejelentkezés"
 
-loginPage :: Maybe AuthFailure -> Html
+loginPage :: Maybe AuthFailure -> I18NHtml
 loginPage err = withTitleAndHead "Bejelentkezés" content
   where
     content = do

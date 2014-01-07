@@ -10,7 +10,7 @@ import Control.Monad (join, mapM_)
 
 import Text.Blaze (ToMarkup(..), textTag)
 import Text.Blaze.Html5 (Html, AttributeValue(..), (!))
-import qualified Text.Blaze.Html5 as H
+--import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import Bead.View.Snap.I18N (I18NHtml, translate)
 import qualified Bead.View.Snap.I18N as I18N
@@ -26,6 +26,8 @@ import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
+import Bead.View.Snap.I18N (IHtml, translate)
+import qualified Bead.View.Snap.I18NHtml as H
 #ifdef TEST
 import Bead.Invariants (Invariants(..))
 #endif
@@ -42,13 +44,13 @@ onlyHtml h = Pagelet { struct = h }
 structMap :: (I18NHtml -> I18NHtml) -> Pagelet -> Pagelet
 structMap f p = p { struct = f . struct $ p }
 
-css :: String -> Html
+css :: String -> IHtml
 css c = H.link ! A.type_ "text/css" ! A.href (fromString c) ! A.rel "stylesheet"
 
-js :: String -> Html
+js :: String -> IHtml
 js j = H.script ! A.src (fromString j) $ empty
 
-document :: Html -> Html -> Html
+document :: IHtml -> IHtml -> IHtml
 document headers body = H.docTypeHtml $ do
   H.head $ do
     H.title "BE-AD beadandókezelő"
@@ -58,7 +60,7 @@ document headers body = H.docTypeHtml $ do
     css "header.css"
   H.body $ body
 
-dynamicDocument :: Html -> Html -> Html
+dynamicDocument :: IHtml -> IHtml -> IHtml
 dynamicDocument header = document
     (do css "jquery-ui.css"
         js "/jquery.js"
@@ -67,18 +69,18 @@ dynamicDocument header = document
         header)
 
 runPagelet :: Pagelet -> I18N -> Html
-runPagelet p i = document (css "inside.css") (translate i . struct $ p)
+runPagelet p i = translate i $ document (css "inside.css") (struct p)
 
 runDynamicPagelet :: Pagelet -> I18N -> Html
-runDynamicPagelet p i =
+runDynamicPagelet p i = translate i $
   dynamicDocument
     (css "inside.css")
-    (translate i . struct $ p)
+    (struct p)
 
 class BlazeTemplate b where
   template :: b -> Html
 
-titleAndHead :: (Html -> Html -> Html) -> String -> Html -> Html
+titleAndHead :: (IHtml -> IHtml -> IHtml) -> String -> IHtml -> IHtml
 titleAndHead doc title content = doc
   (css "screen.css")
   (do H.div ! A.id "header" $ do
@@ -86,19 +88,19 @@ titleAndHead doc title content = doc
         H.div ! A.id "title" $ (fromString title)
       H.div ! A.id "content" $ content)
 
-dynamicTitleAndHead :: String -> Html -> Html
+dynamicTitleAndHead :: String -> IHtml -> IHtml
 dynamicTitleAndHead = titleAndHead dynamicDocument
 
-withTitleAndHead :: String -> Html -> Html
+withTitleAndHead :: String -> IHtml -> IHtml
 withTitleAndHead = titleAndHead document
 
 withUserFrame :: UserState -> Pagelet -> Pagelet
 withUserFrame s = structMap withUserFrame'
   where
-    withUserFrame' content = I18N.liftH2 $ \i -> do
+    withUserFrame' content = do
       H.div ! A.id "header" $ pageHeader s
       pageStatus s
-      H.div ! A.id "content" $ translate i content
+      H.div ! A.id "content" $ content
 
 -- * Basic building blocks
 
@@ -116,16 +118,16 @@ infix |>
 (|>) :: a -> (a -> b) -> b
 x |> f = f x
 
-conditional :: Bool -> Html -> Html -> Html
+conditional :: Bool -> IHtml -> IHtml -> IHtml
 conditional True _ visible = visible
 conditional False text _   = text
 
-nonEmpty :: [o] -> Html -> Html -> Html
+nonEmpty :: [o] -> IHtml -> IHtml -> IHtml
 nonEmpty os = conditional (not . null $ os)
 
 -- * Input fields
 
-charInput :: String -> String -> Int -> Maybe String -> Html
+charInput :: String -> String -> Int -> Maybe String -> IHtml
 charInput t name size value =
   (H.input ! A.type_ (fromString t)
            ! A.id (fromString name)
@@ -133,33 +135,33 @@ charInput t name size value =
            ! A.size (fromString . show $ size))
   |> (withDefaultValue value)
 
-textInput :: String -> Int -> Maybe String -> Html
+textInput :: String -> Int -> Maybe String -> IHtml
 textInput = charInput "text"
 
-passwordInput :: String -> Int -> Maybe String -> Html
+passwordInput :: String -> Int -> Maybe String -> IHtml
 passwordInput = charInput "password"
 
-textAreaInput :: String -> Maybe String -> Html
+textAreaInput :: String -> Maybe String -> IHtml
 textAreaInput name value =
   (H.textarea ! A.name (fromString name)
               ! A.id   (fromString name)) value'
   where
     value' = fromString . maybe "" id $ value
 
-hiddenInput :: String -> String -> Html
+hiddenInput :: String -> String -> IHtml
 hiddenInput name value =
   H.input ! A.type_ "hidden"
           ! A.id (fromString name)
           ! A.name (fromString name)
           ! A.value (fromString value)
 
-hiddenInputWithId :: String -> String -> Html
+hiddenInputWithId :: String -> String -> IHtml
 hiddenInputWithId n v = hiddenInput n v ! A.id (fromString n)
 
-submitButton :: String -> String -> Html
+submitButton :: String -> String -> IHtml
 submitButton i t = H.input ! A.id (fromString i) ! A.type_ "submit" ! A.value (fromString t)
 
-withId :: (Html -> Html) -> String -> (Html -> Html)
+withId :: (IHtml -> IHtml) -> String -> (IHtml -> IHtml)
 withId f i = (f ! A.id (fromString i))
 
 setHookClass c h = h ! A.class_ (className c)
@@ -168,25 +170,25 @@ required h = h ! A.required ""
 
 -- * Form
 
-postForm :: String -> Html -> Html
+postForm :: String -> IHtml -> IHtml
 postForm action = H.form ! A.method "post" ! A.action (fromString action) ! A.acceptCharset "UTF-8"
 
-getForm :: String -> Html -> Html
+getForm :: String -> IHtml -> IHtml
 getForm action = H.form ! A.method "get" ! A.action (fromString action) ! A.acceptCharset "UTF-8"
 
 -- * Table
-table :: String -> String -> Html -> Html
+table :: String -> String -> IHtml -> IHtml
 table i c = H.table ! A.id (fromString i) ! A.class_ (fromString c)
 
-tableLine :: String -> Html -> Html
+tableLine :: String -> IHtml -> IHtml
 tableLine title field = H.tr $ do
   H.td (fromString title)
   H.td field
 
-hiddenTableLine :: Html -> Html
+hiddenTableLine :: IHtml -> IHtml
 hiddenTableLine = H.tr . H.td
 
-empty :: Html
+empty :: IHtml
 empty = return ()
 
 linkText :: (IsString s) => P.Page -> s
@@ -218,34 +220,34 @@ linkText P.SetUserPassword = fromString "Hallgató jelszavának beállítása"
 linkText (P.CommentFromEvaluation _) = fromString "Megjegyzés"
 linkText (P.CommentFromModifyEvaluation _ _) = fromString "Megjegyzés"
 
-linkToPage :: P.Page -> Html
+linkToPage :: P.Page -> IHtml
 linkToPage g = H.a ! A.href (routeOf g) ! A.id (fieldName g) $ linkText g
 
-linkToPageWithText :: P.Page -> String -> Html
+linkToPageWithText :: P.Page -> String -> IHtml
 linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString t
 
-link :: String -> String -> Html
+link :: String -> String -> IHtml
 link r t = H.a ! A.href (fromString r) $ fromString t
 
 -- Produces a HTML-link with the given route text and title
-linkWithTitle :: String -> String -> String -> Html
+linkWithTitle :: String -> String -> String -> IHtml
 linkWithTitle route title text =
   H.a ! A.href (fromString route)
       ! A.title (fromString title)
       $ fromString text
 
-linkToRoute :: String -> Html
+linkToRoute :: String -> IHtml
 linkToRoute = link "/"
 
-navigationMenu :: UserState -> Html
+navigationMenu :: UserState -> IHtml
 navigationMenu s = do
   H.ul $ mapM_ (H.li . linkToPage) $ P.menuPages (role s) (page s)
 
-pageHeader :: UserState -> Html
+pageHeader :: UserState -> IHtml
 pageHeader s = do
   H.div ! A.id "logo" $ "BE-AD"
   H.div ! A.id "user" $ do
-    fromString . str . user $ s
+    (fromString . str . user $ s)
     H.br
     linkToPage P.Home
     H.br
@@ -257,7 +259,7 @@ pageHeader s = do
     title u@(UserState {}) = linkText . page $ u
     title _ = ""
 
-pageStatus :: UserState -> Html
+pageStatus :: UserState -> IHtml
 pageStatus = maybe noMessage message . status
   where
     noMessage = return ()
@@ -265,11 +267,11 @@ pageStatus = maybe noMessage message . status
 
 -- * Picklist
 
-option :: String -> String -> Bool -> Html
+option :: String -> String -> Bool -> IHtml
 option value text False = H.option ! A.value (fromString value)                 $ fromString text
 option value text True  = H.option ! A.value (fromString value) ! A.selected "" $ fromString text
 
-selection :: String -> Html -> Html
+selection :: String -> IHtml -> IHtml
 selection name =
   H.select ! A.id (fromString name) ! A.name (fromString name)
            ! A.multiple "false" ! A.required ""
@@ -295,26 +297,26 @@ instance (SelectionValue v, SelectionText t) => SelectionText (v,x,t) where
 instance SelectionText String where
   selectionText = id
 
-defValueTextSelection :: (Eq s, SelectionValue s, SelectionText s) => String -> s -> [s] -> Html
+defValueTextSelection :: (Eq s, SelectionValue s, SelectionText s) => String -> s -> [s] -> IHtml
 defValueTextSelection name def = selection name . mapM_ option' where
   option' x = option (selectionValue x) (selectionText x) (x == def)
 
-valueTextSelection :: (SelectionValue s, SelectionText s) => String -> [s] -> Html
+valueTextSelection :: (SelectionValue s, SelectionText s) => String -> [s] -> IHtml
 valueTextSelection name = selection name . mapM_ option'
   where
     option' s = option (selectionValue s) (selectionText s) False
 
 -- Creates a selection from enum values, starting enumeration from the
 -- given value
-enumSelection :: (Enum e, SelectionValue e, SelectionText e) => String -> e -> Html
+enumSelection :: (Enum e, SelectionValue e, SelectionText e) => String -> e -> IHtml
 enumSelection name start = valueTextSelection name [start .. ]
 
 -- Creates a selection with a given name attribute and a default value
 -- as the actively selected one.
-defEnumSelection :: (Eq e, Enum e, SelectionValue e, SelectionText e) => String -> e -> Html
+defEnumSelection :: (Eq e, Enum e, SelectionValue e, SelectionText e) => String -> e -> IHtml
 defEnumSelection name def = defValueTextSelection name def [toEnum 0 .. ]
 
-valueSelection :: (o -> (String, String)) -> String -> [o] -> Html
+valueSelection :: (o -> (String, String)) -> String -> [o] -> IHtml
 valueSelection f n = selection n . mapM_ option'
   where
     option' o = let (v,n) = f o in option v n False
@@ -351,7 +353,7 @@ instance SelectionValue TimeZone where
 instance SelectionText TimeZone where
   selectionText = show
 
-evalSelectionDiv :: EvaluationHook -> Html
+evalSelectionDiv :: EvaluationHook -> IHtml
 evalSelectionDiv h = (H.div `withId` (evSelectionDivId h)) $ empty
 
 #ifdef TEST
