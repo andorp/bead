@@ -33,9 +33,11 @@ import Bead.Controller.UserStories (
   , administratedGroups
   )
 
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A (class_, style, id, colspan)
+
+import Bead.View.Snap.I18N (IHtml)
+import qualified Bead.View.Snap.I18NHtml as H
 
 #ifdef TEST
 import Bead.Invariants
@@ -69,30 +71,28 @@ homePage = withUserState $ \s -> do
           <*> (map sortUserLines <$> submissionTables)
           <*> (return converter)))
 
-navigation :: [P.Page] -> Html
+navigation :: [P.Page] -> IHtml
 navigation links = H.div ! A.id "menu" $ H.ul $ mapM_ linkToPage links
 
 homeContent :: HomePageData -> Pagelet
-homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> H.div # textAlign "left" $ do
+homeContent d = onlyHtml $ H.div # textAlign "left" $ do
   let s = userState d
       r = role s
       hasCourse = hasCourses d
       hasGroup  = hasGroups d
   when (isAdmin s) $ H.p $ do
-    H.h3 $ (translate i18n "Rendszergazdai feladatok")
+    H.h3 $ "Rendszergazdai feladatok"
     navigation [P.Administration]
     H.hr
   when (courseAdminUser r) $ H.p $ do
-    H.h3 $ (translate i18n "Tárgyfelelősi feladatok")
-    when (not hasCourse) $ do
-      translate i18n "Még nincsenek tárgyak."
+    H.h3 $ "Tárgyfelelősi feladatok"
+    when (not hasCourse) $ "Még nincsenek tárgyak."
   when (groupAdminUser r) $ H.p $ do
-    H.h3 $ (translate i18n "Oktatói feladatok")
-    when (not hasGroup) $ do
-      translate i18n "Még nincsenek csoportok."
+    H.h3 $ "Oktatói feladatok"
+    when (not hasGroup) $ "Még nincsenek csoportok."
   when ((courseAdminUser r) || (groupAdminUser r)) $ do
     when (hasCourse || hasGroup) $ H.p $ do
-      htmlSubmissionTables i18n (sTables d)
+      htmlSubmissionTables (sTables d)
   when (courseAdminUser r && hasCourse) $ H.p $ do
     navigation $ [ P.CourseAdmin, NewCourseAssignment] ++
                  (if hasGroup then [P.NewGroupAssignment] else []) ++
@@ -101,27 +101,25 @@ homeContent d = onlyHtml $ mkI18NHtml $ \i18n -> H.div # textAlign "left" $ do
   when (groupAdminUser r && hasGroup) $ H.p $ do
     navigation [P.NewGroupAssignment, P.EvaluationTable, P.SetUserPassword]
     H.hr
-  H.h3 $ (translate i18n "Hallgatói feladatok")
+  H.h3 $ "Hallgatói feladatok"
   H.p $ do
-    availableAssignments (timeConverter d) i18n (assignments d)
+    availableAssignments (timeConverter d) (assignments d)
     navigation [P.GroupRegistration]
   where
     courseAdminUser = (==E.CourseAdmin)
     groupAdminUser  = (==E.GroupAdmin)
 
-availableAssignments :: UserTimeConverter -> I18N -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> Html
-availableAssignments _ i18n Nothing = do
-  translate i18n "Még nincsenek felvett tárgyaid, vegyél fel tárgyakat!"
-availableAssignments _ i18n (Just []) = do
-  translate i18n "Még nincsenek kiírva feladatok."
-availableAssignments timeconverter i18n (Just as) = do
+availableAssignments :: UserTimeConverter -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> IHtml
+availableAssignments _ Nothing   = "Még nincsenek felvett tárgyaid, vegyél fel tárgyakat!"
+availableAssignments _ (Just []) = "Még nincsenek kiírva feladatok."
+availableAssignments timeconverter (Just as) = do
   table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
     headerLine
     mapM_ assignmentLine as
   where
     dataCell = H.td # informationalCell
     dataCell' r = H.td # (informationalCell <> r)
-    headerCell t = H.th # (informationalCell <> grayBackground) $ fromString $ i18n t
+    headerCell t = H.th # (informationalCell <> grayBackground) $ t
     headerLine = H.tr $ do
       headerCell ""
       headerCell "Tárgy"
@@ -131,7 +129,7 @@ availableAssignments timeconverter i18n (Just as) = do
       headerCell "Értékelés"
     assignmentLine (k,a,s) = H.tr $ do
       case aActive a of
-        True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (i18n "Új megoldás")
+        True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) "Új megoldás"
         False -> dataCell "Lezárva"
       dataCell (fromString . aGroup $ a)
       dataCell (fromString . join . intersperse ", " . aTeachers $ a)
@@ -139,24 +137,24 @@ availableAssignments timeconverter i18n (Just as) = do
       dataCell (fromString . showDate . timeconverter $ aEndDate a)
       (coloredSubmissionCell dataCell' (H.td) fromString "Nincs megoldás" "Nem értékelt" "Elfogadott" "Elutasított" s)
 
-htmlSubmissionTables :: I18N -> [SubmissionTableInfo] -> Html
-htmlSubmissionTables i18n xs = mapM_ (htmlSubmissionTable i18n) . zip [1..] $ xs
+htmlSubmissionTables :: [SubmissionTableInfo] -> IHtml
+htmlSubmissionTables xs = mapM_ htmlSubmissionTable . zip [1..] $ xs
 
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
 -- group or course students, an informational text is shown.
-htmlSubmissionTable :: I18N -> (Int,SubmissionTableInfo) -> Html
+htmlSubmissionTable :: (Int,SubmissionTableInfo) -> IHtml
 
 -- Empty table
-htmlSubmissionTable i18n (i,s)
+htmlSubmissionTable (i,s)
   | and [null . stAssignments $ s, null . stUsers $ s] = H.p $ do
-      translate i18n "Nincsenek feladatok vagy hallgatók a csoporthoz:"
+      "Nincsenek feladatok vagy hallgatók a csoporthoz:"
       H.br
       fromString . stCourse $ s
       H.br
 
 -- Non empty table
-htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) # informationalTable $ do
+htmlSubmissionTable (i,s) = table tableId (className groupSubmissionTable) # informationalTable $ do
   headLine (stCourse s)
   assignmentLine (stAssignments s)
   mapM_ userLine (stUserLines s)
@@ -166,10 +164,10 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
     headerCell = H.th # (informationalCell <> grayBackground)
     dataCell r = H.td # (informationalCell <> r)
     assignmentLine as = H.tr $ do
-      headerCell $ (translate i18n "Név")
-      headerCell $ (translate i18n "NEPTUN")
+      headerCell $ "Név"
+      headerCell $ "NEPTUN"
       mapM_ (headerCell . modifyAssignmentLink) . zip [1..] $ as
-      headerCell $ (translate i18n "Összesítés")
+      headerCell $ "Összesítés"
 
     modifyAssignmentLink (i,ak) =
       linkWithTitle
@@ -185,8 +183,8 @@ htmlSubmissionTable i18n (i,s) = table tableId (className groupSubmissionTable) 
       mapM_ (submissionCell username) $ as
       case calculateSubmissionResult submissionInfos (stEvalConfig s) of
         Left  e      -> dataCell summaryErrorStyle  $ fromString e
-        Right Passed -> dataCell summaryPassedStyle $ fromString (i18n "Elfogadott")
-        Right Failed -> dataCell summaryFailedStyle $ fromString (i18n "Elutasított")
+        Right Passed -> dataCell summaryPassedStyle $ "Elfogadott"
+        Right Failed -> dataCell summaryFailedStyle $ "Elutasított"
 
     submissionCell u (ak,s) =
       coloredSubmissionCell

@@ -18,9 +18,10 @@ import Bead.View.Snap.Content.Utils
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A (class_)
+import Bead.View.Snap.I18N (constant)
+import qualified Bead.View.Snap.I18NHtml as H
 
 submissionList :: Content
 submissionList = getContentHandler submissionListPage
@@ -52,26 +53,26 @@ submissionListPage = withUserState $ \s -> do
                          }
 
 submissionListContent :: PageData -> Pagelet
-submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (className submissionListDiv) $ do
+submissionListContent p = onlyHtml $ H.div ! A.class_ (className submissionListDiv) $ do
   H.table $ do
     H.tr $ do
-      firstCol  (i "Tárgy, csoport:")
+      firstCol  "Tárgy, csoport:"
       secondCol (slGroup . smList $ p)
     H.tr $ do
-      firstCol (i "Oktató:")
+      firstCol "Oktató:"
       secondCol (join . slTeacher . smList $ p)
     H.tr $ do
-      firstCol (i "Feladat:")
+      firstCol "Feladat:"
       secondCol (assignmentName . slAssignment . smList $ p)
     H.tr $ do
-      firstCol (i "Határidő:")
+      firstCol "Határidő:"
       secondCol (showDate . (uTime p) . assignmentEnd . slAssignment $ smList p)
-  H.h2 $ (translate i "Részletes leírás")
+  H.h2 "Részletes leírás"
   H.div # assignmentTextDiv $
     (markdownToHtml . assignmentDesc . slAssignment . smList $ p)
   let submissions = slSubmissions . smList $ p
-  H.h2 (translate i "Beadott megoldások")
-  either (userSubmissionTimes i) (userSubmissionInfo i) submissions
+  H.h2 "Beadott megoldások"
+  either userSubmissionTimes userSubmissionInfo submissions
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft $ fromString t
@@ -83,18 +84,18 @@ submissionListContent p = onlyHtml $ mkI18NHtml $ \i -> H.div ! A.class_ (classN
       H.td # informationalCell $ (fromString status)
 
     submissionTimeLine time =
-      H.tr $ (H.td # informationalCell) $ (fromString . showDate $ (uTime p) time)
+      H.tr $ (H.td # informationalCell) $ (constant . showDate $ (uTime p) time)
 
-    userSubmissionInfo  i = userSubmission i submissionLine
-    userSubmissionTimes i = userSubmission i submissionTimeLine
+    userSubmissionInfo  = userSubmission submissionLine
+    userSubmissionTimes = userSubmission submissionTimeLine
 
-    userSubmission i line submissions =
+    userSubmission line submissions =
       if (not $ null submissions)
         then do
           table (fieldName submissionTableName) (className submissionListTable) # informationalTable $
             mapM_ line submissions
         else do
-          translate i "Nincsenek még beadott megoldások."
+          "Nincsenek még beadott megoldások."
 
 
 

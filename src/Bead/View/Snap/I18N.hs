@@ -32,6 +32,10 @@ translate :: I18N -> I18NHtml -> H.Html
 translate = flip runI18NHtmlM
 {-# INLINE translate #-}
 
+noTranslate :: I18NHtml -> H.Html
+noTranslate = translate id
+{-# INLINE noTranslate #-}
+
 --instance IsString (I18NHtmlM ()) where
 --  fromString = I18NHtmlM . lift . fromString
 
@@ -77,6 +81,6 @@ instance IsString (I18NHtmlM a) where
   fromString t = I18NHtmlM $ ReaderT $ \i -> fromString (i t)
   {-# INLINE fromString #-}
 
-noTranslate :: String -> I18NHtmlM a
-noTranslate = I18NHtmlM . lift . fromString
-{-# INLINE noTranslate #-}
+constant :: String -> I18NHtmlM a
+constant = I18NHtmlM . lift . fromString
+{-# INLINE constant #-}

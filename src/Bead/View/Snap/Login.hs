@@ -40,15 +40,16 @@ import Snap.Snaplet.Session
 -- import Control.Monad (mapM_)
 
 import Text.Blaze (textTag)
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import Text.Blaze.Html5.Attributes hiding (title, rows, accept)
 import qualified Text.Blaze.Html5.Attributes as A
+import qualified Bead.View.Snap.I18NHtml as H
+import Bead.View.Snap.I18N (IHtml, noTranslate)
 
 -- * Login and Logout handlers
 
 login :: Maybe AuthFailure -> Handler App (AuthManager App) ()
-login authError = blaze $ loginPage authError
+login authError = blaze . noTranslate $ loginPage authError
 
 loginSubmit :: Handler App b ()
 loginSubmit = withTop auth $ handleError $ runErrorT $ do

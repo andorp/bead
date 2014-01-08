@@ -15,9 +15,10 @@ import Data.Maybe
 
 import Snap
 import Snap.Snaplet.Auth as A
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
+import qualified Bead.View.Snap.I18NHtml as H
+import Bead.View.Snap.I18N (IHtml)
 import Text.Printf (printf)
 
 import Bead.Domain.Entities
@@ -145,7 +146,7 @@ and submit the requests.
 resetPasswordGET :: Handler App App ()
 resetPasswordGET = renderForm
   where
-    renderForm = blaze $ dynamicTitleAndHead resetPasswordTitle $ do
+    renderForm = blaze . noTranslate . dynamicTitleAndHead resetPasswordTitle $ do
       postForm "/reset_pwd" $ do
         table (fieldName resetPasswordTable) (fieldName resetPasswordTable) # centerTable $ do
           tableLine "NEPTUN:"    $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
@@ -180,9 +181,8 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
       (lift $ registrationStory $ S.loadUser u) >>=
         (either (throwError . show) return)
 
-
 pageContent :: (Handler App a) ()
-pageContent = blaze $ dynamicTitleAndHead resetPasswordTitle $ do
+pageContent = blaze . noTranslate . dynamicTitleAndHead resetPasswordTitle $ do
   H.p $ "Az új jelszót levélben kiküldtük, nézd meg a leveleidet!"
   H.br
   linkToRoute backToMain

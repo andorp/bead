@@ -69,6 +69,9 @@ script = lh2 H.script
 select = lh2 H.select
 {-# INLINE select #-}
 
+small  = lh2 H.small
+{-# INLINE small #-}
+
 span   = lh2 H.span
 {-# INLINE span #-}
 

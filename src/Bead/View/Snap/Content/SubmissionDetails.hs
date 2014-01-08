@@ -21,8 +21,8 @@ import Bead.Domain.Relationships
 
 
 import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A (class_, style)
+import qualified Bead.View.Snap.I18NHtml as H
 
 submissionDetails :: Content
 submissionDetails = getPostContentHandler submissionDetailsPage submissionDetailsPostHandler
@@ -68,41 +68,40 @@ submissionDetailsPostHandler = do
                    }
 
 submissionDetailsContent :: PageData -> Pagelet
-submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
+submissionDetailsContent p = onlyHtml $ do
   let sm = smDetails p
       tc = uTime p
   H.table $ do
     H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Tárgy, csoport:")
+      H.td # textAlignRight $ H.b $ "Tárgy, csoport:"
       H.td $ fromString (sdGroup $ sm)
     H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Oktató:")
+      H.td # textAlignRight $ H.b $ "Oktató:"
       H.td $ fromString (join . intersperse ", " . sdTeacher $ sm)
     H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Feladat:")
+      H.td # textAlignRight $ H.b $ "Feladat:"
       H.td $ fromString (assignmentName . sdAssignment $ sm)
     H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Határidő:")
+      H.td # textAlignRight $ H.b $ "Határidő:"
       H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
-  H.h2 $ (translate i "Részletes leírás")
+  H.h2 $ "Részletes leírás"
   H.div # assignmentTextDiv $ fromString . assignmentDesc $ sdAssignment $ sm
-  H.h2 (translate i "Megoldás szövege")
+  H.h2 "Megoldás szövege"
   H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
-  H.h2 $ (translate i "Értékelés")
+  H.h2 "Értékelés"
   (fromString $ sdStatus sm)
   let studentComments = filter isStudentComment $ sdComments sm
   when (not $ null studentComments) $ do
-    translate i $ commentsDiv tc studentComments
+    commentsDiv tc studentComments
   H.hr
-  H.h2 (translate i "Új hozzászólás")
+  H.h2 "Új hozzászólás"
   postForm (routeOf $ P.SubmissionDetails (aKey p) (smKey p)) $ do
     H.div ! formDiv $ do
       textAreaInput (fieldName commentValueField) Nothing ! fillDiv
-    submitButton (fieldName commentBtn) (i "Beküld")
+    submitButton (fieldName commentBtn) "Beküld"
 
 invalidSubmission :: Pagelet
-invalidSubmission = onlyHtml $ mkI18NHtml $ \i ->
-  (translate i "Olyan megoldást próbáltál megnyitni, amelyik nem hozzád tartozik!")
+invalidSubmission = onlyHtml $ "Olyan megoldást próbáltál megnyitni, amelyik nem hozzád tartozik!"
 
 -- CSS Section
 

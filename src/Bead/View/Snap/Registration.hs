@@ -46,9 +46,10 @@ import Snap.Snaplet.Auth as A hiding (createUser)
 import Snap.Snaplet.Auth.Backends.JsonFile (mkJsonAuthMgr)
 
 import Text.Blaze (textTag)
-import Text.Blaze.Html5 (Html, (!)) -- hiding (base, map, head, menu)
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A hiding (title, rows, accept)
+import Bead.View.Snap.I18N (IHtml)
+import qualified Bead.View.Snap.I18NHtml as H
 
 createUser :: P.Persist -> FilePath -> User -> String -> IO ()
 createUser persist usersdb user password = do
@@ -130,7 +131,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     , reg_timeout  = timeout 2 now
     }
 
-  renderForm = blaze $ dynamicTitleAndHead registrationTitle $ do
+  renderForm = blaze . noTranslate . dynamicTitleAndHead registrationTitle $ do
     postForm "/reg_request" ! (A.id . formId $ regForm) $ do
       table (fieldName registrationTable) (fieldName registrationTable) $ do
         tableLine "NEPTUN:"     $ textInput (name regUsernamePrm)      20 Nothing ! A.required ""
@@ -229,7 +230,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
               (False, True) -> errorPageWithTitle
                 registrationTitle
                 "Ez a felhasználó már létezik!"
-              (False, False) -> blaze $ dynamicTitleAndHead registrationTitle $ do
+              (False, False) -> blaze . noTranslate . dynamicTitleAndHead registrationTitle $ do
                 postForm "reg_final" ! (A.id . formId $ regFinalForm) $ do
                   table (fieldName registrationTable) (fieldName registrationTable) $ do
                     tableLine "Jelszó:" $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
@@ -305,7 +306,7 @@ createNewUser reg password timezone = runErrorT $ do
     checkFailure (Right x) = return x
 
 pageContent :: Handler App a ()
-pageContent = blaze $ dynamicTitleAndHead registrationTitle $ do
+pageContent = blaze . noTranslate . dynamicTitleAndHead registrationTitle $ do
   H.p $ "A regisztrációs tokent elküldtük levélben, nézd meg a leveleidet!"
   H.br
   linkToRoute backToMain

@@ -14,8 +14,9 @@ import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 
 import Data.String (fromString)
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
+import Bead.View.Snap.I18N (IHtml, constant)
+import qualified Bead.View.Snap.I18NHtml as H
 
 groupRegistration :: Content
 groupRegistration = getPostContentHandler groupRegistrationPage postGroupReg
@@ -43,36 +44,36 @@ groupRegistrationPage = withUserState $ \s -> do
   renderPagelet $ withUserFrame s (groupRegistrationContent desc)
 
 groupRegistrationContent :: GroupRegData -> Pagelet
-groupRegistrationContent desc = onlyHtml $ mkI18NHtml $ \i -> do
+groupRegistrationContent desc = onlyHtml $ do
   H.p $ do
-    H.h3 $ (translate i "Felvett csoportok")
-    groupsAlreadyRegistered i (groupsRegistered desc)
+    H.h3 $ "Felvett csoportok"
+    groupsAlreadyRegistered (groupsRegistered desc)
   H.p $ do
-    H.h3 $ (translate i "Tárgy és csoport kiválasztása")
-    groupsForTheUser i (groups desc)
+    H.h3 $ "Tárgy és csoport kiválasztása"
+    groupsForTheUser (groups desc)
 
-groupsAlreadyRegistered :: I18N -> [(GroupKey, GroupDesc)] -> Html
-groupsAlreadyRegistered i18n ds =
+groupsAlreadyRegistered :: [(GroupKey, GroupDesc)] -> IHtml
+groupsAlreadyRegistered ds =
   nonEmpty ds
-    (fromString . i18n $ "Nincsenek felvett tárgyak.")
+    ("Nincsenek felvett tárgyak.")
     (H.table # informationalTable $ do
       H.tr $ do
-        H.th # (grayBackground <> informationalCell) $ fromString $ i18n $ "Csoportok"
-        H.th # (grayBackground <> informationalCell) $ fromString $ i18n $ "Oktatók"
+        H.th # (grayBackground <> informationalCell) $ "Csoportok"
+        H.th # (grayBackground <> informationalCell) $ "Oktatók"
       mapM_ (groupLine . snd) ds)
   where
     groupLine = groupDescFold $ \n as -> do
       H.tr $ do
-        H.td # informationalCell $ fromString $ n
-        H.td # informationalCell $ fromString $ join $ intersperse " " as
+        H.td # informationalCell $ constant n
+        H.td # informationalCell $ constant $ join $ intersperse " " as
 
-groupsForTheUser :: I18N -> [(GroupKey, GroupDesc)] -> Html
-groupsForTheUser i18n gs = nonEmpty gs (fromString . i18n $ "Nincsenek elérhető csoportok.") $
+groupsForTheUser :: [(GroupKey, GroupDesc)] -> IHtml
+groupsForTheUser gs = nonEmpty gs ("Nincsenek elérhető csoportok.") $
   postForm (routeOf P.GroupRegistration) $ do
     selection (fieldName groupRegistrationField) $ do
       mapM_ (\(gk,gd) -> option (paramValue gk) (descriptive gd) False) gs
     H.br
-    submitButton (fieldName regGroupSubmitBtn) (i18n "Felvesz")
+    submitButton (fieldName regGroupSubmitBtn) ("Felvesz")
 
   where
     descriptive :: GroupDesc -> String

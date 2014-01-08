@@ -21,9 +21,10 @@ import Bead.View.Snap.Content.Comments
 
 import Bead.Domain.Evaluation
 
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A (id, class_, style)
+import qualified Bead.View.Snap.I18NHtml as H
+import Bead.View.Snap.I18N (IHtml)
 
 evaluation :: Content
 evaluation = getPostContentHandler evaluationPage evaluationPostHandler
@@ -133,31 +134,31 @@ commentOnSubmissionHandler = do
       (\_username _page _name role _token _timezone _status -> Just role)
 
 evaluationContent :: PageData -> Pagelet
-evaluationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
+evaluationContent pd = onlyHtml $ do
   let sd = sbmDesc pd
       tc = userTime pd
   postForm (routeOf . evPage $ maybeEvalKey) $ H.div ! formDiv $ do
-    H.div ! title $ H.h2 (translate i "Értékelés")
+    H.div ! title $ H.h2 "Értékelés"
     H.div ! leftInfo $ do
       H.table $ do
         H.tr $ do
-          H.td $ H.b $ (translate i "Tárgy, csoport: ")
+          H.td $ H.b $ "Tárgy, csoport: "
           H.td $ (fromString . eGroup $ sd)
         H.tr $ do
-          H.td $ H.b $ (translate i "Hallgató: ")
+          H.td $ H.b $ "Hallgató: "
           H.td $ (fromString . eStudent $ sd)
       H.div ! A.id (fieldName evaluationPercentageDiv) $
-        translate i . inputEvalResult . eConfig $ sd
-      submitButton (fieldName saveEvalBtn) (i "Mentés")
+        inputEvalResult . eConfig $ sd
+      submitButton (fieldName saveEvalBtn) "Mentés"
     H.div ! rightText $ do
       textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv
-  H.div $ H.h2 $ (translate i "Beadott megoldás")
+  H.div $ H.h2 $ "Beadott megoldás"
   H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
     (fromString . eSolution $ sd)
   when (not . null $ eComments sd) $ do
-    translate i . commentsDiv tc . eComments $ sd
+    commentsDiv tc . eComments $ sd
   -- Renders the comment area where the user can place a comment
-  translate i $ commentPostForm (commentPage maybeEvalKey) (eAssignmentKey sd)
+  commentPostForm (commentPage maybeEvalKey) (eAssignmentKey sd)
   where
     submissionKey = sbmSubmissionKey pd
     maybeEvalKey  = sbmEvaluationKey pd
@@ -171,16 +172,16 @@ evaluationContent pd = onlyHtml $ mkI18NHtml $ \i -> do
     commentPage (Just ek) = P.CommentFromModifyEvaluation submissionKey ek
     commentPage Nothing   = P.CommentFromEvaluation submissionKey
 
-inputEvalResult :: EvaluationConfig -> I18NHtml
-inputEvalResult (BinEval cfg) = mkI18NHtml $ \i -> do
+inputEvalResult :: EvaluationConfig -> IHtml
+inputEvalResult (BinEval cfg) = do
   valueSelection valueAndText (fieldName evaluationResultField) $
-    [(Passed, i "Elfogadott"), (Failed, i "Elutasított")]
+    [(Passed, "Elfogadott"), (Failed, "Elutasított")]
   where
     valueAndText :: (Result, String) -> (String, String)
     valueAndText (v,n) = (errorOnNothing . encodeToFay . EvResult . mkEvalResult $ Binary v, n)
 
 -- When the page is dynamic the percentage spinner is hooked on the field
-inputEvalResult (PctEval cfg) = mkI18NHtml $ \i -> do
+inputEvalResult (PctEval cfg) = do
   hiddenInput
     (fieldName evaluationResultField)
     (fromString . errorOnNothing . encodeToFay . EvResult . mkEvalResult . Percentage $ Scores [0.0])

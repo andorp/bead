@@ -21,7 +21,7 @@ import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.DataBridge
 
-import Text.Blaze.Html5 (Html(..))
+import Bead.View.Snap.I18N (IHtml)
 
 -- * Input pagelet and handler
 
@@ -29,7 +29,7 @@ class GetValueHandler i where
   getValue :: HandlerError App App i
 
 class InputPagelet i where
-  inputPagelet :: Maybe i -> Html
+  inputPagelet :: Maybe i -> IHtml
 
 -- * Instances
 
@@ -152,7 +152,7 @@ emptyEvaluationConfig :: Maybe (EvaluationData Binary Percentage)
 emptyEvaluationConfig = Nothing
 
 -- TODO
-evaluationConfig :: String -> Maybe EvaluationConfig -> Html
+evaluationConfig :: String -> Maybe EvaluationConfig -> IHtml
 evaluationConfig n v = do
   valueSelection valueAndName n evaluationTypes
   where
@@ -162,11 +162,11 @@ evaluationConfig n v = do
     name (PctEval ()) = "Százalékos"
 
 -- TODO
-dateInput :: String -> Maybe UTCTime -> Html
+dateInput :: String -> Maybe UTCTime -> IHtml
 dateInput n v = required . setHookClass datePickerClass $ textInput n 10 (show <$> v)
 
-hourInput :: String -> Maybe Int -> Html
+hourInput :: String -> Maybe Int -> IHtml
 hourInput n v = required . setHookClass hourSpinnerClass $ textInput n 2 (show <$> v)
 
-minInput :: String -> Maybe Int -> Html
+minInput :: String -> Maybe Int -> IHtml
 minInput n v = required . setHookClass minuteSpinnerClass $ textInput n 2 (show <$> v)

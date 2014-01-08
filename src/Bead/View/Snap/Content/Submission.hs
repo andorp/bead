@@ -18,9 +18,9 @@ import Bead.View.Snap.Markdown (markdownToHtml)
 import Bead.View.Snap.Content.Utils
 import qualified Bead.Domain.Entities as E
 
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
+import qualified Bead.View.Snap.I18NHtml as H
 
 submission :: Content
 submission = getPostContentHandler submissionPage submissionPostHandler
@@ -52,33 +52,32 @@ submissionPostHandler =
            <*> liftIO getCurrentTime)
 
 submissionContent :: PageData -> Pagelet
-submissionContent p = onlyHtml $ mkI18NHtml $ \i -> do
+submissionContent p = onlyHtml $ do
   postForm (routeOf P.Submission) $ H.div ! formDiv $ do
     H.table $ do
       H.tr $ do
-        H.td $ H.b $ (translate i "Tárgy: ")
+        H.td $ H.b $ "Tárgy: "
         H.td $ (fromString . aGroup $ asDesc p)
       H.tr $ do
-        H.td $ H.b $ (translate i "Oktató: ")
+        H.td $ H.b $ "Oktató: "
         H.td $ (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
       H.tr $ do
-        H.td $ H.b $ (translate i "Feladat: ")
+        H.td $ H.b $ "Feladat: "
         H.td $ (fromString . assignmentName . asValue $ p)
       H.tr $ do
-        H.td $ H.b $ (translate i "Határidő: ")
+        H.td $ H.b $ "Határidő: "
         H.td $ (fromString . showDate . (asTimeConv p) . assignmentEnd $ asValue p)
-    H.h2 (translate i "Leírás")
+    H.h2 $ "Leírás"
     H.div # assignmentTextDiv $
       markdownToHtml . assignmentDesc . asValue $ p
-    H.h2 $ (translate i "Megoldás")
+    H.h2 $ "Megoldás"
     H.div $ do
       textAreaInput (fieldName submissionTextField) Nothing ! A.rows "25" ! A.cols "80"
-    submitButton (fieldName submitSolutionBtn) (i "Beküld")
+    submitButton (fieldName submitSolutionBtn) "Beküld"
     hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
 
 invalidAssignment :: Pagelet
-invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->
-  (translate i "Olyan feladatot próbáltál megnyitni, amely nem hozzád tartozik!")
+invalidAssignment = onlyHtml $ "Olyan feladatot próbáltál megnyitni, amely nem hozzád tartozik!"
 
 -- CSS Section
 

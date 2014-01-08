@@ -7,8 +7,8 @@ import Control.Monad (liftM)
 import Data.String
 
 import Snap.Snaplet.Auth hiding (currentUser)
-import Text.Blaze.Html5 (Html,(!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
+import qualified Bead.View.Snap.I18NHtml as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 import Bead.Controller.Pages (Page(..))
@@ -37,21 +37,21 @@ changeUserDetails = ChangeUserDetails
   <*> getParameter userTimeZonePrm
 
 profileContent :: User -> Pagelet
-profileContent user = onlyHtml $ mkI18NHtml $ \i -> do
+profileContent user = onlyHtml $ do
   postForm (routeOf Profile) $ do
     table (fieldName profileTable) (fieldName profileTable) $ do
-      tableLine (i "Felhasználó: ") (usernameCata (H.small . H.b . fromString) $ u_username user)
-      tableLine (i "Email cím: ") (emailCata (H.small . H.b . fromString) $ u_email user)
-      tableLine (i "Teljes név: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
-      tableLine (i "Időzóna: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
-    submitButton (fieldName changeProfileBtn) (i "Mentés")
+      tableLine "Felhasználó: " (usernameCata (H.small . H.b . fromString) $ u_username user)
+      tableLine "Email cím: " (emailCata (H.small . H.b . fromString) $ u_email user)
+      tableLine "Teljes név: " $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
+      tableLine "Időzóna: " $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
+    submitButton (fieldName changeProfileBtn) "Mentés"
   H.br
   postForm (routeOf ChangePassword) `withId` (rFormId changePwdForm) $ do
     table (fieldName changePasswordTable) (fieldName changePasswordTable) $ do
-      tableLine (i "Régi jelszó: ") $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
-      tableLine (i "Új jelszó: ") $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
-      tableLine (i "Új jelszó (ismét): ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
-    submitButton (fieldName changePasswordBtn) (i "Csere")
+      tableLine "Régi jelszó: " $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
+      tableLine "Új jelszó: " $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
+      tableLine "Új jelszó (ismét): " $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
+    submitButton (fieldName changePasswordBtn) "Csere"
 
 changePassword :: Content
 changePassword = postContentHandler $ do
