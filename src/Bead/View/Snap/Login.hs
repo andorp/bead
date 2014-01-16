@@ -16,8 +16,13 @@ import Bead.View.Snap.Dictionary (Language(..))
 import Bead.View.Snap.Session
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.Pagelets
-import Bead.View.Snap.ErrorPage (errorPageWithTitle, errorPage)
+import Bead.View.Snap.ErrorPage (
+    errorPageWithTitle
+  , errorPage
+  , errorPageWithTitleTrans
+  )
 import Bead.View.Snap.I18N
+import Bead.View.Snap.Translation
 
 import Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import Bead.View.Snap.Content.All
@@ -43,7 +48,7 @@ import Text.Blaze (textTag)
 import Text.Blaze.Html5 ((!))
 import Text.Blaze.Html5.Attributes hiding (title, rows, accept)
 import qualified Text.Blaze.Html5.Attributes as A
-import qualified Bead.View.Snap.I18NHtml as H
+import qualified Text.Blaze.Html5 as H
 import Bead.View.Snap.I18N (IHtml, noTranslate)
 
 -- * Login and Logout handlers
@@ -78,7 +83,9 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
               liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
               A.logout
               withTop sessionManager $ commitSession
-              errorPageWithTitle "Bejelentkezés" "Belső hiba történt, jelezd az üzemeltetőknek!"
+              errorPageWithTitleTrans
+                (Msg_Login_PageTitle "Bejelentkezés")
+                (Msg_Login_InternalError "Belső hiba történt, jelezd az üzemeltetőknek!")
             Right (val,userState) -> do
               initSessionValues (page userState) unameFromAuth
               withTop sessionManager $ commitSession
@@ -101,26 +108,30 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
 
 -- * Blaze --
 
-userForm :: String -> I18NHtml
+userForm :: String -> IHtml
 userForm act = do
-  postForm act $ do
+  msg <- getI18N
+  return $ postForm act $ do
     table (formId loginForm) (formId loginForm) $ do
-      tableLine "NEPTUN:" (textInput (fieldName loginUsername) 20 Nothing ! A.required "")
-      tableLine "Jelszó:" (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
-    submitButton (fieldName loginSubmitBtn) "Bejelentkezés"
+      return ()
+      tableLine (msg $ Msg_Login_Neptun "NEPTUN:") (textInput (fieldName loginUsername) 20 Nothing ! A.required "")
+      tableLine (msg $ Msg_Login_Password "Jelszó:") (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
+    submitButton (fieldName loginSubmitBtn) (msg $ Msg_Login_Submit "Bejelentkezés")
 
-loginPage :: Maybe AuthFailure -> I18NHtml
-loginPage err = withTitleAndHead "Bejelentkezés" content
+loginPage :: Maybe AuthFailure -> IHtml
+loginPage err = withTitleAndHead (Msg_Login_Title "Bejelentkezés") content
   where
     content = do
-      userForm "/login"
-      maybe (return ())
-            ((H.p ! A.style "font-size: smaller") . fromString . show)
-            err
-      H.p $ do
-        H.a ! A.href "/reg_request" $ "Regisztráció"
-        H.br
-        H.a ! A.href "/reset_pwd" $ "Elfelejtett jelszó"
+      msg <- getI18N
+      return $ do
+        i18n msg $ userForm "/login"
+        maybe (return ())
+              ((H.p ! A.style "font-size: smaller") . fromString . show)
+              err
+        H.p $ do
+          H.a ! A.href "/reg_request" $ fromString $ msg $ Msg_Login_Registration "Regisztráció"
+          H.br
+          H.a ! A.href "/reset_pwd" $ fromString $ msg $ Msg_Login_Forgotten_Password "Elfelejtett jelszó"
 
 -- Keeps only the authentication failures which are
 -- visible for the user

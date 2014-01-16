@@ -85,6 +85,7 @@ index =
             (with auth $ login Nothing)
             (redirect (routeOf P.Home))
 
+-- TODO: I18N
 {- Logged In user combinator. It tries to authenticate the user with three methods.
    The first method authenticate it using Snap auth, the second method authenticates
    it using the session encoded user information. The third method authenticates it
@@ -248,6 +249,7 @@ logoutAndErrorPage msg = do
   HU.logout
   msgErrorPage msg
 
+-- TODO: I18N
 {- When a user logs in the home page is shown for her. An universal handler
    is used. E.g "/home" -> handlePage P.Home.
    * If the user can navigate to the

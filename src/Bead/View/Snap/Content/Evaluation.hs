@@ -23,7 +23,7 @@ import Bead.Domain.Evaluation
 
 import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A (id, class_, style)
-import qualified Bead.View.Snap.I18NHtml as H
+import qualified Text.Blaze.Html5 as H
 import Bead.View.Snap.I18N (IHtml)
 
 evaluation :: Content
@@ -133,32 +133,34 @@ commentOnSubmissionHandler = do
       Nothing
       (\_username _page _name role _token _timezone _status -> Just role)
 
-evaluationContent :: PageData -> Pagelet
-evaluationContent pd = onlyHtml $ do
+evaluationContent :: PageData -> IHtml
+evaluationContent pd = do
   let sd = sbmDesc pd
       tc = userTime pd
-  postForm (routeOf . evPage $ maybeEvalKey) $ H.div ! formDiv $ do
-    H.div ! title $ H.h2 "Értékelés"
-    H.div ! leftInfo $ do
-      H.table $ do
-        H.tr $ do
-          H.td $ H.b $ "Tárgy, csoport: "
-          H.td $ (fromString . eGroup $ sd)
-        H.tr $ do
-          H.td $ H.b $ "Hallgató: "
-          H.td $ (fromString . eStudent $ sd)
-      H.div ! A.id (fieldName evaluationPercentageDiv) $
-        inputEvalResult . eConfig $ sd
-      submitButton (fieldName saveEvalBtn) "Mentés"
-    H.div ! rightText $ do
-      textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv
-  H.div $ H.h2 $ "Beadott megoldás"
-  H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
-    (fromString . eSolution $ sd)
-  when (not . null $ eComments sd) $ do
-    commentsDiv tc . eComments $ sd
-  -- Renders the comment area where the user can place a comment
-  commentPostForm (commentPage maybeEvalKey) (eAssignmentKey sd)
+  msg <- getI18N
+  return $ do
+    postForm (routeOf . evPage $ maybeEvalKey) $ H.div ! formDiv $ do
+      H.div ! title $ H.h2 (fromString . msg $ Msg_Evaluation_Title "Értékelés")
+      H.div ! leftInfo $ do
+        H.table $ do
+          H.tr $ do
+            H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Course "Tárgy, csoport: ")
+            H.td $ (fromString . eGroup $ sd)
+          H.tr $ do
+            H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Student "Hallgató: ")
+            H.td $ (fromString . eStudent $ sd)
+        H.div ! A.id (fieldName evaluationPercentageDiv) $
+          i18n msg $ inputEvalResult . eConfig $ sd
+        submitButton (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Mentés")
+      H.div ! rightText $ do
+        textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv
+    H.div $ H.h2 $ (fromString . msg $ Msg_Evaluation_Submited_Solution "Beadott megoldás")
+    H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
+      (fromString . eSolution $ sd)
+    when (not . null $ eComments sd) $ do
+      i18n msg $ commentsDiv tc . eComments $ sd
+    -- Renders the comment area where the user can place a comment
+    i18n msg $ commentPostForm (commentPage maybeEvalKey) (eAssignmentKey sd)
   where
     submissionKey = sbmSubmissionKey pd
     maybeEvalKey  = sbmEvaluationKey pd
@@ -174,15 +176,18 @@ evaluationContent pd = onlyHtml $ do
 
 inputEvalResult :: EvaluationConfig -> IHtml
 inputEvalResult (BinEval cfg) = do
-  valueSelection valueAndText (fieldName evaluationResultField) $
-    [(Passed, "Elfogadott"), (Failed, "Elutasított")]
+  msg <- getI18N
+  return $ valueSelection valueAndText (fieldName evaluationResultField) $
+             [ (Passed, msg $ Msg_Evaluation_Accepted "Elfogadott")
+             , (Failed, msg $ Msg_Evaluation_Rejected "Elutasított")
+             ]
   where
     valueAndText :: (Result, String) -> (String, String)
     valueAndText (v,n) = (errorOnNothing . encodeToFay . EvResult . mkEvalResult $ Binary v, n)
 
 -- When the page is dynamic the percentage spinner is hooked on the field
-inputEvalResult (PctEval cfg) = do
-  hiddenInput
+inputEvalResult (PctEval cfg) =
+  return $ hiddenInput
     (fieldName evaluationResultField)
     (fromString . errorOnNothing . encodeToFay . EvResult . mkEvalResult . Percentage $ Scores [0.0])
 

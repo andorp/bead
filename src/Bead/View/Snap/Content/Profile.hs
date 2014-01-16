@@ -8,7 +8,7 @@ import Data.String
 
 import Snap.Snaplet.Auth hiding (currentUser)
 import Text.Blaze.Html5 ((!))
-import qualified Bead.View.Snap.I18NHtml as H
+import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 import Bead.Controller.Pages (Page(..))
@@ -36,23 +36,26 @@ changeUserDetails = ChangeUserDetails
   <$> getParameter regFullNamePrm
   <*> getParameter userTimeZonePrm
 
-profileContent :: User -> Pagelet
-profileContent user = onlyHtml $ do
-  postForm (routeOf Profile) $ do
-    table (fieldName profileTable) (fieldName profileTable) $ do
-      tableLine "Felhasználó: " (usernameCata (H.small . H.b . fromString) $ u_username user)
-      tableLine "Email cím: " (emailCata (H.small . H.b . fromString) $ u_email user)
-      tableLine "Teljes név: " $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
-      tableLine "Időzóna: " $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
-    submitButton (fieldName changeProfileBtn) "Mentés"
-  H.br
-  postForm (routeOf ChangePassword) `withId` (rFormId changePwdForm) $ do
-    table (fieldName changePasswordTable) (fieldName changePasswordTable) $ do
-      tableLine "Régi jelszó: " $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
-      tableLine "Új jelszó: " $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
-      tableLine "Új jelszó (ismét): " $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
-    submitButton (fieldName changePasswordBtn) "Csere"
+profileContent :: User -> IHtml
+profileContent user = do
+  msg <- getI18N
+  return $ do
+    postForm (routeOf Profile) $ do
+      table (fieldName profileTable) (fieldName profileTable) $ do
+        tableLine (msg $ Msg_Profile_User "Felhasználó: ") (usernameCata (H.small . H.b . fromString) $ u_username user)
+        tableLine (msg $ Msg_Profile_Email "Email cím: ") (emailCata (H.small . H.b . fromString) $ u_email user)
+        tableLine (msg $ Msg_Profile_FullName "Teljes név:) ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
+        tableLine (msg $ Msg_Profile_Timezone "Időzóna: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
+      submitButton (fieldName changeProfileBtn) (msg $ Msg_Profile_SaveButton "Mentés")
+    H.br
+    postForm (routeOf ChangePassword) `withId` (rFormId changePwdForm) $ do
+      table (fieldName changePasswordTable) (fieldName changePasswordTable) $ do
+        tableLine (msg $ Msg_Profile_OldPassword "Régi jelszó: ") $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
+        tableLine (msg $ Msg_Profile_NewPassword "Új jelszó: ") $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
+        tableLine (msg $ Msg_Profile_NewPasswordAgain "Új jelszó (ismét): ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
+      submitButton (fieldName changePasswordBtn) (msg $ Msg_Profile_ChangePwdButton "Csere")
 
+-- TODO: I18N
 changePassword :: Content
 changePassword = postContentHandler $ do
   oldPwd <- getParameter oldPasswordPrm

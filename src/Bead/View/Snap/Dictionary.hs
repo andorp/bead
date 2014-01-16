@@ -23,10 +23,11 @@ import System.IO
 -- Bead imports
 
 import Bead.Domain.Types (readMaybe)
+import Bead.View.Snap.Translation
 
 -- * Definitions
 
-type I18N = String -> String
+type I18N = Translation String -> String
 
 newtype Dictionary = Dictionary { unDictionary :: I18N }
 
@@ -47,13 +48,17 @@ dictionary :: I18N -> Dictionary
 dictionary = Dictionary
 
 fromEntries :: [Entry] -> Dictionary
+fromEntries _ = idDictionary
+{-
 fromEntries es = Dictionary {
     unDictionary = \k -> maybe k id . Map.lookup k . Map.fromList . map p $ es
   } where
       p (Entry o t) = (o,t)
+-}
 
 fileDictionary :: FilePath -> IO (Maybe Dictionary)
 fileDictionary = (((fromEntries <$>) .  readMaybe) <$>) . readFile
 
 idDictionary :: Dictionary
-idDictionary = Dictionary id
+idDictionary = Dictionary trans
+

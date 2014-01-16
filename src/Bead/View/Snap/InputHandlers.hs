@@ -21,7 +21,10 @@ import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.DataBridge
 
-import Bead.View.Snap.I18N (IHtml)
+import Bead.View.Snap.I18N (IHtml, getI18N)
+import Bead.View.Snap.Translation
+
+import Text.Blaze.Html5 (Html)
 
 -- * Input pagelet and handler
 
@@ -41,13 +44,16 @@ emptyGroup = Nothing
 
 instance InputPagelet Group where
   inputPagelet g = do
+    msg <- getI18N
     let hook = createGroupHook
-    table "create-group" "create-group-table" $ do
-      tableLine "Név" $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
-      tableLine "Leírás" $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
-      tableLine "Értékelés" $ evaluationConfig (evSelectionId hook) (fmap groupEvalConfig g)
-    hiddenInputWithId (evHiddenValueId hook) ""
-    evalSelectionDiv hook
+    evalConfig <- evaluationConfig (evSelectionId hook) (fmap groupEvalConfig g)
+    return $ do
+      table "create-group" "create-group-table" $ do
+        tableLine (msg $ Msg_Input_Group_Name "Név") $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
+        tableLine (msg $ Msg_Input_Group_Description "Leírás") $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
+        tableLine (msg $ Msg_Input_Group_Evaluation "Értékelés") $ evalConfig
+      hiddenInputWithId (evHiddenValueId hook) ""
+      evalSelectionDiv hook
 
 instance GetValueHandler Group where
   getValue = Group
@@ -69,28 +75,33 @@ emptyCourse = Nothing
 
 instance InputPagelet Course where
   inputPagelet c = do
+    msg <- getI18N
     let hook = createCourseHook
-    table "create-course" "create-course-table" $ do
-      tableLine "Név" $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
-      tableLine "Leírás" $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
-      tableLine "Értékelés" $ evaluationConfig (evSelectionId hook) (fmap courseEvalConfig c)
-    hiddenInputWithId (evHiddenValueId hook) ""
-    evalSelectionDiv hook
+    evalConfig <- evaluationConfig (evSelectionId hook) (fmap courseEvalConfig c)
+    return $ do
+      table "create-course" "create-course-table" $ do
+        tableLine (msg $ Msg_Input_Course_Name "Név") $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
+        tableLine (msg $ Msg_Input_Course_Description "Leírás") $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
+        tableLine (msg $ Msg_Input_Course_Evaluation "Értékelés") $ evalConfig
+      hiddenInputWithId (evHiddenValueId hook) ""
+      evalSelectionDiv hook
 
 emptyRole :: Maybe Role
 emptyRole = Nothing
 
 instance InputPagelet Role where
-  inputPagelet q = selection (fieldName userRoleField) $ mapM_ (roleOptions q) roles
+  inputPagelet q = do
+    msg <- getI18N
+    return $ selection (fieldName userRoleField) $ mapM_ (roleOptions msg q) roles
     where
-      roleOptions Nothing   r = option (show r) (roleLabel r) False
-      roleOptions (Just q') r = option (show r) (roleLabel r) (q' == r)
+      roleOptions msg Nothing   r = option (show r) (msg $ roleLabel r) False
+      roleOptions msg (Just q') r = option (show r) (msg $ roleLabel r) (q' == r)
 
       roleLabel = roleCata
-        "Hallgató"
-        "Oktató"
-        "Tárgyfelelős"
-        "Rendszergazda"
+        (Msg_InputHandlers_Role_Student "Hallgató")
+        (Msg_InputHandlers_Role_GroupAdmin "Oktató")
+        (Msg_InputHandlers_Role_CourseAdmin "Tárgyfelelős")
+        (Msg_InputHandlers_Role_Admin "Rendszergazda")
 
 instance GetValueHandler Role where
   getValue = getParameter rolePrm
@@ -99,7 +110,7 @@ emptyUsername :: Maybe Username
 emptyUsername = Nothing
 
 instance InputPagelet Username where
-  inputPagelet u = textInput (fieldName usernameField) 20 (fmap str u)
+  inputPagelet u = return $ textInput (fieldName usernameField) 20 (fmap str u)
 
 instance GetValueHandler Username where
   getValue = getParameter usernamePrm
@@ -116,12 +127,16 @@ instance GetValueHandler User where
     <*> getParameter userTimeZonePrm
 
 instance InputPagelet User where
-  inputPagelet u = table "user-detail-table" "user-detail-table" $ do
-    tableLine "Szerepkör"  $ required $ inputPagelet (fmap u_role u)
-    tableLine "Email cím"  $ required $ textInput (fieldName userEmailField)      20 (fmap (str . u_email) u)
-    tableLine "Teljes név" $ required $ textInput (fieldName userFamilyNameField) 20 (fmap u_name u)
-    tableLine "Időzóna"    $ required $ defEnumSelection (B.name userTimeZonePrm) (maybe UTC u_timezone u)
-    when (isJust u) . hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username . fromJust $ u
+  inputPagelet u = do
+    msg <- getI18N
+    roleInput <- inputPagelet (fmap u_role u)
+    return $ do
+      table "user-detail-table" "user-detail-table" $ do
+        tableLine (msg $ Msg_Input_User_Role "Szerepkör")  $ required $ roleInput
+        tableLine (msg $ Msg_Input_User_Email "Email cím") $ required $ textInput (fieldName userEmailField) 20 (fmap (str . u_email) u)
+        tableLine (msg $ Msg_Input_User_FullName "Teljes név") $ required $ textInput (fieldName userFamilyNameField) 20 (fmap u_name u)
+        tableLine (msg $ Msg_Input_User_TimeZone "Időzóna") $ required $ defEnumSelection (B.name userTimeZonePrm) (maybe UTC u_timezone u)
+        when (isJust u) . hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username . fromJust $ u
 
 emptyAssignment :: Maybe Assignment
 emptyAssignment = Nothing
@@ -154,19 +169,20 @@ emptyEvaluationConfig = Nothing
 -- TODO
 evaluationConfig :: String -> Maybe EvaluationConfig -> IHtml
 evaluationConfig n v = do
-  valueSelection valueAndName n evaluationTypes
+  msg <- getI18N
+  return $ valueSelection (valueAndName msg) n evaluationTypes
   where
-    valueAndName e = (encodeEvalType e, name e)
+    valueAndName msg e = (encodeEvalType e, msg $ name e)
 
-    name (BinEval ()) = "Kétállapotú"
-    name (PctEval ()) = "Százalékos"
+    name (BinEval ()) = Msg_InputHandlers_BinEval "Kétállapotú"
+    name (PctEval ()) = Msg_InputHandlers_PctEval "Százalékos"
 
 -- TODO
-dateInput :: String -> Maybe UTCTime -> IHtml
+dateInput :: String -> Maybe UTCTime -> Html
 dateInput n v = required . setHookClass datePickerClass $ textInput n 10 (show <$> v)
 
-hourInput :: String -> Maybe Int -> IHtml
+hourInput :: String -> Maybe Int -> Html
 hourInput n v = required . setHookClass hourSpinnerClass $ textInput n 2 (show <$> v)
 
-minInput :: String -> Maybe Int -> IHtml
+minInput :: String -> Maybe Int -> Html
 minInput n v = required . setHookClass minuteSpinnerClass $ textInput n 2 (show <$> v)

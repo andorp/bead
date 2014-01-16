@@ -37,7 +37,7 @@ import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A (class_, style, id, colspan)
 
 import Bead.View.Snap.I18N (IHtml)
-import qualified Bead.View.Snap.I18NHtml as H
+import qualified Text.Blaze.Html5 as H
 
 #ifdef TEST
 import Bead.Invariants
@@ -71,74 +71,88 @@ homePage = withUserState $ \s -> do
           <*> (map sortUserLines <$> submissionTables)
           <*> (return converter)))
 
-navigation :: [P.Page] -> IHtml
+navigation :: [P.Page] -> H.Html
 navigation links = H.div ! A.id "menu" $ H.ul $ mapM_ linkToPage links
 
-homeContent :: HomePageData -> Pagelet
-homeContent d = onlyHtml $ H.div # textAlign "left" $ do
+homeContent :: HomePageData -> IHtml
+homeContent d = do
   let s = userState d
       r = role s
       hasCourse = hasCourses d
       hasGroup  = hasGroups d
-  when (isAdmin s) $ H.p $ do
-    H.h3 $ "Rendszergazdai feladatok"
-    navigation [P.Administration]
-    H.hr
-  when (courseAdminUser r) $ H.p $ do
-    H.h3 $ "Tárgyfelelősi feladatok"
-    when (not hasCourse) $ "Még nincsenek tárgyak."
-  when (groupAdminUser r) $ H.p $ do
-    H.h3 $ "Oktatói feladatok"
-    when (not hasGroup) $ "Még nincsenek csoportok."
-  when ((courseAdminUser r) || (groupAdminUser r)) $ do
-    when (hasCourse || hasGroup) $ H.p $ do
-      htmlSubmissionTables (sTables d)
-  when (courseAdminUser r && hasCourse) $ H.p $ do
-    navigation $ [ P.CourseAdmin, NewCourseAssignment] ++
-                 (if hasGroup then [P.NewGroupAssignment] else []) ++
-                 [ P.EvaluationTable, P.SetUserPassword ]
-    H.hr
-  when (groupAdminUser r && hasGroup) $ H.p $ do
-    navigation [P.NewGroupAssignment, P.EvaluationTable, P.SetUserPassword]
-    H.hr
-  H.h3 $ "Hallgatói feladatok"
-  H.p $ do
-    availableAssignments (timeConverter d) (assignments d)
-    navigation [P.GroupRegistration]
-  where
-    courseAdminUser = (==E.CourseAdmin)
-    groupAdminUser  = (==E.GroupAdmin)
+  msg <- getI18N
+  return $ H.div # textAlign "left" $ do
+    when (isAdmin s) $ H.p $ do
+      H.h3 . fromString . msg $ Msg_Home_AdminTasks "Rendszergazdai feladatok"
+      navigation [P.Administration]
+      H.hr
+    when (courseAdminUser r) $ H.p $ do
+      H.h3 . fromString . msg $ Msg_Home_CourseAdminTasks "Tárgyfelelősi feladatok"
+      when (not hasCourse) $ (fromString $ msg $ Msg_Home_NoCoursesYet "Még nincsenek tárgyak.")
+    when (groupAdminUser r) $ H.p $ do
+      H.h3 . fromString . msg $ Msg_Home_GroupAdminTasks "Oktatói feladatok"
+      when (not hasGroup) $ (fromString $ msg $ Msg_Home_NoGroupsYet "Még nincsenek csoportok.")
+    when ((courseAdminUser r) || (groupAdminUser r)) $ do
+      when (hasCourse || hasGroup) $ H.p $ do
+        i18n msg $ htmlSubmissionTables (sTables d)
+    when (courseAdminUser r && hasCourse) $ H.p $ do
+      navigation $ [ P.CourseAdmin, NewCourseAssignment] ++
+                   (if hasGroup then [P.NewGroupAssignment] else []) ++
+                   [ P.EvaluationTable, P.SetUserPassword ]
+      H.hr
+    when (groupAdminUser r && hasGroup) $ H.p $ do
+      navigation [P.NewGroupAssignment, P.EvaluationTable, P.SetUserPassword]
+      H.hr
+    H.h3 . fromString . msg $ Msg_Home_StudentTasks "Hallgatói feladatok"
+    H.p $ do
+      i18n msg $ availableAssignments (timeConverter d) (assignments d)
+      navigation [P.GroupRegistration]
+    where
+      courseAdminUser = (==E.CourseAdmin)
+      groupAdminUser  = (==E.GroupAdmin)
 
 availableAssignments :: UserTimeConverter -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> IHtml
-availableAssignments _ Nothing   = "Még nincsenek felvett tárgyaid, vegyél fel tárgyakat!"
-availableAssignments _ (Just []) = "Még nincsenek kiírva feladatok."
+availableAssignments _ Nothing = do
+  msg <- getI18N
+  return $ fromString $ msg $ Msg_Home_HasNoRegisteredCourses "Még nincsenek felvett tárgyaid, vegyél fel tárgyakat!"
+availableAssignments _ (Just []) = do
+  msg <- getI18N
+  return $ fromString $ msg $ Msg_Home_HasNoAssignments "Még nincsenek kiírva feladatok."
 availableAssignments timeconverter (Just as) = do
-  table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
-    headerLine
-    mapM_ assignmentLine as
+  msg <- getI18N
+  return $ table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
+    headerLine msg
+    mapM_ (assignmentLine msg) as
   where
     dataCell = H.td # informationalCell
     dataCell' r = H.td # (informationalCell <> r)
     headerCell t = H.th # (informationalCell <> grayBackground) $ t
-    headerLine = H.tr $ do
+    headerLine msg = H.tr $ do
       headerCell ""
-      headerCell "Tárgy"
-      headerCell "Oktató"
-      headerCell "Feladat"
-      headerCell "Határidő"
-      headerCell "Értékelés"
-    assignmentLine (k,a,s) = H.tr $ do
+      headerCell (fromString $ msg $ Msg_Home_Course "Tárgy")
+      headerCell (fromString $ msg $ Msg_Home_CourseAdmin "Oktató")
+      headerCell (fromString $ msg $ Msg_Home_Assignment "Feladat")
+      headerCell (fromString $ msg $ Msg_Home_Deadline "Határidő")
+      headerCell (fromString $ msg $ Msg_Home_Evaluation "Értékelés")
+    assignmentLine msg (k,a,s) = H.tr $ do
       case aActive a of
-        True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) "Új megoldás"
-        False -> dataCell "Lezárva"
+        True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (msg $ Msg_Home_NewSolution "Új megoldás")
+        False -> dataCell (fromString . msg $ Msg_Home_ClosedSubmission "Lezárva")
       dataCell (fromString . aGroup $ a)
       dataCell (fromString . join . intersperse ", " . aTeachers $ a)
-      dataCell $ link (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
+      dataCell $ linkWithText (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
       dataCell (fromString . showDate . timeconverter $ aEndDate a)
-      (coloredSubmissionCell dataCell' (H.td) fromString "Nincs megoldás" "Nem értékelt" "Elfogadott" "Elutasított" s)
+      (coloredSubmissionCell dataCell' (H.td) fromString
+        (msg $ Msg_Home_SubmissionCell_NoSubmission "Nincs megoldás")
+        (msg $ Msg_Home_SubmissionCell_NonEvaluated "Nem értékelt")
+        (msg $ Msg_Home_SubmissionCell_Accepted "Elfogadott")
+        (msg $ Msg_Home_SubmissionCell_Rejected "Elutasított")
+        s)
 
 htmlSubmissionTables :: [SubmissionTableInfo] -> IHtml
-htmlSubmissionTables xs = mapM_ htmlSubmissionTable . zip [1..] $ xs
+htmlSubmissionTables xs = do
+  tables <- mapM htmlSubmissionTable . zip [1..] $ xs
+  return $ sequence_ tables
 
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
@@ -147,27 +161,31 @@ htmlSubmissionTable :: (Int,SubmissionTableInfo) -> IHtml
 
 -- Empty table
 htmlSubmissionTable (i,s)
-  | and [null . stAssignments $ s, null . stUsers $ s] = H.p $ do
-      "Nincsenek feladatok vagy hallgatók a csoporthoz:"
+  | and [null . stAssignments $ s, null . stUsers $ s] = do
+    msg <- getI18N
+    return $ H.p $ do
+      (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "Nincsenek feladatok vagy hallgatók a csoporthoz:")
       H.br
       fromString . stCourse $ s
       H.br
 
 -- Non empty table
-htmlSubmissionTable (i,s) = table tableId (className groupSubmissionTable) # informationalTable $ do
-  headLine (stCourse s)
-  assignmentLine (stAssignments s)
-  mapM_ userLine (stUserLines s)
+htmlSubmissionTable (i,s) = do
+  msg <- getI18N
+  return $ table tableId (className groupSubmissionTable) # informationalTable $ do
+    headLine (stCourse s)
+    assignmentLine msg (stAssignments s)
+    mapM_ (userLine msg) (stUserLines s)
   where
     tableId = join ["st", show i]
     headLine = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
     headerCell = H.th # (informationalCell <> grayBackground)
     dataCell r = H.td # (informationalCell <> r)
-    assignmentLine as = H.tr $ do
-      headerCell $ "Név"
-      headerCell $ "NEPTUN"
+    assignmentLine msg as = H.tr $ do
+      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_StudentName "Név"
+      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Username "NEPTUN"
       mapM_ (headerCell . modifyAssignmentLink) . zip [1..] $ as
-      headerCell $ "Összesítés"
+      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Summary "Összesítés"
 
     modifyAssignmentLink (i,ak) =
       linkWithTitle
@@ -175,22 +193,22 @@ htmlSubmissionTable (i,s) = table tableId (className groupSubmissionTable) # inf
         (maybe "" id . Map.lookup ak $ stAssignmentNames s)
         (show i)
 
-    userLine (u, p, as) = H.tr $ do
+    userLine msg (u, p, as) = H.tr $ do
       let username = ud_username u
           submissionInfos = map snd as
       dataCell noStyle . fromString . ud_fullname $ u
       dataCell noStyle . fromString . show $ username
       mapM_ (submissionCell username) $ as
-      case calculateSubmissionResult submissionInfos (stEvalConfig s) of
+      case calculateSubmissionResult msg submissionInfos (stEvalConfig s) of
         Left  e      -> dataCell summaryErrorStyle  $ fromString e
-        Right Passed -> dataCell summaryPassedStyle $ "Elfogadott"
-        Right Failed -> dataCell summaryFailedStyle $ "Elutasított"
+        Right Passed -> dataCell summaryPassedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Accepted "Elfogadott"
+        Right Failed -> dataCell summaryFailedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Rejected "Elutasított"
 
     submissionCell u (ak,s) =
       coloredSubmissionCell
         dataCell
         (H.td)
-        (link (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]))
+        (linkWithText (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]))
         " "
         "."
         "1"
@@ -237,13 +255,13 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated passed fai
 
 -- Produces the result of the submissions. The selected evaluation method depends
 -- on the given configuration.
-calculateSubmissionResult :: [SubmissionInfo] -> EvaluationConfig -> Either String Result
-calculateSubmissionResult si e =
+calculateSubmissionResult :: I18N -> [SubmissionInfo] -> EvaluationConfig -> Either String Result
+calculateSubmissionResult msg si e =
   case results of
-    [] -> (Left "Nem összesíthető")
+    [] -> (Left (msg $ Msg_Home_HasNoSummary "Nem összesíthető"))
     rs -> evaluationDataMap
-            (const (sumBinaryResult rs))
-            (flip sumPercentageResult rs)
+            (const (sumBinaryResult msg rs))
+            (flip (sumPercentageResult msg) rs)
             e
   where
     results = filter evaluated si
@@ -255,14 +273,14 @@ calculateSubmissionResult si e =
 
 -- Produces the result of a user's submission list for a binary evaluation.
 -- Returns (Right result) when there is no error in the submission set, otherwise (Left "Reason")
-sumBinaryResult :: [SubmissionInfo] -> Either String Result
-sumBinaryResult = calcEvaluationResult binary calcBinaryResult
+sumBinaryResult :: I18N -> [SubmissionInfo] -> Either String Result
+sumBinaryResult msg = calcEvaluationResult binary calcBinaryResult
   where
     -- Checks if the result is a binary result
     -- Produces (Left "error") if the result is not a binary result
     -- otherwise (Right result)
     binary :: EvaluationResult -> Either String Binary
-    binary = evaluationDataMap Right (const . Left $ "Nem kétértékű értékelés")
+    binary = evaluationDataMap Right (const . Left $ (msg $ Msg_Home_NonBinaryEvaluation "Nem kétértékű értékelés"))
 
     calcBinaryResult :: [Binary] -> Result
     calcBinaryResult bs = calculateEvaluation bs ()
@@ -270,12 +288,12 @@ sumBinaryResult = calcEvaluationResult binary calcBinaryResult
 -- Produces the result of a user's submission list for a percentage evaluation using
 -- the given config.
 -- Returns (Right result) when there is no error in the submission set, otherwise (Left "Reason")
-sumPercentageResult :: PctConfig -> [SubmissionInfo] -> Either String Result
-sumPercentageResult config = calcEvaluationResult percentage calcPercentageResult
+sumPercentageResult :: I18N -> PctConfig -> [SubmissionInfo] -> Either String Result
+sumPercentageResult msg config = calcEvaluationResult percentage calcPercentageResult
   where
     percentage :: EvaluationResult -> Either String Percentage
     percentage = evaluationDataMap
-                   (const . Left $ "Nem százalékos értékelés")
+                   (const . Left $ (msg $ Msg_Home_NonPercentageEvaluation "Nem százalékos értékelés"))
                    Right
 
     calcPercentageResult :: [Percentage] -> Result
@@ -363,10 +381,10 @@ binFailed = Submission_Result undefined (BinEval (Binary Failed))
 pctResult = Submission_Result undefined (PctEval (Percentage (Scores [0.1])))
 
 sumBinaryResultTests = [
-    Assertion "Empty list" (sumBinaryResult []) (Right Failed)
-  , Assertion "Homogenous passed list" (sumBinaryResult [binPassed, binPassed]) (Right Passed)
-  , Assertion "Homogenous failed list" (sumBinaryResult [binPassed, binFailed]) (Right Failed)
-  , Assertion "Inhomogenous list" (sumBinaryResult [binPassed, binFailed, pctResult, binPassed])
+    Assertion "Empty list" (sumBinaryResult trans []) (Right Failed)
+  , Assertion "Homogenous passed list" (sumBinaryResult trans [binPassed, binPassed]) (Right Passed)
+  , Assertion "Homogenous failed list" (sumBinaryResult trans [binPassed, binFailed]) (Right Failed)
+  , Assertion "Inhomogenous list" (sumBinaryResult trans [binPassed, binFailed, pctResult, binPassed])
               (Left "Not a binary evaluation")
   ]
 
@@ -375,12 +393,12 @@ cfg40 = PctConfig 0.4 -- At least 40% is needed to pass
 pct x = Submission_Result undefined (PctEval (Percentage (Scores [x])))
 
 sumPercentageResultTests = [
-    Assertion "Empty list"     (sumPercentageResult cfg30 []) (Right Failed)
-  , Assertion "30% and passed" (sumPercentageResult cfg30 [pct 0.3]) (Right Passed)
-  , Assertion "40% and failed" (sumPercentageResult cfg40 [pct 0.3]) (Right Failed)
-  , Assertion "60/200 and passed" (sumPercentageResult cfg30 [pct 0.1, pct 0.5]) (Right Passed)
-  , Assertion "50/200 and failed" (sumPercentageResult cfg30 [pct 0, pct 0.5]) (Right Failed)
-  , Assertion "Inhomogenous list" (sumPercentageResult cfg30 [pct 0, binPassed])
+    Assertion "Empty list"     (sumPercentageResult trans cfg30 []) (Right Failed)
+  , Assertion "30% and passed" (sumPercentageResult trans cfg30 [pct 0.3]) (Right Passed)
+  , Assertion "40% and failed" (sumPercentageResult trans cfg40 [pct 0.3]) (Right Failed)
+  , Assertion "60/200 and passed" (sumPercentageResult trans cfg30 [pct 0.1, pct 0.5]) (Right Passed)
+  , Assertion "50/200 and failed" (sumPercentageResult trans cfg30 [pct 0, pct 0.5]) (Right Failed)
+  , Assertion "Inhomogenous list" (sumPercentageResult trans cfg30 [pct 0, binPassed])
                                   (Left "Not a percentage evaluation")
   ]
 
@@ -389,14 +407,14 @@ pctConfig = PctEval cfg30
 
 calculateSubmissionResultTests = [
     Assertion "Binary config, failed"
-              (calculateSubmissionResult [binPassed, binFailed] binConfig) (Right Failed)
+              (calculateSubmissionResult trans [binPassed, binFailed] binConfig) (Right Failed)
   , Assertion "Percentage config, failed"
-              (calculateSubmissionResult [pct 0.3, pct 0.1] pctConfig) (Right Failed)
+              (calculateSubmissionResult trans [pct 0.3, pct 0.1] pctConfig) (Right Failed)
   , Assertion "Binary config, wrong list"
-              (calculateSubmissionResult [binPassed, binFailed] pctConfig)
+              (calculateSubmissionResult trans [binPassed, binFailed] pctConfig)
               (Left "Not a percentage evaluation")
   , Assertion "Percentage config, wrong list"
-              (calculateSubmissionResult [pct 0.3, pct 0.1] binConfig)
+              (calculateSubmissionResult trans [pct 0.3, pct 0.1] binConfig)
               (Left "Not a binary evaluation")
   ]
 #endif

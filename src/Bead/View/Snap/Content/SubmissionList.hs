@@ -20,8 +20,7 @@ import Bead.Domain.Relationships
 
 import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A (class_)
-import Bead.View.Snap.I18N (constant)
-import qualified Bead.View.Snap.I18NHtml as H
+import qualified Text.Blaze.Html5 as H
 
 submissionList :: Content
 submissionList = getContentHandler submissionListPage
@@ -49,60 +48,63 @@ submissionListPage = withUserState $ \s -> do
               submissionListContent $
                 PageData { asKey = ak
                          , smList = sortSbmListDescendingByTime sl
-                         , uTime = tc 
+                         , uTime = tc
                          }
 
-submissionListContent :: PageData -> Pagelet
-submissionListContent p = onlyHtml $ H.div ! A.class_ (className submissionListDiv) $ do
-  H.table $ do
-    H.tr $ do
-      firstCol  "Tárgy, csoport:"
-      secondCol (slGroup . smList $ p)
-    H.tr $ do
-      firstCol "Oktató:"
-      secondCol (join . slTeacher . smList $ p)
-    H.tr $ do
-      firstCol "Feladat:"
-      secondCol (assignmentName . slAssignment . smList $ p)
-    H.tr $ do
-      firstCol "Határidő:"
-      secondCol (showDate . (uTime p) . assignmentEnd . slAssignment $ smList p)
-  H.h2 "Részletes leírás"
-  H.div # assignmentTextDiv $
-    (markdownToHtml . assignmentDesc . slAssignment . smList $ p)
-  let submissions = slSubmissions . smList $ p
-  H.h2 "Beadott megoldások"
-  either userSubmissionTimes userSubmissionInfo submissions
+submissionListContent :: PageData -> IHtml
+submissionListContent p = do
+  msg <- getI18N
+  return $ do
+    H.div ! A.class_ (className submissionListDiv) $ do
+    H.table $ do
+      H.tr $ do
+        firstCol  (msg $ Msg_SubmissionList_CourseOrGroup "Tárgy, csoport:")
+        secondCol (slGroup . smList $ p)
+      H.tr $ do
+        firstCol  (msg $ Msg_SubmissionList_Admin "Oktató:")
+        secondCol (join . slTeacher . smList $ p)
+      H.tr $ do
+        firstCol  (msg $ Msg_SubmissionList_Assignment "Feladat:")
+        secondCol (assignmentName . slAssignment . smList $ p)
+      H.tr $ do
+        firstCol  (msg $ Msg_SubmissionList_Deadline "Határidő:")
+        secondCol (showDate . (uTime p) . assignmentEnd . slAssignment $ smList p)
+    H.h2 . fromString . msg $ Msg_SubmissionList_Description "Részletes leírás"
+    H.div # assignmentTextDiv $
+      (markdownToHtml . assignmentDesc . slAssignment . smList $ p)
+    let submissions = slSubmissions . smList $ p
+    H.h2 . fromString . msg $ Msg_SubmissionList_SubmittedSolutions "Beadott megoldások"
+    either (userSubmissionTimes msg) (userSubmissionInfo msg) submissions
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft $ fromString t
 
     submissionLine (sk, time, status, t) = H.tr $ do
-      H.td # informationalCell $ link
+      H.td # informationalCell $ linkWithText
         (routeOf $ P.SubmissionDetails (asKey p) sk)
         (fromString . showDate $ (uTime p) time)
       H.td # informationalCell $ (fromString status)
 
     submissionTimeLine time =
-      H.tr $ (H.td # informationalCell) $ (constant . showDate $ (uTime p) time)
+      H.tr $ (H.td # informationalCell) $ fromString $ showDate $ (uTime p) time
 
-    userSubmissionInfo  = userSubmission submissionLine
-    userSubmissionTimes = userSubmission submissionTimeLine
+    userSubmissionInfo  msg = userSubmission msg submissionLine
+    userSubmissionTimes msg = userSubmission msg submissionTimeLine
 
-    userSubmission line submissions =
+    userSubmission msg line submissions =
       if (not $ null submissions)
         then do
           table (fieldName submissionTableName) (className submissionListTable) # informationalTable $
             mapM_ line submissions
         else do
-          "Nincsenek még beadott megoldások."
+          (fromString . msg $ Msg_SubmissionList_NoSubmittedSolutions "Nincsenek még beadott megoldások.")
 
+invalidAssignment :: IHtml
+invalidAssignment = do
+  msg <- getI18N
+  return . fromString . msg $ Msg_SubmissionList_NonAssociatedAssignment "Olyan feladatot próbáltál megnyitni, amelyik nem hozzád tartozik!"
 
-
-invalidAssignment :: Pagelet
-invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->
-  (translate i "Olyan feladatot próbáltál megnyitni, amelyik nem hozzád tartozik!")
-
-assignmentNotStartedYet :: Pagelet
-assignmentNotStartedYet = onlyHtml $ mkI18NHtml $ \i ->
-  (translate i "Olyan feladatot próbáltál megnyitni, amelyik nem érhető el!")
+assignmentNotStartedYet :: IHtml
+assignmentNotStartedYet = do
+  msg <- getI18N
+  return . fromString . msg $ Msg_SubmissionList_NonReachableAssignment "Olyan feladatot próbáltál megnyitni, amelyik nem érhető el!"

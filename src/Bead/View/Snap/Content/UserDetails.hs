@@ -11,7 +11,7 @@ import Bead.Controller.Pages as P (Page(UserDetails))
 
 import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
-import qualified Bead.View.Snap.I18NHtml as H
+import qualified Text.Blaze.Html5 as H
 import Data.String (fromString)
 
 userDetails :: Content
@@ -34,15 +34,17 @@ userDataChange = do
   user <- getValue
   return $ UpdateUser user
 
-userDetailForm :: User -> Pagelet
-userDetailForm u = onlyHtml $ do
-  postForm (routeOf P.UserDetails) $ do
-    inputPagelet . defaultValue $ u
-    submitButton (fieldName saveChangesBtn) "Mentés"
+userDetailForm :: User -> IHtml
+userDetailForm u = do
+  msg <- getI18N
+  return $ postForm (routeOf P.UserDetails) $ do
+    i18n msg . inputPagelet . defaultValue $ u
+    submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Mentés")
 
-userDoesNotExist :: Username -> Pagelet
-userDoesNotExist username = onlyHtml $ do
-  H.p $ do
-    "Nem létező felhasználó:"
+userDoesNotExist :: Username -> IHtml
+userDoesNotExist username = do
+  msg <- getI18N
+  return $ H.p $ do
+    (fromString $ msg $ Msg_UserDetails_NonExistingUser "Nem létező felhasználó:")
     fromString . str $ username
 

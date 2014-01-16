@@ -11,31 +11,34 @@ import Bead.Domain.Entities (Comment(..))
 import Bead.Controller.Pages (Page(..))
 import Bead.View.Snap.Content
 
-import Text.Blaze.Html5 ((!))
+import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5.Attributes as A
-import qualified Bead.View.Snap.I18NHtml as H
-import Bead.View.Snap.I18N (IHtml, constant)
+import qualified Text.Blaze.Html5 as H
+import Bead.View.Snap.I18N (IHtml)
 
 commentsDiv :: UserTimeConverter -> [Comment] -> IHtml
 commentsDiv t cs = do
-  H.div ! A.id "comments" $ do
-    H.h2 "Hozzászólások"
+  msg <- getI18N
+  return $ H.div ! A.id "comments" $ do
+    H.h2 (fromString . msg $ Msg_Comments_Title "Hozzászólások")
     mapM_ (commentPar t) cs
 
-commentPar :: UserTimeConverter -> Comment -> IHtml
+commentPar :: UserTimeConverter -> Comment -> Html
 commentPar t c = H.div # commentTextDiv $ do
-  H.p # textAlign "left" $ constant . showDate . t . commentDate $ c
-  H.pre # commentTextPre $ constant . comment $ c
+  H.p # textAlign "left" $ fromString $ showDate . t . commentDate $ c
+  H.pre # commentTextPre $ fromString $ comment $ c
 
 -- Creates a post form for the given route assignment key and submission key, where
 -- a comment can be placed and the result is submitted to the given page, which is
 -- need to understand the given parameters
 commentPostForm :: Page -> AssignmentKey -> IHtml
-commentPostForm p ak = postForm (routeOf p) $ do
-  H.div ! formDiv $ do
-    textAreaInput (fieldName commentValueField) Nothing ! fillDiv
-    hiddenInput (fieldName assignmentKeyField) (paramValue ak)
-  submitButton (fieldName commentBtn) "Beküld"
+commentPostForm p ak = do
+  msg <- getI18N
+  return $ postForm (routeOf p) $ do
+    H.div ! formDiv $ do
+      textAreaInput (fieldName commentValueField) Nothing ! fillDiv
+      hiddenInput (fieldName assignmentKeyField) (paramValue ak)
+    submitButton (fieldName commentBtn) (msg $ Msg_Comments_SubmitButton "Beküld")
 
 -- * CSS section
 

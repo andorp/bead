@@ -22,7 +22,7 @@ import Bead.Domain.Relationships
 
 import Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5.Attributes as A (class_, style)
-import qualified Bead.View.Snap.I18NHtml as H
+import qualified Text.Blaze.Html5 as H
 
 submissionDetails :: Content
 submissionDetails = getPostContentHandler submissionDetailsPage submissionDetailsPostHandler
@@ -67,41 +67,46 @@ submissionDetailsPostHandler = do
                    , commentType = CT_Student
                    }
 
-submissionDetailsContent :: PageData -> Pagelet
-submissionDetailsContent p = onlyHtml $ do
+submissionDetailsContent :: PageData -> IHtml
+submissionDetailsContent p = do
   let sm = smDetails p
       tc = uTime p
-  H.table $ do
-    H.tr $ do
-      H.td # textAlignRight $ H.b $ "Tárgy, csoport:"
-      H.td $ fromString (sdGroup $ sm)
-    H.tr $ do
-      H.td # textAlignRight $ H.b $ "Oktató:"
-      H.td $ fromString (join . intersperse ", " . sdTeacher $ sm)
-    H.tr $ do
-      H.td # textAlignRight $ H.b $ "Feladat:"
-      H.td $ fromString (assignmentName . sdAssignment $ sm)
-    H.tr $ do
-      H.td # textAlignRight $ H.b $ "Határidő:"
-      H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
-  H.h2 $ "Részletes leírás"
-  H.div # assignmentTextDiv $ fromString . assignmentDesc $ sdAssignment $ sm
-  H.h2 "Megoldás szövege"
-  H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
-  H.h2 "Értékelés"
-  (fromString $ sdStatus sm)
-  let studentComments = filter isStudentComment $ sdComments sm
-  when (not $ null studentComments) $ do
-    commentsDiv tc studentComments
-  H.hr
-  H.h2 "Új hozzászólás"
-  postForm (routeOf $ P.SubmissionDetails (aKey p) (smKey p)) $ do
-    H.div ! formDiv $ do
-      textAreaInput (fieldName commentValueField) Nothing ! fillDiv
-    submitButton (fieldName commentBtn) "Beküld"
+  msg <- getI18N
+  return $ do
+    H.table $ do
+      H.tr $ do
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Course "Tárgy, csoport:")
+        H.td $ fromString (sdGroup $ sm)
+      H.tr $ do
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Admins "Oktató:")
+        H.td $ fromString (join . intersperse ", " . sdTeacher $ sm)
+      H.tr $ do
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Assignment "Feladat:")
+        H.td $ fromString (assignmentName . sdAssignment $ sm)
+      H.tr $ do
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Deadline "Határidő:")
+        H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Description "Részletes leírás"
+    H.div # assignmentTextDiv $ fromString . assignmentDesc $ sdAssignment $ sm
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "Megoldás szövege"
+    H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Evaluation "Értékelés"
+    (fromString $ sdStatus sm)
+    let studentComments = filter isStudentComment $ sdComments sm
+    when (not $ null studentComments) $ do
+      i18n msg $ commentsDiv tc studentComments
+    H.hr
+    H.h2 (fromString . msg $ Msg_SubmissionDetails_NewComment "Új hozzászólás")
+    postForm (routeOf $ P.SubmissionDetails (aKey p) (smKey p)) $ do
+      H.div ! formDiv $ do
+        textAreaInput (fieldName commentValueField) Nothing ! fillDiv
+      submitButton (fieldName commentBtn) (msg $ Msg_SubmissionDetails_SubmitComment "Beküld")
 
-invalidSubmission :: Pagelet
-invalidSubmission = onlyHtml $ "Olyan megoldást próbáltál megnyitni, amelyik nem hozzád tartozik!"
+invalidSubmission :: IHtml
+invalidSubmission = do
+  msg <- getI18N
+  return . fromString . msg $
+    Msg_SubmissionDetails_InvalidSubmission "Olyan megoldást próbáltál megnyitni, amelyik nem hozzád tartozik!"
 
 -- CSS Section
 

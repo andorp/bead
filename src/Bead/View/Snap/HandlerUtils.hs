@@ -38,8 +38,10 @@ import Bead.View.Snap.Application
 import Bead.View.Snap.Session
 import Bead.View.Snap.DataBridge
 import Bead.View.Snap.Dictionary
-import Bead.View.Snap.Pagelets (Pagelet, runPagelet, runDynamicPagelet)
+import Bead.View.Snap.Pagelets (runPagelet, runDynamicPagelet)
 import Bead.View.Snap.RouteOf (ReqParam(..))
+import Bead.View.Snap.Translation
+import Bead.View.Snap.I18N (IHtml)
 
 -- Haskell imports
 
@@ -131,7 +133,7 @@ usersTimeZoneConverter = do
 errorPageHandler :: T.Text -> Handler App b ()
 errorPageHandler msg = error "errorPageHandler: undefined" -- blaze errorPage
 
-i18nE :: (IsString s) => HandlerError App b (String -> s)
+i18nE :: (IsString s) => HandlerError App b (Translation String -> s)
 i18nE = do
   lang <- lift . withTop sessionManager $ languageFromSession
   when (isNothing lang) . throwError . strMsg $ "Language was not defined in session"
@@ -139,15 +141,16 @@ i18nE = do
   -- the identical dictionary is returned. The fromString is necessary
   -- for the Attribute names and values used in html templating engines
   d <- lift . withTop dictionaryContext . getDictionary . fromJust $ lang
-  return (fromString . (unDictionary $ maybe idDictionary id d))
+  return (fromString . (unDictionary $ maybe idDictionary id d)) -- TODO: I18N
+
 
 blazeI18n :: (I18N -> Html) -> HandlerError App b ()
 blazeI18n h = i18nE >>= blaze . h
 
-renderPagelet :: Pagelet -> HandlerError App b ()
+renderPagelet :: IHtml -> HandlerError App b ()
 renderPagelet p = i18nE >>= blaze . (runPagelet p)
 
-renderDynamicPagelet :: Pagelet -> HandlerError App b ()
+renderDynamicPagelet :: IHtml -> HandlerError App b ()
 renderDynamicPagelet p = i18nE >>= blaze . (runDynamicPagelet p)
 
 withUserState :: (UserState -> HandlerError App b c) -> HandlerError App b c
