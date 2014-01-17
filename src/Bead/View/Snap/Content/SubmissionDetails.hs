@@ -14,6 +14,7 @@ import Bead.Controller.Pages as P (Page(SubmissionDetails))
 import Bead.Controller.UserStories (submissionDetailsDesc)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
+import Bead.View.Snap.Markdown
 import Bead.View.Snap.Content.Utils
 import Bead.View.Snap.Content.Comments
 import Bead.Domain.Entities (Comment(..))
@@ -85,7 +86,8 @@ submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
       H.td # textAlignRight $ H.b $ fromString (i "Határidő:")
       H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
   H.h2 $ (translate i "Részletes leírás")
-  H.div # assignmentTextDiv $ fromString . assignmentDesc $ sdAssignment $ sm
+  H.div # assignmentTextDiv $
+    markdownToHtml . assignmentDesc . sdAssignment $ sm
   H.h2 (translate i "Megoldás szövege")
   H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
   H.h2 $ (translate i "Értékelés")
