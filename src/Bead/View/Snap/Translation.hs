@@ -90,8 +90,6 @@ data Translation a
   | Msg_Comments_Title { trans :: a }
   | Msg_Comments_SubmitButton { trans :: a }
 
-  | Msg_Evaluation_ { trans :: a }
-
   | Msg_Evaluation_Title { trans :: a }
   | Msg_Evaluation_Course { trans :: a }
   | Msg_Evaluation_Student { trans :: a }
@@ -134,21 +132,14 @@ data Translation a
   | Msg_RegistrationFinalize_SubmitButton { trans :: a }
   | Msg_RegistrationFinalize_GoBackToLogin { trans :: a }
 
-  | Msg_RegistrationCreateStudent_ { trans :: a }
-
   | Msg_RegistrationCreateStudent_NoParameters { trans :: a }
   | Msg_RegistrationCreateStudent_InnerError { trans :: a }
   | Msg_RegistrationCreateStudent_InvalidToken { trans :: a }
-
---  | Msg_RegistrationCreateNewUser_NoSnapUserIsCreated { trans :: a }
---  | Msg_RegistrationCreateNewUser_NoSnapPasswordIsCreated { trans :: a }
---  | Msg_RegistrationCreateNewUser_StoryFailed { trans :: a }
 
   | Msg_RegistrationTokenSend_Title { trans :: a }
   | Msg_RegistrationTokenSend_StoryFailed { trans :: a }
   | Msg_RegistrationTokenSend_GoBackToLogin { trans :: a }
 
-  | Msg_Home_NewSolution { trans :: a }
 
   | Msg_EvaluationTable_EmptyUnevaluatedSolutions { trans :: a }
   | Msg_EvaluationTable_Group { trans :: a }
@@ -210,8 +201,7 @@ data Translation a
   | Msg_InputHandlers_Role_CourseAdmin { trans :: a }
   | Msg_InputHandlers_Role_Admin { trans :: a }
 
-  | Msg_Home_ { trans :: a }
-
+  | Msg_Home_NewSolution { trans :: a }
   | Msg_Home_AdminTasks { trans :: a }
   | Msg_Home_CourseAdminTasks { trans :: a }
   | Msg_Home_NoCoursesYet { trans :: a }
@@ -243,5 +233,5 @@ data Translation a
   | Msg_Home_NonPercentageEvaluation { trans :: a }
 
 
-  deriving (Show,Read)
+  deriving (Show, Read, Eq, Ord)
 
