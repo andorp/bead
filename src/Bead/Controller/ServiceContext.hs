@@ -33,6 +33,8 @@ import Control.Concurrent.MVar
 import Control.Monad (liftM)
 import Control.Monad.Transaction.TIO (TIO)
 
+import Bead.View.Snap.Translation
+
 newtype UsrToken = UsrToken (Username, String)
   deriving (Show, Eq, Ord)
 
@@ -52,7 +54,7 @@ data UserState
   , role :: Role
   , token :: String
   , timezone :: TimeZone
-  , status :: Maybe String
+  , status :: Maybe (Translation String)
   } deriving (Show)
 
 userStateCata

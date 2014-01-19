@@ -32,6 +32,7 @@ import Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
 import Bead.View.Snap.HandlerUtils (registrationStory, userState, renderPublicPage)
 import Bead.View.Snap.Session (passwordFromAuthUser)
 import Bead.View.Snap.Style
+import Bead.View.Snap.Translation
 
 backToLogin :: Translation String
 backToLogin = Msg_ResetPassword_GoBackToLogin "Vissza a főoldalra"
@@ -55,17 +56,20 @@ resetPassword u = do
 -- Saves the users password it to the persistence layer and the authentication
 -- and sends the email to the given user.
 -- The handler returns a status message that should be displayed to the user.
-setUserPassword :: (Error e) => Username -> String -> ErrorT e (Handler App a) String
+setUserPassword :: (Error e) => Username -> String -> ErrorT e (Handler App a) (Translation String)
 setUserPassword u password = do
   let username = usernameCata id u
   authUser <- getAuthUser u
   case authUser of
-    Nothing -> return $ printf "A(z) %s felhasználó nem létezik!" username
+    Nothing -> return $
+      Msg_ResetPassword_UserDoesNotExist $ printf "A(z) %s felhasználó nem létezik!" username
     Just user -> do
       encryptedPwd <- encryptPwd password
       updateUser user { userPassword = Just encryptedPwd }
       emailPasswordToUser u password
-      return $ printf "%s részére be lett állítva a jelszó." username
+      return $
+        Msg_ResetPassword_PasswordIsSet $
+          printf "%s részére be lett állítva a jelszó." username
 
 -- TODO: I18N
 emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (Handler App a) ()

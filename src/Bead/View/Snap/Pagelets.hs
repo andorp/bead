@@ -259,10 +259,12 @@ pageHeader s = return $ do
     title _ = ""
 
 pageStatus :: UserState -> IHtml
-pageStatus = return . maybe noMessage message . status
+pageStatus = maybe noMessage message . status
   where
-    noMessage = return ()
-    message m = H.div ! A.id "status" # backgroundColor "yellow" $ H.span $ (fromString m)
+    noMessage = return $ return ()
+    message m = do
+      msg <- getI18N
+      return $ H.div ! A.id "status" # backgroundColor "yellow" $ H.span $ (fromString $ msg m)
 
 -- * Picklist
 

@@ -141,7 +141,6 @@ data Translation a
   | Msg_RegistrationTokenSend_StoryFailed { trans :: a }
   | Msg_RegistrationTokenSend_GoBackToLogin { trans :: a }
 
-
   | Msg_EvaluationTable_EmptyUnevaluatedSolutions { trans :: a }
   | Msg_EvaluationTable_Group { trans :: a }
   | Msg_EvaluationTable_Student { trans :: a }
@@ -173,6 +172,8 @@ data Translation a
   | Msg_SubmissionList_NonAssociatedAssignment { trans :: a }
   | Msg_SubmissionList_NonReachableAssignment { trans :: a }
 
+  | Msg_ResetPassword_UserDoesNotExist { trans :: a }
+  | Msg_ResetPassword_PasswordIsSet { trans :: a }
   | Msg_ResetPassword_GoBackToLogin { trans :: a }
   | Msg_ResetPassword_Neptun { trans :: a }
   | Msg_ResetPassword_Email { trans :: a }
@@ -190,7 +191,9 @@ data Translation a
   | Msg_Profile_NewPasswordAgain { trans :: a }
   | Msg_Profile_ChangePwdButton { trans :: a }
   | Msg_Profile_Language { trans :: a }
+  | Msg_Profile_PasswordHasBeenChanged { trans :: a }
 
+  | Msg_SetUserPassword_NonRegisteredUser { trans :: a }
   | Msg_SetUserPassword_User { trans :: a }
   | Msg_SetUserPassword_NewPassword { trans :: a }
   | Msg_SetUserPassword_NewPasswordAgain { trans :: a }
@@ -234,6 +237,17 @@ data Translation a
   | Msg_Home_HasNoSummary { trans :: a }
   | Msg_Home_NonPercentageEvaluation { trans :: a }
 
+  | Msg_UserStory_SetTimeZone { trans :: a }
+  | Msg_UserStory_ChangedUserDetails { trans :: a }
+  | Msg_UserStory_CreateCourse { trans :: a }
+  | Msg_UserStory_SetCourseAdmin { trans :: a }
+  | Msg_UserStory_SetGroupAdmin { trans :: a }
+  | Msg_UserStory_CreateGroup { trans :: a }
+  | Msg_UserStory_SubscribedToGroup { trans :: a }
+  | Msg_UserStory_NewGroupAssignment { trans :: a }
+  | Msg_UserStory_NewCourseAssignment { trans :: a }
+
+  | Msg_UserActions_ChangedUserDetails { trans :: a }
 
   deriving (Show, Read, Eq, Ord)
 

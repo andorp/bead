@@ -30,7 +30,8 @@ setUsrPwd = do
   case isStudentOfMe of
     False -> do
       let username = usernameCata id user
-      return $ StatusMessage $ printf "%s nincs regisztrálva egyik tárgyadon vagy csoportodban sem!" username
+      return . StatusMessage . Msg_SetUserPassword_NonRegisteredUser
+        $ printf "%s nincs regisztrálva egyik tárgyadon vagy csoportodban sem!" username
     True -> do
       msg <- P.setUserPassword user newPwd
       return $ StatusMessage msg

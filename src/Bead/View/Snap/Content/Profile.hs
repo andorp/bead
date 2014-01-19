@@ -76,4 +76,4 @@ changePassword = postContentHandler $ do
   newPwd <- getParameter newPasswordPrm
   checkCurrentAuthPassword oldPwd
   updateCurrentAuthPassword newPwd
-  return . StatusMessage $ "A jelszó megváltozott!"
+  return . StatusMessage $ Msg_Profile_PasswordHasBeenChanged "A jelszó megváltozott!"

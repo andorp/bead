@@ -8,13 +8,14 @@ import Bead.Controller.ServiceContext (UserState(..))
 import qualified Bead.Controller.UserStories as Story
 import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.Logging as L
+import Bead.View.Snap.Translation
 
 -- | The user can preform the following actions on the user interface
 data UserAction
   -- Navigation
   = Logout
   | LogMessage String
-  | StatusMessage String
+  | StatusMessage (Translation String)
 
   -- Profiling
   | ChangeUserDetails String TimeZone Language
@@ -75,7 +76,7 @@ userStoryFor (SubmissionComment sk c) = Story.createComment sk c
 userStoryFor (ChangeUserDetails n t l) =
   do Story.changeUserDetails n t l
      Story.setTimeZone t
-     Story.putStatusMessage "User's details has been changed"
+     Story.putStatusMessage $ Msg_UserActions_ChangedUserDetails "Az adatok módosultak."
 
 userStoryFor _                      = Story.logMessage L.DEBUG "No story was selected"
 -- etc ...
