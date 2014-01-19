@@ -7,8 +7,10 @@ module Bead.View.Snap.RouteOf (
   , routeOf
   , routeWithParams
   , requestRoute
+  , queryString -- Creates a well-formed query string from base path and parameters
   , RoutePath
   , loginPath
+  , changeLanguagePath
   , logoutPath
   , homePath
   , errorPath
@@ -57,6 +59,9 @@ type RoutePath = String
 
 loginPath :: RoutePath
 loginPath = "/login"
+
+changeLanguagePath :: RoutePath
+changeLanguagePath = "/change-language"
 
 logoutPath :: RoutePath
 logoutPath = "/logout"

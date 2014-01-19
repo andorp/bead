@@ -320,6 +320,16 @@ valueSelection f n = selection n . mapM_ option'
   where
     option' o = let (v,n) = f o in option v n False
 
+-- Creates a selection from a descriptive function, which converts a value to a selection value and text pair
+-- from an HTML identifier name, a function that describes if the value is selected or not
+-- and a list of values
+valueSelectionWithDefault :: (o -> (String, String)) -> String -> (o -> Bool) -> [o] -> Html
+valueSelectionWithDefault f n d = selection n . mapM_ option'
+  where
+    option' o =
+      let (v,n) = f o
+      in option v n (d o)
+
 -- SelectionValue and SelectionText instances
 
 instance SelectionValue CourseKey where

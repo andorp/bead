@@ -78,6 +78,7 @@ createAdminUser persist usersdb = userRegInfoCata $
       , u_email = Email email
       , u_name = fullName
       , u_timezone = timeZone
+      , u_language = Language "hu" -- TODO: I18N
       }
     in createUser persist usersdb usr password
 
@@ -128,7 +129,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     , reg_timeout  = timeout 2 now
     }
 
-  renderForm = blaze . noTranslate . dynamicTitleAndHead registrationTitle $ do
+  renderForm = renderPublicPage . dynamicTitleAndHead registrationTitle $ do
     msg <- getI18N
     return $ do
       postForm "/reg_request" ! (A.id . formId $ regForm) $ do
@@ -237,7 +238,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
               (False, True) -> errorPageWithTitle
                 (Msg_Registration_Title "Regisztració")
                 (i18n $ Msg_RegistrationFinalize_UserAlreadyExist "Ez a felhasználó már létezik!")
-              (False, False) -> blaze . noTranslate . dynamicTitleAndHead registrationTitle $ do
+              (False, False) -> renderPublicPage . dynamicTitleAndHead registrationTitle $ do
                 msg <- getI18N
                 return $ do
                   postForm "reg_final" ! (A.id . formId $ regFinalForm) $ do
@@ -294,6 +295,7 @@ createNewUser reg password timezone = runErrorT $ do
     , u_email = email
     , u_name = fullname
     , u_timezone = timezone
+    , u_language = Language "hu" -- TODO: I18N
     }
 
   -- Check if the Snap Auth registration went fine
@@ -320,7 +322,7 @@ createNewUser reg password timezone = runErrorT $ do
     checkFailure (Right x) = return x
 
 pageContent :: Handler App a ()
-pageContent = blaze . noTranslate . dynamicTitleAndHead (Msg_Registration_Title "Regisztració") $ do
+pageContent = renderPublicPage . dynamicTitleAndHead (Msg_Registration_Title "Regisztració") $ do
   msg <- getI18N
   return $ do
     H.p . fromString . msg $ Msg_RegistrationTokenSend_Title "A regisztrációs tokent elküldtük levélben, nézd meg a leveleidet!"

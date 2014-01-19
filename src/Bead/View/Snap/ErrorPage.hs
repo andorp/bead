@@ -19,27 +19,27 @@ import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.Pagelets (
     link, withTitleAndHead
   )
-import Bead.View.Snap.I18N (IHtml, noTranslate, getI18N)
+import Bead.View.Snap.I18N (IHtml, getI18N)
 import Bead.View.Snap.Translation
 import qualified Text.Blaze.Html5 as H
 
 -- | Produces an error page showing the reason of an error, and redirects to
 --   login page after a while
 errorPage :: ContentHandlerError -> Handler App b ()
-errorPage = contentHandlerErrorMap (render . (page $ Msg_ErrorPage_Title "Error"))
+errorPage = contentHandlerErrorMap (renderPublicPage . (page $ Msg_ErrorPage_Title "Error"))
 
 msgErrorPage :: String -> Handler App b ()
-msgErrorPage = render . (page $ Msg_ErrorPage_Title "Error") . Just
+msgErrorPage = renderPublicPage . (page $ Msg_ErrorPage_Title "Error") . Just
 
 -- Produces a handler that renders the error page, with the
 -- given title and message for the user
 errorPageWithTitleTrans :: Translation String -> Translation String -> Handler App b ()
-errorPageWithTitleTrans title = render . (pageTranslation title) . Just
+errorPageWithTitleTrans title = renderPublicPage . (pageTranslation title) . Just
 
 -- Produces a handler that renders the error page, with the
 -- given title and message for the user
 errorPageWithTitle :: Translation String -> String -> Handler App b ()
-errorPageWithTitle title = render . (page title) . Just
+errorPageWithTitle title = renderPublicPage . (page title) . Just
 
 pageTemplate :: (a -> H.Html) -> Translation String -> Maybe a -> IHtml
 pageTemplate content t e = withTitleAndHead t $ do
@@ -60,7 +60,3 @@ pageTranslation :: Translation String -> (Maybe (Translation String)) -> IHtml
 pageTranslation t e = do
   msg <- getI18N
   pageTemplate (fromString . msg) t e
-
--- Renders the page with no translation
-render :: MonadSnap m => IHtml -> m ()
-render = blaze . noTranslate

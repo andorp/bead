@@ -54,17 +54,34 @@ dictionarySnaplet d = makeSnaplet
   "Dictionaries"
   "A snaplet providing the i18 dictionary context"
   Nothing $ liftIO $ do
-    ref <- newIORef d
+    ref <- newIORef (addHungarian d)
     return $! DictionaryContext ref
+  where
+    -- The source code contains hungarian text by default
+    addHungarian = Map.insert (Language "hu") (idDictionary, DictionaryInfo "hu.ico" "Magyar")
+
+-- Maps the stored dictionaries into a value within the Handler monad
+dictionarySnapletMap :: (Dictionaries -> a) -> Handler b DictionaryContext a
+dictionarySnapletMap f = do
+  DictionaryContext ref <- get
+  m <- liftIO . readIORef $ ref
+  return (f m)
 
 -- | getDictionary returns a (Just dictionary) for the given language
 --   if the dictionary is registered for the given language,
 --   otherwise returns Nothing
 getDictionary :: Language -> Handler b DictionaryContext (Maybe Dictionary)
-getDictionary l = do
-  DictionaryContext ref <- get
-  m <- liftIO . readIORef $ ref
-  return $ Map.lookup l m
+getDictionary l = dictionarySnapletMap (fmap fst . Map.lookup l)
+
+-- A dictionary infos is a list that contains the language of and information
+-- about the dictionaries contained by the DictionarySnaplet
+type DictionaryInfos = [(Language, DictionaryInfo)]
+
+dictionaryInfosCata list item d = list $ map item d
+
+-- Computes a list with the defined languages and dictionary info
+dcGetDictionaryInfos :: Handler b DictionaryContext DictionaryInfos
+dcGetDictionaryInfos = dictionarySnapletMap (Map.toList . Map.map snd)
 
 -- * Email sending spanplet
 

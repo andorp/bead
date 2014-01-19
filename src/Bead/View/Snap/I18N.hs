@@ -28,16 +28,13 @@ i18n :: I18N -> IHtml -> H.Html
 i18n = flip runReader
 {-# INLINE i18n #-}
 
-noTranslate :: IHtml -> H.Html
-noTranslate = flip runReader trans
-{-# INLINE noTranslate #-}
-
 html :: H.Html -> IHtml
 html = return
 {-# INLINE html #-}
 
 getI18N :: Reader I18N (Translation String -> String)
 getI18N = asks (\f -> fromString . f)
+{-# INLINE getI18N #-}
 
 liftH :: H.Html -> IHtml
 liftH = return

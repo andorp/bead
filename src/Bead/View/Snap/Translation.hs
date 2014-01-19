@@ -29,6 +29,7 @@ data Translation a
   | Msg_Input_User_Email { trans :: a }
   | Msg_Input_User_FullName { trans :: a }
   | Msg_Input_User_TimeZone { trans :: a }
+  | Msg_Input_User_Language { trans :: a }
 
   | Msg_CourseAdmin_CreateCourse { trans :: a }
   | Msg_CourseAdmin_AssignAdmin { trans :: a }
@@ -188,6 +189,7 @@ data Translation a
   | Msg_Profile_NewPassword { trans :: a }
   | Msg_Profile_NewPasswordAgain { trans :: a }
   | Msg_Profile_ChangePwdButton { trans :: a }
+  | Msg_Profile_Language { trans :: a }
 
   | Msg_SetUserPassword_User { trans :: a }
   | Msg_SetUserPassword_NewPassword { trans :: a }

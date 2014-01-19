@@ -66,6 +66,7 @@ routes config = join
     , ("/reset_pwd",resetPasswordPage)
     , ("/reg_request", registrationRequest config)
     , ("/reg_final", finalizeRegistration)
+    , ("/change-language", changeLanguage)
     , ("/fay", with fayContext fayServe)
     ]
   , map toPathContentPair content

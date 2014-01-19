@@ -253,6 +253,14 @@ commentValueField = CommentValueField "comment-value"
 instance SnapFieldName CommentField where
   fieldName = fromString . ckFieldName
 
+newtype ChangeLanguageField = ChangeLanguageField { clgFieldName :: String }
+
+changeLanguageField = ChangeLanguageField "change-language"
+userLanguageField = ChangeLanguageField "user-change-language"
+
+instance SnapFieldName ChangeLanguageField where
+  fieldName = fromString . clgFieldName
+
 data TableName = TableName {
     tName :: String
   }
@@ -341,7 +349,8 @@ fieldList = map fieldName $ join [
   , SFN assignmentEndHourField, SFN assignmentEndMinField
   , SFN assignmentStartDefaultDate, SFN assignmentStartDefaultHour, SFN assignmentStartDefaultMin
   , SFN assignmentEndDefaultDate, SFN assignmentEndDefaultHour, SFN assignmentEndDefaultMin
-  , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage
+  , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage, SFN changeLanguageField
+  , SFN userLanguageField
 
   , SFN createCourseForm, SFN evaluationTypeSelection, SFN evaluationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId

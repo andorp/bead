@@ -21,7 +21,7 @@ import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.DataBridge
 
-import Bead.View.Snap.I18N (IHtml, getI18N)
+import Bead.View.Snap.I18N (IHtml, getI18N, i18n)
 import Bead.View.Snap.Translation
 
 import Text.Blaze.Html5 (Html)
@@ -114,29 +114,6 @@ instance InputPagelet Username where
 
 instance GetValueHandler Username where
   getValue = getParameter usernamePrm
-
-emptyUser :: Maybe User
-emptyUser = Nothing
-
-instance GetValueHandler User where
-  getValue = User
-    <$> getValue -- role
-    <*> getValue -- username
-    <*> getParameter userEmailPrm
-    <*> getParameter (stringParameter (fieldName userFamilyNameField) "Teljes név")
-    <*> getParameter userTimeZonePrm
-
-instance InputPagelet User where
-  inputPagelet u = do
-    msg <- getI18N
-    roleInput <- inputPagelet (fmap u_role u)
-    return $ do
-      table "user-detail-table" "user-detail-table" $ do
-        tableLine (msg $ Msg_Input_User_Role "Szerepkör")  $ required $ roleInput
-        tableLine (msg $ Msg_Input_User_Email "Email cím") $ required $ textInput (fieldName userEmailField) 20 (fmap (str . u_email) u)
-        tableLine (msg $ Msg_Input_User_FullName "Teljes név") $ required $ textInput (fieldName userFamilyNameField) 20 (fmap u_name u)
-        tableLine (msg $ Msg_Input_User_TimeZone "Időzóna") $ required $ defEnumSelection (B.name userTimeZonePrm) (maybe UTC u_timezone u)
-        when (isJust u) . hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username . fromJust $ u
 
 emptyAssignment :: Maybe Assignment
 emptyAssignment = Nothing

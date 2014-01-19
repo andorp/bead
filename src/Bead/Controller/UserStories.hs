@@ -114,11 +114,11 @@ setTimeZone tz = do
   changeUserState $ \userState -> userState { timezone = tz }
   putStatusMessage $ printf "Az időzóna %s lett." (show tz)
 
--- Updates the current user's full name and timezone in the persistence layer
-changeUserDetails :: String -> TimeZone -> UserStory ()
-changeUserDetails name timezone = logAction INFO ("changes fullname and timezone") $ do
+-- Updates the current user's full name, timezone and language in the persistence layer
+changeUserDetails :: String -> TimeZone -> Language -> UserStory ()
+changeUserDetails name timezone language = logAction INFO ("changes fullname, timezone and language") $ do
   user <- currentUser
-  withPersist $ flip R.updateUser user { u_name = name , u_timezone = timezone }
+  withPersist $ flip R.updateUser user { u_name = name , u_timezone = timezone , u_language = language }
   putStatusMessage "A beállítások megváltoztak."
 
 updateUser :: User -> UserStory ()
@@ -625,4 +625,3 @@ withPersist m = do
       logMessage ERROR ("Persistence error: " ++ e)
       CME.throwError $ strMsg e
     Right x -> return x
-

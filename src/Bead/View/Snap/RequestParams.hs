@@ -4,6 +4,7 @@ import Control.Monad (join)
 import Data.String (IsString(..))
 import Bead.Domain.Entities (Username(..))
 import Bead.Domain.Relationships
+import Bead.View.Snap.Dictionary (Language, languageCata)
 import Bead.View.Snap.TemplateAndComponentNames
 
 -- Request Parameter Name Constants
@@ -16,6 +17,9 @@ submissionKeyParamName = fromString $ fieldName submissionKeyField
 
 evaluationKeyParamName :: IsString s => s
 evaluationKeyParamName = fromString $ fieldName evaluationKeyField
+
+languageParamName :: IsString s => s
+languageParamName = fromString $ fieldName changeLanguageField
 
 -- Request Param is a Pair of Strings, which
 -- are key and value representing a parameter in
@@ -65,3 +69,8 @@ instance ReqParamValue Username where
 instance RequestParam Username where
   requestParam u = ReqParam (fieldName usernameField, paramValue u)
 
+instance ReqParamValue Language where
+  paramValue = languageCata fromString
+
+instance RequestParam Language where
+  requestParam l = ReqParam (languageParamName, paramValue l)

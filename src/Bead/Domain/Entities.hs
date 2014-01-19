@@ -399,6 +399,12 @@ newtype UserRegInfo = UserRegInfo (String, String, String, String, TimeZone)
 userRegInfoCata f (UserRegInfo (username, password, email, fullName, timeZone))
   = f username password email fullName timeZone
 
+-- The language what the dictionary represents.
+newtype Language = Language String
+  deriving (Eq, Show, Read, Ord)
+
+languageCata f (Language l) = f l
+
 -- | Logged in user
 data User = User {
     u_role     :: Role
@@ -406,18 +412,19 @@ data User = User {
   , u_email    :: Email
   , u_name     :: String
   , u_timezone :: TimeZone
+  , u_language :: Language
   } deriving (Eq, Ord, Show)
 
-userCata f (User role username email name timezone) =
-  f role username email name timezone
+userCata f (User role username email name timezone language) =
+  f role username email name timezone language
 
-userAna role username email name timezone = User
+userAna role username email name timezone language = User
   <$> role
   <*> username
   <*> email
   <*> name
   <*> timezone
-
+  <*> language
 newtype PersonalInfo = PersonalInfo (Role, String, TimeZone)
 
 personalInfoCata f (PersonalInfo (role, name, timezone))

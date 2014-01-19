@@ -17,11 +17,13 @@ import Bead.Controller.UserStories (currentUser)
 import Bead.Domain.Entities
 import Bead.View.Snap.Content
 import qualified Bead.View.Snap.DataBridge as B
+import Bead.View.Snap.Dictionary
+import Bead.View.Snap.Application
 import Bead.View.Snap.HandlerUtils (userState)
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.ResetPassword
 import Bead.View.Snap.Style
-import Bead.View.Snap.Session (convertPassword)
+import Bead.View.Snap.Session (convertPassword, setLanguageInSession)
 
 profile :: Content
 profile = getPostContentHandler profilePage changeUserDetails
@@ -29,15 +31,22 @@ profile = getPostContentHandler profilePage changeUserDetails
 profilePage :: GETContentHandler
 profilePage = withUserState $ \s -> do
   user <- userStory currentUser
-  renderDynamicPagelet $ withUserFrame s (profileContent user)
+  languages <- getDictionaryInfos
+  renderDynamicPagelet $ withUserFrame s (profileContent user languages)
 
 changeUserDetails :: POSTContentHandler
-changeUserDetails = ChangeUserDetails
-  <$> getParameter regFullNamePrm
-  <*> getParameter userTimeZonePrm
+changeUserDetails = do
+  language <- getParameter userLanguagePrm
+  setLanguage language
+  ChangeUserDetails
+    <$> getParameter regFullNamePrm
+    <*> getParameter userTimeZonePrm
+    <*> (return language)
+  where
+    setLanguage = lift . withTop sessionManager . setLanguageInSession
 
-profileContent :: User -> IHtml
-profileContent user = do
+profileContent :: User -> DictionaryInfos -> IHtml
+profileContent user languages = do
   msg <- getI18N
   return $ do
     postForm (routeOf Profile) $ do
@@ -46,6 +55,8 @@ profileContent user = do
         tableLine (msg $ Msg_Profile_Email "Email cím: ") (emailCata (H.small . H.b . fromString) $ u_email user)
         tableLine (msg $ Msg_Profile_FullName "Teljes név:) ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
         tableLine (msg $ Msg_Profile_Timezone "Időzóna: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
+        tableLine (msg $ Msg_Profile_Language "Nyelv: ") $
+          valueSelectionWithDefault langValue (B.name userLanguagePrm) (langDef (u_language user)) languages ! A.required ""
       submitButton (fieldName changeProfileBtn) (msg $ Msg_Profile_SaveButton "Mentés")
     H.br
     postForm (routeOf ChangePassword) `withId` (rFormId changePwdForm) $ do
@@ -54,6 +65,9 @@ profileContent user = do
         tableLine (msg $ Msg_Profile_NewPassword "Új jelszó: ") $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
         tableLine (msg $ Msg_Profile_NewPasswordAgain "Új jelszó (ismét): ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
       submitButton (fieldName changePasswordBtn) (msg $ Msg_Profile_ChangePwdButton "Csere")
+  where
+    langValue (lang,info)  = (languageCata id lang, languageName info)
+    langDef l (lang,_info) = l == lang
 
 -- TODO: I18N
 changePassword :: Content

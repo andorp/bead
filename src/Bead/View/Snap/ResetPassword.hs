@@ -29,7 +29,7 @@ import Bead.View.Snap.Content hiding (name)
 import Bead.View.Snap.DataBridge
 import Bead.View.Snap.ErrorPage (errorPageWithTitle)
 import Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
-import Bead.View.Snap.HandlerUtils (registrationStory, userState)
+import Bead.View.Snap.HandlerUtils (registrationStory, userState, renderPublicPage)
 import Bead.View.Snap.Session (passwordFromAuthUser)
 import Bead.View.Snap.Style
 
@@ -152,7 +152,7 @@ and submit the requests.
 resetPasswordGET :: Handler App App ()
 resetPasswordGET = renderForm
   where
-    renderForm = blaze . noTranslate . dynamicTitleAndHead resetPasswordTitle $ do
+    renderForm = renderPublicPage . dynamicTitleAndHead resetPasswordTitle $ do
       msg <- getI18N
       return $ do
         postForm "/reset_pwd" $ do
@@ -191,7 +191,7 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
         (either (throwError . show) return)
 
 pageContent :: (Handler App a) ()
-pageContent = blaze . noTranslate . dynamicTitleAndHead resetPasswordTitle $ do
+pageContent = renderPublicPage . dynamicTitleAndHead resetPasswordTitle $ do
   msg <- getI18N
   return $ do
     H.p . fromString . msg $ Msg_ResetPassword_EmailSent $ "Az új jelszót levélben kiküldtük, nézd meg a leveleidet!"
