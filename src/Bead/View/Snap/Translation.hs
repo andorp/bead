@@ -250,4 +250,3 @@ data Translation a
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 
   deriving (Show, Read, Eq, Ord)
-
