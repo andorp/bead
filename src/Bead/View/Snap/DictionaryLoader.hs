@@ -1,6 +1,6 @@
 module Bead.View.Snap.DictionaryLoader where
 
-import Control.Arrow ((***))
+import Control.Arrow ((&&&))
 import Control.Applicative ((<$>))
 import Control.Monad (filterM, mapM)
 
@@ -15,18 +15,19 @@ import System.FilePath (takeExtension, joinPath, takeBaseName)
 import Bead.View.Snap.Dictionary
 import Bead.Domain.Types
 
+-- Reads up all the dictionary files from a given directory, and
+-- creates the dictionaries map
 loadDictionaries :: FilePath -> IO Dictionaries
 loadDictionaries d = do
   fs <- ((map fullPath  . filter dictionaryFile) <$> getDirectoryContents d) >>= (filterM doesFileExist)
-  ds <- (map (id *** fromJust) . filter (isJust . snd)) <$> mapM loadDictionary fs
-  return . Map.fromList . map (lang *** id) $ ds
+  ds <- catMaybes <$> mapM loadDictionary fs
+  return . Map.fromList
+         . map ((Language . langCode) &&& (dictionaryFromDFile &&& dictionaryFileToInfo))
+         $ ds
     where
       fullPath f = joinPath [d,f]
       dictionaryFile = (".dict"==) . takeExtension
-      lang = Language . takeBaseName
 
-loadDictionary :: FilePath -> IO (FilePath, Maybe Dictionary)
-loadDictionary f = do
-  s <- readFile f
-  return (f, fromEntries <$> readMaybe s)
+      loadDictionary :: FilePath -> IO (Maybe DictionaryFile)
+      loadDictionary f = readMaybe <$> readFile f
 

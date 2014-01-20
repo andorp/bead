@@ -10,6 +10,7 @@ import Bead.Controller.Logging  as L
 import Bead.Controller.Pages    as P
 import Bead.Persistence.Persist (Persist(..))
 import qualified Bead.Persistence.Persist as R
+import Bead.View.Snap.Translation
 
 import Control.Applicative
 import Control.Monad (when, unless)
@@ -112,14 +113,14 @@ createUser newUser = do
 setTimeZone :: TimeZone -> UserStory ()
 setTimeZone tz = do
   changeUserState $ \userState -> userState { timezone = tz }
-  putStatusMessage $ printf "Az időzóna %s lett." (show tz)
+  putStatusMessage $ Msg_UserStory_SetTimeZone $ printf "Az időzóna %s lett." (show tz)
 
--- Updates the current user's full name and timezone in the persistence layer
-changeUserDetails :: String -> TimeZone -> UserStory ()
-changeUserDetails name timezone = logAction INFO ("changes fullname and timezone") $ do
+-- Updates the current user's full name, timezone and language in the persistence layer
+changeUserDetails :: String -> TimeZone -> Language -> UserStory ()
+changeUserDetails name timezone language = logAction INFO ("changes fullname, timezone and language") $ do
   user <- currentUser
-  withPersist $ flip R.updateUser user { u_name = name , u_timezone = timezone }
-  putStatusMessage "A beállítások megváltoztak."
+  withPersist $ flip R.updateUser user { u_name = name , u_timezone = timezone , u_language = language }
+  putStatusMessage $ Msg_UserStory_ChangedUserDetails "A beállítások megváltoztak."
 
 updateUser :: User -> UserStory ()
 updateUser u = logAction INFO ("updates user " ++ (str . u_username $ u)) $ do
@@ -192,7 +193,7 @@ createCourse :: Course -> UserStory CourseKey
 createCourse course = logAction INFO "creates course" $ do
   authorize P_Create P_Course
   key <- create descriptor saveCourse course
-  putStatusMessage $ printf "A(z) '%s' tárgy létrejött." (courseName course)
+  putStatusMessage $ Msg_UserStory_CreateCourse $ printf "A(z) '%s' tárgy létrejött." (courseName course)
   return key
   where
     descriptor course _ =
@@ -217,7 +218,7 @@ createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
   authorize P_Create P_CourseAdmin
   authorize P_Open   P_User
   withPersist $ \p -> R.createCourseAdmin p u ck
-  putStatusMessage $ printf "%s most már tárgyfelelős." (user u)
+  putStatusMessage $ Msg_UserStory_SetCourseAdmin $ printf "%s most már tárgyfelelős." (user u)
   where
     user = usernameCata id
 
@@ -232,7 +233,7 @@ createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $
         then R.createGroupAdmin p u gk >> return True
         else return False
   if groupAdminSetted
-    then putStatusMessage $ printf "%s most már oktató." (user u)
+    then putStatusMessage $ Msg_UserStory_SetGroupAdmin $ printf "%s most már oktató." (user u)
     else CME.throwError . strMsg $ printf "%s nem lehet oktató!" (user u)
   where
     user = usernameCata id
@@ -242,7 +243,7 @@ createGroup :: CourseKey -> Group -> UserStory GroupKey
 createGroup ck g = logAction INFO ("creats group " ++ show (groupName g)) $ do
   authorize P_Create P_Group
   key <- withPersist $ \p -> R.saveGroup p ck g
-  putStatusMessage $ printf "A(z) '%s' csoport létrejött." (groupName g)
+  putStatusMessage $ Msg_UserStory_CreateGroup $ printf "A(z) '%s' csoport létrejött." (groupName g)
   return key
 
 loadGroup :: GroupKey -> UserStory Group
@@ -272,7 +273,7 @@ subscribeToGroup gk = logAction INFO ("subscribes to the group " ++ (show gk)) $
   withPersist $ \p -> do
     ck <- R.courseOfGroup p gk
     R.subscribe p (user state) ck gk
-  putStatusMessage "Sikeresen regisztráltál a csoportba!"
+  putStatusMessage $ Msg_UserStory_SubscribedToGroup "Sikeresen regisztráltál a csoportba!"
 
 attendedGroups :: UserStory [(GroupKey, GroupDesc)]
 attendedGroups = logAction INFO "selects courses attended in" $ do
@@ -293,7 +294,7 @@ createGroupAssignment gk a = logAction INFO msg $ do
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for group " ++ show gk
     statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
-      putStatusMessage $ printf "Létrejött a(z) '%s' című csoportszintű feladat." name
+      putStatusMessage $ Msg_UserStory_NewGroupAssignment $ printf "Létrejött a(z) '%s' című csoportszintű feladat." name
 
 createCourseAssignment :: CourseKey -> Assignment -> UserStory AssignmentKey
 createCourseAssignment ck a = logAction INFO msg $ do
@@ -306,7 +307,7 @@ createCourseAssignment ck a = logAction INFO msg $ do
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for course " ++ show ck
     statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
-      putStatusMessage $ printf "Létrejött a(z) '%s' című tárgyszintű feladat." name
+      putStatusMessage $ Msg_UserStory_NewCourseAssignment $ printf "Létrejött a(z) '%s' című tárgyszintű feladat." name
 
 selectAssignments :: (AssignmentKey -> Assignment -> Bool) -> UserStory [(AssignmentKey, Assignment)]
 selectAssignments f = logAction INFO "selects some assignments" $ do
@@ -320,7 +321,7 @@ loadAssignment k = logAction INFO ("loads assignment " ++ show k) $ do
   withPersist $ flip R.loadAssignment k
 
 -- Puts the given status message to the actual user state
-putStatusMessage :: String -> UserStory ()
+putStatusMessage :: Translation String -> UserStory ()
 putStatusMessage = changeUserState . setStatus
 
 -- Clears the status message of the user
@@ -625,4 +626,3 @@ withPersist m = do
       logMessage ERROR ("Persistence error: " ++ e)
       CME.throwError $ strMsg e
     Right x -> return x
-

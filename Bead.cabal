@@ -40,6 +40,13 @@ Data-Files:
 Flag Tests
   Description:  Enable testing
 
+Executable CreateBeadLanguageFile
+  Main-is: UtilsMain.hs
+  HS-Source-Dirs: src, snaplets/fay/src
+  Build-Depends:
+    containers
+
+
 Executable Bead
   Main-is: SnapMain.hs
   HS-Source-Dirs: src, snaplets/fay/src

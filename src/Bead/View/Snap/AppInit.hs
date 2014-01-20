@@ -70,7 +70,7 @@ appInit config user s d = makeSnaplet "bead" description dataDir $ do
   fs <- nestSnaplet "fay" fayContext $ initFay
 
   addRoutes (routes config)
-  wrapSite (<|> msgErrorPage "Invalid address")
+  wrapSite (<|> msgErrorPage "Invalid address") -- TODO: I18N
 
   return $ App sm as ss ds se rp fs
   where

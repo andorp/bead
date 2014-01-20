@@ -16,9 +16,9 @@ import Bead.View.Snap.Content
 import Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
 
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
+import qualified Text.Blaze.Html5 as H
 
 administration :: Content
 administration = getContentHandler administrationPage
@@ -53,30 +53,32 @@ administrationPage = withUserState $ \s -> do
     admin = (Admin ==) . u_role
     courseAdmin = (CourseAdmin ==) . u_role
 
-administrationContent :: PageInfo -> Pagelet
-administrationContent info = onlyHtml $ mkI18NHtml $ \i18n -> do
-  H.div $ do
-    H.h3 $ (translate i18n "Új tárgy")
-    (postForm (routeOf P.CreateCourse) `withId` (evFormId createCourseHook)) $ do
-      inputPagelet emptyCourse
-      -- Help message for the percentage
-      H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $ fromString
-        (i18n "A hallgatók által minimálisan teljesítendő százalék")
-      submitButton (fieldName createCourseBtn) (i18n "Létrehozás")
-  H.div $ do
-    H.h3 $ (translate i18n "Oktató hozzárendelése a tárgyhoz")
-    nonEmpty (courses info) (translate i18n "Nincsenek tárgyak!") $
-      nonEmpty (courseAdmins info) (translate i18n "Nincsenek oktatók!") $
-        postForm (routeOf P.AssignCourseAdmin) $ do
-          valueTextSelection (fieldName selectedCourse) (courses info)
-          valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
-          H.br
-          submitButton (fieldName assignBtn) (i18n "Hozzárendelés")
-  H.div $ do
-    H.h3 $ (translate i18n "Felhasználó adatainak módosítása")
-    getForm (routeOf P.UserDetails) $ do
-      inputPagelet emptyUsername
-      submitButton (fieldName selectBtn) (i18n "Kiválasztás")
+administrationContent :: PageInfo -> IHtml
+administrationContent info = do
+  msg <- getI18N
+  return $ do
+    H.div $ do
+      H.h3 $ (fromString . msg $ Msg_Administration_NewCourse "Új tárgy")
+      (postForm (routeOf P.CreateCourse) `withId` (evFormId createCourseHook)) $ do
+        i18n msg $ inputPagelet emptyCourse
+        -- Help message for the percentage
+        H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $
+          (fromString . msg $ Msg_Administration_PctHelpMessage "A hallgatók által minimálisan teljesítendő százalék")
+        submitButton (fieldName createCourseBtn) (fromString . msg $ Msg_Administration_CreateCourse "Létrehozás")
+    H.div $ do
+      H.h3 $ (fromString . msg $ Msg_Administration_AssignCourseAdminTitle "Oktató hozzárendelése a tárgyhoz")
+      nonEmpty (courses info) (fromString . msg $ Msg_Administration_NoCourses "Nincsenek tárgyak!") $
+        nonEmpty (courseAdmins info) (fromString . msg $ Msg_Administration_NoCourseAdmins "Nincsenek oktatók!") $
+          postForm (routeOf P.AssignCourseAdmin) $ do
+            valueTextSelection (fieldName selectedCourse) (courses info)
+            valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
+            H.br
+            submitButton (fieldName assignBtn) (fromString . msg $ Msg_Administration_AssignCourseAdminButton "Hozzárendelés")
+    H.div $ do
+      H.h3 $ (fromString . msg $ Msg_Administration_ChangeUserProfile "Felhasználó adatainak módosítása")
+      getForm (routeOf P.UserDetails) $ do
+        i18n msg $ inputPagelet emptyUsername
+        submitButton (fieldName selectBtn) (fromString . msg $ Msg_Administration_SelectUser "Kiválasztás")
 
 -- Add Course Admin
 

@@ -6,11 +6,14 @@ module Bead.View.Snap.HandlerUtils (
   , userStory
   , registrationStory
   , getParameter
+  , getParameterOrError
   , getJSONParam
+  , getDictionaryInfos -- Calculates a list of language and dictionaryInfo
   , i18nE
   , blazeI18n
   , renderPagelet
   , renderDynamicPagelet
+  , renderPublicPage
   , setInSessionE
   , setReqParamInSession
   , sessionToken
@@ -38,8 +41,10 @@ import Bead.View.Snap.Application
 import Bead.View.Snap.Session
 import Bead.View.Snap.DataBridge
 import Bead.View.Snap.Dictionary
-import Bead.View.Snap.Pagelets (Pagelet, runPagelet, runDynamicPagelet)
+import Bead.View.Snap.Pagelets (runPagelet, runDynamicPagelet)
 import Bead.View.Snap.RouteOf (ReqParam(..))
+import Bead.View.Snap.Translation
+import Bead.View.Snap.I18N (IHtml, translate)
 
 -- Haskell imports
 
@@ -131,7 +136,7 @@ usersTimeZoneConverter = do
 errorPageHandler :: T.Text -> Handler App b ()
 errorPageHandler msg = error "errorPageHandler: undefined" -- blaze errorPage
 
-i18nE :: (IsString s) => HandlerError App b (String -> s)
+i18nE :: (IsString s) => HandlerError App b (Translation String -> s)
 i18nE = do
   lang <- lift . withTop sessionManager $ languageFromSession
   when (isNothing lang) . throwError . strMsg $ "Language was not defined in session"
@@ -139,19 +144,34 @@ i18nE = do
   -- the identical dictionary is returned. The fromString is necessary
   -- for the Attribute names and values used in html templating engines
   d <- lift . withTop dictionaryContext . getDictionary . fromJust $ lang
-  return (fromString . (unDictionary $ maybe idDictionary id d))
+  return (fromString . (unDictionary $ maybe idDictionary id d)) -- TODO: I18N
 
 blazeI18n :: (I18N -> Html) -> HandlerError App b ()
 blazeI18n h = i18nE >>= blaze . h
 
-renderPagelet :: Pagelet -> HandlerError App b ()
+renderPagelet :: IHtml -> HandlerError App b ()
 renderPagelet p = i18nE >>= blaze . (runPagelet p)
 
-renderDynamicPagelet :: Pagelet -> HandlerError App b ()
+renderDynamicPagelet :: IHtml -> HandlerError App b ()
 renderDynamicPagelet p = i18nE >>= blaze . (runDynamicPagelet p)
+
+-- Renders the public page selecting the I18N translation based on the
+-- language stored in the session, if there is no such value, the
+-- default translator function is used
+renderPublicPage :: IHtml -> Handler App b ()
+renderPublicPage p = do
+  language <- withTop sessionManager languageFromSession
+  t <- maybe (return Nothing) (withTop dictionaryContext . getDictionary) language
+  let translator = maybe trans unDictionary t
+  blaze $ translate translator p
 
 withUserState :: (UserState -> HandlerError App b c) -> HandlerError App b c
 withUserState = (userState >>=)
+
+getParameterOrError :: Parameter a -> Handler App b (Either String a)
+getParameterOrError param
+  = either (Left . contentHandlerErrorMsg) (Right . id)
+     <$> (runErrorT $ getParameter param)
 
 getParameter :: Parameter a -> HandlerError App b a
 getParameter param = do
@@ -170,6 +190,10 @@ getJSONParam param msg = do
     Just y  -> case decodeFromFay . B.unpack $ y of
       Nothing -> throwError . strMsg $ "Decoding error"
       Just z  -> return z
+
+-- Computes a list that contains language and dictionary info pairs
+getDictionaryInfos :: HandlerError App b DictionaryInfos
+getDictionaryInfos = lift (withTop dictionaryContext dcGetDictionaryInfos)
 
 setReqParamInSession :: ReqParam -> HandlerError App b ()
 setReqParamInSession (ReqParam (k,v)) = setInSessionE k v
@@ -241,7 +265,7 @@ logout = do
   case um of
     Nothing -> do
       logMessage ERROR "There is no user logged in to log out."
-      withTop sessionManager $ resetSession
+      resetPrivateSessionData
 
     Just authUser -> do
       let unameFromAuth = usernameFromAuthUser authUser
@@ -249,5 +273,5 @@ logout = do
       let users = userContainer context
       token <- sessionToken
       liftIO $ users `userLogsOut` (userToken (unameFromAuth, token))
-      withTop sessionManager $ resetSession
+      resetPrivateSessionData
       withTop auth A.logout

@@ -7,7 +7,7 @@ module Bead.View.Snap.Session where
 import Bead.Domain.Entities as E
 import Bead.Domain.Relationships as R
 import qualified Bead.Controller.Pages as P
-import Bead.View.Snap.Application (App)
+import Bead.View.Snap.Application
 import Bead.View.Snap.Dictionary (Language(..))
 #ifdef TEST
 import Bead.Invariants (Invariants(..), UnitTests(..))
@@ -15,6 +15,7 @@ import Bead.Invariants (Invariants(..), UnitTests(..))
 
 -- Haskell imports
 
+import Control.Applicative ((<$>))
 import Control.Monad (join)
 import Data.ByteString.Char8 hiding (index, length)
 import qualified Data.Text as T
@@ -31,6 +32,40 @@ class SessionStore s where
 
 class SessionRestore s where
   restoreFromSession :: [(T.Text, T.Text)] -> Maybe s
+
+-- * Public and private session information
+
+-- Produces True if the given key represents a private
+-- information in the session
+isPrivateKey :: T.Text -> Bool
+isPrivateKey t
+  | t == pageSessionKey = True
+  | t == usernameSessionKey = True
+  | otherwise = False
+
+-- Produces False if the given key represens a public
+-- information in the session
+isPublicKey :: T.Text -> Bool
+isPublicKey t
+  | t == sessionVersionKey = True
+  | t == languageSessionKey = True
+  | otherwise = False
+
+-- Removes the session values from the session that satisties the key predicate
+removeSessionKeys :: (T.Text -> Bool) -> Handler App b ()
+removeSessionKeys pred = withTop sessionManager $ do
+  values <- L.filter (not . pred . fst) <$> sessionToList
+  resetSession
+  setInSessionKeyValues values
+  commitSession
+
+-- Clears the private session data from the session
+resetPrivateSessionData :: Handler App b ()
+resetPrivateSessionData = removeSessionKeys isPrivateKey
+
+-- Clears the public session data from the session
+resetPublicSessionData :: Handler App b ()
+resetPublicSessionData = removeSessionKeys isPublicKey
 
 -- * Session Key and Values for Page
 

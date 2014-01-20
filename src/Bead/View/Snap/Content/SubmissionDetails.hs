@@ -22,8 +22,8 @@ import Bead.Domain.Relationships
 
 
 import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A (class_, style)
+import qualified Text.Blaze.Html5 as H
 
 submissionDetails :: Content
 submissionDetails = getPostContentHandler submissionDetailsPage submissionDetailsPostHandler
@@ -68,43 +68,47 @@ submissionDetailsPostHandler = do
                    , commentType = CT_Student
                    }
 
-submissionDetailsContent :: PageData -> Pagelet
-submissionDetailsContent p = onlyHtml $ mkI18NHtml $ \i -> do
+submissionDetailsContent :: PageData -> IHtml
+submissionDetailsContent p = do
   let sm = smDetails p
       tc = uTime p
-  H.table $ do
-    H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Tárgy, csoport:")
-      H.td $ fromString (sdGroup $ sm)
-    H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Oktató:")
-      H.td $ fromString (join . intersperse ", " . sdTeacher $ sm)
-    H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Feladat:")
-      H.td $ fromString (assignmentName . sdAssignment $ sm)
-    H.tr $ do
-      H.td # textAlignRight $ H.b $ fromString (i "Határidő:")
-      H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
-  H.h2 $ (translate i "Részletes leírás")
-  H.div # assignmentTextDiv $
-    markdownToHtml . assignmentDesc . sdAssignment $ sm
-  H.h2 (translate i "Megoldás szövege")
-  H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
-  H.h2 $ (translate i "Értékelés")
-  (fromString $ sdStatus sm)
-  let studentComments = filter isStudentComment $ sdComments sm
-  when (not $ null studentComments) $ do
-    translate i $ commentsDiv tc studentComments
-  H.hr
-  H.h2 (translate i "Új hozzászólás")
-  postForm (routeOf $ P.SubmissionDetails (aKey p) (smKey p)) $ do
-    H.div ! formDiv $ do
-      textAreaInput (fieldName commentValueField) Nothing ! fillDiv
-    submitButton (fieldName commentBtn) (i "Beküld")
+  msg <- getI18N
+  return $ do
+    H.table $ do
+      H.tr $ do
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Course "Tárgy, csoport:")
+        H.td $ fromString (sdGroup $ sm)
+      H.tr $ do
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Admins "Oktató:")
+        H.td $ fromString (join . intersperse ", " . sdTeacher $ sm)
+      H.tr $ do
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Assignment "Feladat:")
+        H.td $ fromString (assignmentName . sdAssignment $ sm)
+      H.tr $ do
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Deadline "Határidő:")
+        H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Description "Részletes leírás"
+    H.div # assignmentTextDiv $
+      markdownToHtml . assignmentDesc . sdAssignment $ sm
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "Megoldás szövege"
+    H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Evaluation "Értékelés"
+    (fromString $ sdStatus sm)
+    let studentComments = filter isStudentComment $ sdComments sm
+    when (not $ null studentComments) $ do
+      i18n msg $ commentsDiv tc studentComments
+    H.hr
+    H.h2 (fromString . msg $ Msg_SubmissionDetails_NewComment "Új hozzászólás")
+    postForm (routeOf $ P.SubmissionDetails (aKey p) (smKey p)) $ do
+      H.div ! formDiv $ do
+        textAreaInput (fieldName commentValueField) Nothing ! fillDiv
+      submitButton (fieldName commentBtn) (msg $ Msg_SubmissionDetails_SubmitComment "Beküld")
 
-invalidSubmission :: Pagelet
-invalidSubmission = onlyHtml $ mkI18NHtml $ \i ->
-  (translate i "Olyan megoldást próbáltál megnyitni, amelyik nem hozzád tartozik!")
+invalidSubmission :: IHtml
+invalidSubmission = do
+  msg <- getI18N
+  return . fromString . msg $
+    Msg_SubmissionDetails_InvalidSubmission "Olyan megoldást próbáltál megnyitni, amelyik nem hozzád tartozik!"
 
 -- CSS Section
 

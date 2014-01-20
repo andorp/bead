@@ -1,6 +1,8 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances #-}
 module Bead.View.Snap.I18N where
 
+import Control.Monad (join)
+
 import Text.Blaze.Internal (MarkupM)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
@@ -12,49 +14,32 @@ import Control.Monad.Trans (lift)
 import Control.Monad.Trans.Reader
 
 import Bead.View.Snap.Dictionary (I18N)
+import Bead.View.Snap.Translation
 
-newtype I18NHtmlM a = I18NHtmlM { un18html :: ReaderT I18N MarkupM a }
-  deriving (Monad, MonadReader I18N)
 
-type I18NHtml = I18NHtmlM ()
+type IHtml = Reader I18N (MarkupM ())
 
-runI18NHtmlM :: I18NHtmlM a -> I18N -> MarkupM a
-runI18NHtmlM markup = runReaderT (un18html markup)
+translate :: I18N -> IHtml -> H.Html
+translate = flip runReader
+{-# INLINE translate #-}
 
-runI18NHtml :: I18NHtml -> I18N -> H.Html
-runI18NHtml = runI18NHtmlM
+-- Produces a Html snipet combining the given translation with the given template
+i18n :: I18N -> IHtml -> H.Html
+i18n = flip runReader
+{-# INLINE i18n #-}
 
-translate :: I18N -> I18NHtml -> H.Html
-translate = flip runI18NHtmlM
+html :: H.Html -> IHtml
+html = return
+{-# INLINE html #-}
 
-instance IsString (I18NHtmlM ()) where
-  fromString = I18NHtmlM . lift . fromString
+getI18N :: Reader I18N (Translation String -> String)
+getI18N = asks (\f -> fromString . f)
+{-# INLINE getI18N #-}
 
-i18n :: String -> I18NHtml
-i18n s = I18NHtmlM $ do
-  translator <- ask
-  lift . fromString . translator $ s
+liftH :: H.Html -> IHtml
+liftH = return
+{-# INLINE liftH #-}
 
-html :: H.Html -> I18NHtml
-html = liftH
-
-mkI18NHtml :: (I18N -> H.Html) -> I18NHtml
-mkI18NHtml = liftH2
-
-liftH :: H.Html -> I18NHtml
-liftH = I18NHtmlM . lift
-
-liftH2 :: (I18N -> H.Html) -> I18NHtml
-liftH2 f = I18NHtmlM $ ReaderT f
-
-{- TODO: HTML type class: performance check
-c :: (MarkupM a -> MarkupM b) -> I18NHtmlM a -> I18NHtmlM b
-c f m = I18NHtmlM $ ReaderT (f . runReaderT (un18html m))
-
-instance Attributable (I18NHtmlM a) where
-  h ! a = I18NHtmlM $ ReaderT $ \i -> (runI18NHtmlM h i) ! a
-
-instance Attributable (I18NHtmlM a -> I18NHtmlM b) where
-  h ! a = (! a) . h
--}
-
+instance IsString IHtml where
+  fromString t = return (fromString t)
+  {-# INLINE fromString #-}

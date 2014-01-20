@@ -10,9 +10,8 @@ import Control.Monad (join, mapM_)
 
 import Text.Blaze (ToMarkup(..), textTag)
 import Text.Blaze.Html5 (Html, AttributeValue(..), (!))
-import qualified Text.Blaze.Html5 as H
+--import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
-import Bead.View.Snap.I18N (I18NHtml, translate)
 import qualified Bead.View.Snap.I18N as I18N
 
 import Bead.Domain.Types (Str(..))
@@ -26,21 +25,14 @@ import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
+import Bead.View.Snap.I18N (IHtml, translate, getI18N, html)
+import Bead.View.Snap.Translation
+import qualified Text.Blaze.Html5 as H
 #ifdef TEST
 import Bead.Invariants (Invariants(..))
 #endif
 
 -- * Definitions
-
-data Pagelet = Pagelet {
-    struct :: I18NHtml
-  }
-
-emptyPagelet  = Pagelet { struct = return () }
-onlyHtml h = Pagelet { struct = h }
-
-structMap :: (I18NHtml -> I18NHtml) -> Pagelet -> Pagelet
-structMap f p = p { struct = f . struct $ p }
 
 css :: String -> Html
 css c = H.link ! A.type_ "text/css" ! A.href (fromString c) ! A.rel "stylesheet"
@@ -48,57 +40,62 @@ css c = H.link ! A.type_ "text/css" ! A.href (fromString c) ! A.rel "stylesheet"
 js :: String -> Html
 js j = H.script ! A.src (fromString j) $ empty
 
-document :: Html -> Html -> Html
-document headers body = H.docTypeHtml $ do
-  H.head $ do
-    H.title "BE-AD beadandókezelő"
-    H.meta ! A.charset "UTF-8"
-    H.link ! A.rel "shortcut icon" ! A.href "icon.ico"
-    headers
-    css "header.css"
-  H.body $ body
+document :: Html -> IHtml -> IHtml
+document headers body' = do
+  body <- body'
+  return $ do
+    H.docTypeHtml $ do
+      H.head $ do
+        H.title "BE-AD beadandókezelő"
+        H.meta ! A.charset "UTF-8"
+        H.link ! A.rel "shortcut icon" ! A.href "icon.ico"
+        headers
+        css "header.css"
+      H.body $ body
 
-dynamicDocument :: Html -> Html -> Html
-dynamicDocument header = document
+dynamicDocument :: Html -> IHtml -> IHtml
+dynamicDocument header body = document
     (do css "jquery-ui.css"
         js "/jquery.js"
         js "/jquery-ui.js"
         js "/fay/DynamicContents.js"
         header)
+    body
 
-runPagelet :: Pagelet -> I18N -> Html
-runPagelet p i = document (css "inside.css") (translate i . struct $ p)
+runPagelet :: IHtml -> I18N -> Html
+runPagelet p i = translate i $ document (css "inside.css") p
 
-runDynamicPagelet :: Pagelet -> I18N -> Html
-runDynamicPagelet p i =
-  dynamicDocument
-    (css "inside.css")
-    (translate i . struct $ p)
+runDynamicPagelet :: IHtml -> I18N -> Html
+runDynamicPagelet p i = translate i $ dynamicDocument (css "inside.css") p
 
-class BlazeTemplate b where
-  template :: b -> Html
-
-titleAndHead :: (Html -> Html -> Html) -> String -> Html -> Html
+titleAndHead :: (Html -> IHtml -> IHtml) -> Translation String -> IHtml -> IHtml
 titleAndHead doc title content = doc
   (css "screen.css")
-  (do H.div ! A.id "header" $ do
-        H.div ! A.id "logo" $ "BE-AD"
-        H.div ! A.id "title" $ (fromString title)
-      H.div ! A.id "content" $ content)
+  (do msg <- getI18N
+      content <- content
+      return $ do
+        H.div ! A.id "header" $ do
+          H.div ! A.id "logo" $ "BE-AD"
+          H.div ! A.id "title" $ fromString $ msg title
+        H.div ! A.id "content" $ content)
 
-dynamicTitleAndHead :: String -> Html -> Html
+dynamicTitleAndHead :: Translation String -> IHtml -> IHtml
 dynamicTitleAndHead = titleAndHead dynamicDocument
 
-withTitleAndHead :: String -> Html -> Html
+withTitleAndHead :: Translation String -> IHtml -> IHtml
 withTitleAndHead = titleAndHead document
 
-withUserFrame :: UserState -> Pagelet -> Pagelet
-withUserFrame s = structMap withUserFrame'
+withUserFrame :: UserState -> IHtml -> IHtml
+withUserFrame s = withUserFrame'
   where
-    withUserFrame' content = I18N.liftH2 $ \i -> do
-      H.div ! A.id "header" $ pageHeader s
-      pageStatus s
-      H.div ! A.id "content" $ translate i content
+    withUserFrame' content = do
+      header <- pageHeader s
+      content <- content
+      status <- pageStatus s
+      return $ do
+        H.div ! A.id "header" $ header
+        status
+        H.div ! A.id "content" $ content
 
 -- * Basic building blocks
 
@@ -179,12 +176,13 @@ table :: String -> String -> Html -> Html
 table i c = H.table ! A.id (fromString i) ! A.class_ (fromString c)
 
 tableLine :: String -> Html -> Html
-tableLine title field = H.tr $ do
-  H.td (fromString title)
-  H.td field
+tableLine title field = do
+  H.tr $ do
+    H.td (fromString title)
+    H.td field
 
 hiddenTableLine :: Html -> Html
-hiddenTableLine = H.tr . H.td
+hiddenTableLine value = H.tr . H.td $ value
 
 empty :: Html
 empty = return ()
@@ -225,7 +223,10 @@ linkToPageWithText :: P.Page -> String -> Html
 linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString t
 
 link :: String -> String -> Html
-link r t = H.a ! A.href (fromString r) $ fromString t
+link r t = H.a ! A.href (fromString r) $ (fromString t)
+
+linkWithText :: String -> String -> Html
+linkWithText r t = H.a ! A.href (fromString r) $ (fromString t)
 
 -- Produces a HTML-link with the given route text and title
 linkWithTitle :: String -> String -> String -> Html
@@ -237,15 +238,15 @@ linkWithTitle route title text =
 linkToRoute :: String -> Html
 linkToRoute = link "/"
 
-navigationMenu :: UserState -> Html
-navigationMenu s = do
+navigationMenu :: UserState -> IHtml
+navigationMenu s = return $
   H.ul $ mapM_ (H.li . linkToPage) $ P.menuPages (role s) (page s)
 
-pageHeader :: UserState -> Html
-pageHeader s = do
+pageHeader :: UserState -> IHtml
+pageHeader s = return $ do
   H.div ! A.id "logo" $ "BE-AD"
   H.div ! A.id "user" $ do
-    fromString . str . user $ s
+    (fromString . str . user $ s)
     H.br
     linkToPage P.Home
     H.br
@@ -257,11 +258,13 @@ pageHeader s = do
     title u@(UserState {}) = linkText . page $ u
     title _ = ""
 
-pageStatus :: UserState -> Html
+pageStatus :: UserState -> IHtml
 pageStatus = maybe noMessage message . status
   where
-    noMessage = return ()
-    message m = H.div ! A.id "status" # backgroundColor "yellow" $ H.span $ (fromString m)
+    noMessage = return $ return ()
+    message m = do
+      msg <- getI18N
+      return $ H.div ! A.id "status" # backgroundColor "yellow" $ H.span $ (fromString $ msg m)
 
 -- * Picklist
 
@@ -271,8 +274,8 @@ option value text True  = H.option ! A.value (fromString value) ! A.selected "" 
 
 selection :: String -> Html -> Html
 selection name =
-  H.select ! A.id (fromString name) ! A.name (fromString name)
-           ! A.multiple "false" ! A.required ""
+    H.select ! A.id (fromString name) ! A.name (fromString name)
+             ! A.multiple "false" ! A.required ""
 
 class SelectionValue v where
   selectionValue :: v -> String
@@ -319,6 +322,16 @@ valueSelection f n = selection n . mapM_ option'
   where
     option' o = let (v,n) = f o in option v n False
 
+-- Creates a selection from a descriptive function, which converts a value to a selection value and text pair
+-- from an HTML identifier name, a function that describes if the value is selected or not
+-- and a list of values
+valueSelectionWithDefault :: (o -> (String, String)) -> String -> (o -> Bool) -> [o] -> Html
+valueSelectionWithDefault f n d = selection n . mapM_ option'
+  where
+    option' o =
+      let (v,n) = f o
+      in option v n (d o)
+
 -- SelectionValue and SelectionText instances
 
 instance SelectionValue CourseKey where
@@ -352,7 +365,7 @@ instance SelectionText TimeZone where
   selectionText = show
 
 evalSelectionDiv :: EvaluationHook -> Html
-evalSelectionDiv h = (H.div `withId` (evSelectionDivId h)) $ empty
+evalSelectionDiv h = ((H.div `withId` (evSelectionDivId h)) $ empty)
 
 #ifdef TEST
 
@@ -365,3 +378,4 @@ invariants = Invariants [
       linkText' = linkText
 
 #endif
+

@@ -8,10 +8,14 @@ import Bead.Domain.Types (Str(..))
 import Bead.Domain.Entities (Email(..), roles)
 import Bead.Controller.UserStories (loadUser, doesUserExist)
 import Bead.Controller.Pages as P (Page(UserDetails))
+import qualified Bead.View.Snap.DataBridge as B
+import Bead.View.Snap.Application
+import Bead.View.Snap.Dictionary
 
 import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import qualified Text.Blaze.Html5 as H
+import Data.Maybe
 import Data.String (fromString)
 
 userDetails :: Content
@@ -23,26 +27,46 @@ userDetailPage = withUserState $ \s -> do
   exist    <- userStory $ doesUserExist username
   case exist of
     True -> do
-      user     <- userStory $ loadUser username
-      renderPagelet $ withUserFrame s (userDetailForm user)
+      user      <- userStory $ loadUser username
+      languages <- getDictionaryInfos
+      renderPagelet $ withUserFrame s (userDetailForm user languages)
 
     False -> renderPagelet $ withUserFrame s (userDoesNotExist username)
 
-
 userDataChange :: POSTContentHandler
 userDataChange = do
-  user <- getValue
+  user <- User
+    <$> getValue -- role
+    <*> getValue -- username
+    <*> getParameter userEmailPrm
+    <*> getParameter (stringParameter (fieldName userFamilyNameField) "Teljes név")
+    <*> getParameter userTimeZonePrm
+    <*> getParameter userLanguagePrm
   return $ UpdateUser user
 
-userDetailForm :: User -> Pagelet
-userDetailForm u = onlyHtml $ mkI18NHtml $ \i18n -> do
-  postForm (routeOf P.UserDetails) $ do
-    inputPagelet . defaultValue $ u
-    submitButton (fieldName saveChangesBtn) (i18n "Mentés")
+userDetailForm :: User -> DictionaryInfos -> IHtml
+userDetailForm u languages = do
+  msg <- getI18N
+  return $ postForm (routeOf P.UserDetails) $ do
+    table "user-detail-table" "user-detail-table" $ do
+      tableLine (msg $ Msg_Input_User_Role "Szerepkör")  $ required $ i18n msg $ inputPagelet (Just $ u_role u)
+      tableLine (msg $ Msg_Input_User_Email "Email cím") $ required $ textInput (fieldName userEmailField) 20 (Just . str $ u_email u)
+      tableLine (msg $ Msg_Input_User_FullName "Teljes név") $ required $ textInput (fieldName userFamilyNameField) 20 (Just $ u_name u)
+      tableLine (msg $ Msg_Input_User_TimeZone "Időzóna") $ required $ defEnumSelection (B.name userTimeZonePrm) (u_timezone u)
+      tableLine (msg $ Msg_Input_User_Language "Nyelv") $ required $ valueSelectionWithDefault langVal (B.name userLanguagePrm) (langDef (u_language u)) languages
+      hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username $ u
+    submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Mentés")
+  where
+    langDef l (lang,_info) = lang == l
+    langVal (lang,info) =
+      ( languageCata id lang
+      , languageName info
+      )
 
-userDoesNotExist :: Username -> Pagelet
-userDoesNotExist username = onlyHtml $ mkI18NHtml $ \i -> do
-  H.p $ do
-    translate i "Nem létező felhasználó:"
+userDoesNotExist :: Username -> IHtml
+userDoesNotExist username = do
+  msg <- getI18N
+  return $ H.p $ do
+    (fromString $ msg $ Msg_UserDetails_NonExistingUser "Nem létező felhasználó:")
     fromString . str $ username
 

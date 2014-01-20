@@ -18,9 +18,9 @@ import Bead.View.Snap.Markdown (markdownToHtml)
 import Bead.View.Snap.Content.Utils
 import qualified Bead.Domain.Entities as E
 
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
+import qualified Text.Blaze.Html5 as H
 
 submission :: Content
 submission = getPostContentHandler submissionPage submissionPostHandler
@@ -51,34 +51,36 @@ submissionPostHandler =
            <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege")
            <*> liftIO getCurrentTime)
 
-submissionContent :: PageData -> Pagelet
-submissionContent p = onlyHtml $ mkI18NHtml $ \i -> do
-  postForm (routeOf P.Submission) $ H.div ! formDiv $ do
+submissionContent :: PageData -> IHtml
+submissionContent p = do
+  msg <- getI18N
+  return $ postForm (routeOf P.Submission) $ H.div ! formDiv $ do
     H.table $ do
       H.tr $ do
-        H.td $ H.b $ (translate i "Tárgy: ")
+        H.td $ H.b $ (fromString . msg $ Msg_Submission_Course "Tárgy: ")
         H.td $ (fromString . aGroup $ asDesc p)
       H.tr $ do
-        H.td $ H.b $ (translate i "Oktató: ")
+        H.td $ H.b $ (fromString . msg $ Msg_Submission_Admin "Oktató: ")
         H.td $ (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
       H.tr $ do
-        H.td $ H.b $ (translate i "Feladat: ")
+        H.td $ H.b $ (fromString . msg $ Msg_Submission_Assignment "Feladat: ")
         H.td $ (fromString . assignmentName . asValue $ p)
       H.tr $ do
-        H.td $ H.b $ (translate i "Határidő: ")
+        H.td $ H.b $ (fromString . msg $ Msg_Submission_Deadline "Határidő: ")
         H.td $ (fromString . showDate . (asTimeConv p) . assignmentEnd $ asValue p)
-    H.h2 (translate i "Leírás")
+    H.h2 $ (fromString . msg $ Msg_Submission_Description "Leírás")
     H.div # assignmentTextDiv $
       markdownToHtml . assignmentDesc . asValue $ p
-    H.h2 $ (translate i "Megoldás")
+    H.h2 $ (fromString . msg $ Msg_Submission_Solution "Megoldás")
     H.div $ do
       textAreaInput (fieldName submissionTextField) Nothing ! A.rows "25" ! A.cols "80"
-    submitButton (fieldName submitSolutionBtn) (i "Beküld")
+    submitButton (fieldName submitSolutionBtn) (msg $ Msg_Submission_Submit "Beküld")
     hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
 
-invalidAssignment :: Pagelet
-invalidAssignment = onlyHtml $ mkI18NHtml $ \i ->
-  (translate i "Olyan feladatot próbáltál megnyitni, amely nem hozzád tartozik!")
+invalidAssignment :: IHtml
+invalidAssignment = do
+  msg <- getI18N
+  return . fromString . msg $ Msg_Submission_Invalid_Assignment "Olyan feladatot próbáltál megnyitni, amely nem hozzád tartozik!"
 
 -- CSS Section
 

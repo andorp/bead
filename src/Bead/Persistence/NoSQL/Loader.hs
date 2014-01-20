@@ -252,6 +252,9 @@ instance Save Email where
 instance Save TimeZone where
   save d = fileSave d "timezone" . show
 
+instance Save Language where
+  save d = fileSave d "language" . show
+
 instance Save Assignment where
   save d = assignmentCata $ \name desc type_ start starttz end endtz -> do
     createStructureDirs d assignmentDirStructure
@@ -295,13 +298,14 @@ instance Save Group where
                 fileSave d "evalcfg" (show . groupEvalConfig $ g)
 
 instance Save User where
-  save d = userCata $ \role username email name timezone -> do
+  save d = userCata $ \role username email name timezone language -> do
     createStructureDirs d userDirStructure
     save d role
     save d username
     save d email
     saveName d name
     save d timezone
+    save d language
 
 instance Save UserRegistration where
   save d u = do createStructureDirs d userRegDirStructure
@@ -311,6 +315,9 @@ instance Save UserRegistration where
 
 instance Load Role where
   load d = fileLoad d "role" (maybe (error "Role parsing was failed") same . parseRole)
+
+instance Load Language where
+  load d = fileLoad d "language" readMaybe
 
 instance Load Username where
   load d = fileLoad d "username" (same . Username)
@@ -382,12 +389,14 @@ instance Load User where
     email <- load d
     name  <- loadName d
     zone  <- load d
+    lang  <- load d
     return $ User {
         u_role = role
       , u_username = uname
       , u_email = email
       , u_name = name
       , u_timezone = zone
+      , u_language = lang
       }
 
 instance Load UserRegistration where
@@ -397,6 +406,9 @@ instance Load UserRegistration where
 
 instance Update TimeZone where
   update d = fileUpdate d "timezone" . show
+
+instance Update Language where
+  update d = fileUpdate d "language" . show
 
 instance Update Role where
   update d r = fileUpdate d "role" (show r)
@@ -408,12 +420,13 @@ instance Update Email where
   update d (Email e) = fileUpdate d "email" e
 
 instance Update User where
-  update d = userCata $ \username role email name timezone -> do
+  update d = userCata $ \username role email name timezone language -> do
     update d username
     update d role
     update d email
     updateName d name
     update d timezone
+    update d language
 
 instance Update Evaluation where
   update d e = do
@@ -458,7 +471,7 @@ getCreatedTime :: DirPath -> TIO UTCTime
 getCreatedTime d = fileLoad d "created" readMaybe
 
 userDirStructure = DirStructure {
-    files       = ["email", "name", "role", "username"]
+    files       = ["email", "name", "role", "username", "language"]
   , directories = ["course", "group" ,"courseadmin" ,"groupadmin", "submissions"]
   }
 

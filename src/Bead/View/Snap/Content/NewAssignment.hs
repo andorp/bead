@@ -21,9 +21,10 @@ import Bead.View.Snap.Content
 import Bead.View.UserActions (UserAction(CreateGroupAssignment, CreateCourseAssignment))
 
 import Text.Printf (printf)
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A (id, style, href)
+import qualified Text.Blaze.Html5 as H
+
 
 -- * Content Handlers
 
@@ -90,56 +91,64 @@ modifyAssignmentPage = withUserState $ \s -> do
 postModifyAssignment :: POSTContentHandler
 postModifyAssignment = ModifyAssignment <$> getValue <*> getValue
 
-newAssignmentContent :: PageData -> Pagelet
+newAssignmentContent :: PageData -> IHtml
 newAssignmentContent pd
-  | isEmptyData pd = onlyHtml $ mkI18NHtml $ \i -> do
-      H.p $ pageDataCata (const . translate i $ "Nem vagy felelőse egyik tárgynak sem!")
-                         (const . translate i $ "Nem vagy oktatója egyetlen csoportnak sem!")
-                         (const . translate i $ "Ezt a feladatot más hozta létre!")
-                         pd
-newAssignmentContent pd = onlyHtml $ mkI18NHtml $ \i -> postForm (routeOf . page $ pd) `withId` (hookId assignmentForm) $ H.div ! formDiv $ do
-  H.div ! slimRightCell $ do
-    H.b $ (translate i "Cím")
-    textInput (fieldName assignmentNameField) 10 (amap assignmentName pd) ! fillDiv
-    H.br
-  H.div ! leftCell $ do
-    H.b $ (translate i "Beadás ideje")
-    H.div ! A.id (fieldName startDateDivId) $ do
-       translate i "Kezdés"
-       fromString $ concat [" (", Time.timeZoneName timezone, ")"]
-       H.br
-       hiddenInput (fieldName assignmentStartDefaultDate) (fromString startDefDate)
-       hiddenInput (fieldName assignmentStartDefaultHour) (fromString startDefHour)
-       hiddenInput (fieldName assignmentStartDefaultMin)  (fromString startDefMin)
-       hiddenInput (fieldName assignmentStartField) (fromString $ concat [startDefDate, " ", startDefHour, ":", startDefMin, ":00"])
-    H.div ! A.id (fieldName endDateDivId) $ do
-       translate i "Befejezés"
-       fromString $ concat [" (", Time.timeZoneName timezone, ")"]
-       H.br
-       hiddenInput (fieldName assignmentEndDefaultDate) (fromString endDefDate)
-       hiddenInput (fieldName assignmentEndDefaultHour) (fromString endDefHour)
-       hiddenInput (fieldName assignmentEndDefaultMin)  (fromString endDefMin)
-       hiddenInput (fieldName assignmentEndField) (fromString $ concat [endDefDate, " ", endDefHour, ":", endDefMin, ":00"])
-  H.div ! rightCell $ do
-    H.br
-    H.b $ (translate i "Szöveges leírás")
-    textAreaInput (fieldName assignmentDescField) (amap assignmentDesc pd) ! fillDiv
-    H.a ! A.href linkToPandocMarkdown $ do translate i "Markdown formázás"
-    translate i " használható."
-  H.div ! leftCell $ do
-    H.b $ (translate i "Típus")
-    H.br
-    defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
-    H.br
-    H.p $ do
-      H.b $ pageDataCata (const (translate i "Tárgy")) (const (translate i "Csoport")) (const (translate i "")) pd
-      H.br
-      pageDataCata
-        (valueTextSelection (fieldName selectedCourse) . trd)
-        (valueTextSelection (fieldName selectedGroup)  . trd)
-        (hiddenInput (fieldName assignmentKeyField) . paramValue  . snd3)
+  | isEmptyData pd = do
+      msg <- getI18N
+      return . H.p . fromString . msg $ pageDataCata
+        (const $ Msg_NewAssignment_IsNoCourseAdmin "Nem vagy felelőse egyik tárgynak sem!")
+        (const $ Msg_NewAssignment_IsNoGroupAdmin "Nem vagy oktatója egyetlen csoportnak sem!")
+        (const $ Msg_NewAssignment_IsNoCreator "Ezt a feladatot más hozta létre!")
         pd
-    H.p $ submitButton (fieldName saveSubmitBtn) (i "Mentés")
+newAssignmentContent pd = do
+  msg <- getI18N
+  return $ do
+    postForm (routeOf . page $ pd) `withId` (hookId assignmentForm) $ H.div ! formDiv $ do
+    H.div ! slimRightCell $ do
+      H.b $ (fromString . msg $ Msg_NewAssignment_Title "Cím")
+      textInput (fieldName assignmentNameField) 10 (amap assignmentName pd) ! fillDiv
+      H.br
+    H.div ! leftCell $ do
+      H.b $ (fromString . msg $ Msg_NewAssignment_SubmissionDeadline "Beadás ideje")
+      H.div ! A.id (fieldName startDateDivId) $ do
+         (fromString . msg $ Msg_NewAssignment_StartDate "Kezdés")
+         (fromString $ concat [" (", Time.timeZoneName timezone, ")"])
+         H.br
+         hiddenInput (fieldName assignmentStartDefaultDate) (fromString startDefDate)
+         hiddenInput (fieldName assignmentStartDefaultHour) (fromString startDefHour)
+         hiddenInput (fieldName assignmentStartDefaultMin)  (fromString startDefMin)
+         hiddenInput (fieldName assignmentStartField) (fromString $ concat [startDefDate, " ", startDefHour, ":", startDefMin, ":00"])
+      H.div ! A.id (fieldName endDateDivId) $ do
+         (fromString . msg $ Msg_NewAssignment_EndDate "Befejezés")
+         (fromString $ concat [" (", Time.timeZoneName timezone, ")"])
+         H.br
+         hiddenInput (fieldName assignmentEndDefaultDate) (fromString endDefDate)
+         hiddenInput (fieldName assignmentEndDefaultHour) (fromString endDefHour)
+         hiddenInput (fieldName assignmentEndDefaultMin)  (fromString endDefMin)
+         hiddenInput (fieldName assignmentEndField) (fromString $ concat [endDefDate, " ", endDefHour, ":", endDefMin, ":00"])
+    H.div ! rightCell $ do
+      H.br
+      H.b $ (fromString . msg $ Msg_NewAssignment_Description "Szöveges leírás")
+      textAreaInput (fieldName assignmentDescField) (amap assignmentDesc pd) ! fillDiv
+      H.a ! A.href linkToPandocMarkdown $ (fromString . msg $ Msg_NewAssignment_Markdown "Markdown formázás")
+      (fromString . msg $ Msg_NewAssignment_CanBeUsed " használható.")
+    H.div ! leftCell $ do
+      H.b (fromString . msg $ Msg_NewAssignment_Type "Típus")
+      H.br
+      defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
+      H.br
+      H.p $ do
+        H.b $ pageDataCata (const . fromString . msg $ Msg_NewAssignment_Course "Tárgy")
+                           (const . fromString . msg $ Msg_NewAssignment_Group "Csoport")
+                           (const $ "")
+                           pd
+        H.br
+        pageDataCata
+          (valueTextSelection (fieldName selectedCourse) . trd)
+          (valueTextSelection (fieldName selectedGroup)  . trd)
+          (hiddenInput (fieldName assignmentKeyField) . paramValue  . snd3)
+          pd
+      H.p $ submitButton (fieldName saveSubmitBtn) (fromString . msg $ Msg_NewAssignment_SaveButton "Mentés")
 
     where
       linkToPandocMarkdown = "http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html"

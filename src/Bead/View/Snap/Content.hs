@@ -12,6 +12,7 @@ module Bead.View.Snap.Content (
   , blaze
   , getParameter
   , getJSONParam
+  , getDictionaryInfos
   , setInSessionE
   , setReqParamInSession
   , routeOf
@@ -34,7 +35,6 @@ module Bead.View.Snap.Content (
   , ReqParam(..)
   , RequestParam(..)
   , ReqParamValue(..)
-  , Html
   , UserTimeConverter
   , module Snap
   , module Data.ByteString.Char8
@@ -44,6 +44,7 @@ module Bead.View.Snap.Content (
   , module Bead.Domain.Relationships
   , module Bead.View.UserActions
   , module Bead.View.Snap.I18N
+  , module Bead.View.Snap.Translation
   , module Bead.View.Snap.Application
   , module Bead.View.Snap.Pagelets
   , module Bead.View.Snap.Style
@@ -65,6 +66,7 @@ import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.View.UserActions
 import Bead.View.Snap.I18N
+import Bead.View.Snap.Translation
 import Bead.View.Snap.Application (App)
 import Bead.View.Snap.Dictionary (I18N)
 import Bead.View.Snap.DataBridge hiding (name)
@@ -76,7 +78,6 @@ import Bead.View.Snap.InputHandlers
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Fay.JSON.ServerSide
-import Text.Blaze.Html5 (Html)
 #ifdef TEST
 import Bead.View.Snap.Pagelets hiding (invariants)
 #else
@@ -115,7 +116,7 @@ mkContent
   -> Content
 mkContent g p = Content { get = g, post = p }
 
-withUserStateAndFrame :: (UserState -> Pagelet) -> HandlerError App App ()
+withUserStateAndFrame :: (UserState -> IHtml) -> HandlerError App App ()
 withUserStateAndFrame f = withUserState $ \state ->
   renderPagelet $ withUserFrame state (f state)
 

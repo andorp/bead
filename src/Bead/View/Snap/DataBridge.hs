@@ -13,6 +13,7 @@ import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Validators
+import Bead.View.Snap.Dictionary
 import Bead.View.Snap.RouteOf
 
 {-
@@ -272,3 +273,18 @@ userTimeZonePrm = readablePrm (fieldName userTimeZoneField) "Időzóna"
 
 regTimeZonePrm :: Parameter TimeZone
 regTimeZonePrm = readablePrm (fieldName regTimeZoneField) "Időzóna"
+
+languagePrm :: String -> Parameter Language
+languagePrm field = Parameter {
+    encode = languageCata id
+  , decode = Just . Language
+  , name = field
+  , decodeError = const "Language is not decodeable"
+  , notFound = "Language parameter is not found"
+  }
+
+changeLanguagePrm :: Parameter Language
+changeLanguagePrm = languagePrm (fieldName changeLanguageField)
+
+userLanguagePrm :: Parameter Language
+userLanguagePrm = languagePrm (fieldName userLanguageField)

@@ -15,9 +15,10 @@ import Data.Maybe
 
 import Snap
 import Snap.Snaplet.Auth as A
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5 as H
+import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
+import qualified Text.Blaze.Html5  as H
+import Bead.View.Snap.I18N (IHtml)
 import Text.Printf (printf)
 
 import Bead.Domain.Entities
@@ -28,10 +29,16 @@ import Bead.View.Snap.Content hiding (name)
 import Bead.View.Snap.DataBridge
 import Bead.View.Snap.ErrorPage (errorPageWithTitle)
 import Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
-import Bead.View.Snap.HandlerUtils (registrationStory, userState)
-import Bead.View.Snap.Registration (backToMain)
+import Bead.View.Snap.HandlerUtils (registrationStory, userState, renderPublicPage)
 import Bead.View.Snap.Session (passwordFromAuthUser)
 import Bead.View.Snap.Style
+import Bead.View.Snap.Translation
+
+backToLogin :: Translation String
+backToLogin = Msg_ResetPassword_GoBackToLogin "Vissza a főoldalra"
+
+resetPasswordTitle :: Translation String
+resetPasswordTitle = Msg_ResetPassword_ForgottenPassword "Elfelejtett jelszó"
 
 -- Generates a new random password for the given user. If the user does
 -- not exist it thows an error
@@ -45,21 +52,26 @@ resetPassword u = do
   where
     randomPassword = lift . withTop randomPasswordContext $ getRandomPassword
 
+-- TODO: I18N
 -- Saves the users password it to the persistence layer and the authentication
 -- and sends the email to the given user.
 -- The handler returns a status message that should be displayed to the user.
-setUserPassword :: (Error e) => Username -> String -> ErrorT e (Handler App a) String
+setUserPassword :: (Error e) => Username -> String -> ErrorT e (Handler App a) (Translation String)
 setUserPassword u password = do
   let username = usernameCata id u
   authUser <- getAuthUser u
   case authUser of
-    Nothing -> return $ printf "A(z) %s felhasználó nem létezik!" username
+    Nothing -> return $
+      Msg_ResetPassword_UserDoesNotExist $ printf "A(z) %s felhasználó nem létezik!" username
     Just user -> do
       encryptedPwd <- encryptPwd password
       updateUser user { userPassword = Just encryptedPwd }
       emailPasswordToUser u password
-      return $ printf "%s részére be lett állítva a jelszó." username
+      return $
+        Msg_ResetPassword_PasswordIsSet $
+          printf "%s részére be lett állítva a jelszó." username
 
+-- TODO: I18N
 emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (Handler App a) ()
 emailPasswordToUser user pwd = do
   address <- fmap u_email loadUserFromPersistence
@@ -73,7 +85,7 @@ emailPasswordToUser user pwd = do
       (lift $ registrationStory $ S.loadUser user) >>=
       (either (throwError . strMsg . show) return)
 
-
+-- TODO: I18N
 -- Universal error message for every type of error
 -- in such case the attacker could deduce minimal
 -- amount of information
@@ -112,6 +124,7 @@ updateUser usr =
 encryptPwd :: (Error e) => String -> ErrorT e (Handler App a) A.Password
 encryptPwd = liftIO . encryptPassword . ClearText . fromString
 
+-- TODO: I18N
 -- Check if the current auth password is the same as the given one
 -- If they are different an error is thrown.
 checkCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
@@ -133,8 +146,6 @@ updateCurrentAuthPassword password = do
 resetPasswordPage :: Handler App App ()
 resetPasswordPage = method GET resetPasswordGET <|> method POST resetPasswordPOST
 
-resetPasswordTitle :: String
-resetPasswordTitle = "Elfelejtett jelszó"
 
 {- Reset password GET handler
 Renders the password reset request page. The page contains
@@ -145,13 +156,16 @@ and submit the requests.
 resetPasswordGET :: Handler App App ()
 resetPasswordGET = renderForm
   where
-    renderForm = blaze $ dynamicTitleAndHead resetPasswordTitle $ do
-      postForm "/reset_pwd" $ do
-        table (fieldName resetPasswordTable) (fieldName resetPasswordTable) # centerTable $ do
-          tableLine "NEPTUN:"    $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
-          tableLine "Email cím:" $ textInput (name regEmailPrm)    20 Nothing ! A.required ""
-        submitButton (fieldName pwdSubmitBtn) "Új jelszó"
-      linkToRoute backToMain
+    renderForm = renderPublicPage . dynamicTitleAndHead resetPasswordTitle $ do
+      msg <- getI18N
+      return $ do
+        postForm "/reset_pwd" $ do
+          table (fieldName resetPasswordTable) (fieldName resetPasswordTable) # centerTable $ do
+            tableLine (msg $ Msg_ResetPassword_Neptun "NEPTUN:") $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
+            tableLine (msg $ Msg_ResetPassword_Email "Email cím:") $ textInput (name regEmailPrm) 20 Nothing ! A.required ""
+          submitButton (fieldName pwdSubmitBtn) (msg $ Msg_ResetPassword_NewPwdButton "Új jelszó")
+        linkToRoute (msg backToLogin)
+
 
 {- Reset password POST handler
 Reads out the parameters for the username and the email address, checks
@@ -180,12 +194,13 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
       (lift $ registrationStory $ S.loadUser u) >>=
         (either (throwError . show) return)
 
-
 pageContent :: (Handler App a) ()
-pageContent = blaze $ dynamicTitleAndHead resetPasswordTitle $ do
-  H.p $ "Az új jelszót levélben kiküldtük, nézd meg a leveleidet!"
-  H.br
-  linkToRoute backToMain
+pageContent = renderPublicPage . dynamicTitleAndHead resetPasswordTitle $ do
+  msg <- getI18N
+  return $ do
+    H.p . fromString . msg $ Msg_ResetPassword_EmailSent $ "Az új jelszót levélben kiküldtük, nézd meg a leveleidet!"
+    H.br
+    linkToRoute (msg backToLogin)
 
 readParameter :: (MonadSnap m) => Parameter a -> m (Maybe a)
 readParameter param = do
