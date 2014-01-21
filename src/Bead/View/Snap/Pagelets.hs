@@ -187,37 +187,39 @@ hiddenTableLine value = H.tr . H.td $ value
 empty :: Html
 empty = return ()
 
-linkText :: (IsString s) => P.Page -> s
-linkText P.Login      = fromString "Bejelentkezés"
-linkText P.Logout     = fromString "Kijelentkezés"
-linkText P.Home       = fromString "Főoldal"
-linkText P.Profile    = fromString "Beállítások"
-linkText P.Error      = fromString "Hiba"
-linkText P.CourseAdmin = fromString "Tárgyi beállítások"
-linkText P.Submission  = fromString "Beküldés"
-linkText P.SubmissionList = fromString "Beadott megoldások"
-linkText P.UserSubmissions = fromString "Megoldások"
-linkText (P.ModifyEvaluation _ _) = fromString "Értékelés"
-linkText (P.SubmissionDetails _ _) = fromString "Megoldás"
-linkText P.Administration  = fromString "Adminisztráció"
-linkText (P.Evaluation _)  = fromString "Értékelés"
-linkText P.EvaluationTable = fromString "Értékelések"
-linkText P.GroupRegistration = fromString "Tárgy vagy csoport felvétele"
-linkText P.CreateCourse       = fromString "Tárgy létrehozása"
-linkText P.UserDetails = fromString "Beállítások"
-linkText P.AssignCourseAdmin = fromString "Tárgyfelelős hozzáadása"
-linkText P.CreateGroup = fromString "Csoport létrehozása"
-linkText P.AssignGroupAdmin = fromString "Oktató hozzáadása"
-linkText P.NewGroupAssignment  = fromString "Új csoportszintű feladat"
-linkText P.NewCourseAssignment = fromString "Új tárgyszintű feladat"
-linkText P.ModifyAssignment = fromString "Feladat módosítása"
-linkText P.ChangePassword = fromString "Jelszócsere"
-linkText P.SetUserPassword = fromString "Hallgató jelszavának beállítása"
-linkText (P.CommentFromEvaluation _) = fromString "Megjegyzés"
-linkText (P.CommentFromModifyEvaluation _ _) = fromString "Megjegyzés"
+linkText :: P.Page -> Translation String
+linkText P.Login      = Msg_LinkText_Login "Bejelentkezés"
+linkText P.Logout     = Msg_LinkText_Logout "Kijelentkezés"
+linkText P.Home       = Msg_LinkText_Home "Főoldal"
+linkText P.Profile    = Msg_LinkText_Profile "Beállítások"
+linkText P.Error      = Msg_LinkText_Error "Hiba"
+linkText P.CourseAdmin = Msg_LinkText_CourseAdministration "Tárgyi beállítások"
+linkText P.Submission  = Msg_LinkText_Submission "Beküldés"
+linkText P.SubmissionList = Msg_LinkText_SubmissionList "Beadott megoldások"
+linkText P.UserSubmissions = Msg_LinkText_UserSubmissions "Megoldások"
+linkText (P.ModifyEvaluation _ _) = Msg_LinkText_ModifyEvaluation "Értékelés"
+linkText (P.SubmissionDetails _ _) = Msg_LinkText_SubmissionDetails "Megoldás"
+linkText P.Administration  = Msg_LinkText_Administration "Adminisztráció"
+linkText (P.Evaluation _)  = Msg_LinkText_Evaluation "Értékelés"
+linkText P.EvaluationTable = Msg_LinkText_EvaluationTable "Értékelések"
+linkText P.GroupRegistration = Msg_LinkText_GroupRegistration "Tárgy vagy csoport felvétele"
+linkText P.CreateCourse       = Msg_LinkText_CreateCourse "Tárgy létrehozása"
+linkText P.UserDetails = Msg_LinkText_UserDetails "Beállítások"
+linkText P.AssignCourseAdmin = Msg_LinkText_AssignCourseAdmin "Tárgyfelelős hozzáadása"
+linkText P.CreateGroup = Msg_LinkText_CreateGroup "Csoport létrehozása"
+linkText P.AssignGroupAdmin = Msg_LinkText_AssignGroupAdmin "Oktató hozzáadása"
+linkText P.NewGroupAssignment  = Msg_LinkText_NewGroupAssignment "Új csoportszintű feladat"
+linkText P.NewCourseAssignment = Msg_LinkText_NewCourseAssignment "Új tárgyszintű feladat"
+linkText P.ModifyAssignment = Msg_LinkText_ModifyAssignment "Feladat módosítása"
+linkText P.ChangePassword = Msg_LinkText_ChangePassword "Jelszócsere"
+linkText P.SetUserPassword = Msg_LinkText_SetUserPassword "Hallgató jelszavának beállítása"
+linkText (P.CommentFromEvaluation _) = Msg_LinkText_CommentFromEvaluation "Megjegyzés"
+linkText (P.CommentFromModifyEvaluation _ _) = Msg_LinkText_CommentFromModifyEvaluation "Megjegyzés"
 
-linkToPage :: P.Page -> Html
-linkToPage g = H.a ! A.href (routeOf g) ! A.id (fieldName g) $ linkText g
+linkToPage :: P.Page -> IHtml
+linkToPage g = do
+  msg <- getI18N
+  return $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString $ msg $ linkText g
 
 linkToPageWithText :: P.Page -> String -> Html
 linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString t
@@ -239,24 +241,27 @@ linkToRoute :: String -> Html
 linkToRoute = link "/"
 
 navigationMenu :: UserState -> IHtml
-navigationMenu s = return $
-  H.ul $ mapM_ (H.li . linkToPage) $ P.menuPages (role s) (page s)
+navigationMenu s = do
+  msg <- getI18N
+  return $ H.ul $ mapM_ (H.li . (I18N.i18n msg . linkToPage)) $ P.menuPages (role s) (page s)
 
 pageHeader :: UserState -> IHtml
-pageHeader s = return $ do
-  H.div ! A.id "logo" $ "BE-AD"
-  H.div ! A.id "user" $ do
-    (fromString . str . user $ s)
-    H.br
-    linkToPage P.Home
-    H.br
-    linkToPage P.Profile
-    H.br
-    linkToPage P.Logout
-  H.div ! A.id "title" $ title s
+pageHeader s = do
+  msg <- getI18N
+  return $ do
+    H.div ! A.id "logo" $ "BE-AD"
+    H.div ! A.id "user" $ do
+      (fromString . str . user $ s)
+      H.br
+      (I18N.i18n msg $ linkToPage P.Home)
+      H.br
+      (I18N.i18n msg $ linkToPage P.Profile)
+      H.br
+      (I18N.i18n msg $ linkToPage P.Logout)
+    H.div ! A.id "title" $ title msg s
   where
-    title u@(UserState {}) = linkText . page $ u
-    title _ = ""
+    title msg u@(UserState {}) = fromString . msg . linkText . page $ u
+    title _ _ = ""
 
 pageStatus :: UserState -> IHtml
 pageStatus = maybe noMessage message . status
@@ -375,7 +380,7 @@ invariants = Invariants [
     ("Page link text must be defined: ", \p -> length (linkText' p) > 0)
   ] where
       linkText' :: P.Page -> String
-      linkText' = linkText
+      linkText' = trans . linkText
 
 #endif
 

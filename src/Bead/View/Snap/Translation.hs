@@ -249,4 +249,32 @@ data Translation a
 
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 
+  | Msg_LinkText_Login { trans :: a }
+  | Msg_LinkText_Logout { trans :: a }
+  | Msg_LinkText_Home { trans :: a }
+  | Msg_LinkText_Profile { trans :: a }
+  | Msg_LinkText_Error { trans :: a }
+  | Msg_LinkText_CourseAdministration { trans :: a }
+  | Msg_LinkText_Submission { trans :: a }
+  | Msg_LinkText_SubmissionList { trans :: a }
+  | Msg_LinkText_UserSubmissions { trans :: a }
+  | Msg_LinkText_ModifyEvaluation { trans :: a }
+  | Msg_LinkText_SubmissionDetails { trans :: a }
+  | Msg_LinkText_Administration { trans :: a }
+  | Msg_LinkText_Evaluation { trans :: a }
+  | Msg_LinkText_EvaluationTable { trans :: a }
+  | Msg_LinkText_GroupRegistration { trans :: a }
+  | Msg_LinkText_CreateCourse { trans :: a }
+  | Msg_LinkText_UserDetails { trans :: a }
+  | Msg_LinkText_AssignCourseAdmin { trans :: a }
+  | Msg_LinkText_CreateGroup { trans :: a }
+  | Msg_LinkText_AssignGroupAdmin { trans :: a }
+  | Msg_LinkText_NewGroupAssignment { trans :: a }
+  | Msg_LinkText_NewCourseAssignment { trans :: a }
+  | Msg_LinkText_ModifyAssignment { trans :: a }
+  | Msg_LinkText_ChangePassword { trans :: a }
+  | Msg_LinkText_SetUserPassword { trans :: a }
+  | Msg_LinkText_CommentFromEvaluation { trans :: a }
+  | Msg_LinkText_CommentFromModifyEvaluation { trans :: a }
+
   deriving (Show, Read, Eq, Ord)

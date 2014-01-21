@@ -257,6 +257,35 @@ translationList =
   , Msg_UserStory_NewCourseAssignment ()
 
   , Msg_UserActions_ChangedUserDetails ()
+
+  , Msg_LinkText_Login ()
+  , Msg_LinkText_Logout ()
+  , Msg_LinkText_Home ()
+  , Msg_LinkText_Profile ()
+  , Msg_LinkText_Error ()
+  , Msg_LinkText_CourseAdministration ()
+  , Msg_LinkText_Submission ()
+  , Msg_LinkText_SubmissionList ()
+  , Msg_LinkText_UserSubmissions ()
+  , Msg_LinkText_ModifyEvaluation ()
+  , Msg_LinkText_SubmissionDetails ()
+  , Msg_LinkText_Administration ()
+  , Msg_LinkText_Evaluation ()
+  , Msg_LinkText_EvaluationTable ()
+  , Msg_LinkText_GroupRegistration ()
+  , Msg_LinkText_CreateCourse ()
+  , Msg_LinkText_UserDetails ()
+  , Msg_LinkText_AssignCourseAdmin ()
+  , Msg_LinkText_CreateGroup ()
+  , Msg_LinkText_AssignGroupAdmin ()
+  , Msg_LinkText_NewGroupAssignment ()
+  , Msg_LinkText_NewCourseAssignment ()
+  , Msg_LinkText_ModifyAssignment ()
+  , Msg_LinkText_ChangePassword ()
+  , Msg_LinkText_SetUserPassword ()
+  , Msg_LinkText_CommentFromEvaluation ()
+  , Msg_LinkText_CommentFromModifyEvaluation ()
+
   ]
 
 translationMaxIndex = (length translationList) - 1

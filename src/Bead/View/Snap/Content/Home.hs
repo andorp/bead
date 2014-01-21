@@ -71,8 +71,10 @@ homePage = withUserState $ \s -> do
           <*> (map sortUserLines <$> submissionTables)
           <*> (return converter)))
 
-navigation :: [P.Page] -> H.Html
-navigation links = H.div ! A.id "menu" $ H.ul $ mapM_ linkToPage links
+navigation :: [P.Page] -> IHtml
+navigation links = do
+  msg <- getI18N
+  return $ H.div ! A.id "menu" $ H.ul $ mapM_ (i18n msg . linkToPage) links
 
 homeContent :: HomePageData -> IHtml
 homeContent d = do
@@ -84,7 +86,7 @@ homeContent d = do
   return $ H.div # textAlign "left" $ do
     when (isAdmin s) $ H.p $ do
       H.h3 . fromString . msg $ Msg_Home_AdminTasks "Rendszergazdai feladatok"
-      navigation [P.Administration]
+      i18n msg $ navigation [P.Administration]
       H.hr
     when (courseAdminUser r) $ H.p $ do
       H.h3 . fromString . msg $ Msg_Home_CourseAdminTasks "Tárgyfelelősi feladatok"
@@ -96,17 +98,17 @@ homeContent d = do
       when (hasCourse || hasGroup) $ H.p $ do
         i18n msg $ htmlSubmissionTables (sTables d)
     when (courseAdminUser r && hasCourse) $ H.p $ do
-      navigation $ [ P.CourseAdmin, NewCourseAssignment] ++
-                   (if hasGroup then [P.NewGroupAssignment] else []) ++
-                   [ P.EvaluationTable, P.SetUserPassword ]
+      i18n msg $ navigation $ [ P.CourseAdmin, NewCourseAssignment] ++
+                              (if hasGroup then [P.NewGroupAssignment] else []) ++
+                              [ P.EvaluationTable, P.SetUserPassword ]
       H.hr
     when (groupAdminUser r && hasGroup) $ H.p $ do
-      navigation [P.NewGroupAssignment, P.EvaluationTable, P.SetUserPassword]
+      i18n msg $ navigation [P.NewGroupAssignment, P.EvaluationTable, P.SetUserPassword]
       H.hr
     H.h3 . fromString . msg $ Msg_Home_StudentTasks "Hallgatói feladatok"
     H.p $ do
       i18n msg $ availableAssignments (timeConverter d) (assignments d)
-      navigation [P.GroupRegistration]
+      i18n msg $ navigation [P.GroupRegistration]
     where
       courseAdminUser = (==E.CourseAdmin)
       groupAdminUser  = (==E.GroupAdmin)
