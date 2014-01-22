@@ -36,7 +36,7 @@ commentPostForm p ak = do
   msg <- getI18N
   return $ postForm (routeOf p) $ do
     H.div ! formDiv $ do
-      textAreaInput (fieldName commentValueField) Nothing ! fillDiv
+      textAreaInput (fieldName commentValueField) Nothing ! fillDiv ! A.required ""
       hiddenInput (fieldName assignmentKeyField) (paramValue ak)
     submitButton (fieldName commentBtn) (msg $ Msg_Comments_SubmitButton "Beküld")
 
