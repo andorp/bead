@@ -131,9 +131,7 @@ groupsOfUsersCourse :: Persist -> Username -> CourseKey -> TIO [GroupKey]
 groupsOfUsersCourse p u ck = do
   ugs <- nub <$> userGroups p u
   cgs <- nub <$> groupKeysOfCourse p ck
-  let s = intersect ugs cgs
-  hasNoRollback $ putStrLn $ show s
-  return s
+  return $ intersect ugs cgs
 
 -- Produces a Just Assignment list, if the user is registered for some courses,
 -- otherwise Nothing.

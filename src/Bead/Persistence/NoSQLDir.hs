@@ -250,10 +250,10 @@ nCourseAdmins :: CourseKey -> TIO [Username]
 nCourseAdmins = admins
 
 nIsUserInGroup :: Username -> GroupKey -> TIO Bool
-nIsUserInGroup u gk = isLinkedIn gk u "users"
+nIsUserInGroup u gk = isLinkedIn u gk "users"
 
 nIsUserInCourse :: Username -> CourseKey -> TIO Bool
-nIsUserInCourse u ck = isLinkedIn ck u "users"
+nIsUserInCourse u ck = isLinkedIn u ck "users"
 
 nSubscribe :: Username -> CourseKey -> GroupKey -> TIO ()
 nSubscribe username ck gk = do
@@ -324,7 +324,7 @@ removeForeignKey object linkto subdir =
 
 isLinkedIn :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO Bool
 isLinkedIn object linkto subdir =
-  hasNoRollback . doesDirectoryExist . joinPath $ [referredPath object, subdir, baseName linkto]
+  hasNoRollback . doesDirectoryExist . joinPath $ [referredPath linkto, subdir, baseName object]
 
 link :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO ()
 link object linkto subdir = do

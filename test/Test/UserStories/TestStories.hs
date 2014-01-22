@@ -46,6 +46,7 @@ student = User {
   , u_email = Email "student@university.com"
   , u_name = "Stu Dent"
   , u_timezone = UTC
+  , u_language = Language "hu"
   }
 
 student2 = User {
@@ -54,6 +55,7 @@ student2 = User {
   , u_email = Email "student@university.com"
   , u_name = "Stu Dent"
   , u_timezone = UTC
+  , u_language = Language "hu"
   }
 
 
@@ -63,6 +65,7 @@ adminUser = User {
   , u_email = Email "admin@university.com"
   , u_name = "Admin"
   , u_timezone = UTC
+  , u_language = Language "hu"
   }
 
 -- * Test Tooles

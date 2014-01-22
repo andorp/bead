@@ -48,12 +48,15 @@ familyNames = do
   last <- word
   return $ join [first, " ", last]
 
+languages = Language <$> word
+
 users = userAna
   roleGen
   usernames
   emails
   familyNames
   (return UTC)
+  languages
 
 userAndEPwds = do
   user <- users

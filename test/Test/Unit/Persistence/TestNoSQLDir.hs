@@ -58,6 +58,7 @@ test_create_exercise = testCase "Save an exercise" $ do
       , u_email    = Email "student@gmail.com"
       , u_name     = "Student"
       , u_timezone = UTC
+      , u_language = Language "hu"
       }
       password = "password"
   liftE $ saveUser persist user
@@ -84,6 +85,7 @@ test_create_user = testCase "Create user" $ do
       , u_email    = Email "ursula@gmail.com"
       , u_name     = "Ursula"
       , u_timezone = UTC
+      , u_language = Language "hu"
       }
   liftE $ saveUser persist user
   us <- liftE $ filterUsers persist (const True)
@@ -111,6 +113,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
         , u_email = Email "admin@gmail.com"
         , u_name = "admin"
         , u_timezone = UTC
+        , u_language = Language "hu"
         }
       password = "password"
   ck <- liftE $ saveCourse persist (Course "name" "desc" binaryEvalConfig)
@@ -182,7 +185,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   testComment sk
 
   sld <- liftE $ submissionListDesc persist username gak
-  assertBool "Group name was different" (slGroup sld == "gname")
+  assertBool (concat ["Group name was different: '", slGroup sld, "' 'name - gname'"]) (slGroup sld == "name - gname")
   assertBool "Admins was different" (slTeacher sld == ["admin"])
 --  assertBool "There was different number od submissions" (length (slSubmissions sld) == 1)
   assertBool "Assignment text was different" ((assignmentDesc $ slAssignment sld) == "Assignment")

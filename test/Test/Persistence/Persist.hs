@@ -106,6 +106,7 @@ testDecoratedPersist a q = Persist {
       return gs
 
   , subscribe = subscribe q
+  , unsubscribe = unsubscribe q
   , groupAdmins = \gk -> do
       testGroupKey a gk
       us <- groupAdmins q gk

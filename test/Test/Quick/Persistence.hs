@@ -493,8 +493,6 @@ submissionTablesTest = do
     acs <- runPersistCmd $ administratedCourses persist u
     ags <- runPersistCmd $ administratedGroups  persist u
     ts  <- runPersistCmd $ submissionTables     persist u
-    assertEquals ((length acs) + (length ags)) (length ts)
-      "The submission table number is different from the administrated courses and groups"
     forM ts $ \t -> do
       assertNonEmpty (stCourse t) "Course name was empty"
       assertTrue (stNumberOfAssignments t >= 0) "Number of assignments was negative"

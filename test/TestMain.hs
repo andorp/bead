@@ -32,6 +32,6 @@ tests args =
         then xs
         else []
 
-main = defaultMain (tests ["unit", "no-persist-unit", "no-persist-quick"])
+main = defaultMain (tests ["no-unit", "persist-unit", "persist-quick"])
 
 
