@@ -271,8 +271,11 @@ subscribeToGroup gk = logAction INFO ("subscribes to the group " ++ (show gk)) $
   authorize P_Open P_Group
   state <- userState
   withPersist $ \p -> do
+    let u = user state
     ck <- R.courseOfGroup p gk
-    R.subscribe p (user state) ck gk
+    gks <- R.groupsOfUsersCourse p u ck
+    mapM_ (R.unsubscribe p u ck) gks
+    R.subscribe p u ck gk
   putStatusMessage $ Msg_UserStory_SubscribedToGroup "Sikeresen regisztráltál a csoportba!"
 
 attendedGroups :: UserStory [(GroupKey, GroupDesc)]

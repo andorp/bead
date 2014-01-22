@@ -180,6 +180,9 @@ createTmpDir f t = stepM (createTempDirectory f t) (return ()) removeDirectory
 createLink :: FilePath -> FilePath -> TIO ()
 createLink exist link = step (createSymbolicLinkSafely exist link) (removeLinkSafely link)
 
+deleteLink :: FilePath -> FilePath -> TIO ()
+deleteLink exist link = step (removeLinkSafely link) (createSymbolicLinkSafely exist link)
+
 -- | Create a symbolic link 'l' if the link does not exist already.
 createSymbolicLinkSafely f l = do
   exist <- fileExist l

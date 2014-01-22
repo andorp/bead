@@ -52,6 +52,7 @@ noSqlDirPersist = Persist {
   , isUserInGroup = nIsUserInGroup
   , userGroups    = nUserGroups
   , subscribe     = nSubscribe
+  , unsubscribe   = nUnsubscribe
   , groupAdmins   = nGroupAdmins
   , createGroupAdmin    = nCreateGroupAdmin
   , subscribedToGroup   = nSubscribedToGroup
@@ -261,6 +262,13 @@ nSubscribe username ck gk = do
   link gk username "group"
   link ck username "course"
 
+nUnsubscribe :: Username -> CourseKey -> GroupKey -> TIO ()
+nUnsubscribe username ck gk = do
+  unlink username gk "users"
+  unlink username ck "users"
+  unlink gk username "group"
+  unlink ck username "course"
+
 nCreateGroupAdmin :: Username -> GroupKey -> TIO ()
 nCreateGroupAdmin u gk = do
   link u gk "admins"
@@ -308,6 +316,12 @@ foreignKey object linkto subdir =
     (joinPath ["..", "..", "..", "..", (referredPath object)])
     (joinPath [(referredPath linkto), subdir, baseName object])
 
+removeForeignKey :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO ()
+removeForeignKey object linkto subdir =
+  deleteLink
+    (joinPath ["..", "..", "..", "..", (referredPath object)])
+    (joinPath [(referredPath linkto), subdir, baseName object])
+
 isLinkedIn :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO Bool
 isLinkedIn object linkto subdir =
   hasNoRollback . doesDirectoryExist . joinPath $ [referredPath object, subdir, baseName linkto]
@@ -317,6 +331,10 @@ link object linkto subdir = do
   exist <- isLinkedIn object linkto subdir
   unless exist $ foreignKey object linkto subdir
 
+unlink :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO ()
+unlink object linkto subdir = do
+  exist <- isLinkedIn object linkto subdir
+  when exist $ removeForeignKey object linkto subdir
 
 instance ForeignKey Username where
   referredPath = dirName

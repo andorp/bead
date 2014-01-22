@@ -15,6 +15,7 @@ module Bead.Persistence.Persist (
   , courseOrGroupOfAssignment
   , courseNameAndAdmins
   , administratedGroupsWithCourseName
+  , groupsOfUsersCourse
   ) where
 
 import Bead.Domain.Types (Erroneous)
@@ -23,7 +24,7 @@ import Bead.Domain.Relationships
 
 import Data.Function (on)
 import Data.Time (UTCTime)
-import Data.List (nub, sortBy)
+import Data.List (nub, sortBy, intersect)
 import Data.Map (Map(..))
 import qualified Data.Map as Map
 import Data.Maybe (catMaybes)
@@ -72,6 +73,7 @@ data Persist = Persist {
   , isUserInGroup :: Username -> GroupKey -> TIO Bool
   , userGroups    :: Username -> TIO [GroupKey]
   , subscribe     :: Username -> CourseKey -> GroupKey -> TIO ()
+  , unsubscribe   :: Username -> CourseKey -> GroupKey -> TIO ()
   , groupAdmins   :: GroupKey -> TIO [Username]
   , createGroupAdmin  :: Username -> GroupKey -> TIO ()
   , subscribedToGroup    :: GroupKey -> TIO [Username]
@@ -122,6 +124,16 @@ data Persist = Persist {
   }
 
 -- * Combined Persistence Tasks
+
+-- Computes the Group key list, which should contain one element,
+-- for a course key and a user, which the user attends in.
+groupsOfUsersCourse :: Persist -> Username -> CourseKey -> TIO [GroupKey]
+groupsOfUsersCourse p u ck = do
+  ugs <- nub <$> userGroups p u
+  cgs <- nub <$> groupKeysOfCourse p ck
+  let s = intersect ugs cgs
+  hasNoRollback $ putStrLn $ show s
+  return s
 
 -- Produces a Just Assignment list, if the user is registered for some courses,
 -- otherwise Nothing.
