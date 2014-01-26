@@ -12,6 +12,7 @@ import Bead.Persistence.Persist (Persist(..))
 import qualified Bead.Persistence.Persist as R
 import Bead.View.Snap.Translation
 
+import Control.Arrow
 import Control.Applicative
 import Control.Monad (when, unless)
 import Control.Monad.Error (Error(..))
@@ -25,6 +26,8 @@ import Prelude hiding (log)
 import Data.List (nub)
 import Data.Maybe (catMaybes)
 import Data.Time (UTCTime(..), getCurrentTime)
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Text.Printf (printf)
 
 import Control.Monad.Transaction.TIO
@@ -426,6 +429,7 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
   authorize P_Create P_Submission
   checkActiveAssignment
   withUserAndPersist $ \u p -> do
+    removeUserOpenedSubmissions p u ak
     sk <- saveSubmission p ak u s
     return ()
   where
@@ -435,6 +439,27 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
       now <- liftIO getCurrentTime
       unless (isActivePeriod a now) $
         errorPage "A beküldési határidő lejárt"
+
+    removeUserOpenedSubmissions p u ak = do
+      sks <- R.openedSubmissions p
+      uaks <- mapM userSubmission sks
+      let uaMap = foldl (\m (k,v) -> insertListMap k v m) emptyListMap uaks
+      maybe
+        (return ())
+        (mapM_ (R.removeFromOpened p))
+        (Map.lookup (u,ak) uaMap)
+      where
+        userSubmission sk = do
+          u <- R.usernameOfSubmission p sk
+          a <- R.assignmentOfSubmission p sk
+          return ((u,a),sk)
+
+        emptyListMap = Map.empty
+        insertListMap k v m =
+          maybe
+            (Map.insert k [v] m)
+            (\l -> Map.insert k (v:l) m)
+            (Map.lookup k m)
 
 
 availableGroups :: UserStory [(GroupKey, GroupDesc)]
