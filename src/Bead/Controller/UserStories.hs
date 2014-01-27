@@ -441,26 +441,8 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
         errorPage "A beküldési határidő lejárt"
 
     removeUserOpenedSubmissions p u ak = do
-      sks <- R.openedSubmissions p
-      uaks <- mapM userSubmission sks
-      let uaMap = foldl (\m (k,v) -> insertListMap k v m) emptyListMap uaks
-      maybe
-        (return ())
-        (mapM_ (R.removeFromOpened p))
-        (Map.lookup (u,ak) uaMap)
-      where
-        userSubmission sk = do
-          u <- R.usernameOfSubmission p sk
-          a <- R.assignmentOfSubmission p sk
-          return ((u,a),sk)
-
-        emptyListMap = Map.empty
-        insertListMap k v m =
-          maybe
-            (Map.insert k [v] m)
-            (\l -> Map.insert k (v:l) m)
-            (Map.lookup k m)
-
+      sks <- R.usersOpenedSubmissions p ak u
+      mapM_ (R.removeFromOpened p ak u) sks
 
 availableGroups :: UserStory [(GroupKey, GroupDesc)]
 availableGroups = logAction INFO "lists available assignments" $ do
@@ -573,7 +555,7 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
     a <- R.isAdminedSubmission p u sk
     when a $ do
       R.saveEvaluation p sk e
-      R.removeFromOpened p sk
+      R.removeOpenedSubmission p sk
       R.saveComment p sk (evaluationComment now e)
       return ()
 

@@ -80,9 +80,9 @@ noSqlDirPersist = Persist {
   , evaluationOfSubmission = nEvaluationOfSubmission
   , commentsOfSubmission   = nCommentsOfSubmission
 
-  , placeToOpened     = nPlaceToOpened
   , removeFromOpened  = nRemoveFromOpened
   , openedSubmissions = nOpenedSubmission
+  , usersOpenedSubmissions = nUsersOpenedSubmissions
 
   , saveEvaluation = nSaveEvaluation
   , loadEvaluation = nLoadEvaluation
@@ -520,7 +520,7 @@ nSaveSubmission ak u s = do
   link u  submissionKey "user"
   link submissionKey ak "submission"
   linkUserSubmission submissionKey
-  nPlaceToOpened submissionKey
+  nPlaceToOpened ak u submissionKey
   return submissionKey
     where
       linkUserSubmission :: SubmissionKey -> TIO ()
@@ -574,14 +574,33 @@ tLoadSubmission dirName = do
   s <- load dirName
   return (SubmissionKey . takeBaseName $ dirName, s)
 
-nPlaceToOpened :: SubmissionKey -> TIO ()
-nPlaceToOpened sk = do
-  createLink
-    (joinPath ["..", "..", (referredPath sk)])
-    (joinPath [openSubmissionDataDir, baseName sk])
+openedSubmissionDataDirPath :: AssignmentKey -> Username -> FilePath
+openedSubmissionDataDirPath ak u =
+  joinPath [openSubmissionDataDir, "assignment", baseName ak, baseName u]
 
-nRemoveFromOpened :: SubmissionKey -> TIO ()
-nRemoveFromOpened sk = removeSymLink (joinPath [openSubmissionDataDir, baseName sk])
+nPlaceToOpened :: AssignmentKey -> Username -> SubmissionKey -> TIO ()
+nPlaceToOpened ak u sk = do
+  let lookupPath = openedSubmissionDataDirPath ak u
+  createLink
+    (joinPath ["..", "..", "..", (referredPath sk)])
+    (joinPath [openSubmissionAllDataDir, baseName sk])
+  createDirIfMissing lookupPath
+  createLink
+    (joinPath ["..", "..", "..", "..", "..", (referredPath sk)])
+    (joinPath [lookupPath, baseName sk])
+
+nRemoveFromOpened :: AssignmentKey -> Username -> SubmissionKey -> TIO ()
+nRemoveFromOpened ak u sk = do
+  removeSymLink (joinPath [openSubmissionAllDataDir, baseName sk])
+  removeSymLink (joinPath [openedSubmissionDataDirPath ak u, baseName sk])
+
+nUsersOpenedSubmissions :: AssignmentKey -> Username -> TIO [SubmissionKey]
+nUsersOpenedSubmissions ak u = do
+  let path = openedSubmissionDataDirPath ak u
+  exists <- doesDirExist path
+  if exists
+    then filterDirectory path isSubmissionDir tLoadSubmission (map fst)
+    else return []
 
 filterDirectory :: FilePath -> (FilePath -> TIO Bool) -> (FilePath -> TIO a) -> ([a] -> [b]) -> TIO [b]
 filterDirectory dir isValid loader f = f <$> ((selectValidDirsFrom dir isValid) >>= (mapM loader))
@@ -596,7 +615,7 @@ safeFilterDirectory dir isValid loader f = do
     True  -> filterDirectory dir isValid loader f
 
 nOpenedSubmission :: TIO [SubmissionKey]
-nOpenedSubmission = filterDirectory openSubmissionDataDir isSubmissionDir tLoadSubmission (map fst)
+nOpenedSubmission = filterDirectory openSubmissionAllDataDir isSubmissionDir tLoadSubmission (map fst)
 
 userDirPath :: Username -> FilePath
 userDirPath (Username u) = joinPath [userDataDir, u]

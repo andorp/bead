@@ -49,6 +49,7 @@ submissionDataDir = joinPath [dataDir, submissionDir]
 evaluationDataDir = joinPath [dataDir, evaluationDir]
 commentDataDir    = joinPath [dataDir, commentDir]
 openSubmissionDataDir = joinPath [dataDir, openSubmissionDir]
+openSubmissionAllDataDir = joinPath [openSubmissionDataDir, "all"]
 userRegDataDir = joinPath [dataDir, userRegDir]
 
 persistenceDirs :: [FilePath]
@@ -62,6 +63,7 @@ persistenceDirs = [
   , evaluationDataDir
   , commentDataDir
   , openSubmissionDataDir
+  , openSubmissionAllDataDir
   , userRegDataDir
   ]
 

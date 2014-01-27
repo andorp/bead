@@ -16,6 +16,7 @@ module Bead.Persistence.Persist (
   , courseNameAndAdmins
   , administratedGroupsWithCourseName
   , groupsOfUsersCourse
+  , removeOpenedSubmission
   ) where
 
 import Bead.Domain.Types (Erroneous)
@@ -103,9 +104,10 @@ data Persist = Persist {
   , commentsOfSubmission :: SubmissionKey -> TIO [CommentKey]
   , lastSubmission :: AssignmentKey -> Username -> TIO (Maybe SubmissionKey)
 
-  , placeToOpened     :: SubmissionKey -> TIO ()
-  , removeFromOpened  :: SubmissionKey -> TIO ()
+  , removeFromOpened  :: AssignmentKey -> Username -> SubmissionKey -> TIO ()
   , openedSubmissions :: TIO [SubmissionKey]
+  , usersOpenedSubmissions :: AssignmentKey -> Username -> TIO [SubmissionKey]
+  -- ^ Calculates all the opened submisison for a given user and a given assignment
 
   -- Evaluation
   , saveEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
@@ -434,6 +436,15 @@ userSubmissionDesc p u ak = do
   , usStudent        = student
   , usSubmissions    = submissions
   }
+
+-- Helper computation which removes the given submission from
+-- the opened submission directory, which is optimized by
+-- assignment and username keys, for the quickier lookup
+removeOpenedSubmission :: Persist -> SubmissionKey -> TIO ()
+removeOpenedSubmission p sk = do
+  ak <- assignmentOfSubmission p sk
+  u  <- usernameOfSubmission p sk
+  removeFromOpened p ak u sk
 
 -- * Runner Tools
 
