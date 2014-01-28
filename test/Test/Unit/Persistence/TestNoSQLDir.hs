@@ -180,7 +180,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool "Evaluation was not loaded correctly" (ev == ev1)
   ev_sk <- liftE $ submissionOfEvaluation persist evKey
   assertBool "Submission key was different for the evaluation" (sk == ev_sk)
-  liftE $ removeFromOpened persist sk
+  liftE $ removeFromOpened persist gak username sk
 
   testComment sk
 

@@ -218,15 +218,16 @@ testDecoratedPersist a q = Persist {
       mapM (testSubmissionKey a . fst) ks
       return ks
 
-  , placeToOpened = \sk -> do
+  , removeFromOpened = \ak u sk -> do
+      testAssignmentKey a ak
       testSubmissionKey a sk
-      placeToOpened q sk
-
-  , removeFromOpened = \sk -> do
-      testSubmissionKey a sk
-      removeFromOpened q sk
+      removeFromOpened q ak u sk
 
   , openedSubmissions = openedSubmissions q
+
+  , usersOpenedSubmissions = \ak u -> do
+      testAssignmentKey a ak
+      usersOpenedSubmissions q ak u
 
   , evaluationOfSubmission = \sk -> do
       testSubmissionKey a sk
