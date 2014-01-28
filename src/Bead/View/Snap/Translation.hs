@@ -244,6 +244,7 @@ data Translation a
   | Msg_UserStory_SetGroupAdmin { trans :: a }
   | Msg_UserStory_CreateGroup { trans :: a }
   | Msg_UserStory_SubscribedToGroup { trans :: a }
+  | Msg_UserStory_SubscribedToGroup_ChangeNotAllowed { trans :: a }
   | Msg_UserStory_NewGroupAssignment { trans :: a }
   | Msg_UserStory_NewCourseAssignment { trans :: a }
 

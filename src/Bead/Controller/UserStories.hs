@@ -268,18 +268,31 @@ isUserInCourse ck = logAction INFO ("checks if user is in the course " ++ show c
   state <- userState
   withPersist $ \p -> R.isUserInCourse p (user state) ck
 
--- | Regsiter the user as a group intendee
+-- | Regsiter the user in the group, if the user does not submitted
+-- any solutions for the other groups of the actual course, otherwise
+-- puts a message on the UI, indicating that the course change is
+-- not allowed.
 subscribeToGroup :: GroupKey -> UserStory ()
 subscribeToGroup gk = logAction INFO ("subscribes to the group " ++ (show gk)) $ do
   authorize P_Open P_Group
   state <- userState
-  withPersist $ \p -> do
+  message <- withPersist $ \p -> do
     let u = user state
     ck <- R.courseOfGroup p gk
     gks <- R.groupsOfUsersCourse p u ck
-    mapM_ (R.unsubscribe p u ck) gks
-    R.subscribe p u ck gk
-  putStatusMessage $ Msg_UserStory_SubscribedToGroup "Sikeresen regisztráltál a csoportba!"
+    hasSubmission <- isThereASubmission p u gks
+    case hasSubmission of
+      True -> return $ Msg_UserStory_SubscribedToGroup_ChangeNotAllowed
+        "Csoportváltás nem engedélyezett mert már van beadott megoldásod más csoportban"
+      False -> do
+        mapM_ (R.unsubscribe p u ck) gks
+        R.subscribe p u ck gk
+        return $ Msg_UserStory_SubscribedToGroup "Sikeresen regisztráltál a csoportba!"
+  putStatusMessage message
+  where
+    isThereASubmission p u gks = do
+      aks <- concat <$> mapM (groupAssignments p) gks
+      (not . null . catMaybes) <$> mapM (flip (lastSubmission p) u) aks
 
 attendedGroups :: UserStory [(GroupKey, GroupDesc)]
 attendedGroups = logAction INFO "selects courses attended in" $ do

@@ -253,6 +253,7 @@ translationList =
   , Msg_UserStory_SetGroupAdmin ()
   , Msg_UserStory_CreateGroup ()
   , Msg_UserStory_SubscribedToGroup ()
+  , Msg_UserStory_SubscribedToGroup_ChangeNotAllowed ()
   , Msg_UserStory_NewGroupAssignment ()
   , Msg_UserStory_NewCourseAssignment ()
 
