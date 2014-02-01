@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
 module Bead.View.Snap.Content.Home (
     home
+  , deleteUsersFromCourse
 #ifdef TEST
   , sumBinaryResultTests
   , sumPercentageResultTests
@@ -26,6 +27,8 @@ import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.Pages as P (Page(..))
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content hiding (userState)
+import Bead.View.Snap.DataBridge as Param (Parameter(name))
+import qualified Bead.View.UserActions as UA
 import Bead.Controller.UserStories (
     userAssignments
   , submissionTables
@@ -45,6 +48,9 @@ import Bead.Invariants
 
 home :: Content
 home = getContentHandler homePage
+
+deleteUsersFromCourse :: Content
+deleteUsersFromCourse = postContentHandler deleteUsersFromCourseHandler
 
 data HomePageData = HomePageData {
     userState   :: UserState
@@ -70,6 +76,12 @@ homePage = withUserState $ \s -> do
           <*> userAssignments
           <*> (map sortUserLines <$> submissionTables)
           <*> (return converter)))
+
+deleteUsersFromCourseHandler :: POSTContentHandler
+deleteUsersFromCourseHandler =
+  UA.DeleteUsersFromCourse
+    <$> (getParameter delUserFromCourseKeyPrm)
+    <*> (getParameterValues delUserFromCoursePrm)
 
 navigation :: [P.Page] -> IHtml
 navigation links = do
@@ -174,11 +186,17 @@ htmlSubmissionTable (i,s)
 -- Non empty table
 htmlSubmissionTable (i,s) = do
   msg <- getI18N
-  return $ table tableId (className groupSubmissionTable) # informationalTable $ do
+  return $ courseForm $ table tableId (className groupSubmissionTable) # informationalTable $ do
     headLine (stCourse s)
     assignmentLine msg (stAssignments s)
     mapM_ (userLine msg) (stUserLines s)
   where
+    courseForm inner = infoSourceCata createForm id id infoSrc $ inner where
+      createForm = either
+        (const id) -- No translation for group key
+        (\ck -> (postForm (routeOf (P.DeleteUsersFromCourse ck)))) -- Parameters would fill up from checkboxes
+        key
+
     tableId = join ["st", show i]
     headLine = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
     headerCell = H.th # (informationalCell <> grayBackground)
@@ -188,6 +206,7 @@ htmlSubmissionTable (i,s) = do
       headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Username "NEPTUN"
       mapM_ (headerCell . modifyAssignmentLink) . zip [1..] $ as
       headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Summary "Összesítés"
+      deleteHeaderCell msg
 
     modifyAssignmentLink (i,ak) =
       linkWithTitle
@@ -205,6 +224,7 @@ htmlSubmissionTable (i,s) = do
         Left  e      -> dataCell summaryErrorStyle  $ fromString e
         Right Passed -> dataCell summaryPassedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Accepted "Elfogadott"
         Right Failed -> dataCell summaryFailedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Rejected "Elutasított"
+      deleteUserCheckbox u
 
     submissionCell u (ak,s) =
       coloredSubmissionCell
@@ -216,6 +236,40 @@ htmlSubmissionTable (i,s) = do
         "1"
         "0"
         s
+
+    deleteHeaderCell msg =
+      either
+        (const emptyHtml) -- GroupKey
+        (infoSourceCata   -- CourseKey
+           deleteButton
+           (const emptyHtml)
+           (const emptyHtml)
+           infoSrc)
+        key
+      where
+        deleteButton ck =
+          headerCell $ submitButton
+            (fieldName delUsersFromCourseBtn)
+            (msg $ Msg_Home_DeleteUsersFromCourse "Törlés")
+
+    deleteUserCheckbox u =
+      infoSourceCata
+        deleteCheckbox
+        emptyHtml
+        emptyHtml
+        infoSrc
+      where
+        deleteCheckbox =
+          dataCell noStyle $ checkBox
+            (Param.name delUserFromCoursePrm)
+            (encode delUserFromCoursePrm $ ud_username u)
+            False
+
+    emptyHtml = return ()
+
+    infoSrc = stOrigin s
+
+    key = stKey s
 
 -- Create a table cell for the evaulation value, where
 -- simpleCell is the combinator for the non RGB colored cells
@@ -359,6 +413,7 @@ colorStyle (RGB (r,g,b)) = join ["background-color:#", hex r, hex g, hex b]
 -- Sorts the userlines alphabetically ordered in submissionTableInfo
 sortUserLines = submissionTableInfoCata
   id -- course
+  id -- information source
   id -- number
   id -- config
   id -- assignment
@@ -368,6 +423,7 @@ sortUserLines = submissionTableInfoCata
   id -- userline
   sort -- userlines
   id -- assignment names
+  id -- key
   SubmissionTableInfo
   where
    sort = sortBy (compareHun `on` fst3)

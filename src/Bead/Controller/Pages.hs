@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 module Bead.Controller.Pages (
     Page(..)
+  , pageCata -- Template function for the page data structure
   , pageTransition
   , parentPage
   , allowedPage
@@ -83,8 +84,70 @@ data Page
   | SetUserPassword
   | CommentFromEvaluation R.SubmissionKey
   | CommentFromModifyEvaluation R.SubmissionKey R.EvaluationKey
+  | DeleteUsersFromCourse R.CourseKey -- Users will be defined in parameters
   -- etc ...
   deriving (Eq, Ord, Show)
+
+-- Template method for the page data structure
+pageCata
+  login
+  logout
+  home
+  profile
+  error
+  administration
+  courseAdmin
+  evaluationTable
+  evaluation
+  modifyEvaluation
+  newGroupAssignment
+  newCourseAssignment
+  modifyAssignment
+  submission
+  submissionList
+  submissionDetails
+  groupRegistration
+  userDetails
+  userSubmissions
+  createCourse
+  createGroup
+  assignCourseAdmin
+  assignGroupAdmin
+  changePassword
+  setUserPassword
+  commentFromEvaluation
+  commentFromModifyEvaluation
+  deleteUsersFromCourse
+  p = case p of
+    Login -> login
+    Logout -> logout
+    Home -> home
+    Profile -> profile
+    Error -> error
+    Administration -> administration
+    CourseAdmin -> courseAdmin
+    EvaluationTable -> evaluationTable
+    Evaluation sk -> evaluation sk
+    ModifyEvaluation sk ek -> modifyEvaluation sk ek
+    NewGroupAssignment -> newGroupAssignment
+    NewCourseAssignment -> newCourseAssignment
+    ModifyAssignment -> modifyAssignment
+    Submission -> submission
+    SubmissionList -> submissionList
+    SubmissionDetails ak sk -> submissionDetails ak sk
+    GroupRegistration -> groupRegistration
+    UserDetails -> userDetails
+    UserSubmissions -> userSubmissions
+    CreateCourse -> createCourse
+    CreateGroup -> createGroup
+    AssignCourseAdmin -> assignCourseAdmin
+    AssignGroupAdmin -> assignGroupAdmin
+    ChangePassword -> changePassword
+    SetUserPassword -> setUserPassword
+    CommentFromEvaluation sk -> commentFromEvaluation sk
+    CommentFromModifyEvaluation sk ek -> commentFromModifyEvaluation sk ek
+    DeleteUsersFromCourse ck -> deleteUsersFromCourse ck
+
 
 isLogin Login = True
 isLogin _     = False
@@ -167,6 +230,9 @@ isCommentFromEvaluation _                         = False
 isCommentFromModifyEvaluation (CommentFromModifyEvaluation _ _) = True
 isCommentFromModifyEvaluation _                                 = False
 
+isDeleteUsersFromCourse (DeleteUsersFromCourse _) = True
+isDeleteUsersFromCourse _                         = False
+
 -- Returns True if the page need to be rendered
 contentPages :: Page -> Bool
 contentPages Error = False
@@ -182,7 +248,7 @@ pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
   p Home = [ isLogout, isCourseAdmin, isEvaluationTable, isNewGroupAssignment, isNewCourseAssignment
            , isSubmission, isSubmissionList, isGroupRegistration, isAdministration, isProfile
            , isUserSubmissions, isSubmissionDetails, isModifyAssignment
-           , isSetUserPassword, isHome
+           , isSetUserPassword, isHome, isDeleteUsersFromCourse
            ]
   p CourseAdmin = [isHome, isProfile, isCreateGroup, isAssignGroupAdmin, isCourseAdmin]
   p EvaluationTable  = [isHome, isProfile, isEvaluation, isModifyEvaluation, isEvaluationTable]
@@ -208,6 +274,7 @@ pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
   p SetUserPassword   = [isHome, isProfile, isSetUserPassword]
   p (CommentFromEvaluation _) = [isCommentFromEvaluation, isEvaluation]
   p (CommentFromModifyEvaluation _ _) = [isCommentFromModifyEvaluation, isModifyEvaluation]
+  p (DeleteUsersFromCourse _) = [isHome]
 
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
@@ -273,6 +340,7 @@ dataModificationPages = [
   , isCommentFromModifyEvaluation
   , isEvaluation
   , isModifyEvaluation
+  , isDeleteUsersFromCourse
   ]
 
 -- Pages that not part of the site content
@@ -338,7 +406,7 @@ parentPage ChangePassword      = Profile
 parentPage SetUserPassword     = Home
 parentPage (CommentFromEvaluation sk) = Evaluation sk
 parentPage (CommentFromModifyEvaluation sk ek) = ModifyEvaluation sk ek
-
+parentPage (DeleteUsersFromCourse _) = Home
 
 #ifdef TEST
 

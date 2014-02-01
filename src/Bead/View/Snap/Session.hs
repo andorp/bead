@@ -74,33 +74,35 @@ pageSessionKey = "Page"
 
 instance SessionStore P.Page where
   sessionStore p = [(pageSessionKey, T.pack $ s p)] where
-    s P.Login      = "Login"
-    s P.Logout     = "Logout"
-    s P.Home       = "Home"
-    s P.Error      = "Error"
-    s P.Profile    = "Profile"
-    s P.CourseAdmin = "CourseAdmin"
-    s P.EvaluationTable = "EvaluationTable"
-    s (P.Evaluation (R.SubmissionKey s))  = join ["Evaluation:", s]
-    s P.Submission      = "Submission"
-    s P.SubmissionList  = "SubmissionList"
-    s P.UserSubmissions = "UserSubmissions"
-    s (P.SubmissionDetails (R.AssignmentKey a) (R.SubmissionKey s)) = join ["SubmissionDetails:", a, ":", s]
-    s (P.ModifyEvaluation (R.SubmissionKey s) (R.EvaluationKey e)) = join ["ModifyEvaluation:", s, ":", e]
-    s P.Administration   = "Administration"
-    s P.GroupRegistration = "GroupRegistration"
-    s P.CreateCourse = "CreateCourse"
-    s P.UserDetails = "UserDetails"
-    s P.AssignCourseAdmin = "AssignCourseAdmin"
-    s P.CreateGroup = "CreateGroup"
-    s P.AssignGroupAdmin = "AssignGroupAdmin"
-    s P.NewGroupAssignment  = "NewGroupAssignment"
-    s P.NewCourseAssignment = "NewCourseAssignment"
-    s P.ModifyAssignment = "ModifyAssignment"
-    s P.ChangePassword = "ChangePassword"
-    s P.SetUserPassword = "SetUserPassword"
-    s (P.CommentFromEvaluation (R.SubmissionKey s)) = join ["CommentFromEvaluation:", s]
-    s (P.CommentFromModifyEvaluation (R.SubmissionKey s) (R.EvaluationKey e)) = join ["CommentFromModifyEvaluation:", s, ":", e]
+    s = P.pageCata
+          "Login"
+          "Logout"
+          "Home"
+          "Profile"
+          "Error"
+          "Administration"
+          "CourseAdmin"
+          "EvaluationTable"
+          (\(R.SubmissionKey s) -> join ["Evaluation:",s])
+          (\(R.SubmissionKey s) (R.EvaluationKey e) -> join ["ModifyEvaluation:", s, ":", e])
+          "NewGroupAssignment"
+          "NewCourseAssignment"
+          "ModifyAssignment"
+          "Submission"
+          "SubmissionList"
+          (\(R.AssignmentKey a) (R.SubmissionKey s) -> join ["SubmissionDetails:", a, ":", s])
+          "GroupRegistration"
+          "UserDetails"
+          "UserSubmissions"
+          "CreateCourse"
+          "CreateGroup"
+          "AssignCourseAdmin"
+          "AssignGroupAdmin"
+          "ChangePassword"
+          "SetUserPassword"
+          (\(R.SubmissionKey s) -> join ["CommentFromEvaluation:", s])
+          (\(R.SubmissionKey s) (R.EvaluationKey e) -> join ["CommentFromModifyEvaluation:", s, ":", e])
+          (\(R.CourseKey c) -> join $ ["DeleteUsersFromCourse:", c])
 
 instance SessionRestore P.Page where
   restoreFromSession kv = case L.lookup pageSessionKey kv of
@@ -152,6 +154,11 @@ instance SessionRestore P.Page where
               [s,e] -> Just $ P.ModifyEvaluation (submissionKey s) (evaluationKey e)
               _     -> Nothing
 
+      | startsWith "DeleteUsersFromCourse:" ts ->
+          let se = splitValues "DeleteUsersFromCourse:" ts
+          in case se of
+               [c] -> Just $ P.DeleteUsersFromCourse (courseKey c)
+
     Just _ -> Nothing
     where
       assignmentKey = R.AssignmentKey . T.unpack
@@ -159,6 +166,10 @@ instance SessionRestore P.Page where
       submissionKey = R.SubmissionKey . T.unpack
 
       evaluationKey = R.EvaluationKey . T.unpack
+
+      courseKey = R.CourseKey . T.unpack
+
+      username = E.Username . T.unpack
 
       startsWith preffix t = preffix == (T.take (T.length preffix) t)
 

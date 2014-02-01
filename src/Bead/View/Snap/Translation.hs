@@ -236,6 +236,7 @@ data Translation a
   | Msg_Home_NonBinaryEvaluation { trans :: a }
   | Msg_Home_HasNoSummary { trans :: a }
   | Msg_Home_NonPercentageEvaluation { trans :: a }
+  | Msg_Home_DeleteUsersFromCourse { trans :: a }
 
   | Msg_UserStory_SetTimeZone { trans :: a }
   | Msg_UserStory_ChangedUserDetails { trans :: a }
@@ -247,6 +248,7 @@ data Translation a
   | Msg_UserStory_SubscribedToGroup_ChangeNotAllowed { trans :: a }
   | Msg_UserStory_NewGroupAssignment { trans :: a }
   | Msg_UserStory_NewCourseAssignment { trans :: a }
+  | Msg_UserStory_UsersAreDeletedFromCourse { trans :: a }
 
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 
@@ -277,5 +279,6 @@ data Translation a
   | Msg_LinkText_SetUserPassword { trans :: a }
   | Msg_LinkText_CommentFromEvaluation { trans :: a }
   | Msg_LinkText_CommentFromModifyEvaluation { trans :: a }
+  | Msg_LinkText_DeleteUsersFromCourse { trans :: a }
 
   deriving (Show, Read, Eq, Ord)

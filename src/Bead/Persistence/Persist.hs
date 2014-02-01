@@ -17,6 +17,7 @@ module Bead.Persistence.Persist (
   , administratedGroupsWithCourseName
   , groupsOfUsersCourse
   , removeOpenedSubmission
+  , deleteUserFromCourse -- Deletes a user from a course, searching the group id for the unsubscription
   ) where
 
 import Bead.Domain.Types (Erroneous)
@@ -32,8 +33,8 @@ import Data.Maybe (catMaybes)
 import Data.Time (getCurrentTime)
 
 import Control.Applicative ((<$>))
-import Control.Arrow ((&&&))
-import Control.Monad (mapM, liftM, liftM2, forM)
+import Control.Arrow
+import Control.Monad (mapM, liftM, liftM2, forM, when)
 import Control.Exception (IOException)
 import Control.Monad.Transaction.TIO
 
@@ -326,14 +327,14 @@ groupSubmissionTableInfo p gk = do
   usernames   <- subscribedToGroup p gk
   name <- fullGroupName p gk
   evalCfg <- groupEvalConfig <$> loadGroup p gk
-  submissionTableInfo p name evalCfg assignments usernames
+  submissionTableInfo p name GroupInfSrc evalCfg assignments usernames (Left gk)
 
 courseSubmissionTableInfo :: Persist -> CourseKey -> TIO SubmissionTableInfo
 courseSubmissionTableInfo p ck = do
   assignments <- courseAssignments p ck
   usernames   <- subscribedToCourse p ck
   (name,evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
-  submissionTableInfo p name evalCfg assignments usernames
+  submissionTableInfo p name CourseInfSrc evalCfg assignments usernames (Right ck)
 
 -- Produces a submission table information, which is Just info, for the courses expect that the user is already
 -- administrates, otherwise Nothing
@@ -346,16 +347,18 @@ courseSubmissionTableInfoForGroupAdmin p cks gk = do
       usernames <- subscribedToGroup p gk
       assignments <- courseAssignments p ck
       (name, evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
-      Just <$> submissionTableInfo p name evalCfg assignments usernames
+      Just <$> submissionTableInfo p name GroupAdminCourseInfSrc evalCfg assignments usernames (Right ck)
 
 submissionTableInfo
   :: Persist
   -> String
+  -> InfoSource
   -> EvaluationConfig
   -> [AssignmentKey]
   -> [Username]
+  -> Either GroupKey CourseKey
   -> TIO SubmissionTableInfo
-submissionTableInfo p courseName evalCfg as usernames = do
+submissionTableInfo p courseName source evalCfg as usernames key = do
   assignments <- sortAssignments as
   assignmentNames <- loadAssignmentNames as
 
@@ -369,12 +372,14 @@ submissionTableInfo p courseName evalCfg as usernames = do
 
   return SubmissionTableInfo {
     stCourse      = courseName
+  , stOrigin      = source
   , stNumberOfAssignments = length assignments
   , stEvalConfig  = evalCfg
   , stAssignments = assignments
   , stUsers       = usernames
   , stUserLines   = ulines
   , stAssignmentNames = assignmentNames
+  , stKey         = key
   }
   where
     sortAssignments :: [AssignmentKey] -> TIO [AssignmentKey]
@@ -445,6 +450,23 @@ removeOpenedSubmission p sk = do
   ak <- assignmentOfSubmission p sk
   u  <- usernameOfSubmission p sk
   removeFromOpened p ak u sk
+
+-- Make unsibscribe a user from a course if the user attends in the course
+-- otherwise do nothing
+deleteUserFromCourse :: Persist -> CourseKey -> Username -> TIO ()
+deleteUserFromCourse p ck u = do
+  cs <- userCourses p u
+  when (ck `elem` cs) $ do
+    gs <- userGroups p u
+    -- Collects all the courses for the user's group
+    cgMap <- Map.fromList <$> (forM gs $ runKleisli ((k (courseOfGroup p)) &&& (k return)))
+    -- Unsubscribe the user from a given course with the found group
+    maybe
+      (return ()) -- TODO: Logging should be usefull
+      (unsubscribe p u ck)
+      (Map.lookup ck cgMap)
+  where
+    k = Kleisli
 
 -- * Runner Tools
 

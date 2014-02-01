@@ -225,6 +225,21 @@ createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
   where
     user = usernameCata id
 
+-- Deletes the given users from the given course if the current user is a course
+-- admin for the given course, otherwise throws an exception
+deleteUsersFromCourse :: CourseKey -> [Username] -> UserStory ()
+deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ show ck) $ do
+  authorize P_Modify P_Course
+  u <- CMS.gets user
+  join $ withPersist $ \p -> do
+    cs <- map fst <$> R.administratedCourses p u
+    case ck `elem` cs of
+      False -> return (CME.throwError $ strMsg "Nem oktatója a kurzusnak!")
+      True -> do
+        mapM_ (R.deleteUserFromCourse p ck) sts
+        return . putStatusMessage $
+          Msg_UserStory_UsersAreDeletedFromCourse "A felhasználókat leiratkoztattuk"
+
 createGroupAdmin :: Username -> GroupKey -> UserStory ()
 createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $ do
   authorize P_Create P_GroupAdmin

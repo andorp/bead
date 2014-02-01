@@ -37,6 +37,7 @@ module Bead.View.Snap.RouteOf (
   , setUserPasswordPath
   , commentFromEvaluationPath
   , commentFromModifyEvaluationPath
+  , deleteUsersFromCoursePath
   , pageRoutePath
 #ifdef TEST
   , invariants
@@ -141,36 +142,41 @@ commentFromEvaluationPath = "/comment-from-evaluation"
 commentFromModifyEvaluationPath :: RoutePath
 commentFromModifyEvaluationPath = "/comment-from-modify-evaluation"
 
+deleteUsersFromCoursePath :: RoutePath
+deleteUsersFromCoursePath = "/delete-users-from-course"
+
 -- Returns a base path for the given page
 pageRoutePath :: Page -> RoutePath
-pageRoutePath = r where
-  r Login      = fromString loginPath
-  r Logout     = fromString logoutPath
-  r Home       = fromString homePath
-  r Error      = fromString errorPath
-  r Profile    = fromString profilePath
-  r CourseAdmin = fromString courseAdminPath
-  r (ModifyEvaluation _ _) = fromString modifyEvaluationPath
-  r EvaluationTable = fromString evaluationTablePath
-  r (Evaluation _)  = fromString evaluationPath
-  r Submission      = fromString submissionPath
-  r SubmissionList  = fromString submissionListPath
-  r UserSubmissions = fromString userSubmissionsPath
-  r (SubmissionDetails _ _) = fromString submissionDetailsPath
-  r Administration   = fromString administrationPath
-  r GroupRegistration = fromString groupRegistrationPath
-  r CreateCourse = fromString createCoursePath
-  r UserDetails = fromString userDetailsPath
-  r AssignCourseAdmin = fromString assignCourseAdminPath
-  r CreateGroup = fromString createGroupPath
-  r AssignGroupAdmin = fromString assignGroupAdminPath
-  r NewGroupAssignment  = fromString newGroupAssignmentPath
-  r NewCourseAssignment  = fromString newCourseAssignmentPath
-  r ModifyAssignment = fromString modifyAssignmentPath
-  r ChangePassword = fromString changePasswordPath
-  r SetUserPassword = fromString setUserPasswordPath
-  r (CommentFromEvaluation _) = fromString commentFromEvaluationPath
-  r (CommentFromModifyEvaluation _ _) = fromString commentFromModifyEvaluationPath
+pageRoutePath = fromString . r where
+  r = pageCata
+    loginPath
+    logoutPath
+    homePath
+    profilePath
+    errorPath
+    administrationPath
+    courseAdminPath
+    evaluationTablePath
+    (const evaluationPath)
+    (const $ const modifyEvaluationPath)
+    newGroupAssignmentPath
+    newCourseAssignmentPath
+    modifyAssignmentPath
+    submissionPath
+    submissionListPath
+    (const $ const submissionDetailsPath)
+    groupRegistrationPath
+    userDetailsPath
+    userSubmissionsPath
+    createCoursePath
+    createGroupPath
+    assignCourseAdminPath
+    assignGroupAdminPath
+    changePasswordPath
+    setUserPasswordPath
+    (const commentFromEvaluationPath)
+    (const $ const commentFromModifyEvaluationPath)
+    (const deleteUsersFromCoursePath)
 
 -- Calculates a request parameter list from the given page value
 pageRequestParams :: Page -> [ReqParam]
@@ -180,6 +186,7 @@ pageRequestParams = r where
   r (SubmissionDetails ak sk)  = [requestParam ak, requestParam sk]
   r (CommentFromEvaluation ek) = [requestParam ek]
   r (CommentFromModifyEvaluation ek sk) = [requestParam ek, requestParam sk]
+  r (DeleteUsersFromCourse ck) = [requestParam ck]
   r _ = []
 
 -- Calculates the full path from a page value, including the base path and the

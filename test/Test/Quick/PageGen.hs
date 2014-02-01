@@ -31,6 +31,8 @@ pageGen = oneof [
 
       evaluationKey = EvaluationKey . showInt <$> choose (1,5000)
 
+      courseKey = CourseKey . showInt <$> choose (1,5000)
+
       nonParametricPages = elements [
           Login
         , Logout
@@ -62,4 +64,5 @@ pageGen = oneof [
         , Evaluation <$> submissionKey
         , ModifyEvaluation <$> submissionKey <*> evaluationKey
         , SubmissionDetails <$> assignmentKey <*> submissionKey
+        , DeleteUsersFromCourse <$> courseKey
         ]

@@ -142,18 +142,38 @@ siEvaluationKey (Submission_Result ek _) = Just ek
 -- Simple name for the assignment
 type AssignmentName = String
 
+-- InformationSoruce represents from where the information came from, from a course or from a group
+data InfoSource
+  = CourseInfSrc -- Represent that the generated information came from a course
+  | GroupInfSrc  -- Represent that the generated information came from a group
+  | GroupAdminCourseInfSrc -- Represents that the information came from a course, but requested by the course admin
+  deriving (Show)
+
+-- Template function for Information Source
+infoSourceCata
+  courseInfSrc
+  groupInfSrc
+  groupAdminCourseInfSrc
+  i = case i of
+    CourseInfSrc -> courseInfSrc
+    GroupInfSrc  -> groupInfSrc
+    GroupAdminCourseInfSrc -> groupAdminCourseInfSrc
+
 data SubmissionTableInfo = SubmissionTableInfo {
-    stCourse   :: String
+    stCourse :: String
+  , stOrigin :: InfoSource -- True indicates that the table is generated for a course, False for a group
   , stNumberOfAssignments :: Int
   , stEvalConfig  :: EvaluationConfig
   , stAssignments :: [AssignmentKey] -- Cronologically ordered list of assignments
   , stUsers       :: [Username]      -- Alphabetically ordered list of usernames
   , stUserLines   :: [(UserDesc, Maybe Result, [(AssignmentKey, SubmissionInfo)])]
   , stAssignmentNames :: Map AssignmentKey AssignmentName
+  , stKey :: Either GroupKey CourseKey
   } deriving (Show)
 
 submissionTableInfoCata
   course
+  origin
   number
   config
   assignment
@@ -163,16 +183,19 @@ submissionTableInfoCata
   userline
   userlines
   assignmentNames
+  key
   tableInfo
   t =
     tableInfo
       (course $ stCourse t)
+      (origin $ stOrigin t)
       (number $ stNumberOfAssignments t)
       (config $ stEvalConfig t)
       (assignments . map assignment $ stAssignments t)
       (users . map user $ stUsers t)
       (userlines . map userline $ stUserLines t)
       (assignmentNames $ stAssignmentNames t)
+      (key $ stKey t)
 
 submissionTableInfoPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment)

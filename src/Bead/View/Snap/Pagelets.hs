@@ -156,6 +156,13 @@ hiddenInputWithId n v = hiddenInput n v ! A.id (fromString n)
 submitButton :: String -> String -> Html
 submitButton i t = H.input ! A.id (fromString i) ! A.type_ "submit" ! A.value (fromString t)
 
+checkBox :: String -> String -> Bool -> Html
+checkBox n v c =
+  (H.input ! A.name (fromString n)
+           ! A.type_ "checkbox"
+           ! A.value (fromString v))
+  |> if c then (! A.checked "") else id
+
 withId :: (Html -> Html) -> String -> (Html -> Html)
 withId f i = (f ! A.id (fromString i))
 
@@ -188,33 +195,37 @@ empty :: Html
 empty = return ()
 
 linkText :: P.Page -> Translation String
-linkText P.Login      = Msg_LinkText_Login "Bejelentkezés"
-linkText P.Logout     = Msg_LinkText_Logout "Kijelentkezés"
-linkText P.Home       = Msg_LinkText_Home "Főoldal"
-linkText P.Profile    = Msg_LinkText_Profile "Beállítások"
-linkText P.Error      = Msg_LinkText_Error "Hiba"
-linkText P.CourseAdmin = Msg_LinkText_CourseAdministration "Tárgyi beállítások"
-linkText P.Submission  = Msg_LinkText_Submission "Beküldés"
-linkText P.SubmissionList = Msg_LinkText_SubmissionList "Beadott megoldások"
-linkText P.UserSubmissions = Msg_LinkText_UserSubmissions "Megoldások"
-linkText (P.ModifyEvaluation _ _) = Msg_LinkText_ModifyEvaluation "Értékelés"
-linkText (P.SubmissionDetails _ _) = Msg_LinkText_SubmissionDetails "Megoldás"
-linkText P.Administration  = Msg_LinkText_Administration "Adminisztráció"
-linkText (P.Evaluation _)  = Msg_LinkText_Evaluation "Értékelés"
-linkText P.EvaluationTable = Msg_LinkText_EvaluationTable "Értékelések"
-linkText P.GroupRegistration = Msg_LinkText_GroupRegistration "Tárgy vagy csoport felvétele"
-linkText P.CreateCourse       = Msg_LinkText_CreateCourse "Tárgy létrehozása"
-linkText P.UserDetails = Msg_LinkText_UserDetails "Beállítások"
-linkText P.AssignCourseAdmin = Msg_LinkText_AssignCourseAdmin "Tárgyfelelős hozzáadása"
-linkText P.CreateGroup = Msg_LinkText_CreateGroup "Csoport létrehozása"
-linkText P.AssignGroupAdmin = Msg_LinkText_AssignGroupAdmin "Oktató hozzáadása"
-linkText P.NewGroupAssignment  = Msg_LinkText_NewGroupAssignment "Új csoportszintű feladat"
-linkText P.NewCourseAssignment = Msg_LinkText_NewCourseAssignment "Új tárgyszintű feladat"
-linkText P.ModifyAssignment = Msg_LinkText_ModifyAssignment "Feladat módosítása"
-linkText P.ChangePassword = Msg_LinkText_ChangePassword "Jelszócsere"
-linkText P.SetUserPassword = Msg_LinkText_SetUserPassword "Hallgató jelszavának beállítása"
-linkText (P.CommentFromEvaluation _) = Msg_LinkText_CommentFromEvaluation "Megjegyzés"
-linkText (P.CommentFromModifyEvaluation _ _) = Msg_LinkText_CommentFromModifyEvaluation "Megjegyzés"
+linkText = P.pageCata
+  (Msg_LinkText_Login "Bejelentkezés")
+  (Msg_LinkText_Logout "Kijelentkezés")
+  (Msg_LinkText_Home "Főoldal")
+  (Msg_LinkText_Profile "Beállítások")
+  (Msg_LinkText_Error "Hiba")
+  (Msg_LinkText_Administration "Adminisztráció")
+  (Msg_LinkText_CourseAdministration "Tárgyi beállítások")
+  (Msg_LinkText_EvaluationTable "Értékelések")
+  (const $ Msg_LinkText_Evaluation "Értékelés")
+  (const2 $ Msg_LinkText_ModifyEvaluation "Értékelés")
+  (Msg_LinkText_NewGroupAssignment "Új csoportszintű feladat")
+  (Msg_LinkText_NewCourseAssignment "Új tárgyszintű feladat")
+  (Msg_LinkText_ModifyAssignment "Feladat módosítása")
+  (Msg_LinkText_Submission "Beküldés")
+  (Msg_LinkText_SubmissionList "Beadott megoldások")
+  (const2 $ Msg_LinkText_SubmissionDetails "Megoldás")
+  (Msg_LinkText_GroupRegistration "Tárgy vagy csoport felvétele")
+  (Msg_LinkText_UserDetails "Beállítások")
+  (Msg_LinkText_UserSubmissions "Megoldások")
+  (Msg_LinkText_CreateCourse "Tárgy létrehozása")
+  (Msg_LinkText_CreateGroup "Csoport létrehozása")
+  (Msg_LinkText_AssignCourseAdmin "Tárgyfelelős hozzáadása")
+  (Msg_LinkText_AssignGroupAdmin "Oktató hozzáadása")
+  (Msg_LinkText_ChangePassword "Jelszócsere")
+  (Msg_LinkText_SetUserPassword "Hallgató jelszavának beállítása")
+  (const $ Msg_LinkText_CommentFromEvaluation "Megjegyzés")
+  (const2 $ Msg_LinkText_CommentFromModifyEvaluation "Megjegyzés")
+  (const $ Msg_LinkText_DeleteUsersFromCourse "Hallgatók törlése")
+  where
+    const2 = const . const
 
 linkToPage :: P.Page -> IHtml
 linkToPage g = do

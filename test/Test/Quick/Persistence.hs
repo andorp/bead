@@ -6,6 +6,7 @@ import Control.Concurrent (forkIO)
 import Data.Set (Set)
 import qualified Data.Set as Set
 
+import Data.List ((\\))
 import Data.Set (Set)
 import qualified Data.Set as Set
 import Data.Map (Map)
@@ -627,6 +628,68 @@ modifyEvaluationTest = do
     e1 <- runPersistCmd $ loadEvaluation persist ek
     assertEquals e e1 "Modified and loaded evaluations were different"
 
+-- Test if the users make unsubscribe from the courses by the admin
+deleteUsersFromCourseTest = do
+  cs <- courses 50
+  gs <- groups 250 cs
+  us <- users 200
+  -- Subscribe users to groups
+  quick 500 $ do
+    u <- pick $ elements us
+    g <- pick $ elements gs
+    runPersistCmd $ do
+      c <- courseOfGroup persist g
+      subscribe persist u c g
+  quick 1000 $ do
+    u <- pick $ elements us
+    ucs <- runPersistCmd $ userCourses persist u
+    case ucs of
+      [] -> testEmptyCourse cs u
+      [c] -> testOneCourse u c
+      cs' -> testMoreCourses u cs'
+  where
+    -- Test if selecting any of the course, trying to unsubscribe does not
+    -- produce error and the number of the subscriptions does not change
+    testEmptyCourse cs u = do
+      c <- pick $ elements cs
+      runPersistCmd $ deleteUserFromCourse persist c u
+      ucs <- runPersistCmd $ userCourses persist u
+      assertEquals [] ucs "Subscirbed to some course."
+
+    -- Test if subscribing from the course produces an empty course list
+    testOneCourse u c = do
+      runPersistCmd $ deleteUserFromCourse persist c u
+      ucs <- runPersistCmd $ userCourses persist u
+      assertEquals [] ucs "Subscirbed to some course."
+
+    -- Check if the deletion of one course removes only the deleted course
+    testMoreCourses u cs' = do
+      c <- pick $ elements cs'
+      runPersistCmd $ deleteUserFromCourse persist c u
+      ucs <- runPersistCmd $ userCourses persist u
+      assertEquals ((length cs') - 1) (length ucs) "No only one courses was deleted"
+      assertEquals (cs' \\ [c]) ucs "No the right course was deleted"
+
+deleteUsersFromCourseNegativeTest = do
+  cs <- courses 50
+  gs <- groups 250 cs
+  us <- users 200
+  -- Subscribe users to groups
+  quick 500 $ do
+    u <- pick $ elements us
+    g <- pick $ elements gs
+    runPersistCmd $ do
+      c <- courseOfGroup persist g
+      subscribe persist u c g
+  -- Tries to subscribe students from groups that are not attended in
+  quick 1000 $ do
+    u <- pick $ elements us
+    ucs <- runPersistCmd $ userCourses persist u
+    c' <- pick $ elements (cs \\ ucs)
+    runPersistCmd $ deleteUserFromCourse persist c' u
+    ucs' <- runPersistCmd $ userCourses persist u
+    assertEquals ucs ucs' "User's course list has changed"
+
 runPersistCmd :: TIO a -> PropertyM IO a
 runPersistCmd m = do
   x <- run $ runPersist m
@@ -688,6 +751,8 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Modified assignments must be untouched after loading them" $ modifyAssignmentsTest
   , testCase "Modified evaluations must be untouched after loading them" $ modifyEvaluationTest
   , testCase "Users can not login in using invalid password" $ userCanLoginTest
+  , testCase "Delete user form course" $ deleteUsersFromCourseTest
+  , testCase "Delete user from courses not belong to" $ deleteUsersFromCourseNegativeTest
   , cleanUpPersistence
   ]
 

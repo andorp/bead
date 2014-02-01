@@ -6,6 +6,7 @@ module Bead.View.Snap.HandlerUtils (
   , userStory
   , registrationStory
   , getParameter
+  , getParameterValues -- Calculates a list of values for the given parameter
   , getParameterOrError
   , getJSONParam
   , getDictionaryInfos -- Calculates a list of language and dictionaryInfo
@@ -48,6 +49,7 @@ import Bead.View.Snap.I18N (IHtml, translate)
 
 -- Haskell imports
 
+import Control.Monad (mapM)
 import Data.String (IsString(..))
 import Data.Time (UTCTime, LocalTime)
 import qualified Data.Time as Time
@@ -58,6 +60,8 @@ import qualified Data.List as L
 import Control.Monad.Error
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.UTF8  as BU
+import Data.Map (Map)
+import qualified Data.Map as Map
 
 -- Snap and Blaze imports
 
@@ -173,14 +177,37 @@ getParameterOrError param
   = either (Left . contentHandlerErrorMsg) (Right . id)
      <$> (runErrorT $ getParameter param)
 
+-- Tries to decode the given value with the parameter description, if
+-- fails throws an error, otherwise returns the value
+decodeParamValue :: Parameter a -> BU.ByteString -> HandlerError App b a
+decodeParamValue param value = do
+  let v = T.unpack $ TE.decodeUtf8 value
+      decoded = decode param v
+  maybe
+    (throwError . strMsg . decodeError param $ v)
+    return
+    decoded
+
 getParameter :: Parameter a -> HandlerError App b a
 getParameter param = do
   reqParam <- getParam . B.pack . name $ param
-  when (isNothing reqParam) . throwError . strMsg . notFound $ param
-  let v     = T.unpack . TE.decodeUtf8 . fromJust $ reqParam
-      value = decode param v
-  when (isNothing value) . throwError . strMsg . decodeError param $ v
-  return . fromJust $ value
+  maybe
+    (throwError . strMsg $ notFound param) -- TODO: I18N
+    (decodeParamValue param)
+    reqParam
+
+-- Calculates a list of values named and decoded by the given parameter
+-- If the parameter is not found throws an error, if one of the parameter
+-- values are not decodable throws an error otherwise
+-- returns a list of the decoded values
+getParameterValues :: Parameter a -> HandlerError App b [a]
+getParameterValues param = do
+  params <- getParams
+  let paramName = name param
+  maybe
+    (throwError . strMsg $ notFound param) -- TODO: I18N
+    (mapM (decodeParamValue param))
+    (Map.lookup (fromString paramName) params)
 
 getJSONParam :: (Data a) => String -> String -> HandlerError App b a
 getJSONParam param msg = do

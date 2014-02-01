@@ -15,6 +15,7 @@ import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Validators
 import Bead.View.Snap.Dictionary
 import Bead.View.Snap.RouteOf
+import Bead.View.Snap.RequestParams
 
 {-
 Parameters are the data bridge between the Server side and the Client side.
@@ -288,3 +289,9 @@ changeLanguagePrm = languagePrm (fieldName changeLanguageField)
 
 userLanguagePrm :: Parameter Language
 userLanguagePrm = languagePrm (fieldName userLanguageField)
+
+delUserFromCoursePrm :: Parameter Username
+delUserFromCoursePrm = customUsernamePrm (fieldName delUserFromCourseField)
+
+delUserFromCourseKeyPrm :: Parameter CourseKey
+delUserFromCourseKeyPrm = customCourseKeyPrm courseKeyParamName
