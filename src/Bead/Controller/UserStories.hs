@@ -363,7 +363,9 @@ clearStatusMessage :: UserStory ()
 clearStatusMessage = changeUserState clearStatus
 
 errorPage :: String -> UserStory ()
-errorPage s = CME.throwError $ UserError s
+errorPage s = do
+  logMessage ERROR s
+  CME.throwError $ UserError s
 
 -- * Low level user story functionality
 
@@ -644,8 +646,10 @@ modifyAssignment ak a = logAction INFO ("modifies assignment " ++ show ak) $ do
 -- | The 'logAction' first logs the message after runs the given operation
 logAction :: LogLevel -> String -> UserStory a -> UserStory a
 logAction level msg s = do
-  logMessage level msg
-  s
+  logMessage level (concat [msg, " ..."])
+  x <- s
+  logMessage level (concat [msg, " ... DONE"])
+  return x
 
 withUserAndPersist :: (Username -> Persist -> TIO a) -> UserStory a
 withUserAndPersist f = do

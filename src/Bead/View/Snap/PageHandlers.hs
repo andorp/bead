@@ -301,7 +301,8 @@ handlePage (path,c) = do
 
         notAllowedPage = withUserState $ \s -> do
           lift $ logMessage ERROR . join $ [
-              "Page transition is not allowed "
+              usernameCata show (user s)
+            , ": Page transition is not allowed "
             , show (page s), " -> ", show p
             ]
           lift $ logoutAndResetRoute
