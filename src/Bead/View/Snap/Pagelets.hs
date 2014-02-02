@@ -224,6 +224,7 @@ linkText = P.pageCata
   (const $ Msg_LinkText_CommentFromEvaluation "Megjegyzés")
   (const2 $ Msg_LinkText_CommentFromModifyEvaluation "Megjegyzés")
   (const $ Msg_LinkText_DeleteUsersFromCourse "Hallgatók törlése")
+  (const $ Msg_LinkText_DeleteUsersFromGroup "Hallgatók törlése")
   where
     const2 = const . const
 

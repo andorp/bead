@@ -295,3 +295,10 @@ delUserFromCoursePrm = customUsernamePrm (fieldName delUserFromCourseField)
 
 delUserFromCourseKeyPrm :: Parameter CourseKey
 delUserFromCourseKeyPrm = customCourseKeyPrm courseKeyParamName
+
+delUserFromGroupPrm :: Parameter Username
+delUserFromGroupPrm = customUsernamePrm (fieldName delUserFromGroupField)
+
+delUserFromGroupKeyPrm :: Parameter GroupKey
+delUserFromGroupKeyPrm = customGroupKeyPrm groupKeyParamName
+

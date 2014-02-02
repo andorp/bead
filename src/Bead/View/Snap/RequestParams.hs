@@ -24,6 +24,9 @@ languageParamName = fromString $ fieldName changeLanguageField
 courseKeyParamName :: IsString s => s
 courseKeyParamName = fromString $ fieldName courseKeyField
 
+groupKeyParamName :: IsString s => s
+groupKeyParamName = fromString $ fieldName groupKeyField
+
 -- Request Param is a Pair of Strings, which
 -- are key and value representing a parameter in
 -- the GET or POST http request
@@ -59,6 +62,9 @@ instance RequestParam SubmissionKey where
 
 instance ReqParamValue GroupKey where
   paramValue (GroupKey g) = fromString g
+
+instance RequestParam GroupKey where
+  requestParam g = ReqParam (groupKeyParamName, paramValue g)
 
 instance ReqParamValue CourseKey where
   paramValue (CourseKey c) = fromString c

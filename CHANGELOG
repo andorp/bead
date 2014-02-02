@@ -1,3 +1,7 @@
+- New Translation message: Msg_LinkText_DeleteUsersFromGroup
+- New Translation message: Msg_Home_DeleteUsersFromGroup
+- New Translation message: Msg_UserStory_UsersAreDeletedFromGroup
 - New Translation message: Msg_UserStory_UsersAreDeletedFromCourse
 - New Translation message: Msg_LinkText_DeleteUsersFromCourse
+- New Translation message: Msg_Home_DeleteUsersFromCourse
 - New Translation message: Msg_UserStory_SubscribedToGroup_ChangeNotAllowed

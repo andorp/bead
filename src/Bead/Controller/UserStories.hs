@@ -226,7 +226,7 @@ createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
     user = usernameCata id
 
 -- Deletes the given users from the given course if the current user is a course
--- admin for the given course, otherwise throws an exception
+-- admin for the given course, otherwise redirects to the error page
 deleteUsersFromCourse :: CourseKey -> [Username] -> UserStory ()
 deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ show ck) $ do
   authorize P_Modify P_Course
@@ -234,11 +234,27 @@ deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ 
   join $ withPersist $ \p -> do
     cs <- map fst <$> R.administratedCourses p u
     case ck `elem` cs of
-      False -> return (CME.throwError $ strMsg "Nem oktatója a kurzusnak!")
+      False -> return $ errorPage "Nem oktatója a kurzusnak!"
       True -> do
         mapM_ (R.deleteUserFromCourse p ck) sts
         return . putStatusMessage $
           Msg_UserStory_UsersAreDeletedFromCourse "A felhasználókat leiratkoztattuk"
+
+-- Deletes the given users from the given group if the current user is a group
+-- admin for the given group, otherwise redirects to the error page
+deleteUsersFromGroup :: GroupKey -> [Username] -> UserStory ()
+deleteUsersFromGroup gk sts = logAction INFO ("delets users form group: " ++ show gk) $ do
+  authorize P_Modify P_Group
+  u <- CMS.gets user
+  join $ withPersist $ \p -> do
+    gs <- map fst <$> R.administratedGroups p u
+    case gk `elem` gs of
+      False -> return $ errorPage "Nem oktatója a csoportnak!"
+      True -> do
+        ck <- R.courseOfGroup p gk
+        mapM_ (\student -> R.unsubscribe p student ck gk) sts
+        return . putStatusMessage $
+          Msg_UserStory_UsersAreDeletedFromGroup "A felhasználókat leiratkoztattuk"
 
 createGroupAdmin :: Username -> GroupKey -> UserStory ()
 createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $ do

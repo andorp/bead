@@ -24,11 +24,12 @@ data UserAction
   | CreateGroup CourseKey Group
   | SubscribeToGroup GroupKey
   | CreateGroupAdmin Username GroupKey
-  | DeleteUsersFromCourse CourseKey [Username]
+  | DeleteUsersFromGroup GroupKey [Username]
 
   -- Course
   | CreateCourse Course
   | CreateCourseAdmin Username CourseKey
+  | DeleteUsersFromCourse CourseKey [Username]
 
   -- Assignment
   | CreateGroupAssignment GroupKey Assignment
@@ -72,6 +73,7 @@ userStoryFor (NewEvaluation sk e)    = Story.newEvaluation sk e
 userStoryFor (ModifyEvaluation ek e) = Story.modifyEvaluation ek e
 userStoryFor (SubmissionComment sk c) = Story.createComment sk c
 userStoryFor (DeleteUsersFromCourse ck us) = Story.deleteUsersFromCourse ck us
+userStoryFor (DeleteUsersFromGroup gk us) = Story.deleteUsersFromGroup gk us
 
 -- Saves the email, fullname and timezone in the persistence layer
 -- and set the user's timezone in the service context

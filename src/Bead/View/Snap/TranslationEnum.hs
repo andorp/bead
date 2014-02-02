@@ -246,6 +246,7 @@ translationList =
   , Msg_Home_HasNoSummary ()
   , Msg_Home_NonPercentageEvaluation ()
   , Msg_Home_DeleteUsersFromCourse ()
+  , Msg_Home_DeleteUsersFromGroup ()
 
   , Msg_UserStory_SetTimeZone ()
   , Msg_UserStory_ChangedUserDetails ()
@@ -258,6 +259,7 @@ translationList =
   , Msg_UserStory_NewGroupAssignment ()
   , Msg_UserStory_NewCourseAssignment ()
   , Msg_UserStory_UsersAreDeletedFromCourse ()
+  , Msg_UserStory_UsersAreDeletedFromGroup ()
 
   , Msg_UserActions_ChangedUserDetails ()
 
@@ -289,6 +291,7 @@ translationList =
   , Msg_LinkText_CommentFromEvaluation ()
   , Msg_LinkText_CommentFromModifyEvaluation ()
   , Msg_LinkText_DeleteUsersFromCourse ()
+  , Msg_LinkText_DeleteUsersFromGroup ()
 
   ]
 

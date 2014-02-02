@@ -103,6 +103,7 @@ instance SessionStore P.Page where
           (\(R.SubmissionKey s) -> join ["CommentFromEvaluation:", s])
           (\(R.SubmissionKey s) (R.EvaluationKey e) -> join ["CommentFromModifyEvaluation:", s, ":", e])
           (\(R.CourseKey c) -> join $ ["DeleteUsersFromCourse:", c])
+          (\(R.GroupKey g) -> join $ ["DeleteUsersFromGroup:", g])
 
 instance SessionRestore P.Page where
   restoreFromSession kv = case L.lookup pageSessionKey kv of
@@ -158,6 +159,13 @@ instance SessionRestore P.Page where
           let se = splitValues "DeleteUsersFromCourse:" ts
           in case se of
                [c] -> Just $ P.DeleteUsersFromCourse (courseKey c)
+               _   -> Nothing
+
+      | startsWith "DeleteUsersFromGroup:" ts ->
+          let se = splitValues "DeleteUsersFromGroup:" ts
+          in case se of
+               [g] -> Just $ P.DeleteUsersFromGroup (groupKey g)
+               _   -> Nothing
 
     Just _ -> Nothing
     where
@@ -168,6 +176,8 @@ instance SessionRestore P.Page where
       evaluationKey = R.EvaluationKey . T.unpack
 
       courseKey = R.CourseKey . T.unpack
+
+      groupKey = R.GroupKey . T.unpack
 
       username = E.Username . T.unpack
 

@@ -84,7 +84,8 @@ data Page
   | SetUserPassword
   | CommentFromEvaluation R.SubmissionKey
   | CommentFromModifyEvaluation R.SubmissionKey R.EvaluationKey
-  | DeleteUsersFromCourse R.CourseKey -- Users will be defined in parameters
+  | DeleteUsersFromCourse R.CourseKey -- NOTE: Users will be defined in parameters
+  | DeleteUsersFromGroup R.GroupKey -- NOTE: Users will be defined in parameters
   -- etc ...
   deriving (Eq, Ord, Show)
 
@@ -118,6 +119,7 @@ pageCata
   commentFromEvaluation
   commentFromModifyEvaluation
   deleteUsersFromCourse
+  deleteUsersFromGroup
   p = case p of
     Login -> login
     Logout -> logout
@@ -147,6 +149,7 @@ pageCata
     CommentFromEvaluation sk -> commentFromEvaluation sk
     CommentFromModifyEvaluation sk ek -> commentFromModifyEvaluation sk ek
     DeleteUsersFromCourse ck -> deleteUsersFromCourse ck
+    DeleteUsersFromGroup gk -> deleteUsersFromGroup gk
 
 
 isLogin Login = True
@@ -233,6 +236,9 @@ isCommentFromModifyEvaluation _                                 = False
 isDeleteUsersFromCourse (DeleteUsersFromCourse _) = True
 isDeleteUsersFromCourse _                         = False
 
+isDeleteUsersFromGroup (DeleteUsersFromGroup _) = True
+isDeleteUsersFromGroup _                        = False
+
 -- Returns True if the page need to be rendered
 contentPages :: Page -> Bool
 contentPages Error = False
@@ -248,7 +254,7 @@ pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
   p Home = [ isLogout, isCourseAdmin, isEvaluationTable, isNewGroupAssignment, isNewCourseAssignment
            , isSubmission, isSubmissionList, isGroupRegistration, isAdministration, isProfile
            , isUserSubmissions, isSubmissionDetails, isModifyAssignment
-           , isSetUserPassword, isHome, isDeleteUsersFromCourse
+           , isSetUserPassword, isHome, isDeleteUsersFromCourse, isDeleteUsersFromGroup
            ]
   p CourseAdmin = [isHome, isProfile, isCreateGroup, isAssignGroupAdmin, isCourseAdmin]
   p EvaluationTable  = [isHome, isProfile, isEvaluation, isModifyEvaluation, isEvaluationTable]
@@ -275,6 +281,7 @@ pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
   p (CommentFromEvaluation _) = [isCommentFromEvaluation, isEvaluation]
   p (CommentFromModifyEvaluation _ _) = [isCommentFromModifyEvaluation, isModifyEvaluation]
   p (DeleteUsersFromCourse _) = [isHome]
+  p (DeleteUsersFromGroup _) = [isHome]
 
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
@@ -341,6 +348,7 @@ dataModificationPages = [
   , isEvaluation
   , isModifyEvaluation
   , isDeleteUsersFromCourse
+  , isDeleteUsersFromGroup
   ]
 
 -- Pages that not part of the site content
@@ -407,6 +415,7 @@ parentPage SetUserPassword     = Home
 parentPage (CommentFromEvaluation sk) = Evaluation sk
 parentPage (CommentFromModifyEvaluation sk ek) = ModifyEvaluation sk ek
 parentPage (DeleteUsersFromCourse _) = Home
+parentPage (DeleteUsersFromGroup _) = Home
 
 #ifdef TEST
 

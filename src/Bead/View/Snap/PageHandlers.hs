@@ -383,9 +383,13 @@ requestToPage path params
     = P.CommentFromModifyEvaluation <$> submissionKey <*> evaluationKey
   | path == deleteUsersFromCoursePath
     = P.DeleteUsersFromCourse <$> courseKey
+  | path == deleteUsersFromGroupPath
+    = P.DeleteUsersFromGroup <$> groupKey
+  | otherwise = Nothing
   where
     j = Just
     courseKey     = (CourseKey     . unpack) <$> value courseKeyParamName
+    groupKey      = (GroupKey      . unpack) <$> value groupKeyParamName
     assignmentKey = (AssignmentKey . unpack) <$> value assignmentKeyParamName
     submissionKey = (SubmissionKey . unpack) <$> value submissionKeyParamName
     evaluationKey = (EvaluationKey . unpack) <$> value evaluationKeyParamName

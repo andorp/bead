@@ -16,7 +16,8 @@ import Bead.View.Snap.RouteOf hiding (invariants)
 import Bead.View.Snap.Content (Content(..), emptyContent)
 import Bead.View.Snap.Content.Home (
     home,
-    deleteUsersFromCourse)
+    deleteUsersFromCourse,
+    deleteUsersFromGroup)
 import Bead.View.Snap.Content.Profile (profile, changePassword)
 import Bead.View.Snap.Content.CourseAdmin (courseAdmin, createGroup, assignGroupAdmin)
 import Bead.View.Snap.Content.Administration (administration, assignCourseAdmin)
@@ -82,7 +83,8 @@ content = [
   route setUserPasswordPath setUserPassword,
   route commentFromEvaluationPath commentFromEvaluation,
   route commentFromModifyEvaluationPath commentFromModifyEvaluation,
-  route deleteUsersFromCoursePath deleteUsersFromCourse]
+  route deleteUsersFromCoursePath deleteUsersFromCourse,
+  route deleteUsersFromGroupPath deleteUsersFromGroup]
 
 contentMap :: Page -> Content
 contentMap p = maybe (error "Content is not defined") id

@@ -64,6 +64,7 @@ assignGroupAdminBtn = SubmitButton "asg-group-admin-submit"
 changeProfileBtn = SubmitButton "change-profile"
 changePasswordBtn = SubmitButton "change-password"
 delUsersFromCourseBtn = SubmitButton "del-users-from-course-sbm-btn"
+delUsersFromGroupBtn = SubmitButton "del-users-from-group-sbm-btn"
 
 instance SnapFieldName RegistrationComp where
   fieldName = fromString . rFieldName
@@ -282,6 +283,7 @@ instance SnapFieldName HomeField where
   fieldName = fromString . hfFieldName
 
 delUserFromCourseField = HomeField "del-user-form-course"
+delUserFromGroupField  = HomeField "del-user-from-group"
 
 newtype CourseKeyField = CourseKeyField { ckfFieldName :: String }
 
@@ -289,6 +291,13 @@ instance SnapFieldName CourseKeyField where
   fieldName = fromString . ckfFieldName
 
 courseKeyField = CourseKeyField "course-key-field"
+
+newtype GroupKeyField = GroupKeyField { gkfFieldName :: String }
+
+instance SnapFieldName GroupKeyField where
+  fieldName = fromString . gkfFieldName
+
+groupKeyField = GroupKeyField "group-key-field"
 
 -- * Template names
 
@@ -365,7 +374,8 @@ fieldList = map fieldName $ join [
   , SFN assignmentStartDefaultDate, SFN assignmentStartDefaultHour, SFN assignmentStartDefaultMin
   , SFN assignmentEndDefaultDate, SFN assignmentEndDefaultHour, SFN assignmentEndDefaultMin
   , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage, SFN changeLanguageField
-  , SFN userLanguageField, SFN delUsersFromCourseBtn
+  , SFN userLanguageField, SFN delUsersFromCourseBtn, SFN courseKeyField, SFN groupKeyField
+  , SFN delUserFromCourseField, SFN delUserFromGroupField
 
   , SFN createCourseForm, SFN evaluationTypeSelection, SFN evaluationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId

@@ -38,6 +38,7 @@ module Bead.View.Snap.RouteOf (
   , commentFromEvaluationPath
   , commentFromModifyEvaluationPath
   , deleteUsersFromCoursePath
+  , deleteUsersFromGroupPath
   , pageRoutePath
 #ifdef TEST
   , invariants
@@ -145,6 +146,9 @@ commentFromModifyEvaluationPath = "/comment-from-modify-evaluation"
 deleteUsersFromCoursePath :: RoutePath
 deleteUsersFromCoursePath = "/delete-users-from-course"
 
+deleteUsersFromGroupPath :: RoutePath
+deleteUsersFromGroupPath = "/delete-users-from-group"
+
 -- Returns a base path for the given page
 pageRoutePath :: Page -> RoutePath
 pageRoutePath = fromString . r where
@@ -177,6 +181,7 @@ pageRoutePath = fromString . r where
     (const commentFromEvaluationPath)
     (const $ const commentFromModifyEvaluationPath)
     (const deleteUsersFromCoursePath)
+    (const deleteUsersFromGroupPath)
 
 -- Calculates a request parameter list from the given page value
 pageRequestParams :: Page -> [ReqParam]
@@ -187,6 +192,7 @@ pageRequestParams = r where
   r (CommentFromEvaluation ek) = [requestParam ek]
   r (CommentFromModifyEvaluation ek sk) = [requestParam ek, requestParam sk]
   r (DeleteUsersFromCourse ck) = [requestParam ck]
+  r (DeleteUsersFromGroup gk) = [requestParam gk]
   r _ = []
 
 -- Calculates the full path from a page value, including the base path and the

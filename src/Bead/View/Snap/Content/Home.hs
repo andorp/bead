@@ -2,6 +2,7 @@
 module Bead.View.Snap.Content.Home (
     home
   , deleteUsersFromCourse
+  , deleteUsersFromGroup
 #ifdef TEST
   , sumBinaryResultTests
   , sumPercentageResultTests
@@ -52,6 +53,9 @@ home = getContentHandler homePage
 deleteUsersFromCourse :: Content
 deleteUsersFromCourse = postContentHandler deleteUsersFromCourseHandler
 
+deleteUsersFromGroup :: Content
+deleteUsersFromGroup = postContentHandler deleteUsersFromGroupHandler
+
 data HomePageData = HomePageData {
     userState   :: UserState
   , hasCourses  :: Bool -- True if the user has administrated courses
@@ -82,6 +86,12 @@ deleteUsersFromCourseHandler =
   UA.DeleteUsersFromCourse
     <$> (getParameter delUserFromCourseKeyPrm)
     <*> (getParameterValues delUserFromCoursePrm)
+
+deleteUsersFromGroupHandler :: POSTContentHandler
+deleteUsersFromGroupHandler =
+  UA.DeleteUsersFromGroup
+    <$> (getParameter delUserFromGroupKeyPrm)
+    <*> (getParameterValues delUserFromGroupPrm)
 
 navigation :: [P.Page] -> IHtml
 navigation links = do
@@ -191,10 +201,10 @@ htmlSubmissionTable (i,s) = do
     assignmentLine msg (stAssignments s)
     mapM_ (userLine msg) (stUserLines s)
   where
-    courseForm inner = infoSourceCata createForm id id infoSrc $ inner where
+    courseForm = infoSourceCata createForm createForm id infoSrc where
       createForm = either
-        (const id) -- No translation for group key
-        (\ck -> (postForm (routeOf (P.DeleteUsersFromCourse ck)))) -- Parameters would fill up from checkboxes
+        (postForm . routeOf . P.DeleteUsersFromGroup)
+        (postForm . routeOf . P.DeleteUsersFromCourse)
         key
 
     tableId = join ["st", show i]
@@ -239,30 +249,45 @@ htmlSubmissionTable (i,s) = do
 
     deleteHeaderCell msg =
       either
-        (const emptyHtml) -- GroupKey
-        (infoSourceCata   -- CourseKey
-           deleteButton
+        (infoSourceCata -- GroupKey
+          (const emptyHtml)
+          deleteForGroupButton
+          (const emptyHtml)
+          infoSrc)
+        (infoSourceCata -- CourseKey
+           deleteForCourseButton
            (const emptyHtml)
            (const emptyHtml)
            infoSrc)
         key
       where
-        deleteButton ck =
+        deleteForCourseButton ck =
           headerCell $ submitButton
             (fieldName delUsersFromCourseBtn)
             (msg $ Msg_Home_DeleteUsersFromCourse "Törlés")
 
+        deleteForGroupButton gk =
+          headerCell $ submitButton
+            (fieldName delUsersFromGroupBtn)
+            (msg $ Msg_Home_DeleteUsersFromGroup "Törlés")
+
     deleteUserCheckbox u =
       infoSourceCata
-        deleteCheckbox
-        emptyHtml
+        deleteCourseCheckbox
+        deleteGroupCheckbox
         emptyHtml
         infoSrc
       where
-        deleteCheckbox =
+        deleteCourseCheckbox =
           dataCell noStyle $ checkBox
             (Param.name delUserFromCoursePrm)
             (encode delUserFromCoursePrm $ ud_username u)
+            False
+
+        deleteGroupCheckbox =
+          dataCell noStyle $ checkBox
+            (Param.name delUserFromGroupPrm)
+            (encode delUserFromGroupPrm $ ud_username u)
             False
 
     emptyHtml = return ()
