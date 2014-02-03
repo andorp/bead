@@ -25,6 +25,7 @@ data UserAction
   | SubscribeToGroup GroupKey
   | CreateGroupAdmin Username GroupKey
   | DeleteUsersFromGroup GroupKey [Username]
+  | StudentUnsubscription GroupKey -- Student wants to unsibscribe from a course which he is subscribed to
 
   -- Course
   | CreateCourse Course
@@ -74,6 +75,7 @@ userStoryFor (ModifyEvaluation ek e) = Story.modifyEvaluation ek e
 userStoryFor (SubmissionComment sk c) = Story.createComment sk c
 userStoryFor (DeleteUsersFromCourse ck us) = Story.deleteUsersFromCourse ck us
 userStoryFor (DeleteUsersFromGroup gk us) = Story.deleteUsersFromGroup gk us
+userStoryFor (StudentUnsubscription gk) = Story.studentUnsubscription gk
 
 -- Saves the email, fullname and timezone in the persistence layer
 -- and set the user's timezone in the service context

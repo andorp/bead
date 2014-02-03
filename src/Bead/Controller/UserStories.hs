@@ -14,7 +14,7 @@ import Bead.View.Snap.Translation
 
 import Control.Arrow
 import Control.Applicative
-import Control.Monad (when, unless)
+import Control.Monad (when, unless, filterM)
 import Control.Monad.Error (Error(..))
 import Control.Concurrent.MVar
 import qualified Control.Monad.State  as CMS
@@ -272,6 +272,25 @@ createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $
   where
     user = usernameCata id
 
+-- Unsubscribes the student from the given group if the group is one of the student's group
+-- and the sutdent did not submit any solutions for the assignments of the group. In that
+-- case the error page is rendered
+studentUnsubscription :: GroupKey -> UserStory ()
+studentUnsubscription gk = logAction INFO ("unsubscribes from group: " ++ show gk) $ do
+  u <- CMS.gets user
+  join $ withPersist $ \p -> do
+    registered <- R.isUserInGroup p u gk
+    case registered of
+      False -> return $ errorPage "Nem a te csoportod"
+      True -> do
+        ck <- R.courseOfGroup p gk
+        s <- (&&) <$> R.isThereASubmissionForGroup p u gk
+                  <*> R.isThereASubmissionForCourse p u ck
+        if s then (return $ errorPage "Már van beadott megoldásod a kurzushoz tartozó feladatokhoz")
+             else do
+               R.unsubscribe p u ck gk
+               return (return ())
+
 -- | Adds a new group to the given course
 createGroup :: CourseKey -> Group -> UserStory GroupKey
 createGroup ck g = logAction INFO ("creats group " ++ show (groupName g)) $ do
@@ -325,13 +344,22 @@ subscribeToGroup gk = logAction INFO ("subscribes to the group " ++ (show gk)) $
       aks <- concat <$> mapM (groupAssignments p) gks
       (not . null . catMaybes) <$> mapM (flip (lastSubmission p) u) aks
 
-attendedGroups :: UserStory [(GroupKey, GroupDesc)]
+-- Returns a list of elements of group key, description and a boolean value indicating
+-- that the user already submitted a solution for the group or the course of the group
+attendedGroups :: UserStory [(GroupKey, GroupDesc, Bool)]
 attendedGroups = logAction INFO "selects courses attended in" $ do
   authorize P_Open P_Group
   uname <- CMS.gets user
   withPersist $ \p -> do
     ks <- R.userGroups p uname
-    mapM (R.groupDescription p) ks
+    ds <- mapM (R.groupDescription p) ks
+    mapM (isThereASubmissionDesc p uname) ds
+  where
+    isThereASubmissionDesc p u (gk, desc) = do
+      ck <- R.courseOfGroup p gk
+      s <- (||) <$> R.isThereASubmissionForGroup p u gk
+                <*> R.isThereASubmissionForCourse p u ck
+      return (gk,desc,s)
 
 createGroupAssignment :: GroupKey -> Assignment -> UserStory AssignmentKey
 createGroupAssignment gk a = logAction INFO msg $ do
@@ -490,12 +518,18 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
       sks <- R.usersOpenedSubmissions p ak u
       mapM_ (R.removeFromOpened p ak u) sks
 
+-- Returns all the group for that the user does not submitted a soultion already
 availableGroups :: UserStory [(GroupKey, GroupDesc)]
-availableGroups = logAction INFO "lists available assignments" $ do
+availableGroups = logAction INFO "lists available groups" $ do
   authorize P_Open P_Group
-  withPersist $ \p -> (mapM (R.groupDescription p . fst)) =<< (R.filterGroups p each)
+  u <- CMS.gets user
+  withPersist $ \p -> do
+    allGroups <- map fst <$> R.filterGroups p each
+    available <- filterM (thereIsNoSubmission p u) allGroups
+    (mapM (R.groupDescription p)) available
   where
     each _ _ = True
+    thereIsNoSubmission p u gk = not <$> R.isThereASubmissionForGroup p u gk
 
 -- Produces a list that contains the assignments for the actual user,
 -- if the user is not subscribed to a course or group the list

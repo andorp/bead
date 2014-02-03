@@ -18,6 +18,8 @@ module Bead.Persistence.Persist (
   , groupsOfUsersCourse
   , removeOpenedSubmission
   , deleteUserFromCourse -- Deletes a user from a course, searching the group id for the unsubscription
+  , isThereASubmissionForGroup -- Checks if the user submitted any solutions for the group
+  , isThereASubmissionForCourse -- Checks if the user submitted any solutions for the course
   ) where
 
 import Bead.Domain.Types (Erroneous)
@@ -467,6 +469,20 @@ deleteUserFromCourse p ck u = do
       (Map.lookup ck cgMap)
   where
     k = Kleisli
+
+-- Returns True if the given student submitted at least one solution for the
+-- assignments for the given group, otherwise False
+isThereASubmissionForGroup :: Persist -> Username -> GroupKey -> TIO Bool
+isThereASubmissionForGroup p u gk = do
+  aks <- groupAssignments p gk
+  (not . null . catMaybes) <$> mapM (flip (lastSubmission p) u) aks
+
+-- Returns True if the given student submitted at least one solution for the
+-- assignments for the given group, otherwise False
+isThereASubmissionForCourse :: Persist -> Username -> CourseKey -> TIO Bool
+isThereASubmissionForCourse p u ck = do
+  aks <- courseAssignments p ck
+  (not . null . catMaybes) <$> mapM (flip (lastSubmission p) u) aks
 
 -- * Runner Tools
 

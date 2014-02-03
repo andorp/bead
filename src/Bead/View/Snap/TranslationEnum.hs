@@ -84,6 +84,8 @@ translationList =
   , Msg_GroupRegistration_Admins ()
   , Msg_GroupRegistration_NoAvailableCourses ()
   , Msg_GroupRegistration_Register ()
+  , Msg_GroupRegistration_Unsubscribe ()
+  , Msg_GroupRegistration_NoUnsubscriptionAvailable ()
 
   , Msg_UserDetails_SaveButton ()
   , Msg_UserDetails_NonExistingUser ()

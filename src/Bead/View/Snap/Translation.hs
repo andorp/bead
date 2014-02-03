@@ -75,6 +75,8 @@ data Translation a
   | Msg_GroupRegistration_Admins { trans :: a }
   | Msg_GroupRegistration_NoAvailableCourses { trans :: a }
   | Msg_GroupRegistration_Register { trans :: a }
+  | Msg_GroupRegistration_Unsubscribe { trans :: a }
+  | Msg_GroupRegistration_NoUnsubscriptionAvailable { trans :: a }
 
   | Msg_UserDetails_SaveButton { trans :: a }
   | Msg_UserDetails_NonExistingUser { trans :: a }

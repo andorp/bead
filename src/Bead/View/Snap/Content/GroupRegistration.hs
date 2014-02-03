@@ -23,7 +23,7 @@ groupRegistration = getPostContentHandler groupRegistrationPage postGroupReg
 
 data GroupRegData = GroupRegData {
     groups :: [(GroupKey, GroupDesc)]
-  , groupsRegistered :: [(GroupKey, GroupDesc)]
+  , groupsRegistered :: [(GroupKey, GroupDesc, Bool)]
   }
 
 postGroupReg :: POSTContentHandler
@@ -34,7 +34,7 @@ groupRegistrationPage :: GETContentHandler
 groupRegistrationPage = withUserState $ \s -> do
   desc <- userStory $ do
     as <- attendedGroups
-    let attendedGroupKeys = map fst as
+    let attendedGroupKeys = map fst3 as
         newGroupForUser (gk,_) = not (elem gk attendedGroupKeys)
     gs <- (filter newGroupForUser) <$> availableGroups
     return GroupRegData {
@@ -42,6 +42,8 @@ groupRegistrationPage = withUserState $ \s -> do
       , groupsRegistered = as
       }
   renderPagelet $ withUserFrame s (groupRegistrationContent desc)
+  where
+    fst3 (f,_,_) = f
 
 groupRegistrationContent :: GroupRegData -> IHtml
 groupRegistrationContent desc = do
@@ -54,7 +56,7 @@ groupRegistrationContent desc = do
       H.h3 $ (fromString . msg $ Msg_GroupRegistration_SelectGroup "Tárgy és csoport kiválasztása")
       i18n msg $ groupsForTheUser (groups desc)
 
-groupsAlreadyRegistered :: [(GroupKey, GroupDesc)] -> IHtml
+groupsAlreadyRegistered :: [(GroupKey, GroupDesc, Bool)] -> IHtml
 groupsAlreadyRegistered ds = do
   msg <- getI18N
   return $ nonEmpty ds
@@ -63,12 +65,17 @@ groupsAlreadyRegistered ds = do
       H.tr $ do
         H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Courses "Csoportok")
         H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Admins "Oktatók")
-      mapM_ (groupLine . snd) ds)
+        H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Unsubscribe "Leiratkozás")
+      mapM_ (groupLine msg) ds)
   where
-    groupLine = groupDescFold $ \n as -> do
+    groupLine msg (_key, desc, hasSubmission) = flip groupDescFold desc $ \n as -> do
       H.tr $ do
         H.td # informationalCell $ fromString $ n
         H.td # informationalCell $ fromString $ join $ intersperse " " as
+        H.td # informationalCell $
+          if hasSubmission
+            then (fromString . msg $ Msg_GroupRegistration_NoUnsubscriptionAvailable "Már van beadott megoldásod")
+            else submitButton "TODO_route" (msg $ Msg_GroupRegistration_Unsubscribe "Leiratkozás")
 
 groupsForTheUser :: [(GroupKey, GroupDesc)] -> IHtml
 groupsForTheUser gs = do

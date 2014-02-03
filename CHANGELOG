@@ -1,3 +1,5 @@
+- New Translation message: Msg_GroupRegistration_NoUnsubscriptionAvailable
+- New Translation message: Msg_GroupRegistration_Unsubscribe
 - New Translation message: Msg_LinkText_DeleteUsersFromGroup
 - New Translation message: Msg_Home_DeleteUsersFromGroup
 - New Translation message: Msg_UserStory_UsersAreDeletedFromGroup
