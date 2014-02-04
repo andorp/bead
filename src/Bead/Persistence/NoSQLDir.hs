@@ -6,7 +6,7 @@ import Bead.Domain.Types
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.Persistence.Persist
-import Bead.Persistence.NoSQL.Loader
+import Bead.Persistence.NoSQLDirFile
 import Control.Monad.Transaction.TIO
 
 import Control.Applicative ((<$>))

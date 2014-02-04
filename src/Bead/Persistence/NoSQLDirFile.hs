@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP #-}
-module Bead.Persistence.NoSQL.Loader where
+module Bead.Persistence.NoSQLDirFile where
 
 import Bead.Domain.Types hiding (FileName(..), fileName)
 import qualified Bead.Domain.Types as T (FileName(..), fileName)
