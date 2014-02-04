@@ -491,14 +491,35 @@ submissionDirStructure = DirStructure {
   , directories = ["assignment", "user", "evaluation", "comment"]
   }
 
+-- Course directory structure
 courseDirStructure = DirStructure {
-    files       = ["description", "name", "evalcfg"]
-  , directories = ["groups", "assignments", "users", "admins"]
+    files =
+      [ "description" -- Short description for the course
+      , "name"        -- Name that usually appears on the UI
+      , "evalcfg"     -- Evaluation config
+      ]
+  , directories =
+      [ "groups"       -- Soft links to the groups associated with the course
+      , "assignments"  -- Soft links to the assignments associated with the course
+      , "users"        -- Soft links to the users that are actively registered for the course
+      , "admins"       -- Soft links to the users that administrates the course
+      , "unsubscribed" -- Soft links to the users that are subscribed and unsubscribed to the course at least once
+      ]
   }
 
 groupDirStructure = DirStructure {
-    files       = ["description", "name", "evalcfg"]
-  , directories = ["users", "course", "admins", "assignments"]
+    files =
+      [ "description" -- Short description for the group
+      , "name"        -- Name that usually appears on the UI
+      , "evalcfg"     -- Evaulation config
+      ]
+  , directories =
+      [ "users"        -- Soft links to the users that are actively registered for the group
+      , "course"       -- Soft links to the course that the group is associated with
+      , "admins"       -- Soft links to the users that administrated the group
+      , "assignments"  -- Soft links to the assignments that are associated with the group
+      , "unsubscribed" -- Soft links to the users that are subscribed and unsubscribed to the group at least once
+      ]
   }
 
 evaluationDirStructure = DirStructure {

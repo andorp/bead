@@ -1,3 +1,5 @@
+- Data directory change: Group directory contains a new "unsubscribed" subdirectory
+- Data directory change: Course directory contains a new "unsubscribed" subdirectory
 - New Translation message: Msg_UserStory_SuccessfulCourseUnsubscription
 - New Translation message: Msg_LinkText_UnsubscribeFromCourse
 - New Translation message: Msg_GroupRegistration_NoUnsubscriptionAvailable

@@ -66,6 +66,10 @@ testDecoratedPersist a q = Persist {
       testCourseKey a ck
       subscribedToCourse q ck
 
+  , unsubscribedFromCourse = \ck -> do
+      testCourseKey a ck
+      unsubscribedFromCourse q ck
+
   , isUserInCourse = isUserInCourse q
   , userCourses = \u -> do
       cs <- userCourses q u
@@ -117,6 +121,11 @@ testDecoratedPersist a q = Persist {
   , subscribedToGroup = \gk -> do
       testGroupKey a gk
       subscribedToGroup q gk
+
+  , unsubscribedFromGroup = \gk -> do
+      testGroupKey a gk
+      unsubscribedFromGroup q gk
+
 
   , filterAssignment = filterAssignment q
   , assignmentKeys = do

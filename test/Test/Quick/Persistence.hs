@@ -7,8 +7,6 @@ import Data.Set (Set)
 import qualified Data.Set as Set
 
 import Data.List ((\\))
-import Data.Set (Set)
-import qualified Data.Set as Set
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.IORef
@@ -284,8 +282,9 @@ quick n p = check $ quickCheckWithResult (success n) $ monadicIO p
 check m = do
   x <- m
   case x of
-    (Success {}) -> return ()
-    _            -> fail "quickcheck has failed"
+    s@(Success {}) -> return ()
+    f@(Failure {}) -> fail $ reason f
+    other          -> fail $ output other
 
 -- The test are at very high level, we must see if basic load
 -- properties are hold.

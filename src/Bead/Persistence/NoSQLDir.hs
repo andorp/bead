@@ -44,6 +44,7 @@ noSqlDirPersist = Persist {
   , createCourseAdmin = nCreateCourseAdmin
   , courseAdmins = nCourseAdmins
   , subscribedToCourse = nSubscribedToCourse
+  , unsubscribedFromCourse = nUnsubscribedFromCourse
 
   , saveGroup     = nSaveGroup
   , loadGroup     = nLoadGroup
@@ -56,6 +57,7 @@ noSqlDirPersist = Persist {
   , groupAdmins   = nGroupAdmins
   , createGroupAdmin    = nCreateGroupAdmin
   , subscribedToGroup   = nSubscribedToGroup
+  , unsubscribedFromGroup = nUnsubscribedFromGroup
 
   , filterAssignment     = nFilterAssignment
   , assignmentKeys       = nAssignmentKeys
@@ -221,6 +223,12 @@ nSubscribedToCourse = objectsIn "users" Username isUserDir
 nSubscribedToGroup :: GroupKey -> TIO [Username]
 nSubscribedToGroup = objectsIn "users" Username isUserDir
 
+nUnsubscribedFromCourse :: CourseKey -> TIO [Username]
+nUnsubscribedFromCourse = objectsIn "unsubscribed" Username isUserDir
+
+nUnsubscribedFromGroup :: GroupKey -> TIO [Username]
+nUnsubscribedFromGroup = objectsIn "unsubscribed" Username isUserDir
+
 isCorrectDirStructure :: DirStructure -> FilePath -> TIO Bool
 isCorrectDirStructure d p = hasNoRollback $ isCorrectStructure p d
 
@@ -264,10 +272,16 @@ nSubscribe username ck gk = do
 
 nUnsubscribe :: Username -> CourseKey -> GroupKey -> TIO ()
 nUnsubscribe username ck gk = do
-  unlink username gk "users"
-  unlink username ck "users"
-  unlink gk username "group"
-  unlink ck username "course"
+  usersGroup <- nIsUserInGroup username gk
+  when usersGroup $ do
+    ck' <- nCourseOfGroup gk
+    when (ck == ck') $ do
+      unlink username gk "users"
+      unlink username ck "users"
+      unlink gk username "group"
+      unlink ck username "course"
+      link username gk "unsubscribed"
+      link username ck "unsubscribed"
 
 nCreateGroupAdmin :: Username -> GroupKey -> TIO ()
 nCreateGroupAdmin u gk = do

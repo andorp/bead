@@ -68,6 +68,7 @@ data Persist = Persist {
   , createCourseAdmin :: Username -> CourseKey -> TIO ()
   , courseAdmins      :: CourseKey -> TIO [Username]
   , subscribedToCourse :: CourseKey -> TIO [Username]
+  , unsubscribedFromCourse :: CourseKey -> TIO [Username]
 
   -- Group Persistence
   , saveGroup     :: CourseKey -> Group -> TIO GroupKey
@@ -80,7 +81,8 @@ data Persist = Persist {
   , unsubscribe   :: Username -> CourseKey -> GroupKey -> TIO ()
   , groupAdmins   :: GroupKey -> TIO [Username]
   , createGroupAdmin  :: Username -> GroupKey -> TIO ()
-  , subscribedToGroup    :: GroupKey -> TIO [Username]
+  , subscribedToGroup     :: GroupKey -> TIO [Username]
+  , unsubscribedFromGroup :: GroupKey -> TIO [Username]
 
   -- Assignment Persistence
   , filterAssignment  :: (AssignmentKey -> Assignment -> Bool) -> TIO [(AssignmentKey, Assignment)]
