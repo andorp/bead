@@ -16,7 +16,7 @@ import Bead.Domain.Evaluation
 import Bead.Domain.Relationships
 import Bead.Persistence.Persist
 import Bead.Persistence.NoSQLDir
-import Bead.Persistence.NoSQL.Loader
+import Bead.Persistence.NoSQLDirFile
 import Control.Monad.Transaction.TIO
 
 -- Utils
