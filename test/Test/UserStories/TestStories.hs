@@ -177,7 +177,9 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
     ug <- attendedGroups
     return (uc,ug)
   assertBool "User is not registered in course" (uc == True)
-  assertBool "User is not registered in group" (elem gk2 (map fst ug))
+  assertBool "User is not registered in group" (elem gk2 (map fst3 ug))
+  where
+    fst3 (f,_,_) = f
 
 -- * Helpers
 

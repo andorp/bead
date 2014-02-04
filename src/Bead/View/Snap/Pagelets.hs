@@ -212,7 +212,7 @@ linkText = P.pageCata
   (Msg_LinkText_Submission "Beküldés")
   (Msg_LinkText_SubmissionList "Beadott megoldások")
   (const2 $ Msg_LinkText_SubmissionDetails "Megoldás")
-  (Msg_LinkText_GroupRegistration "Tárgy vagy csoport felvétele")
+  (Msg_LinkText_GroupRegistration "Tárgy vagy csoport felvétele, leadása")
   (Msg_LinkText_UserDetails "Beállítások")
   (Msg_LinkText_UserSubmissions "Megoldások")
   (Msg_LinkText_CreateCourse "Tárgy létrehozása")
@@ -225,6 +225,7 @@ linkText = P.pageCata
   (const2 $ Msg_LinkText_CommentFromModifyEvaluation "Megjegyzés")
   (const $ Msg_LinkText_DeleteUsersFromCourse "Hallgatók törlése")
   (const $ Msg_LinkText_DeleteUsersFromGroup "Hallgatók törlése")
+  (const $ Msg_LinkText_UnsubscribeFromCourse "Leiratkozás")
   where
     const2 = const . const
 

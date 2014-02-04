@@ -39,9 +39,11 @@ module Bead.View.Snap.RouteOf (
   , commentFromModifyEvaluationPath
   , deleteUsersFromCoursePath
   , deleteUsersFromGroupPath
+  , unsubscribeFromCoursePath
   , pageRoutePath
+  , pageRequestParams
 #ifdef TEST
-  , invariants
+  , routeOfInvariants
 #endif
   ) where
 
@@ -149,6 +151,9 @@ deleteUsersFromCoursePath = "/delete-users-from-course"
 deleteUsersFromGroupPath :: RoutePath
 deleteUsersFromGroupPath = "/delete-users-from-group"
 
+unsubscribeFromCoursePath :: RoutePath
+unsubscribeFromCoursePath = "/unsubscribe-from-course"
+
 -- Returns a base path for the given page
 pageRoutePath :: Page -> RoutePath
 pageRoutePath = fromString . r where
@@ -182,6 +187,7 @@ pageRoutePath = fromString . r where
     (const $ const commentFromModifyEvaluationPath)
     (const deleteUsersFromCoursePath)
     (const deleteUsersFromGroupPath)
+    (const unsubscribeFromCoursePath)
 
 -- Calculates a request parameter list from the given page value
 pageRequestParams :: Page -> [ReqParam]
@@ -193,6 +199,7 @@ pageRequestParams = r where
   r (CommentFromModifyEvaluation ek sk) = [requestParam ek, requestParam sk]
   r (DeleteUsersFromCourse ck) = [requestParam ck]
   r (DeleteUsersFromGroup gk) = [requestParam gk]
+  r (UnsubscribeFromCourse ck) = [requestParam ck]
   r _ = []
 
 -- Calculates the full path from a page value, including the base path and the
@@ -219,7 +226,7 @@ requestRoute route rs = fromString . join $
 
 -- * Invariants
 
-invariants = Invariants [
+routeOfInvariants = Invariants [
     ("RouteOf strings must not be empty", \p -> length (routeOf' p) > 0)
   ] where
     routeOf' :: Page -> String

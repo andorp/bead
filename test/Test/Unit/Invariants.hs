@@ -22,7 +22,8 @@ import Test.Quick.RolePermissionGen
 
 -- * Unit tests and invariants import from Bead modules
 
-import qualified Bead.View.Snap.RouteOf as R (invariants)
+import qualified Bead.View.Snap.RouteOf as R (routeOfInvariants)
+import qualified Bead.View.Snap.PageHandlers as PH (pageHandlersInvariants)
 import qualified Bead.Controller.Pages as P (invariants)
 import qualified Bead.Domain.Entities as E (roleInvariants, assignmentTests, compareHunTests)
 import qualified Bead.Domain.RolePermission as RP (invariants)
@@ -70,7 +71,8 @@ assertionTestGroup name as = testGroup name
 -- * Unit tests
 
 tests = [
-    invariantsGroup "Route Of" R.invariants
+    invariantsGroup "Route Of" R.routeOfInvariants
+  , invariantsGroup "Page Handlers" PH.pageHandlersInvariants
   , invariantsGroup "Page invariants" P.invariants
   , invariantsGroup "Role permission invariants" RP.invariants
   , invariantsGroup "Content handler definitions" VA.invariants

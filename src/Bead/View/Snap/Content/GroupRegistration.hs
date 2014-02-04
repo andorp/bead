@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Content.GroupRegistration (
     groupRegistration
+  , unsubscribeFromCourse
   ) where
 
 import Data.List (intersperse)
@@ -9,7 +10,7 @@ import Control.Monad (liftM)
 
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.UserStories (availableGroups, attendedGroups)
-import Bead.Controller.Pages as P (Page(GroupRegistration))
+import qualified Bead.Controller.Pages as P (Page(GroupRegistration, UnsubscribeFromCourse))
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 
@@ -20,6 +21,10 @@ import qualified Text.Blaze.Html5 as H
 
 groupRegistration :: Content
 groupRegistration = getPostContentHandler groupRegistrationPage postGroupReg
+
+unsubscribeFromCourse :: Content
+unsubscribeFromCourse =
+  postContentHandler (UnsubscribeFromCourse <$> getParameter unsubscribeUserGroupKeyPrm)
 
 data GroupRegData = GroupRegData {
     groups :: [(GroupKey, GroupDesc)]
@@ -68,14 +73,17 @@ groupsAlreadyRegistered ds = do
         H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Unsubscribe "Leiratkozás")
       mapM_ (groupLine msg) ds)
   where
-    groupLine msg (_key, desc, hasSubmission) = flip groupDescFold desc $ \n as -> do
+    groupLine msg (key, desc, hasSubmission) = flip groupDescFold desc $ \n as -> do
       H.tr $ do
         H.td # informationalCell $ fromString $ n
         H.td # informationalCell $ fromString $ join $ intersperse " " as
         H.td # informationalCell $
           if hasSubmission
             then (fromString . msg $ Msg_GroupRegistration_NoUnsubscriptionAvailable "Már van beadott megoldásod")
-            else submitButton "TODO_route" (msg $ Msg_GroupRegistration_Unsubscribe "Leiratkozás")
+            else postForm (routeOf $ P.UnsubscribeFromCourse key) $
+                   submitButton
+                     (fieldName unsubscribeFromCourseSubmitBtn)
+                     (msg $ Msg_GroupRegistration_Unsubscribe "Leiratkozás")
 
 groupsForTheUser :: [(GroupKey, GroupDesc)] -> IHtml
 groupsForTheUser gs = do

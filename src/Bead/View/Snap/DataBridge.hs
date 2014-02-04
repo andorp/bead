@@ -302,3 +302,5 @@ delUserFromGroupPrm = customUsernamePrm (fieldName delUserFromGroupField)
 delUserFromGroupKeyPrm :: Parameter GroupKey
 delUserFromGroupKeyPrm = customGroupKeyPrm groupKeyParamName
 
+unsubscribeUserGroupKeyPrm :: Parameter GroupKey
+unsubscribeUserGroupKeyPrm = customGroupKeyPrm groupKeyParamName

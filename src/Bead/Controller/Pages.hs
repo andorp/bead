@@ -86,6 +86,7 @@ data Page
   | CommentFromModifyEvaluation R.SubmissionKey R.EvaluationKey
   | DeleteUsersFromCourse R.CourseKey -- NOTE: Users will be defined in parameters
   | DeleteUsersFromGroup R.GroupKey -- NOTE: Users will be defined in parameters
+  | UnsubscribeFromCourse R.GroupKey -- NOTE: There is no course without an active group
   -- etc ...
   deriving (Eq, Ord, Show)
 
@@ -120,6 +121,7 @@ pageCata
   commentFromModifyEvaluation
   deleteUsersFromCourse
   deleteUsersFromGroup
+  unsubscribeFromCourse
   p = case p of
     Login -> login
     Logout -> logout
@@ -150,6 +152,7 @@ pageCata
     CommentFromModifyEvaluation sk ek -> commentFromModifyEvaluation sk ek
     DeleteUsersFromCourse ck -> deleteUsersFromCourse ck
     DeleteUsersFromGroup gk -> deleteUsersFromGroup gk
+    UnsubscribeFromCourse gk -> unsubscribeFromCourse gk
 
 
 isLogin Login = True
@@ -239,6 +242,9 @@ isDeleteUsersFromCourse _                         = False
 isDeleteUsersFromGroup (DeleteUsersFromGroup _) = True
 isDeleteUsersFromGroup _                        = False
 
+isUnsubscribeFromCourse (UnsubscribeFromCourse _) = True
+isUnsubscribeFromCourse _                         = False
+
 -- Returns True if the page need to be rendered
 contentPages :: Page -> Bool
 contentPages Error = False
@@ -255,6 +261,7 @@ pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
            , isSubmission, isSubmissionList, isGroupRegistration, isAdministration, isProfile
            , isUserSubmissions, isSubmissionDetails, isModifyAssignment
            , isSetUserPassword, isHome, isDeleteUsersFromCourse, isDeleteUsersFromGroup
+           , isUnsubscribeFromCourse
            ]
   p CourseAdmin = [isHome, isProfile, isCreateGroup, isAssignGroupAdmin, isCourseAdmin]
   p EvaluationTable  = [isHome, isProfile, isEvaluation, isModifyEvaluation, isEvaluationTable]
@@ -282,6 +289,7 @@ pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
   p (CommentFromModifyEvaluation _ _) = [isCommentFromModifyEvaluation, isModifyEvaluation]
   p (DeleteUsersFromCourse _) = [isHome]
   p (DeleteUsersFromGroup _) = [isHome]
+  p (UnsubscribeFromCourse _) = [isHome]
 
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
@@ -349,6 +357,7 @@ dataModificationPages = [
   , isModifyEvaluation
   , isDeleteUsersFromCourse
   , isDeleteUsersFromGroup
+  , isUnsubscribeFromCourse
   ]
 
 -- Pages that not part of the site content
@@ -387,35 +396,39 @@ menuPages r p = filter allowedPage' menuPageList
       ]
 
 parentPage :: Page -> Page
-parentPage Login          = Login
-parentPage Error          = Error
-parentPage Logout         = Logout
-parentPage Profile        = Profile
-parentPage Home           = Home
-parentPage CourseAdmin    = Home
-parentPage EvaluationTable = Home
-parentPage (Evaluation _) = EvaluationTable
-parentPage (ModifyEvaluation _ _) = EvaluationTable
-parentPage Submission      = Home
-parentPage SubmissionList  = Home
-parentPage UserSubmissions = Home
-parentPage (SubmissionDetails ak sk) = SubmissionDetails ak sk
-parentPage Administration  = Home
-parentPage GroupRegistration = Home
-parentPage UserDetails  = Administration
-parentPage CreateCourse = Administration
-parentPage AssignCourseAdmin = Administration
-parentPage CreateGroup     = CourseAdmin
-parentPage AssignGroupAdmin = CourseAdmin
-parentPage NewGroupAssignment  = NewGroupAssignment
-parentPage NewCourseAssignment = NewCourseAssignment
-parentPage ModifyAssignment    = Home
-parentPage ChangePassword      = Profile
-parentPage SetUserPassword     = Home
-parentPage (CommentFromEvaluation sk) = Evaluation sk
-parentPage (CommentFromModifyEvaluation sk ek) = ModifyEvaluation sk ek
-parentPage (DeleteUsersFromCourse _) = Home
-parentPage (DeleteUsersFromGroup _) = Home
+parentPage = pageCata
+  Login   --login
+  Logout  -- logout
+  Home    -- home
+  Profile -- profile
+  Error   -- error
+  Home    -- administration
+  Home    -- courseAdmin
+  Home    -- evaluationTable
+  (const EvaluationTable)  -- evaluation
+  (const2 EvaluationTable) -- modifyEvaluation
+  NewGroupAssignment       -- newGroupAssignment
+  NewCourseAssignment      -- newCourseAssignment
+  Home -- modifyAssignment
+  Home -- submission
+  Home -- submissionList
+  SubmissionDetails -- submissionDetails
+  Home -- groupRegistration
+  Administration -- userDetails
+  Home -- userSubmissions
+  Administration -- createCourse
+  CourseAdmin    -- createGroup
+  Administration -- sassignCourseAdmin
+  CourseAdmin -- assignGroupAdmin
+  Profile -- changePassword
+  Home -- setUserPassword
+  Evaluation -- commentFromEvaluation
+  ModifyEvaluation -- commentFromModifyEvaluation
+  (const Home) -- deleteUsersFromCourse
+  (const Home) -- deleteUsersFromGroup
+  (const Home) -- unsubscribeFromCourse
+  where
+    const2 = const . const
 
 #ifdef TEST
 

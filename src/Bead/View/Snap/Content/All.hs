@@ -31,7 +31,7 @@ import Bead.View.Snap.Content.NewAssignment (newCourseAssignment, newGroupAssign
 import Bead.View.Snap.Content.Submission (submission)
 import Bead.View.Snap.Content.SubmissionList (submissionList)
 import Bead.View.Snap.Content.SubmissionDetails (submissionDetails)
-import Bead.View.Snap.Content.GroupRegistration (groupRegistration)
+import Bead.View.Snap.Content.GroupRegistration (groupRegistration, unsubscribeFromCourse)
 import Bead.View.Snap.Content.CreateCourse (createCourse)
 import Bead.View.Snap.Content.UserDetails (userDetails)
 import Bead.View.Snap.Content.UserSubmissions (userSubmissions)
@@ -84,7 +84,8 @@ content = [
   route commentFromEvaluationPath commentFromEvaluation,
   route commentFromModifyEvaluationPath commentFromModifyEvaluation,
   route deleteUsersFromCoursePath deleteUsersFromCourse,
-  route deleteUsersFromGroupPath deleteUsersFromGroup]
+  route deleteUsersFromGroupPath deleteUsersFromGroup,
+  route unsubscribeFromCoursePath unsubscribeFromCourse]
 
 contentMap :: Page -> Content
 contentMap p = maybe (error "Content is not defined") id

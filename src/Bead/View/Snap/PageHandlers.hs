@@ -2,6 +2,9 @@
 {-# LANGUAGE CPP #-}
 module Bead.View.Snap.PageHandlers (
     routes
+#ifdef TEST
+  , pageHandlersInvariants
+#endif
   ) where
 
 -- Bead imports
@@ -55,6 +58,10 @@ import Snap.Snaplet.Auth as A
 import Snap.Snaplet.Fay
 import Snap.Snaplet.Session
 import Snap.Util.FileServe (serveDirectory)
+
+#ifdef TEST
+import Bead.Invariants (Invariants(..))
+#endif
 
 -- * Route table
 
@@ -385,6 +392,8 @@ requestToPage path params
     = P.DeleteUsersFromCourse <$> courseKey
   | path == deleteUsersFromGroupPath
     = P.DeleteUsersFromGroup <$> groupKey
+  | path == unsubscribeFromCoursePath
+    = P.UnsubscribeFromCourse <$> groupKey
   | otherwise = Nothing
   where
     j = Just
@@ -400,3 +409,20 @@ requestToPage path params
       where
         oneValue [l] = Just l
         oneValue _   = Nothing
+
+#ifdef TEST
+
+requestToParams :: [ReqParam] -> Params
+requestToParams = foldl insert Map.empty
+  where
+    insert m (ReqParam (name, value)) =
+      Map.insert (fromString name) [(fromString value)] m
+
+pageHandlersInvariants = Invariants [
+    ("For each page must be requestToPage must be defined",
+     \p -> let rp = pageRoutePath p
+               ps = requestToParams $ pageRequestParams p
+           in requestToPage rp ps == Just p)
+  ]
+
+#endif

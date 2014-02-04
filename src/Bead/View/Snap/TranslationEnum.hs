@@ -262,6 +262,7 @@ translationList =
   , Msg_UserStory_NewCourseAssignment ()
   , Msg_UserStory_UsersAreDeletedFromCourse ()
   , Msg_UserStory_UsersAreDeletedFromGroup ()
+  , Msg_UserStory_SuccessfulCourseUnsubscription ()
 
   , Msg_UserActions_ChangedUserDetails ()
 
@@ -294,6 +295,7 @@ translationList =
   , Msg_LinkText_CommentFromModifyEvaluation ()
   , Msg_LinkText_DeleteUsersFromCourse ()
   , Msg_LinkText_DeleteUsersFromGroup ()
+  , Msg_LinkText_UnsubscribeFromCourse ()
 
   ]
 

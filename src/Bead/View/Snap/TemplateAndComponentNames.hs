@@ -65,6 +65,7 @@ changeProfileBtn = SubmitButton "change-profile"
 changePasswordBtn = SubmitButton "change-password"
 delUsersFromCourseBtn = SubmitButton "del-users-from-course-sbm-btn"
 delUsersFromGroupBtn = SubmitButton "del-users-from-group-sbm-btn"
+unsubscribeFromCourseSubmitBtn = SubmitButton "unsubscribe-from-course"
 
 instance SnapFieldName RegistrationComp where
   fieldName = fromString . rFieldName
@@ -375,7 +376,7 @@ fieldList = map fieldName $ join [
   , SFN assignmentEndDefaultDate, SFN assignmentEndDefaultHour, SFN assignmentEndDefaultMin
   , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage, SFN changeLanguageField
   , SFN userLanguageField, SFN delUsersFromCourseBtn, SFN courseKeyField, SFN groupKeyField
-  , SFN delUserFromCourseField, SFN delUserFromGroupField
+  , SFN delUserFromCourseField, SFN delUserFromGroupField, SFN unsubscribeFromCourseSubmitBtn
 
   , SFN createCourseForm, SFN evaluationTypeSelection, SFN evaluationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId

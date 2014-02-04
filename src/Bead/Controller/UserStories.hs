@@ -272,11 +272,11 @@ createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $
   where
     user = usernameCata id
 
--- Unsubscribes the student from the given group if the group is one of the student's group
+-- Unsubscribes the student from the given group (and course) if the group is one of the student's group
 -- and the sutdent did not submit any solutions for the assignments of the group. In that
 -- case the error page is rendered
-studentUnsubscription :: GroupKey -> UserStory ()
-studentUnsubscription gk = logAction INFO ("unsubscribes from group: " ++ show gk) $ do
+unsubscribeFromCourse :: GroupKey -> UserStory ()
+unsubscribeFromCourse gk = logAction INFO ("unsubscribes from group: " ++ show gk) $ do
   u <- CMS.gets user
   join $ withPersist $ \p -> do
     registered <- R.isUserInGroup p u gk
@@ -289,7 +289,8 @@ studentUnsubscription gk = logAction INFO ("unsubscribes from group: " ++ show g
         if s then (return $ errorPage "Már van beadott megoldásod a kurzushoz tartozó feladatokhoz")
              else do
                R.unsubscribe p u ck gk
-               return (return ())
+               return . putStatusMessage $
+                 Msg_UserStory_SuccessfulCourseUnsubscription "Sikeresen leiratkoztál a kurzusról!"
 
 -- | Adds a new group to the given course
 createGroup :: CourseKey -> Group -> UserStory GroupKey

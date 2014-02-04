@@ -68,4 +68,5 @@ pageGen = oneof [
         , SubmissionDetails <$> assignmentKey <*> submissionKey
         , DeleteUsersFromCourse <$> courseKey
         , DeleteUsersFromGroup <$> groupKey
+        , UnsubscribeFromCourse <$> groupKey
         ]
