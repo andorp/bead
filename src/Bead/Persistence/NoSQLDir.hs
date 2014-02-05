@@ -272,16 +272,12 @@ nSubscribe username ck gk = do
 
 nUnsubscribe :: Username -> CourseKey -> GroupKey -> TIO ()
 nUnsubscribe username ck gk = do
-  usersGroup <- nIsUserInGroup username gk
-  when usersGroup $ do
-    ck' <- nCourseOfGroup gk
-    when (ck == ck') $ do
-      unlink username gk "users"
-      unlink username ck "users"
-      unlink gk username "group"
-      unlink ck username "course"
-      link username gk "unsubscribed"
-      link username ck "unsubscribed"
+  unlink username gk "users"
+  unlink username ck "users"
+  unlink gk username "group"
+  unlink ck username "course"
+  link username gk "unsubscribed"
+  link username ck "unsubscribed"
 
 nCreateGroupAdmin :: Username -> GroupKey -> TIO ()
 nCreateGroupAdmin u gk = do

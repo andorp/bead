@@ -627,18 +627,21 @@ modifyEvaluationTest = do
     e1 <- runPersistCmd $ loadEvaluation persist ek
     assertEquals e e1 "Modified and loaded evaluations were different"
 
--- Test if the users make unsubscribe from the courses by the admin
-deleteUsersFromCourseTest = do
-  cs <- courses 50
-  gs <- groups 250 cs
-  us <- users 200
-  -- Subscribe users to groups
-  quick 500 $ do
+-- Subscribe users to groups
+subscribeUsers n us gs =
+  quick n $ do
     u <- pick $ elements us
     g <- pick $ elements gs
     runPersistCmd $ do
       c <- courseOfGroup persist g
       subscribe persist u c g
+
+-- Test if the users make unsubscribe from the courses by the admin
+deleteUsersFromCourseTest = do
+  cs <- courses 50
+  gs <- groups 250 cs
+  us <- users 200
+  subscribeUsers 500 us gs
   quick 1000 $ do
     u <- pick $ elements us
     ucs <- runPersistCmd $ userCourses persist u
@@ -673,13 +676,7 @@ deleteUsersFromCourseNegativeTest = do
   cs <- courses 50
   gs <- groups 250 cs
   us <- users 200
-  -- Subscribe users to groups
-  quick 500 $ do
-    u <- pick $ elements us
-    g <- pick $ elements gs
-    runPersistCmd $ do
-      c <- courseOfGroup persist g
-      subscribe persist u c g
+  subscribeUsers 500 us gs
   -- Tries to subscribe students from groups that are not attended in
   quick 1000 $ do
     u <- pick $ elements us
@@ -688,6 +685,39 @@ deleteUsersFromCourseNegativeTest = do
     runPersistCmd $ deleteUserFromCourse persist c' u
     ucs' <- runPersistCmd $ userCourses persist u
     assertEquals ucs ucs' "User's course list has changed"
+
+unsubscribeFromSubscribedGroupsTest = do
+  cs <- courses 50
+  gs <- groups 250 cs
+  us <- users 200
+  subscribeUsers 500 us gs
+  quick 1000 $ do
+    u <- pick $ elements us
+    ugs <- runPersistCmd $ userGroups persist u
+    when (not $ null ugs) $ do
+    g <- pick $ elements ugs
+    join $ runPersistCmd $ do
+      ucsb <- userCourses persist u
+      ugsb <- userGroups  persist u
+      c <- courseOfGroup  persist g
+      unregscb <- unsubscribedFromCourse persist c
+      unregsgb <- unsubscribedFromGroup  persist g
+      unsubscribe persist u c g
+      ucsa <- userCourses persist u
+      ugsa <- userGroups  persist u
+      unregsca <- unsubscribedFromCourse persist c
+      unregsga <- unsubscribedFromGroup  persist g
+      return $ case g `elem` ugsb of
+        True -> do
+          assertEquals (length ugsa) (length ugsb - 1) "User is not unsubscribed from group"
+          assertSetEquals (ugsb) (g:ugsa) "User is not unsubscribed from group #2"
+          assertFalse (u `elem` unregsgb) "User was in the group unsubscribed list"
+          assertTrue  (u `elem` unregsga) "User is not in the group unsubscribed list"
+          -- First unsubscription, before and after values must differs
+        False -> do
+          -- Second unsubscription, before and after values must be the same
+          assertSetEquals (ugsb) (ugsa) "User is unsubscribed from course #2"
+          assertSetEquals (unregsgb) (unregsga) "User is in the course unsubscribed list"
 
 runPersistCmd :: TIO a -> PropertyM IO a
 runPersistCmd m = do
@@ -752,6 +782,7 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Users can not login in using invalid password" $ userCanLoginTest
   , testCase "Delete user form course" $ deleteUsersFromCourseTest
   , testCase "Delete user from courses not belong to" $ deleteUsersFromCourseNegativeTest
+  , testCase "User unsubscribes from a course" $ unsubscribeFromSubscribedGroupsTest
   , cleanUpPersistence
   ]
 
@@ -762,6 +793,10 @@ initPersistenceLayer = testCase "Initialization" $ do
 
 cleanUpPersistence = testCase "Clean up" $ do
   removeDirectoryRecursive "data"
+
+-- Fails if the two given list does not represent the same set
+assertSetEquals :: (Monad m, Eq a, Ord a) => [a] -> [a] -> String -> m ()
+assertSetEquals xs ys msg = assertEquals (Set.fromList xs) (Set.fromList ys) msg
 
 -- The test will fail with the given message, if the given values are different
 assertEquals :: (Monad m, Eq a) => a -> a -> String -> m ()
