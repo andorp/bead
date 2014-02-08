@@ -11,6 +11,8 @@ import qualified Bead.Controller.UserStories as UserStory
 import Bead.Controller.ServiceContext (ServiceContext)
 import qualified Bead.Controller.ServiceContext as Context
 
+import Test.Quick.EnumGen
+
 import Test.QuickCheck.Gen
 import Test.QuickCheck.Arbitrary
 import Control.Monad (join, liftM)
@@ -152,3 +154,17 @@ evaluationResults =
   evaluationDataMap
     (const (BinEval <$> elements [Binary Passed, Binary Failed]))
     (const (PctEval . Percentage . Scores . (:[]) <$> percentage))
+
+testScripts = testScriptAppAna
+  word      -- words
+  manyWords -- desc
+  manyWords -- notes
+  manyWords -- script
+  enumGenerator -- type
+
+testCases = testCaseAppAna
+  word      -- name
+  manyWords -- desc
+  manyWords -- value
+  enumGenerator -- type
+  manyWords -- info

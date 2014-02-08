@@ -13,7 +13,8 @@ module Bead.View.Snap.Content.Home (
 import Numeric (showHex)
 import Data.Function (on)
 import Data.Maybe (catMaybes)
-import qualified Data.Map as Map (lookup)
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.List (intersperse, sortBy)
 import Data.String (fromString)
 import Data.Time
@@ -35,6 +36,7 @@ import Bead.Controller.UserStories (
   , submissionTables
   , administratedCourses
   , administratedGroups
+  , testScriptInfos
   )
 
 import Text.Blaze.Html5 ((!))
@@ -56,6 +58,9 @@ deleteUsersFromCourse = postContentHandler deleteUsersFromCourseHandler
 deleteUsersFromGroup :: Content
 deleteUsersFromGroup = postContentHandler deleteUsersFromGroupHandler
 
+-- Maps a course to its defined test scripts
+type CourseTestScriptInfos = Map CourseKey [(TestScriptKey, TestScriptInfo)]
+
 data HomePageData = HomePageData {
     userState   :: UserState
   , hasCourses  :: Bool -- True if the user has administrated courses
@@ -67,19 +72,33 @@ data HomePageData = HomePageData {
     -- The convertes function that convert a given utc time into the users local
     -- timezone
   , timeConverter :: UserTimeConverter
+  , courseTestScripts :: CourseTestScriptInfos
+    -- Test scripts for the courses
   }
 
 homePage :: GETContentHandler
 homePage = withUserState $ \s -> do
   converter <- usersTimeZoneConverter
-  (renderPagelet . withUserFrame s . homeContent) =<<
-    (userStory
-       (HomePageData s
-          <$> ((not . null) <$> administratedCourses)
-          <*> ((not . null) <$> administratedGroups)
-          <*> userAssignments
-          <*> (map sortUserLines <$> submissionTables)
-          <*> (return converter)))
+  (renderPagelet . withUserFrame s . homeContent) =<< do
+    (userStory $ do
+       adminCourses <- administratedCourses
+       adminGroups  <- administratedGroups
+       ua <- userAssignments
+       sbmTables <- (map sortUserLines <$> submissionTables)
+       testScripts <- Map.fromList <$> mapM (testScriptForCourse . fst) adminCourses
+       return $
+         HomePageData
+           s
+           (not $ null adminCourses)
+           (not $ null adminGroups)
+           ua
+           sbmTables
+           converter
+           testScripts)
+  where
+    testScriptForCourse ck = do
+      infos <- testScriptInfos ck
+      return (ck, infos)
 
 deleteUsersFromCourseHandler :: POSTContentHandler
 deleteUsersFromCourseHandler =
@@ -104,6 +123,7 @@ homeContent d = do
       r = role s
       hasCourse = hasCourses d
       hasGroup  = hasGroups d
+      testScripts = courseTestScripts d
   msg <- getI18N
   return $ H.div # textAlign "left" $ do
     when (isAdmin s) $ H.p $ do
@@ -119,20 +139,20 @@ homeContent d = do
       H.h3 . fromString . msg $ Msg_Home_GroupAdminTasks "Oktatói feladatok"
       when (not hasGroup) $ (fromString $ msg $ Msg_Home_NoGroupsYet "Még nincsenek csoportok.")
     when ((courseAdminUser r) || (groupAdminUser r)) $ do
-      when (hasCourse || hasGroup) $ do
+      when (hasCourse || hasGroup) $ H.p $ do
         when (not . null $ concatMap stAssignments $ sTables d) $ do
           H.p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
             [ "A feladat sorszámára kattintva módosítható már kiírt feladat (a nevét ld. tooltipben).  "
             , "Hallgatókat törölhetőek kurzusról vagy csoportból a Törlés oszlopban bejelölve, majd a gombra kattintva."
             ]
-        i18n msg $ htmlSubmissionTables (sTables d)
+        i18n msg $ (htmlSubmissionTables testScripts) (sTables d)
     when (courseAdminUser r && hasCourse) $ do
       H.p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
         [ "A tárgyhoz új csoportokat a Tárgyi beállítások almenüben lehet létrehozni.  Ugyanitt lehet "
         , "egyúttal az egyes csoportokhoz oktatókat rendelni."
         ]
       H.p $ do
-        i18n msg $ navigation $ [ P.CourseAdmin, NewCourseAssignment] ++
+        i18n msg $ navigation $ [ P.CourseAdmin, NewTestScript, NewCourseAssignment] ++
                                 (if hasGroup then [P.NewGroupAssignment] else []) ++
                                 [ P.EvaluationTable, P.SetUserPassword ]
       H.hr
@@ -191,18 +211,18 @@ availableAssignments timeconverter (Just as) = do
         (msg $ Msg_Home_SubmissionCell_Rejected "Elutasított")
         s)
 
-htmlSubmissionTables :: [SubmissionTableInfo] -> IHtml
-htmlSubmissionTables xs = do
-  tables <- mapM htmlSubmissionTable . zip [1..] $ xs
+htmlSubmissionTables :: CourseTestScriptInfos -> [SubmissionTableInfo] -> IHtml
+htmlSubmissionTables cti xs = do
+  tables <- mapM (htmlSubmissionTable cti) $ zip [1..] xs
   return $ sequence_ tables
 
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
 -- group or course students, an informational text is shown.
-htmlSubmissionTable :: (Int,SubmissionTableInfo) -> IHtml
+htmlSubmissionTable :: CourseTestScriptInfos -> (Int,SubmissionTableInfo) -> IHtml
 
 -- Empty table
-htmlSubmissionTable (i,s)
+htmlSubmissionTable cti (i,s)
   | and [null . stAssignments $ s, null . stUsers $ s] = do
     msg <- getI18N
     return $ H.p $ do
@@ -210,14 +230,23 @@ htmlSubmissionTable (i,s)
       H.br
       fromString . stCourse $ s
       H.br
+      either
+        (const $ return ())
+        (i18n msg . testScriptTable cti)
+        (stKey s)
 
 -- Non empty table
-htmlSubmissionTable (i,s) = do
+htmlSubmissionTable cti (i,s) = do
   msg <- getI18N
-  return $ courseForm $ table tableId (className groupSubmissionTable) # informationalTable $ do
-    headLine (stCourse s)
-    assignmentLine msg (stAssignments s)
-    mapM_ (userLine msg) (stUserLines s)
+  return $ do
+    courseForm $ table tableId (className groupSubmissionTable) # informationalTable $ do
+      headLine (stCourse s)
+      assignmentLine msg (stAssignments s)
+      mapM_ (userLine msg) (stUserLines s)
+    either
+      (const $ return ())
+      (i18n msg . testScriptTable cti)
+      (stKey s)
   where
     courseForm = infoSourceCata createForm createForm id infoSrc where
       createForm = either
@@ -313,6 +342,36 @@ htmlSubmissionTable (i,s) = do
     infoSrc = stOrigin s
 
     key = stKey s
+
+-- Renders a course test script modification table if the information is found in the
+-- for the course, otherwise an error message. If the course is found, and there is no
+-- test script found for the course a message indicating that will be rendered, otherwise
+-- the modification table is rendered
+testScriptTable :: CourseTestScriptInfos -> CourseKey -> IHtml
+testScriptTable cti ck = maybe courseNotFound courseFound $ Map.lookup ck cti where
+  courseNotFound = do
+    msg <- getI18N
+    return $ do
+      fromString . msg $ Msg_Home_NotAdministratedTestScripts "Nem adminisztrált kurzus: Szriptek nem módosíthatóak"
+
+  courseFound ts = do
+    msg <- getI18N
+    return $ case ts of
+      [] -> fromString . msg $
+        Msg_Home_NoTestScriptsWereDefined "Nincsennek teszt szkriptek definiálva a kurzushoz"
+      ts' -> do
+        table tableId (className groupSubmissionTable) # informationalTable $ do
+          headLine . msg $ Msg_Home_ModifyTestScriptTable "Teszt szkriptek módosítása"
+          mapM_ testScriptLine ts'
+    where
+      headLine = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
+      tableId = join ["tst-", courseKeyMap id ck]
+      dataCell r = H.td # (informationalCell <> r)
+
+      testScriptLine (tsk,tsi) = do
+        dataCell noStyle $ linkWithText
+          (routeOf (P.ModifyTestScript tsk))
+          (tsiName tsi)
 
 -- Create a table cell for the evaulation value, where
 -- simpleCell is the combinator for the non RGB colored cells

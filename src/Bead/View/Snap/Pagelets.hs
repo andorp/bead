@@ -215,6 +215,8 @@ linkText = P.pageCata
   (Msg_LinkText_GroupRegistration "Tárgy vagy csoport felvétele, leadása")
   (Msg_LinkText_UserDetails "Beállítások")
   (Msg_LinkText_UserSubmissions "Megoldások")
+  (Msg_LinkText_NewTestScript "Új teszt szkript")
+  (const $ Msg_LinkText_ModifyTestScript "Meglévő teszt szkript módosítása")
   (Msg_LinkText_CreateCourse "Tárgy létrehozása")
   (Msg_LinkText_CreateGroup "Csoport létrehozása")
   (Msg_LinkText_AssignCourseAdmin "Tárgyfelelős hozzáadása")
@@ -298,6 +300,7 @@ selection name =
 class SelectionValue v where
   selectionValue :: v -> String
 
+-- TODO: Change to I18N
 class SelectionText t where
   selectionText :: t -> String
 
@@ -369,6 +372,12 @@ instance SelectionText Group where
 
 instance SelectionValue GroupKey where
   selectionValue (GroupKey k) = k
+
+instance SelectionValue TestScriptType where
+  selectionValue = show
+
+instance SelectionText TestScriptType where
+  selectionText = show
 
 instance SelectionText AssignmentType where
   selectionText = show

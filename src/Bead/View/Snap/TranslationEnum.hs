@@ -269,6 +269,18 @@ translationList =
   , Msg_Home_NonPercentageEvaluation ()
   , Msg_Home_DeleteUsersFromCourse ()
   , Msg_Home_DeleteUsersFromGroup ()
+  , Msg_Home_NotAdministratedTestScripts ()
+  , Msg_Home_NoTestScriptsWereDefined ()
+  , Msg_Home_ModifyTestScriptTable ()
+
+  , Msg_NewTestScript_Name ()
+  , Msg_NewTestScript_Type ()
+  , Msg_NewTestScript_Description ()
+  , Msg_NewTestScript_Notes ()
+  , Msg_NewTestScript_Script ()
+  , Msg_NewTestScript_Save ()
+  , Msg_NewTestScript_Course ()
+  , Msg_NewTestScript_HasNoCourses ()
 
   , Msg_UserStory_SetTimeZone ()
   , Msg_UserStory_ChangedUserDetails ()
@@ -283,6 +295,8 @@ translationList =
   , Msg_UserStory_UsersAreDeletedFromCourse ()
   , Msg_UserStory_UsersAreDeletedFromGroup ()
   , Msg_UserStory_SuccessfulCourseUnsubscription ()
+  , Msg_UserStory_NewTestScriptIsCreated ()
+  , Msg_UserStory_ModifyTestScriptIsDone ()
 
   , Msg_UserActions_ChangedUserDetails ()
 
@@ -295,6 +309,8 @@ translationList =
   , Msg_LinkText_Submission ()
   , Msg_LinkText_SubmissionList ()
   , Msg_LinkText_UserSubmissions ()
+  , Msg_LinkText_NewTestScript ()
+  , Msg_LinkText_ModifyTestScript ()
   , Msg_LinkText_ModifyEvaluation ()
   , Msg_LinkText_SubmissionDetails ()
   , Msg_LinkText_Administration ()

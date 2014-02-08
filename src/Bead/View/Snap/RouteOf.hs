@@ -22,6 +22,8 @@ module Bead.View.Snap.RouteOf (
   , submissionPath
   , submissionListPath
   , userSubmissionsPath
+  , newTestScriptPath
+  , modifyTestScriptPath
   , submissionDetailsPath
   , administrationPath
   , groupRegistrationPath
@@ -100,6 +102,12 @@ submissionListPath = "/submission-list"
 userSubmissionsPath :: RoutePath
 userSubmissionsPath = "/user-submissions"
 
+newTestScriptPath :: RoutePath
+newTestScriptPath = "/new-test-script"
+
+modifyTestScriptPath :: RoutePath
+modifyTestScriptPath = "/modify-test-script"
+
 submissionDetailsPath :: RoutePath
 submissionDetailsPath = "/submission-details"
 
@@ -177,6 +185,8 @@ pageRoutePath = fromString . r where
     groupRegistrationPath
     userDetailsPath
     userSubmissionsPath
+    newTestScriptPath
+    (const modifyTestScriptPath)
     createCoursePath
     createGroupPath
     assignCourseAdminPath
@@ -200,6 +210,7 @@ pageRequestParams = r where
   r (DeleteUsersFromCourse ck) = [requestParam ck]
   r (DeleteUsersFromGroup gk) = [requestParam gk]
   r (UnsubscribeFromCourse ck) = [requestParam ck]
+  r (ModifyTestScript tsk) = [requestParam tsk]
   r _ = []
 
 -- Calculates the full path from a page value, including the base path and the

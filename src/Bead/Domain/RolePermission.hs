@@ -42,9 +42,9 @@ groupAdmin P_Delete o = elem o [P_Assignment]
 -- * Course Admin
 
 courseAdmin P_Open   o = elem o
-  [ P_Assignment, P_Submission, P_Statistics, P_Course, P_CourseAdmin, P_PlainPage, P_User ]
-courseAdmin P_Create o = elem o [P_Group, P_Assignment, P_CourseAdmin, P_GroupAdmin ]
-courseAdmin P_Modify o = elem o [P_Assignment, P_Password, P_CourseAdmin, P_GroupAdmin, P_Course]
+  [ P_Assignment, P_Submission, P_Statistics, P_Course, P_CourseAdmin, P_PlainPage, P_User, P_TestScript ]
+courseAdmin P_Create o = elem o [P_Group, P_Assignment, P_CourseAdmin, P_GroupAdmin, P_TestScript ]
+courseAdmin P_Modify o = elem o [P_Assignment, P_Password, P_CourseAdmin, P_GroupAdmin, P_Course, P_TestScript]
 courseAdmin P_Delete o = elem o [P_Assignment, P_GroupAdmin]
 
 -- * Admin

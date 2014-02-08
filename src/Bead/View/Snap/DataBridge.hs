@@ -109,6 +109,16 @@ submissionKeyPrm = Parameter {
   , notFound    = "A megoldásazonosító nem található!"
   }
 
+-- Represents the TestScriptKey parameter
+testScriptKeyPrm :: Parameter TestScriptKey
+testScriptKeyPrm = Parameter {
+    encode = testScriptKeyCata id
+  , decode = Just . TestScriptKey
+  , name = fieldName testScriptKeyField
+  , decodeError = \m -> printf "Érvénytelen teszt szkript azonosító: %s!" m
+  , notFound = "A teszt szkript azonosító nem található"
+  }
+
 -- Represents the SubmissionKey parameter
 evaluationKeyPrm :: Parameter EvaluationKey
 evaluationKeyPrm = Parameter {

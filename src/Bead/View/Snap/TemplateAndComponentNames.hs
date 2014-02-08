@@ -148,33 +148,41 @@ instance SnapFieldName ChangePwdField where
   fieldName = fromString . cpf
 
 menuId :: P.Page -> String
-menuId P.Login          = "link-login"
-menuId P.Logout         = "link-logout"
-menuId P.Home           = "link-home"
-menuId P.Profile        = "link-profile"
-menuId P.Error          = "link-error"
-menuId P.Administration = "link-admin"
-menuId P.CourseAdmin    = "link-course-admin"
-menuId P.EvaluationTable = "link-evaluation-table"
-menuId (P.Evaluation _)  = "link-evaluation"
-menuId P.Submission      = "link-submission"
-menuId P.SubmissionList  = "link-submission-list"
-menuId P.UserSubmissions = "link-user-submissions"
-menuId (P.ModifyEvaluation _ _) = "link-modify-evaluation"
-menuId (P.SubmissionDetails _ _)  = "link-submission-details"
-menuId P.GroupRegistration = "link-group-registration"
-menuId P.CreateCourse = "link-create-course"
-menuId P.UserDetails = "link-user-details"
-menuId P.AssignCourseAdmin = "link-assign-course-admin"
-menuId P.CreateGroup = "link-create-group"
-menuId P.AssignGroupAdmin = "link-assign-group-admin"
-menuId P.NewGroupAssignment  = "link-new-group-assignment"
-menuId P.NewCourseAssignment = "link-new-course-assignment"
-menuId P.ModifyAssignment = "link-modify-assignment"
-menuId P.ChangePassword = "link-change-password"
-menuId P.SetUserPassword = "link-set-user-password"
-menuId (P.CommentFromEvaluation _) = "link-comment-from-evaluation"
-menuId (P.CommentFromModifyEvaluation _ _) = "link-comment-from-modify-evaluation"
+menuId = P.pageCata
+  "link-login"
+  "link-logout"
+  "link-home"
+  "link-profile"
+  "link-error"
+  "link-admin"
+  "link-course-admin"
+  "link-evaluation-table"
+  (const "link-evaluation")
+  (const2 "link-modify-evaluation")
+  "link-new-group-assignment"
+  "link-new-course-assignment"
+  "link-modify-assignment"
+  "link-submission"
+  "link-submission-list"
+  (const2 "link-submission-details")
+  "link-group-registration"
+  "link-user-details"
+  "link-user-submissions"
+  "link-new-test-script"
+  (const "link-modify-test-script")
+  "link-create-course"
+  "link-create-group"
+  "link-assign-course-admin"
+  "link-assign-group-admin"
+  "link-change-password"
+  "link-set-user-password"
+  (const "link-comment-from-evaluation")
+  (const2 "link-comment-from-modify-evaluation")
+  (const "link-delete-users-from-course")
+  (const "link-delete-users-from-group")
+  (const "link-unsubscribe-from-course")
+  where
+    const2 = const . const
 
 instance SnapFieldName P.Page where
   fieldName = fromString . menuId
@@ -300,6 +308,20 @@ instance SnapFieldName GroupKeyField where
 
 groupKeyField = GroupKeyField "group-key-field"
 
+newtype TestScriptField = TestScriptField { tscFieldName :: String }
+
+instance SnapFieldName TestScriptField where
+  fieldName = fromString . tscFieldName
+
+testScriptNameField = TestScriptField "test-script-name"
+testScriptTypeField = TestScriptField "test-script-type"
+testScriptDescField = TestScriptField "test-script-desc"
+testScriptNotesField = TestScriptField "test-script-note"
+testScriptScriptField = TestScriptField "test-script-script"
+testScriptSaveButton = TestScriptField "test-script-save-button"
+testScriptCourseKeyField = TestScriptField "test-script-course-key"
+testScriptKeyField = TestScriptField "test-script-key"
+
 -- * Template names
 
 newtype LoginTemp = LoginTemp String
@@ -377,6 +399,10 @@ fieldList = map fieldName $ join [
   , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage, SFN changeLanguageField
   , SFN userLanguageField, SFN delUsersFromCourseBtn, SFN courseKeyField, SFN groupKeyField
   , SFN delUserFromCourseField, SFN delUserFromGroupField, SFN unsubscribeFromCourseSubmitBtn
+
+  , SFN testScriptNameField, SFN testScriptTypeField, SFN testScriptDescField
+  , SFN testScriptNotesField, SFN testScriptScriptField, SFN testScriptSaveButton
+  , SFN testScriptCourseKeyField, SFN testScriptKeyField
 
   , SFN createCourseForm, SFN evaluationTypeSelection, SFN evaluationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId

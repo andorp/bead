@@ -1,0 +1,142 @@
+{-# LANGUAGE OverloadedStrings #-}
+module Bead.View.Snap.Content.NewTestScript (
+    newTestScript
+  , modifyTestScript
+  ) where
+
+import           Control.Applicative ((<$>),(<*>))
+import           Control.Arrow ((***))
+import           Data.String (fromString)
+
+import           Text.Blaze.Html5 ((!))
+import qualified Text.Blaze.Html5.Attributes as A
+import qualified Text.Blaze.Html5 as H
+
+import           Bead.View.Snap.Content
+import           Bead.View.Snap.Pagelets
+import qualified Bead.Controller.Pages as P (Page(..))
+import qualified Bead.Controller.UserStories as Story
+import qualified Bead.View.UserActions as UA
+
+
+-- * Content Handlers
+
+data PageData
+  = Create [(CourseKey, Course)]
+  -- ^ Create a new test script
+  | Modify String TestScriptKey TestScript
+  -- ^ Modify an existing test script with CourseName Key Script
+
+pageDataCata
+  create
+  modify
+  p = case p of
+    Create cs    -> create cs
+    Modify cn tk ts -> modify cn tk ts
+
+newTestScript :: Content
+newTestScript = getPostContentHandler newTestScriptPage postNewTestScript
+
+modifyTestScript :: Content
+modifyTestScript = getPostContentHandler modifyTestScriptPage postModifyTestScript
+
+newTestScriptPage :: GETContentHandler
+newTestScriptPage = withUserState $ \s -> do
+  cs <- userStory Story.administratedCourses
+  renderDynamicPagelet . withUserFrame s $ testScriptContent (Create cs)
+
+postNewTestScript :: POSTContentHandler
+postNewTestScript = do
+  script <- TestScript
+    <$> (getParameter (stringParameter (fieldName testScriptNameField) "Test Script Name"))
+    <*> (getParameter (stringParameter (fieldName testScriptDescField) "Test Script Description"))
+    <*> (getParameter (stringParameter (fieldName testScriptNotesField) "Test Script Notes"))
+    <*> (getParameter (stringParameter (fieldName testScriptScriptField) "Test Script"))
+    <*> (getParameter (readablePrm (fieldName testScriptTypeField) "Test Script Type"))
+  ck <- CourseKey <$> getParameter (stringParameter (fieldName testScriptCourseKeyField) "Course Key")
+  return $ UA.CreateTestScript ck script
+
+modifyTestScriptPage :: GETContentHandler
+modifyTestScriptPage = withUserState $ \s -> do
+  tsk <- getParameter testScriptKeyPrm
+  (course, script) <- userStory $ do
+    (script, ck)  <- Story.loadTestScript tsk
+    (course, _gk) <- Story.loadCourse ck
+    return (course, script)
+  renderDynamicPagelet . withUserFrame s $
+    testScriptContent (Modify (courseName course) tsk script)
+
+postModifyTestScript :: POSTContentHandler
+postModifyTestScript = do
+  script <- TestScript
+    <$> (getParameter (stringParameter (fieldName testScriptNameField) "Test Script Name"))
+    <*> (getParameter (stringParameter (fieldName testScriptDescField) "Test Script Description"))
+    <*> (getParameter (stringParameter (fieldName testScriptNotesField) "Test Script Notes"))
+    <*> (getParameter (stringParameter (fieldName testScriptScriptField) "Test Script"))
+    <*> (getParameter (readablePrm (fieldName testScriptTypeField) "Test Script Type"))
+  tsk <- getParameter testScriptKeyPrm
+  return $ UA.ModifyTestScript tsk script
+
+testScriptContent :: PageData -> IHtml
+testScriptContent pd = pageDataCata checkIfThereCourses modify pd
+  where
+    checkIfThereCourses [] = hasNoCourses
+    checkIfThereCourses _  = hasPageContent pd
+
+    modify _ _ _ = hasPageContent pd
+
+hasNoCourses :: IHtml
+hasNoCourses = do
+  msg <- getI18N
+  return $ do
+  fromString . msg $ Msg_NewTestScript_HasNoCourses "Egyetlen kurzusnak sem vagy adminisztrátora"
+
+hasPageContent :: PageData -> IHtml
+hasPageContent pd = do
+  msg <- getI18N
+  return $ do
+  postForm (routeOf $ testScriptPage pd) $ H.div ! formDiv $ do
+    H.div ! rightCell $ do
+      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Name "Név"
+      textInput (fieldName testScriptNameField) 10 (testScriptName pd) ! fillDiv
+      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Description "Leírás"
+      textInput (fieldName testScriptDescField) 10 (testScriptDesc pd) ! fillDiv
+      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Notes "Megjegyzés a tesztesetekhez"
+      textAreaInput (fieldName testScriptNotesField) (testScriptNotes pd) ! (textAreaFillDiv 20)
+      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Script "Tesztelő szkript"
+      textAreaInput (fieldName testScriptScriptField) (testScriptScript pd) ! (textAreaFillDiv 50)
+    H.div ! leftCell $ do
+      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Type "Típus"
+      H.br
+      defEnumSelection (fieldName testScriptTypeField) (testScriptType pd)
+      H.br
+      testScriptCourse msg pd
+      H.br
+      submitButton
+        (fieldName testScriptSaveButton)
+        (fromString . msg $ Msg_NewTestScript_Save "Mentés")
+  where
+    const2 = const . const
+    const3 = const2 . const
+    testScriptPage = pageDataCata (const P.NewTestScript) (\_name key _script -> P.ModifyTestScript key)
+    testScriptName = pageDataCata (const Nothing) (const2 (Just . tsName))
+    testScriptType = pageDataCata (const TestScriptSimple) (const2 tsType)
+    testScriptDesc = pageDataCata (const Nothing) (const2 (Just . tsDescription))
+    testScriptNotes = pageDataCata (const Nothing) (const2 (Just . tsNotes))
+    testScriptScript = pageDataCata (const Nothing) (const2 (Just . tsScript))
+    testScriptCourse msg = pageDataCata
+      (valueSelection (courseKeyMap id *** courseName) (fieldName testScriptCourseKeyField))
+      (\courseName _key _script -> do
+        H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Course "Kurzus:"
+        fromString courseName)
+
+-- CSS Section
+
+slimLeftCell  = A.style "float: left;  width: 30%; height: 5%"
+slimRightCell h = A.style (fromString $ concat ["float: right; width: 68%; height: ", show h, "%"])
+leftCell      = A.style "float: left;  width: 20%; height: 30%"
+rightCell     = A.style "float: right; width: 78%; height: 99%"
+fillDiv       = A.style "width: 99%"
+textAreaFillDiv h = A.style (fromString $ concat ["width: 99%; height: ", show h,"%"])
+formDiv       = A.style "width: 100%; height: 600px"
+boldText      = A.style "font-weight: bold"

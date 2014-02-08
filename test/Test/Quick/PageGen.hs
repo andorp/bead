@@ -26,14 +26,11 @@ pageGen = oneof [
       showInt = show
 
       assignmentKey = AssignmentKey . showInt <$> choose (1,5000)
-
       submissionKey = SubmissionKey . showInt <$> choose (1,5000)
-
       evaluationKey = EvaluationKey . showInt <$> choose (1,5000)
-
-      courseKey = CourseKey . showInt <$> choose (1,5000)
-
-      groupKey = GroupKey . showInt <$> choose (1,5000)
+      courseKey     = CourseKey . showInt     <$> choose (1,5000)
+      groupKey      = GroupKey . showInt      <$> choose (1,5000)
+      testScriptKey = TestScriptKey . showInt <$> choose (1,5000)
 
       nonParametricPages = elements [
           Login
@@ -58,6 +55,7 @@ pageGen = oneof [
         , AssignGroupAdmin
         , ChangePassword
         , SetUserPassword
+        , NewTestScript
         ]
 
       parametricPages = oneof [
@@ -69,4 +67,5 @@ pageGen = oneof [
         , DeleteUsersFromCourse <$> courseKey
         , DeleteUsersFromGroup <$> groupKey
         , UnsubscribeFromCourse <$> groupKey
+        , ModifyTestScript <$> testScriptKey
         ]

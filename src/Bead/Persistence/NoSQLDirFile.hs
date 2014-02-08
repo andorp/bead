@@ -40,6 +40,8 @@ evaluationDir = "evaluation"
 commentDir    = "comment"
 openSubmissionDir = "open-submission"
 userRegDir = "user-registration"
+testScriptDir = "test-script"
+testCaseDir = "test-case"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
@@ -51,6 +53,8 @@ commentDataDir    = joinPath [dataDir, commentDir]
 openSubmissionDataDir = joinPath [dataDir, openSubmissionDir]
 openSubmissionAllDataDir = joinPath [openSubmissionDataDir, "all"]
 userRegDataDir = joinPath [dataDir, userRegDir]
+testScriptDataDir = joinPath [dataDir, testScriptDir]
+testCaseDataDir = joinPath [dataDir, testCaseDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -65,6 +69,8 @@ persistenceDirs = [
   , openSubmissionDataDir
   , openSubmissionAllDataDir
   , userRegDataDir
+  , testScriptDataDir
+  , testCaseDataDir
   ]
 
 class DirName d where
@@ -115,6 +121,12 @@ instance DirName EvaluationKey where
 
 instance DirName CommentKey where
   dirName (CommentKey ck) = joinPath [commentDataDir, ck]
+
+instance DirName TestScriptKey where
+  dirName (TestScriptKey k) = joinPath [testScriptDataDir, k]
+
+instance DirName TestCaseKey where
+  dirName (TestCaseKey k) = joinPath [testCaseDataDir, k]
 
 -- * Load and save aux functions
 
@@ -317,6 +329,24 @@ instance Save UserRegistration where
   save d u = do createStructureDirs d userRegDirStructure
                 fileSave d "userreg" (show u)
 
+instance Save TestScript where
+  save d = testScriptCata show $ \name desc notes script type_ -> do
+    createStructureDirs d testScriptDirStructure
+    saveName d name
+    saveDesc d desc
+    fileSave d "notes" notes
+    fileSave d "script" script
+    fileSave d "type" type_
+
+instance Save TestCase where
+  save d = testCaseCata show $ \name desc value type_ info -> do
+    createStructureDirs d testCaseDirStructure
+    saveName d name
+    saveDesc d desc
+    fileSave d "value" value
+    fileSave d "type" type_
+    fileSave d "info" info
+
 -- * Load instances
 
 instance Load Role where
@@ -409,6 +439,22 @@ instance Load User where
 instance Load UserRegistration where
   load d = fileLoad d "userreg" readMaybe
 
+instance Load TestScript where
+  load d = testScriptAppAna
+    (loadName d)
+    (loadDesc d)
+    (fileLoad d "notes" same)
+    (fileLoad d "script" same)
+    (fileLoad d "type" readMaybe)
+
+instance Load TestCase where
+  load d = testCaseAppAna
+    (loadName d)
+    (loadDesc d)
+    (fileLoad d "value" same)
+    (fileLoad d "type" readMaybe)
+    (fileLoad d "info" same)
+
 -- * Update instances
 
 instance Update TimeZone where
@@ -450,6 +496,22 @@ instance Update Assignment where
     fileUpdate d "end"         (show end)
     fileUpdate d "endtz"       (show endtz)
 
+instance Update TestScript where
+  update d = testScriptCata show $ \name desc notes script type_ -> do
+    updateName d name
+    fileUpdate d "description" desc
+    fileUpdate d "notes" notes
+    fileUpdate d "script" script
+    fileUpdate d "type" type_
+
+instance Update TestCase where
+  update d = testCaseCata show $ \name desc value type_ info -> do
+    updateName d name
+    fileUpdate d "description" desc
+    fileUpdate d "value" value
+    fileUpdate d "type" type_
+    fileUpdate d "info" info
+
 -- * Dir Structures
 
 data DirStructure = DirStructure {
@@ -483,9 +545,22 @@ userDirStructure = DirStructure {
   }
 
 assignmentDirStructure = DirStructure {
-    files = [ "name", "description"
-            , "type", "start", "starttz", "end", "endtz", created ]
-  , directories = ["group", "course", "submission"]
+    files =
+      [ "name" -- The name of the assignment
+      , "description" -- The description that appears on the ui
+      , "type"    -- The type of the assignment
+      , "start"   -- The start date of from when the assignment is active
+      , "starttz" -- The timezone of the given start date
+      , "end"     -- The end data of from when the assignment is inactive
+      , "endtz"   -- The timezone of the given end date
+      , created   -- The time when the assignment is created
+      ]
+  , directories =
+      [ "group"      -- The group of the assignment OR
+      , "course"     -- The course of the assignment
+      , "submission" -- The submissions for the assignment
+      , "test-case"  -- The optional test case for the assignment
+      ]
   }
 
 submissionDirStructure = DirStructure {
@@ -506,6 +581,7 @@ courseDirStructure = DirStructure {
       , "users"        -- Soft links to the users that are actively registered for the course
       , "admins"       -- Soft links to the users that administrates the course
       , "unsubscribed" -- Soft links to the users that are subscribed and unsubscribed to the course at least once
+      , "test-script"  -- Soft link to the test-script for the course
       ]
   }
 
@@ -521,6 +597,32 @@ groupDirStructure = DirStructure {
       , "admins"       -- Soft links to the users that administrated the group
       , "assignments"  -- Soft links to the assignments that are associated with the group
       , "unsubscribed" -- Soft links to the users that are subscribed and unsubscribed to the group at least once
+      ]
+  }
+
+testScriptDirStructure = DirStructure {
+    files =
+      [ "name"        -- The name of the test script that appears on the UI
+      , "description" -- The short description
+      , "notes"       -- The Notes appear for the test case creator
+      , "script"      -- The script itself, which will be substituated into the test framework
+      , "type"        -- The type of the associated test cases
+      ]
+  , directories =
+      [ "course" ]    -- The course that the test script is associated with
+  }
+
+testCaseDirStructure = DirStructure {
+    files =
+      [ "name"        -- The name of the test case that appears on the UI
+      , "description" -- The description of the test case that optionally appears on the UI
+      , "value"       -- The value of the test case, which can be a zip file or a plain text
+      , "type"        -- The type of the value
+      , "info"        -- Extra information which interpretation depends on the type of the value
+      ]
+  , directories =
+      [ "test-script" -- The test script of the test case
+      , "assignment" -- The assignment of the test case
       ]
   }
 
@@ -578,6 +680,8 @@ dirStructures = [
   , evaluationDirStructure
   , commentDirStructure
   , userRegDirStructure
+  , testScriptDirStructure
+  , testCaseDirStructure
   ]
 
 unitTests = UnitTests [

@@ -142,6 +142,12 @@ siEvaluationKey (Submission_Result ek _) = Just ek
 -- Simple name for the assignment
 type AssignmentName = String
 
+-- Information to display on the UI
+data TestScriptInfo = TestScriptInfo {
+    tsiName :: String
+  , tsiDescription :: String
+  }
+
 -- InformationSoruce represents from where the information came from, from a course or from a group
 data InfoSource
   = CourseInfSrc -- Represent that the generated information came from a course
@@ -245,8 +251,19 @@ newtype SubmissionKey = SubmissionKey String
 submissionKeyMap :: (String -> a) -> SubmissionKey -> a
 submissionKeyMap f (SubmissionKey s) = f s
 
-newtype TestKey = TestKey String
+-- Key for a given Test Script in the persistence layer
+newtype TestScriptKey = TestScriptKey String
   deriving (Eq, Ord, Show)
+
+-- Template function for the TestScriptKey value
+testScriptKeyCata f (TestScriptKey x) = f x
+
+-- Key for a given Test Case in the persistence layer
+newtype TestCaseKey = TestCaseKey String
+  deriving (Eq, Ord, Show)
+
+-- Template function for the TestCaseKey value
+testCaseKeyCata f (TestCaseKey x) = f x
 
 newtype CourseKey = CourseKey String
   deriving (Eq, Ord, Show)

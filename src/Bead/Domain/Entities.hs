@@ -306,6 +306,7 @@ data PermissionObject
   | P_CourseAdmin
   | P_AdminPage
   | P_PlainPage
+  | P_TestScript
   deriving (Eq, Ord, Show, Enum)
 
 -- Permission Objects are dynamically associated with values
@@ -458,6 +459,88 @@ userRegistrationFold
   -> UserRegistration
   -> a
 userRegistrationFold f (UserRegistration u e n t d) = f u e n t d
+
+-- Test Script Type represents a choice: The test cases for the
+-- test script will be uploaded as plain text or a zip file
+data TestScriptType
+  = TestScriptSimple
+  | TestScriptZipped
+  deriving (Eq, Ord, Enum, Show, Read)
+
+-- Template function for the TestScriptType
+testScriptTypeCata
+  simple
+  zipped
+  t = case t of
+    TestScriptSimple -> simple
+    TestScriptZipped -> zipped
+
+-- Test Script defines a scripts that can be integrated with the
+-- testing framework for the given course.
+data TestScript = TestScript {
+    tsName :: String -- The name of the script
+  , tsDescription :: String -- The short description of the script
+  , tsNotes :: String -- The notes for the creator of the test cases, which are associated with the script
+  , tsScript :: String -- The script itself that will be subsctituated to the test frameworks shell script
+  , tsType :: TestScriptType -- The type of the test script
+  } deriving (Eq, Show, Read)
+
+-- Template function for the TestScript
+testScriptCata
+  tc -- Transformation of the test script type
+  f
+  (TestScript
+    name
+    description
+    notes
+    script
+    type_)
+  = f name description notes script (tc type_)
+
+-- Applicative functor based TestScript value creation
+testScriptAppAna name desc notes script type_
+  = TestScript <$> name <*> desc <*> notes <*> script <*> type_
+
+-- Test cases can arrive in plain text or in a zip file
+data TestCaseType
+  = TestCaseSimple
+  | TestCaseZipped
+  deriving (Eq, Ord, Enum, Show, Read)
+
+-- Template function for the test case type
+testCaseTypeCata
+  simple
+  zipped
+  t = case t of
+    TestCaseSimple -> simple
+    TestCaseZipped -> zipped
+
+-- Test Cases are for assignment and test script pair, test case
+-- has name, description and a piece of code that will be subsctituated
+-- during the evaluation of a submission
+data TestCase = TestCase {
+    tcName :: String -- The name of the test case
+  , tcDescription :: String -- The short description of the test case
+  , tcValue :: String -- The stored value of test cases
+  , tcType  :: TestCaseType -- The type of the test case
+  , tcInfo  :: String -- Additional information which interpretation could change depending on the
+                      -- type of the test case
+  } deriving (Eq, Show, Read)
+
+-- Template method for test case
+testCaseCata
+  tc -- Transformation of the TestCaseType
+  f
+  (TestCase name
+            description
+            value
+            type_
+            info)
+  = f name description value (tc type_) info
+
+-- Applicative functor based TestCase value creation
+testCaseAppAna name desc value type_ info
+  = TestCase <$> name <*> desc <*> value <*> type_ <*> info
 
 -- * Data storage
 

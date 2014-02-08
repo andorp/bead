@@ -260,6 +260,18 @@ data Translation a
   | Msg_Home_NonPercentageEvaluation { trans :: a }
   | Msg_Home_DeleteUsersFromCourse { trans :: a }
   | Msg_Home_DeleteUsersFromGroup { trans :: a }
+  | Msg_Home_NotAdministratedTestScripts { trans :: a }
+  | Msg_Home_NoTestScriptsWereDefined { trans :: a }
+  | Msg_Home_ModifyTestScriptTable { trans :: a }
+
+  | Msg_NewTestScript_Name { trans :: a }
+  | Msg_NewTestScript_Type { trans :: a }
+  | Msg_NewTestScript_Description { trans :: a }
+  | Msg_NewTestScript_Notes { trans :: a }
+  | Msg_NewTestScript_Script { trans :: a }
+  | Msg_NewTestScript_Save { trans :: a }
+  | Msg_NewTestScript_Course { trans :: a }
+  | Msg_NewTestScript_HasNoCourses { trans :: a }
 
   | Msg_UserStory_SetTimeZone { trans :: a }
   | Msg_UserStory_ChangedUserDetails { trans :: a }
@@ -274,6 +286,8 @@ data Translation a
   | Msg_UserStory_UsersAreDeletedFromCourse { trans :: a }
   | Msg_UserStory_UsersAreDeletedFromGroup { trans :: a }
   | Msg_UserStory_SuccessfulCourseUnsubscription { trans :: a }
+  | Msg_UserStory_NewTestScriptIsCreated { trans :: a }
+  | Msg_UserStory_ModifyTestScriptIsDone { trans :: a }
 
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 
@@ -286,6 +300,8 @@ data Translation a
   | Msg_LinkText_Submission { trans :: a }
   | Msg_LinkText_SubmissionList { trans :: a }
   | Msg_LinkText_UserSubmissions { trans :: a }
+  | Msg_LinkText_NewTestScript { trans :: a }
+  | Msg_LinkText_ModifyTestScript { trans :: a }
   | Msg_LinkText_ModifyEvaluation { trans :: a }
   | Msg_LinkText_SubmissionDetails { trans :: a }
   | Msg_LinkText_Administration { trans :: a }

@@ -32,6 +32,10 @@ data UserAction
   | CreateCourseAdmin Username CourseKey
   | DeleteUsersFromCourse CourseKey [Username]
 
+  -- Test Script
+  | CreateTestScript CourseKey TestScript
+  | ModifyTestScript TestScriptKey TestScript
+
   -- Assignment
   | CreateGroupAssignment GroupKey Assignment
   | CreateCourseAssignment CourseKey Assignment
@@ -76,6 +80,8 @@ userStoryFor (SubmissionComment sk c) = Story.createComment sk c
 userStoryFor (DeleteUsersFromCourse ck us) = Story.deleteUsersFromCourse ck us
 userStoryFor (DeleteUsersFromGroup gk us) = Story.deleteUsersFromGroup gk us
 userStoryFor (UnsubscribeFromCourse gk) = Story.unsubscribeFromCourse gk
+userStoryFor (CreateTestScript ck s) = Story.saveTestScript ck s
+userStoryFor (ModifyTestScript tsk s) = Story.modifyTestScript tsk s
 
 -- Saves the email, fullname and timezone in the persistence layer
 -- and set the user's timezone in the service context

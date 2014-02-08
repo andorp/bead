@@ -266,6 +266,29 @@ evaluations n ss = do
     run $ insertListRef list ek
   listInRef list
 
+-- Generates and stores the given number of test scripts for the randomly selected
+-- courses, and returns all the created TestScriptKeys
+testScripts n cs = do
+  list <- createListRef
+  quick n $ do
+    ck <- pick $ elements cs
+    tsk <- saveAndLoadIdenpotent "TestScript"
+      (saveTestScript persist ck) (loadTestScript persist) (Gen.testScripts)
+    run $ insertListRef list tsk
+  listInRef list
+
+-- Generates and stores the given number of the test cases for the randomly selected
+-- test scripts and assignments, and returns all the created TestCaseKeys
+testCases n tcs as = do
+  list <- createListRef
+  quick n $ do
+    tsk <- pick $ elements tcs
+    ak  <- pick $ elements as
+    tck <- saveAndLoadIdenpotent "TestCase"
+      (saveTestCase persist tsk ak) (loadTestCase persist) (Gen.testCases)
+    run $ insertListRef list tck
+  listInRef list
+
 massPersistenceTest = do
   cs <- courses 100
   gs <- groups 250 cs
@@ -720,6 +743,42 @@ unsubscribeFromSubscribedGroupsTest = do
           assertSetEquals (ugsb) (ugsa) "User is unsubscribed from course #2"
           assertSetEquals (unregsgb) (unregsga) "User is in the course unsubscribed list"
 
+saveLoadAndModifyTestScriptsTest = do
+  reinitPersistence
+  cs <- courses 200
+  tss <- testScripts 1000 cs
+  quick 1000 $ do
+    ts <- pick $ elements tss
+    nts <- pick $ Gen.testScripts
+    join $ runPersistCmd $ do
+      modifyTestScript persist ts nts
+      nts' <- loadTestScript persist ts
+      ck <- courseOfTestScript persist ts
+      ctss <- testScriptsOfCourse persist ck
+      return $ do
+        assertEquals nts nts' "Modifing the test script failed"
+        assertTrue (elem ts ctss) "Test Script is not in it's course"
+
+
+saveLoadAndModifyTestCasesTest = do
+  reinitPersistence
+  cs <- courses 100
+  gs <- groups 200 cs
+  tss <- testScripts 500 cs
+  as <- courseAndGroupAssignments 100 100 cs gs
+  tcs <- testCases 1000 tss as
+  quick 1000 $ do
+    tc  <- pick $ elements tcs
+    ntc <- pick $ Gen.testCases
+    join $ runPersistCmd $ do
+      modifyTestCase persist tc ntc
+      ntc' <- loadTestCase persist tc
+      ak <- assignmentOfTestCase persist tc
+      asg <- loadAssignment persist ak
+      return $ do
+        assertEquals ntc ntc' "Modfiy the test case failed"
+        assertTrue (not . null $ assignmentName asg) "Invalid assignment"
+
 runPersistCmd :: TIO a -> PropertyM IO a
 runPersistCmd m = do
   x <- run $ runPersist m
@@ -784,6 +843,8 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Delete user form course" $ deleteUsersFromCourseTest
   , testCase "Delete user from courses not belong to" $ deleteUsersFromCourseNegativeTest
   , testCase "User unsubscribes from a course" $ unsubscribeFromSubscribedGroupsTest
+  , testCase "Save, load and modify test scripts" $ saveLoadAndModifyTestScriptsTest
+  , testCase "Save, load and modify test cases" $ saveLoadAndModifyTestCasesTest
   , cleanUpPersistence
   ]
 

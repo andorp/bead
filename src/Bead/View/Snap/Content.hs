@@ -76,7 +76,7 @@ import Bead.View.Snap.RouteOf
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.RequestParams
 import Bead.View.Snap.InputHandlers
-import Bead.View.Snap.TemplateAndComponentNames
+import Bead.View.Snap.TemplateAndComponentNames hiding (tcName)
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Fay.JSON.ServerSide
 #ifdef TEST

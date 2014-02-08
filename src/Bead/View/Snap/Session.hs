@@ -94,6 +94,8 @@ instance SessionStore P.Page where
           "GroupRegistration"
           "UserDetails"
           "UserSubmissions"
+          "NewTestScript"
+          (\(R.TestScriptKey t) -> join ["ModifyTestScript:", t])
           "CreateCourse"
           "CreateGroup"
           "AssignCourseAdmin"
@@ -119,6 +121,7 @@ instance SessionRestore P.Page where
     Just "Submission"      -> Just P.Submission
     Just "SubmissionList"  -> Just P.SubmissionList
     Just "UserSubmissions" -> Just P.UserSubmissions
+    Just "NewTestScript" -> Just P.NewTestScript
     Just "Administration"   -> Just P.Administration
     Just "GroupRegistration" -> Just P.GroupRegistration
     Just "CreateCourse" -> Just P.CreateCourse
@@ -174,6 +177,12 @@ instance SessionRestore P.Page where
                [g] -> Just $ P.UnsubscribeFromCourse (groupKey g)
                _   -> Nothing
 
+      | startsWith "ModifyTestScript:" ts ->
+          let se = splitValues "ModifyTestScript:" ts
+          in case se of
+              [t] -> Just $ P.ModifyTestScript (testScriptKey t)
+              _   -> Nothing
+
     Just _ -> Nothing
     where
       assignmentKey = R.AssignmentKey . T.unpack
@@ -185,6 +194,8 @@ instance SessionRestore P.Page where
       courseKey = R.CourseKey . T.unpack
 
       groupKey = R.GroupKey . T.unpack
+
+      testScriptKey = R.TestScriptKey . T.unpack
 
       username = E.Username . T.unpack
 

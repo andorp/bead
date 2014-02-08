@@ -370,6 +370,9 @@ requestToPage path params
   | path == submissionPath       = j P.Submission
   | path == submissionListPath   = j P.SubmissionList
   | path == userSubmissionsPath  = j P.UserSubmissions
+  | path == newTestScriptPath    = j P.NewTestScript
+  | path == modifyTestScriptPath
+    = P.ModifyTestScript <$> testScriptKey
   | path == submissionDetailsPath
     = P.SubmissionDetails <$> assignmentKey <*> submissionKey
   | path == administrationPath    = j P.Administration
@@ -402,11 +405,13 @@ requestToPage path params
     assignmentKey = (AssignmentKey . unpack) <$> value assignmentKeyParamName
     submissionKey = (SubmissionKey . unpack) <$> value submissionKeyParamName
     evaluationKey = (EvaluationKey . unpack) <$> value evaluationKeyParamName
+    testScriptKey = (TestScriptKey . unpack) <$> value testScriptKeyParamName
 
     -- Returns Just x if only one x corresponds to the key in the request params
     -- otherwise Nothing
     value key = Map.lookup key params >>= oneValue
       where
+        oneValue []  = Nothing
         oneValue [l] = Just l
         oneValue _   = Nothing
 

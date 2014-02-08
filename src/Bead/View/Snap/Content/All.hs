@@ -36,6 +36,7 @@ import Bead.View.Snap.Content.CreateCourse (createCourse)
 import Bead.View.Snap.Content.UserDetails (userDetails)
 import Bead.View.Snap.Content.UserSubmissions (userSubmissions)
 import Bead.View.Snap.Content.SetUserPassword (setUserPassword)
+import Bead.View.Snap.Content.NewTestScript (newTestScript, modifyTestScript)
 
 import qualified Bead.Controller.Pages as P hiding (invariants)
 
@@ -68,6 +69,8 @@ content = [
   route submissionPath submission,
   route submissionListPath submissionList,
   route userSubmissionsPath userSubmissions,
+  route newTestScriptPath newTestScript,
+  route modifyTestScriptPath modifyTestScript,
   route modifyEvaluationPath modifyEvaluation,
   route submissionDetailsPath submissionDetails,
   route groupRegistrationPath groupRegistration,

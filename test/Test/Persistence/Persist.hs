@@ -83,6 +83,11 @@ testDecoratedPersist a q = Persist {
       us <- courseAdmins q ck
       return us
 
+  , testScriptsOfCourse = \ck -> do
+      testCourseKey a ck
+      tsks <- testScriptsOfCourse q ck
+      mapM (testTestScriptKey a) tsks
+      return tsks
 
   , saveGroup = \ck g -> do
       testCourseKey a ck
@@ -126,6 +131,54 @@ testDecoratedPersist a q = Persist {
       testGroupKey a gk
       unsubscribedFromGroup q gk
 
+  -- Test Scripts
+  , saveTestScript = \ck ts -> do
+      testCourseKey a ck
+      tk <- saveTestScript q ck ts
+      testTestScriptKey a tk
+      return tk
+
+  , loadTestScript = \tk -> do
+      testTestScriptKey a tk
+      loadTestScript q tk
+
+  , courseOfTestScript = \tk -> do
+      testTestScriptKey a tk
+      ck <- courseOfTestScript q tk
+      testCourseKey a ck
+      return ck
+
+  , modifyTestScript = \tk ts -> do
+      testTestScriptKey a tk
+      modifyTestScript q tk ts
+
+  -- Test Cases
+  , saveTestCase = \tk ak tc -> do
+      testTestScriptKey a tk
+      testAssignmentKey a ak
+      tck <- saveTestCase q tk ak tc
+      testTestCaseKey a tck
+      return tck
+
+  , loadTestCase = \tk -> do
+      testTestCaseKey a tk
+      loadTestCase q tk
+
+  , assignmentOfTestCase = \tk -> do
+      testTestCaseKey a tk
+      ak <- assignmentOfTestCase q tk
+      testAssignmentKey a ak
+      return ak
+
+  , testScriptOfTestCase = \tk -> do
+      testTestCaseKey a tk
+      sk <- testScriptOfTestCase q tk
+      testTestScriptKey a sk
+      return sk
+
+  , modifyTestCase = \tk tc -> do
+      testTestCaseKey a tk
+      modifyTestCase q tk tc
 
   , filterAssignment = filterAssignment q
   , assignmentKeys = do
@@ -191,6 +244,12 @@ testDecoratedPersist a q = Persist {
   , assignmentCreatedTime = \ak -> do
       testAssignmentKey a ak
       assignmentCreatedTime q ak
+
+  , testCaseOfAssignment = \ak -> do
+      testAssignmentKey a ak
+      mtck <- testCaseOfAssignment q ak
+      maybe (return ()) (testTestCaseKey a) mtck
+      return mtck
 
   -- Submission
   , saveSubmission = \ak u s -> do
@@ -314,6 +373,12 @@ testEvaluationKey a (EvaluationKey ek) = checkKeyString ek a $ "EvaluationKey wa
 
 testCommentKey :: Assert -> CommentKey -> TIO ()
 testCommentKey a (CommentKey ck) = checkKeyString ck a $ "CommentKey was invalid: " ++ ck
+
+testTestScriptKey :: Assert -> TestScriptKey -> TIO ()
+testTestScriptKey a = testScriptKeyCata $ \k -> checkKeyString k a $ "TestScriptKey was invalid: " ++ k
+
+testTestCaseKey :: Assert -> TestCaseKey -> TIO ()
+testTestCaseKey a = testCaseKeyCata $ \k -> checkKeyString k a $ "TestCaseKey was invalid: " ++ k
 
 checkKeyString :: String -> Assert -> String -> TIO ()
 checkKeyString str assert msg = when (length (splitPath str) /= 1) $ assert msg

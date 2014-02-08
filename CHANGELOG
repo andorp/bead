@@ -1,3 +1,21 @@
+- New Translation message: Msg_Home_NotAdministratedTestScripts
+- New Translation message: Msg_Home_NoTestScriptWereDefined
+- New Translation message: Msg_Home_ModifyTestScriptTable
+- New Translation message: Msg_NewTestScript_Name
+- New Translation message: Msg_NewTestScript_Type
+- New Translation message: Msg_NewTestScript_Description
+- New Translation message: Msg_NewTestScript_Notes
+- New Translation message: Msg_NewTestScript_Script
+- New Translation message: Msg_NewTestScript_Save
+- New Translation message: Msg_NewTestScript_Course
+- New Translation message: Msg_NewTestScript_HasNoCourses
+- New Translation message: Msg_UserStory_NewTestScriptIsCreated
+- New Translation message: Msg_UserStory_ModifyTestScriptIsDone
+- New Translation message: Msg_LinkText_NewTestScript
+- New Translation message: Msg_LinkText_ModifyTestScript
+- Data directory change: Assignment directory contains a new "test-case" subdirectory
+- Data directory change: Course directory contains a new "test-script" subdirectory
+
 - Data directory change: Group directory contains a new "unsubscribed" subdirectory
 - Data directory change: Course directory contains a new "unsubscribed" subdirectory
 - New Translation message: Msg_UserStory_SuccessfulCourseUnsubscription

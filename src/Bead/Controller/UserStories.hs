@@ -143,6 +143,10 @@ loadUser u = logAction INFO "Loading user information" $ do
   authorize P_Open P_User
   withPersist $ flip R.loadUser u
 
+-- Returns the username who is active in the current userstory
+username :: UserStory Username
+username = CMS.gets user
+
 -- The UserStory calculation returns the current user's profile data
 currentUser :: UserStory User
 currentUser = logAction INFO "Load the current user's data" $ do
@@ -158,14 +162,14 @@ courseOrGroupStudent student = logAction INFO
 administratedCourses :: UserStory [(CourseKey, Course)]
 administratedCourses = logAction INFO "selects adminstrated courses" $ do
   authorize P_Open P_Course
-  u <- CMS.gets user
+  u <- username
   withPersist $ flip R.administratedCourses u
 
 -- Produces a list of group keys, group and the full name of the group
 administratedGroups :: UserStory [(GroupKey, Group, String)]
 administratedGroups = logAction INFO "selects administrated groups" $ do
   authorize P_Open P_Group
-  u <- CMS.gets user
+  u <- username
   withPersist $ flip R.administratedGroupsWithCourseName u
 
 -- | The 'create' function is an abstract function
@@ -232,7 +236,7 @@ createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
 deleteUsersFromCourse :: CourseKey -> [Username] -> UserStory ()
 deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ show ck) $ do
   authorize P_Modify P_Course
-  u <- CMS.gets user
+  u <- username
   join $ withPersist $ \p -> do
     cs <- map fst <$> R.administratedCourses p u
     case ck `elem` cs of
@@ -242,12 +246,55 @@ deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ 
         return . putStatusMessage $
           Msg_UserStory_UsersAreDeletedFromCourse "A felhasználókat leiratkoztattuk"
 
+-- Saves the given test script associated with the given course, if the
+-- current user have authorization for the operation and if he administrates the
+-- course given in the parameter. If authorization violation happens the page
+-- redirects to the error page
+saveTestScript :: CourseKey -> TestScript -> UserStory ()
+saveTestScript ck ts = logAction INFO ("creates new test script for course: " ++ show ck) $ do
+  authorize P_Create P_TestScript
+  user <- username
+  join $ withPersist $ \p -> do
+    cs <- map fst <$> R.administratedCourses p user
+    case ck `elem` cs of
+      False -> return $ errorPage "Nem oktatója a kurzusnak!"
+      True -> do
+        R.saveTestScript p ck ts
+        return . putStatusMessage $
+          Msg_UserStory_NewTestScriptIsCreated "A teszt szkript létrejött!"
+
+-- Overwrite the test script with the given one if the current user administrates
+-- the course that are of the given test script otherwise redirects to the error page
+modifyTestScript :: TestScriptKey -> TestScript -> UserStory ()
+modifyTestScript tsk ts = logAction INFO ("modifies the existing test script: " ++ show tsk) $ do
+  authorize P_Modify P_TestScript
+  user <- username
+  join $ withPersist $ \p -> do
+    cs <- map fst <$> R.administratedCourses p user
+    ck <- R.courseOfTestScript p tsk
+    case ck `elem` cs of
+      False -> return $ errorPage "Nem a saját teszt szkripted módosítod!"
+      True -> do
+        R.modifyTestScript p tsk ts
+        return . putStatusMessage $
+          Msg_UserStory_ModifyTestScriptIsDone "A teszt szkript módosítva lett!"
+
+-- | Loads the test script if the user has authorization for the load, and
+-- otherwise redirects to the error page
+loadTestScript :: TestScriptKey -> UserStory (TestScript, CourseKey)
+loadTestScript tsk = logAction INFO ("loads the test script: " ++ show tsk) $ do
+  authorize P_Open P_TestScript
+  join $ withPersist $ \p -> do
+    ck <- R.courseOfTestScript p tsk
+    ts <- R.loadTestScript p tsk
+    return (return (ts, ck))
+
 -- Deletes the given users from the given group if the current user is a group
 -- admin for the given group, otherwise redirects to the error page
 deleteUsersFromGroup :: GroupKey -> [Username] -> UserStory ()
 deleteUsersFromGroup gk sts = logAction INFO ("delets users form group: " ++ show gk) $ do
   authorize P_Modify P_Group
-  u <- CMS.gets user
+  u <- username
   join $ withPersist $ \p -> do
     gs <- map fst <$> R.administratedGroups p u
     case gk `elem` gs of
@@ -279,7 +326,7 @@ createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $
 -- case the error page is rendered
 unsubscribeFromCourse :: GroupKey -> UserStory ()
 unsubscribeFromCourse gk = logAction INFO ("unsubscribes from group: " ++ show gk) $ do
-  u <- CMS.gets user
+  u <- username
   join $ withPersist $ \p -> do
     registered <- R.isUserInGroup p u gk
     case registered of
@@ -352,7 +399,7 @@ subscribeToGroup gk = logAction INFO ("subscribes to the group " ++ (show gk)) $
 attendedGroups :: UserStory [(GroupKey, GroupDesc, Bool)]
 attendedGroups = logAction INFO "selects courses attended in" $ do
   authorize P_Open P_Group
-  uname <- CMS.gets user
+  uname <- username
   withPersist $ \p -> do
     ks <- R.userGroups p uname
     ds <- mapM (R.groupDescription p) ks
@@ -525,7 +572,7 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
 availableGroups :: UserStory [(GroupKey, GroupDesc)]
 availableGroups = logAction INFO "lists available groups" $ do
   authorize P_Open P_Group
-  u <- CMS.gets user
+  u <- username
   withPersist $ \p -> do
     allGroups <- map fst <$> R.filterGroups p each
     available <- filterM (thereIsNoSubmission p u) allGroups
@@ -540,7 +587,7 @@ availableGroups = logAction INFO "lists available groups" $ do
 userAssignmentKeys :: UserStory [AssignmentKey]
 userAssignmentKeys = logAction INFO "lists its assignments" $ do
   authorize P_Open P_Assignment
-  uname <- CMS.gets user
+  uname <- username
   withPersist $ \p -> (R.userAssignmentKeyList p uname)
 
 userSubmissionKeys :: AssignmentKey -> UserStory [SubmissionKey]
@@ -629,6 +676,15 @@ submissionTables = logAction INFO "lists submission tables" $ do
   authPerms submissionTableInfoPermissions
   withUserAndPersist $ \uname p -> R.submissionTables p uname
 
+-- Calculates the test script infos for the given course
+testScriptInfos :: CourseKey -> UserStory [(TestScriptKey, TestScriptInfo)]
+testScriptInfos ck = withPersist $ \p ->
+  mapM (testScriptInfoAndKey p) =<< (R.testScriptsOfCourse p ck)
+  where
+    testScriptInfoAndKey p tk = do
+      ts <- R.testScriptInfo p tk
+      return (tk,ts)
+
 newEvaluation :: SubmissionKey -> Evaluation -> UserStory ()
 newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ do
   authorize P_Open   P_Submission
@@ -708,7 +764,7 @@ logAction level msg s = do
 
 withUserAndPersist :: (Username -> Persist -> TIO a) -> UserStory a
 withUserAndPersist f = do
-  u <- CMS.gets user
+  u <- username
   withPersist (f u)
 
 -- | Lifting a persistence action

@@ -20,6 +20,7 @@ module Bead.Persistence.Persist (
   , deleteUserFromCourse -- Deletes a user from a course, searching the group id for the unsubscription
   , isThereASubmissionForGroup -- Checks if the user submitted any solutions for the group
   , isThereASubmissionForCourse -- Checks if the user submitted any solutions for the course
+  , testScriptInfo -- Calculates the test script information for the given test key
   ) where
 
 import Bead.Domain.Types (Erroneous)
@@ -69,6 +70,7 @@ data Persist = Persist {
   , courseAdmins      :: CourseKey -> TIO [Username]
   , subscribedToCourse :: CourseKey -> TIO [Username]
   , unsubscribedFromCourse :: CourseKey -> TIO [Username]
+  , testScriptsOfCourse :: CourseKey -> TIO [TestScriptKey]
 
   -- Group Persistence
   , saveGroup     :: CourseKey -> Group -> TIO GroupKey
@@ -84,6 +86,19 @@ data Persist = Persist {
   , subscribedToGroup     :: GroupKey -> TIO [Username]
   , unsubscribedFromGroup :: GroupKey -> TIO [Username]
 
+  -- Test Scripts
+  , saveTestScript :: CourseKey -> TestScript -> TIO TestScriptKey
+  , loadTestScript :: TestScriptKey -> TIO TestScript
+  , courseOfTestScript :: TestScriptKey -> TIO CourseKey
+  , modifyTestScript :: TestScriptKey -> TestScript -> TIO ()
+
+  -- Test Cases
+  , saveTestCase :: TestScriptKey -> AssignmentKey -> TestCase -> TIO TestCaseKey
+  , loadTestCase :: TestCaseKey -> TIO TestCase
+  , assignmentOfTestCase :: TestCaseKey -> TIO AssignmentKey
+  , testScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
+  , modifyTestCase :: TestCaseKey -> TestCase -> TIO ()
+
   -- Assignment Persistence
   , filterAssignment  :: (AssignmentKey -> Assignment -> Bool) -> TIO [(AssignmentKey, Assignment)]
   , assignmentKeys    :: TIO [AssignmentKey]
@@ -98,6 +113,7 @@ data Persist = Persist {
   , groupOfAssignment    :: AssignmentKey -> TIO (Maybe GroupKey)
   , submissionsForAssignment :: AssignmentKey -> TIO [SubmissionKey]
   , assignmentCreatedTime    :: AssignmentKey -> TIO UTCTime
+  , testCaseOfAssignment :: AssignmentKey -> TIO (Maybe TestCaseKey)
 
   -- Submission
   , saveSubmission :: AssignmentKey -> Username -> Submission -> TIO SubmissionKey
@@ -471,6 +487,14 @@ deleteUserFromCourse p ck u = do
       (Map.lookup ck cgMap)
   where
     k = Kleisli
+
+testScriptInfo :: Persist -> TestScriptKey -> TIO TestScriptInfo
+testScriptInfo p tk = do
+  script <- loadTestScript p tk
+  return TestScriptInfo {
+      tsiName = tsName script
+    , tsiDescription = tsDescription script
+    }
 
 -- Returns True if the given student submitted at least one solution for the
 -- assignments for the given group, otherwise False

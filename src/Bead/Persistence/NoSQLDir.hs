@@ -45,6 +45,7 @@ noSqlDirPersist = Persist {
   , courseAdmins = nCourseAdmins
   , subscribedToCourse = nSubscribedToCourse
   , unsubscribedFromCourse = nUnsubscribedFromCourse
+  , testScriptsOfCourse = nTestScriptsOfCourse
 
   , saveGroup     = nSaveGroup
   , loadGroup     = nLoadGroup
@@ -58,6 +59,17 @@ noSqlDirPersist = Persist {
   , createGroupAdmin    = nCreateGroupAdmin
   , subscribedToGroup   = nSubscribedToGroup
   , unsubscribedFromGroup = nUnsubscribedFromGroup
+
+  , saveTestScript = nSaveTestScript -- :: CourseKey -> TestScript -> TIO TestScriptKey
+  , loadTestScript = nLoadTestScript -- :: TestScriptKey -> TIO TestScript
+  , courseOfTestScript = nCourseOfTestScript -- :: TestScriptKey -> TIO CourseKey
+  , modifyTestScript = nModifyTestScript -- :: TestScriptKey -> TestScript -> TIO ()
+
+  , saveTestCase = nSaveTestCase -- :: TestScriptKey -> AssignmentKey -> TIO TestCaseKey
+  , loadTestCase = nLoadTestCase -- :: TestCaseKey -> TIO TestCase
+  , assignmentOfTestCase = nAssignmentOfTestCase -- :: TestCaseKey -> TIO AssignmentKey
+  , testScriptOfTestCase = nTestScriptOfTestCase -- :: TestCaseKey -> TIO TestScriptKey
+  , modifyTestCase = nModifyTestCase -- :: TestCaseKey -> TestCase -> TIO ()
 
   , filterAssignment     = nFilterAssignment
   , assignmentKeys       = nAssignmentKeys
@@ -73,6 +85,7 @@ noSqlDirPersist = Persist {
   , submissionsForAssignment = nSubmissionsForAssignment
   , assignmentCreatedTime    = nAssignmentCreatedTime
   , lastSubmission           = nLastSubmission
+  , testCaseOfAssignment = nTestCaseOfAssignment
 
   , saveSubmission = nSaveSubmission
   , loadSubmission = nLoadSubmission
@@ -256,6 +269,9 @@ nGroupAdmins = admins
 
 nCourseAdmins :: CourseKey -> TIO [Username]
 nCourseAdmins = admins
+
+nTestScriptsOfCourse :: CourseKey -> TIO [TestScriptKey]
+nTestScriptsOfCourse = objectsIn "test-script" TestScriptKey isTestScriptDir
 
 nIsUserInGroup :: Username -> GroupKey -> TIO Bool
 nIsUserInGroup u gk = isLinkedIn u gk "users"
@@ -468,6 +484,9 @@ nCourseOfAssignment = objectIn "course" CourseKey isCourseDir
 
 nGroupOfAssignment :: AssignmentKey -> TIO (Maybe GroupKey)
 nGroupOfAssignment = objectIn  "group" GroupKey isGroupDir
+
+nTestCaseOfAssignment :: AssignmentKey -> TIO (Maybe TestCaseKey)
+nTestCaseOfAssignment = objectIn "test-case" TestCaseKey isTestCaseDir
 
 nSubmissionsForAssignment :: AssignmentKey -> TIO [SubmissionKey]
 nSubmissionsForAssignment = objectsIn "submission" SubmissionKey isSubmissionDir
@@ -713,12 +732,95 @@ nLoadComment :: CommentKey -> TIO Comment
 nLoadComment ck = do
   let p = commentDirPath ck
   isC <- isCommentDir p
-  unless isC . throwEx . userError . join $ ["Comment does not exist."]
+  unless isC . throwEx $ userError "Comment does not exist."
   liftM snd . tLoadPersistenceObject CommentKey $ p
 
 nSubmissionOfComment :: CommentKey -> TIO SubmissionKey
 nSubmissionOfComment =
-  objectIn' "No evaluation was found for " "submission" SubmissionKey isSubmissionDir
+  objectIn' "No submission was found for " "submission" SubmissionKey isSubmissionDir
+
+-- * Test Script
+
+testScriptDirPath :: TestScriptKey -> FilePath
+testScriptDirPath = testScriptKeyCata $ \k -> joinPath [testScriptDataDir, k]
+
+isTestScriptDir :: FilePath -> TIO Bool
+isTestScriptDir = isCorrectDirStructure testScriptDirStructure
+
+instance ForeignKey TestScriptKey where
+  referredPath = testScriptDirPath
+  baseName     (TestScriptKey k) = k
+
+nSaveTestScript :: CourseKey -> TestScript -> TIO TestScriptKey
+nSaveTestScript ck ts = do
+  dirName <- createTmpDir testScriptDataDir "ts"
+  let key = TestScriptKey $ takeBaseName dirName
+  save dirName ts
+  link key ck "test-script"
+  link ck key "course"
+  return key
+
+nLoadTestScript :: TestScriptKey -> TIO TestScript
+nLoadTestScript tk = do
+  let p = testScriptDirPath tk
+  isTS <- isTestScriptDir p
+  unless isTS . throwEx $ userError "Not a test script directory"
+  snd <$> tLoadPersistenceObject TestScriptKey p
+
+nCourseOfTestScript :: TestScriptKey -> TIO CourseKey
+nCourseOfTestScript =
+  objectIn' "No course was found for " "course" CourseKey isCourseDir
+
+nModifyTestScript :: TestScriptKey -> TestScript -> TIO ()
+nModifyTestScript tk ts = do
+  let p = testScriptDirPath tk
+  isTS <- isTestScriptDir p
+  unless isTS . throwEx $ userError "Test Script does not exist"
+  update p ts
+
+-- * Test Case
+
+testCaseDirPath :: TestCaseKey -> FilePath
+testCaseDirPath = testCaseKeyCata $ \k -> joinPath [testCaseDataDir, k]
+
+isTestCaseDir :: FilePath -> TIO Bool
+isTestCaseDir = isCorrectDirStructure testCaseDirStructure
+
+instance ForeignKey TestCaseKey where
+  referredPath = testCaseDirPath
+  baseName (TestCaseKey k) = k
+
+nSaveTestCase :: TestScriptKey -> AssignmentKey -> TestCase -> TIO TestCaseKey
+nSaveTestCase tk ak tc = do
+  dirName <- createTmpDir testCaseDataDir "tc"
+  let key = TestCaseKey $ takeBaseName dirName
+  save dirName tc
+  link key ak "test-case"
+  link ak key "assignment"
+  link tk key "test-script"
+  return key
+
+nLoadTestCase :: TestCaseKey -> TIO TestCase
+nLoadTestCase tk = do
+  let p = testCaseDirPath tk
+  isTC <- isTestCaseDir p
+  unless isTC . throwEx $ userError "Not a test case directory"
+  snd <$> tLoadPersistenceObject TestCaseKey p
+
+nAssignmentOfTestCase :: TestCaseKey -> TIO AssignmentKey
+nAssignmentOfTestCase =
+  objectIn' "No assignment was found for " "assignment" AssignmentKey isAssignmentDir
+
+nTestScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
+nTestScriptOfTestCase =
+  objectIn' "No Test Script was found for " "test-script" TestScriptKey isTestScriptDir
+
+nModifyTestCase :: TestCaseKey -> TestCase -> TIO ()
+nModifyTestCase tk tc = do
+  let p = testCaseDirPath tk
+  isTC <- isTestCaseDir p
+  unless isTC . throwEx $ userError "Test Case does not exist"
+  update p tc
 
 -- * Tools
 
