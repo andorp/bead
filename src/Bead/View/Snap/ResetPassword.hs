@@ -29,7 +29,7 @@ import Bead.View.Snap.Content hiding (name)
 import Bead.View.Snap.DataBridge
 import Bead.View.Snap.ErrorPage (errorPageWithTitle)
 import Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
-import Bead.View.Snap.HandlerUtils (registrationStory, userState, renderPublicPage)
+import Bead.View.Snap.HandlerUtils (registrationStory, userState, renderPublicPage, i18nH)
 import Bead.View.Snap.Session (passwordFromAuthUser)
 import Bead.View.Snap.Style
 import Bead.View.Snap.Translation
@@ -75,10 +75,12 @@ setUserPassword u password = do
 emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (Handler App a) ()
 emailPasswordToUser user pwd = do
   address <- fmap u_email loadUserFromPersistence
-  lift $ withTop sendEmailContext $
+  msg <- lift i18nH
+  lift $ withTop sendEmailContext $ do
     sendEmail
       address
-      "BE-AD: Elfelejtett jelszó"
+      (msg $ Msg_ResetPassword_EmailSubject "BE-AD: Elfelejtett jelszó")
+      (msg $ Msg_ResetPassword_EmailBody forgottenPasswordEmailTemplate)
       ForgottenPassword { fpUsername = show user, fpNewPassword = pwd }
   where
     loadUserFromPersistence =
@@ -89,19 +91,20 @@ emailPasswordToUser user pwd = do
 -- Universal error message for every type of error
 -- in such case the attacker could deduce minimal
 -- amount of information
-errorMsg :: (Error e) => e
-errorMsg = strMsg "Hibás NEPTUN azonosító vagy jelszó!"
+errorMsg = Msg_ResetPassword_GenericError "Hibás NEPTUN azonosító vagy jelszó!"
 
 checkUserInAuth :: (Error e) => Username -> ErrorT e (Handler App a) ()
 checkUserInAuth u = do
-  exist    <- lift . withTop auth $ usernameExists (usernameStr u)
-  unless exist $ throwError errorMsg
+  msg <- lift i18nH
+  exist <- lift . withTop auth $ usernameExists (usernameStr u)
+  unless exist $ throwError . strMsg $ msg errorMsg
 
 checkUserInPersistence :: (Error e) => Username -> ErrorT e (Handler App a) ()
-checkUserInPersistence u =
-  (lift $ registrationStory $ S.doesUserExist u) >>=
+checkUserInPersistence u = do
+  msg <- lift i18nH
+  x <- lift $ registrationStory $ S.doesUserExist u
   either (throwError . strMsg . show)
-         (\e -> unless e $ throwError errorMsg)
+         (\e -> unless e $ (throwError . strMsg . msg $ errorMsg)) x
 
 usernameStr :: (IsString s) => Username -> s
 usernameStr = usernameCata fromString
@@ -112,8 +115,9 @@ getAuthUser u =
 
 loadAuthUser :: (Error e) => Username -> ErrorT e (Handler App a) AuthUser
 loadAuthUser u = do
+  msg <- lift i18nH
   usr <- getAuthUser u
-  when (isNothing usr) $ throwError $ strMsg errorMsg
+  when (isNothing usr) $ throwError . strMsg $ msg errorMsg
   return . fromJust $ usr
 
 updateUser :: (Error e) => AuthUser -> ErrorT e (Handler App a) AuthUser
@@ -129,10 +133,12 @@ encryptPwd = liftIO . encryptPassword . ClearText . fromString
 -- If they are different an error is thrown.
 checkCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
 checkCurrentAuthPassword pwd = do
+  msg <- lift i18nH
   name <- user <$> userState
   result <- lift $ withTop auth $
     loginByUsername (usernameCata fromString name) (ClearText $ fromString pwd) False
-  when (isLeft result) . throwError $ strMsg "Hibás jelszó!"
+  when (isLeft result) . throwError . strMsg . msg $
+    Msg_ResetPassword_InvalidPassword "Hibás jelszó!"
 
 -- Update the currently logged in user's password in the authentication module
 updateCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
@@ -176,15 +182,16 @@ resetPasswordPOST :: Handler App App ()
 resetPasswordPOST = renderErrorPage $ runErrorT $ do
   u <- readParameter regUsernamePrm
   e <- readParameter regEmailPrm
+  msg <- lift i18nH
   case (u,e) of
     (Just username, Just email) -> do
       checkUserInAuth username
       checkUserInPersistence username
       user <- loadUser username
-      when (email /= (u_email user)) $ throwError errorMsg
+      when (email /= (u_email user)) $ throwError . strMsg . msg $ errorMsg
       resetPassword username
       lift pageContent
-    _ -> throwError errorMsg
+    _ -> throwError . strMsg . msg $ errorMsg
   where
     renderErrorPage :: Handler App App (Either String ()) -> Handler App App ()
     renderErrorPage m = m >>=
@@ -212,3 +219,21 @@ readParameter param = do
 isLeft :: Either a b -> Bool
 isLeft (Left _)  = True
 isLeft (Right _) = False
+
+-- * Email Template
+
+forgottenPasswordEmailTemplate :: String
+forgottenPasswordEmailTemplate = unlines
+  [ "Kedves {{fpUsername}}!"
+  , ""
+  , "A jelszavad átállítását kérted, ezért most generáltunk (és beállítottunk) neked"
+  , "egy új jelszót, amely a következő:"
+  , ""
+  , "    {{fpNewPassword}}"
+  , ""
+  , "Kérjük, jelentkezz be ezen jelszó használatával és változtasd meg minél"
+  , "hamarabb!"
+  , ""
+  , "Üdvözlettel:"
+  , "Az Adminisztrátorok"
+  ]

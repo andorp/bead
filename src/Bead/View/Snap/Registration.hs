@@ -49,7 +49,6 @@ import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A hiding (title, rows, accept)
 import Bead.View.Snap.I18N (IHtml)
 import qualified Text.Blaze.Html5 as H
-import Bead.View.Snap.Translation (trans)
 
 createUser :: P.Persist -> FilePath -> User -> String -> IO ()
 createUser persist usersdb user password = do
@@ -147,30 +146,32 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     f <- readParameter regFullNamePrm
 
     renderPage $ do
-      let i18n = trans -- TODO: I18N
+      i18n <- lift i18nH
       case (u,e,f) of
-        (Nothing, _, _) -> throwError $ i18n $ Msg_Registration_InvalidNeptunCode "Hibás NEPTUN-kód"
+        (Nothing, _, _) -> throwError . strMsg $ i18n $
+          Msg_Registration_InvalidNeptunCode "Hibás NEPTUN-kód"
         (Just username, Just email, Just fullname) -> do
             exist <- lift $ registrationStory (S.doesUserExist username)
-            when (isLeft exist) . throwError . i18n $
+            when (isLeft exist) . throwError . strMsg . i18n $
               Msg_Registration_HasNoUserAccess "A felhasználó adatainak lekérdezése nem megengedett"
-            when (fromRight exist) . throwError . i18n $
+            when (fromRight exist) . throwError . strMsg . i18n $
               Msg_Registration_UserAlreadyExists "A felhasználó már létezik"
             userRegData <- liftIO $ createUserRegData username email fullname
             result <- lift $ registrationStory (S.createUserReg userRegData)
-            when (isLeft result) . throwError . i18n $
+            when (isLeft result) . throwError . strMsg . i18n $
               Msg_Registration_RegistrationNotSaved "A regisztráció nem lett elmentve!"
             let key = fromRight result
             lift $ withTop sendEmailContext $
               sendEmail
                 email
                 (i18n $ Msg_Registration_EmailSubject "BE-AD: Regisztráció")
+                (i18n $ Msg_Registration_EmailBody registrationEmailTemplate)
                 RegTemplate {
                     regUsername = reg_username userRegData
                   , regUrl = createUserRegAddress key userRegData
                   }
             lift $ pageContent
-        _ -> throwError . i18n $
+        _ -> throwError . strMsg . i18n $
                Msg_Registration_RequestParameterIsMissing "Valamelyik request paraméter hiányzik!"
 
   createUserRegAddress :: UserRegKey -> UserRegistration -> String
@@ -216,7 +217,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
 
   renderForm = do
     values <- readRegParameters
-    let i18n = trans -- TODO: I18N
+    i18n <- i18nH
     case values of
       Nothing -> registrationErrorPage $ i18n $
         Msg_RegistrationFinalize_NoRegistrationParametersAreFound "Nincsenek regisztrációs paraméterek!"
@@ -227,7 +228,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                     return (userReg, existence)
         case result of
           Left e -> registrationErrorPage $
-            printf "Valami hiba történt: %s" (show e) -- TODO: I18N
+            printf (i18n $ Msg_Registration_GenericError "Valami hiba történt: %s") (show e)
           Right (userRegData,exist) -> do
             -- TODO: Check username and token values
             now <- liftIO $ getCurrentTime
@@ -239,20 +240,19 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                 (Msg_Registration_Title "Regisztració")
                 (i18n $ Msg_RegistrationFinalize_UserAlreadyExist "Ez a felhasználó már létezik!")
               (False, False) -> renderPublicPage . dynamicTitleAndHead registrationTitle $ do
-                msg <- getI18N
                 return $ do
                   postForm "reg_final" ! (A.id . formId $ regFinalForm) $ do
                     table (fieldName registrationTable) (fieldName registrationTable) $ do
-                      tableLine (msg $ Msg_RegistrationFinalize_Password "Jelszó:") $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
-                      tableLine (msg $ Msg_RegistrationFinalize_PwdAgain "Jelszó (ismét):") $ passwordInput (name regPasswordAgainPrm) 20 Nothing ! A.required ""
-                      tableLine (msg $ Msg_RegistrationFinalize_Timezone "Időzóna:") $ defEnumSelection (name regTimeZonePrm) UTC ! A.required ""
+                      tableLine (i18n $ Msg_RegistrationFinalize_Password "Jelszó:") $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
+                      tableLine (i18n $ Msg_RegistrationFinalize_PwdAgain "Jelszó (ismét):") $ passwordInput (name regPasswordAgainPrm) 20 Nothing ! A.required ""
+                      tableLine (i18n $ Msg_RegistrationFinalize_Timezone "Időzóna:") $ defEnumSelection (name regTimeZonePrm) UTC ! A.required ""
                     hiddenParam regUserRegKeyPrm key
                     hiddenParam regTokenPrm      token
                     hiddenParam regUsernamePrm   username
                     H.br
-                    submitButton (fieldName regSubmitBtn) (msg $ Msg_RegistrationFinalize_SubmitButton "Regisztráció")
+                    submitButton (fieldName regSubmitBtn) (i18n $ Msg_RegistrationFinalize_SubmitButton "Regisztráció")
                   H.br
-                  linkToRoute (msg $ Msg_RegistrationFinalize_GoBackToLogin "Vissza a bejelentkezéshez")
+                  linkToRoute (i18n $ Msg_RegistrationFinalize_GoBackToLogin "Vissza a bejelentkezéshez")
 
   hiddenParam parameter value = hiddenInput (name parameter) (encode parameter value)
 
@@ -260,21 +260,21 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     values <- readRegParameters
     pwd    <- readParameter regPasswordPrm
     tz     <- readParameter regTimeZonePrm
-    let i18n = trans -- TODO: I18N
+    msg <- i18nH
     case (values, pwd, tz) of
-      (Nothing,_,_) -> errorPageWithTitle (Msg_Registration_Title "Regisztració") $ i18n $
+      (Nothing,_,_) -> errorPageWithTitle (Msg_Registration_Title "Regisztráció") $ msg $
         Msg_RegistrationCreateStudent_NoParameters "Nincsenek regisztrációs paraméterek!"
       (Just (key, token, username), Just password, Just timezone) -> do
         result <- registrationStory (S.loadUserReg key)
         case result of
-          Left e -> errorPageWithTitle (Msg_Registration_Title "Regisztració") $ i18n $
+          Left e -> errorPageWithTitle (Msg_Registration_Title "Regisztráció") $ msg $
             Msg_RegistrationCreateStudent_InnerError "Valamilyen belső hiba történt!"
           Right userRegData -> do
             now <- liftIO getCurrentTime
             -- TODO: Check username and token values (are the same as in the persistence)
             case (reg_timeout userRegData < now) of
-              True -> errorPageWithTitle (Msg_Registration_Title "Regisztració") $ i18n $
-                Msg_RegistrationCreateStudent_InvalidToken "A regisztrációs token már lejárt, regisztrálj újra!"
+              True -> errorPageWithTitle (Msg_Registration_Title "Regisztráció") $ msg $
+                Msg_RegistrationCreateStudent_InvalidToken "A regisztrációs token már lejárt, újra kell regisztrálni!"
               False -> do
                 result <- withTop auth $ createNewUser userRegData password timezone
                 redirect "/"
@@ -327,7 +327,7 @@ pageContent :: Handler App a ()
 pageContent = renderPublicPage . dynamicTitleAndHead (Msg_Registration_Title "Regisztració") $ do
   msg <- getI18N
   return $ do
-    H.p . fromString . msg $ Msg_RegistrationTokenSend_Title "A regisztrációs tokent elküldtük levélben, nézd meg a leveleidet!"
+    H.p . fromString . msg $ Msg_RegistrationTokenSend_Title "A regisztrációs tokent elküldtük levélben, hamarosan megérkezik!"
     H.br
     linkToRoute (msg $ Msg_RegistrationTokenSend_GoBackToLogin "Vissza a bejelentkezéshez")
 
@@ -344,3 +344,23 @@ isLeft (Right _) = False
 fromRight :: Either a b -> b
 fromRight (Right x) = x
 fromRight (Left _)  = error "fromRight: left found"
+
+
+-- * Email template
+
+registrationEmailTemplate :: String
+registrationEmailTemplate = unlines
+  [ "Kedves leendő felhasználó!"
+  , ""
+  , "Ezt a levelet azért kapod, mert valaki ezzel az e-mail címmel szeretne a BE-AD"
+  , "rendszerbe regisztrálni, \"{{regUsername}}\" néven.  Kérjük, erősítsd meg ezt a"
+  , "szándékot azzal, hogy követed az alábbi linket."
+  , ""
+  , "{{regUrl}}"
+  , ""
+  , "Üdvözlettel:"
+  , "Az Adminisztrátorok"
+  , ""
+  , "UI: Amennyiben ezt a levelet tévedésből kaptad volna meg, vagy már nem kívánsz"
+  , "regisztrálni a rendszerbe, úgy nyugodtan hagyd csak figyelmen kívül."
+  ]

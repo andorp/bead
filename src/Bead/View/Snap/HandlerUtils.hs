@@ -11,6 +11,7 @@ module Bead.View.Snap.HandlerUtils (
   , getJSONParam
   , getDictionaryInfos -- Calculates a list of language and dictionaryInfo
   , i18nE
+  , i18nH
   , blazeI18n
   , renderPagelet
   , renderDynamicPagelet
@@ -149,6 +150,12 @@ i18nE = do
   -- for the Attribute names and values used in html templating engines
   d <- lift . withTop dictionaryContext . getDictionary . fromJust $ lang
   return (fromString . (unDictionary $ maybe idDictionary id d)) -- TODO: I18N
+
+i18nH :: Handler App a (Translation String -> String)
+i18nH = do
+  language <- withTop sessionManager languageFromSession
+  t <- maybe (return Nothing) (withTop dictionaryContext . getDictionary) language
+  return $ maybe trans unDictionary t
 
 blazeI18n :: (I18N -> Html) -> HandlerError App b ()
 blazeI18n h = i18nE >>= blaze . h

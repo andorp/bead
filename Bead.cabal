@@ -32,9 +32,6 @@ Data-Files:
 
   cookie
 
-  email/registration
-  email/forgottenpwd
-
   bead.config
 
 Flag Tests

@@ -123,7 +123,9 @@ data Translation a
   | Msg_Registration_UserAlreadyExists { trans :: a }
   | Msg_Registration_RegistrationNotSaved { trans :: a }
   | Msg_Registration_EmailSubject { trans :: a }
+  | Msg_Registration_EmailBody { trans :: a }
   | Msg_Registration_RequestParameterIsMissing { trans :: a }
+  | Msg_Registration_GenericError { trans :: a }
 
   | Msg_RegistrationFinalize_NoRegistrationParametersAreFound { trans :: a }
   | Msg_RegistrationFinalize_SomeError { trans :: a }
@@ -182,6 +184,10 @@ data Translation a
   | Msg_ResetPassword_NewPwdButton { trans :: a }
   | Msg_ResetPassword_EmailSent { trans :: a }
   | Msg_ResetPassword_ForgottenPassword { trans :: a }
+  | Msg_ResetPassword_EmailSubject { trans :: a }
+  | Msg_ResetPassword_EmailBody { trans :: a }
+  | Msg_ResetPassword_GenericError { trans :: a }
+  | Msg_ResetPassword_InvalidPassword { trans :: a }
 
   | Msg_Profile_User { trans :: a }
   | Msg_Profile_Email { trans :: a }

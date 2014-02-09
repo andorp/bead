@@ -132,7 +132,9 @@ translationList =
   , Msg_Registration_UserAlreadyExists ()
   , Msg_Registration_RegistrationNotSaved ()
   , Msg_Registration_EmailSubject ()
+  , Msg_Registration_EmailBody ()
   , Msg_Registration_RequestParameterIsMissing ()
+  , Msg_Registration_GenericError ()
 
   , Msg_RegistrationFinalize_NoRegistrationParametersAreFound ()
   , Msg_RegistrationFinalize_SomeError ()
@@ -191,6 +193,10 @@ translationList =
   , Msg_ResetPassword_NewPwdButton ()
   , Msg_ResetPassword_EmailSent ()
   , Msg_ResetPassword_ForgottenPassword ()
+  , Msg_ResetPassword_EmailSubject ()
+  , Msg_ResetPassword_EmailBody ()
+  , Msg_ResetPassword_GenericError ()
+  , Msg_ResetPassword_InvalidPassword ()
 
   , Msg_Profile_User ()
   , Msg_Profile_Email ()
