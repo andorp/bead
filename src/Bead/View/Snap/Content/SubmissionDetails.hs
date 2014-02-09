@@ -59,14 +59,24 @@ submissionDetailsPostHandler = do
   sk <- getParameter submissionKeyPrm
   c  <- getParameter (stringParameter (fieldName commentValueField) "Hozzászólás")
   now <- liftIO $ getCurrentTime
+  mname <- getName <$> userState
+  let uname = case mname of
+                Just un -> un
+                Nothing -> "???"
   usersSubmission ak sk $ \s -> do
     return $ case s of
       Nothing -> LogMessage "Submission does not belong to the user"
       Just _  -> SubmissionComment sk Comment {
                      comment = c
+                   , commentAuthor = uname
                    , commentDate = now
                    , commentType = CT_Student
                    }
+  where
+    getName = userStateCata
+      Nothing
+      Nothing
+      (\_username _page name _role _token _timezone _status -> Just name)
 
 submissionDetailsContent :: PageData -> IHtml
 submissionDetailsContent p = do

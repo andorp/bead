@@ -195,7 +195,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
 testComment :: SubmissionKey -> IO ()
 testComment sk = do
   now <- getCurrentTime
-  let comment = Comment "comment" now CT_Student
+  let comment = Comment "comment" "author" now CT_Student
   key <- liftE $ saveComment persist sk comment
   c2  <- liftE $ loadComment persist key
   assertBool "Loaded comment was different" (comment == c2)

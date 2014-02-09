@@ -92,19 +92,21 @@ commentTypeCata
 
 -- | Comment on the text of exercise, on the evaluation
 data Comment = Comment {
-    comment     :: String
-  , commentDate :: UTCTime
-  , commentType :: CommentType
+    comment       :: String
+  , commentAuthor :: String
+  , commentDate   :: UTCTime
+  , commentType   :: CommentType
   } deriving (Eq, Show)
 
-commentCata f (Comment c d t) = f c d t
+commentCata f (Comment c a d t) = f c a d t
 
-commentAna comment date type_ = Comment <$> comment <*> date <*> type_
+commentAna comment author date type_ =
+  Comment <$> comment <*> author <*> date <*> type_
 
 -- Returns True if the comment can be displayed for the student
 -- otherwise false
 isStudentComment :: Comment -> Bool
-isStudentComment = commentCata $ \_comment _date -> student where
+isStudentComment = commentCata $ \_comment _owner _date -> student where
   student = commentTypeCata
     True  -- Student
     True  -- Group Admin
@@ -160,9 +162,10 @@ resultString (PctEval p) =
     Nothing -> "No evaluation result, some internal error happened!"
     Just q  -> printf "%3.2f%%" (100.0 * q)
 
-evaluationComment :: UTCTime -> Evaluation -> Comment
-evaluationComment t e = Comment {
+evaluationComment :: UTCTime -> User -> Evaluation -> Comment
+evaluationComment t u e = Comment {
     comment = c
+  , commentAuthor = u_name u
   , commentDate = t
   , commentType = CT_Evaluation
   } where

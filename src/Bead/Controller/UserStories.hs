@@ -632,24 +632,26 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
   authorize P_Open   P_Submission
   authorize P_Create P_Evaluation
   now <- liftIO $ getCurrentTime
+  userData <- CMS.gets user >>= Bead.Controller.UserStories.loadUser
   withUserAndPersist $ \u p -> do
     a <- R.isAdminedSubmission p u sk
     when a $ do
       R.saveEvaluation p sk e
       R.removeOpenedSubmission p sk
-      R.saveComment p sk (evaluationComment now e)
+      R.saveComment p sk (evaluationComment now userData e)
       return ()
 
 modifyEvaluation :: EvaluationKey -> Evaluation -> UserStory ()
 modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
   authorize P_Modify P_Evaluation
   now <- liftIO $ getCurrentTime
+  userData <- CMS.gets user >>= Bead.Controller.UserStories.loadUser
   withUserAndPersist $ \u p -> do
     sk <- R.submissionOfEvaluation p ek
     a <- R.isAdminedSubmission p u sk
     when a $ do
       R.modifyEvaluation p ek e
-      saveComment p sk (evaluationComment now e)
+      saveComment p sk (evaluationComment now userData e)
       return ()
 
 createComment :: SubmissionKey -> Comment -> UserStory ()

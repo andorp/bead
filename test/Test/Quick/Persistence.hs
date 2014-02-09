@@ -466,7 +466,7 @@ submissionDetailsDescTest = do
     assertNonEmpty (sdGroup desc) "Group name was empty"
     forM (sdTeacher desc) $ \t -> assertNonEmpty t "Admin name was empty"
     assertNonEmpty (assignmentDesc $ sdAssignment desc) "Description was empty"
-    assertNonEmpty (sdStatus desc) "Status was empty"
+    assertNonNothing (sdStatus desc) "Status was empty"
     assertNonEmpty (sdSubmission desc) "Submission text was empty"
     forM (sdComments desc) $ \c -> assertNonEmpty (comment c) "Comment was empty"
 
@@ -818,6 +818,11 @@ assertFalse True msg = fail msg
 assertNonEmpty :: (Monad m) => [a] -> String -> m ()
 assertNonEmpty [] msg = fail msg
 assertNonEmpty _ _ = return ()
+
+-- The test will fail with the given message, if the value is Nothing
+assertNonNothing :: (Monad m) => Maybe a -> String -> m ()
+assertNonNothing Nothing msg = fail msg
+assertNonNothing _ _ = return ()
 
 -- The test will fail with the given message, if the list is not empty
 assertEmpty :: (Monad m) => [a] -> String -> m ()

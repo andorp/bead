@@ -131,12 +131,15 @@ commentTypes = elements [CT_Student, CT_GroupAdmin, CT_CourseAdmin, CT_Admin, CT
 
 comments date = Comment
   <$> commentTexts
+  <*> commentAuthors
   <*> (return date)
   <*> commentTypes
 
 solutionTexts = manyWords
 
 commentTexts = manyWords
+
+commentAuthors = manyWords
 
 evaluations :: EvaluationConfig -> Gen Evaluation
 evaluations cfg = Evaluation

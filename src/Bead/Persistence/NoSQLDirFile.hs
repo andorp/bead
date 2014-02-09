@@ -284,9 +284,10 @@ instance Save Evaluation where
     fileSave d "result" (show . evaluationResult $ e)
 
 instance Save Comment where
-  save d = commentCata $ \comment date type_ -> do
+  save d = commentCata $ \comment author date type_ -> do
     createStructureDirs d commentDirStructure
     fileSave d "comment" comment
+    fileSave d "author" author
     fileSave d "date" (show date)
     fileSave d "type" (show type_)
 
@@ -364,6 +365,7 @@ instance Load Evaluation where
 instance Load Comment where
   load d = commentAna
     (fileLoad d "comment" same)
+    (fileLoad d "author" same)
     (fileLoad d "date" readMaybe)
     (fileLoad d "type" readMaybe)
 
@@ -528,7 +530,7 @@ evaluationDirStructure = DirStructure {
   }
 
 commentDirStructure = DirStructure {
-    files = ["comment", "date", "type"]
+    files = ["comment", "author", "date", "type"]
   , directories = ["submission"]
   }
 

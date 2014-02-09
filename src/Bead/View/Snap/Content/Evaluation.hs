@@ -109,6 +109,10 @@ modifyEvaluationPost = do
 commentOnSubmissionHandler :: POSTContentHandler
 commentOnSubmissionHandler = do
   mrole <- getRole <$> userState
+  mname <- getName <$> userState
+  let uname = case mname of
+                Just un -> un
+                Nothing -> "???"
   case mrole of
     Nothing -> return $ LogMessage "A felhasználó nincs bejelentkezve" -- Impossible
     Just role -> do
@@ -118,6 +122,7 @@ commentOnSubmissionHandler = do
       now <- liftIO $ getCurrentTime
       return $ SubmissionComment sk Comment {
          comment = c
+       , commentAuthor = uname
        , commentDate = now
        , commentType = roleToCommentType role
        }
@@ -132,6 +137,11 @@ commentOnSubmissionHandler = do
       Nothing
       Nothing
       (\_username _page _name role _token _timezone _status -> Just role)
+
+    getName = userStateCata
+      Nothing
+      Nothing
+      (\_username _page name _role _token _timezone _status -> Just name)
 
 evaluationContent :: PageData -> IHtml
 evaluationContent pd = do
