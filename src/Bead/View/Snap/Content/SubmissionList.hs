@@ -13,6 +13,7 @@ import Bead.Controller.UserStories (submissionListDesc)
 import Bead.Controller.Pages as P (Page(SubmissionList, SubmissionDetails))
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
+import Bead.View.Snap.Content.Submission (resolveStatus)
 import Bead.View.Snap.Markdown
 import Bead.View.Snap.Content.Utils
 import Bead.Domain.Entities
@@ -79,16 +80,16 @@ submissionListContent p = do
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft $ fromString t
 
-    submissionLine (sk, time, status, t) = H.tr $ do
+    submissionLine msg (sk, time, status, t) = H.tr $ do
       H.td # informationalCell $ linkWithText
         (routeOf $ P.SubmissionDetails (asKey p) sk)
         (fromString . showDate $ (uTime p) time)
-      H.td # informationalCell $ (fromString status)
+      H.td # informationalCell $ (resolveStatus msg status)
 
     submissionTimeLine time =
       H.tr $ (H.td # informationalCell) $ fromString $ showDate $ (uTime p) time
 
-    userSubmissionInfo  msg = userSubmission msg submissionLine
+    userSubmissionInfo  msg = userSubmission msg (submissionLine msg)
     userSubmissionTimes msg = userSubmission msg submissionTimeLine
 
     userSubmission msg line submissions =

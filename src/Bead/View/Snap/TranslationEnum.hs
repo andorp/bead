@@ -237,7 +237,7 @@ translationList =
   , Msg_Home_SubmissionCell_Accepted ()
   , Msg_Home_SubmissionCell_Rejected ()
   , Msg_Home_SubmissionTable_NoCoursesOrStudents ()
-
+  , Msg_SubmissionList_NotEvaluatedYet ()
   , Msg_Home_SubmissionTable_StudentName ()
   , Msg_Home_SubmissionTable_Username ()
   , Msg_Home_SubmissionTable_Summary ()

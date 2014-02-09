@@ -267,14 +267,14 @@ submissionListDesc p u ak = do
 
     submissionTime sk = solutionPostDate <$> loadSubmission p sk
 
-submissionEvalStr :: Persist -> SubmissionKey -> TIO String
+submissionEvalStr :: Persist -> SubmissionKey -> TIO (Maybe String)
 submissionEvalStr p sk = do
   mEk <- evaluationOfSubmission p sk
   case mEk of
-    Nothing -> return "Not evaluated yet"
+    Nothing -> return Nothing
     Just ek -> eString <$> loadEvaluation p ek
   where
-    eString = resultString . evaluationResult
+    eString = Just . resultString . evaluationResult
 
 submissionDetailsDesc :: Persist -> SubmissionKey -> TIO SubmissionDetailsDesc
 submissionDetailsDesc p sk = do

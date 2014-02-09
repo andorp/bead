@@ -61,7 +61,7 @@ submissionDescPermissions = ObjectPermissions [
   , (P_Open, P_Comment)
   ]
 
-type Status = String
+type Status = Maybe String
 type EvaluatedBy = String
 
 -- List of the submissions made by a student for a given assignment
@@ -112,7 +112,7 @@ data SubmissionDetailsDesc = SubmissionDetailsDesc {
     sdGroup :: String
   , sdTeacher :: [String]
   , sdAssignment :: Assignment
-  , sdStatus :: String
+  , sdStatus :: Maybe String
   , sdSubmission :: String
   , sdComments :: [Comment]
   }

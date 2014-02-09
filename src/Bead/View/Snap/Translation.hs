@@ -169,7 +169,7 @@ data Translation a
   | Msg_SubmissionList_Deadline { trans :: a }
   | Msg_SubmissionList_Description { trans :: a }
   | Msg_SubmissionList_SubmittedSolutions { trans :: a }
-
+  | Msg_SubmissionList_NotEvaluatedYet { trans :: a }
   | Msg_SubmissionList_NoSubmittedSolutions { trans :: a }
   | Msg_SubmissionList_NonAssociatedAssignment { trans :: a }
   | Msg_SubmissionList_NonReachableAssignment { trans :: a }

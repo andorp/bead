@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Content.Submission (
     submission
+  , resolveStatus
   ) where
 
 import Data.List (intersperse)
@@ -81,6 +82,10 @@ invalidAssignment :: IHtml
 invalidAssignment = do
   msg <- getI18N
   return . fromString . msg $ Msg_Submission_Invalid_Assignment "Olyan feladatot próbáltál megnyitni, amely nem hozzád tartozik!"
+
+resolveStatus :: I18N -> Maybe String -> H.Html
+resolveStatus msg Nothing    = fromString . msg $ Msg_SubmissionList_NotEvaluatedYet "Még nem értékelt"
+resolveStatus msg (Just str) = fromString str
 
 -- CSS Section
 

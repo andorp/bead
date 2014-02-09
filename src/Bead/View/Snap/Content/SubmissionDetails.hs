@@ -17,6 +17,7 @@ import Bead.View.Snap.Content
 import Bead.View.Snap.Markdown
 import Bead.View.Snap.Content.Utils
 import Bead.View.Snap.Content.Comments
+import Bead.View.Snap.Content.Submission (resolveStatus)
 import Bead.Domain.Entities (Comment(..))
 import Bead.Domain.Relationships
 
@@ -103,7 +104,7 @@ submissionDetailsContent p = do
     H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "Megoldás szövege"
     H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
     H.h2 . fromString . msg $ Msg_SubmissionDetails_Evaluation "Értékelés"
-    (fromString $ sdStatus sm)
+    (resolveStatus msg $ sdStatus sm)
     let studentComments = filter isStudentComment $ sdComments sm
     when (not $ null studentComments) $ do
       i18n msg $ commentsDiv tc studentComments
