@@ -112,17 +112,24 @@ homeContent d = do
       H.hr
     when (courseAdminUser r) $ H.p $ do
       H.h3 . fromString . msg $ Msg_Home_CourseAdminTasks "Tárgyfelelősi feladatok"
-      when (not hasCourse) $ (fromString $ msg $ Msg_Home_NoCoursesYet "Még nincsenek tárgyak.")
+      when (not hasCourse) $ do
+        H.p $ fromString . msg $ Msg_Home_NoCoursesYet
+          "Még nincsenek tárgyak.  Meg kell kérni az adminisztrátort, hogy rendeljen hozzánk tárgyakat!"
     when (groupAdminUser r) $ H.p $ do
       H.h3 . fromString . msg $ Msg_Home_GroupAdminTasks "Oktatói feladatok"
       when (not hasGroup) $ (fromString $ msg $ Msg_Home_NoGroupsYet "Még nincsenek csoportok.")
     when ((courseAdminUser r) || (groupAdminUser r)) $ do
       when (hasCourse || hasGroup) $ H.p $ do
         i18n msg $ htmlSubmissionTables (sTables d)
-    when (courseAdminUser r && hasCourse) $ H.p $ do
-      i18n msg $ navigation $ [ P.CourseAdmin, NewCourseAssignment] ++
-                              (if hasGroup then [P.NewGroupAssignment] else []) ++
-                              [ P.EvaluationTable, P.SetUserPassword ]
+    when (courseAdminUser r && hasCourse) $ do
+      H.p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
+        [ "A tárgyhoz új csoportokat a Tárgyi beállítások almenüben lehet létrehozni.  Ugyanitt lehet "
+        , "egyúttal az egyes csoportokhoz oktatókat rendelni."
+        ]
+      H.p $ do
+        i18n msg $ navigation $ [ P.CourseAdmin, NewCourseAssignment] ++
+                                (if hasGroup then [P.NewGroupAssignment] else []) ++
+                                [ P.EvaluationTable, P.SetUserPassword ]
       H.hr
     when (groupAdminUser r && hasGroup) $ H.p $ do
       i18n msg $ navigation [P.NewGroupAssignment, P.EvaluationTable, P.SetUserPassword]

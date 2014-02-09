@@ -54,6 +54,7 @@ translationList =
 
   , Msg_Administration_NewCourse ()
   , Msg_Administration_PctHelpMessage ()
+  , Msg_Administration_CreatedCourses ()
   , Msg_Administration_CreateCourse ()
   , Msg_Administration_AssignCourseAdminTitle ()
   , Msg_Administration_NoCourses ()
@@ -61,6 +62,7 @@ translationList =
   , Msg_Administration_AssignCourseAdminButton ()
   , Msg_Administration_ChangeUserProfile ()
   , Msg_Administration_SelectUser ()
+  , Msg_Administration_HowToAddMoreAdmins ()
 
   , Msg_NewAssignment_IsNoCourseAdmin ()
   , Msg_NewAssignment_IsNoGroupAdmin ()
@@ -226,6 +228,7 @@ translationList =
   , Msg_Home_NewSolution ()
   , Msg_Home_AdminTasks ()
   , Msg_Home_CourseAdminTasks ()
+  , Msg_Home_CourseAdministration_Info ()
   , Msg_Home_NoCoursesYet ()
   , Msg_Home_GroupAdminTasks ()
   , Msg_Home_NoGroupsYet ()

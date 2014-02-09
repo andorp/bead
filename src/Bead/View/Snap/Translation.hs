@@ -45,6 +45,7 @@ data Translation a
 
   | Msg_Administration_NewCourse { trans :: a }
   | Msg_Administration_PctHelpMessage { trans :: a }
+  | Msg_Administration_CreatedCourses { trans :: a }
   | Msg_Administration_CreateCourse { trans :: a }
   | Msg_Administration_AssignCourseAdminTitle { trans :: a }
   | Msg_Administration_NoCourses { trans :: a }
@@ -52,6 +53,7 @@ data Translation a
   | Msg_Administration_AssignCourseAdminButton { trans :: a }
   | Msg_Administration_ChangeUserProfile { trans :: a }
   | Msg_Administration_SelectUser { trans :: a }
+  | Msg_Administration_HowToAddMoreAdmins { trans :: a }
 
   | Msg_NewAssignment_IsNoCourseAdmin { trans :: a }
   | Msg_NewAssignment_IsNoGroupAdmin { trans :: a }
@@ -217,6 +219,7 @@ data Translation a
   | Msg_Home_NewSolution { trans :: a }
   | Msg_Home_AdminTasks { trans :: a }
   | Msg_Home_CourseAdminTasks { trans :: a }
+  | Msg_Home_CourseAdministration_Info { trans :: a }
   | Msg_Home_NoCoursesYet { trans :: a }
   | Msg_Home_GroupAdminTasks { trans :: a }
   | Msg_Home_NoGroupsYet { trans :: a }

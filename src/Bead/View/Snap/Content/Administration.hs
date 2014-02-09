@@ -67,8 +67,18 @@ administrationContent info = do
         submitButton (fieldName createCourseBtn) (fromString . msg $ Msg_Administration_CreateCourse "Létrehozás")
     H.div $ do
       H.h3 $ (fromString . msg $ Msg_Administration_AssignCourseAdminTitle "Oktató hozzárendelése a tárgyhoz")
-      nonEmpty (courses info) (fromString . msg $ Msg_Administration_NoCourses "Nincsenek tárgyak!") $
-        nonEmpty (courseAdmins info) (fromString . msg $ Msg_Administration_NoCourseAdmins "Nincsenek oktatók!") $
+      let coursesInfo = courses info
+      nonEmpty coursesInfo (fromString . msg $ Msg_Administration_NoCourses "Nincsenek tárgyak!") $ do
+        nonEmpty (courseAdmins info)
+          (do fromString . msg $ Msg_Administration_NoCourseAdmins "Nincsenek oktatók! Oktatókat a regisztrált felhasználók adatainak módosításával lehet létrehozni."
+              H.table $ do
+                H.tr $ headerCell (fromString . msg $ Msg_Administration_CreatedCourses "Tárgyak")
+                forM_ coursesInfo $ \(_ckey,c) ->
+                  H.tr $ dataCell (fromString $ courseName c)
+              H.br) $ do
+          H.p (fromString . msg $
+            Msg_Administration_HowToAddMoreAdmins
+            "További oktatókat a felhasználói adatok módosításával lehet létrehozni, majd ezt követően tudjuk őket a tárgyakhoz rendelni.")
           postForm (routeOf P.AssignCourseAdmin) $ do
             valueTextSelection (fieldName selectedCourse) (courses info)
             valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
@@ -79,6 +89,9 @@ administrationContent info = do
       getForm (routeOf P.UserDetails) $ do
         i18n msg $ inputPagelet emptyUsername
         submitButton (fieldName selectBtn) (fromString . msg $ Msg_Administration_SelectUser "Kiválasztás")
+  where
+    headerCell = H.th # (informationalCell <> grayBackground)
+    dataCell   = H.td # informationalCell
 
 -- Add Course Admin
 
