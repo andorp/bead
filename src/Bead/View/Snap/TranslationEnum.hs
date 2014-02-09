@@ -111,6 +111,8 @@ translationList =
   , Msg_Evaluation_Submited_Solution ()
   , Msg_Evaluation_Accepted ()
   , Msg_Evaluation_Rejected ()
+  , Msg_Evaluation_New_Comment ()
+  , Msg_Evaluation_Info ()
 
   , Msg_SubmissionDetails_Course ()
   , Msg_SubmissionDetails_Admins ()
@@ -186,6 +188,7 @@ translationList =
   , Msg_SubmissionList_NoSubmittedSolutions ()
   , Msg_SubmissionList_NonAssociatedAssignment ()
   , Msg_SubmissionList_NonReachableAssignment ()
+  , Msg_SubmissionList_Info ()
 
   , Msg_ResetPassword_UserDoesNotExist ()
   , Msg_ResetPassword_PasswordIsSet ()

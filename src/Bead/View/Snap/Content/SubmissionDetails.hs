@@ -98,22 +98,24 @@ submissionDetailsContent p = do
       H.tr $ do
         H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Deadline "Határidő:")
         H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
-    H.h2 . fromString . msg $ Msg_SubmissionDetails_Description "Részletes leírás"
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Description "A feladat szövege"
     H.div # assignmentTextDiv $
       markdownToHtml . assignmentDesc . sdAssignment $ sm
-    H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "Megoldás szövege"
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "A beadott megoldás"
     H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
     H.h2 . fromString . msg $ Msg_SubmissionDetails_Evaluation "Értékelés"
     (resolveStatus msg $ sdStatus sm)
-    let studentComments = filter isStudentComment $ sdComments sm
-    when (not $ null studentComments) $ do
-      i18n msg $ commentsDiv tc studentComments
-    H.hr
-    H.h2 (fromString . msg $ Msg_SubmissionDetails_NewComment "Új hozzászólás")
+    H.h2 (fromString . msg $ Msg_Comments_Title "Hozzászólások")
+    H.h3 (fromString . msg $ Msg_SubmissionDetails_NewComment "Új hozzászólás")
     postForm (routeOf $ P.SubmissionDetails (aKey p) (smKey p)) $ do
       H.div ! formDiv $ do
         textAreaInput (fieldName commentValueField) Nothing ! fillDiv
+      H.br
       submitButton (fieldName commentBtn) (msg $ Msg_SubmissionDetails_SubmitComment "Beküld")
+    let studentComments = filter isStudentComment $ sdComments sm
+    when (not $ null studentComments) $ do
+      H.hr
+      i18n msg $ commentsDiv tc studentComments
 
 invalidSubmission :: IHtml
 invalidSubmission = do

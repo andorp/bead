@@ -4,6 +4,8 @@ module Bead.View.Snap.Content.Comments (
   , commentPostForm
   ) where
 
+import Data.Function (on)
+import Data.List (sortBy)
 import Data.String
 import Data.Time (UTCTime, LocalTime)
 
@@ -20,12 +22,12 @@ commentsDiv :: UserTimeConverter -> [Comment] -> IHtml
 commentsDiv t cs = do
   msg <- getI18N
   return $ H.div ! A.id "comments" $ do
-    H.h2 (fromString . msg $ Msg_Comments_Title "Hozzászólások")
-    mapM_ (commentPar t) cs
+    mapM_ (commentPar t) $ sortBy ((flip compare) `on` commentDate) cs
 
 commentPar :: UserTimeConverter -> Comment -> Html
 commentPar t c = H.div # commentTextDiv $ do
-  H.p # textAlign "left" $ fromString $ showDate . t . commentDate $ c
+  H.p # textAlign "left" $ fromString $
+    (showDate . t . commentDate $ c) ++ ", " ++ (commentAuthor $ c)
   H.pre # commentTextPre $ fromString $ comment $ c
 
 -- Creates a post form for the given route assignment key and submission key, where
@@ -38,6 +40,7 @@ commentPostForm p ak = do
     H.div ! formDiv $ do
       textAreaInput (fieldName commentValueField) Nothing ! fillDiv ! A.required ""
       hiddenInput (fieldName assignmentKeyField) (paramValue ak)
+    H.br
     submitButton (fieldName commentBtn) (msg $ Msg_Comments_SubmitButton "Beküld")
 
 -- * CSS section

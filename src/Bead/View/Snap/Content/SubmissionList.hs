@@ -95,6 +95,8 @@ submissionListContent p = do
     userSubmission msg line submissions =
       if (not $ null submissions)
         then do
+          H.p $ fromString . msg $ Msg_SubmissionList_Info
+            "A beadott megoldásokhoz a beadás után még hozzászólások írhatóak."
           table (fieldName submissionTableName) (className submissionListTable) # informationalTable $
             mapM_ line submissions
         else do

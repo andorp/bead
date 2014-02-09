@@ -102,6 +102,8 @@ data Translation a
   | Msg_Evaluation_Submited_Solution { trans :: a }
   | Msg_Evaluation_Accepted { trans :: a }
   | Msg_Evaluation_Rejected { trans :: a }
+  | Msg_Evaluation_New_Comment { trans :: a }
+  | Msg_Evaluation_Info { trans :: a }
 
   | Msg_SubmissionDetails_Course { trans :: a }
   | Msg_SubmissionDetails_Admins { trans :: a }
@@ -177,6 +179,7 @@ data Translation a
   | Msg_SubmissionList_NoSubmittedSolutions { trans :: a }
   | Msg_SubmissionList_NonAssociatedAssignment { trans :: a }
   | Msg_SubmissionList_NonReachableAssignment { trans :: a }
+  | Msg_SubmissionList_Info { trans :: a }
 
   | Msg_ResetPassword_UserDoesNotExist { trans :: a }
   | Msg_ResetPassword_PasswordIsSet { trans :: a }

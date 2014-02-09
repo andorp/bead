@@ -151,6 +151,11 @@ evaluationContent pd = do
   return $ do
     postForm (routeOf . evPage $ maybeEvalKey) $ H.div ! formDiv $ do
       H.div ! title $ H.h2 (fromString . msg $ Msg_Evaluation_Title "Értékelés")
+      H.p $ fromString . msg $ Msg_Evaluation_Info $ concat
+        [ "Nem kötelező egyből értékelni a hallgató munkáját, lehet csak hozzászólást is írni.  "
+        , "A hozzászólásokra a hallgató szintén hozzászólásokkal tud válaszolni.  A feladat "
+        , "többször is értékelhető."
+        ]
       H.div ! leftInfo $ do
         H.table $ do
           H.tr $ do
@@ -161,16 +166,20 @@ evaluationContent pd = do
             H.td $ (fromString . eStudent $ sd)
         H.div ! A.id (fieldName evaluationPercentageDiv) $
           i18n msg $ inputEvalResult . eConfig $ sd
-        submitButton (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Mentés")
+        submitButton (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Értékel")
       H.div ! rightText $ do
         textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv
     H.div $ H.h2 $ (fromString . msg $ Msg_Evaluation_Submited_Solution "Beadott megoldás")
     H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
       (fromString . eSolution $ sd)
-    when (not . null $ eComments sd) $ do
-      i18n msg $ commentsDiv tc . eComments $ sd
+    H.h2 (fromString . msg $ Msg_Comments_Title "Hozzászólások")
     -- Renders the comment area where the user can place a comment
+    H.div $ H.h3 $ (fromString . msg $ Msg_Evaluation_New_Comment "Új hozzászólás")
     i18n msg $ commentPostForm (commentPage maybeEvalKey) (eAssignmentKey sd)
+    when (not . null $ eComments sd) $ do
+      H.hr
+      i18n msg $ commentsDiv tc . eComments $ sd
+
   where
     submissionKey = sbmSubmissionKey pd
     maybeEvalKey  = sbmEvaluationKey pd
