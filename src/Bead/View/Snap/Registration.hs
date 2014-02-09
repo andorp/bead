@@ -249,7 +249,9 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                     hiddenParam regUserRegKeyPrm key
                     hiddenParam regTokenPrm      token
                     hiddenParam regUsernamePrm   username
+                    H.br
                     submitButton (fieldName regSubmitBtn) (msg $ Msg_RegistrationFinalize_SubmitButton "Regisztráció")
+                  H.br
                   linkToRoute (msg $ Msg_RegistrationFinalize_GoBackToLogin "Vissza a bejelentkezéshez")
 
   hiddenParam parameter value = hiddenInput (name parameter) (encode parameter value)
