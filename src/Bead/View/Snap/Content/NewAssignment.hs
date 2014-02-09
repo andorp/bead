@@ -131,7 +131,22 @@ newAssignmentContent pd = do
       H.b $ (fromString . msg $ Msg_NewAssignment_Description "Szöveges leírás")
       textAreaInput (fieldName assignmentDescField) (amap assignmentDesc pd) ! fillDiv
       H.a ! A.href linkToPandocMarkdown $ (fromString . msg $ Msg_NewAssignment_Markdown "Markdown formázás")
-      (fromString . msg $ Msg_NewAssignment_CanBeUsed " használható.")
+      (fromString . msg $ Msg_NewAssignment_CanBeUsed " használható a feladat leírásában (de előnézet még nincs).")
+      H.p $ do
+        H.b (fromString . msg $ Msg_NewAssignment_Title_Normal "Normal")
+        ": "
+        fromString . msg $ Msg_NewAssignment_Info_Normal $ concat
+          [ "A feladatot a kezdés idejétől a befejezés idejéig lehet beadni.  A feladat nem fog látszani "
+          , "a kezdés idejéig.  A feladatok mindig automatikusan nyílnak és záródnak."
+          ]
+      H.p $ do
+        H.b (fromString . msg $ Msg_NewAssignment_Title_Urn "Urn")
+        ": "
+        fromString . msg $ Msg_NewAssignment_Info_Urn $ concat
+          [ "(Zárthelyihez javasolt.)  A feladatot a kezdés idejétől a befejezés idejéig lehet beadni, "
+          , "azonban a beadott megoldások és a hozzájuk tartozó értékelés csak a befejezés után lesz elérhető a "
+          , "hallgatók számára.  A feladatok nem fognak látszani a kezdés idejéig és mindig automatikusan nyílnak és záródnak."
+          ]
     H.div ! leftCell $ do
       H.b (fromString . msg $ Msg_NewAssignment_Type "Típus")
       H.br

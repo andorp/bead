@@ -78,6 +78,10 @@ translationList =
   , Msg_NewAssignment_Course ()
   , Msg_NewAssignment_Group ()
   , Msg_NewAssignment_SaveButton ()
+  , Msg_NewAssignment_Title_Normal ()
+  , Msg_NewAssignment_Title_Urn ()
+  , Msg_NewAssignment_Info_Normal ()
+  , Msg_NewAssignment_Info_Urn ()
 
   , Msg_GroupRegistration_RegisteredCourses ()
   , Msg_GroupRegistration_SelectGroup ()

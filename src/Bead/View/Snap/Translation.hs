@@ -69,6 +69,10 @@ data Translation a
   | Msg_NewAssignment_Course { trans :: a }
   | Msg_NewAssignment_Group { trans :: a }
   | Msg_NewAssignment_SaveButton { trans :: a }
+  | Msg_NewAssignment_Title_Normal { trans :: a }
+  | Msg_NewAssignment_Title_Urn { trans :: a }
+  | Msg_NewAssignment_Info_Normal { trans :: a }
+  | Msg_NewAssignment_Info_Urn { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }
