@@ -24,31 +24,30 @@ courseAdmin :: Content
 courseAdmin = getContentHandler courseAdminPage
 
 data PageData = PageData {
-    courses    :: [(CourseKey, Course)]
-  , groups     :: [(GroupKey, Group)]
+    courses     :: [(CourseKey, Course)]
+  , groups      :: [(GroupKey, String)]
   , groupAdmins :: [User]
   }
 
 courseAdminPage :: GETContentHandler
 courseAdminPage = withUserState $ \s -> do
   pageData <- userStory $ do
-    cs <- administratedCourses
-    gs <- do courseAndGroupKeys <- mapM (loadCourse . fst) cs
-             let gks = join . map snd $ courseAndGroupKeys
-             mapM loadGroup' gks
+    theCourses <- administratedCourses
+    courseAndGroupKeys <- forM theCourses $ \(ck,_) -> loadCourse ck
+    theGroups <- forM courseAndGroupKeys $ \(c,gkeys) -> do
+      grps <- forM gkeys loadGroup
+      let courseWithGroups = repeat c `zip` grps
+      let expandName x y = courseName x ++ " - " ++ groupName y
+      return (gkeys `zip` (map (uncurry expandName) courseWithGroups))
     ps <- selectUsers group_admin
     return PageData {
-        courses    = cs
-      , groups     = gs
+        courses     = theCourses
+      , groups      = concat theGroups
       , groupAdmins = ps
       }
   renderDynamicPagelet $ withUserFrame s (courseAdminContent pageData)
   where
     group_admin = groupAdmin . u_role
-
-    loadGroup' gk = do
-      g <- loadGroup gk
-      return (gk,g)
 
 courseAdminContent :: PageData -> IHtml
 courseAdminContent info = do
