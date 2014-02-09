@@ -155,6 +155,7 @@ data Translation a
   | Msg_EvaluationTable_Assignment { trans :: a }
   | Msg_EvaluationTable_Link { trans :: a }
   | Msg_EvaluationTable_Solution { trans :: a }
+  | Msg_EvaluationTable_Info { trans :: a }
 
   | Msg_UserSubmissions_NonAccessibleSubmissions { trans :: a }
   | Msg_UserSubmissions_Course { trans :: a }

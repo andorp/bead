@@ -164,6 +164,7 @@ translationList =
   , Msg_EvaluationTable_Assignment ()
   , Msg_EvaluationTable_Link ()
   , Msg_EvaluationTable_Solution ()
+  , Msg_EvaluationTable_Info ()
 
   , Msg_UserSubmissions_NonAccessibleSubmissions ()
   , Msg_UserSubmissions_Course ()

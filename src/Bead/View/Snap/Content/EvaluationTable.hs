@@ -28,6 +28,11 @@ evaluationTableContent ks = do
   return $ if (null ks)
     then (fromString . msg $ Msg_EvaluationTable_EmptyUnevaluatedSolutions "Nincsenek nem értékelt megoldások.")
     else do
+      H.p $ fromString . msg $ Msg_EvaluationTable_Info $ concat
+        [ "A táblázatban hallgatónként csak a legutolsó, nem értékelt beadott "
+        , "megoldás látszik.  A többi megoldást a főoldalon levő összefoglaló "
+        , "értékelő táblázaton keresztül érhetjük el."
+        ]
       H.p $ table "evaluation-table" (className evaluationClassTable) # informationalTable $ do
         H.tr # grayBackground $ do
           H.th (fromString . msg $ Msg_EvaluationTable_Group "Csoport")
