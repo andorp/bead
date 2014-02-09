@@ -232,9 +232,11 @@ data Translation a
   | Msg_Home_NoCoursesYet { trans :: a }
   | Msg_Home_GroupAdminTasks { trans :: a }
   | Msg_Home_NoGroupsYet { trans :: a }
+  | Msg_Home_SubmissionTable_Info { trans :: a }
   | Msg_Home_StudentTasks { trans :: a }
   | Msg_Home_HasNoRegisteredCourses { trans :: a }
   | Msg_Home_HasNoAssignments { trans :: a }
+  | Msg_Home_Assignments_Info { trans :: a }
   | Msg_Home_Course { trans :: a }
   | Msg_Home_CourseAdmin { trans :: a }
   | Msg_Home_Assignment { trans :: a }

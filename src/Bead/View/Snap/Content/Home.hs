@@ -119,7 +119,12 @@ homeContent d = do
       H.h3 . fromString . msg $ Msg_Home_GroupAdminTasks "Oktatói feladatok"
       when (not hasGroup) $ (fromString $ msg $ Msg_Home_NoGroupsYet "Még nincsenek csoportok.")
     when ((courseAdminUser r) || (groupAdminUser r)) $ do
-      when (hasCourse || hasGroup) $ H.p $ do
+      when (hasCourse || hasGroup) $ do
+        when (not . null $ concatMap stAssignments $ sTables d) $ do
+          H.p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
+            [ "A feladat sorszámára kattintva módosítható már kiírt feladat (a nevét ld. tooltipben).  "
+            , "Hallgatókat törölhetőek kurzusról vagy csoportból a Törlés oszlopban bejelölve, majd a gombra kattintva."
+            ]
         i18n msg $ htmlSubmissionTables (sTables d)
     when (courseAdminUser r && hasCourse) $ do
       H.p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
@@ -145,13 +150,19 @@ homeContent d = do
 availableAssignments :: UserTimeConverter -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> IHtml
 availableAssignments _ Nothing = do
   msg <- getI18N
-  return $ fromString $ msg $ Msg_Home_HasNoRegisteredCourses "Még nincsenek felvett tárgyaid, vegyél fel tárgyakat!"
+  return $ fromString $ msg $ Msg_Home_HasNoRegisteredCourses "Még nincsenek felvett tárgyak, vegyünk fel tárgyakat!"
 availableAssignments _ (Just []) = do
   msg <- getI18N
   return $ fromString $ msg $ Msg_Home_HasNoAssignments "Még nincsenek kiírva feladatok."
 availableAssignments timeconverter (Just as) = do
   msg <- getI18N
-  return $ table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
+  return $ do
+    H.p $ fromString . msg $ Msg_Home_Assignments_Info $ concat
+      [ "A feladat linkjére kattintva lehet elérni az eddig beadott megoldásokat "
+      , "és a hozzájuk tartozó értékeléseket.  A táblázatban mindig az utolsó "
+      , "értékelés eredménye látható."
+      ]
+    table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
     headerLine msg
     mapM_ (assignmentLine msg) as
   where
@@ -248,11 +259,11 @@ htmlSubmissionTable (i,s) = do
         dataCell
         (H.td)
         (linkWithText (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]))
-        " "
-        "."
-        "1"
-        "0"
-        s
+        "░░░"
+        "░░░" -- non-evaluated
+        "░░░" -- accepted
+        "░░░" -- rejected
+        s      -- of percent
 
     deleteHeaderCell msg =
       either
@@ -346,7 +357,7 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated passed fai
 calculateSubmissionResult :: I18N -> [SubmissionInfo] -> EvaluationConfig -> Either String Result
 calculateSubmissionResult msg si e =
   case results of
-    [] -> (Left (msg $ Msg_Home_HasNoSummary "Nem összesíthető"))
+    [] -> (Left (msg $ Msg_Home_HasNoSummary "Nincs"))
     rs -> evaluationDataMap
             (const (sumBinaryResult msg rs))
             (flip (sumPercentageResult msg) rs)
