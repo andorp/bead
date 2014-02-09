@@ -92,6 +92,7 @@ translationList =
   , Msg_GroupRegistration_Register ()
   , Msg_GroupRegistration_Unsubscribe ()
   , Msg_GroupRegistration_NoUnsubscriptionAvailable ()
+  , Msg_GroupRegistration_Warning ()
 
   , Msg_UserDetails_SaveButton ()
   , Msg_UserDetails_NonExistingUser ()
