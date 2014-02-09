@@ -31,6 +31,7 @@ import Bead.View.Snap.Content.All
 
 -- Haskell imports
 
+import Prelude as P
 import Data.Either (either)
 import Data.String
 import Data.ByteString.Char8 hiding (index, putStrLn)
@@ -138,12 +139,13 @@ loginPage err langInfos = withTitleAndHead (Msg_Login_Title "Bejelentkezés") co
           H.a ! A.href "/reg_request" $ fromString $ msg $ Msg_Login_Registration "Regisztráció"
           H.br
           H.a ! A.href "/reset_pwd" $ fromString $ msg $ Msg_Login_Forgotten_Password "Elfelejtett jelszó"
-        H.p $ do
-          forM_ langInfos $ \(language,info) -> do
-            -- TODO: I18N put the icon
-            H.a ! A.href (queryString changeLanguagePath [requestParam language])
-              $ (dictionaryInfoCata (\_icon -> fromString) info)
-            H.br
+        when ((P.length langInfos) > 1) $ do
+          H.p $ do
+            forM_ langInfos $ \(language,info) -> do
+              -- TODO: I18N put the icon
+              H.a ! A.href (queryString changeLanguagePath [requestParam language])
+                $ (dictionaryInfoCata (\_icon -> fromString) info)
+              H.br
 
 -- TODO: I18N
 -- Keeps only the authentication failures which are
