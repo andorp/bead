@@ -136,12 +136,14 @@ selectUsers f = logAction INFO "selects some users" $ do
   authorize P_Open P_User
   withPersist $ flip R.filterUsers f
 
+-- | Load another user's data if the current user is authorized to open
+-- other users' profile
 loadUser :: Username -> UserStory User
 loadUser u = logAction INFO "Loading user information" $ do
   authorize P_Open P_User
   withPersist $ flip R.loadUser u
 
--- The UserStroy calculation returns the current user's profile data
+-- The UserStory calculation returns the current user's profile data
 currentUser :: UserStory User
 currentUser = logAction INFO "Load the current user's data" $ do
   u <- user <$> userState
@@ -632,7 +634,7 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
   authorize P_Open   P_Submission
   authorize P_Create P_Evaluation
   now <- liftIO $ getCurrentTime
-  userData <- CMS.gets user >>= Bead.Controller.UserStories.loadUser
+  userData <- currentUser
   withUserAndPersist $ \u p -> do
     a <- R.isAdminedSubmission p u sk
     when a $ do
@@ -645,7 +647,7 @@ modifyEvaluation :: EvaluationKey -> Evaluation -> UserStory ()
 modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
   authorize P_Modify P_Evaluation
   now <- liftIO $ getCurrentTime
-  userData <- CMS.gets user >>= Bead.Controller.UserStories.loadUser
+  userData <- currentUser
   withUserAndPersist $ \u p -> do
     sk <- R.submissionOfEvaluation p ek
     a <- R.isAdminedSubmission p u sk
