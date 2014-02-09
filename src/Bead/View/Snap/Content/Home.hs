@@ -157,9 +157,7 @@ homeContent d = do
         , "egyúttal az egyes csoportokhoz oktatókat rendelni."
         ]
       H.p $ do
-        i18n msg $ navigation $ [ P.CourseAdmin, NewTestScript, NewCourseAssignment] ++
-                                (if hasGroup then [P.NewGroupAssignment] else []) ++
-                                [ P.EvaluationTable, P.SetUserPassword ]
+        i18n msg $ navigation $ [ P.CourseAdmin, NewTestScript, P.EvaluationTable, P.SetUserPassword ]
       H.hr
     when (groupAdminUser r && hasGroup) $ H.p $ do
       i18n msg $ navigation [P.EvaluationTable, P.SetUserPassword]
