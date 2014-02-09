@@ -53,7 +53,7 @@ profileContent user languages = do
       table (fieldName profileTable) (fieldName profileTable) $ do
         tableLine (msg $ Msg_Profile_User "Felhasználó: ") (usernameCata (H.small . H.b . fromString) $ u_username user)
         tableLine (msg $ Msg_Profile_Email "Email cím: ") (emailCata (H.small . H.b . fromString) $ u_email user)
-        tableLine (msg $ Msg_Profile_FullName "Teljes név:) ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
+        tableLine (msg $ Msg_Profile_FullName "Teljes név: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
         tableLine (msg $ Msg_Profile_Timezone "Időzóna: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
         tableLine (msg $ Msg_Profile_Language "Nyelv: ") $
           valueSelectionWithDefault langValue (B.name userLanguagePrm) (langDef (u_language user)) languages ! A.required ""
