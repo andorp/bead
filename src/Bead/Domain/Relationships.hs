@@ -146,6 +146,7 @@ type AssignmentName = String
 data TestScriptInfo = TestScriptInfo {
     tsiName :: String
   , tsiDescription :: String
+  , tsiType :: TestScriptType
   }
 
 -- InformationSoruce represents from where the information came from, from a course or from a group

@@ -289,6 +289,48 @@ loadTestScript tsk = logAction INFO ("loads the test script: " ++ show tsk) $ do
     ts <- R.loadTestScript p tsk
     return (return (ts, ck))
 
+-- | Returns the test scrips of the given assignments, that are attached to the course of the assignment
+testScriptInfosOfAssignment :: AssignmentKey -> UserStory [(TestScriptKey, TestScriptInfo)]
+testScriptInfosOfAssignment ak = do
+  authorize P_Open P_TestScript
+  join $ withPersist $ \p -> do
+    keys <- R.courseOrGroupOfAssignment p ak
+    ck <- either (return) (R.courseOfGroup p) keys
+    tsks <- R.testScriptsOfCourse p ck
+    tss <- mapM (loadTestScriptWithKey p) tsks
+    return (return tss)
+  where
+    loadTestScriptWithKey p tk = do
+      ti <- R.testScriptInfo p tk
+      return (tk, ti)
+
+-- | Returns the test scripts of the given group, that are arrached to the course of the group
+testScriptInfosOfGroup :: GroupKey -> UserStory [(TestScriptKey, TestScriptInfo)]
+testScriptInfosOfGroup gk = do
+  authorize P_Open P_TestScript
+  join $ withPersist $ \p -> do
+    ck <- R.courseOfGroup p gk
+    tsks <- R.testScriptsOfCourse p ck
+    tss <- mapM (loadTestScriptWithKey p) tsks
+    return (return tss)
+  where
+    loadTestScriptWithKey p tk = do
+      ti <- R.testScriptInfo p tk
+      return (tk, ti)
+
+-- | Returns the test scripts of the given course
+testScriptInfosOfCourse :: CourseKey -> UserStory [(TestScriptKey, TestScriptInfo)]
+testScriptInfosOfCourse ck = do
+  authorize P_Open P_TestScript
+  join $ withPersist $ \p -> do
+    tsks <- R.testScriptsOfCourse p ck
+    tss <- mapM (loadTestScriptWithKey p) tsks
+    return (return tss)
+  where
+    loadTestScriptWithKey p tk = do
+      ti <- R.testScriptInfo p tk
+      return (tk, ti)
+
 -- Deletes the given users from the given group if the current user is a group
 -- admin for the given group, otherwise redirects to the error page
 deleteUsersFromGroup :: GroupKey -> [Username] -> UserStory ()

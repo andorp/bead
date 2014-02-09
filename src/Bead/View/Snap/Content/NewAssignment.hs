@@ -18,6 +18,7 @@ import Bead.Controller.ServiceContext (UserState(..))
 import qualified Bead.Controller.UserStories as S
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
+import Bead.View.Snap.RequestParams
 import Bead.View.UserActions (UserAction(CreateGroupAssignment, CreateCourseAssignment))
 
 import Text.Printf (printf)
@@ -38,27 +39,35 @@ modifyAssignment :: Content
 modifyAssignment = getPostContentHandler modifyAssignmentPage postModifyAssignment
 
 data PageData
-  = PD_Course     (Time.TimeZone, UTCTime, [(CourseKey, Course)])
-  | PD_Group      (Time.TimeZone, UTCTime, [(GroupKey, Group, String)])
-  | PD_Assignment (Time.TimeZone, AssignmentKey, Assignment)
+  = PD_Course      Time.TimeZone  UTCTime  (CourseKey, Course) (Maybe [(TestScriptKey, TestScriptInfo)])
+  | PD_Group       Time.TimeZone  UTCTime  (GroupKey, Group)   (Maybe [(TestScriptKey, TestScriptInfo)])
+  | PD_Assignment  Time.TimeZone  AssignmentKey  Assignment    (Maybe [(TestScriptKey, TestScriptInfo)])
   -- TODO: Calculate the time differences and shows the values in
   -- the actual time zone
 
 pageDataCata course group assignment p = case p of
-  PD_Course x -> course x
-  PD_Group  x -> group x
-  PD_Assignment x -> assignment x
+  PD_Course timezone time courses tsType -> course timezone time courses tsType
+  PD_Group  timezone time groups tsType  -> group  timezone time groups  tsType
+  PD_Assignment timezone key asg tsType -> assignment timezone key asg tsType
 
-isEmptyData = pageDataCata (null . trd) (null . trd) (const False)
+const2 = const . const
+const3 = const2 . const
+const4 = const3 . const
+
+isEmptyData _ = False
 
 -- * Course Assignment
 
 newCourseAssignmentPage :: GETContentHandler
 newCourseAssignmentPage = withUserState $ \s -> do
-  cs <- userStory S.administratedCourses
+  ck <- getParameter (customCourseKeyPrm courseKeyParamName)
+  (c,tss) <- userStory $ do
+    (course, _groupKeys) <- S.loadCourse ck
+    tss' <- S.testScriptInfosOfCourse ck
+    return ((ck, course),nonEmptyList tss')
   now <- liftIO $ getCurrentTime
   tz <- dataTimeZone <$> userTimeZone
-  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Course (tz,now,cs)))
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Course tz now c tss))
 
 postCourseAssignment :: POSTContentHandler
 postCourseAssignment = CreateCourseAssignment
@@ -70,9 +79,13 @@ postCourseAssignment = CreateCourseAssignment
 newGroupAssignmentPage :: GETContentHandler
 newGroupAssignmentPage = withUserState $ \s -> do
   now <- liftIO $ getCurrentTime
-  gs <- userStory S.administratedGroups
+  gk <- getParameter (customGroupKeyPrm groupKeyParamName)
+  (g,tss) <- userStory $ do
+    group <- S.loadGroup gk
+    tss' <- S.testScriptInfosOfGroup gk
+    return ((gk, group), nonEmptyList tss')
   tz <- dataTimeZone <$> userTimeZone
-  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Group (tz,now,gs)))
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Group tz now g tss))
 
 postGroupAssignment :: POSTContentHandler
 postGroupAssignment = CreateGroupAssignment
@@ -84,21 +97,32 @@ postGroupAssignment = CreateGroupAssignment
 modifyAssignmentPage :: GETContentHandler
 modifyAssignmentPage = withUserState $ \s -> do
   ak <- getValue
-  as <- userStory (S.loadAssignment ak)
+  (as,tss) <- userStory $ do
+    as <- S.loadAssignment ak
+    tss' <- S.testScriptInfosOfAssignment ak
+    return (as,nonEmptyList tss')
   tz <- dataTimeZone <$> userTimeZone
-  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Assignment (tz,ak,as)))
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Assignment tz ak as tss))
 
 postModifyAssignment :: POSTContentHandler
 postModifyAssignment = ModifyAssignment <$> getValue <*> getValue
+
+-- * Helpers
+
+-- | Returns Nothing if the given list was empty, otherwise Just list
+nonEmptyList [] = Nothing
+nonEmptyList xs = Just xs
+
+-- * Page rendering
 
 newAssignmentContent :: PageData -> IHtml
 newAssignmentContent pd
   | isEmptyData pd = do
       msg <- getI18N
       return . H.p . fromString . msg $ pageDataCata
-        (const $ Msg_NewAssignment_IsNoCourseAdmin "Nem vagy felelőse egyik tárgynak sem!")
-        (const $ Msg_NewAssignment_IsNoGroupAdmin "Nem vagy oktatója egyetlen csoportnak sem!")
-        (const $ Msg_NewAssignment_IsNoCreator "Ezt a feladatot más hozta létre!")
+        (const4 $ Msg_NewAssignment_IsNoCourseAdmin "Nem vagy felelőse egyik tárgynak sem!")
+        (const4 $ Msg_NewAssignment_IsNoGroupAdmin "Nem vagy oktatója egyetlen csoportnak sem!")
+        (const4 $ Msg_NewAssignment_IsNoCreator "Ezt a feladatot más hozta létre!")
         pd
 newAssignmentContent pd = do
   msg <- getI18N
@@ -147,22 +171,21 @@ newAssignmentContent pd = do
           , "azonban a beadott megoldások és a hozzájuk tartozó értékelés csak a befejezés után lesz elérhető a "
           , "hallgatók számára.  A feladatok nem fognak látszani a kezdés idejéig és mindig automatikusan nyílnak és záródnak."
           ]
+      H.br
+      testCaseTestArea msg pd
     H.div ! leftCell $ do
       H.b (fromString . msg $ Msg_NewAssignment_Type "Típus")
       H.br
       defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
       H.br
       H.p $ do
-        H.b $ pageDataCata (const . fromString . msg $ Msg_NewAssignment_Course "Tárgy")
-                           (const . fromString . msg $ Msg_NewAssignment_Group "Csoport")
-                           (const $ "")
+        H.b $ pageDataCata (const4 . fromString . msg $ Msg_NewAssignment_Course "Tárgy")
+                           (const4 . fromString . msg $ Msg_NewAssignment_Group "Csoport")
+                           (const4 $ "")
                            pd
         H.br
-        pageDataCata
-          (valueTextSelection (fieldName selectedCourse) . trd)
-          (valueTextSelection (fieldName selectedGroup)  . trd)
-          (hiddenInput (fieldName assignmentKeyField) . paramValue  . snd3)
-          pd
+        hiddenKeyField pd
+      testScriptSelection msg pd
       H.p $ submitButton (fieldName saveSubmitBtn) (fromString . msg $ Msg_NewAssignment_SaveButton "Mentés")
 
     where
@@ -170,18 +193,45 @@ newAssignmentContent pd = do
 
       page :: PageData -> Page
       page = pageDataCata
-                   (const P.NewCourseAssignment)
-                   (const P.NewGroupAssignment)
-                   (const P.ModifyAssignment)
+                   (const4 P.NewCourseAssignment)
+                   (const4 P.NewGroupAssignment)
+                   (const4 P.ModifyAssignment)
 
       amap :: (Assignment -> a) -> PageData -> Maybe a
-      amap f (PD_Assignment (_,_,a)) = Just . f $ a
-      amap _ _                     = Nothing
+      amap f (PD_Assignment _ _ a _) = Just . f $ a
+      amap _ _                       = Nothing
+
+      hiddenKeyField = pageDataCata
+        (\_tz _t (key,_course) _tsType -> hiddenInput (fieldName selectedCourse) (courseKeyMap id key))
+        (\_tz _t (key,_group)  _tsType -> hiddenInput (fieldName selectedGroup) (groupKeyMap id key))
+        (\_ts key _asg _tsType -> hiddenInput (fieldName assignmentKeyField) $ paramValue key)
+
+      testCaseTestArea msg = pageDataCata
+        (const3 testCaseTestArea')
+        (const3 testCaseTestArea')
+        (const3 testCaseTestArea')
+        where
+          testCaseTestArea' = maybe
+            (fromString . msg $ Msg_NewAssignment_NoTestScriptsAreDefined "Nincs tesztelői szkript megadva, így nem kell tesztesetet megadni")
+            (\t -> do
+              H.br
+              H.b . fromString . msg $ Msg_NewAssignment_TestCase "Teszteset"
+              textAreaInput (fieldName assignmentTestCaseField) Nothing ! fillDiv)
+
+      -- TODO
+      testScriptSelection msg = pageDataCata
+        (const3 scriptSelection)
+        (const3 scriptSelection)
+        (const3 scriptSelection)
+        where
+          scriptSelection = maybe
+            (return ())
+            (const $ return ())
 
       timezone = pageDataCata
-        fst3
-        fst3
-        fst3
+        (\tz _t _c _ts -> tz)
+        (\tz _t _g _ts -> tz)
+        (\tz _k _a _ts -> tz)
         pd
 
       date t =
@@ -193,15 +243,15 @@ newAssignmentContent pd = do
            )
 
       (startDefDate, startDefHour, startDefMin) = date $ pageDataCata
-        snd3
-        snd3
-        (assignmentStart . trd)
+        (\_tz t _c _ts -> t)
+        (\_tz t _g _ts -> t)
+        (\_tz _k a _ts -> assignmentStart a)
         pd
 
       (endDefDate, endDefHour, endDefMin) = date $ pageDataCata
-        snd3
-        snd3
-        (assignmentEnd . trd)
+        (\_tz t _c _ts -> t)
+        (\_tz t _g _ts -> t)
+        (\_tz _k a _ts -> assignmentEnd a)
         pd
 
 -- CSS Section
@@ -212,9 +262,3 @@ leftCell      = A.style "float: left;  width:30%; height: 30%"
 rightCell     = A.style "float: right; width:68%; height: 44%"
 fillDiv       = A.style "width: 98%; height: 90%"
 formDiv       = A.style "width: 100%; height: 600px"
-
--- Helper
-
-fst3 (a,b,c) = a
-snd3 (a,b,c) = b
-trd  (a,b,c) = c

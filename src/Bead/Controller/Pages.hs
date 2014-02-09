@@ -424,8 +424,8 @@ parentPage = pageCata
   Home    -- evaluationTable
   (const EvaluationTable)  -- evaluation
   (const2 EvaluationTable) -- modifyEvaluation
-  NewGroupAssignment       -- newGroupAssignment
-  NewCourseAssignment      -- newCourseAssignment
+  Home -- newGroupAssignment
+  Home -- newCourseAssignment
   Home -- modifyAssignment
   Home -- submission
   Home -- submissionList

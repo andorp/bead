@@ -494,6 +494,7 @@ testScriptInfo p tk = do
   return TestScriptInfo {
       tsiName = tsName script
     , tsiDescription = tsDescription script
+    , tsiType = tsType script
     }
 
 -- Returns True if the given student submitted at least one solution for the

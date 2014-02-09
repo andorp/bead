@@ -187,20 +187,15 @@ menuId = P.pageCata
 instance SnapFieldName P.Page where
   fieldName = fromString . menuId
 
-data AssignmentField
-  = AssignmentDescField { aFieldName :: String }
-  | AssignmentNameField { aFieldName :: String }
-  | AssignmentTCsField { aFieldName :: String }
-  | AssignmentTypeField { aFieldName :: String }
-  | AssignmentKeyField { aFieldName :: String }
-  | AssignmentEvField { aFieldName :: String }
+newtype AssignmentField = AssignmentField { aFieldName :: String }
 
-assignmentNameField  = AssignmentNameField  "asg-name"
-assignmentDescField  = AssignmentDescField  "asg-desc"
-assignmentTCsField   = AssignmentTCsField   "asg-tcs"
-assignmentTypeField  = AssignmentTypeField  "asg-type"
-assignmentKeyField   = AssignmentKeyField   "asg-key"
-assignmentEvField    = AssignmentEvField    "asg-ev"
+assignmentNameField  = AssignmentField  "asg-name"
+assignmentDescField  = AssignmentField  "asg-desc"
+assignmentTCsField   = AssignmentField   "asg-tcs"
+assignmentTypeField  = AssignmentField  "asg-type"
+assignmentKeyField   = AssignmentField   "asg-key"
+assignmentEvField    = AssignmentField    "asg-ev"
+assignmentTestCaseField = AssignmentField "asg-testcase"
 
 instance SnapFieldName AssignmentField where
   fieldName = fromString . aFieldName
@@ -393,7 +388,7 @@ fieldList = map fieldName $ join [
   , SFN changePasswordTable, SFN oldPasswordField, SFN newPasswordField, SFN newPasswordAgainField
   , SFN assignmentStartDateField, SFN assignmentEndDateField
   , SFN assignmentStartHourField, SFN assignmentStartMinField
-  , SFN assignmentEndHourField, SFN assignmentEndMinField
+  , SFN assignmentEndHourField, SFN assignmentEndMinField, SFN assignmentTestCaseField
   , SFN assignmentStartDefaultDate, SFN assignmentStartDefaultHour, SFN assignmentStartDefaultMin
   , SFN assignmentEndDefaultDate, SFN assignmentEndDefaultHour, SFN assignmentEndDefaultMin
   , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage, SFN changeLanguageField

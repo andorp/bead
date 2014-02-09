@@ -82,6 +82,8 @@ translationList =
   , Msg_NewAssignment_Title_Urn ()
   , Msg_NewAssignment_Info_Normal ()
   , Msg_NewAssignment_Info_Urn ()
+  , Msg_NewAssignment_TestCase ()
+  , Msg_NewAssignment_NoTestScriptsAreDefined ()
 
   , Msg_GroupRegistration_RegisteredCourses ()
   , Msg_GroupRegistration_SelectGroup ()

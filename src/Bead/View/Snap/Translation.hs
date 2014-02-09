@@ -73,6 +73,8 @@ data Translation a
   | Msg_NewAssignment_Title_Urn { trans :: a }
   | Msg_NewAssignment_Info_Normal { trans :: a }
   | Msg_NewAssignment_Info_Urn { trans :: a }
+  | Msg_NewAssignment_TestCase { trans :: a }
+  | Msg_NewAssignment_NoTestScriptsAreDefined { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }

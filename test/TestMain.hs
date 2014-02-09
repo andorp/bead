@@ -33,5 +33,3 @@ tests args =
         else []
 
 main = defaultMain (tests ["unit", "persist-unit", "persist-quick"])
-
-

@@ -65,15 +65,14 @@ data HomePageData = HomePageData {
     userState   :: UserState
   , hasCourses  :: Bool -- True if the user has administrated courses
   , hasGroups   :: Bool -- True if the user has administrated groups
-    -- Nothing means that the user is not registrated in any
-    -- courses
-  , assignments :: Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)]
+  , assignments :: Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -- Nothing means that the user is not registrated in any courses
   , sTables     :: [SubmissionTableInfo]
-    -- The convertes function that convert a given utc time into the users local
-    -- timezone
+    -- ^ The convertes function that convert a given utc time into the users local timezone
   , timeConverter :: UserTimeConverter
   , courseTestScripts :: CourseTestScriptInfos
-    -- Test scripts for the courses
+    -- ^ Test scripts for the courses
+  , administratedCourseMap :: Map CourseKey Course
+  , administratedGroupMap  :: Map GroupKey (Group, String)
   }
 
 homePage :: GETContentHandler
@@ -94,11 +93,17 @@ homePage = withUserState $ \s -> do
            ua
            sbmTables
            converter
-           testScripts)
+           testScripts
+           (adminCourseMap adminCourses)
+           (adminGroupMap adminGroups))
   where
     testScriptForCourse ck = do
       infos <- testScriptInfos ck
       return (ck, infos)
+
+    adminCourseMap = Map.fromList
+
+    adminGroupMap = Map.fromList . map (\(k,g,c) -> (k,(g,c)))
 
 deleteUsersFromCourseHandler :: POSTContentHandler
 deleteUsersFromCourseHandler =
@@ -145,8 +150,8 @@ homeContent d = do
             [ "A feladat sorszámára kattintva módosítható már kiírt feladat (a nevét ld. tooltipben).  "
             , "Hallgatókat törölhetőek kurzusról vagy csoportból a Törlés oszlopban bejelölve, majd a gombra kattintva."
             ]
-        i18n msg $ (htmlSubmissionTables testScripts) (sTables d)
-    when (courseAdminUser r && hasCourse) $ do
+        i18n msg $ htmlSubmissionTables d
+    when (courseAdminUser r && hasCourse) $ H.p $ do
       H.p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
         [ "A tárgyhoz új csoportokat a Tárgyi beállítások almenüben lehet létrehozni.  Ugyanitt lehet "
         , "egyúttal az egyes csoportokhoz oktatókat rendelni."
@@ -157,7 +162,7 @@ homeContent d = do
                                 [ P.EvaluationTable, P.SetUserPassword ]
       H.hr
     when (groupAdminUser r && hasGroup) $ H.p $ do
-      i18n msg $ navigation [P.NewGroupAssignment, P.EvaluationTable, P.SetUserPassword]
+      i18n msg $ navigation [P.EvaluationTable, P.SetUserPassword]
       H.hr
     H.h3 . fromString . msg $ Msg_Home_StudentTasks "Hallgatói feladatok"
     H.p $ do
@@ -211,18 +216,18 @@ availableAssignments timeconverter (Just as) = do
         (msg $ Msg_Home_SubmissionCell_Rejected "Elutasított")
         s)
 
-htmlSubmissionTables :: CourseTestScriptInfos -> [SubmissionTableInfo] -> IHtml
-htmlSubmissionTables cti xs = do
-  tables <- mapM (htmlSubmissionTable cti) $ zip [1..] xs
+htmlSubmissionTables :: HomePageData -> IHtml
+htmlSubmissionTables pd = do
+  tables <- mapM (htmlSubmissionTable pd) $ zip [1..] (sTables pd)
   return $ sequence_ tables
 
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
 -- group or course students, an informational text is shown.
-htmlSubmissionTable :: CourseTestScriptInfos -> (Int,SubmissionTableInfo) -> IHtml
+htmlSubmissionTable :: HomePageData -> (Int,SubmissionTableInfo) -> IHtml
 
 -- Empty table
-htmlSubmissionTable cti (i,s)
+htmlSubmissionTable pd (i,s)
   | and [null . stAssignments $ s, null . stUsers $ s] = do
     msg <- getI18N
     return $ H.p $ do
@@ -230,24 +235,21 @@ htmlSubmissionTable cti (i,s)
       H.br
       fromString . stCourse $ s
       H.br
-      either
-        (const $ return ())
-        (i18n msg . testScriptTable cti)
-        (stKey s)
+      courseTestScriptTable msg pd (stKey s)
+      assignmentCreationMenu msg pd (stKey s)
 
 -- Non empty table
-htmlSubmissionTable cti (i,s) = do
+htmlSubmissionTable pd (i,s) = do
   msg <- getI18N
   return $ do
     courseForm $ table tableId (className groupSubmissionTable) # informationalTable $ do
       headLine (stCourse s)
       assignmentLine msg (stAssignments s)
       mapM_ (userLine msg) (stUserLines s)
-    either
-      (const $ return ())
-      (i18n msg . testScriptTable cti)
-      (stKey s)
+    courseTestScriptTable msg pd (stKey s)
+    assignmentCreationMenu msg pd (stKey s)
   where
+
     courseForm = infoSourceCata createForm createForm id infoSrc where
       createForm = either
         (postForm . routeOf . P.DeleteUsersFromGroup)
@@ -343,6 +345,11 @@ htmlSubmissionTable cti (i,s) = do
 
     key = stKey s
 
+-- TODO: refactor
+courseTestScriptTable msg pd = either
+  (const $ return ())
+  (i18n msg . testScriptTable (courseTestScripts pd))
+
 -- Renders a course test script modification table if the information is found in the
 -- for the course, otherwise an error message. If the course is found, and there is no
 -- test script found for the course a message indicating that will be rendered, otherwise
@@ -372,6 +379,31 @@ testScriptTable cti ck = maybe courseNotFound courseFound $ Map.lookup ck cti wh
         dataCell noStyle $ linkWithText
           (routeOf (P.ModifyTestScript tsk))
           (tsiName tsi)
+
+
+-- Renders a menu for the creation of the course of group assignment if the
+-- user administrates the given group or course
+assignmentCreationMenu :: I18N -> HomePageData -> Either GroupKey CourseKey -> H.Html
+assignmentCreationMenu msg pd = either groupMenu courseMenu
+  where
+    groupMenu gk = maybe
+      (return ())
+      (const $ do
+        H.br
+        navigationWithRoute [(P.NewGroupAssignment,[requestParam gk])])
+      (Map.lookup gk (administratedGroupMap pd))
+
+    courseMenu ck = maybe
+      (return ())
+      (const $ do
+        H.br
+        navigationWithRoute [(P.NewCourseAssignment,[requestParam ck])])
+      (Map.lookup ck (administratedCourseMap pd))
+
+    navigationWithRoute links = H.div ! A.id "menu" $ H.ul $ mapM_ elem links
+      where
+        elem (page,params) = link (routeWithParams page params) (msg $ linkText page)
+
 
 -- Create a table cell for the evaulation value, where
 -- simpleCell is the combinator for the non RGB colored cells
