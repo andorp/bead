@@ -401,7 +401,7 @@ fieldList = map fieldName $ join [
 
   , SFN createCourseForm, SFN evaluationTypeSelection, SFN evaluationTypeValue, SFN startDateDivId
   , SFN evalTypeSelectionDiv, SFN registrationTable, SFN createGroupForm, SFN endDateDivId
-  , SFN evaluationPercentageDiv, SFN regUserRegKey, SFN regToken, SFN pwdSubmitBtn
+  , SFN evaluationPercentageDiv, SFN regUserRegKey, SFN regToken, SFN regLanguage, SFN pwdSubmitBtn
   , SFN resetPasswordTable, SFN regPasswordAgain, SFN changeProfileBtn, SFN changePasswordBtn
   , SFN userTimeZoneField, SFN assignmentForm, SFI changePwdForm, SFI setStudentPwdForm
 

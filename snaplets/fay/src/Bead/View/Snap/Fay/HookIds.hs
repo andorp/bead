@@ -60,6 +60,7 @@ regFullName     = RegComp "reg_full_name"
 regEmailAddress = RegComp "reg_email_address"
 regUserRegKey   = RegComp "reg_user_reg_key"
 regToken        = RegComp "reg_token"
+regLanguage     = RegComp "reg_language"
 regTimeZoneField = RegComp "reg_time_zone"
 
 data FormId = FormId { rFormId :: String }

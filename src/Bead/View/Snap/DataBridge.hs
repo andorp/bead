@@ -238,6 +238,9 @@ regUserRegKeyPrm = Parameter {
 regTokenPrm :: Parameter String
 regTokenPrm = stringParameter (fieldName regToken) "Regisztrációs token"
 
+regLanguagePrm :: Parameter String
+regLanguagePrm = stringParameter (fieldName regLanguage) "Regisztrációs nyelv"
+
 -- Creates a new parameter where the the decode function first
 -- validates a parameter with the given validator
 validateBy :: FieldValidator -> Parameter a -> Parameter a

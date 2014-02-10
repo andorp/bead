@@ -160,6 +160,8 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
             result <- lift $ registrationStory (S.createUserReg userRegData)
             when (isLeft result) . throwError . strMsg . i18n $
               Msg_Registration_RegistrationNotSaved "The registration has not been saved."
+            lang <- lift $ withTop sessionManager languageFromSession
+            let language = maybe (Language "en") id lang
             let key = fromRight result
             lift $ withTop sendEmailContext $
               sendEmail
@@ -168,19 +170,20 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
                 (i18n $ Msg_Registration_EmailBody registrationEmailTemplate)
                 RegTemplate {
                     regUsername = reg_username userRegData
-                  , regUrl = createUserRegAddress key userRegData
+                  , regUrl = createUserRegAddress key language userRegData
                   }
             lift $ pageContent
         _ -> throwError . strMsg . i18n $
                Msg_Registration_RequestParameterIsMissing "Some request parameter is missing."
 
-  createUserRegAddress :: UserRegKey -> UserRegistration -> String
-  createUserRegAddress key reg =
+  createUserRegAddress :: UserRegKey -> Language -> UserRegistration -> String
+  createUserRegAddress key (Language language) reg =
     -- TODO: Add the correct address of the server
     requestRoute (join [emailHostname config, "/reg_final"])
                  [ requestParameter regUserRegKeyPrm key
                  , requestParameter regTokenPrm      (reg_token reg)
                  , requestParameter regUsernamePrm   (Username . reg_username $ reg)
+                 , requestParameter regLanguagePrm   language
                  ]
 
   -- Calculates the result of an (ErrorT String ...) transformator and
@@ -211,9 +214,10 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     username <- readParameter regUsernamePrm
     key      <- readParameter regUserRegKeyPrm
     token    <- readParameter regTokenPrm
-    case (key, token, username) of
-      (Just k, Just t, Just u) -> return $ Just (k,t,u)
-      _                        -> return $ Nothing
+    language <- readParameter regLanguagePrm
+    case (key, token, username, language) of
+      (Just k, Just t, Just u, Just l) -> return $ Just (k,t,u,l)
+      _                                -> return $ Nothing
 
   renderForm = do
     values <- readRegParameters
@@ -221,7 +225,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     case values of
       Nothing -> registrationErrorPage $ i18n $
         Msg_RegistrationFinalize_NoRegistrationParametersAreFound "No registration parameters found."
-      Just (key, token, username) -> do
+      Just (key, token, username, language) -> do
         result <- registrationStory $ do
                     userReg   <- S.loadUserReg key
                     existence <- S.doesUserExist username
@@ -249,6 +253,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                     hiddenParam regUserRegKeyPrm key
                     hiddenParam regTokenPrm      token
                     hiddenParam regUsernamePrm   username
+                    hiddenParam regLanguagePrm   language
                     H.br
                     submitButton (fieldName regSubmitBtn) (i18n $ Msg_RegistrationFinalize_SubmitButton "Register")
                   H.br
@@ -264,7 +269,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     case (values, pwd, tz) of
       (Nothing,_,_) -> errorPageWithTitle (Msg_Registration_Title "Registration") $ msg $
         Msg_RegistrationCreateStudent_NoParameters "No registration parameters."
-      (Just (key, token, username), Just password, Just timezone) -> do
+      (Just (key, token, username, language), Just password, Just timezone) -> do
         result <- registrationStory (S.loadUserReg key)
         case result of
           Left e -> errorPageWithTitle (Msg_Registration_Title "Registration") $ msg $
@@ -276,15 +281,14 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
               True -> errorPageWithTitle (Msg_Registration_Title "Registration") $ msg $
                 Msg_RegistrationCreateStudent_InvalidToken "The registration token has expired, start the registration over."
               False -> do
-                result <- withTop auth $ createNewUser userRegData password timezone
+                result <- withTop auth $ createNewUser userRegData password timezone (Language language)
                 redirect "/"
 
   log lvl msg = withTop serviceContext $ logMessage lvl msg
 
 
--- TODO: I18N
-createNewUser :: UserRegistration -> String -> TimeZone -> Handler App (AuthManager App) (Either RegError ())
-createNewUser reg password timezone = runErrorT $ do
+createNewUser :: UserRegistration -> String -> TimeZone -> Language -> Handler App (AuthManager App) (Either RegError ())
+createNewUser reg password timezone language = runErrorT $ do
   -- Check if the user is exist already
   userExistence <- checkFailure =<< lift (registrationStory (S.doesUserExist username))
   when userExistence . throwError $ (RegErrorUserExist username)
@@ -297,7 +301,7 @@ createNewUser reg password timezone = runErrorT $ do
     , u_email = email
     , u_name = fullname
     , u_timezone = timezone
-    , u_language = Language "hu" -- TODO: I18N
+    , u_language = language
     }
 
   -- Check if the Snap Auth registration went fine
