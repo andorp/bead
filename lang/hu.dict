@@ -67,6 +67,7 @@ DictionaryFile {
     , Msg_NewAssignment_Title_Urn { trans = "Urn" }
     , Msg_NewAssignment_Info_Normal { trans = "A feladatot a kezdés idejétől a befejezés idejéig lehet beadni.  A feladat nem fog látszani a kezdés idejéig.  A feladatok mindig automatikusan nyílnak és záródnak." }
     , Msg_NewAssignment_Info_Urn { trans = "(Zárthelyihez javasolt.)  A feladatot a kezdés idejétől a befejezés idejéig lehet beadni azonban a beadott megoldások és a hozzájuk tartozó értékelés csak a befejezés után lesz elérhető a hallgatók számára.  A feladatok nem fognak látszani a kezdés idejéig és mindig automatikusan nyílnak és záródnak." }
+    , Msg_NewAssignment_TestCase { trans = "Tesztesetek" }
     , Msg_GroupRegistration_RegisteredCourses { trans = "Felvett csoportok" }
     , Msg_GroupRegistration_SelectGroup { trans = "Tárgy és csoport kiválasztása" }
     , Msg_GroupRegistration_NoRegisteredCourses { trans = "Nincsenek felvett tárgyak.  Válasszunk egy  csoportot!" }

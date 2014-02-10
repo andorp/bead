@@ -171,7 +171,6 @@ newAssignmentContent pd = do
           , "but the submissions and the corresponding evaluations will be visible by the students until it is closed.  "
           , "The assignment will not be visible until it is opened and they open and close automatically."
           ]
-      H.br
       testCaseTestArea msg pd
     H.div ! leftCell $ do
       H.b (fromString . msg $ Msg_NewAssignment_Type "Type")
@@ -212,10 +211,10 @@ newAssignmentContent pd = do
         (const3 testCaseTestArea')
         where
           testCaseTestArea' = maybe
-            (fromString . msg $ Msg_NewAssignment_NoTestScriptsAreDefined "Nincs tesztelői szkript megadva, így nem kell tesztesetet megadni")
+            ""
             (\t -> do
               H.br
-              H.b . fromString . msg $ Msg_NewAssignment_TestCase "Teszteset"
+              H.b . fromString . msg $ Msg_NewAssignment_TestCase "Test cases"
               textAreaInput (fieldName assignmentTestCaseField) Nothing ! fillDiv)
 
       -- TODO
