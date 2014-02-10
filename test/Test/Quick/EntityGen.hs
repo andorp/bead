@@ -86,10 +86,12 @@ percentage = do
 
 pctConfigs = (PctEval . PctConfig) <$> percentage
 
-courses = Course
-  <$> courseNames
-  <*> courseDescs
-  <*> evalConfigs
+courses =
+  courseAppAna
+    courseNames
+    courseDescs
+    evalConfigs
+    (elements [TestScriptSimple, TestScriptZipped])
 
 groupCodes = word
 

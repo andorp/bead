@@ -304,10 +304,12 @@ instance Save Comment where
     fileSave d "type" (show type_)
 
 instance Save Course where
-  save d c = do createStructureDirs d courseDirStructure
-                saveDesc d (courseDesc c)
-                saveName d (courseName c)
-                fileSave d "evalcfg" (show . courseEvalConfig $ c)
+  save d = courseCata show show $ \name desc cfg type_ -> do
+    createStructureDirs d courseDirStructure
+    saveDesc d desc
+    saveName d name
+    fileSave d "evalcfg" cfg
+    fileSave d "scripttype" type_
 
 instance Save Group where
   save d g = do createStructureDirs d groupDirStructure
@@ -400,7 +402,13 @@ instance Load Comment where
     (fileLoad d "type" readMaybe)
 
 instance Load Course where
-  load d = do desc <- loadDesc d
+  load d = courseAppAna
+    (loadName d)
+    (loadDesc d)
+    (fileLoad d "evalcfg" readMaybe)
+    (fileLoad d "scripttype" readMaybe)
+{-
+  do desc <- loadDesc d
               name <- loadName d
               eval <- fileLoad d "evalcfg" readMaybe
               return $ Course {
@@ -408,6 +416,7 @@ instance Load Course where
                 , courseName = name
                 , courseEvalConfig = eval
                 }
+-}
 
 instance Load Group where
   load d = do desc <- loadDesc d
@@ -574,6 +583,7 @@ courseDirStructure = DirStructure {
       [ "description" -- Short description for the course
       , "name"        -- Name that usually appears on the UI
       , "evalcfg"     -- Evaluation config
+      , "scripttype"  -- Uniform type of the associated test scripts
       ]
   , directories =
       [ "groups"       -- Soft links to the groups associated with the course

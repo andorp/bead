@@ -185,10 +185,14 @@ data Course = Course {
     courseName :: String
   , courseDesc :: String
   , courseEvalConfig :: EvaluationConfig
+  , courseTestScriptType :: TestScriptType
   } deriving (Eq, Show)
 
-courseCata course config (Course name desc cfg)
-  = course name desc (config cfg)
+courseCata config script course (Course name desc cfg scriptType)
+  = course name desc (config cfg) (script scriptType)
+
+courseAppAna name desc eval test =
+  Course <$> name <*> desc <*> eval <*> test
 
 -- | Groups are registered under the courses
 data Group = Group {

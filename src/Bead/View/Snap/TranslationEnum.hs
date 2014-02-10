@@ -34,6 +34,7 @@ translationList =
   , Msg_Input_Course_Name ()
   , Msg_Input_Course_Description ()
   , Msg_Input_Course_Evaluation ()
+  , Msg_Input_Course_TestScript ()
   , Msg_Input_User_Role ()
   , Msg_Input_User_Email ()
   , Msg_Input_User_FullName ()
@@ -282,6 +283,7 @@ translationList =
   , Msg_NewTestScript_Save ()
   , Msg_NewTestScript_Course ()
   , Msg_NewTestScript_HasNoCourses ()
+  , Msg_NewTestScript_ScriptTypeHelp ()
 
   , Msg_UserStory_SetTimeZone ()
   , Msg_UserStory_ChangedUserDetails ()
@@ -333,6 +335,9 @@ translationList =
   , Msg_LinkText_DeleteUsersFromCourse ()
   , Msg_LinkText_DeleteUsersFromGroup ()
   , Msg_LinkText_UnsubscribeFromCourse ()
+
+  , Msg_TestScriptTypeSimple ()
+  , Msg_TestScriptTypeZipped ()
 
   ]
 

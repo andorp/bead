@@ -47,13 +47,15 @@ newTestScriptPage = withUserState $ \s -> do
 
 postNewTestScript :: POSTContentHandler
 postNewTestScript = do
-  script <- TestScript
+  script' <- TestScript
     <$> (getParameter (stringParameter (fieldName testScriptNameField) "Test Script Name"))
     <*> (getParameter (stringParameter (fieldName testScriptDescField) "Test Script Description"))
     <*> (getParameter (stringParameter (fieldName testScriptNotesField) "Test Script Notes"))
     <*> (getParameter (stringParameter (fieldName testScriptScriptField) "Test Script"))
-    <*> (getParameter (readablePrm (fieldName testScriptTypeField) "Test Script Type"))
   ck <- CourseKey <$> getParameter (stringParameter (fieldName testScriptCourseKeyField) "Course Key")
+  script <- userStory $ do
+    (course,_groupkeys) <- Story.loadCourse ck
+    return (script' $ courseTestScriptType course)
   return $ UA.CreateTestScript ck script
 
 modifyTestScriptPage :: GETContentHandler
@@ -68,13 +70,15 @@ modifyTestScriptPage = withUserState $ \s -> do
 
 postModifyTestScript :: POSTContentHandler
 postModifyTestScript = do
-  script <- TestScript
+  script' <- TestScript
     <$> (getParameter (stringParameter (fieldName testScriptNameField) "Test Script Name"))
     <*> (getParameter (stringParameter (fieldName testScriptDescField) "Test Script Description"))
     <*> (getParameter (stringParameter (fieldName testScriptNotesField) "Test Script Notes"))
     <*> (getParameter (stringParameter (fieldName testScriptScriptField) "Test Script"))
-    <*> (getParameter (readablePrm (fieldName testScriptTypeField) "Test Script Type"))
   tsk <- getParameter testScriptKeyPrm
+  script <- userStory $ do
+    (testscript, _coursekey) <- Story.loadTestScript tsk
+    return (script' $ tsType testscript)
   return $ UA.ModifyTestScript tsk script
 
 testScriptContent :: PageData -> IHtml
@@ -106,9 +110,9 @@ hasPageContent pd = do
       H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Script "Test script"
       textAreaInput (fieldName testScriptScriptField) (testScriptScript pd) ! (textAreaFillDiv 50)
     H.div ! leftCell $ do
-      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Type "Type"
+      H.b $ fromString . msg $ Msg_NewTestScript_Course "Course:"
       H.br
-      defEnumSelection (fieldName testScriptTypeField) (testScriptType pd)
+      fromString . msg $ Msg_NewTestScript_ScriptTypeHelp "A tesztesektek fajtái"
       H.br
       testScriptCourse msg pd
       H.br
@@ -120,22 +124,25 @@ hasPageContent pd = do
     const3 = const2 . const
     testScriptPage = pageDataCata (const P.NewTestScript) (\_name key _script -> P.ModifyTestScript key)
     testScriptName = pageDataCata (const Nothing) (const2 (Just . tsName))
-    testScriptType = pageDataCata (const TestScriptSimple) (const2 tsType)
     testScriptDesc = pageDataCata (const Nothing) (const2 (Just . tsDescription))
     testScriptNotes = pageDataCata (const Nothing) (const2 (Just . tsNotes))
     testScriptScript = pageDataCata (const Nothing) (const2 (Just . tsScript))
     testScriptCourse msg = pageDataCata
-      (valueSelection (courseKeyMap id *** courseName) (fieldName testScriptCourseKeyField))
-      (\courseName _key _script -> do
-        H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Course "Course:"
-        fromString courseName)
+      (valueSelection (courseKeyMap id *** courseNameAndType) (fieldName testScriptCourseKeyField))
+      (\courseName _key _script -> fromString courseName)
+      where
+        courseNameAndType c = concat
+          [courseName c, " - ", courseTypeStr $ courseTestScriptType c]
+        courseTypeStr = msg . testScriptTypeCata
+          (Msg_TestScriptTypeSimple "Szöveges")
+          (Msg_TestScriptTypeZipped "Zippelt")
 
 -- CSS Section
 
 slimLeftCell  = A.style "float: left;  width: 30%; height: 5%"
 slimRightCell h = A.style (fromString $ concat ["float: right; width: 68%; height: ", show h, "%"])
-leftCell      = A.style "float: left;  width: 20%; height: 30%"
-rightCell     = A.style "float: right; width: 78%; height: 99%"
+leftCell      = A.style "float: left;  width: 30%; height: 30%"
+rightCell     = A.style "float: right; width: 68%; height: 99%"
 fillDiv       = A.style "width: 99%"
 textAreaFillDiv h = A.style (fromString $ concat ["width: 99%; height: ", show h,"%"])
 formDiv       = A.style "width: 100%; height: 600px"

@@ -1,4 +1,10 @@
-- Test commit
+- New Translation message: Msg_NewTestScript_ScriptTypeHelp
+- New Translation message: Msg_Input_Course_TestScript
+- New Translation message: Msg_TestScriptTypeSimple
+- New Translation message: Msg_TestScriptTypeZipped
+- Unused Translation message: Msg_NewTestScript_Type (not removed yet)
+- Data directory change: Course directory contains a new file: "scripttye"
+
 - New Translation message: Msg_Home_NotAdministratedTestScripts
 - New Translation message: Msg_Home_NoTestScriptWereDefined
 - New Translation message: Msg_Home_ModifyTestScriptTable

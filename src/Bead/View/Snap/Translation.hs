@@ -25,6 +25,7 @@ data Translation a
   | Msg_Input_Course_Name { trans :: a }
   | Msg_Input_Course_Description { trans :: a }
   | Msg_Input_Course_Evaluation { trans :: a }
+  | Msg_Input_Course_TestScript { trans :: a }
   | Msg_Input_User_Role { trans :: a }
   | Msg_Input_User_Email { trans :: a }
   | Msg_Input_User_FullName { trans :: a }
@@ -273,6 +274,7 @@ data Translation a
   | Msg_NewTestScript_Save { trans :: a }
   | Msg_NewTestScript_Course { trans :: a }
   | Msg_NewTestScript_HasNoCourses { trans :: a }
+  | Msg_NewTestScript_ScriptTypeHelp { trans :: a }
 
   | Msg_UserStory_SetTimeZone { trans :: a }
   | Msg_UserStory_ChangedUserDetails { trans :: a }
@@ -324,5 +326,8 @@ data Translation a
   | Msg_LinkText_DeleteUsersFromCourse { trans :: a }
   | Msg_LinkText_DeleteUsersFromGroup { trans :: a }
   | Msg_LinkText_UnsubscribeFromCourse { trans :: a }
+
+  | Msg_TestScriptTypeSimple { trans :: a }
+  | Msg_TestScriptTypeZipped { trans :: a }
 
   deriving (Show, Read, Eq, Ord)

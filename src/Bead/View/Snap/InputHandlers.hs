@@ -69,6 +69,7 @@ instance GetValueHandler Course where
     <$> getParameter (stringParameter (fieldName courseNameField) "Tárgy neve")
     <*> getParameter (stringParameter (fieldName courseDescField) "Tárgy leírása")
     <*> getParameter (evalConfigPrm createCourseHook)
+    <*> getParameter (readablePrm (fieldName testScriptTypeField) "Script típusa")
 
 emptyCourse :: Maybe Course
 emptyCourse = Nothing
@@ -83,8 +84,14 @@ instance InputPagelet Course where
         tableLine (msg $ Msg_Input_Course_Name "Title") $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
         tableLine (msg $ Msg_Input_Course_Description "Description") $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
         tableLine (msg $ Msg_Input_Course_Evaluation "Evaluation") $ evalConfig
+        tableLine (msg $ Msg_Input_Course_TestScript "Tesztelő szkript típusa") $ testScriptTypeSelection c
       hiddenInputWithId (evHiddenValueId hook) ""
       evalSelectionDiv hook
+    where
+      testScriptTypeSelection c =
+        defEnumSelection
+          (fieldName testScriptTypeField)
+          (maybe TestScriptSimple id (fmap courseTestScriptType c))
 
 emptyRole :: Maybe Role
 emptyRole = Nothing

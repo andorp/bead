@@ -116,7 +116,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
         , u_language = Language "hu"
         }
       password = "password"
-  ck <- liftE $ saveCourse persist (Course "name" "desc" binaryEvalConfig)
+  ck <- liftE $ saveCourse persist (Course "name" "desc" binaryEvalConfig TestScriptSimple)
   gk <- liftE $ saveGroup persist ck (Group "gname" "gdesc" binaryEvalConfig)
   gks <- liftE $ groupKeysOfCourse persist ck
   assertBool "Registered group was not found in the group list" (elem gk gks)
