@@ -550,7 +550,7 @@ getCreatedTime d = fileLoad d "created" readMaybe
 
 userDirStructure = DirStructure {
     files       = ["email", "name", "role", "username", "language"]
-  , directories = ["course", "group" ,"courseadmin" ,"groupadmin", "submissions"]
+  , directories = ["course", "group" ,"courseadmin" ,"groupadmin", "submissions", "datadir"]
   }
 
 assignmentDirStructure = DirStructure {
