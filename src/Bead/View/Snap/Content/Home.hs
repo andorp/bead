@@ -363,10 +363,10 @@ testScriptTable cti ck = maybe courseNotFound courseFound $ Map.lookup ck cti wh
     msg <- getI18N
     return $ case ts of
       [] -> fromString . msg $
-        Msg_Home_NoTestScriptsWereDefined "Nincsennek teszt szkriptek definiálva a kurzushoz"
+        Msg_Home_NoTestScriptsWereDefined "There are no test scripts for the course."
       ts' -> do
         table tableId (className groupSubmissionTable) # informationalTable $ do
-          headLine . msg $ Msg_Home_ModifyTestScriptTable "Teszt szkriptek módosítása"
+          headLine . msg $ Msg_Home_ModifyTestScriptTable "Modify test scripts"
           mapM_ testScriptLine ts'
     where
       headLine = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString

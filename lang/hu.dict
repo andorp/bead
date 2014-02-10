@@ -233,6 +233,17 @@ DictionaryFile {
     , Msg_Home_NonPercentageEvaluation { trans = "Nem százalékos értékelés" }
     , Msg_Home_DeleteUsersFromCourse { trans = "Törlés" }
     , Msg_Home_DeleteUsersFromGroup { trans = "Törlés" }
+    , Msg_Home_NotAdministratedTestScripts { trans = "A tesztelőt valaki más hozta létre, ezért nem módosítható!" }
+    , Msg_Home_NoTestScriptsWereDefined { trans = "Nincsenek tesztelők a tárgyhoz." }
+    , Msg_Home_ModifyTestScriptTable { trans = "Tesztelők" }
+    , Msg_NewTestScript_Name { trans = "Név" }
+    , Msg_NewTestScript_Description { trans = "Leírás" }
+    , Msg_NewTestScript_Notes { trans = "Segítség tesztesetek írásához" }
+    , Msg_NewTestScript_Script { trans = "Tesztelő szkript" }
+    , Msg_NewTestScript_Type { trans = "Típus" }
+    , Msg_NewTestScript_Save { trans = "Mentés" }
+    , Msg_NewTestScript_Course { trans = "Tárgy:" }
+    , Msg_NewTestScript_HasNoCourses { trans = "Ez a felhasználó egyik tárgynak sem a felelőse!" }
     , Msg_UserStory_SetTimeZone { trans = "Megváltozott az időzóna." }
     , Msg_UserStory_ChangedUserDetails { trans = "A beállítások megváltoztak." }
     , Msg_UserStory_CreateCourse { trans = "Létrejött a tárgy." }
@@ -256,7 +267,7 @@ DictionaryFile {
     , Msg_LinkText_Submission { trans = "Beküldés" }
     , Msg_LinkText_SubmissionList { trans = "Beadott megoldások" }
     , Msg_LinkText_UserSubmissions { trans = "Megoldások" }
-    , Msg_LinkText_NewTestScript { trans = "Új tesztelő szkript" }
+    , Msg_LinkText_NewTestScript { trans = "Új tesztelő" }
     , Msg_LinkText_ModifyTestScript { trans = "Tesztelő szkript módosítása" }
     , Msg_LinkText_ModifyEvaluation { trans = "Értékelés" }
     , Msg_LinkText_SubmissionDetails { trans = "Megoldás" }
@@ -269,7 +280,7 @@ DictionaryFile {
     , Msg_LinkText_AssignCourseAdmin { trans = "Tárgyfelelős felvétele" }
     , Msg_LinkText_CreateGroup { trans = "Csoport létrehozása" }
     , Msg_LinkText_AssignGroupAdmin { trans = "Oktató felvétele" }
-    , Msg_LinkText_NewGroupAssignment { trans = "Új csoporszintű feladat" }
+    , Msg_LinkText_NewGroupAssignment { trans = "Új csoportszintű feladat" }
     , Msg_LinkText_NewCourseAssignment { trans = "Új tárgyszintű feladat" }
     , Msg_LinkText_ModifyAssignment { trans = "Feladat módosítása" }
     , Msg_LinkText_ChangePassword { trans = "Jelszócsere" }

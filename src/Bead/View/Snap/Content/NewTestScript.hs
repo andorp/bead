@@ -89,7 +89,7 @@ hasNoCourses :: IHtml
 hasNoCourses = do
   msg <- getI18N
   return $ do
-  fromString . msg $ Msg_NewTestScript_HasNoCourses "Egyetlen kurzusnak sem vagy adminisztrátora"
+  fromString . msg $ Msg_NewTestScript_HasNoCourses "This user cannot administer any courses."
 
 hasPageContent :: PageData -> IHtml
 hasPageContent pd = do
@@ -97,16 +97,16 @@ hasPageContent pd = do
   return $ do
   postForm (routeOf $ testScriptPage pd) $ H.div ! formDiv $ do
     H.div ! rightCell $ do
-      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Name "Név"
+      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Name "Name"
       textInput (fieldName testScriptNameField) 10 (testScriptName pd) ! fillDiv
-      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Description "Leírás"
+      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Description "Description"
       textInput (fieldName testScriptDescField) 10 (testScriptDesc pd) ! fillDiv
-      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Notes "Megjegyzés a tesztesetekhez"
+      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Notes "Help for writing test cases"
       textAreaInput (fieldName testScriptNotesField) (testScriptNotes pd) ! (textAreaFillDiv 20)
-      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Script "Tesztelő szkript"
+      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Script "Test script"
       textAreaInput (fieldName testScriptScriptField) (testScriptScript pd) ! (textAreaFillDiv 50)
     H.div ! leftCell $ do
-      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Type "Típus"
+      H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Type "Type"
       H.br
       defEnumSelection (fieldName testScriptTypeField) (testScriptType pd)
       H.br
@@ -114,7 +114,7 @@ hasPageContent pd = do
       H.br
       submitButton
         (fieldName testScriptSaveButton)
-        (fromString . msg $ Msg_NewTestScript_Save "Mentés")
+        (fromString . msg $ Msg_NewTestScript_Save "Commit")
   where
     const2 = const . const
     const3 = const2 . const
@@ -127,7 +127,7 @@ hasPageContent pd = do
     testScriptCourse msg = pageDataCata
       (valueSelection (courseKeyMap id *** courseName) (fieldName testScriptCourseKeyField))
       (\courseName _key _script -> do
-        H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Course "Kurzus:"
+        H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Course "Course:"
         fromString courseName)
 
 -- CSS Section
