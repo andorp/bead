@@ -183,6 +183,7 @@ newAssignmentContent pd = do
                            (const4 $ "")
                            pd
         H.br
+        courseOrGroupName pd
         hiddenKeyField pd
       testScriptSelection msg pd
       H.p $ submitButton (fieldName saveSubmitBtn) (fromString . msg $ Msg_NewAssignment_SaveButton "Commit")
@@ -199,6 +200,11 @@ newAssignmentContent pd = do
       amap :: (Assignment -> a) -> PageData -> Maybe a
       amap f (PD_Assignment _ _ a _) = Just . f $ a
       amap _ _                       = Nothing
+
+      courseOrGroupName = pageDataCata
+        (\_tz _t (_key,course) _tsType -> fromString $ courseName course)
+        (\_tz _t (_key,group)  _tsType -> fromString $ groupName group)
+        (const4 (return ()))
 
       hiddenKeyField = pageDataCata
         (\_tz _t (key,_course) _tsType -> hiddenInput (fieldName selectedCourse) (courseKeyMap id key))
