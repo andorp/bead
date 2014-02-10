@@ -353,12 +353,7 @@ courseTestScriptTable msg pd = either
 -- test script found for the course a message indicating that will be rendered, otherwise
 -- the modification table is rendered
 testScriptTable :: CourseTestScriptInfos -> CourseKey -> IHtml
-testScriptTable cti ck = maybe courseNotFound courseFound $ Map.lookup ck cti where
-  courseNotFound = do
-    msg <- getI18N
-    return $ do
-      fromString . msg $ Msg_Home_NotAdministratedTestScripts "Nem adminisztrált kurzus: Szriptek nem módosíthatóak"
-
+testScriptTable cti ck = maybe (return "") courseFound $ Map.lookup ck cti where
   courseFound ts = do
     msg <- getI18N
     return $ case ts of
@@ -387,14 +382,12 @@ assignmentCreationMenu msg pd = either groupMenu courseMenu
     groupMenu gk = maybe
       (return ())
       (const $ do
-        H.br
         navigationWithRoute [(P.NewGroupAssignment,[requestParam gk])])
       (Map.lookup gk (administratedGroupMap pd))
 
     courseMenu ck = maybe
       (return ())
       (const $ do
-        H.br
         navigationWithRoute [(P.NewCourseAssignment,[requestParam ck])])
       (Map.lookup ck (administratedCourseMap pd))
 
