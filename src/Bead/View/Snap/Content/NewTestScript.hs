@@ -112,8 +112,6 @@ hasPageContent pd = do
     H.div ! leftCell $ do
       H.b $ fromString . msg $ Msg_NewTestScript_Course "Course:"
       H.br
-      fromString . msg $ Msg_NewTestScript_ScriptTypeHelp "A tesztesektek fajtái"
-      H.br
       testScriptCourse msg pd
       H.br
       submitButton
@@ -134,8 +132,8 @@ hasPageContent pd = do
         courseNameAndType c = concat
           [courseName c, " - ", courseTypeStr $ courseTestScriptType c]
         courseTypeStr = msg . testScriptTypeCata
-          (Msg_TestScriptTypeSimple "Szöveges")
-          (Msg_TestScriptTypeZipped "Zippelt")
+          (Msg_TestScriptTypeSimple "Textual")
+          (Msg_TestScriptTypeZipped "Binary")
 
 -- CSS Section
 

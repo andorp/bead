@@ -84,7 +84,7 @@ instance InputPagelet Course where
         tableLine (msg $ Msg_Input_Course_Name "Title") $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
         tableLine (msg $ Msg_Input_Course_Description "Description") $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
         tableLine (msg $ Msg_Input_Course_Evaluation "Evaluation") $ evalConfig
-        tableLine (msg $ Msg_Input_Course_TestScript "Tesztelő szkript típusa") $ testScriptTypeSelection c
+        tableLine (msg $ Msg_Input_Course_TestScript "Test type") $ testScriptTypeSelection c
       hiddenInputWithId (evHiddenValueId hook) ""
       evalSelectionDiv hook
     where

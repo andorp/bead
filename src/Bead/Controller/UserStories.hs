@@ -261,7 +261,7 @@ saveTestScript ck ts = logAction INFO ("creates new test script for course: " ++
       True -> do
         R.saveTestScript p ck ts
         return . putStatusMessage $
-          Msg_UserStory_NewTestScriptIsCreated "A teszt szkript létrejött!"
+          Msg_UserStory_NewTestScriptIsCreated "The test script has been created."
 
 -- Overwrite the test script with the given one if the current user administrates
 -- the course that are of the given test script otherwise redirects to the error page
@@ -277,7 +277,7 @@ modifyTestScript tsk ts = logAction INFO ("modifies the existing test script: " 
       True -> do
         R.modifyTestScript p tsk ts
         return . putStatusMessage $
-          Msg_UserStory_ModifyTestScriptIsDone "A teszt szkript módosítva lett!"
+          Msg_UserStory_ModifyTestScriptIsDone "The test script has been updated."
 
 -- | Loads the test script if the user has authorization for the load, and
 -- otherwise redirects to the error page

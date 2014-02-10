@@ -22,6 +22,7 @@ DictionaryFile {
     , Msg_Input_Course_Name { trans = "Név" }
     , Msg_Input_Course_Description { trans = "Leírás" }
     , Msg_Input_Course_Evaluation { trans = "Értékelés" }
+    , Msg_Input_Course_TestScript { trans = "Tesztelés típusa" }
     , Msg_Input_User_Role { trans = "Szerepkör" }
     , Msg_Input_User_Email { trans = "Email cím" }
     , Msg_Input_User_FullName { trans = "Teljes név" }
@@ -245,6 +246,9 @@ DictionaryFile {
     , Msg_NewTestScript_Save { trans = "Mentés" }
     , Msg_NewTestScript_Course { trans = "Tárgy:" }
     , Msg_NewTestScript_HasNoCourses { trans = "Ez a felhasználó egyik tárgynak sem a felelőse!" }
+    , Msg_NewTestScript_ScriptTypeHelp { trans = "A tesztesetek fajtái" }
+    , Msg_TestScriptTypeSimple { trans = "Szöveges" }
+    , Msg_TestScriptTypeZipped { trans = "Bináris" }
     , Msg_UserStory_SetTimeZone { trans = "Megváltozott az időzóna." }
     , Msg_UserStory_ChangedUserDetails { trans = "A beállítások megváltoztak." }
     , Msg_UserStory_CreateCourse { trans = "Létrejött a tárgy." }
@@ -258,6 +262,8 @@ DictionaryFile {
     , Msg_UserStory_UsersAreDeletedFromCourse { trans = "A felhasználók törölve lettek a tárgyról." }
     , Msg_UserStory_UsersAreDeletedFromGroup { trans = "A felhasználók törölve lettek a csoportból." }
     , Msg_UserStory_SuccessfulCourseUnsubscription { trans = "A tárgyról sikerült leiratkozni!" }
+    , Msg_UserStory_NewTestScriptIsCreated { trans = "A tesztelő létrejött!" }
+    , Msg_UserStory_ModifyTestScriptIsDone { trans = "A tesztelő módosítva lett!" }
     , Msg_UserActions_ChangedUserDetails { trans = "A felhasználói beállításai megváltoztak." }
     , Msg_LinkText_Login { trans = "Bejelentkezés" }
     , Msg_LinkText_Logout { trans = "Kijelentkezés" }
