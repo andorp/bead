@@ -13,6 +13,8 @@ import Snap.Snaplet.Auth
 import Snap.Snaplet.Auth.Backends.SafeJsonFile
 import Snap.Snaplet.Fay
 import Data.Maybe (maybe)
+import Data.Map (Map)
+import qualified Data.Map as Map
 import System.FilePath (joinPath)
 
 import Bead.Configuration (Config(..))
@@ -26,6 +28,7 @@ import Bead.View.Snap.PageHandlers (routes)
 import Bead.View.Snap.Registration (createAdminUser)
 import Bead.View.Snap.ErrorPage (msgErrorPage)
 import Bead.View.Snap.DataDir
+import Bead.View.Snap.DictionaryLoader (loadDictionaries)
 
 import System.FilePath ((</>))
 import System.Directory
@@ -44,10 +47,18 @@ usersJson = "users.json"
 -- Nothing means there is no additional init task to be done.
 type AppInitTasks = Maybe UserRegInfo
 
-appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> Dictionaries -> SnapletInit App App
-appInit config user s d = makeSnaplet "bead" description dataDir $ do
+appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> SnapletInit App App
+appInit config user s = makeSnaplet "bead" description dataDir $ do
 
   copyDataContext
+
+  let dictionaryDir = "lang"
+  dExist <- liftIO $ doesDirectoryExist dictionaryDir
+  dictionaries <- case dExist of
+    True -> liftIO $ loadDictionaries dictionaryDir
+    False -> return Map.empty
+
+  liftIO $ putStrLn $ "Found dictionaries: " ++ (show $ Map.keys dictionaries)
 
   case user of
     Nothing        -> return ()
@@ -61,7 +72,7 @@ appInit config user s d = makeSnaplet "bead" description dataDir $ do
 
   ss <- nestSnaplet "context" A.serviceContext $ contextSnaplet s
 
-  ds <- nestSnaplet "dictionary" dictionaryContext $ dictionarySnaplet d
+  ds <- nestSnaplet "dictionary" dictionaryContext $ dictionarySnaplet dictionaries
 
   se <- nestSnaplet "sendemail" sendEmailContext (emailSenderSnaplet config)
 

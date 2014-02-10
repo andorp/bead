@@ -12,8 +12,6 @@ import Bead.Controller.ServiceContext as S
 import Bead.Domain.Entities (UserRegInfo(..), TimeZone(..))
 import Bead.View.Snap.Application
 import Bead.View.Snap.AppInit
-import Bead.View.Snap.Dictionary (Dictionaries)
-import Bead.View.Snap.DictionaryLoader (loadDictionaries)
 import Bead.View.Snap.Logger
 import Bead.View.Snap.Validators hiding (toLower)
 import Bead.Persistence.Persist (initPersistence, isPersistenceSetUp)
@@ -24,8 +22,6 @@ import Snap hiding (Config(..))
 import Snap.Snaplet
 
 import Data.Char (toUpper)
-import Data.Map (Map)
-import qualified Data.Map as Map
 
 -- Creates a service context that includes the given logger
 createContext :: L.Logger -> IO ServiceContext
@@ -117,13 +113,5 @@ startService config appInitTasks = do
 
   context <- createContext (snapLogger userActionLogs)
 
-  let dictionaryDir = "dic"
-  dExist <- doesDirectoryExist dictionaryDir
-  dictionaries <- case dExist of
-    True -> loadDictionaries dictionaryDir
-    False -> return Map.empty
-
-  putStrLn $ "Found dictionaries: " ++ (show $ Map.keys dictionaries)
-
-  serveSnaplet defaultConfig (appInit config appInitTasks context dictionaries)
+  serveSnaplet defaultConfig (appInit config appInitTasks context)
   stopLogger userActionLogs

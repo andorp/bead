@@ -32,6 +32,8 @@ Data-Files:
 
   cookie
 
+  lang/hu.dict
+
   bead.config
 
 Flag Tests
