@@ -13,7 +13,7 @@ import           Bead.View.Snap.Translation
 
 translationList =
   [ Msg_Login_PageTitle ()
-  , Msg_Login_Neptun ()
+  , Msg_Login_Username ()
   , Msg_Login_Password ()
   , Msg_Login_Submit ()
   , Msg_Login_Title ()
@@ -133,12 +133,12 @@ translationList =
   , Msg_SubmissionDetails_InvalidSubmission ()
 
   , Msg_Registration_Title ()
-  , Msg_Registration_Neptun ()
+  , Msg_Registration_Username ()
   , Msg_Registration_Email ()
   , Msg_Registration_FullName ()
   , Msg_Registration_SubmitButton ()
   , Msg_Registration_GoBackToLogin ()
-  , Msg_Registration_InvalidNeptunCode ()
+  , Msg_Registration_InvalidUsername ()
   , Msg_Registration_HasNoUserAccess ()
   , Msg_Registration_UserAlreadyExists ()
   , Msg_Registration_RegistrationNotSaved ()
@@ -158,7 +158,7 @@ translationList =
   , Msg_RegistrationFinalize_GoBackToLogin ()
 
   , Msg_RegistrationCreateStudent_NoParameters ()
-  , Msg_RegistrationCreateStudent_InnerError ()
+  , Msg_RegistrationCreateStudent_InternalError ()
   , Msg_RegistrationCreateStudent_InvalidToken ()
 
   , Msg_RegistrationTokenSend_Title ()
@@ -201,7 +201,7 @@ translationList =
   , Msg_ResetPassword_UserDoesNotExist ()
   , Msg_ResetPassword_PasswordIsSet ()
   , Msg_ResetPassword_GoBackToLogin ()
-  , Msg_ResetPassword_Neptun ()
+  , Msg_ResetPassword_Username ()
   , Msg_ResetPassword_Email ()
   , Msg_ResetPassword_NewPwdButton ()
   , Msg_ResetPassword_EmailSent ()

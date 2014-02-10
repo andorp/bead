@@ -30,8 +30,8 @@ setUsrPwd = do
   case isStudentOfMe of
     False -> do
       let username = usernameCata id user
-      return . StatusMessage . Msg_SetUserPassword_NonRegisteredUser
-        $ printf "%s nincs regisztrálva egyik tárgyadon vagy csoportodban sem!" username
+      return . StatusMessage $ Msg_SetUserPassword_NonRegisteredUser
+        "This user is not registered in neither of your courses nor your groups."
     True -> do
       msg <- P.setUserPassword user newPwd
       return $ StatusMessage msg
@@ -42,7 +42,7 @@ setUserPasswordContent = do
   return $ H.div # textAlign "left" $ do
     postForm (routeOf SetUserPassword) `withId` (rFormId setStudentPwdForm) $ do
       table (fieldName changePasswordTable) (fieldName changePasswordTable) $ do
-        tableLine (msg $ Msg_SetUserPassword_User "NEPTUN: ") $ textInput (B.name usernamePrm) 20 Nothing ! A.required ""
-        tableLine (msg $ Msg_SetUserPassword_NewPassword "Új jelszó: ") $ passwordInput (B.name studentNewPwdPrm) 20 Nothing ! A.required ""
-        tableLine (msg $ Msg_SetUserPassword_NewPasswordAgain "Új jelszó (ismét): ") $ passwordInput (B.name studentNewPwdAgainPrm) 20 Nothing ! A.required ""
-      submitButton (fieldName changePasswordBtn) (msg $ Msg_SetUserPassword_SetButton "Beállít")
+        tableLine (msg $ Msg_SetUserPassword_User "Username: ") $ textInput (B.name usernamePrm) 20 Nothing ! A.required ""
+        tableLine (msg $ Msg_SetUserPassword_NewPassword "New password: ") $ passwordInput (B.name studentNewPwdPrm) 20 Nothing ! A.required ""
+        tableLine (msg $ Msg_SetUserPassword_NewPasswordAgain "New password (again): ") $ passwordInput (B.name studentNewPwdAgainPrm) 20 Nothing ! A.required ""
+      submitButton (fieldName changePasswordBtn) (msg $ Msg_SetUserPassword_SetButton "Update")

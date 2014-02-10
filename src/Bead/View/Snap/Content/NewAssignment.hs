@@ -120,22 +120,22 @@ newAssignmentContent pd
   | isEmptyData pd = do
       msg <- getI18N
       return . H.p . fromString . msg $ pageDataCata
-        (const4 $ Msg_NewAssignment_IsNoCourseAdmin "Nem vagy felelőse egyik tárgynak sem!")
-        (const4 $ Msg_NewAssignment_IsNoGroupAdmin "Nem vagy oktatója egyetlen csoportnak sem!")
-        (const4 $ Msg_NewAssignment_IsNoCreator "Ezt a feladatot más hozta létre!")
+        (const4 $ Msg_NewAssignment_IsNoCourseAdmin "No courses are assigned to this user.")
+        (const4 $ Msg_NewAssignment_IsNoGroupAdmin "No groups are assigned to this user.")
+        (const4 $ Msg_NewAssignment_IsNoCreator "This assignment was created by somebody else.")
         pd
 newAssignmentContent pd = do
   msg <- getI18N
   return $ do
     postForm (routeOf . page $ pd) `withId` (hookId assignmentForm) $ H.div ! formDiv $ do
     H.div ! slimRightCell $ do
-      H.b $ (fromString . msg $ Msg_NewAssignment_Title "Cím")
+      H.b $ (fromString . msg $ Msg_NewAssignment_Title "Title")
       textInput (fieldName assignmentNameField) 10 (amap assignmentName pd) ! fillDiv
       H.br
     H.div ! leftCell $ do
-      H.b $ (fromString . msg $ Msg_NewAssignment_SubmissionDeadline "Beadás ideje")
+      H.b $ (fromString . msg $ Msg_NewAssignment_SubmissionDeadline "Visibility")
       H.div ! A.id (fieldName startDateDivId) $ do
-         (fromString . msg $ Msg_NewAssignment_StartDate "Kezdés")
+         (fromString . msg $ Msg_NewAssignment_StartDate "Opens")
          (fromString $ concat [" (", Time.timeZoneName timezone, ")"])
          H.br
          hiddenInput (fieldName assignmentStartDefaultDate) (fromString startDefDate)
@@ -143,7 +143,7 @@ newAssignmentContent pd = do
          hiddenInput (fieldName assignmentStartDefaultMin)  (fromString startDefMin)
          hiddenInput (fieldName assignmentStartField) (fromString $ concat [startDefDate, " ", startDefHour, ":", startDefMin, ":00"])
       H.div ! A.id (fieldName endDateDivId) $ do
-         (fromString . msg $ Msg_NewAssignment_EndDate "Befejezés")
+         (fromString . msg $ Msg_NewAssignment_EndDate "Closes")
          (fromString $ concat [" (", Time.timeZoneName timezone, ")"])
          H.br
          hiddenInput (fieldName assignmentEndDefaultDate) (fromString endDefDate)
@@ -152,41 +152,41 @@ newAssignmentContent pd = do
          hiddenInput (fieldName assignmentEndField) (fromString $ concat [endDefDate, " ", endDefHour, ":", endDefMin, ":00"])
     H.div ! rightCell $ do
       H.br
-      H.b $ (fromString . msg $ Msg_NewAssignment_Description "Szöveges leírás")
+      H.b $ (fromString . msg $ Msg_NewAssignment_Description "Description")
       textAreaInput (fieldName assignmentDescField) (amap assignmentDesc pd) ! fillDiv
-      H.a ! A.href linkToPandocMarkdown $ (fromString . msg $ Msg_NewAssignment_Markdown "Markdown formázás")
-      (fromString . msg $ Msg_NewAssignment_CanBeUsed " használható a feladat leírásában (de előnézet még nincs).")
+      H.a ! A.href linkToPandocMarkdown $ (fromString . msg $ Msg_NewAssignment_Markdown "Markdown syntax")
+      (fromString . msg $ Msg_NewAssignment_CanBeUsed " may be used for formatting.")
       H.p $ do
         H.b (fromString . msg $ Msg_NewAssignment_Title_Normal "Normal")
         ": "
         fromString . msg $ Msg_NewAssignment_Info_Normal $ concat
-          [ "A feladatot a kezdés idejétől a befejezés idejéig lehet beadni.  A feladat nem fog látszani "
-          , "a kezdés idejéig.  A feladatok mindig automatikusan nyílnak és záródnak."
+          [ "Solutions may be submitted from the time of opening until the time of closing.  The assignment will not "
+          , "be visible until it is opened.  The assignments open and close automatically."
           ]
       H.p $ do
         H.b (fromString . msg $ Msg_NewAssignment_Title_Urn "Urn")
         ": "
         fromString . msg $ Msg_NewAssignment_Info_Urn $ concat
-          [ "(Zárthelyihez javasolt.)  A feladatot a kezdés idejétől a befejezés idejéig lehet beadni, "
-          , "azonban a beadott megoldások és a hozzájuk tartozó értékelés csak a befejezés után lesz elérhető a "
-          , "hallgatók számára.  A feladatok nem fognak látszani a kezdés idejéig és mindig automatikusan nyílnak és záródnak."
+          [ "(Recommended for tests.)  Solutions may be submitted from the time of opening until the time of closing, "
+          , "but the submissions and the corresponding evaluations will be visible by the students until it is closed.  "
+          , "The assignment will not be visible until it is opened and they open and close automatically."
           ]
       H.br
       testCaseTestArea msg pd
     H.div ! leftCell $ do
-      H.b (fromString . msg $ Msg_NewAssignment_Type "Típus")
+      H.b (fromString . msg $ Msg_NewAssignment_Type "Type")
       H.br
       defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
       H.br
       H.p $ do
-        H.b $ pageDataCata (const4 . fromString . msg $ Msg_NewAssignment_Course "Tárgy")
-                           (const4 . fromString . msg $ Msg_NewAssignment_Group "Csoport")
+        H.b $ pageDataCata (const4 . fromString . msg $ Msg_NewAssignment_Course "Course")
+                           (const4 . fromString . msg $ Msg_NewAssignment_Group "Group")
                            (const4 $ "")
                            pd
         H.br
         hiddenKeyField pd
       testScriptSelection msg pd
-      H.p $ submitButton (fieldName saveSubmitBtn) (fromString . msg $ Msg_NewAssignment_SaveButton "Mentés")
+      H.p $ submitButton (fieldName saveSubmitBtn) (fromString . msg $ Msg_NewAssignment_SaveButton "Commit")
 
     where
       linkToPandocMarkdown = "http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html"

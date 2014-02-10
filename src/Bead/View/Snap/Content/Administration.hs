@@ -58,37 +58,37 @@ administrationContent info = do
   msg <- getI18N
   return $ do
     H.div $ do
-      H.h3 $ (fromString . msg $ Msg_Administration_NewCourse "Új tárgy")
+      H.h3 $ (fromString . msg $ Msg_Administration_NewCourse "New course")
       (postForm (routeOf P.CreateCourse) `withId` (evFormId createCourseHook)) $ do
         i18n msg $ inputPagelet emptyCourse
         -- Help message for the percentage
         H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $
-          (fromString . msg $ Msg_Administration_PctHelpMessage "A hallgatók által minimálisan teljesítendő százalék")
-        submitButton (fieldName createCourseBtn) (fromString . msg $ Msg_Administration_CreateCourse "Létrehozás")
+          (fromString . msg $ Msg_Administration_PctHelpMessage "Minimum of percent to achieve by students")
+        submitButton (fieldName createCourseBtn) (fromString . msg $ Msg_Administration_CreateCourse "Create")
     H.div $ do
-      H.h3 $ (fromString . msg $ Msg_Administration_AssignCourseAdminTitle "Oktató hozzárendelése a tárgyhoz")
+      H.h3 $ (fromString . msg $ Msg_Administration_AssignCourseAdminTitle "Assign teacher to course")
       let coursesInfo = courses info
-      nonEmpty coursesInfo (fromString . msg $ Msg_Administration_NoCourses "Nincsenek tárgyak!") $ do
+      nonEmpty coursesInfo (fromString . msg $ Msg_Administration_NoCourses "There are no courses.") $ do
         nonEmpty (courseAdmins info)
-          (do fromString . msg $ Msg_Administration_NoCourseAdmins "Nincsenek oktatók! Oktatókat a regisztrált felhasználók adatainak módosításával lehet létrehozni."
+          (do fromString . msg $ Msg_Administration_NoCourseAdmins "There are no teacchers.  Teachers can be created by modifying roles of users."
               H.table $ do
-                H.tr $ headerCell (fromString . msg $ Msg_Administration_CreatedCourses "Tárgyak")
+                H.tr $ headerCell (fromString . msg $ Msg_Administration_CreatedCourses "Courses")
                 forM_ coursesInfo $ \(_ckey,c) ->
                   H.tr $ dataCell (fromString $ courseName c)
               H.br) $ do
           H.p (fromString . msg $
             Msg_Administration_HowToAddMoreAdmins
-            "További oktatókat a felhasználói adatok módosításával lehet létrehozni, majd ezt követően tudjuk őket a tárgyakhoz rendelni.")
+            "Further teachers can be added by modifying roles of users, then assign them to courses.")
           postForm (routeOf P.AssignCourseAdmin) $ do
             valueTextSelection (fieldName selectedCourse) (courses info)
             valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
             H.br
-            submitButton (fieldName assignBtn) (fromString . msg $ Msg_Administration_AssignCourseAdminButton "Hozzárendelés")
+            submitButton (fieldName assignBtn) (fromString . msg $ Msg_Administration_AssignCourseAdminButton "Assign")
     H.div $ do
-      H.h3 $ (fromString . msg $ Msg_Administration_ChangeUserProfile "Felhasználó adatainak módosítása")
+      H.h3 $ (fromString . msg $ Msg_Administration_ChangeUserProfile "Modify users")
       getForm (routeOf P.UserDetails) $ do
         i18n msg $ inputPagelet emptyUsername
-        submitButton (fieldName selectBtn) (fromString . msg $ Msg_Administration_SelectUser "Kiválasztás")
+        submitButton (fieldName selectBtn) (fromString . msg $ Msg_Administration_SelectUser "Select")
   where
     headerCell = H.th # (informationalCell <> grayBackground)
     dataCell   = H.td # informationalCell

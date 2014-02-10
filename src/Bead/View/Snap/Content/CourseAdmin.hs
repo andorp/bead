@@ -53,29 +53,29 @@ courseAdminContent :: PageData -> IHtml
 courseAdminContent info = do
   msg <- getI18N
   return $ H.div # textAlign "left" $ do
-    H.h3 $ (fromString $ msg $ Msg_CourseAdmin_CreateGroup "Új csoport létrehozása a tárgyhoz")
-    H.p $ nonEmpty (courses info) (fromString $ msg $ Msg_CourseAdmin_NoCourses "Nincsenek tárgyak!") $
+    H.h3 $ (fromString $ msg $ Msg_CourseAdmin_CreateGroup "New group for the course")
+    H.p $ nonEmpty (courses info) (fromString $ msg $ Msg_CourseAdmin_NoCourses "There are no courses.") $
           (postForm (routeOf P.CreateGroup) `withId` (evFormId createGroupHook)) $ do
-            H.b $ (fromString $ msg $ Msg_CourseAdmin_Course "Tárgy")
+            H.b $ (fromString $ msg $ Msg_CourseAdmin_Course "Course")
             H.br
             valueTextSelection (fieldName courseKeyInfo) (courses info)
             -- Help message for the percentage
             H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $
-              (fromString $ msg $ Msg_CourseAdmin_PctHelpMessage "A hallgatók által minimálisan teljesítendő százalék")
+              (fromString $ msg $ Msg_CourseAdmin_PctHelpMessage "Minimum of percent to achieve by students")
             i18n msg $ inputPagelet emptyGroup
             H.br
-            submitButton (fieldName createGroupBtn) (fromString $ msg $ Msg_CourseAdmin_CreateCourse "Csoport létrehozása")
-    H.h3 $ (fromString $ msg $ Msg_CourseAdmin_AssignAdmin "Oktató hozzárendelése a csoporthoz")
-    H.p $ nonEmpty (groups info) (fromString . msg $ Msg_CourseAdmin_NoGroups "Nincsenek csoportok!") $
-          nonEmpty (groupAdmins info) (fromString . msg $ Msg_CourseAdmin_NoGroupAdmins "Nincsenek oktatók!") $
+            submitButton (fieldName createGroupBtn) (fromString $ msg $ Msg_CourseAdmin_CreateCourse "Create group")
+    H.h3 $ (fromString $ msg $ Msg_CourseAdmin_AssignAdmin "Assign teacher to the group")
+    H.p $ nonEmpty (groups info) (fromString . msg $ Msg_CourseAdmin_NoGroups "There are no groups.") $
+          nonEmpty (groupAdmins info) (fromString . msg $ Msg_CourseAdmin_NoGroupAdmins "There are no teachers.") $
           postForm (routeOf P.AssignGroupAdmin) $ do
             H.table $ do
-              (header (fromString . msg $ Msg_CourseAdmin_Group "Csoport") (fromString . msg $ Msg_CourseAdmin_Admin "Oktató"))
+              (header (fromString . msg $ Msg_CourseAdmin_Group "Group") (fromString . msg $ Msg_CourseAdmin_Admin "Teacher"))
               (selections
                  (valueTextSelection (fieldName selectedGroup) (groups info))
                  (valueTextSelection (fieldName selectedGroupAdmin) (groupAdmins info)))
             H.br
-            submitButton (fieldName assignGroupAdminBtn) (msg $ Msg_CourseAdmin_AssignAdmin_Button "Hozzárendelés")
+            submitButton (fieldName assignGroupAdminBtn) (msg $ Msg_CourseAdmin_AssignAdmin_Button "Assign")
   where
     header h1 h2 = H.tr $ do
       H.th h1

@@ -59,22 +59,22 @@ submissionListContent p = do
     H.div ! A.class_ (className submissionListDiv) $ do
     H.table $ do
       H.tr $ do
-        firstCol  (msg $ Msg_SubmissionList_CourseOrGroup "Tárgy, csoport:")
+        firstCol  (msg $ Msg_SubmissionList_CourseOrGroup "Course, group:")
         secondCol (slGroup . smList $ p)
       H.tr $ do
-        firstCol  (msg $ Msg_SubmissionList_Admin "Oktató:")
+        firstCol  (msg $ Msg_SubmissionList_Admin "Teacher:")
         secondCol (join . slTeacher . smList $ p)
       H.tr $ do
-        firstCol  (msg $ Msg_SubmissionList_Assignment "Feladat:")
+        firstCol  (msg $ Msg_SubmissionList_Assignment "Assignment:")
         secondCol (assignmentName . slAssignment . smList $ p)
       H.tr $ do
-        firstCol  (msg $ Msg_SubmissionList_Deadline "Határidő:")
+        firstCol  (msg $ Msg_SubmissionList_Deadline "Deadline:")
         secondCol (showDate . (uTime p) . assignmentEnd . slAssignment $ smList p)
-    H.h2 . fromString . msg $ Msg_SubmissionList_Description "Részletes leírás"
+    H.h2 . fromString . msg $ Msg_SubmissionList_Description "Description"
     H.div # assignmentTextDiv $
       (markdownToHtml . assignmentDesc . slAssignment . smList $ p)
     let submissions = slSubmissions . smList $ p
-    H.h2 . fromString . msg $ Msg_SubmissionList_SubmittedSolutions "Beadott megoldások"
+    H.h2 . fromString . msg $ Msg_SubmissionList_SubmittedSolutions "Submissions"
     either (userSubmissionTimes msg) (userSubmissionInfo msg) submissions
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
@@ -96,18 +96,18 @@ submissionListContent p = do
       if (not $ null submissions)
         then do
           H.p $ fromString . msg $ Msg_SubmissionList_Info
-            "A beadott megoldásokhoz a beadás után még hozzászólások írhatóak."
+            "Comments may be added for submissions."
           table (fieldName submissionTableName) (className submissionListTable) # informationalTable $
             mapM_ line submissions
         else do
-          (fromString . msg $ Msg_SubmissionList_NoSubmittedSolutions "Nincsenek még beadott megoldások.")
+          (fromString . msg $ Msg_SubmissionList_NoSubmittedSolutions "There are no submissions.")
 
 invalidAssignment :: IHtml
 invalidAssignment = do
   msg <- getI18N
-  return . fromString . msg $ Msg_SubmissionList_NonAssociatedAssignment "Olyan feladatot próbáltál megnyitni, amelyik nem hozzád tartozik!"
+  return . fromString . msg $ Msg_SubmissionList_NonAssociatedAssignment "This assignment cannot be accessed by this user."
 
 assignmentNotStartedYet :: IHtml
 assignmentNotStartedYet = do
   msg <- getI18N
-  return . fromString . msg $ Msg_SubmissionList_NonReachableAssignment "Olyan feladatot próbáltál megnyitni, amelyik nem érhető el!"
+  return . fromString . msg $ Msg_SubmissionList_NonReachableAssignment "This assignment cannot be accessed."

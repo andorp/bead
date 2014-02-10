@@ -49,9 +49,9 @@ instance InputPagelet Group where
     evalConfig <- evaluationConfig (evSelectionId hook) (fmap groupEvalConfig g)
     return $ do
       table "create-group" "create-group-table" $ do
-        tableLine (msg $ Msg_Input_Group_Name "Név") $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
-        tableLine (msg $ Msg_Input_Group_Description "Leírás") $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
-        tableLine (msg $ Msg_Input_Group_Evaluation "Értékelés") $ evalConfig
+        tableLine (msg $ Msg_Input_Group_Name "Title") $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
+        tableLine (msg $ Msg_Input_Group_Description "Description") $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
+        tableLine (msg $ Msg_Input_Group_Evaluation "Evaluation") $ evalConfig
       hiddenInputWithId (evHiddenValueId hook) ""
       evalSelectionDiv hook
 
@@ -80,9 +80,9 @@ instance InputPagelet Course where
     evalConfig <- evaluationConfig (evSelectionId hook) (fmap courseEvalConfig c)
     return $ do
       table "create-course" "create-course-table" $ do
-        tableLine (msg $ Msg_Input_Course_Name "Név") $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
-        tableLine (msg $ Msg_Input_Course_Description "Leírás") $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
-        tableLine (msg $ Msg_Input_Course_Evaluation "Értékelés") $ evalConfig
+        tableLine (msg $ Msg_Input_Course_Name "Title") $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
+        tableLine (msg $ Msg_Input_Course_Description "Description") $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
+        tableLine (msg $ Msg_Input_Course_Evaluation "Evaluation") $ evalConfig
       hiddenInputWithId (evHiddenValueId hook) ""
       evalSelectionDiv hook
 
@@ -98,10 +98,10 @@ instance InputPagelet Role where
       roleOptions msg (Just q') r = option (show r) (msg $ roleLabel r) (q' == r)
 
       roleLabel = roleCata
-        (Msg_InputHandlers_Role_Student "Hallgató")
-        (Msg_InputHandlers_Role_GroupAdmin "Oktató")
-        (Msg_InputHandlers_Role_CourseAdmin "Tárgyfelelős")
-        (Msg_InputHandlers_Role_Admin "Rendszergazda")
+        (Msg_InputHandlers_Role_Student "Student")
+        (Msg_InputHandlers_Role_GroupAdmin "Teacher")
+        (Msg_InputHandlers_Role_CourseAdmin "Course Admin")
+        (Msg_InputHandlers_Role_Admin "Administrator")
 
 instance GetValueHandler Role where
   getValue = getParameter rolePrm
@@ -151,8 +151,8 @@ evaluationConfig n v = do
   where
     valueAndName msg e = (encodeEvalType e, msg $ name e)
 
-    name (BinEval ()) = Msg_InputHandlers_BinEval "Kétállapotú"
-    name (PctEval ()) = Msg_InputHandlers_PctEval "Százalékos"
+    name (BinEval ()) = Msg_InputHandlers_BinEval "Binary"
+    name (PctEval ()) = Msg_InputHandlers_PctEval "Percentage"
 
 -- TODO
 dateInput :: String -> Maybe UTCTime -> Html

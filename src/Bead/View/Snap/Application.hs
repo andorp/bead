@@ -54,11 +54,11 @@ dictionarySnaplet d = makeSnaplet
   "Dictionaries"
   "A snaplet providing the i18 dictionary context"
   Nothing $ liftIO $ do
-    ref <- newIORef (addHungarian d)
+    ref <- newIORef (addDefault d)
     return $! DictionaryContext ref
   where
     -- The source code contains hungarian text by default
-    addHungarian = Map.insert (Language "hu") (idDictionary, DictionaryInfo "hu.ico" "Magyar")
+    addDefault = Map.insert (Language "en") (idDictionary, DictionaryInfo "en.ico" "English")
 
 -- Maps the stored dictionaries into a value within the Handler monad
 dictionarySnapletMap :: (Dictionaries -> a) -> Handler b DictionaryContext a

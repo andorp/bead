@@ -116,14 +116,14 @@ createUser newUser = do
 setTimeZone :: TimeZone -> UserStory ()
 setTimeZone tz = do
   changeUserState $ \userState -> userState { timezone = tz }
-  putStatusMessage $ Msg_UserStory_SetTimeZone $ printf "Az időzóna %s lett." (show tz)
+  putStatusMessage $ Msg_UserStory_SetTimeZone "The time zone has been set."
 
 -- Updates the current user's full name, timezone and language in the persistence layer
 changeUserDetails :: String -> TimeZone -> Language -> UserStory ()
 changeUserDetails name timezone language = logAction INFO ("changes fullname, timezone and language") $ do
   user <- currentUser
   withPersist $ flip R.updateUser user { u_name = name , u_timezone = timezone , u_language = language }
-  putStatusMessage $ Msg_UserStory_ChangedUserDetails "A beállítások megváltoztak."
+  putStatusMessage $ Msg_UserStory_ChangedUserDetails "The user details have been updated."
 
 updateUser :: User -> UserStory ()
 updateUser u = logAction INFO ("updates user " ++ (str . u_username $ u)) $ do
@@ -202,7 +202,7 @@ createCourse :: Course -> UserStory CourseKey
 createCourse course = logAction INFO "creates course" $ do
   authorize P_Create P_Course
   key <- create descriptor saveCourse course
-  putStatusMessage $ Msg_UserStory_CreateCourse $ printf "A(z) '%s' tárgy létrejött." (courseName course)
+  putStatusMessage $ Msg_UserStory_CreateCourse "The course has been created."
   return key
   where
     descriptor course _ =
@@ -227,7 +227,7 @@ createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
   authorize P_Create P_CourseAdmin
   authorize P_Open   P_User
   withPersist $ \p -> R.createCourseAdmin p u ck
-  putStatusMessage $ Msg_UserStory_SetCourseAdmin $ printf "%s most már tárgyfelelős." (user u)
+  putStatusMessage $ Msg_UserStory_SetCourseAdmin "The user has become a course administrator."
   where
     user = usernameCata id
 
@@ -244,7 +244,7 @@ deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ 
       True -> do
         mapM_ (R.deleteUserFromCourse p ck) sts
         return . putStatusMessage $
-          Msg_UserStory_UsersAreDeletedFromCourse "A felhasználókat leiratkoztattuk"
+          Msg_UserStory_UsersAreDeletedFromCourse "The students have been removed from the course."
 
 -- Saves the given test script associated with the given course, if the
 -- current user have authorization for the operation and if he administrates the
@@ -345,7 +345,7 @@ deleteUsersFromGroup gk sts = logAction INFO ("delets users form group: " ++ sho
         ck <- R.courseOfGroup p gk
         mapM_ (\student -> R.unsubscribe p student ck gk) sts
         return . putStatusMessage $
-          Msg_UserStory_UsersAreDeletedFromGroup "A felhasználókat leiratkoztattuk"
+          Msg_UserStory_UsersAreDeletedFromGroup "The students have been removed from the group."
 
 createGroupAdmin :: Username -> GroupKey -> UserStory ()
 createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $ do
@@ -358,7 +358,7 @@ createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $
         then R.createGroupAdmin p u gk >> return True
         else return False
   if groupAdminSetted
-    then putStatusMessage $ Msg_UserStory_SetGroupAdmin $ printf "%s most már oktató." (user u)
+    then putStatusMessage $ Msg_UserStory_SetGroupAdmin "The user has become a teacher."
     else CME.throwError . strMsg $ printf "%s nem lehet oktató!" (user u)
   where
     user = usernameCata id
@@ -381,14 +381,14 @@ unsubscribeFromCourse gk = logAction INFO ("unsubscribes from group: " ++ show g
              else do
                R.unsubscribe p u ck gk
                return . putStatusMessage $
-                 Msg_UserStory_SuccessfulCourseUnsubscription "Sikeresen leiratkoztál a kurzusról!"
+                 Msg_UserStory_SuccessfulCourseUnsubscription "Unregistration was successful."
 
 -- | Adds a new group to the given course
 createGroup :: CourseKey -> Group -> UserStory GroupKey
 createGroup ck g = logAction INFO ("creats group " ++ show (groupName g)) $ do
   authorize P_Create P_Group
   key <- withPersist $ \p -> R.saveGroup p ck g
-  putStatusMessage $ Msg_UserStory_CreateGroup $ printf "A(z) '%s' csoport létrejött." (groupName g)
+  putStatusMessage $ Msg_UserStory_CreateGroup "The group has been created."
   return key
 
 loadGroup :: GroupKey -> UserStory Group
@@ -425,11 +425,11 @@ subscribeToGroup gk = logAction INFO ("subscribes to the group " ++ (show gk)) $
     hasSubmission <- isThereASubmission p u gks
     case hasSubmission of
       True -> return $ Msg_UserStory_SubscribedToGroup_ChangeNotAllowed
-        "Csoportváltás nem engedélyezett mert már van beadott megoldásod más csoportban"
+        "It is not possible to move between groups as there are submission for the current group."
       False -> do
         mapM_ (R.unsubscribe p u ck) gks
         R.subscribe p u ck gk
-        return $ Msg_UserStory_SubscribedToGroup "Sikeresen regisztráltál a csoportba!"
+        return $ Msg_UserStory_SubscribedToGroup "Successful registration."
   putStatusMessage message
   where
     isThereASubmission p u gks = do
@@ -464,7 +464,7 @@ createGroupAssignment gk a = logAction INFO msg $ do
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for group " ++ show gk
     statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
-      putStatusMessage $ Msg_UserStory_NewGroupAssignment $ printf "Létrejött a(z) '%s' című csoportszintű feladat." name
+      putStatusMessage $ Msg_UserStory_NewGroupAssignment "The group assignment has been created."
 
 createCourseAssignment :: CourseKey -> Assignment -> UserStory AssignmentKey
 createCourseAssignment ck a = logAction INFO msg $ do
@@ -477,7 +477,7 @@ createCourseAssignment ck a = logAction INFO msg $ do
     descriptor _ key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for course " ++ show ck
     statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
-      putStatusMessage $ Msg_UserStory_NewCourseAssignment $ printf "Létrejött a(z) '%s' című tárgyszintű feladat." name
+      putStatusMessage $ Msg_UserStory_NewCourseAssignment "The course assignment has been created."
 
 selectAssignments :: (AssignmentKey -> Assignment -> Bool) -> UserStory [(AssignmentKey, Assignment)]
 selectAssignments f = logAction INFO "selects some assignments" $ do

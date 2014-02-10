@@ -150,31 +150,31 @@ evaluationContent pd = do
   msg <- getI18N
   return $ do
     postForm (routeOf . evPage $ maybeEvalKey) $ H.div ! formDiv $ do
-      H.div ! title $ H.h2 (fromString . msg $ Msg_Evaluation_Title "Értékelés")
+      H.div ! title $ H.h2 (fromString . msg $ Msg_Evaluation_Title "Evaluation")
       H.p $ fromString . msg $ Msg_Evaluation_Info $ concat
-        [ "Nem kötelező egyből értékelni a hallgató munkáját, lehet csak hozzászólást is írni.  "
-        , "A hozzászólásokra a hallgató szintén hozzászólásokkal tud válaszolni.  A feladat "
-        , "többször is értékelhető."
+        [ "It is not mandatory to evaluate the submission, it is allowed to comment on it only.  "
+        , "The student may answer the comments by further comments.  The submission may be "
+        , "evaluated many times."
         ]
       H.div ! leftInfo $ do
         H.table $ do
           H.tr $ do
-            H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Course "Tárgy, csoport: ")
+            H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Course "Course, group: ")
             H.td $ (fromString . eGroup $ sd)
           H.tr $ do
-            H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Student "Hallgató: ")
+            H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Student "Student: ")
             H.td $ (fromString . eStudent $ sd)
         H.div ! A.id (fieldName evaluationPercentageDiv) $
           i18n msg $ inputEvalResult . eConfig $ sd
-        submitButton (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Értékel")
+        submitButton (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Evaluate")
       H.div ! rightText $ do
         textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv
-    H.div $ H.h2 $ (fromString . msg $ Msg_Evaluation_Submited_Solution "Beadott megoldás")
+    H.div $ H.h2 $ (fromString . msg $ Msg_Evaluation_Submited_Solution "Submission")
     H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
       (fromString . eSolution $ sd)
-    H.h2 (fromString . msg $ Msg_Comments_Title "Hozzászólások")
+    H.h2 (fromString . msg $ Msg_Comments_Title "Comments")
     -- Renders the comment area where the user can place a comment
-    H.div $ H.h3 $ (fromString . msg $ Msg_Evaluation_New_Comment "Új hozzászólás")
+    H.div $ H.h3 $ (fromString . msg $ Msg_Evaluation_New_Comment "New comment")
     i18n msg $ commentPostForm (commentPage maybeEvalKey) (eAssignmentKey sd)
     when (not . null $ eComments sd) $ do
       H.hr
@@ -197,8 +197,8 @@ inputEvalResult :: EvaluationConfig -> IHtml
 inputEvalResult (BinEval cfg) = do
   msg <- getI18N
   return $ valueSelection valueAndText (fieldName evaluationResultField) $
-             [ (Passed, msg $ Msg_Evaluation_Accepted "Elfogadott")
-             , (Failed, msg $ Msg_Evaluation_Rejected "Elutasított")
+             [ (Passed, msg $ Msg_Evaluation_Accepted "Accepted")
+             , (Failed, msg $ Msg_Evaluation_Rejected "Rejected")
              ]
   where
     valueAndText :: (Result, String) -> (String, String)

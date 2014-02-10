@@ -58,33 +58,33 @@ submissionContent p = do
   return $ postForm (routeOf P.Submission) $ H.div ! formDiv $ do
     H.table $ do
       H.tr $ do
-        H.td $ H.b $ (fromString . msg $ Msg_Submission_Course "Tárgy: ")
+        H.td $ H.b $ (fromString . msg $ Msg_Submission_Course "Course: ")
         H.td $ (fromString . aGroup $ asDesc p)
       H.tr $ do
-        H.td $ H.b $ (fromString . msg $ Msg_Submission_Admin "Oktató: ")
+        H.td $ H.b $ (fromString . msg $ Msg_Submission_Admin "Teacher: ")
         H.td $ (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
       H.tr $ do
-        H.td $ H.b $ (fromString . msg $ Msg_Submission_Assignment "Feladat: ")
+        H.td $ H.b $ (fromString . msg $ Msg_Submission_Assignment "Assignment: ")
         H.td $ (fromString . assignmentName . asValue $ p)
       H.tr $ do
-        H.td $ H.b $ (fromString . msg $ Msg_Submission_Deadline "Határidő: ")
+        H.td $ H.b $ (fromString . msg $ Msg_Submission_Deadline "Deadline: ")
         H.td $ (fromString . showDate . (asTimeConv p) . assignmentEnd $ asValue p)
-    H.h2 $ (fromString . msg $ Msg_Submission_Description "Leírás")
+    H.h2 $ (fromString . msg $ Msg_Submission_Description "Description")
     H.div # assignmentTextDiv $
       markdownToHtml . assignmentDesc . asValue $ p
-    H.h2 $ (fromString . msg $ Msg_Submission_Solution "Megoldás")
+    H.h2 $ (fromString . msg $ Msg_Submission_Solution "Submission")
     H.div $ do
       textAreaInput (fieldName submissionTextField) Nothing ! A.rows "25" ! A.cols "80"
-    submitButton (fieldName submitSolutionBtn) (msg $ Msg_Submission_Submit "Beküld")
+    submitButton (fieldName submitSolutionBtn) (msg $ Msg_Submission_Submit "Submit")
     hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
 
 invalidAssignment :: IHtml
 invalidAssignment = do
   msg <- getI18N
-  return . fromString . msg $ Msg_Submission_Invalid_Assignment "Olyan feladatot próbáltál megnyitni, amely nem hozzád tartozik!"
+  return . fromString . msg $ Msg_Submission_Invalid_Assignment "It is not allowed to access this assignment with this user."
 
 resolveStatus :: I18N -> Maybe String -> H.Html
-resolveStatus msg Nothing    = fromString . msg $ Msg_SubmissionList_NotEvaluatedYet "Még nem értékelt"
+resolveStatus msg Nothing    = fromString . msg $ Msg_SubmissionList_NotEvaluatedYet "Not evaluated yet"
 resolveStatus msg (Just str) = fromString str
 
 -- CSS Section

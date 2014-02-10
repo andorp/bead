@@ -41,7 +41,7 @@ commentPostForm p ak = do
       textAreaInput (fieldName commentValueField) Nothing ! fillDiv ! A.required ""
       hiddenInput (fieldName assignmentKeyField) (paramValue ak)
     H.br
-    submitButton (fieldName commentBtn) (msg $ Msg_Comments_SubmitButton "Beküld")
+    submitButton (fieldName commentBtn) (msg $ Msg_Comments_SubmitButton "Submit")
 
 -- * CSS section
 

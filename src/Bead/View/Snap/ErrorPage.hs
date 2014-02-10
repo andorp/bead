@@ -29,7 +29,7 @@ errorPage :: ContentHandlerError -> Handler App b ()
 errorPage = contentHandlerErrorMap (renderPublicPage . (page $ Msg_ErrorPage_Title "Error"))
 
 msgErrorPage :: String -> Handler App b ()
-msgErrorPage = renderPublicPage . (page $ Msg_ErrorPage_Title "Error") . Just
+msgErrorPage = renderPublicPage . (page $ Msg_ErrorPage_Title "Hiba!") . Just
 
 -- Produces a handler that renders the error page, with the
 -- given title and message for the user
@@ -46,12 +46,12 @@ pageTemplate content t e = withTitleAndHead t $ do
   msg <- getI18N
   return $ do
     H.div $ do
-      H.h2 $ (fromString $ msg $ Msg_ErrorPage_Header "Valami hiba történt... :-)")
+      H.h2 $ (fromString $ msg $ Msg_ErrorPage_Header "Some error happened... :-)")
       H.p $
         maybe (return ()) content e
       H.br
     H.div $
-      link "/" (msg $ Msg_ErrorPage_GoBackToLogin "Vissza a bejelentkezésehez")
+      link "/" (msg $ Msg_ErrorPage_GoBackToLogin "Back to login")
 
 page :: Translation String -> (Maybe String) -> IHtml
 page = pageTemplate fromString

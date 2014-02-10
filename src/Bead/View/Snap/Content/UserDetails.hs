@@ -49,13 +49,13 @@ userDetailForm u languages = do
   msg <- getI18N
   return $ postForm (routeOf P.UserDetails) $ do
     table "user-detail-table" "user-detail-table" $ do
-      tableLine (msg $ Msg_Input_User_Role "Szerepkör")  $ required $ i18n msg $ inputPagelet (Just $ u_role u)
-      tableLine (msg $ Msg_Input_User_Email "Email cím") $ required $ textInput (fieldName userEmailField) 20 (Just . str $ u_email u)
-      tableLine (msg $ Msg_Input_User_FullName "Teljes név") $ required $ textInput (fieldName userFamilyNameField) 20 (Just $ u_name u)
-      tableLine (msg $ Msg_Input_User_TimeZone "Időzóna") $ required $ defEnumSelection (B.name userTimeZonePrm) (u_timezone u)
-      tableLine (msg $ Msg_Input_User_Language "Nyelv") $ required $ valueSelectionWithDefault langVal (B.name userLanguagePrm) (langDef (u_language u)) languages
+      tableLine (msg $ Msg_Input_User_Role "Role")  $ required $ i18n msg $ inputPagelet (Just $ u_role u)
+      tableLine (msg $ Msg_Input_User_Email "Email") $ required $ textInput (fieldName userEmailField) 20 (Just . str $ u_email u)
+      tableLine (msg $ Msg_Input_User_FullName "Full name") $ required $ textInput (fieldName userFamilyNameField) 20 (Just $ u_name u)
+      tableLine (msg $ Msg_Input_User_TimeZone "Time zone") $ required $ defEnumSelection (B.name userTimeZonePrm) (u_timezone u)
+      tableLine (msg $ Msg_Input_User_Language "Language") $ required $ valueSelectionWithDefault langVal (B.name userLanguagePrm) (langDef (u_language u)) languages
       hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username $ u
-    submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Mentés")
+    submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Update")
   where
     langDef l (lang,_info) = lang == l
     langVal (lang,info) =
@@ -67,6 +67,6 @@ userDoesNotExist :: Username -> IHtml
 userDoesNotExist username = do
   msg <- getI18N
   return $ H.p $ do
-    (fromString $ msg $ Msg_UserDetails_NonExistingUser "Nem létező felhasználó:")
+    (fromString $ msg $ Msg_UserDetails_NonExistingUser "No such user:")
     fromString . str $ username
 

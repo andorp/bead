@@ -132,29 +132,30 @@ homeContent d = do
   msg <- getI18N
   return $ H.div # textAlign "left" $ do
     when (isAdmin s) $ H.p $ do
-      H.h3 . fromString . msg $ Msg_Home_AdminTasks "Rendszergazdai feladatok"
+      H.h3 . fromString . msg $ Msg_Home_AdminTasks "Administrator Menu"
       i18n msg $ navigation [P.Administration]
       H.hr
     when (courseAdminUser r) $ H.p $ do
-      H.h3 . fromString . msg $ Msg_Home_CourseAdminTasks "Tárgyfelelősi feladatok"
+      H.h3 . fromString . msg $ Msg_Home_CourseAdminTasks "Course Administrator Menu"
       when (not hasCourse) $ do
         H.p $ fromString . msg $ Msg_Home_NoCoursesYet
-          "Még nincsenek tárgyak.  Meg kell kérni az adminisztrátort, hogy rendeljen hozzánk tárgyakat!"
+          "There are no courses.  Contact the administrator to have courses assigned."
     when (groupAdminUser r) $ H.p $ do
-      H.h3 . fromString . msg $ Msg_Home_GroupAdminTasks "Oktatói feladatok"
-      when (not hasGroup) $ (fromString $ msg $ Msg_Home_NoGroupsYet "Még nincsenek csoportok.")
+      H.h3 . fromString . msg $ Msg_Home_GroupAdminTasks "Teacher Menu"
+      when (not hasGroup) $ (fromString $ msg $ Msg_Home_NoGroupsYet "There are no groups.")
     when ((courseAdminUser r) || (groupAdminUser r)) $ do
       when (hasCourse || hasGroup) $ H.p $ do
         when (not . null $ concatMap stAssignments $ sTables d) $ do
           H.p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
-            [ "A feladat sorszámára kattintva módosítható már kiírt feladat (a nevét ld. tooltipben).  "
-            , "Hallgatókat törölhetőek kurzusról vagy csoportból a Törlés oszlopban bejelölve, majd a gombra kattintva."
+            [ "Assignments may be modified by clicking on their identifiers (their names are shown in the tooltip).  "
+            , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
+            , "then clicking on the button."
             ]
         i18n msg $ htmlSubmissionTables d
     when (courseAdminUser r && hasCourse) $ H.p $ do
       H.p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
-        [ "A tárgyhoz új csoportokat a Tárgyi beállítások almenüben lehet létrehozni.  Ugyanitt lehet "
-        , "egyúttal az egyes csoportokhoz oktatókat rendelni."
+        [ "New groups for courses may be created in the Course Settings menu.  Teachers may be also assigned to "
+        , "each of the groups there as well."
         ]
       H.p $ do
         i18n msg $ navigation $ [ P.CourseAdmin, NewTestScript, P.EvaluationTable, P.SetUserPassword ]
@@ -162,7 +163,7 @@ homeContent d = do
     when (groupAdminUser r && hasGroup) $ H.p $ do
       i18n msg $ navigation [P.EvaluationTable, P.SetUserPassword]
       H.hr
-    H.h3 . fromString . msg $ Msg_Home_StudentTasks "Hallgatói feladatok"
+    H.h3 . fromString . msg $ Msg_Home_StudentTasks "Student Menu"
     H.p $ do
       i18n msg $ availableAssignments (timeConverter d) (assignments d)
       i18n msg $ navigation [P.GroupRegistration]
@@ -173,17 +174,16 @@ homeContent d = do
 availableAssignments :: UserTimeConverter -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> IHtml
 availableAssignments _ Nothing = do
   msg <- getI18N
-  return $ fromString $ msg $ Msg_Home_HasNoRegisteredCourses "Még nincsenek felvett tárgyak, vegyünk fel tárgyakat!"
+  return $ fromString $ msg $ Msg_Home_HasNoRegisteredCourses "There are no registered courses, register to some."
 availableAssignments _ (Just []) = do
   msg <- getI18N
-  return $ fromString $ msg $ Msg_Home_HasNoAssignments "Még nincsenek kiírva feladatok."
+  return $ fromString $ msg $ Msg_Home_HasNoAssignments "There are no available assignments yet."
 availableAssignments timeconverter (Just as) = do
   msg <- getI18N
   return $ do
     H.p $ fromString . msg $ Msg_Home_Assignments_Info $ concat
-      [ "A feladat linkjére kattintva lehet elérni az eddig beadott megoldásokat "
-      , "és a hozzájuk tartozó értékeléseket.  A táblázatban mindig az utolsó "
-      , "értékelés eredménye látható."
+      [ "Submissions and their evaluations may be accessed by clicking on each assignment's link. "
+      , "The table shows only the last evaluation per assignment."
       ]
     table (fieldName availableAssignmentsTable) (className assignmentTable) # informationalTable $ do
     headerLine msg
@@ -194,24 +194,24 @@ availableAssignments timeconverter (Just as) = do
     headerCell t = H.th # (informationalCell <> grayBackground) $ t
     headerLine msg = H.tr $ do
       headerCell ""
-      headerCell (fromString $ msg $ Msg_Home_Course "Tárgy")
-      headerCell (fromString $ msg $ Msg_Home_CourseAdmin "Oktató")
-      headerCell (fromString $ msg $ Msg_Home_Assignment "Feladat")
-      headerCell (fromString $ msg $ Msg_Home_Deadline "Határidő")
-      headerCell (fromString $ msg $ Msg_Home_Evaluation "Értékelés")
+      headerCell (fromString $ msg $ Msg_Home_Course "Course")
+      headerCell (fromString $ msg $ Msg_Home_CourseAdmin "Teacher")
+      headerCell (fromString $ msg $ Msg_Home_Assignment "Assignment")
+      headerCell (fromString $ msg $ Msg_Home_Deadline "Deadline")
+      headerCell (fromString $ msg $ Msg_Home_Evaluation "Evaluation")
     assignmentLine msg (k,a,s) = H.tr $ do
       case aActive a of
-        True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (msg $ Msg_Home_NewSolution "Új megoldás")
-        False -> dataCell (fromString . msg $ Msg_Home_ClosedSubmission "Lezárva")
+        True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (msg $ Msg_Home_NewSolution "New submission")
+        False -> dataCell (fromString . msg $ Msg_Home_ClosedSubmission "Closed")
       dataCell (fromString . aGroup $ a)
       dataCell (fromString . join . intersperse ", " . aTeachers $ a)
       dataCell $ linkWithText (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
       dataCell (fromString . showDate . timeconverter $ aEndDate a)
       (coloredSubmissionCell dataCell' (H.td) fromString
-        (msg $ Msg_Home_SubmissionCell_NoSubmission "Nincs megoldás")
-        (msg $ Msg_Home_SubmissionCell_NonEvaluated "Nem értékelt")
-        (msg $ Msg_Home_SubmissionCell_Accepted "Elfogadott")
-        (msg $ Msg_Home_SubmissionCell_Rejected "Elutasított")
+        (msg $ Msg_Home_SubmissionCell_NoSubmission "No submission")
+        (msg $ Msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
+        (msg $ Msg_Home_SubmissionCell_Accepted "Accepted")
+        (msg $ Msg_Home_SubmissionCell_Rejected "Rejected")
         s)
 
 htmlSubmissionTables :: HomePageData -> IHtml
@@ -229,7 +229,7 @@ htmlSubmissionTable pd (i,s)
   | and [null . stAssignments $ s, null . stUsers $ s] = do
     msg <- getI18N
     return $ H.p $ do
-      (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "Nincsenek feladatok vagy hallgatók a csoporthoz:")
+      (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "There are no assignments or students for the following groups:")
       H.br
       fromString . stCourse $ s
       H.br
@@ -259,10 +259,10 @@ htmlSubmissionTable pd (i,s) = do
     headerCell = H.th # (informationalCell <> grayBackground)
     dataCell r = H.td # (informationalCell <> r)
     assignmentLine msg as = H.tr $ do
-      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_StudentName "Név"
-      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Username "NEPTUN"
+      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_StudentName "Name"
+      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Username "Username"
       mapM_ (headerCell . modifyAssignmentLink) . zip [1..] $ as
-      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Summary "Összesítés"
+      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Summary "Summary"
       deleteHeaderCell msg
 
     modifyAssignmentLink (i,ak) =
@@ -279,8 +279,8 @@ htmlSubmissionTable pd (i,s) = do
       mapM_ (submissionCell username) $ as
       case calculateSubmissionResult msg submissionInfos (stEvalConfig s) of
         Left  e      -> dataCell summaryErrorStyle  $ fromString e
-        Right Passed -> dataCell summaryPassedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Accepted "Elfogadott"
-        Right Failed -> dataCell summaryFailedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Rejected "Elutasított"
+        Right Passed -> dataCell summaryPassedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Accepted "Accepted"
+        Right Failed -> dataCell summaryFailedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Rejected "Rejected"
       deleteUserCheckbox u
 
     submissionCell u (ak,s) =
@@ -311,12 +311,12 @@ htmlSubmissionTable pd (i,s) = do
         deleteForCourseButton ck =
           headerCell $ submitButton
             (fieldName delUsersFromCourseBtn)
-            (msg $ Msg_Home_DeleteUsersFromCourse "Törlés")
+            (msg $ Msg_Home_DeleteUsersFromCourse "Remove")
 
         deleteForGroupButton gk =
           headerCell $ submitButton
             (fieldName delUsersFromGroupBtn)
-            (msg $ Msg_Home_DeleteUsersFromGroup "Törlés")
+            (msg $ Msg_Home_DeleteUsersFromGroup "Remove")
 
     deleteUserCheckbox u =
       infoSourceCata
@@ -446,7 +446,7 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated passed fai
 calculateSubmissionResult :: I18N -> [SubmissionInfo] -> EvaluationConfig -> Either String Result
 calculateSubmissionResult msg si e =
   case results of
-    [] -> (Left (msg $ Msg_Home_HasNoSummary "Nincs"))
+    [] -> (Left (msg $ Msg_Home_HasNoSummary "N/A"))
     rs -> evaluationDataMap
             (const (sumBinaryResult msg rs))
             (flip (sumPercentageResult msg) rs)
@@ -468,7 +468,7 @@ sumBinaryResult msg = calcEvaluationResult binary calcBinaryResult
     -- Produces (Left "error") if the result is not a binary result
     -- otherwise (Right result)
     binary :: EvaluationResult -> Either String Binary
-    binary = evaluationDataMap Right (const . Left $ (msg $ Msg_Home_NonBinaryEvaluation "Nem kétértékű értékelés"))
+    binary = evaluationDataMap Right (const . Left $ (msg $ Msg_Home_NonBinaryEvaluation "Not a binary evaluation"))
 
     calcBinaryResult :: [Binary] -> Result
     calcBinaryResult bs = calculateEvaluation bs ()
@@ -481,7 +481,7 @@ sumPercentageResult msg config = calcEvaluationResult percentage calcPercentageR
   where
     percentage :: EvaluationResult -> Either String Percentage
     percentage = evaluationDataMap
-                   (const . Left $ (msg $ Msg_Home_NonPercentageEvaluation "Nem százalékos értékelés"))
+                   (const . Left $ (msg $ Msg_Home_NonPercentageEvaluation "Not a percentage evaluation"))
                    Right
 
     calcPercentageResult :: [Percentage] -> Result

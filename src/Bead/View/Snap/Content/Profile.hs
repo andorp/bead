@@ -51,20 +51,20 @@ profileContent user languages = do
   return $ do
     postForm (routeOf Profile) $ do
       table (fieldName profileTable) (fieldName profileTable) $ do
-        tableLine (msg $ Msg_Profile_User "Felhasználó: ") (usernameCata (H.small . H.b . fromString) $ u_username user)
-        tableLine (msg $ Msg_Profile_Email "Email cím: ") (emailCata (H.small . H.b . fromString) $ u_email user)
-        tableLine (msg $ Msg_Profile_FullName "Teljes név: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
-        tableLine (msg $ Msg_Profile_Timezone "Időzóna: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
-        tableLine (msg $ Msg_Profile_Language "Nyelv: ") $
+        tableLine (msg $ Msg_Profile_User "Username: ") (usernameCata (H.small . H.b . fromString) $ u_username user)
+        tableLine (msg $ Msg_Profile_Email "Email: ") (emailCata (H.small . H.b . fromString) $ u_email user)
+        tableLine (msg $ Msg_Profile_FullName "Full name: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
+        tableLine (msg $ Msg_Profile_Timezone "Time zone: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
+        tableLine (msg $ Msg_Profile_Language "Language: ") $
           valueSelectionWithDefault langValue (B.name userLanguagePrm) (langDef (u_language user)) languages ! A.required ""
-      submitButton (fieldName changeProfileBtn) (msg $ Msg_Profile_SaveButton "Mentés")
+      submitButton (fieldName changeProfileBtn) (msg $ Msg_Profile_SaveButton "Save")
     H.br
     postForm (routeOf ChangePassword) `withId` (rFormId changePwdForm) $ do
       table (fieldName changePasswordTable) (fieldName changePasswordTable) $ do
-        tableLine (msg $ Msg_Profile_OldPassword "Régi jelszó: ") $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
-        tableLine (msg $ Msg_Profile_NewPassword "Új jelszó: ") $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
-        tableLine (msg $ Msg_Profile_NewPasswordAgain "Új jelszó (ismét): ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
-      submitButton (fieldName changePasswordBtn) (msg $ Msg_Profile_ChangePwdButton "Csere")
+        tableLine (msg $ Msg_Profile_OldPassword "Old password: ") $ passwordInput (B.name oldPasswordPrm) 20 Nothing ! A.required ""
+        tableLine (msg $ Msg_Profile_NewPassword "New password: ") $ passwordInput (B.name newPasswordPrm) 20 Nothing ! A.required ""
+        tableLine (msg $ Msg_Profile_NewPasswordAgain "New password (again): ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
+      submitButton (fieldName changePasswordBtn) (msg $ Msg_Profile_ChangePwdButton "Update")
   where
     langValue (lang,info)  = (languageCata id lang, languageName info)
     langDef l (lang,_info) = l == lang
@@ -76,4 +76,4 @@ changePassword = postContentHandler $ do
   newPwd <- getParameter newPasswordPrm
   checkCurrentAuthPassword oldPwd
   updateCurrentAuthPassword newPwd
-  return . StatusMessage $ Msg_Profile_PasswordHasBeenChanged "A jelszó megváltozott!"
+  return . StatusMessage $ Msg_Profile_PasswordHasBeenChanged "The password has been changed."

@@ -56,17 +56,16 @@ groupRegistrationContent desc = do
   return $ do
     let registeredGroups = groupsRegistered desc
     H.p $ do
-      H.h3 $ (fromString . msg $ Msg_GroupRegistration_RegisteredCourses "Felvett csoportok")
+      H.h3 $ (fromString . msg $ Msg_GroupRegistration_RegisteredCourses "Registered courses")
       i18n msg $ groupsAlreadyRegistered registeredGroups
     when (not . null $ registeredGroups) $ do
       H.p $ (fromString . msg $ Msg_GroupRegistration_Warning $ concat
-        ["Amíg nincs beadott feladat, addig le lehet iratkozni az adott csoportról vagy "
-        ,"egy másik csoport kiválasztásával át lehet menni abba a csoportba.  Ha már van "
-        ,"beadott feladatunk, akkor a gyakorlatvezetőt kell megkérni, hogy töröljön a "
-        ,"csoportból."
+        [ "It is possible to quit from a group or move between groups until a submission is "
+        , "submitted.  Otherwise, the teacher of the given group should be asked to undo the "
+        , "group registration."
         ])
     H.p $ do
-      H.h3 $ (fromString . msg $ Msg_GroupRegistration_SelectGroup "Tárgy és csoport kiválasztása")
+      H.h3 $ (fromString . msg $ Msg_GroupRegistration_SelectGroup "Select course and group")
       i18n msg $ groupsForTheUser (groups desc)
 
 groupsAlreadyRegistered :: [(GroupKey, GroupDesc, Bool)] -> IHtml
@@ -74,12 +73,12 @@ groupsAlreadyRegistered ds = do
   msg <- getI18N
   return $ nonEmpty ds
     (fromString . msg $ Msg_GroupRegistration_NoRegisteredCourses
-      "Nincsenek felvett tárgyak.  Válasszunk egy csoportot!")
+      "No registered courses.  Choose a group.")
     (H.table # informationalTable $ do
       H.tr $ do
-        H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Courses "Csoportok")
-        H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Admins "Oktatók")
-        H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Unsubscribe "Leiratkozás")
+        H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Courses "Groups")
+        H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Admins "Teachers")
+        H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Unsubscribe "Unregister")
       mapM_ (groupLine msg) ds)
   where
     groupLine msg (key, desc, hasSubmission) = flip groupDescFold desc $ \n as -> do
@@ -89,23 +88,23 @@ groupsAlreadyRegistered ds = do
         H.td # informationalCell $
           if hasSubmission
             then (fromString . msg $ Msg_GroupRegistration_NoUnsubscriptionAvailable
-              "Már nem lehet leiratkozni")
+              "Unregistration is not allowed.")
             else postForm (routeOf $ P.UnsubscribeFromCourse key) $
                    submitButton
                      (fieldName unsubscribeFromCourseSubmitBtn)
-                     (msg $ Msg_GroupRegistration_Unsubscribe "Leiratkozás")
+                     (msg $ Msg_GroupRegistration_Unsubscribe "Unregister")
 
 groupsForTheUser :: [(GroupKey, GroupDesc)] -> IHtml
 groupsForTheUser gs = do
   msg <- getI18N
   return $
     nonEmpty gs (fromString . msg $ Msg_GroupRegistration_NoAvailableCourses
-      "Még nincsenek elérhető csoportok.  Valószínűleg még félév eleje van :-)") $
+      "There are no available groups yet.") $
     postForm (routeOf P.GroupRegistration) $ do
       selection (fieldName groupRegistrationField) $ do
         mapM_ (\(gk,gd) -> option (paramValue gk) (descriptive gd) False) gs
       H.br
-      submitButton (fieldName regGroupSubmitBtn) (msg $ Msg_GroupRegistration_Register "Felvesz")
+      submitButton (fieldName regGroupSubmitBtn) (msg $ Msg_GroupRegistration_Register "Register")
 
   where
     descriptive :: GroupDesc -> String

@@ -4,7 +4,7 @@ module Bead.View.Snap.Translation where
 -- on every page with the associated value.
 data Translation a
   = Msg_Login_PageTitle { trans :: a }
-  | Msg_Login_Neptun { trans :: a }
+  | Msg_Login_Username { trans :: a }
   | Msg_Login_Password { trans :: a }
   | Msg_Login_Submit { trans :: a }
   | Msg_Login_Title { trans :: a }
@@ -124,12 +124,12 @@ data Translation a
   | Msg_SubmissionDetails_InvalidSubmission { trans :: a }
 
   | Msg_Registration_Title { trans :: a }
-  | Msg_Registration_Neptun { trans :: a }
+  | Msg_Registration_Username { trans :: a }
   | Msg_Registration_Email { trans :: a }
   | Msg_Registration_FullName { trans :: a }
   | Msg_Registration_SubmitButton { trans :: a }
   | Msg_Registration_GoBackToLogin { trans :: a }
-  | Msg_Registration_InvalidNeptunCode { trans :: a }
+  | Msg_Registration_InvalidUsername { trans :: a }
   | Msg_Registration_HasNoUserAccess { trans :: a }
   | Msg_Registration_UserAlreadyExists { trans :: a }
   | Msg_Registration_RegistrationNotSaved { trans :: a }
@@ -149,7 +149,7 @@ data Translation a
   | Msg_RegistrationFinalize_GoBackToLogin { trans :: a }
 
   | Msg_RegistrationCreateStudent_NoParameters { trans :: a }
-  | Msg_RegistrationCreateStudent_InnerError { trans :: a }
+  | Msg_RegistrationCreateStudent_InternalError { trans :: a }
   | Msg_RegistrationCreateStudent_InvalidToken { trans :: a }
 
   | Msg_RegistrationTokenSend_Title { trans :: a }
@@ -192,7 +192,7 @@ data Translation a
   | Msg_ResetPassword_UserDoesNotExist { trans :: a }
   | Msg_ResetPassword_PasswordIsSet { trans :: a }
   | Msg_ResetPassword_GoBackToLogin { trans :: a }
-  | Msg_ResetPassword_Neptun { trans :: a }
+  | Msg_ResetPassword_Username { trans :: a }
   | Msg_ResetPassword_Email { trans :: a }
   | Msg_ResetPassword_NewPwdButton { trans :: a }
   | Msg_ResetPassword_EmailSent { trans :: a }

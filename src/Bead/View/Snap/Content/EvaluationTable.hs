@@ -26,18 +26,18 @@ evaluationTableContent :: [(SubmissionKey, SubmissionDesc)] -> IHtml
 evaluationTableContent ks = do
   msg <- getI18N
   return $ if (null ks)
-    then (fromString . msg $ Msg_EvaluationTable_EmptyUnevaluatedSolutions "Nincsenek nem értékelt megoldások.")
+    then (fromString . msg $ Msg_EvaluationTable_EmptyUnevaluatedSolutions "There are no unevaluated submissions.")
     else do
       H.p $ fromString . msg $ Msg_EvaluationTable_Info $ concat
-        [ "A táblázatban hallgatónként csak a legutolsó, nem értékelt beadott "
-        , "megoldás látszik.  A többi megoldást a főoldalon levő összefoglaló "
-        , "értékelő táblázaton keresztül érhetjük el."
+        [ "Only the last unevaluated submission is shown per student.  The"
+        , "other submissions may be accessed through the submission table "
+        , "on the home page."
         ]
       H.p $ table "evaluation-table" (className evaluationClassTable) # informationalTable $ do
         H.tr # grayBackground $ do
-          H.th (fromString . msg $ Msg_EvaluationTable_Group "Csoport")
-          H.th (fromString . msg $ Msg_EvaluationTable_Student "Hallgató")
-          H.th (fromString . msg $ Msg_EvaluationTable_Assignment "Feladat")
+          H.th (fromString . msg $ Msg_EvaluationTable_Group "Group")
+          H.th (fromString . msg $ Msg_EvaluationTable_Student "Student")
+          H.th (fromString . msg $ Msg_EvaluationTable_Assignment "Assignment")
           H.th (fromString . msg $ Msg_EvaluationTable_Link "Link")
         forM_ ks (submissionInfo msg)
 
@@ -45,4 +45,4 @@ submissionInfo msg (key, desc) = H.tr $ do
   H.td . fromString . eGroup $ desc
   H.td . fromString . eStudent $ desc
   H.td . fromString . eAssignmentTitle $ desc
-  H.td $ link (routeOf (P.Evaluation key)) (msg $ Msg_EvaluationTable_Solution "Megoldás")
+  H.td $ link (routeOf (P.Evaluation key)) (msg $ Msg_EvaluationTable_Solution "Submission")

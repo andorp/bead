@@ -87,31 +87,31 @@ submissionDetailsContent p = do
   return $ do
     H.table $ do
       H.tr $ do
-        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Course "Tárgy, csoport:")
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Course "Course, group:")
         H.td $ fromString (sdGroup $ sm)
       H.tr $ do
-        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Admins "Oktató:")
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Admins "Teacher:")
         H.td $ fromString (join . intersperse ", " . sdTeacher $ sm)
       H.tr $ do
-        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Assignment "Feladat:")
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Assignment "Assignment:")
         H.td $ fromString (assignmentName . sdAssignment $ sm)
       H.tr $ do
-        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Deadline "Határidő:")
+        H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Deadline "Deadline:")
         H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
-    H.h2 . fromString . msg $ Msg_SubmissionDetails_Description "A feladat szövege"
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Description "Assignment text"
     H.div # assignmentTextDiv $
       markdownToHtml . assignmentDesc . sdAssignment $ sm
-    H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "A beadott megoldás"
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "Submission text"
     H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
-    H.h2 . fromString . msg $ Msg_SubmissionDetails_Evaluation "Értékelés"
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Evaluation "Evaluation"
     (resolveStatus msg $ sdStatus sm)
-    H.h2 (fromString . msg $ Msg_Comments_Title "Hozzászólások")
-    H.h3 (fromString . msg $ Msg_SubmissionDetails_NewComment "Új hozzászólás")
+    H.h2 (fromString . msg $ Msg_Comments_Title "Comments")
+    H.h3 (fromString . msg $ Msg_SubmissionDetails_NewComment "New comment")
     postForm (routeOf $ P.SubmissionDetails (aKey p) (smKey p)) $ do
       H.div ! formDiv $ do
         textAreaInput (fieldName commentValueField) Nothing ! fillDiv
       H.br
-      submitButton (fieldName commentBtn) (msg $ Msg_SubmissionDetails_SubmitComment "Beküld")
+      submitButton (fieldName commentBtn) (msg $ Msg_SubmissionDetails_SubmitComment "Submit")
     let studentComments = filter isStudentComment $ sdComments sm
     when (not $ null studentComments) $ do
       H.hr
@@ -121,7 +121,7 @@ invalidSubmission :: IHtml
 invalidSubmission = do
   msg <- getI18N
   return . fromString . msg $
-    Msg_SubmissionDetails_InvalidSubmission "Olyan megoldást próbáltál megnyitni, amelyik nem hozzád tartozik!"
+    Msg_SubmissionDetails_InvalidSubmission "This submission cannot be accessed by this user."
 
 -- CSS Section
 

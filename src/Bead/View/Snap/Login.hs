@@ -91,8 +91,9 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
               A.logout
               withTop sessionManager $ commitSession
               errorPageWithTitleTrans
-                (Msg_Login_PageTitle "Bejelentkezés")
-                (Msg_Login_InternalError "Belső hiba történt, jelezd az üzemeltetőknek!")
+                (Msg_Login_PageTitle "Login")
+                (Msg_Login_InternalError
+                   "Some internal error happened, please contact the administrators.")
             Right (user,userState) -> do
               initSessionValues (page userState) unameFromAuth (u_language user)
               withTop sessionManager $ commitSession
@@ -121,12 +122,12 @@ userForm act = do
   return $ postForm act $ do
     table (formId loginForm) (formId loginForm) $ do
       return ()
-      tableLine (msg $ Msg_Login_Neptun "NEPTUN:") (textInput (fieldName loginUsername) 20 Nothing ! A.required "")
-      tableLine (msg $ Msg_Login_Password "Jelszó:") (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
-    submitButton (fieldName loginSubmitBtn) (msg $ Msg_Login_Submit "Bejelentkezés")
+      tableLine (msg $ Msg_Login_Username "Username:") (textInput (fieldName loginUsername) 20 Nothing ! A.required "")
+      tableLine (msg $ Msg_Login_Password "Password:") (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
+    submitButton (fieldName loginSubmitBtn) (msg $ Msg_Login_Submit "Login")
 
 loginPage :: Maybe AuthFailure -> DictionaryInfos -> IHtml
-loginPage err langInfos = withTitleAndHead (Msg_Login_Title "Bejelentkezés") content
+loginPage err langInfos = withTitleAndHead (Msg_Login_Title "Login") content
   where
     content = do
       msg <- getI18N
@@ -136,9 +137,9 @@ loginPage err langInfos = withTitleAndHead (Msg_Login_Title "Bejelentkezés") co
               ((H.p ! A.style "font-size: smaller") . fromString . show)
               err
         H.p $ do
-          H.a ! A.href "/reg_request" $ fromString $ msg $ Msg_Login_Registration "Regisztráció"
+          H.a ! A.href "/reg_request" $ fromString $ msg $ Msg_Login_Registration "Registration"
           H.br
-          H.a ! A.href "/reset_pwd" $ fromString $ msg $ Msg_Login_Forgotten_Password "Elfelejtett jelszó"
+          H.a ! A.href "/reset_pwd" $ fromString $ msg $ Msg_Login_Forgotten_Password "Forgotten password"
         when ((P.length langInfos) > 1) $ do
           H.p $ do
             forM_ langInfos $ \(language,info) -> do

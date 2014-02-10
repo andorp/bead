@@ -37,7 +37,7 @@ userSubmissionPage = withUserState $ \s -> do
 unauthorized :: IHtml
 unauthorized = do
   msg <- getI18N
-  return . fromString . msg $ Msg_UserSubmissions_NonAccessibleSubmissions "Olyan megoldást próbáltál meg elérni, amelyik nem tartozik hozzád!"
+  return . fromString . msg $ Msg_UserSubmissions_NonAccessibleSubmissions "This submission cannot be accessed by this user."
 
 userSubmissionHtml :: UserTimeConverter -> UserSubmissionDesc -> IHtml
 userSubmissionHtml ut u = do
@@ -45,16 +45,16 @@ userSubmissionHtml ut u = do
   return $ do
     H.table # centerTable $ do
       H.tr $ do
-        firstCol  . msg $ Msg_UserSubmissions_Course "Tárgy:"
+        firstCol  . msg $ Msg_UserSubmissions_Course "Course:"
         secondCol . usCourse $ u
       H.tr $ do
-        firstCol  . msg $ Msg_UserSubmissions_Assignment "Feladat:"
+        firstCol  . msg $ Msg_UserSubmissions_Assignment "Assignment:"
         secondCol . usAssignmentName $ u
       H.tr $ do
-        firstCol  . msg $ Msg_UserSubmissions_Student "Hallgató:"
+        firstCol  . msg $ Msg_UserSubmissions_Student "Student:"
         secondCol . usStudent $ u
     H.p $ do
-      H.h3 . fromString . msg $ Msg_UserSubmissions_SubmittedSolutions "Beadott megoldások"
+      H.h3 . fromString . msg $ Msg_UserSubmissions_SubmittedSolutions "Submissions"
       i18n msg . submissionTable ut . sortDescendingByTime . usSubmissions $ u
   where
     firstCol  t = H.td # textAlignRight $ H.b $ fromString $ t
@@ -73,20 +73,20 @@ submissionTable userTime s = do
 
   where
     headerLine msg = H.tr $ do
-      H.th # (informationalCell <> grayBackground) $ fromString $ msg $ Msg_UserSubmissions_SubmissionDate "Beküldés dátuma"
-      H.th # (informationalCell <> grayBackground) $ fromString $ msg $ Msg_UserSubmissions_Evaluation "Értékelés"
+      H.th # (informationalCell <> grayBackground) $ fromString $ msg $ Msg_UserSubmissions_SubmissionDate "Date of submission"
+      H.th # (informationalCell <> grayBackground) $ fromString $ msg $ Msg_UserSubmissions_Evaluation "Evaluation"
 
     submissionLine msg (sk,t,si) = H.tr $ do
       H.td # informationalCell $ sbmLink si sk t
       H.td # informationalCell $ submissionInfo msg si
 
     submissionInfo msg = fromString . submissionInfoCata
-      (msg $ Msg_UserSubmissions_NotFound "Nem található")
-      (msg $ Msg_UserSubmissions_NonEvaluated "Nem értékelt")
+      (msg $ Msg_UserSubmissions_NotFound "Not found")
+      (msg $ Msg_UserSubmissions_NonEvaluated "Not evaluated")
       (const (evaluationDataMap bin pct))
       where
-        bin (Binary b) = msg $ resultCata (Msg_UserSubmissions_Accepted "Elfogadott")
-                                          (Msg_UserSubmissions_Discarded "Elutasított")
+        bin (Binary b) = msg $ resultCata (Msg_UserSubmissions_Accepted "Accepted")
+                                          (Msg_UserSubmissions_Discarded "Rejected")
                                           b
         pct (Percentage (Scores [x])) = fromString $ printf "%3.2f%%" (100 * x)
         pct (Percentage _) = fromString "Error: ???%"

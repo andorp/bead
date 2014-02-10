@@ -35,10 +35,10 @@ import Bead.View.Snap.Style
 import Bead.View.Snap.Translation
 
 backToLogin :: Translation String
-backToLogin = Msg_ResetPassword_GoBackToLogin "Vissza a főoldalra"
+backToLogin = Msg_ResetPassword_GoBackToLogin "Back to login"
 
 resetPasswordTitle :: Translation String
-resetPasswordTitle = Msg_ResetPassword_ForgottenPassword "Elfelejtett jelszó"
+resetPasswordTitle = Msg_ResetPassword_ForgottenPassword "Forgotten password"
 
 -- Generates a new random password for the given user. If the user does
 -- not exist it thows an error
@@ -62,14 +62,13 @@ setUserPassword u password = do
   authUser <- getAuthUser u
   case authUser of
     Nothing -> return $
-      Msg_ResetPassword_UserDoesNotExist $ printf "A(z) %s felhasználó nem létezik!" username
+      Msg_ResetPassword_UserDoesNotExist "No such user."
     Just user -> do
       encryptedPwd <- encryptPwd password
       updateUser user { userPassword = Just encryptedPwd }
       emailPasswordToUser u password
       return $
-        Msg_ResetPassword_PasswordIsSet $
-          printf "%s részére be lett állítva a jelszó." username
+        Msg_ResetPassword_PasswordIsSet "The password has been set."
 
 -- TODO: I18N
 emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (Handler App a) ()
@@ -79,7 +78,7 @@ emailPasswordToUser user pwd = do
   lift $ withTop sendEmailContext $ do
     sendEmail
       address
-      (msg $ Msg_ResetPassword_EmailSubject "BE-AD: Elfelejtett jelszó")
+      (msg $ Msg_ResetPassword_EmailSubject "BE-AD: Forgotten password")
       (msg $ Msg_ResetPassword_EmailBody forgottenPasswordEmailTemplate)
       ForgottenPassword { fpUsername = show user, fpNewPassword = pwd }
   where
@@ -91,7 +90,7 @@ emailPasswordToUser user pwd = do
 -- Universal error message for every type of error
 -- in such case the attacker could deduce minimal
 -- amount of information
-errorMsg = Msg_ResetPassword_GenericError "Hibás NEPTUN azonosító vagy jelszó!"
+errorMsg = Msg_ResetPassword_GenericError "Invalid username or password."
 
 checkUserInAuth :: (Error e) => Username -> ErrorT e (Handler App a) ()
 checkUserInAuth u = do
@@ -138,7 +137,7 @@ checkCurrentAuthPassword pwd = do
   result <- lift $ withTop auth $
     loginByUsername (usernameCata fromString name) (ClearText $ fromString pwd) False
   when (isLeft result) . throwError . strMsg . msg $
-    Msg_ResetPassword_InvalidPassword "Hibás jelszó!"
+    Msg_ResetPassword_InvalidPassword "Invalid password."
 
 -- Update the currently logged in user's password in the authentication module
 updateCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
@@ -167,9 +166,9 @@ resetPasswordGET = renderForm
       return $ do
         postForm "/reset_pwd" $ do
           table (fieldName resetPasswordTable) (fieldName resetPasswordTable) # centerTable $ do
-            tableLine (msg $ Msg_ResetPassword_Neptun "NEPTUN:") $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
-            tableLine (msg $ Msg_ResetPassword_Email "Email cím:") $ textInput (name regEmailPrm) 20 Nothing ! A.required ""
-          submitButton (fieldName pwdSubmitBtn) (msg $ Msg_ResetPassword_NewPwdButton "Új jelszó")
+            tableLine (msg $ Msg_ResetPassword_Username "Username:") $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
+            tableLine (msg $ Msg_ResetPassword_Email "Email") $ textInput (name regEmailPrm) 20 Nothing ! A.required ""
+          submitButton (fieldName pwdSubmitBtn) (msg $ Msg_ResetPassword_NewPwdButton "New password")
         linkToRoute (msg backToLogin)
 
 
@@ -205,7 +204,7 @@ pageContent :: (Handler App a) ()
 pageContent = renderPublicPage . dynamicTitleAndHead resetPasswordTitle $ do
   msg <- getI18N
   return $ do
-    H.p . fromString . msg $ Msg_ResetPassword_EmailSent $ "Az új jelszót levélben kiküldtük, nézd meg a leveleidet!"
+    H.p . fromString . msg $ Msg_ResetPassword_EmailSent $ "The new password has been sent in email, it shall arrive soon."
     H.br
     linkToRoute (msg backToLogin)
 
@@ -224,16 +223,15 @@ isLeft (Right _) = False
 
 forgottenPasswordEmailTemplate :: String
 forgottenPasswordEmailTemplate = unlines
-  [ "Kedves {{fpUsername}}!"
+  [ "Dear {{fpUsername}},"
   , ""
-  , "A jelszavad átállítását kérted, ezért most generáltunk (és beállítottunk) neked"
-  , "egy új jelszót, amely a következő:"
+  , "You have requested resetting your password, hence we have now generated"
+  , "(and set) you a new password, which is as follows:"
   , ""
   , "    {{fpNewPassword}}"
   , ""
-  , "Kérjük, jelentkezz be ezen jelszó használatával és változtasd meg minél"
-  , "hamarabb!"
+  , "Please, use this password to login and change it as soon as possible."
   , ""
-  , "Üdvözlettel:"
-  , "Az Adminisztrátorok"
+  , "Cheers,"
+  , "The Administrators"
   ]
