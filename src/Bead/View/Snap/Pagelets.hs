@@ -294,8 +294,9 @@ option value text True  = H.option ! A.value (fromString value) ! A.selected "" 
 
 selection :: String -> Html -> Html
 selection name =
-    H.select ! A.id (fromString name) ! A.name (fromString name)
-             ! A.multiple "false" ! A.required ""
+    H.select ! A.id (fromString name)
+             ! A.name (fromString name)
+             ! A.required ""
 
 class SelectionValue v where
   selectionValue :: v -> String
