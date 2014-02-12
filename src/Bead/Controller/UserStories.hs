@@ -1,34 +1,31 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Bead.Controller.UserStories where
 
-import Bead.Domain.Entities     as E
-import Bead.Domain.Relationships
-import Bead.Domain.RolePermission (permission)
-import Bead.Domain.Types
-import Bead.Controller.ServiceContext
-import Bead.Controller.Logging  as L
-import Bead.Controller.Pages    as P
-import Bead.Persistence.Persist (Persist(..))
+import           Bead.Domain.Entities     as E
+import           Bead.Domain.Relationships
+import           Bead.Domain.RolePermission (permission)
+import           Bead.Domain.Types
+import           Bead.Controller.ServiceContext
+import           Bead.Controller.Logging  as L
+import           Bead.Controller.Pages    as P
+import           Bead.Persistence.Persist (Persist(..))
 import qualified Bead.Persistence.Persist as R
-import Bead.View.Snap.Translation
+import           Bead.View.Snap.Translation
 
-import Control.Arrow
-import Control.Applicative
-import Control.Monad (when, unless, filterM)
-import Control.Monad.Error (Error(..))
-import Control.Concurrent.MVar
+import           Control.Applicative
+import           Control.Monad (when, unless, filterM)
+import           Control.Monad.Error (Error(..))
+import           Control.Concurrent.MVar
 import qualified Control.Monad.State  as CMS
 import qualified Control.Monad.Error  as CME
 import qualified Control.Monad.Reader as CMR
-import Control.Monad.Trans
-import Control.Monad (join)
-import Prelude hiding (log)
-import Data.List (nub)
-import Data.Maybe (catMaybes)
-import Data.Time (UTCTime(..), getCurrentTime)
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Text.Printf (printf)
+import           Control.Monad.Trans
+import           Control.Monad (join)
+import           Prelude hiding (log)
+import           Data.List (nub)
+import           Data.Maybe (catMaybes)
+import           Data.Time (UTCTime(..), getCurrentTime)
+import           Text.Printf (printf)
 
 import Control.Monad.Transaction.TIO
 
