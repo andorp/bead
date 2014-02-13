@@ -32,50 +32,47 @@ module Bead.View.Snap.HandlerUtils (
   , module Control.Monad.Error
   ) where
 
--- Bead imports
-
-import Bead.Domain.Entities (TimeZone, dataTimeZone)
-import Bead.Controller.ServiceContext hiding (serviceContext, name)
-import Bead.Controller.Logging as L
-import qualified Bead.Controller.Pages as P
-import qualified Bead.Controller.UserStories as S
-import Bead.View.Snap.Application
-import Bead.View.Snap.Session
-import Bead.View.Snap.DataBridge
-import Bead.View.Snap.Dictionary
-import Bead.View.Snap.Pagelets (runPagelet, runDynamicPagelet)
-import Bead.View.Snap.RouteOf (ReqParam(..))
-import Bead.View.Snap.Translation
-import Bead.View.Snap.I18N (IHtml, translate)
-
 -- Haskell imports
 
-import Control.Monad (mapM)
-import Data.String (IsString(..))
-import Data.Time (UTCTime, LocalTime)
-import qualified Data.Time as Time
-import Data.Maybe (isNothing, fromJust)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-import qualified Data.List as L
-import Control.Monad.Error
+import           Control.Monad.Error
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.UTF8  as BU
-import Data.Map (Map)
-import qualified Data.Map as Map
+import qualified Data.Map as Map (lookup)
+import           Data.Maybe (isNothing, fromJust)
+import           Data.String (IsString(..))
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+import           Data.Time (UTCTime, LocalTime)
+import qualified Data.Time as Time
+import           Text.Printf (printf)
 
 -- Snap and Blaze imports
 
-import Text.Blaze.Html5 (Html)
-import Snap hiding (get)
-import Snap.Blaze (blaze)
-import Snap.Snaplet.Auth hiding (logout)
+import           Snap hiding (get)
+import           Snap.Blaze (blaze)
+import           Snap.Snaplet.Auth hiding (logout)
 import qualified Snap.Snaplet.Auth as A (logout)
-import Snap.Snaplet.Session
+import           Snap.Snaplet.Session
+import           Text.Blaze.Html5 (Html)
+
+-- Bead imports
+
+import           Bead.Controller.Logging as L
+import           Bead.Controller.ServiceContext hiding (serviceContext, name)
+import qualified Bead.Controller.UserStories as S
+import           Bead.Domain.Entities (TimeZone, dataTimeZone)
+import           Bead.View.Snap.Application
+import           Bead.View.Snap.DataBridge
+import           Bead.View.Snap.Dictionary
+import           Bead.View.Snap.I18N (IHtml, translate)
+import           Bead.View.Snap.Pagelets (runPagelet, runDynamicPagelet)
+import           Bead.View.Snap.RouteOf (ReqParam(..))
+import           Bead.View.Snap.Session
+import           Bead.View.Snap.Translation
 
 -- Fay imports
 
-import Bead.View.Snap.Fay.JSON.ServerSide
+import           Bead.View.Snap.Fay.JSON.ServerSide
 
 
 newtype ContentHandlerError = ContentHandlerError (Maybe String)
@@ -241,9 +238,10 @@ setInSessionE k v
 -- otherwise returns the computed value
 userStory :: S.UserStory a -> HandlerError App b a
 userStory story = do
+  i18n <- lift i18nH
   x <- lift . runStory $ story
   case x of
-    Left e  -> throwError . strMsg . S.userErrorMsg $ e
+    Left e  -> throwError . strMsg . S.translateUserError i18n $ e
     Right y -> return y
 
 -- Runs a UserStory in the registration context

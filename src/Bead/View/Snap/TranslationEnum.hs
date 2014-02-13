@@ -145,7 +145,6 @@ translationList =
   , Msg_Registration_EmailSubject ()
   , Msg_Registration_EmailBody ()
   , Msg_Registration_RequestParameterIsMissing ()
-  , Msg_Registration_GenericError ()
 
   , Msg_RegistrationFinalize_NoRegistrationParametersAreFound ()
   , Msg_RegistrationFinalize_SomeError ()
@@ -300,6 +299,21 @@ translationList =
   , Msg_UserStory_SuccessfulCourseUnsubscription ()
   , Msg_UserStory_NewTestScriptIsCreated ()
   , Msg_UserStory_ModifyTestScriptIsDone ()
+
+  , Msg_UserStoryError_UnknownError ()
+  , Msg_UserStoryError_Message ()
+  , Msg_UserStoryError_SameUserIsLoggedIn ()
+  , Msg_UserStoryError_InvalidUsernameOrPassword ()
+  , Msg_UserStoryError_NoCourseAdminOfCourse ()
+  , Msg_UserStoryError_NoAssociatedTestScript ()
+  , Msg_UserStoryError_NoGroupAdmin ()
+  , Msg_UserStoryError_NoGroupAdminOfGroup ()
+  , Msg_UserStoryError_AlreadyHasSubmission ()
+  , Msg_UserStoryError_UserIsNotLoggedIn ()
+  , Msg_UserStoryError_RegistrationProcessError ()
+  , Msg_UserStoryError_AuthenticationNeeded ()
+  , Msg_UserStoryError_SubmissionDeadlineIsReached ()
+  , Msg_UserStoryError_XID ()
 
   , Msg_UserActions_ChangedUserDetails ()
 

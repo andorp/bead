@@ -231,8 +231,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                     existence <- S.doesUserExist username
                     return (userReg, existence)
         case result of
-          Left e -> registrationErrorPage $
-            printf (i18n $ Msg_Registration_GenericError "Some error happened: %s") (show e)
+          Left e -> registrationErrorPage $ S.translateUserError i18n e
           Right (userRegData,exist) -> do
             -- TODO: Check username and token values
             now <- liftIO $ getCurrentTime

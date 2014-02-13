@@ -59,6 +59,7 @@ Executable Bead
     clientsession,
     deepseq,
     directory,
+    hashable,
     fay,
     fay-jquery == 0.4.0.*,
     fay-text,

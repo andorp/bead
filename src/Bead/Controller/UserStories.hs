@@ -21,25 +21,53 @@ import qualified Control.Monad.Error  as CME
 import qualified Control.Monad.Reader as CMR
 import           Control.Monad.Trans
 import           Control.Monad (join)
-import           Prelude hiding (log)
+import           Prelude hiding (log, userError)
+import           Data.Hashable
 import           Data.List (nub)
 import           Data.Maybe (catMaybes)
 import           Data.Time (UTCTime(..), getCurrentTime)
+import           Numeric (showHex)
 import           Text.Printf (printf)
 
 import Control.Monad.Transaction.TIO
 
-data UserError = UserError String
+-- User error can be a message that need to be displayed, or
+-- a parametrized message with a string parameter that needs
+-- to be resolved in the place where the message is rendered
+newtype UserError = UserError TransMsg
 
-userErrorMsg :: UserError -> String
-userErrorMsg (UserError msg) = msg
+-- Template method for the UserError functions
+userErrorCata f (UserError t) = f t
 
-instance Show UserError where
-  show (UserError msg) = msg
+-- Creates a user error that contains a non-parametrized message
+userError :: Translation String -> UserError
+userError = UserError . TransMsg
+
+-- Creates a user error that contains a parametrized message, with one parameter
+userParamError :: Translation String -> String -> UserError
+userParamError t p = UserError (TransPrmMsg t p)
+
+-- Creates a user error that contains a parametrized message, with 2 parameters
+userPrm2Error :: Translation String -> String -> String -> UserError
+userPrm2Error t p1 p2 = UserError (TransPrm2Msg t p1 p2)
+
+-- Creates a user error that contains a parametrized message, with 3 parameters
+userPrm3Error :: Translation String -> String -> String -> String -> UserError
+userPrm3Error t p1 p2 p3 = UserError (TransPrm3Msg t p1 p2 p3)
+
+-- Translates the given user error with the given translation function,
+-- applying the parameters if necessary to the parametrized messages
+translateUserError :: (Translation String -> String) -> UserError -> String
+translateUserError f = userErrorCata translation where
+  translation = transMsgCata
+    id     f
+    printf f
+    printf f
+    printf f
 
 instance Error UserError where
-  noMsg    = UserError "Unknown Error: No message"
-  strMsg e = UserError e
+  noMsg    = userError (Msg_UserStoryError_UnknownError "Unknown Error: No message.")
+  strMsg m = userParamError (Msg_UserStoryError_Message "Some error happened: %s") m
 
 newtype UserStory a = UserStory {
     unStory :: CMR.ReaderT ServiceContext (CMS.StateT UserState (CME.ErrorT UserError IO)) a
@@ -76,8 +104,8 @@ login username token = do
       loadUserData username token P.Home
       s <- userState
       liftIO $ userLogsIn usrContainer (userToken s) s
-    (True , True)  -> errorPage "Ez a felhasználó máshonnan is be van jelentkezve"
-    (False,    _)  -> errorPage "Rossz jelszó vagy felhasználónév"
+    (True , True)  -> errorPage . userError $ Msg_UserStoryError_SameUserIsLoggedIn "This user is logged in somewhere else."
+    (False,    _)  -> errorPage . userError $ Msg_UserStoryError_InvalidUsernameOrPassword "Invalid username or password."
 
 -- | The user logs out
 logout :: UserStory ()
@@ -237,7 +265,7 @@ deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ 
   join $ withPersist $ \p -> do
     cs <- map fst <$> R.administratedCourses p u
     case ck `elem` cs of
-      False -> return $ errorPage "Nem oktatója a kurzusnak!"
+      False -> return . errorPage . userError $ Msg_UserStoryError_NoCourseAdminOfCourse "The user is not course admin for the course."
       True -> do
         mapM_ (R.deleteUserFromCourse p ck) sts
         return . putStatusMessage $
@@ -254,7 +282,7 @@ saveTestScript ck ts = logAction INFO ("creates new test script for course: " ++
   join $ withPersist $ \p -> do
     cs <- map fst <$> R.administratedCourses p user
     case ck `elem` cs of
-      False -> return $ errorPage "Nem oktatója a kurzusnak!"
+      False -> return . errorPage . userError $ Msg_UserStoryError_NoCourseAdminOfCourse "The user is not course admin for the course."
       True -> do
         R.saveTestScript p ck ts
         return . putStatusMessage $
@@ -270,7 +298,7 @@ modifyTestScript tsk ts = logAction INFO ("modifies the existing test script: " 
     cs <- map fst <$> R.administratedCourses p user
     ck <- R.courseOfTestScript p tsk
     case ck `elem` cs of
-      False -> return $ errorPage "Nem a saját teszt szkripted módosítod!"
+      False -> return . errorPage . userError $ Msg_UserStoryError_NoAssociatedTestScript "You are trying to modify someone else's test script."
       True -> do
         R.modifyTestScript p tsk ts
         return . putStatusMessage $
@@ -337,7 +365,7 @@ deleteUsersFromGroup gk sts = logAction INFO ("delets users form group: " ++ sho
   join $ withPersist $ \p -> do
     gs <- map fst <$> R.administratedGroups p u
     case gk `elem` gs of
-      False -> return $ errorPage "Nem oktatója a csoportnak!"
+      False -> return . errorPage . userError $ Msg_UserStoryError_NoGroupAdminOfGroup "You are not a group admin for the group."
       True -> do
         ck <- R.courseOfGroup p gk
         mapM_ (\student -> R.unsubscribe p student ck gk) sts
@@ -356,7 +384,7 @@ createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $
         else return False
   if groupAdminSetted
     then putStatusMessage $ Msg_UserStory_SetGroupAdmin "The user has become a teacher."
-    else CME.throwError . strMsg $ printf "%s nem lehet oktató!" (user u)
+    else CME.throwError $ userParamError (Msg_UserStoryError_NoGroupAdmin "%s is not a group admin!") (user u)
   where
     user = usernameCata id
 
@@ -369,12 +397,12 @@ unsubscribeFromCourse gk = logAction INFO ("unsubscribes from group: " ++ show g
   join $ withPersist $ \p -> do
     registered <- R.isUserInGroup p u gk
     case registered of
-      False -> return $ errorPage "Nem a te csoportod"
+      False -> return . errorPage . userError $ Msg_UserStoryError_NoGroupAdminOfGroup "You are not group admin for the group."
       True -> do
         ck <- R.courseOfGroup p gk
         s <- (&&) <$> R.isThereASubmissionForGroup p u gk
                   <*> R.isThereASubmissionForCourse p u ck
-        if s then (return $ errorPage "Már van beadott megoldásod a kurzushoz tartozó feladatokhoz")
+        if s then (return . errorPage . userError $ Msg_UserStoryError_AlreadyHasSubmission "You have already submitted some solution for the assignments of the course.")
              else do
                R.unsubscribe p u ck gk
                return . putStatusMessage $
@@ -495,13 +523,13 @@ putStatusMessage = changeUserState . setStatus
 clearStatusMessage :: UserStory ()
 clearStatusMessage = changeUserState clearStatus
 
-errorPage :: String -> UserStory ()
-errorPage s = do
-  logMessage ERROR s
-  CME.throwError $ UserError s
+-- Logs the error message into the logfile and, also throw as an error
+errorPage :: UserError -> UserStory ()
+errorPage e = do
+  logMessage ERROR $ translateUserError trans e
+  CME.throwError e
 
 -- * Low level user story functionality
-
 
 authPerms :: ObjectPermissions -> UserStory ()
 authPerms = mapM_ (uncurry authorize) . permissions
@@ -515,21 +543,21 @@ authorize p o = do
   case er of
 
     Left EmptyRole ->
-      errorPage "A felhasználó nincs bejelentkezve"
+      errorPage $ userError (Msg_UserStoryError_UserIsNotLoggedIn "The user is not logged in.")
 
     Left RegRole -> case elem (p,o) regPermObjects of
       True  -> return ()
-      False -> errorPage $ join [
-          "Regisztrációs folyamat hibás működése miatt más folyamatot akar elérni "
-        , show p, " ", show o
-        ]
+      False -> errorPage $ userPrm2Error
+        (Msg_UserStoryError_RegistrationProcessError $ unlines [
+           "During the registration process some internal error happened ",
+           "and tries to reach other processes %s %s."])
+        (show p) (show o)
 
     Right r -> case permission r p o of
       True  -> return ()
-      False -> errorPage $ join [
-          "Azonosítás szükséges: ", show r, " "
-        , show p, " ", show o
-        ]
+      False -> errorPage $ userPrm3Error
+        (Msg_UserStoryError_AuthenticationNeeded "Authentication needed %s %s %s")
+          (show r) (show p) (show o)
   where
     regPermObjects = [
         (P_Create, P_User),    (P_Open, P_User)
@@ -600,8 +628,8 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
     checkActiveAssignment = do
       a <- Bead.Controller.UserStories.loadAssignment ak
       now <- liftIO getCurrentTime
-      unless (isActivePeriod a now) $
-        errorPage "A beküldési határidő lejárt"
+      unless (isActivePeriod a now) . errorPage . userError $
+        Msg_UserStoryError_SubmissionDeadlineIsReached "The submission deadline is reached."
 
     removeUserOpenedSubmissions p u ak = do
       sks <- R.usersOpenedSubmissions p ak u
@@ -806,7 +834,10 @@ withUserAndPersist f = do
   u <- username
   withPersist (f u)
 
--- | Lifting a persistence action
+-- | Lifting a persistence action, if some error happens
+-- during the action we create a unique hash ticket and we display
+-- the ticket to the user, and log the original message with the
+-- ticket itself
 withPersist :: (Persist -> TIO a) -> UserStory a
 withPersist m = do
   mp <- CMR.asks persist
@@ -815,6 +846,19 @@ withPersist m = do
          return (p,ea)
   case x of
     Left e -> do
-      logMessage ERROR ("Persistence error: " ++ e)
-      CME.throwError $ strMsg e
+      up <- userPart
+      let xid = encodeMessage (concat [up, " ", e])
+      logMessage ERROR $ concat ["Persistence error: ", e, "XID: ", xid]
+      CME.throwError $ userParamError
+        (Msg_UserStoryError_XID "Some internal error happened, XID: %s")
+        xid
     Right x -> return x
+  where
+    encodeMessage :: String -> String
+    encodeMessage = flip showHex "" . abs . hash
+
+    userPart = (userStateCata userNotLoggedIn registration loggedIn) <$> CMS.get
+      where
+        userNotLoggedIn    = "Not logged in user!"
+        registration       = "Registration"
+        loggedIn u _ _ _ t _ _ = concat [str u, " ", t]

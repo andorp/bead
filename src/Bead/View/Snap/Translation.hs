@@ -136,7 +136,6 @@ data Translation a
   | Msg_Registration_EmailSubject { trans :: a }
   | Msg_Registration_EmailBody { trans :: a }
   | Msg_Registration_RequestParameterIsMissing { trans :: a }
-  | Msg_Registration_GenericError { trans :: a }
 
   | Msg_RegistrationFinalize_NoRegistrationParametersAreFound { trans :: a }
   | Msg_RegistrationFinalize_SomeError { trans :: a }
@@ -292,6 +291,21 @@ data Translation a
   | Msg_UserStory_NewTestScriptIsCreated { trans :: a }
   | Msg_UserStory_ModifyTestScriptIsDone { trans :: a }
 
+  | Msg_UserStoryError_UnknownError { trans :: a }
+  | Msg_UserStoryError_Message { trans :: a }
+  | Msg_UserStoryError_SameUserIsLoggedIn { trans :: a }
+  | Msg_UserStoryError_InvalidUsernameOrPassword { trans :: a }
+  | Msg_UserStoryError_NoCourseAdminOfCourse { trans :: a }
+  | Msg_UserStoryError_NoAssociatedTestScript { trans :: a }
+  | Msg_UserStoryError_NoGroupAdmin { trans :: a }
+  | Msg_UserStoryError_NoGroupAdminOfGroup { trans :: a }
+  | Msg_UserStoryError_AlreadyHasSubmission { trans :: a }
+  | Msg_UserStoryError_UserIsNotLoggedIn { trans :: a }
+  | Msg_UserStoryError_RegistrationProcessError { trans :: a }
+  | Msg_UserStoryError_AuthenticationNeeded { trans :: a }
+  | Msg_UserStoryError_SubmissionDeadlineIsReached { trans :: a }
+  | Msg_UserStoryError_XID { trans :: a }
+
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 
   | Msg_LinkText_Login { trans :: a }
@@ -331,3 +345,24 @@ data Translation a
   | Msg_TestScriptTypeZipped { trans :: a }
 
   deriving (Show, Read, Eq, Ord)
+
+-- | The Translation Message represents a message that
+-- can rendered out the the UI, the message could
+-- be a normal message or a parametrized one
+data TransMsg
+  = TransMsg (Translation String)
+  | TransPrmMsg (Translation String) String
+  | TransPrm2Msg (Translation String) String String
+  | TransPrm3Msg (Translation String) String String String
+
+-- Template method for TransMsg function
+transMsgCata
+  transMsg     f
+  transPrmMsg  g
+  transPrm2Msg h
+  transPrm3Msg i
+  tm = case tm of
+    TransMsg     t          -> transMsg     (f t)
+    TransPrmMsg  t p1       -> transPrmMsg  (g t) p1
+    TransPrm2Msg t p1 p2    -> transPrm2Msg (h t) p1 p2
+    TransPrm3Msg t p1 p2 p3 -> transPrm3Msg (i t) p1 p2 p3

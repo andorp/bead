@@ -1,3 +1,19 @@
+- Translation message is removed: Msg_Registration_GenericError
+- New Translation message: Msg_UserStoryError_XID
+- New Translation message: Msg_UserStoryError_SubmissionDeadlineIsReached
+- New Translation message: Msg_UserStoryError_UserIsNotLoggedIn
+- New Translation message: Msg_UserStoryError_RegistrationProcessError
+- New Translation message: Msg_UserStoryError_AuthenticationNeeded
+- New Translation message: Msg_UserStoryError_UnknownError
+- New Translation message: Msg_UserStoryError_Message
+- New Translation message: Msg_UserStoryError_SameUserIsLoggedIn
+- New Translation message: Msg_UserStoryError_InvalidUsernameOrPassword
+- New Translation message: Msg_UserStoryError_NoCourseAdminOfCourse
+- New Translation message: Msg_UserStoryError_NoAssociatedTestScript
+- New Translation message: Msg_UserStoryError_NoGroupAdmin
+- New Translation message: Msg_UserStoryError_NoGroupAdminOfGroup
+- New Translation message: Msg_UserStoryError_AlreadyHasSubmission
+
 - New Translation message: Msg_NewTestScript_ScriptTypeHelp
 - New Translation message: Msg_Input_Course_TestScript
 - New Translation message: Msg_TestScriptTypeSimple

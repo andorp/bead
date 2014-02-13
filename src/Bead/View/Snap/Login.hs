@@ -85,7 +85,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
             S.currentUser
           case result of
             Left err -> do
-              logMessage ERROR $ "Error happened processing user story: " ++ show err
+              logMessage ERROR $ "Error happened processing user story: " ++ S.translateUserError trans err
               -- Service context authentication
               liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
               A.logout

@@ -52,7 +52,6 @@ resetPassword u = do
   where
     randomPassword = lift . withTop randomPasswordContext $ getRandomPassword
 
--- TODO: I18N
 -- Saves the users password it to the persistence layer and the authentication
 -- and sends the email to the given user.
 -- The handler returns a status message that should be displayed to the user.
@@ -70,11 +69,10 @@ setUserPassword u password = do
       return $
         Msg_ResetPassword_PasswordIsSet "The password has been set."
 
--- TODO: I18N
 emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (Handler App a) ()
 emailPasswordToUser user pwd = do
-  address <- fmap u_email loadUserFromPersistence
   msg <- lift i18nH
+  address <- fmap u_email (loadUserFromPersistence msg)
   lift $ withTop sendEmailContext $ do
     sendEmail
       address
@@ -82,11 +80,10 @@ emailPasswordToUser user pwd = do
       (msg $ Msg_ResetPassword_EmailBody forgottenPasswordEmailTemplate)
       ForgottenPassword { fpUsername = show user, fpNewPassword = pwd }
   where
-    loadUserFromPersistence =
+    loadUserFromPersistence i18n =
       (lift $ registrationStory $ S.loadUser user) >>=
-      (either (throwError . strMsg . show) return)
+      (either (throwError . strMsg . S.translateUserError i18n) return)
 
--- TODO: I18N
 -- Universal error message for every type of error
 -- in such case the attacker could deduce minimal
 -- amount of information
@@ -102,7 +99,7 @@ checkUserInPersistence :: (Error e) => Username -> ErrorT e (Handler App a) ()
 checkUserInPersistence u = do
   msg <- lift i18nH
   x <- lift $ registrationStory $ S.doesUserExist u
-  either (throwError . strMsg . show)
+  either (throwError . strMsg . S.translateUserError msg)
          (\e -> unless e $ (throwError . strMsg . msg $ errorMsg)) x
 
 usernameStr :: (IsString s) => Username -> s
@@ -186,7 +183,7 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
     (Just username, Just email) -> do
       checkUserInAuth username
       checkUserInPersistence username
-      user <- loadUser username
+      user <- loadUser msg username
       when (email /= (u_email user)) $ throwError . strMsg . msg $ errorMsg
       resetPassword username
       lift pageContent
@@ -196,9 +193,9 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
     renderErrorPage m = m >>=
        (either (errorPageWithTitle resetPasswordTitle) return)
 
-    loadUser u =
+    loadUser i18n u =
       (lift $ registrationStory $ S.loadUser u) >>=
-        (either (throwError . show) return)
+        (either (throwError . strMsg . S.translateUserError i18n) return)
 
 pageContent :: (Handler App a) ()
 pageContent = renderPublicPage . dynamicTitleAndHead resetPasswordTitle $ do
