@@ -251,6 +251,14 @@ registrationStory s = withTop serviceContext getServiceContext >>=
   where
     forgetUserState = either Left (Right . fst)
 
+-- Handels file uploads and throw an error, to render the error page later
+fileUpload :: HandlerError App b ()
+fileUpload = handleFileUploads tmpDir uploadPolicy perpartUploadPolicy handlers where
+  tmpDir = "data/uploadtmp"
+  uploadPolicy = defualtUploadPolicy
+  perpartUploadPolicy = const disallow
+  handlers _ = undefined
+
 -- | Runs a user story for authenticated user and saves the new user state
 --   into the service context
 runStory :: S.UserStory a -> Handler App b (Either S.UserError a)

@@ -4,32 +4,28 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Bead.View.Snap.Pagelets where
 
-import Data.Maybe (isJust, fromJust)
-import Data.String (IsString(..), fromString)
-import Control.Monad (join, mapM_)
+import           Control.Monad (join)
+import           Data.String (IsString(..), fromString)
 
-import Text.Blaze (ToMarkup(..), textTag)
-import Text.Blaze.Html5 (Html, AttributeValue(..), (!))
---import qualified Text.Blaze.Html5 as H
+import           Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5.Attributes as A
-import qualified Bead.View.Snap.I18N as I18N
-
-import Bead.Domain.Types (Str(..))
-import Bead.Domain.Entities
-import Bead.Domain.Relationships
-import qualified Bead.Controller.Pages as P
-import Bead.Controller.ServiceContext (UserState(..))
-import Bead.View.Snap.RouteOf
-import Bead.View.Snap.Style
-import Bead.View.Snap.Dictionary (I18N)
-import Bead.View.Snap.TemplateAndComponentNames
-import Bead.View.Snap.Fay.Hooks
-import Bead.View.Snap.Fay.HookIds
-import Bead.View.Snap.I18N (IHtml, translate, getI18N, html)
-import Bead.View.Snap.Translation
 import qualified Text.Blaze.Html5 as H
+
+import qualified Bead.Controller.Pages as P
+import           Bead.Controller.ServiceContext (UserState(..))
+import           Bead.Domain.Entities
+import           Bead.Domain.Relationships
+import           Bead.Domain.Types (Str(..))
+import           Bead.View.Snap.Dictionary (I18N)
+import           Bead.View.Snap.Fay.Hooks
+import qualified Bead.View.Snap.I18N as I18N
+import           Bead.View.Snap.I18N (IHtml, translate, getI18N)
+import           Bead.View.Snap.RouteOf
+import           Bead.View.Snap.Style
+import           Bead.View.Snap.TemplateAndComponentNames
+import           Bead.View.Snap.Translation
 #ifdef TEST
-import Bead.Invariants (Invariants(..))
+import           Bead.Invariants (Invariants(..))
 #endif
 
 -- * Definitions
@@ -152,6 +148,12 @@ hiddenInput name value =
 
 hiddenInputWithId :: String -> String -> Html
 hiddenInputWithId n v = hiddenInput n v ! A.id (fromString n)
+
+fileInput :: String -> Html
+fileInput name =
+  H.input ! A.type_ "file"
+          ! A.id (fromString name)
+          ! A.name (fromString name)
 
 submitButton :: String -> String -> Html
 submitButton i t = H.input ! A.id (fromString i) ! A.type_ "submit" ! A.value (fromString t)
