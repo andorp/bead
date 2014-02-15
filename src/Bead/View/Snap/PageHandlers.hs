@@ -75,6 +75,7 @@ routes config = join
     , ("/reg_final", finalizeRegistration)
     , ("/change-language", changeLanguage)
     , ("/fay", with fayContext fayServe)
+    , ("/upload", fileUpload)
     ]
   , map toPathContentPair content
     -- Add static handlers

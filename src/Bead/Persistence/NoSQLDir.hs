@@ -31,6 +31,10 @@ noSqlDirPersist = Persist {
   , administratedCourses = nAdministratedCourses
   , administratedGroups = nAdministratedGroups
 
+  , copyFile  = nCopyFile
+  , listFiles = nListFiles
+  , getFile   = nGetFile
+
   , saveUserReg = nSaveUserReg
   , loadUserReg = nLoadUserReg
 
@@ -112,10 +116,10 @@ noSqlDirPersist = Persist {
   , initPersistence    = nInitPersistence
   }
 
+-- Returns True if all the necessary persistence directories exist on the disk
+-- otherwise false
 nIsPersistenceSetUp :: IO Bool
-nIsPersistenceSetUp = do
-  dirsExist <- mapM doesDirectoryExist persistenceDirs
-  return $ and dirsExist
+nIsPersistenceSetUp = and <$> mapM doesDirectoryExist persistenceDirs
 
 nInitPersistence :: IO ()
 nInitPersistence = mapM_ createDirWhenDoesNotExist persistenceDirs
@@ -130,6 +134,7 @@ nSaveUserReg u = do
   let userRegKey = UserRegKey . takeBaseName $ dirName
   save dirName u
   return userRegKey
+
 
 nLoadUserReg :: UserRegKey -> TIO UserRegistration
 nLoadUserReg u = do
@@ -147,6 +152,15 @@ nSaveUser usr = do
       let dirname = dirName usr
       createDir dirname
       save    dirname usr
+
+nCopyFile :: Username -> FilePath -> UsersFile -> TIO ()
+nCopyFile = undefined
+
+nListFiles :: Username -> TIO [UsersFile]
+nListFiles = undefined
+
+nGetFile :: Username -> UsersFile -> TIO (Maybe FilePath)
+nGetFile = undefined
 
 isThereAUser :: Username -> TIO Bool
 isThereAUser uname = hasNoRollback $ do

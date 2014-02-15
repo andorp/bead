@@ -42,6 +42,7 @@ openSubmissionDir = "open-submission"
 userRegDir = "user-registration"
 testScriptDir = "test-script"
 testCaseDir = "test-case"
+uploadTempDir = "upload-temp"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
@@ -55,6 +56,7 @@ openSubmissionAllDataDir = joinPath [openSubmissionDataDir, "all"]
 userRegDataDir = joinPath [dataDir, userRegDir]
 testScriptDataDir = joinPath [dataDir, testScriptDir]
 testCaseDataDir = joinPath [dataDir, testCaseDir]
+uploadTempDataDir = joinPath [dataDir, uploadTempDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -71,6 +73,7 @@ persistenceDirs = [
   , userRegDataDir
   , testScriptDataDir
   , testCaseDataDir
+  , uploadTempDataDir
   ]
 
 class DirName d where
@@ -407,16 +410,6 @@ instance Load Course where
     (loadDesc d)
     (fileLoad d "evalcfg" readMaybe)
     (fileLoad d "scripttype" readMaybe)
-{-
-  do desc <- loadDesc d
-              name <- loadName d
-              eval <- fileLoad d "evalcfg" readMaybe
-              return $ Course {
-                  courseDesc = desc
-                , courseName = name
-                , courseEvalConfig = eval
-                }
--}
 
 instance Load Group where
   load d = do desc <- loadDesc d

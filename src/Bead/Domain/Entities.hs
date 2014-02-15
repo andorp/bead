@@ -546,6 +546,13 @@ testCaseCata
 testCaseAppAna name desc value type_ info
   = TestCase <$> name <*> desc <*> value <*> type_ <*> info
 
+-- Name of the file that a user can upload
+newtype UsersFile = UsersFile String
+  deriving (Eq, Show, Read)
+
+-- Template method for User's file
+usersFileCata f (UsersFile x) = f x
+
 -- * Data storage
 
 newtype Stored key value = Stored (key, value)
