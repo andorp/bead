@@ -22,6 +22,7 @@ module Bead.View.Snap.HandlerUtils (
   , userState
   , userTimeZone
   , usersTimeZoneConverter
+  , fileUpload
   , logout
   , HandlerError(..)
   , ContentHandlerError
@@ -44,7 +45,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import           Data.Time (UTCTime, LocalTime)
 import qualified Data.Time as Time
-import           Text.Printf (printf)
 
 -- Snap and Blaze imports
 
@@ -53,6 +53,7 @@ import           Snap.Blaze (blaze)
 import           Snap.Snaplet.Auth hiding (logout)
 import qualified Snap.Snaplet.Auth as A (logout)
 import           Snap.Snaplet.Session
+import           Snap.Util.FileUploads
 import           Text.Blaze.Html5 (Html)
 
 -- Bead imports
@@ -251,13 +252,23 @@ registrationStory s = withTop serviceContext getServiceContext >>=
   where
     forgetUserState = either Left (Right . fst)
 
+-- TODO: Set maximum size, set temporary directory
 -- Handels file uploads and throw an error, to render the error page later
-fileUpload :: HandlerError App b ()
-fileUpload = handleFileUploads tmpDir uploadPolicy perpartUploadPolicy handlers where
-  tmpDir = "data/uploadtmp"
-  uploadPolicy = defualtUploadPolicy
-  perpartUploadPolicy = const disallow
-  handlers _ = undefined
+fileUpload :: Handler App b ()
+fileUpload = do
+  handleFileUploads tmpDir uploadPolicy perpartUploadPolicy handlers
+  where
+    tmpDir = "/usr/home/and.or/bead-tmp/"
+    uploadPolicy = defaultUploadPolicy
+    perpartUploadPolicy = const $ allowWithMaximumSize 1048576 -- 1 MB
+    handlers ps = do
+      liftIO $ print ps
+      mapM_ handlerPartInfo ps
+      where
+        handlerPartInfo (partInfo, uploaded) =
+          case uploaded of
+            Left exception -> liftIO $ putStrLn "Exception"
+            Right file -> liftIO . B.putStrLn . maybe (fromString "Nothing") id $ partFileName partInfo
 
 -- | Runs a user story for authenticated user and saves the new user state
 --   into the service context

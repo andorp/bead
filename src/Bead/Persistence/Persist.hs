@@ -44,7 +44,7 @@ import Control.Monad.Transaction.TIO
 data Persist = Persist {
   -- User Persistence
     saveUser      :: User -> TIO ()
-  , personalInfo  :: Username -> TIO PersonalInfo -- (Role, String)
+  , personalInfo  :: Username -> TIO PersonalInfo
   , filterUsers   :: (User -> Bool) -> TIO [User]
   , loadUser      :: Username -> TIO User
   , updateUser    :: User -> TIO ()
@@ -53,6 +53,11 @@ data Persist = Persist {
   , userSubmissions :: Username -> AssignmentKey -> TIO [SubmissionKey]
   , administratedCourses :: Username -> TIO [(CourseKey, Course)]
   , administratedGroups  :: Username -> TIO [(GroupKey, Group)]
+
+  -- Users file upload
+  , copyFile  :: Username -> FilePath -> UsersFile -> TIO () -- Copies the given file with the given filename to the users data directory
+  , listFiles :: Username -> TIO [UsersFile] -- List all the user's files
+  , getFile   :: Username -> UsersFile -> TIO (Maybe FilePath) -- Get the current path for the user's file
 
   -- Registration
   , saveUserReg   :: UserRegistration -> TIO UserRegKey

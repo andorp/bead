@@ -23,7 +23,7 @@ import Bead.View.UserActions (UserAction(CreateGroupAssignment, CreateCourseAssi
 
 import Text.Printf (printf)
 import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A (id, style, href)
+import qualified Text.Blaze.Html5.Attributes as A (id, style, href, enctype)
 import qualified Text.Blaze.Html5 as H
 
 
@@ -127,7 +127,7 @@ newAssignmentContent pd
 newAssignmentContent pd = do
   msg <- getI18N
   return $ do
-    postForm ("/test-upload") `withId` "upload-file" $ do
+    postForm ("upload") `withId` "upload-file" ! A.enctype "multipart/form-data" $ do
       fileInput "fileinput"
       submitButton "submitinput" "Upload"
     postForm (routeOf . page $ pd) `withId` (hookId assignmentForm) $ H.div ! formDiv $ do
