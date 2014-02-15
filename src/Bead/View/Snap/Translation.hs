@@ -354,6 +354,7 @@ data TransMsg
   | TransPrmMsg (Translation String) String
   | TransPrm2Msg (Translation String) String String
   | TransPrm3Msg (Translation String) String String String
+  deriving (Show)
 
 -- Template method for TransMsg function
 transMsgCata

@@ -548,7 +548,7 @@ testCaseAppAna name desc value type_ info
 
 -- Name of the file that a user can upload
 newtype UsersFile = UsersFile String
-  deriving (Eq, Show, Read)
+  deriving (Eq, Show, Read, Ord)
 
 -- Template method for User's file
 usersFileCata f (UsersFile x) = f x

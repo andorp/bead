@@ -20,6 +20,11 @@ testDecoratedPersist a q = Persist {
   , updateUser   = updateUser q
   , doesUserExist = doesUserExist q
   , userDescription = userDescription q
+
+  , copyFile = copyFile q
+  , listFiles = listFiles q
+  , getFile = getFile q
+
   , saveUserReg = saveUserReg q
   , loadUserReg = loadUserReg q
   , userSubmissions = \u ak -> do
