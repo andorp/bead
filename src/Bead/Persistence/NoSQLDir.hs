@@ -10,10 +10,9 @@ import Bead.Persistence.NoSQLDirFile
 import Control.Monad.Transaction.TIO
 
 import Control.Applicative ((<$>))
-import Control.Monad (join, mapM, liftM, filterM, when, unless)
-import Control.Exception (IOException, throwIO)
-import System.FilePath (joinPath, takeBaseName)
-import System.Directory (doesFileExist, doesDirectoryExist, createDirectory)
+import Control.Monad (join, liftM, filterM, when, unless)
+import System.FilePath ((</>), joinPath, takeBaseName)
+import System.Directory (doesDirectoryExist, createDirectory, doesFileExist)
 import Data.Function (on)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.List (sortBy)
@@ -135,7 +134,6 @@ nSaveUserReg u = do
   save dirName u
   return userRegKey
 
-
 nLoadUserReg :: UserRegKey -> TIO UserRegistration
 nLoadUserReg u = do
   let p = userRegDirPath u
@@ -153,14 +151,43 @@ nSaveUser usr = do
       createDir dirname
       save    dirname usr
 
+-- Checks if the given username exist in the persistence layer
+-- and it has a correct structure
+checkIfUserDir :: Username -> TIO ()
+checkIfUserDir username = do
+  let dirname = dirName username
+  exist <- hasNoRollback $ doesDirectoryExist dirname
+  unless exist . throwEx . userError $ "User directory does not exist: " ++ show username
+  correct <- hasNoRollback $ isCorrectStructure dirname userDirStructure
+  unless correct . throwEx . userError $ "User directory is not correct: " ++ show username
+
 nCopyFile :: Username -> FilePath -> UsersFile -> TIO ()
-nCopyFile = undefined
+nCopyFile username tmpPath userfile = do
+  checkIfUserDir username
+  let dirname = dirName username
+      datadir = dirname </> "datadir"
+  copy tmpPath (usersFileCata (datadir </>) userfile)
 
 nListFiles :: Username -> TIO [UsersFile]
-nListFiles = undefined
+nListFiles username = do
+  checkIfUserDir username
+  let dirname = dirName username
+      datadir = dirname </> "datadir"
+  map UsersFile <$> getFilesInFolder datadir
 
-nGetFile :: Username -> UsersFile -> TIO (Maybe FilePath)
-nGetFile = undefined
+nGetFile :: Username -> UsersFile -> TIO FilePath
+nGetFile username userfile = do
+  checkIfUserDir username
+  let dirname = dirName username
+      dataDir = dirname </> "datadir"
+  flip usersFileCata userfile $ \fn -> do
+    let fname = dataDir </> fn
+    exist <- hasNoRollback $ doesFileExist fname
+    unless exist . throwEx . userError $ concat [
+        "File (", fn, ") does not exist in users folder ("
+      , show username, ")"
+      ]
+    return fname
 
 isThereAUser :: Username -> TIO Bool
 isThereAUser uname = hasNoRollback $ do
