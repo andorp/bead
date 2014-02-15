@@ -68,7 +68,7 @@ isAlphaNum c =
 
 emailAddress :: String -> Bool
 emailAddress []     = False
-emailAddress (c:cs) = isAlpha c && isEmailBody cs
+emailAddress (c:cs) = isEmailChar c && isEmailBody cs
   where
     isSpecial :: Char -> Bool
     isSpecial c = elem c "._,!-():;<>[\\]"
@@ -101,6 +101,6 @@ assertEmailAddress = [
   , Assertion "One char"  (emailAddress "1") False
   , Assertion "Only user" (emailAddress "q.dfs") False
   , Assertion "Valid"     (emailAddress "q.fd@gma.il.com") True
-  , Assertion "Invalid"   (emailAddress "1adf@ga.com.") False
+  , Assertion "Valid 2"   (emailAddress "1adf@ga.com.") True
   ]
 #endif
