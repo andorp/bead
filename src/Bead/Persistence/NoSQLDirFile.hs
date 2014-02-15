@@ -200,6 +200,10 @@ createLink exist link = step (createSymbolicLinkSafely exist link) (removeLinkSa
 deleteLink :: FilePath -> FilePath -> TIO ()
 deleteLink exist link = step (removeLinkSafely link) (createSymbolicLinkSafely exist link)
 
+-- Copy the old file into the new one
+copy :: FilePath -> FilePath -> TIO ()
+copy old new = step (copyFile old new) (removeFile new)
+
 -- | Create a symbolic link 'l' if the link does not exist already.
 createSymbolicLinkSafely f l = do
   exist <- fileExist l
