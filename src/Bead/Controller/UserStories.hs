@@ -35,6 +35,7 @@ import Control.Monad.Transaction.TIO
 -- a parametrized message with a string parameter that needs
 -- to be resolved in the place where the message is rendered
 newtype UserError = UserError TransMsg
+  deriving (Show)
 
 -- Template method for the UserError functions
 userErrorCata f (UserError t) = f t

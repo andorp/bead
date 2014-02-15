@@ -3,29 +3,28 @@ module Test.Quick.Persistence where
 import Control.Applicative ((<$>))
 import Control.Monad
 import Control.Concurrent (forkIO)
-import Data.Set (Set)
 import qualified Data.Set as Set
 
-import Data.List ((\\))
-import Data.Map (Map)
+import Data.List ((\\), intersperse)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.IORef
 import Data.Time
-import System.Directory
+import System.Directory hiding (copyFile)
+import System.IO
 
 import Control.Monad.Transaction.TIO
 import Bead.Persistence.Persist
 import Bead.Persistence.NoSQLDir
+import Bead.Persistence.NoSQLDirFile (uploadTempDataDir)
 
 import qualified Test.Quick.EntityGen as Gen
 
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
-import Bead.Domain.Types
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
-import Test.Framework (Test(..), testGroup)
+import Test.Framework (testGroup)
 import Test.Framework.Providers.HUnit
 import Test.Framework.Providers.QuickCheck2
 
@@ -178,6 +177,18 @@ insertListRef r e = modifyIORef r (e:)
 -- Returns the list hold in the list reference
 listInRef :: ListRef a -> IO [a]
 listInRef r = readIORef r
+
+-- Creates the given number of files in the upload template directory
+uploadTempFiles n = do
+  list <- createListRef
+  quick n $ do
+    (fp, handle) <- run $ openTempFile uploadTempDataDir "tmp.txt"
+    words <- pick . listOf . listOf1 $ elements ['a' .. 'z']
+    run $ do
+      hPutStr handle $ concat $ intersperse " " words
+      hClose handle
+      insertListRef list fp
+  listInRef list
 
 -- Generate and store the given number of courses and returns the
 -- course keys stored in the
@@ -776,8 +787,64 @@ saveLoadAndModifyTestCasesTest = do
       ak <- assignmentOfTestCase persist tc
       asg <- loadAssignment persist ak
       return $ do
-        assertEquals ntc ntc' "Modfiy the test case failed"
+        assertEquals ntc ntc' "Modification of the test case has failed"
         assertTrue (not . null $ assignmentName asg) "Invalid assignment"
+
+userFileHandlingTest = do
+  reinitPersistence
+  us <- users 100
+  fs <- uploadTempFiles 1000
+  quick 1000 $ do
+    u <- pick $ elements us
+    f <- pick $ elements fs
+    fn <- UsersFile <$> (pick $ vectorOf 8 $ elements ['a'..'z'])
+    ufs <- runPersistCmd $ listFiles persist u
+    join $ case fn `elem` ufs of
+      True  -> testOverwriteFile u f fn ufs
+      False -> testNewFile u f fn ufs
+  where
+    testNewFile u f fn ufs = runPersistCmd $ do
+      copyFile persist u f fn
+      ufs' <- listFiles persist u
+      path <- getFile persist u fn
+      return $ do
+        assertSetEquals (fn:ufs) ufs' "New file was not copied into the user's dir"
+        assertTrue (length path > 0) "Invalid path"
+
+    testOverwriteFile u f fn ufs = runPersistCmd $ do
+      path  <- getFile persist u fn
+      copyFile persist u f fn
+      content <- hasNoRollback $ readFile f
+      path' <- getFile persist u fn
+      content' <- hasNoRollback $ readFile path'
+      return $ do
+        assertEquals path path' "The overwritted file path's has changed"
+        assertEquals content content' "The file content was not overwritted"
+
+userOverwriteFileTest = do
+  reinitPersistence
+  us <- users 100
+  fs <- uploadTempFiles 1000
+  forM_ us $ \u -> quick 5 $ do
+    f <- pick $ elements fs
+    fn <- UsersFile <$> (pick $ vectorOf 8 $ elements ['a'..'z'])
+    runPersistCmd $ copyFile persist u f fn
+  quick 1000 $ do
+    u <- pick $ elements us
+    ufs <- runPersistCmd $ listFiles persist u
+    f <- pick $ elements fs
+    fn <- pick $ elements ufs
+    join $ runPersistCmd $ do
+      path <- getFile persist u fn
+      copyFile persist u f fn
+      content <- hasNoRollback $ readFile f
+      path' <- getFile persist u fn
+      content' <- hasNoRollback $ readFile path'
+      ufs' <- listFiles persist u
+      return $ do
+        assertSetEquals ufs ufs' "The user's file set was changed"
+        assertEquals path path' "The user's file path was changed"
+        assertEquals content content' "The user's file content is not copied correctly"
 
 runPersistCmd :: TIO a -> PropertyM IO a
 runPersistCmd m = do
@@ -845,6 +912,8 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "User unsubscribes from a course" $ unsubscribeFromSubscribedGroupsTest
   , testCase "Save, load and modify test scripts" $ saveLoadAndModifyTestScriptsTest
   , testCase "Save, load and modify test cases" $ saveLoadAndModifyTestCasesTest
+  , testCase "Copy, list, and get user's data file path" $ userFileHandlingTest
+  , testCase "Overwrite user's data file" $ userOverwriteFileTest
   , cleanUpPersistence
   ]
 
@@ -857,8 +926,9 @@ cleanUpPersistence = testCase "Clean up" $ do
   removeDirectoryRecursive "data"
 
 -- Fails if the two given list does not represent the same set
-assertSetEquals :: (Monad m, Eq a, Ord a) => [a] -> [a] -> String -> m ()
-assertSetEquals xs ys msg = assertEquals (Set.fromList xs) (Set.fromList ys) msg
+assertSetEquals :: (Monad m, Show a, Eq a, Ord a) => [a] -> [a] -> String -> m ()
+assertSetEquals xs ys msg = assertEquals
+ (Set.fromList xs) (Set.fromList ys) (concat [msg, " ", show xs, " ", show ys])
 
 -- The test will fail with the given message, if the given values are different
 assertEquals :: (Monad m, Eq a) => a -> a -> String -> m ()

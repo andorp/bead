@@ -11,7 +11,7 @@ import Control.Monad.Transaction.TIO
 
 import Control.Applicative ((<$>))
 import Control.Monad (join, liftM, filterM, when, unless)
-import System.FilePath ((</>), joinPath, takeBaseName)
+import System.FilePath ((</>), joinPath, takeBaseName, takeFileName)
 import System.Directory (doesDirectoryExist, createDirectory, doesFileExist)
 import Data.Function (on)
 import Data.Time (UTCTime, getCurrentTime)
@@ -173,7 +173,7 @@ nListFiles username = do
   checkIfUserDir username
   let dirname = dirName username
       datadir = dirname </> "datadir"
-  map UsersFile <$> getFilesInFolder datadir
+  map (UsersFile . takeFileName) <$> getFilesInFolder datadir
 
 nGetFile :: Username -> UsersFile -> TIO FilePath
 nGetFile username userfile = do
