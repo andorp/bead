@@ -76,6 +76,7 @@ data Page
   | UserSubmissions
   | NewTestScript
   | ModifyTestScript R.TestScriptKey
+  | UploadFile
 
   -- Only Post handlers
   | CreateCourse
@@ -115,6 +116,7 @@ pageCata
   userSubmissions
   newTestScript
   modifyTestScript
+  uploadFile
   createCourse
   createGroup
   assignCourseAdmin
@@ -148,6 +150,7 @@ pageCata
     UserSubmissions -> userSubmissions
     NewTestScript -> newTestScript
     ModifyTestScript tsk -> modifyTestScript tsk
+    UploadFile -> uploadFile
     CreateCourse -> createCourse
     CreateGroup -> createGroup
     AssignCourseAdmin -> assignCourseAdmin
@@ -224,6 +227,9 @@ isNewTestScript _             = False
 isModifyTestScript (ModifyTestScript _) = True
 isModifyTestScript _                    = False
 
+isUploadFile UploadFile = True
+isUploadFile _          = False
+
 isCreateCourse CreateCourse = True
 isCreateCourse _            = False
 
@@ -273,7 +279,7 @@ pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
            , isSubmission, isSubmissionList, isGroupRegistration, isAdministration, isProfile
            , isUserSubmissions, isSubmissionDetails, isModifyAssignment
            , isSetUserPassword, isHome, isDeleteUsersFromCourse, isDeleteUsersFromGroup
-           , isUnsubscribeFromCourse, isNewTestScript, isModifyTestScript
+           , isUnsubscribeFromCourse, isNewTestScript, isModifyTestScript, isUploadFile
            ]
   p CourseAdmin = [isHome, isProfile, isCreateGroup, isAssignGroupAdmin, isCourseAdmin]
   p EvaluationTable  = [isHome, isProfile, isEvaluation, isModifyEvaluation, isEvaluationTable]
@@ -286,6 +292,7 @@ pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
   p UserSubmissions  = [isHome, isProfile, isModifyEvaluation, isEvaluation, isUserSubmissions]
   p NewTestScript    = [isHome, isProfile]
   p (ModifyTestScript _)   = [isHome, isProfile]
+  p UploadFile             = [isHome, isProfile, isUploadFile]
   p (ModifyEvaluation _ _) = [isHome, isProfile, isEvaluationTable, isCommentFromModifyEvaluation, isModifyEvaluation]
   p UserDetails      = [isAdministration, isUserDetails]
   p GroupRegistration = [isHome, isProfile, isGroupRegistration]
@@ -339,6 +346,7 @@ groupAdminPages = [
   , isModifyAssignment
   , isUserSubmissions
   , isSetUserPassword
+  , isUploadFile
   ]
 
 courseAdminPages = [
@@ -355,6 +363,7 @@ courseAdminPages = [
   , isSetUserPassword
   , isNewTestScript
   , isModifyTestScript
+  , isUploadFile
   ]
 
 adminPages = [
@@ -362,6 +371,7 @@ adminPages = [
   , isCreateCourse
   , isUserDetails
   , isAssignCourseAdmin
+  , isUploadFile
   ]
 
 -- Pages that can not be displayed only, modifies the
@@ -391,6 +401,7 @@ menuPageList = [
   , GroupRegistration
   , UserSubmissions
   , NewTestScript
+  , UploadFile
   ]
 
 -- Returns a page predicate function depending on the role, which page transition is allowed,
@@ -435,6 +446,7 @@ parentPage = pageCata
   Home -- userSubmissions
   Home -- newTestScript
   (const Home) -- modifyTestScript
+  UploadFile  -- uploadFile
   Administration -- createCourse
   CourseAdmin    -- createGroup
   Administration -- sassignCourseAdmin

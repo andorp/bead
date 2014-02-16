@@ -219,6 +219,7 @@ linkText = P.pageCata
   (Msg_LinkText_UserSubmissions "Submissions")
   (Msg_LinkText_NewTestScript "New Test")
   (const $ Msg_LinkText_ModifyTestScript "Modify Test Script")
+  (Msg_LinkText_UploadFile "Upload file")
   (Msg_LinkText_CreateCourse "Create Course")
   (Msg_LinkText_CreateGroup "Create Group")
   (Msg_LinkText_AssignCourseAdmin "Assign Course Admin")

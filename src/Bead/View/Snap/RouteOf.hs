@@ -24,6 +24,7 @@ module Bead.View.Snap.RouteOf (
   , userSubmissionsPath
   , newTestScriptPath
   , modifyTestScriptPath
+  , uploadFilePath
   , submissionDetailsPath
   , administrationPath
   , groupRegistrationPath
@@ -108,6 +109,9 @@ newTestScriptPath = "/new-test-script"
 modifyTestScriptPath :: RoutePath
 modifyTestScriptPath = "/modify-test-script"
 
+uploadFilePath :: RoutePath
+uploadFilePath = "/upload-file"
+
 submissionDetailsPath :: RoutePath
 submissionDetailsPath = "/submission-details"
 
@@ -187,6 +191,7 @@ pageRoutePath = fromString . r where
     userSubmissionsPath
     newTestScriptPath
     (const modifyTestScriptPath)
+    uploadFilePath
     createCoursePath
     createGroupPath
     assignCourseAdminPath

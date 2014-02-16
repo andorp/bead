@@ -170,6 +170,7 @@ menuId = P.pageCata
   "link-user-submissions"
   "link-new-test-script"
   (const "link-modify-test-script")
+  "link-upload-files"
   "link-create-course"
   "link-create-group"
   "link-assign-course-admin"
@@ -289,6 +290,21 @@ instance SnapFieldName HomeField where
 delUserFromCourseField = HomeField "del-user-form-course"
 delUserFromGroupField  = HomeField "del-user-from-group"
 
+newtype UploadFileField = UploadFileField { ufFieldName :: String }
+
+newtype UploadFileClass = UploadFileClass { ufClassName :: String }
+
+instance SnapFieldName UploadFileField where
+  fieldName = fromString . ufFieldName
+
+instance SnapClassName UploadFileClass where
+  className = fromString . ufClassName
+
+fileUploadField = UploadFileField "upload-file"
+fileUploadSubmit = UploadFileField "upload-file-submit"
+usersFileTableName = UploadFileField "upload-file-table"
+usersFileTableClass = UploadFileClass "upload-file-table-class"
+
 newtype CourseKeyField = CourseKeyField { ckfFieldName :: String }
 
 instance SnapFieldName CourseKeyField where
@@ -394,6 +410,7 @@ fieldList = map fieldName $ join [
   , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage, SFN changeLanguageField
   , SFN userLanguageField, SFN delUsersFromCourseBtn, SFN courseKeyField, SFN groupKeyField
   , SFN delUserFromCourseField, SFN delUserFromGroupField, SFN unsubscribeFromCourseSubmitBtn
+  , SFN fileUploadField, SFN fileUploadSubmit, SFN usersFileTableName
 
   , SFN testScriptNameField, SFN testScriptTypeField, SFN testScriptDescField
   , SFN testScriptNotesField, SFN testScriptScriptField, SFN testScriptSaveButton
@@ -414,7 +431,7 @@ classList :: [String]
 classList = map className [
     SCN evaluationClassTable, SCN groupSubmissionTable, SCN assignmentTable
   , SCN submissionListTable, SCN submissionListDiv, SCN datePickerClass, SCN minuteSpinnerClass
-  , SCN hourSpinnerClass
+  , SCN hourSpinnerClass, SCN usersFileTableClass
   ]
 
 names = fieldList ++ classList

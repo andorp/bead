@@ -179,6 +179,35 @@ currentUser = logAction INFO "Load the current user's data" $ do
   u <- user <$> userState
   withPersist $ flip R.loadUser u
 
+-- Saves (copies) a file to the actual directory from the given filepath
+-- which will be determined. If the user has no permission for the uploading
+-- an error is thrown
+saveUsersFile :: FilePath -> UsersFile -> UserStory ()
+saveUsersFile tempPath usersfile = logAction INFO logMessage $ do
+  authorize P_Create P_File
+  u <- username
+  withPersist $ \p -> copyFile p u tempPath usersfile
+  where
+    logMessage = usersFileCata (\u -> " uploads a file " ++ show u) usersfile
+
+-- List all the user's file. If the user has no permission for the listing
+-- of files an error is thrown
+listUsersFiles :: UserStory [(UsersFile, FileInfo)]
+listUsersFiles = logAction INFO " lists all his files" $ do
+  authorize P_Open P_File
+  u <- username
+  withPersist $ \p -> listFiles p u
+
+-- Returns the user's data file real path, for further processing, if
+-- the user has authentication, otherwise throws an error page
+getFilePath :: UsersFile -> UserStory FilePath
+getFilePath usersfile = logAction INFO logMessage $ do
+  authorize P_Open P_File
+  u <- username
+  withPersist $ \p -> getFile p u usersfile
+  where
+    logMessage = usersFileCata (\u -> " asks the file path: " ++ show u) usersfile
+
 -- Produces true if the given user is the student of the actual one
 courseOrGroupStudent :: Username -> UserStory Bool
 courseOrGroupStudent student = logAction INFO

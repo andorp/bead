@@ -311,6 +311,7 @@ data PermissionObject
   | P_AdminPage
   | P_PlainPage
   | P_TestScript
+  | P_File
   deriving (Eq, Ord, Show, Enum)
 
 -- Permission Objects are dynamically associated with values
@@ -550,8 +551,20 @@ testCaseAppAna name desc value type_ info
 newtype UsersFile = UsersFile String
   deriving (Eq, Show, Read, Ord)
 
--- Template method for User's file
+-- Template function for User's file
 usersFileCata f (UsersFile x) = f x
+
+-- File information that will be displayed on the UI
+data FileInfo = FileInfo {
+    fiSize :: Int     -- The size of the file in bytes
+  , fiDate :: UTCTime -- The last modifcation date of the file
+  }
+
+-- Template function for the FileInfo value
+fileInfoCata f (FileInfo size date) = f size date
+
+-- Applicative functor based FileInfo construction
+fileInfoAppAna size date = FileInfo <$> size <*> date
 
 -- * Data storage
 

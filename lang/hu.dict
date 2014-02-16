@@ -246,6 +246,18 @@ DictionaryFile {
     , Msg_NewTestScript_Course { trans = "Tárgy:" }
     , Msg_NewTestScript_HasNoCourses { trans = "Ez a felhasználó egyik tárgynak sem a felelőse!" }
     , Msg_NewTestScript_ScriptTypeHelp { trans = "A tesztesetek fajtái" }
+    , Msg_UploadFile_PleaseSelectFile { trans = "Válassz ki egy fájlt amit fel szeretnél tölteni" }
+    , Msg_UploadFile_MaxSize { trans = "A fájl mérete maximálisan 128Kb" }
+    , Msg_UploadFile_UploadButton { trans = "Feltöltés" }
+    , Msg_UploadFile_FileName { trans = "A fájl neve" }
+    , Msg_UploadFile_FileSize { trans = "A fájl mérete" }
+    , Msg_UploadFile_FileDate { trans = "A fájl dátuma" }
+    , Msg_UploadFile_Successful { trans = "Sikeres feltöltés" }
+    , Msg_UploadFile_NoFileReceived { trans = "Nem érkezett fájl" }
+    , Msg_UploadFile_PolicyFailure { trans = "Nem megfelelő fájl, méret vagy típusbeli hiba" }
+    , Msg_UploadFile_UnnamedFile { trans = "Névtelen fájl érkezett" }
+    , Msg_UploadFile_InternalError { trans = "Belső hiba történt" }
+    , Msg_UploadFile_ErrorInManyUploads { trans = "Hiba történt egy vagy több fájl feldolgozásakor" }
     , Msg_TestScriptTypeSimple { trans = "Szöveges" }
     , Msg_TestScriptTypeZipped { trans = "Bináris" }
     , Msg_UserStory_SetTimeZone { trans = "Megváltozott az időzóna." }
@@ -289,6 +301,7 @@ DictionaryFile {
     , Msg_LinkText_UserSubmissions { trans = "Megoldások" }
     , Msg_LinkText_NewTestScript { trans = "Új tesztelő" }
     , Msg_LinkText_ModifyTestScript { trans = "Tesztelő szkript módosítása" }
+    , Msg_LinkText_UploadFile { trans = "Fájlfeltöltés" }
     , Msg_LinkText_ModifyEvaluation { trans = "Értékelés" }
     , Msg_LinkText_SubmissionDetails { trans = "Megoldás" }
     , Msg_LinkText_Administration { trans = "Adminisztráció" }

@@ -56,7 +56,7 @@ data Persist = Persist {
 
   -- Users file upload
   , copyFile  :: Username -> FilePath -> UsersFile -> TIO () -- Copies the given file with the given filename to the users data directory
-  , listFiles :: Username -> TIO [UsersFile] -- List all the user's files
+  , listFiles :: Username -> TIO [(UsersFile, FileInfo)] -- List all the user's files
   , getFile   :: Username -> UsersFile -> TIO FilePath -- Get the current path for the user's file
 
   -- Registration

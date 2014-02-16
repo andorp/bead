@@ -158,10 +158,12 @@ homeContent d = do
         , "each of the groups there as well."
         ]
       H.p $ do
-        i18n msg $ navigation $ [ P.CourseAdmin, NewTestScript, P.EvaluationTable, P.SetUserPassword ]
+        i18n msg $ navigation $ [
+            P.CourseAdmin, P.NewTestScript, P.EvaluationTable
+          , P.SetUserPassword, P.UploadFile ]
       H.hr
     when (groupAdminUser r && hasGroup) $ H.p $ do
-      i18n msg $ navigation [P.EvaluationTable, P.SetUserPassword]
+      i18n msg $ navigation [P.EvaluationTable, P.SetUserPassword, P.UploadFile ]
       H.hr
     H.h3 . fromString . msg $ Msg_Home_StudentTasks "Student Menu"
     H.p $ do
