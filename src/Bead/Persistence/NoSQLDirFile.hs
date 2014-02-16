@@ -75,7 +75,7 @@ persistenceDirs = [
   , testScriptDataDir
   , testCaseDataDir
   , testOutgoingDataDir
-  , testIncommingDataDir
+  , testIncomingDataDir
   ]
 
 class DirName d where
