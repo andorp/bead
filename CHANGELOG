@@ -1,3 +1,16 @@
+- New Translation message: Msg_UploadFile_NoFileReceived
+- New Translation message: Msg_UploadFile_PolicyFailure
+- New Translation message: Msg_UploadFile_UnnamedFile
+- New Translation message: Msg_UploadFile_InternalError
+- New Translation message: Msg_UploadFile_ErrorInManyUploads
+- New Translation message: Msg_UploadFile_PleaseSelectFile
+- New Translation message: Msg_UploadFile_MaxSize
+- New Translation message: Msg_UploadFile_UploadButton
+- New Translation message: Msg_UploadFile_FileName
+- New Translation message: Msg_UploadFile_FileSize
+- New Translation message: Msg_UploadFile_FileDate
+- New Translation message: Msg_UploadFile_Successful
+
 - Translation message is removed: Msg_Registration_GenericError
 - New Translation message: Msg_UserStoryError_XID
 - New Translation message: Msg_UserStoryError_SubmissionDeadlineIsReached

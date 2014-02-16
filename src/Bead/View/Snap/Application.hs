@@ -2,7 +2,6 @@
 module Bead.View.Snap.Application where
 
 import Snap hiding (Config(..))
-import Snap.Snaplet
 import Snap.Snaplet.Session
 import Snap.Snaplet.Auth
 import Snap.Snaplet.Fay
@@ -13,17 +12,13 @@ import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy.Char8 as BL
 import Data.String (fromString)
 import qualified Data.Text as DT
-import qualified Data.Text.Encoding as DT
 import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Encoding as LT
-import qualified Text.XmlHtml as X
 import Network.Mail.Mime
 import System.Random
 
 import Bead.Configuration (Config(..))
 import Bead.Domain.Entities
 import Bead.View.Snap.Dictionary
-import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.EmailTemplate
 import Bead.Controller.ServiceContext
 
@@ -137,6 +132,26 @@ sendEmail address sub body value = do
   msg <- liftIO . runEmailTemplate (emailTemplate body) $ value
   liftIO $ send address sub msg
 
+-- * Bead's temp directory
+
+-- Bead temp directory holds a reference to the created temp directory
+-- where the handlers can place temporary files
+newtype TempDirectoryContext = TempDirectoryContext (IORef FilePath)
+
+tempDirectorySnaplet :: FilePath -> SnapletInit a TempDirectoryContext
+tempDirectorySnaplet tempPath = makeSnaplet
+  "Template directory"
+  "A snaplet holding a reference to the temporary directory"
+  Nothing $ liftIO $ do
+    ref <- newIORef tempPath
+    return $! TempDirectoryContext ref
+
+-- Returns the bead temp directory
+getTempDirectory :: Handler b TempDirectoryContext FilePath
+getTempDirectory = do
+  TempDirectoryContext ref <- get
+  liftIO $ readIORef ref
+
 -- * Password generation
 
 -- PasswordGeneratorContext is a reference to the password generator computation,
@@ -200,6 +215,7 @@ data App = App {
   , _sendEmailContext   :: Snaplet SendEmailContext
   , _randomPasswordContext :: Snaplet PasswordGeneratorContext
   , _fayContext     :: Snaplet Fay
+  , _tempDirContext :: Snaplet TempDirectoryContext
   }
 
 makeLenses ''App

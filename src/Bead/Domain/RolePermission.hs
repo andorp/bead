@@ -34,23 +34,23 @@ student P_Delete _ = False
 
 -- * Group Admin
 
-groupAdmin P_Open   o = elem o [P_Assignment, P_Submission, P_Statistics, P_Group, P_PlainPage, P_GroupAdmin, P_TestScript]
-groupAdmin P_Create o = elem o [P_Assignment, P_Evaluation]
+groupAdmin P_Open   o = elem o [P_Assignment, P_Submission, P_Statistics, P_Group, P_PlainPage, P_GroupAdmin, P_TestScript, P_File]
+groupAdmin P_Create o = elem o [P_Assignment, P_Evaluation, P_File]
 groupAdmin P_Modify o = elem o [P_Assignment, P_Password, P_Evaluation, P_Group]
 groupAdmin P_Delete o = elem o [P_Assignment]
 
 -- * Course Admin
 
 courseAdmin P_Open   o = elem o
-  [ P_Assignment, P_Submission, P_Statistics, P_Course, P_CourseAdmin, P_PlainPage, P_User, P_TestScript ]
-courseAdmin P_Create o = elem o [P_Group, P_Assignment, P_CourseAdmin, P_GroupAdmin, P_TestScript ]
+  [ P_Assignment, P_Submission, P_Statistics, P_Course, P_CourseAdmin, P_PlainPage, P_User, P_TestScript, P_File ]
+courseAdmin P_Create o = elem o [P_Group, P_Assignment, P_CourseAdmin, P_GroupAdmin, P_TestScript, P_File ]
 courseAdmin P_Modify o = elem o [P_Assignment, P_Password, P_CourseAdmin, P_GroupAdmin, P_Course, P_TestScript]
 courseAdmin P_Delete o = elem o [P_Assignment, P_GroupAdmin]
 
 -- * Admin
 
-admin P_Open   o = elem o [P_Assignment, P_Submission, P_Statistics, P_Course, P_CourseAdmin, P_GroupAdmin, P_AdminPage, P_PlainPage]
-admin P_Create o = elem o [P_Course, P_CourseAdmin, P_GroupAdmin, P_Group, P_User]
+admin P_Open   o = elem o [P_Assignment, P_Submission, P_Statistics, P_Course, P_CourseAdmin, P_GroupAdmin, P_AdminPage, P_PlainPage, P_File]
+admin P_Create o = elem o [P_Course, P_CourseAdmin, P_GroupAdmin, P_Group, P_User, P_File]
 admin P_Modify o = elem o [P_Course, P_CourseAdmin, P_GroupAdmin, P_Password, P_User]
 admin P_Delete o = elem o [P_Course, P_CourseAdmin, P_GroupAdmin]
 

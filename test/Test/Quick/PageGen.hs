@@ -49,6 +49,7 @@ pageGen = oneof [
         , GroupRegistration
         , UserDetails
         , UserSubmissions
+        , UploadFile
         , CreateCourse
         , CreateGroup
         , AssignCourseAdmin

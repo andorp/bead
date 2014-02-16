@@ -127,9 +127,6 @@ newAssignmentContent pd
 newAssignmentContent pd = do
   msg <- getI18N
   return $ do
-    postForm ("upload") `withId` "upload-file" ! A.enctype "multipart/form-data" $ do
-      fileInput "fileinput"
-      submitButton "submitinput" "Upload"
     postForm (routeOf . page $ pd) `withId` (hookId assignmentForm) $ H.div ! formDiv $ do
     H.div ! slimRightCell $ do
       H.b $ (fromString . msg $ Msg_NewAssignment_Title "Title")

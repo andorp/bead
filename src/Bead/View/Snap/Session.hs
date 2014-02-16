@@ -96,6 +96,7 @@ instance SessionStore P.Page where
           "UserSubmissions"
           "NewTestScript"
           (\(R.TestScriptKey t) -> join ["ModifyTestScript:", t])
+          "UploadFile"
           "CreateCourse"
           "CreateGroup"
           "AssignCourseAdmin"
@@ -124,6 +125,7 @@ instance SessionRestore P.Page where
     Just "NewTestScript" -> Just P.NewTestScript
     Just "Administration"   -> Just P.Administration
     Just "GroupRegistration" -> Just P.GroupRegistration
+    Just "UploadFile" -> Just P.UploadFile
     Just "CreateCourse" -> Just P.CreateCourse
     Just "UserDetails"  -> Just P.UserDetails
     Just "AssignCourseAdmin" -> Just P.AssignCourseAdmin

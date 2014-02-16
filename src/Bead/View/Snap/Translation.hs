@@ -275,6 +275,19 @@ data Translation a
   | Msg_NewTestScript_HasNoCourses { trans :: a }
   | Msg_NewTestScript_ScriptTypeHelp { trans :: a }
 
+  | Msg_UploadFile_PleaseSelectFile { trans :: a }
+  | Msg_UploadFile_MaxSize { trans :: a }
+  | Msg_UploadFile_UploadButton { trans :: a }
+  | Msg_UploadFile_FileName { trans :: a }
+  | Msg_UploadFile_FileSize { trans :: a }
+  | Msg_UploadFile_FileDate { trans :: a }
+  | Msg_UploadFile_Successful { trans :: a }
+  | Msg_UploadFile_NoFileReceived { trans :: a }
+  | Msg_UploadFile_PolicyFailure { trans :: a }
+  | Msg_UploadFile_UnnamedFile { trans :: a }
+  | Msg_UploadFile_InternalError { trans :: a }
+  | Msg_UploadFile_ErrorInManyUploads { trans :: a }
+
   | Msg_UserStory_SetTimeZone { trans :: a }
   | Msg_UserStory_ChangedUserDetails { trans :: a }
   | Msg_UserStory_CreateCourse { trans :: a }
@@ -319,6 +332,7 @@ data Translation a
   | Msg_LinkText_UserSubmissions { trans :: a }
   | Msg_LinkText_NewTestScript { trans :: a }
   | Msg_LinkText_ModifyTestScript { trans :: a }
+  | Msg_LinkText_UploadFile { trans :: a }
   | Msg_LinkText_ModifyEvaluation { trans :: a }
   | Msg_LinkText_SubmissionDetails { trans :: a }
   | Msg_LinkText_Administration { trans :: a }

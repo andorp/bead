@@ -10,11 +10,15 @@ import Bead.Persistence.NoSQLDirFile
 import Control.Monad.Transaction.TIO
 
 import Control.Applicative ((<$>))
-import Control.Monad (join, liftM, filterM, when, unless)
+import Control.Monad (join, liftM, filterM, when, unless, forM)
 import System.FilePath ((</>), joinPath, takeBaseName, takeFileName)
 import System.Directory (doesDirectoryExist, createDirectory, doesFileExist)
+import System.Posix.Types (COff(..), EpochTime(..))
+import Foreign.C.Types (CTime(..))
+import System.Posix.Files (getFileStatus, fileSize, modificationTime)
 import Data.Function (on)
 import Data.Time (UTCTime, getCurrentTime)
+import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.List (sortBy)
 
 -- | Simple directory and file based NoSQL persistence implementation
@@ -168,12 +172,20 @@ nCopyFile username tmpPath userfile = do
       datadir = dirname </> "datadir"
   copy tmpPath (usersFileCata (datadir </>) userfile)
 
-nListFiles :: Username -> TIO [UsersFile]
+nListFiles :: Username -> TIO [(UsersFile, FileInfo)]
 nListFiles username = do
   checkIfUserDir username
   let dirname = dirName username
       datadir = dirname </> "datadir"
-  map (UsersFile . takeFileName) <$> getFilesInFolder datadir
+  paths <- getFilesInFolder datadir
+  forM paths $ \path -> do
+    status <- hasNoRollback $ getFileStatus path
+    let info = FileInfo
+                 (fileOffsetToInt $ fileSize status)
+                 (posixSecondsToUTCTime . realToFrac $ modificationTime status)
+    return (UsersFile $ takeFileName path, info)
+  where
+    fileOffsetToInt (COff x) = fromIntegral x
 
 nGetFile :: Username -> UsersFile -> TIO FilePath
 nGetFile username userfile = do

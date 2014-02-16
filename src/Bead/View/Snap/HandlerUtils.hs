@@ -256,11 +256,12 @@ registrationStory s = withTop serviceContext getServiceContext >>=
 -- Handels file uploads and throw an error, to render the error page later
 fileUpload :: Handler App b ()
 fileUpload = do
+  tmpDir <- withTop tempDirContext $ getTempDirectory
   handleFileUploads tmpDir uploadPolicy perpartUploadPolicy handlers
   where
-    tmpDir = "/usr/home/and.or/bead-tmp/"
-    uploadPolicy = defaultUploadPolicy
-    perpartUploadPolicy = const $ allowWithMaximumSize 1048576 -- 1 MB
+    s128K = 128 * 1024 -- 128Kb
+    uploadPolicy = defaultUploadPolicy -- { maximumFormInputSize = s128K }
+    perpartUploadPolicy = const $ allowWithMaximumSize s128K
     handlers ps = do
       liftIO $ print ps
       mapM_ handlerPartInfo ps

@@ -12,11 +12,11 @@ import Data.IORef
 import Data.Time
 import System.Directory hiding (copyFile)
 import System.IO
+import System.IO.Temp (createTempDirectory)
 
 import Control.Monad.Transaction.TIO
 import Bead.Persistence.Persist
 import Bead.Persistence.NoSQLDir
-import Bead.Persistence.NoSQLDirFile (uploadTempDataDir)
 
 import qualified Test.Quick.EntityGen as Gen
 
@@ -179,10 +179,10 @@ listInRef :: ListRef a -> IO [a]
 listInRef r = readIORef r
 
 -- Creates the given number of files in the upload template directory
-uploadTempFiles n = do
+uploadTempFiles tmpDir n = do
   list <- createListRef
   quick n $ do
-    (fp, handle) <- run $ openTempFile uploadTempDataDir "tmp.txt"
+    (fp, handle) <- run $ openTempFile tmpDir "tmp.txt"
     words <- pick . listOf . listOf1 $ elements ['a' .. 'z']
     run $ do
       hPutStr handle $ concat $ intersperse " " words
@@ -312,14 +312,16 @@ massPersistenceTest = do
   return ()
 
 
-quick n p = check $ quickCheckWithResult (success n) $ monadicIO p
+quick n p = check (return ()) $ quickCheckWithResult (success n) $ monadicIO p
 
-check m = do
+quickWithCleanUp cleanup n p = check cleanup $ quickCheckWithResult (success n) $ monadicIO p
+
+check cleanup m = do
   x <- m
   case x of
-    s@(Success {}) -> return ()
-    f@(Failure {}) -> fail $ reason f
-    other          -> fail $ output other
+    s@(Success {}) -> cleanup
+    f@(Failure {}) -> cleanup >> (fail $ reason f)
+    other          -> cleanup >> (fail $ output other)
 
 -- The test are at very high level, we must see if basic load
 -- properties are hold.
@@ -790,22 +792,30 @@ saveLoadAndModifyTestCasesTest = do
         assertEquals ntc ntc' "Modification of the test case has failed"
         assertTrue (not . null $ assignmentName asg) "Invalid assignment"
 
+-- Creates a temporary directory for the bead in the system's temp dir
+createBeadTempDir :: IO FilePath
+createBeadTempDir = do
+  tmp <- getTemporaryDirectory
+  createTempDirectory tmp "bead."
+
+
 userFileHandlingTest = do
   reinitPersistence
+  tmpDir <- createBeadTempDir
   us <- users 100
-  fs <- uploadTempFiles 1000
-  quick 1000 $ do
+  fs <- uploadTempFiles tmpDir 1000
+  quickWithCleanUp (removeDirectoryRecursive tmpDir) 1000 $ do
     u <- pick $ elements us
     f <- pick $ elements fs
     fn <- UsersFile <$> (pick $ vectorOf 8 $ elements ['a'..'z'])
-    ufs <- runPersistCmd $ listFiles persist u
+    ufs <- map fst <$> (runPersistCmd $ listFiles persist u)
     join $ case fn `elem` ufs of
       True  -> testOverwriteFile u f fn ufs
       False -> testNewFile u f fn ufs
   where
     testNewFile u f fn ufs = runPersistCmd $ do
       copyFile persist u f fn
-      ufs' <- listFiles persist u
+      ufs' <- map fst <$> listFiles persist u
       path <- getFile persist u fn
       return $ do
         assertSetEquals (fn:ufs) ufs' "New file was not copied into the user's dir"
@@ -823,15 +833,16 @@ userFileHandlingTest = do
 
 userOverwriteFileTest = do
   reinitPersistence
+  tmpDir <- createBeadTempDir
   us <- users 100
-  fs <- uploadTempFiles 1000
+  fs <- uploadTempFiles tmpDir 1000
   forM_ us $ \u -> quick 5 $ do
     f <- pick $ elements fs
     fn <- UsersFile <$> (pick $ vectorOf 8 $ elements ['a'..'z'])
     runPersistCmd $ copyFile persist u f fn
-  quick 1000 $ do
+  quickWithCleanUp (removeDirectoryRecursive tmpDir) 1000 $ do
     u <- pick $ elements us
-    ufs <- runPersistCmd $ listFiles persist u
+    ufs <- map fst <$> (runPersistCmd $ listFiles persist u)
     f <- pick $ elements fs
     fn <- pick $ elements ufs
     join $ runPersistCmd $ do
@@ -840,7 +851,7 @@ userOverwriteFileTest = do
       content <- hasNoRollback $ readFile f
       path' <- getFile persist u fn
       content' <- hasNoRollback $ readFile path'
-      ufs' <- listFiles persist u
+      ufs' <- map fst <$> listFiles persist u
       return $ do
         assertSetEquals ufs ufs' "The user's file set was changed"
         assertEquals path path' "The user's file path was changed"

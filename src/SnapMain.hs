@@ -1,27 +1,24 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
-import System.Console.GetOpt
-import System.Directory (doesDirectoryExist)
-import System.Environment (getArgs, getProgName)
-import System.FilePath (FilePath, joinPath)
-import System.IO (hFlush, hSetEcho, stdout, stdin)
+import           Data.Char (toUpper)
 
-import Bead.Configuration
-import Bead.Controller.ServiceContext as S
-import Bead.Domain.Entities (UserRegInfo(..), TimeZone(..))
-import Bead.View.Snap.Application
-import Bead.View.Snap.AppInit
-import Bead.View.Snap.Logger
-import Bead.View.Snap.Validators hiding (toLower)
-import Bead.Persistence.Persist (initPersistence, isPersistenceSetUp)
+import           Snap hiding (Config(..))
+import           System.Directory (getTemporaryDirectory, removeDirectoryRecursive)
+import           System.Environment (getArgs)
+import           System.IO (hFlush, hSetEcho, stdout, stdin)
+import           System.IO.Temp (createTempDirectory)
+
+import           Bead.Configuration
 import qualified Bead.Controller.Logging as L
+import           Bead.Controller.ServiceContext as S
+import           Bead.Domain.Entities (UserRegInfo(..), TimeZone(..))
+import           Bead.Persistence.Persist (initPersistence, isPersistenceSetUp)
 import qualified Bead.Persistence.NoSQLDir as P
+import           Bead.View.Snap.AppInit
+import           Bead.View.Snap.Logger
+import           Bead.View.Snap.Validators hiding (toLower)
 
-import Snap hiding (Config(..))
-import Snap.Snaplet
-
-import Data.Char (toUpper)
 
 -- Creates a service context that includes the given logger
 createContext :: L.Logger -> IO ServiceContext
@@ -109,9 +106,24 @@ readAdminUser = do
 
 startService :: Config -> AppInitTasks -> IO ()
 startService config appInitTasks = do
-  userActionLogs <- createSnapLogger . userActionLogFile $ config
+  userActionLogs <- creating "logger" $ createSnapLogger . userActionLogFile $ config
 
-  context <- createContext (snapLogger userActionLogs)
+  context <- creating "service context" $ createContext (snapLogger userActionLogs)
 
-  serveSnaplet defaultConfig (appInit config appInitTasks context)
+  tempDir <- creating "temporary directory" createBeadTempDir
+
+  serveSnaplet defaultConfig (appInit config appInitTasks context tempDir)
   stopLogger userActionLogs
+  removeDirectoryRecursive tempDir
+  where
+    creating name m = do
+      putStr $ concat ["Creating ", name, " ... "]
+      x <- m
+      putStrLn "DONE"
+      return x
+
+-- Creates a temporary directory for the bead in the system's temp dir
+createBeadTempDir :: IO FilePath
+createBeadTempDir = do
+  tmp <- getTemporaryDirectory
+  createTempDirectory tmp "bead."

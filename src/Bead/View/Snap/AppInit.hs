@@ -6,24 +6,17 @@ module Bead.View.Snap.AppInit (
   ) where
 
 import Snap hiding (Config(..))
-import Snap.Snaplet
-import Snap.Snaplet.Session
 import Snap.Snaplet.Session.Backends.CookieSession
 import Snap.Snaplet.Auth
 import Snap.Snaplet.Auth.Backends.SafeJsonFile
 import Snap.Snaplet.Fay
-import Data.Maybe (maybe)
-import Data.Map (Map)
 import qualified Data.Map as Map
-import System.FilePath (joinPath)
 
 import Bead.Configuration (Config(..))
 import Bead.Domain.Entities (UserRegInfo)
-import Bead.View.Snap.TemplateAndComponentNames
 import Bead.Controller.ServiceContext as S
 
 import Bead.View.Snap.Application as A
-import Bead.View.Snap.Dictionary (Dictionaries)
 import Bead.View.Snap.PageHandlers (routes)
 import Bead.View.Snap.Registration (createAdminUser)
 import Bead.View.Snap.ErrorPage (msgErrorPage)
@@ -47,8 +40,8 @@ usersJson = "users.json"
 -- Nothing means there is no additional init task to be done.
 type AppInitTasks = Maybe UserRegInfo
 
-appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> SnapletInit App App
-appInit config user s = makeSnaplet "bead" description dataDir $ do
+appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> FilePath -> SnapletInit App App
+appInit config user s tempDir = makeSnaplet "bead" description dataDir $ do
 
   copyDataContext
 
@@ -80,10 +73,12 @@ appInit config user s = makeSnaplet "bead" description dataDir $ do
 
   fs <- nestSnaplet "fay" fayContext $ initFay
 
+  ts <- nestSnaplet "tempdir" tempDirContext $ tempDirectorySnaplet tempDir
+
   addRoutes (routes config)
   wrapSite (<|> msgErrorPage "Invalid address") -- TODO: I18N
 
-  return $ App sm as ss ds se rp fs
+  return $ App sm as ss ds se rp fs ts
   where
     description = "The BEAD website"
 

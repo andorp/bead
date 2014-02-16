@@ -1,7 +1,6 @@
 module Main where
 
 import Control.Monad (join)
-import System.Environment (getArgs)
 
 import Test.Framework (defaultMain)
 

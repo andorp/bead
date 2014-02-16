@@ -56,7 +56,6 @@ openSubmissionAllDataDir = joinPath [openSubmissionDataDir, "all"]
 userRegDataDir = joinPath [dataDir, userRegDir]
 testScriptDataDir = joinPath [dataDir, testScriptDir]
 testCaseDataDir = joinPath [dataDir, testCaseDir]
-uploadTempDataDir = joinPath [dataDir, uploadTempDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -73,7 +72,6 @@ persistenceDirs = [
   , userRegDataDir
   , testScriptDataDir
   , testCaseDataDir
-  , uploadTempDataDir
   ]
 
 class DirName d where

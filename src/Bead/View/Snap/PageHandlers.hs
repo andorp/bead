@@ -374,6 +374,7 @@ requestToPage path params
   | path == newTestScriptPath    = j P.NewTestScript
   | path == modifyTestScriptPath
     = P.ModifyTestScript <$> testScriptKey
+  | path == uploadFilePath = j P.UploadFile
   | path == submissionDetailsPath
     = P.SubmissionDetails <$> assignmentKey <*> submissionKey
   | path == administrationPath    = j P.Administration
