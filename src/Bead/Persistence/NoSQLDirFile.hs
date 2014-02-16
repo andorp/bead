@@ -42,7 +42,7 @@ userRegDir = "user-registration"
 testScriptDir = "test-script"
 testCaseDir = "test-case"
 testOutgoingDir = "test-outgoing"
-testIncommingDir = "test-incomming"
+testIncomingDir = "test-incoming"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
@@ -57,7 +57,7 @@ userRegDataDir = joinPath [dataDir, userRegDir]
 testScriptDataDir = joinPath [dataDir, testScriptDir]
 testCaseDataDir = joinPath [dataDir, testCaseDir]
 testOutgoingDataDir = joinPath [dataDir, testOutgoingDir]
-testIncommingDataDir = joinPath [dataDir, testIncommingDir]
+testIncomingDataDir = joinPath [dataDir, testIncomingDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
