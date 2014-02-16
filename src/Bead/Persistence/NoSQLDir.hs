@@ -1,5 +1,6 @@
 module Bead.Persistence.NoSQLDir (
     noSqlDirPersist
+  , ForeignKey(..)
   ) where
 
 import Bead.Domain.Types
@@ -13,8 +14,7 @@ import Control.Applicative ((<$>))
 import Control.Monad (join, liftM, filterM, when, unless, forM)
 import System.FilePath ((</>), joinPath, takeBaseName, takeFileName)
 import System.Directory (doesDirectoryExist, createDirectory, doesFileExist)
-import System.Posix.Types (COff(..), EpochTime(..))
-import Foreign.C.Types (CTime(..))
+import System.Posix.Types (COff(..))
 import System.Posix.Files (getFileStatus, fileSize, modificationTime)
 import Data.Function (on)
 import Data.Time (UTCTime, getCurrentTime)
@@ -67,16 +67,18 @@ noSqlDirPersist = Persist {
   , subscribedToGroup   = nSubscribedToGroup
   , unsubscribedFromGroup = nUnsubscribedFromGroup
 
-  , saveTestScript = nSaveTestScript -- :: CourseKey -> TestScript -> TIO TestScriptKey
-  , loadTestScript = nLoadTestScript -- :: TestScriptKey -> TIO TestScript
-  , courseOfTestScript = nCourseOfTestScript -- :: TestScriptKey -> TIO CourseKey
-  , modifyTestScript = nModifyTestScript -- :: TestScriptKey -> TestScript -> TIO ()
+  , saveTestScript = nSaveTestScript
+  , loadTestScript = nLoadTestScript
+  , courseOfTestScript = nCourseOfTestScript
+  , modifyTestScript = nModifyTestScript
 
-  , saveTestCase = nSaveTestCase -- :: TestScriptKey -> AssignmentKey -> TIO TestCaseKey
-  , loadTestCase = nLoadTestCase -- :: TestCaseKey -> TIO TestCase
-  , assignmentOfTestCase = nAssignmentOfTestCase -- :: TestCaseKey -> TIO AssignmentKey
-  , testScriptOfTestCase = nTestScriptOfTestCase -- :: TestCaseKey -> TIO TestScriptKey
-  , modifyTestCase = nModifyTestCase -- :: TestCaseKey -> TestCase -> TIO ()
+  , saveTestCase = nSaveTestCase
+  , loadTestCase = nLoadTestCase
+  , assignmentOfTestCase = nAssignmentOfTestCase
+  , testScriptOfTestCase = nTestScriptOfTestCase
+  , modifyTestCase = nModifyTestCase
+
+  , saveTestJob = nSaveTestJob
 
   , filterAssignment     = nFilterAssignment
   , assignmentKeys       = nAssignmentKeys
@@ -434,6 +436,10 @@ instance ForeignKey AssignmentKey where
 instance ForeignKey SubmissionKey where
   referredPath (SubmissionKey s) = joinPath [submissionDataDir, s]
   baseName     (SubmissionKey s) = s
+
+instance ForeignKey TestJobKey where
+  referredPath (TestJobKey s) = joinPath [testOutgoingDataDir, s]
+  baseName     (TestJobKey s) = s
 
 {- * One primitve value is stored in the file with the same name as the row.
    * One combined value is stored in the given directory into many files. The name
@@ -868,12 +874,37 @@ nTestScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
 nTestScriptOfTestCase =
   objectIn' "No Test Script was found for " "test-script" TestScriptKey isTestScriptDir
 
+
 nModifyTestCase :: TestCaseKey -> TestCase -> TIO ()
 nModifyTestCase tk tc = do
   let p = testCaseDirPath tk
   isTC <- isTestCaseDir p
   unless isTC . throwEx $ userError "Test Case does not exist"
   update p tc
+
+-- Collects the test script, test case and the submission and copies them to the
+-- the directory named after the submission key placed in the test-outgoing directory
+nSaveTestJob :: SubmissionKey -> TIO ()
+nSaveTestJob sk = do
+  ak <- nAssignmentOfSubmission sk
+  mtk <- nTestCaseOfAssignment ak
+  maybe (return ()) copyParts mtk
+  where
+    -- If there is a test case, we copy the information to the desired
+    copyParts :: TestCaseKey -> TIO ()
+    copyParts tk = do
+      tsk <- nTestScriptOfTestCase tk
+      let submissionFile = referredPath sk  </> "solution"
+          testcaseFile   = referredPath tk  </> "value"
+          testscriptFile = referredPath tsk </> "script"
+          tjk = submissionKeyToTestJobKey sk
+          tjPath = referredPath tjk
+      exist <- hasNoRollback $ doesDirectoryExist tjPath
+      when exist . throwEx . userError $ concat ["Test job directory already exist:", show tjk]
+      createDir tjPath
+      copy submissionFile (tjPath </> "submission")
+      copy testscriptFile (tjPath </> "script")
+      copy testcaseFile   (tjPath </> "tests")
 
 -- * Tools
 

@@ -13,6 +13,7 @@ import Data.Time
 import System.Directory hiding (copyFile)
 import System.IO
 import System.IO.Temp (createTempDirectory)
+import System.FilePath ((</>))
 
 import Control.Monad.Transaction.TIO
 import Bead.Persistence.Persist
@@ -295,9 +296,12 @@ testCases n tcs as = do
   quick n $ do
     tsk <- pick $ elements tcs
     ak  <- pick $ elements as
-    tck <- saveAndLoadIdenpotent "TestCase"
-      (saveTestCase persist tsk ak) (loadTestCase persist) (Gen.testCases)
-    run $ insertListRef list tck
+    mtk <- runPersistCmd $ testCaseOfAssignment persist ak
+    case mtk of
+      Just tk -> return ()
+      Nothing -> do tck <- saveAndLoadIdenpotent "TestCase"
+                             (saveTestCase persist tsk ak) (loadTestCase persist) (Gen.testCases)
+                    run $ insertListRef list tck
   listInRef list
 
 massPersistenceTest = do
@@ -857,6 +861,51 @@ userOverwriteFileTest = do
         assertEquals path path' "The user's file path was changed"
         assertEquals content content' "The user's file content is not copied correctly"
 
+testJobCreationTest = do
+  reinitPersistence
+  us <- users 400
+  cs <- courses 50
+  gs <- groups 200 cs
+  tss <- testScripts 100 cs
+  as <- courseAndGroupAssignments 200 200 cs gs
+  tcs <- testCases 600 tss as
+  ss <- submissions 1500 us as
+  testedSks <- createListRef
+  quick 1000 $ do
+    ((_u,_ak),sk) <- pick $ elements ss
+    tsks <- run $ listInRef testedSks
+    case sk `elem` tsks of
+      True -> return ()
+      False -> do
+        run $ insertListRef testedSks sk
+        join $ runPersistCmd $ do
+          saveTestJob persist sk
+          ak <- assignmentOfSubmission persist sk
+          mtck <- testCaseOfAssignment persist ak
+          maybe (testIfHasNoTestJob sk) (testIfHasTestJob sk) mtck
+
+  where
+    testIfHasNoTestJob sk = do
+      let tk = submissionKeyToTestJobKey sk
+      exist <- hasNoRollback $ doesDirectoryExist $ referredPath tk
+      return $ do
+        assertFalse exist "Test Job directory is exist"
+
+    testIfHasTestJob sk tck = do
+      -- Domain knowledge is used
+      tsk <- testScriptOfTestCase persist tck
+      let tk = submissionKeyToTestJobKey sk
+      submission  <- hasNoRollback $ readFile $ referredPath sk  </> "solution"
+      script      <- hasNoRollback $ readFile $ referredPath tsk </> "script"
+      tests       <- hasNoRollback $ readFile $ referredPath tck </> "value"
+      submission' <- hasNoRollback $ readFile $ referredPath tk </> "submission"
+      script'     <- hasNoRollback $ readFile $ referredPath tk </> "script"
+      tests'      <- hasNoRollback $ readFile $ referredPath tk </> "tests"
+      return $ do
+        assertEquals submission submission' "Submissions are differenr"
+        assertEquals script script' "Scripts are different"
+        assertEquals tests tests' "Tests are different"
+
 runPersistCmd :: TIO a -> PropertyM IO a
 runPersistCmd m = do
   x <- run $ runPersist m
@@ -925,6 +974,7 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Save, load and modify test cases" $ saveLoadAndModifyTestCasesTest
   , testCase "Copy, list, and get user's data file path" $ userFileHandlingTest
   , testCase "Overwrite user's data file" $ userOverwriteFileTest
+  , testCase "Test Job cration" $ testJobCreationTest
   , cleanUpPersistence
   ]
 

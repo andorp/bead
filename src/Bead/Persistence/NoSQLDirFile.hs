@@ -11,12 +11,11 @@ import Control.DeepSeq (deepseq)
 import Control.Monad (liftM, filterM, unless)
 
 import Data.Char (ord)
-import Data.Maybe (maybe)
 import Data.Time (UTCTime)
 import Data.List (nub)
 import System.FilePath (joinPath)
 import System.IO
-import System.IO.Temp (createTempDirectory, openTempFile)
+import System.IO.Temp (createTempDirectory)
 import System.Directory
 import System.Posix.Files (createSymbolicLink, removeLink, readSymbolicLink, fileExist)
 import Control.Exception as E
@@ -42,7 +41,8 @@ openSubmissionDir = "open-submission"
 userRegDir = "user-registration"
 testScriptDir = "test-script"
 testCaseDir = "test-case"
-uploadTempDir = "upload-temp"
+testOutgoingDir = "test-outgoing"
+testIncommingDir = "test-incomming"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
@@ -56,6 +56,8 @@ openSubmissionAllDataDir = joinPath [openSubmissionDataDir, "all"]
 userRegDataDir = joinPath [dataDir, userRegDir]
 testScriptDataDir = joinPath [dataDir, testScriptDir]
 testCaseDataDir = joinPath [dataDir, testCaseDir]
+testOutgoingDataDir = joinPath [dataDir, testOutgoingDir]
+testIncommingDataDir = joinPath [dataDir, testIncommingDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -72,6 +74,8 @@ persistenceDirs = [
   , userRegDataDir
   , testScriptDataDir
   , testCaseDataDir
+  , testOutgoingDataDir
+  , testIncommingDataDir
   ]
 
 class DirName d where
@@ -128,6 +132,9 @@ instance DirName TestScriptKey where
 
 instance DirName TestCaseKey where
   dirName (TestCaseKey k) = joinPath [testCaseDataDir, k]
+
+instance DirName TestJobKey where
+  dirName (TestJobKey k) = joinPath [testCaseDataDir, k]
 
 -- * Load and save aux functions
 
@@ -646,6 +653,15 @@ userRegDirStructure = DirStructure {
   , directories = []
   }
 
+testJobDirStructure = DirStructure {
+    files = [
+        "submission" -- Submission for the solution
+      , "script"     -- Script for the testing
+      , "tests"      -- Test cases for the testing
+      ]
+  , directories = []
+  }
+
 -- * Encoding
 
 ordEncode :: String -> String
@@ -687,6 +703,7 @@ dirStructures = [
   , userRegDirStructure
   , testScriptDirStructure
   , testCaseDirStructure
+  , testJobDirStructure
   ]
 
 unitTests = UnitTests [

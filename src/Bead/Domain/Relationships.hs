@@ -266,6 +266,19 @@ newtype TestCaseKey = TestCaseKey String
 -- Template function for the TestCaseKey value
 testCaseKeyCata f (TestCaseKey x) = f x
 
+-- Key for the Test Job that the test daemon will consume
+newtype TestJobKey = TestJobKey String
+  deriving (Eq, Ord, Show)
+
+-- Template function for the TestJobKey value
+testJobKeyCata f (TestJobKey x) = f x
+
+-- Converts a TestJobKey to a SubmissionKey
+testJobKeyToSubmissionKey = testJobKeyCata SubmissionKey
+
+-- Converts a SubmissionKey to a TestJobKey
+submissionKeyToTestJobKey = submissionKeyMap TestJobKey
+
 newtype CourseKey = CourseKey String
   deriving (Eq, Ord, Show)
 
