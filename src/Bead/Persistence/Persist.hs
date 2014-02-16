@@ -104,6 +104,9 @@ data Persist = Persist {
   , testScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
   , modifyTestCase :: TestCaseKey -> TestCase -> TIO ()
 
+  -- Test Jobs
+  , saveTestJob :: SubmissionKey -> TIO ()
+
   -- Assignment Persistence
   , filterAssignment  :: (AssignmentKey -> Assignment -> Bool) -> TIO [(AssignmentKey, Assignment)]
   , assignmentKeys    :: TIO [AssignmentKey]

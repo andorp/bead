@@ -652,6 +652,7 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
   withUserAndPersist $ \u p -> do
     removeUserOpenedSubmissions p u ak
     sk <- saveSubmission p ak u s
+    saveTestJob p sk
     return ()
   where
     checkActiveAssignment :: UserStory ()
