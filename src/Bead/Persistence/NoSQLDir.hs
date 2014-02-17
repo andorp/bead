@@ -12,7 +12,7 @@ import Control.Monad.Transaction.TIO
 
 import Control.Applicative ((<$>))
 import Control.Monad (join, liftM, filterM, when, unless, forM)
-import System.FilePath ((</>), joinPath, takeBaseName, takeFileName)
+import System.FilePath ((</>), joinPath, takeBaseName, takeFileName, splitFileName)
 import System.Directory (doesDirectoryExist, createDirectory, doesFileExist)
 import System.Posix.Types (COff(..))
 import System.Posix.Files (getFileStatus, fileSize, modificationTime)
@@ -79,6 +79,9 @@ noSqlDirPersist = Persist {
   , modifyTestCase = nModifyTestCase
 
   , saveTestJob = nSaveTestJob
+
+  , testComments = nTestComments
+  , deleteTestComment = nDeleteTestComment
 
   , filterAssignment     = nFilterAssignment
   , assignmentKeys       = nAssignmentKeys
@@ -174,6 +177,9 @@ nCopyFile username tmpPath userfile = do
       datadir = dirname </> "datadir"
   copy tmpPath (usersFileCata (datadir </>) userfile)
 
+-- Calculates the file modification time in UTC time from the File status
+fileModificationInUTCTime = posixSecondsToUTCTime . realToFrac . modificationTime
+
 nListFiles :: Username -> TIO [(UsersFile, FileInfo)]
 nListFiles username = do
   checkIfUserDir username
@@ -184,7 +190,7 @@ nListFiles username = do
     status <- hasNoRollback $ getFileStatus path
     let info = FileInfo
                  (fileOffsetToInt $ fileSize status)
-                 (posixSecondsToUTCTime . realToFrac $ modificationTime status)
+                 (fileModificationInUTCTime status)
     return (UsersFile $ takeFileName path, info)
   where
     fileOffsetToInt (COff x) = fromIntegral x
@@ -905,6 +911,25 @@ nSaveTestJob sk = do
       copy submissionFile (tjPath </> "submission")
       copy testscriptFile (tjPath </> "script")
       copy testcaseFile   (tjPath </> "tests")
+
+-- Test Comments are stored in the persistence layer, in the test-incomming directory
+-- each one in a file, named after an existing submission in the system
+nTestComments :: TIO [(SubmissionKey, Comment)]
+nTestComments = getFilesInFolder testIncomingDataDir >>= createComments
+  where
+    createComments = mapM createComment
+    createComment fp = do
+      let (dir,fname) = splitFileName fp
+      comment <- commentAna (fileLoad dir fname Just)
+                            (return "Testing")
+                            (fileModificationInUTCTime <$> (hasNoRollback $ getFileStatus fp))
+                            (return CT_TestAgent)
+      return (SubmissionKey $ takeFileName fp, comment)
+
+-- Deletes the comment contained file from the test-incomming directory, named after
+-- an existing submission
+nDeleteTestComment :: SubmissionKey -> TIO ()
+nDeleteTestComment = submissionKeyMap (fileDelete testIncomingDataDir)
 
 -- * Tools
 

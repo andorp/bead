@@ -47,6 +47,7 @@ instance UserToken (Username, String) where
 data UserState
   = UserNotLoggedIn
   | Registration
+  | TestAgent
   | UserState {
     user :: Username
   , page :: Page
@@ -60,55 +61,54 @@ data UserState
 userStateCata
   userNotLoggedIn
   registration
+  testAgent
   userState
   s = case s of
     UserNotLoggedIn -> userNotLoggedIn
     Registration -> registration
+    TestAgent -> testAgent
     UserState u p n r t tz s -> userState u p n r t tz s
 
 userNotLoggedIn :: UserState
 userNotLoggedIn = UserNotLoggedIn
 
+-- Converts the user state to a Role
 userRole :: UserState -> Either OutsideRole Role
-userRole UserNotLoggedIn = Left EmptyRole
-userRole Registration    = Left RegRole
-userRole s@(UserState{}) = Right . role $ s
+userRole = userStateCata
+  (Left EmptyRole) -- userNotLoggedIn
+  (Left RegRole)   -- registration
+  (Left TestAgentRole) -- testAgent
+  (\_u _p _n role _t _tz _s -> Right role) -- userState
 
 -- Produces a new user state from the old one, setting
 -- the status message to the given one
-setStatus msg = userStateCata UserNotLoggedIn Registration userState where
+setStatus msg = userStateCata UserNotLoggedIn Registration TestAgent userState where
   userState u p n r t tz _ = UserState u p n r t tz (Just msg)
 
 -- Produces the status message of the UserState, otherwise Nothing
-getStatus = userStateCata Nothing Nothing status where
+getStatus = userStateCata Nothing Nothing Nothing status where
   status _ _ _ _ _ _ s = s
 
 -- Produces a new status expect that the status message is cleared.
-clearStatus = userStateCata UserNotLoggedIn Registration userState where
+clearStatus = userStateCata UserNotLoggedIn Registration TestAgent userState where
   userState u p n r t tz _ = UserState u p n r t tz Nothing
 
 instance UserToken UserState where
-  userToken UserNotLoggedIn = error "Impossible: userToken UserNotLoggedIn"
-  userToken u = UsrToken (user u, token u)
+  userToken = userStateCata
+    (UsrToken (Username "UNL", "UNL")) -- userNotLoggedIn
+    (UsrToken (Username "REG", "REG")) -- registration
+    (UsrToken (Username "TA", "TA"))   -- testAgent
+    (\user _p _n _r token _tz _s -> UsrToken (user, token))
 
 instance InRole UserState where
-  isAdmin       UserNotLoggedIn = False
-  isAdmin       s = isAdmin . role $ s
-
-  isCourseAdmin UserNotLoggedIn = False
-  isCourseAdmin s = isCourseAdmin . role $ s
-
-  isGroupAdmin  UserNotLoggedIn = False
-  isGroupAdmin  s = isGroupAdmin . role $ s
-
-  isStudent     UserNotLoggedIn = False
-  isStudent     s = isStudent . role $ s
-
+  isAdmin = userStateCata False False False (\_u _p _n role _t _tz _s -> isAdmin role)
+  isCourseAdmin = userStateCata False False False (\_u _p _n role _t _tz _s -> isCourseAdmin role)
+  isGroupAdmin = userStateCata False False False (\_u _p _n role _t _tz _s -> isGroupAdmin role)
+  isStudent = userStateCata False False False (\_u _p _n role _t _tz _s -> isStudent role)
 
 -- | The actual page that corresponds to the user's state
 actualPage :: UserState -> Page
-actualPage UserNotLoggedIn = Login
-actualPage u               = page u
+actualPage = userStateCata Login Login Login (\_u page _n _r _t _tz _s -> page)
 
 data UserContainer a = UserContainer {
     isUserLoggedIn :: UsrToken -> IO Bool

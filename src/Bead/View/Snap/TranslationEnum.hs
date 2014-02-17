@@ -327,6 +327,7 @@ translationList =
   , Msg_UserStoryError_AuthenticationNeeded ()
   , Msg_UserStoryError_SubmissionDeadlineIsReached ()
   , Msg_UserStoryError_XID ()
+  , Msg_UserStoryError_TestAgentError ()
 
   , Msg_UserActions_ChangedUserDetails ()
 

@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
+import           Control.Exception
+import           Control.Concurrent
 import           Data.Char (toUpper)
 
 import           Snap hiding (Config(..))
@@ -12,6 +14,7 @@ import           System.IO.Temp (createTempDirectory)
 import           Bead.Configuration
 import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
+import           Bead.Controller.UserStories (runUserStory, testAgentComments)
 import           Bead.Domain.Entities (UserRegInfo(..), TimeZone(..))
 import           Bead.Persistence.Persist (initPersistence, isPersistenceSetUp)
 import qualified Bead.Persistence.NoSQLDir as P
@@ -112,6 +115,8 @@ startService config appInitTasks = do
 
   tempDir <- creating "temporary directory" createBeadTempDir
 
+  creating "test comments agent" $ startTestCommentsAgent (snapLogger userActionLogs) 30 5 {-s-} context
+
   serveSnaplet defaultConfig (appInit config appInitTasks context tempDir)
   stopLogger userActionLogs
   removeDirectoryRecursive tempDir
@@ -127,3 +132,27 @@ createBeadTempDir :: IO FilePath
 createBeadTempDir = do
   tmp <- getTemporaryDirectory
   createTempDirectory tmp "bead."
+
+-- Starts a thread that polls the persistence layer for new test agent comments in every w seconds
+-- and places them into the right place.
+startTestCommentsAgent :: L.Logger -> Int -> Int -> ServiceContext -> IO ()
+startTestCommentsAgent logger initWait wait context = do
+  let agent = do threadDelay (secToMicroSec wait)
+                 ((runUserStory context TestAgent testAgentComments) >> return ()) `catch` someException
+                 agent
+  forkIO $ do
+    threadDelay (secToMicroSec initWait)
+    agent
+  return ()
+  where
+    secToMicroSec = (* 1000000)
+
+    someException :: SomeException -> IO ()
+    someException e = do
+      (L.log logger L.ERROR (show e)) `catch` (loggerException e)
+      return ()
+      where
+        loggerException :: SomeException -> SomeException -> IO ()
+        loggerException original e = do
+          print original
+          print e

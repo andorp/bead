@@ -136,9 +136,11 @@ commentOnSubmissionHandler = do
     getRole = userStateCata
       Nothing
       Nothing
+      Nothing
       (\_username _page _name role _token _timezone _status -> Just role)
 
     getName = userStateCata
+      Nothing
       Nothing
       Nothing
       (\_username _page name _role _token _timezone _status -> Just name)

@@ -188,6 +188,32 @@ fileUpdate d f c = do
         writeFile fname original
         return ()
 
+-- Tries to delete a file if the file exist, saving it's content if something goes wrong
+fileDelete :: DirPath -> FilePath -> TIO ()
+fileDelete d f = stepM action reverseBefore reverseAfter >> return () where
+  action =
+    do let fname = joinPath [d,f]
+       exist <- doesFileExist fname
+       case exist of
+         False -> return Nothing
+         True  -> do h <- openFile fname ReadMode
+                     hSetEncoding h utf8
+                     s <- hGetContents h
+                     s `deepseq` hClose h
+                     removeFile fname
+                     return $ Just s
+
+  reverseBefore = return ()
+
+  reverseAfter Nothing  = return ()
+  reverseAfter (Just s) = do
+    let fname = joinPath [d,f]
+    handler <- openFile fname WriteMode
+    hSetEncoding handler utf8
+    hPutStr handler s
+    hClose handler
+    return ()
+
 -- * Directories
 
 createDir :: FilePath -> TIO ()

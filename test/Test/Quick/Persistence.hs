@@ -18,6 +18,7 @@ import System.FilePath ((</>))
 import Control.Monad.Transaction.TIO
 import Bead.Persistence.Persist
 import Bead.Persistence.NoSQLDir
+import Bead.Persistence.NoSQLDirFile
 
 import qualified Test.Quick.EntityGen as Gen
 
@@ -906,6 +907,65 @@ testJobCreationTest = do
         assertEquals script script' "Scripts are different"
         assertEquals tests tests' "Tests are different"
 
+incomingCommentsTest = do
+  reinitPersistence
+  us <- users 400
+  cs <- courses 50
+  gs <- groups 200 cs
+  as <- courseAndGroupAssignments 200 200 cs gs
+  ss <- submissions 1500 us as
+  commented <- createListRef
+  quick 1000 $ do
+    ((_u,_ak),sk) <- pick $ elements ss
+    cks <- run $ listInRef commented
+    case sk `elem` cks of
+      True  -> checkIfThereIsAComment sk
+      False -> checkIfCanBeCommented sk commented
+  where
+    checkIfThereIsAComment sk =
+      join $ runPersistCmd $ do
+        cks <- map fst <$> testComments persist
+        return $ do
+          assertTrue (sk `elem` cks) "Was not commented"
+
+    checkIfCanBeCommented sk commented = do
+      run $ insertListRef commented sk
+      comment <- pick $ Gen.manyWords
+      join $ runPersistCmd $ do
+        fileSave testIncomingDataDir (submissionKeyMap id sk) comment
+        cks <- map fst <$> testComments persist
+        return $ do
+          assertTrue (sk `elem` cks) "Was not commented"
+
+deleteIncomingCommentsTest = do
+  reinitPersistence
+  us <- users 400
+  cs <- courses 50
+  gs <- groups 200 cs
+  as <- courseAndGroupAssignments 200 200 cs gs
+  ss <- submissions 1500 us as
+  quick 1000 $ do
+    ((_u,_ak),sk) <- pick $ elements ss
+    sks <- runPersistCmd $ (map fst <$> testComments persist)
+    case sk `elem` sks of
+      True  -> checkIfCanBeDeleted   sk
+      False -> checkIfCanBeCommented sk
+  where
+    checkIfCanBeDeleted sk = do
+      join $ runPersistCmd $ do
+        deleteTestComment persist sk
+        cks <- map fst <$> testComments persist
+        return $ do
+          assertFalse (sk `elem` cks) ("Comment was not deleted: " ++ show sk)
+
+    checkIfCanBeCommented sk = do
+      comment <- pick $ Gen.manyWords
+      join $ runPersistCmd $ do
+        fileSave testIncomingDataDir (submissionKeyMap id sk) comment
+        cks <- map fst <$> testComments persist
+        return $ do
+          assertTrue (sk `elem` cks) "Was not commented"
+
 runPersistCmd :: TIO a -> PropertyM IO a
 runPersistCmd m = do
   x <- run $ runPersist m
@@ -975,6 +1035,8 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Copy, list, and get user's data file path" $ userFileHandlingTest
   , testCase "Overwrite user's data file" $ userOverwriteFileTest
   , testCase "Test Job cration" $ testJobCreationTest
+  , testCase "Incoming comments" $ incomingCommentsTest
+  , testCase "Delete incoming comments" $ deleteIncomingCommentsTest
   , cleanUpPersistence
   ]
 
