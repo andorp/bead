@@ -318,6 +318,7 @@ data Translation a
   | Msg_UserStoryError_AuthenticationNeeded { trans :: a }
   | Msg_UserStoryError_SubmissionDeadlineIsReached { trans :: a }
   | Msg_UserStoryError_XID { trans :: a }
+  | Msg_UserStoryError_TestAgentError { trans :: a }
 
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 

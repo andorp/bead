@@ -77,6 +77,7 @@ submissionDetailsPostHandler = do
     getName = userStateCata
       Nothing
       Nothing
+      Nothing
       (\_username _page name _role _token _timezone _status -> Just name)
 
 submissionDetailsContent :: PageData -> IHtml

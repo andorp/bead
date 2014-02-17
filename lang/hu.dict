@@ -279,6 +279,7 @@ DictionaryFile {
     , Msg_UserStoryError_SubmissionDeadlineIsReached { trans = "A beküldési határidő lejárt!" }
     , Msg_UserStoryError_UserIsNotLoggedIn { trans = "A felhasználó nincs bejelentkezve" }
     , Msg_UserStoryError_RegistrationProcessError { trans = "A registrációs folyamat hibás működése miatt más folyamatokat akar elérni %s %s" }
+    , Msg_UserStoryError_TestAgentError { trans = "A tesztelői folyamat hibás működése miatt más folyamatokat akar elérni %s %s" }
     , Msg_UserStoryError_AuthenticationNeeded { trans = "Azonosítás szükséges %s %s %s!" }
     , Msg_UserStoryError_UnknownError { trans = "Ismeretlen hiba történt!" }
     , Msg_UserStoryError_Message { trans = "Hiba történt: %s" }

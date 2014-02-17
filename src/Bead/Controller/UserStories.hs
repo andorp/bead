@@ -13,7 +13,7 @@ import qualified Bead.Persistence.Persist as R
 import           Bead.View.Snap.Translation
 
 import           Control.Applicative
-import           Control.Monad (when, unless, filterM)
+import           Control.Monad (filterM, forM_, when, unless)
 import           Control.Monad.Error (Error(..))
 import           Control.Concurrent.MVar
 import qualified Control.Monad.State  as CMS
@@ -583,6 +583,14 @@ authorize p o = do
            "and tries to reach other processes %s %s."])
         (show p) (show o)
 
+    Left TestAgentRole -> case elem (p,o) testAgentPermObjects of
+      True -> return ()
+      False -> errorPage $ userPrm2Error
+        (Msg_UserStoryError_TestAgentError $ unlines [
+           "During the automated testing process some internal error happened ",
+           "and tries to reach other processes %s %s."])
+        (show p) (show o)
+
     Right r -> case permission r p o of
       True  -> return ()
       False -> errorPage $ userPrm3Error
@@ -592,6 +600,10 @@ authorize p o = do
     regPermObjects = [
         (P_Create, P_User),    (P_Open, P_User)
       , (P_Create, P_UserReg), (P_Open, P_UserReg)
+      ]
+
+    testAgentPermObjects = [
+        (P_Open, P_TestIncoming), (P_Open, P_Submission), (P_Create, P_Comment)
       ]
 
 -- | No operational User Story
@@ -609,6 +621,7 @@ logMessage level msg = do
     userStateCata
       userNotLoggedIn
       registration
+      testAgent
       loggedIn
   where
     logMsg preffix =
@@ -616,6 +629,7 @@ logMessage level msg = do
 
     userNotLoggedIn    = logMsg "Not logged in user!"
     registration       = logMsg "Registration"
+    testAgent          = logMsg "Test Agent"
     loggedIn u _ _ _ t _ _ = logMsg (join [str u, " ", t])
 
 
@@ -820,6 +834,19 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
       saveComment p sk c
       return ()
 
+-- Test agent user story, that reads out all the comments that the test daemon left
+-- and saves the comments
+testAgentComments :: UserStory ()
+testAgentComments = logAction INFO "saves incoming comments" $ do
+  authorize P_Open P_TestIncoming
+  authorize P_Open P_Submission
+  authorize P_Create P_Comment
+  withPersist $ \p -> do
+    comments <- testComments p
+    forM_ comments $ \(sk,c) -> do
+      saveComment p sk c
+      deleteTestComment p sk
+
 userSubmissions :: Username -> AssignmentKey -> UserStory (Maybe UserSubmissionDesc)
 userSubmissions s ak = logAction INFO msg $ do
   authPerms userSubmissionDescPermissions
@@ -888,8 +915,9 @@ withPersist m = do
     encodeMessage :: String -> String
     encodeMessage = flip showHex "" . abs . hash
 
-    userPart = (userStateCata userNotLoggedIn registration loggedIn) <$> CMS.get
+    userPart = (userStateCata userNotLoggedIn registration testAgent loggedIn) <$> CMS.get
       where
         userNotLoggedIn    = "Not logged in user!"
         registration       = "Registration"
+        testAgent          = "Test Agent"
         loggedIn u _ _ _ t _ _ = concat [str u, " ", t]

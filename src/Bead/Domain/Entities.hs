@@ -246,6 +246,7 @@ groupAdmin = roleCata
 data OutsideRole
   = EmptyRole
   | RegRole
+  | TestAgentRole
   deriving (Eq, Ord)
 
 parseRole :: String -> Maybe Role
@@ -312,6 +313,7 @@ data PermissionObject
   | P_PlainPage
   | P_TestScript
   | P_File
+  | P_TestIncoming
   deriving (Eq, Ord, Show, Enum)
 
 -- Permission Objects are dynamically associated with values
