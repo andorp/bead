@@ -12,6 +12,7 @@ module Bead.View.Snap.Content (
   , blaze
   , getParameter
   , getParameterValues
+  , getOptionalParameter
   , getJSONParam
   , getDictionaryInfos
   , setInSessionE

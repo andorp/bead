@@ -20,6 +20,8 @@ import System.Directory
 import System.Posix.Files (createSymbolicLink, removeLink, readSymbolicLink, fileExist)
 import Control.Exception as E
 import Control.Monad (join, when)
+import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as BS
 
 #ifdef TEST
 import Bead.Invariants (UnitTests(..), InvariantsM2(..))
@@ -150,6 +152,19 @@ fileSave d f s = step
         exists <- doesFileExist fname
         when exists $ removeFile fname)
 
+fileSaveBS :: DirPath -> FilePath -> ByteString -> TIO ()
+fileSaveBS d f s = step
+    (do let fname = joinPath [d,f]
+        handler <- openFile fname WriteMode
+        hSetEncoding handler utf8
+        BS.hPutStr handler s
+        hClose handler
+        return ())
+    (do let fname = joinPath [d,f]
+        exists <- doesFileExist fname
+        when exists $ removeFile fname)
+
+
 fileLoad :: DirPath -> FilePath -> (String -> Maybe a) -> TIO a
 fileLoad d f reader = step
     (do let fname = joinPath [d,f]
@@ -164,8 +179,26 @@ fileLoad d f reader = step
           Just x  -> return x)
     (return ())
 
+fileLoadBS :: DirPath -> FilePath -> TIO ByteString
+fileLoadBS d f = step
+    (do let fname = joinPath [d,f]
+        exist <- doesFileExist fname
+        h <- openFile fname ReadMode
+        hSetEncoding h utf8
+        s <- BS.hGetContents h
+        s `deepseq` hClose h
+        return s)
+    (return ())
+
 same :: a -> Maybe a
 same = Just
+
+writeUtf8File :: FilePath -> String -> IO ()
+writeUtf8File fp s = do
+  handler <- openFile fp WriteMode
+  hSetEncoding handler utf8
+  hPutStr handler s
+  hClose handler
 
 fileUpdate :: DirPath -> FilePath -> String -> TIO ()
 fileUpdate d f c = do
@@ -180,13 +213,54 @@ fileUpdate d f c = do
         hSetEncoding h utf8
         s <- hGetContents h
         s `deepseq` hClose h
-        writeFile fname c
+        writeUtf8File fname c
         return s
 
       after original = do
         let fname = joinPath [d,f]
-        writeFile fname original
+        writeUtf8File fname original
         return ()
+
+fileUpdateBS :: DirPath -> FilePath -> ByteString -> TIO ()
+fileUpdateBS d f c = do
+  stepM action before after
+  return ()
+    where
+      before = return ()
+
+      action = do
+        let fname = joinPath [d,f]
+        h <- openFile fname ReadMode
+        hSetEncoding h utf8
+        s <- BS.hGetContents h
+        s `deepseq` hClose h
+        BS.writeFile fname c
+        return s
+
+      after original = do
+        let fname = joinPath [d,f]
+        BS.writeFile fname original
+        return ()
+
+
+-- Tries to overwrite file, if some error happened tries to replace the original
+-- content back
+overwriteFile :: FilePath -> FilePath -> TIO ()
+overwriteFile old new = stepM action reverseBefore reverseAfter >> return () where
+  action = do
+    let fname = new
+    h <- openFile fname ReadMode
+    hSetEncoding h utf8
+    s <- hGetContents h
+    s `deepseq` hClose h
+    copyFile old new
+    return s
+
+  reverseBefore = return ()
+
+  reverseAfter original = do
+    writeUtf8File new original
+    return ()
 
 -- Tries to delete a file if the file exist, saving it's content if something goes wrong
 fileDelete :: DirPath -> FilePath -> TIO ()
@@ -383,7 +457,7 @@ instance Save TestCase where
     createStructureDirs d testCaseDirStructure
     saveName d name
     saveDesc d desc
-    fileSave d "value" value
+    fileSaveBS d "value" value
     fileSave d "type" type_
     fileSave d "info" info
 
@@ -488,7 +562,7 @@ instance Load TestCase where
   load d = testCaseAppAna
     (loadName d)
     (loadDesc d)
-    (fileLoad d "value" same)
+    (fileLoadBS d "value")
     (fileLoad d "type" readMaybe)
     (fileLoad d "info" same)
 
@@ -545,7 +619,7 @@ instance Update TestCase where
   update d = testCaseCata show $ \name desc value type_ info -> do
     updateName d name
     fileUpdate d "description" desc
-    fileUpdate d "value" value
+    fileUpdateBS d "value" value
     fileUpdate d "type" type_
     fileUpdate d "info" info
 

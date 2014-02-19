@@ -16,6 +16,8 @@ import Control.Monad (join)
 import Control.Applicative
 import System.Locale (defaultTimeLocale)
 import Text.Printf (printf)
+import Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as BS
 
 -- * Course, exams, exercises, solutions
 
@@ -314,6 +316,7 @@ data PermissionObject
   | P_TestScript
   | P_File
   | P_TestIncoming
+  | P_TestCase
   deriving (Eq, Ord, Show, Enum)
 
 -- Permission Objects are dynamically associated with values
@@ -528,7 +531,7 @@ testCaseTypeCata
 data TestCase = TestCase {
     tcName :: String -- The name of the test case
   , tcDescription :: String -- The short description of the test case
-  , tcValue :: String -- The stored value of test cases
+  , tcValue :: ByteString -- The stored value of test cases
   , tcType  :: TestCaseType -- The type of the test case
   , tcInfo  :: String -- Additional information which interpretation could change depending on the
                       -- type of the test case

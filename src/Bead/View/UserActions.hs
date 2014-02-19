@@ -37,9 +37,9 @@ data UserAction
   | ModifyTestScript TestScriptKey TestScript
 
   -- Assignment
-  | CreateGroupAssignment GroupKey Assignment
-  | CreateCourseAssignment CourseKey Assignment
-  | ModifyAssignment AssignmentKey Assignment
+  | CreateGroupAssignment GroupKey Assignment TCCreation
+  | CreateCourseAssignment CourseKey Assignment TCCreation
+  | ModifyAssignment AssignmentKey Assignment TCModification
 
   -- Submission
   | NewSubmission AssignmentKey Submission
@@ -70,9 +70,9 @@ userStoryFor (UpdateUser u)     = Story.updateUser u
 userStoryFor (CreateCourseAdmin u c) = Story.createCourseAdmin u c
 userStoryFor (CreateGroupAdmin u g)   = Story.createGroupAdmin u g
 userStoryFor (SubscribeToGroup g)    = Story.subscribeToGroup g
-userStoryFor (CreateGroupAssignment gk a)  = Story.createGroupAssignment gk a >> return ()
-userStoryFor (CreateCourseAssignment ck a) = Story.createCourseAssignment ck a >> return ()
-userStoryFor (ModifyAssignment ak a) = Story.modifyAssignment ak a
+userStoryFor (CreateGroupAssignment gk a tc)  = Story.createGroupAssignment gk a tc >> return ()
+userStoryFor (CreateCourseAssignment ck a tc) = Story.createCourseAssignment ck a tc >> return ()
+userStoryFor (ModifyAssignment ak a tm) = Story.modifyAssignment ak a tm
 userStoryFor (NewSubmission ak s)    = Story.submitSolution ak s >> return ()
 userStoryFor (NewEvaluation sk e)    = Story.newEvaluation sk e
 userStoryFor (ModifyEvaluation ek e) = Story.modifyEvaluation ek e

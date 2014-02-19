@@ -7,6 +7,7 @@ module Bead.View.Snap.Content.NewTestScript (
 import           Control.Applicative ((<$>),(<*>))
 import           Control.Arrow ((***))
 import           Data.String (fromString)
+import           Data.String.Utils (replace)
 
 import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
@@ -51,7 +52,7 @@ postNewTestScript = do
     <$> (getParameter (stringParameter (fieldName testScriptNameField) "Test Script Name"))
     <*> (getParameter (stringParameter (fieldName testScriptDescField) "Test Script Description"))
     <*> (getParameter (stringParameter (fieldName testScriptNotesField) "Test Script Notes"))
-    <*> (getParameter (stringParameter (fieldName testScriptScriptField) "Test Script"))
+    <*> (replaceCrlf <$> getParameter (stringParameter (fieldName testScriptScriptField) "Test Script"))
   ck <- CourseKey <$> getParameter (stringParameter (fieldName testScriptCourseKeyField) "Course Key")
   script <- userStory $ do
     (course,_groupkeys) <- Story.loadCourse ck
@@ -74,7 +75,7 @@ postModifyTestScript = do
     <$> (getParameter (stringParameter (fieldName testScriptNameField) "Test Script Name"))
     <*> (getParameter (stringParameter (fieldName testScriptDescField) "Test Script Description"))
     <*> (getParameter (stringParameter (fieldName testScriptNotesField) "Test Script Notes"))
-    <*> (getParameter (stringParameter (fieldName testScriptScriptField) "Test Script"))
+    <*> (replaceCrlf <$> getParameter (stringParameter (fieldName testScriptScriptField) "Test Script"))
   tsk <- getParameter testScriptKeyPrm
   script <- userStory $ do
     (testscript, _coursekey) <- Story.loadTestScript tsk
@@ -108,7 +109,9 @@ hasPageContent pd = do
       H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Notes "Help for writing test cases"
       textAreaInput (fieldName testScriptNotesField) (testScriptNotes pd) ! (textAreaFillDiv 20)
       H.span ! boldText $ fromString . msg $ Msg_NewTestScript_Script "Test script"
-      textAreaInput (fieldName testScriptScriptField) (testScriptScript pd) ! (textAreaFillDiv 50)
+      textAreaInput (fieldName testScriptScriptField) (testScriptScript pd)
+        ! (textAreaFillDiv 50)
+        ! (A.acceptCharset "utf-8")
     H.div ! leftCell $ do
       H.b $ fromString . msg $ Msg_NewTestScript_Course "Course:"
       H.br
@@ -145,3 +148,8 @@ fillDiv       = A.style "width: 99%"
 textAreaFillDiv h = A.style (fromString $ concat ["width: 99%; height: ", show h,"%"])
 formDiv       = A.style "width: 100%; height: 600px"
 boldText      = A.style "font-weight: bold"
+
+-- Helper
+
+replaceCrlf :: String -> String
+replaceCrlf = replace "\r\n" "\n"
