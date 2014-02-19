@@ -1,4 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE OverloadedStrings          #-}
 module Bead.Controller.UserStories where
 
 import           Bead.Domain.Entities     as E
@@ -22,6 +23,7 @@ import qualified Control.Monad.Reader as CMR
 import           Control.Monad.Trans
 import           Control.Monad (join)
 import           Prelude hiding (log, userError)
+import qualified Data.ByteString.Char8 as BS
 import           Data.Hashable
 import           Data.List (nub)
 import           Data.Maybe (catMaybes)
@@ -344,6 +346,18 @@ loadTestScript tsk = logAction INFO ("loads the test script: " ++ show tsk) $ do
     ts <- R.loadTestScript p tsk
     return (return (ts, ck))
 
+-- | Returns Just test case key and test case for the given assignment if there any, otherwise Nothing
+testCaseOfAssignment :: AssignmentKey -> UserStory (Maybe (TestCaseKey, TestCase, TestScriptKey))
+testCaseOfAssignment ak = logAction INFO (" loads the test case for assignment: " ++ show ak) $ do
+  join $ withPersist $ \p -> do
+    mtk <- R.testCaseOfAssignment p ak
+    maybe
+      (return (return Nothing))
+      (\tk -> do tc <- R.loadTestCase p tk
+                 tsk <- R.testScriptOfTestCase p tk
+                 return (return (Just (tk, tc, tsk))))
+      mtk
+
 -- | Returns the test scrips of the given assignments, that are attached to the course of the assignment
 testScriptInfosOfAssignment :: AssignmentKey -> UserStory [(TestScriptKey, TestScriptInfo)]
 testScriptInfosOfAssignment ak = do
@@ -508,11 +522,97 @@ attendedGroups = logAction INFO "selects courses attended in" $ do
                 <*> R.isThereASubmissionForCourse p u ck
       return (gk,desc,s)
 
-createGroupAssignment :: GroupKey -> Assignment -> UserStory AssignmentKey
-createGroupAssignment gk a = logAction INFO msg $ do
+testCaseModificationForAssignment :: AssignmentKey -> TCModification -> UserStory ()
+testCaseModificationForAssignment ak = tcModificationCata noModification fileOverwrite textOverwrite tcDelete where
+  noModification = return ()
+
+  fileOverwrite tsk uf = do
+    u <- username
+    withPersist $ \p -> do
+      let usersFileName = usersFileCata id uf
+          testCase = TestCase {
+              tcName        = usersFileName
+            , tcDescription = usersFileName
+            , tcValue       = ""
+            , tcType        = TestCaseZipped
+            , tcInfo        = usersFileName
+            }
+      mtk <- R.testCaseOfAssignment p ak
+      tk <- case mtk of
+        Just tk -> R.modifyTestCase p tk testCase >> return tk
+        Nothing -> R.saveTestCase p tsk ak testCase
+      R.modifyTestScriptOfTestCase p tk tsk
+      copyTestCaseFile p tk u uf
+    return ()
+
+  textOverwrite tsk t = do
+    withPersist $ \p -> do
+      a <- R.loadAssignment p ak
+      let name = assignmentName a
+          testCase = TestCase {
+              tcName        = name
+            , tcDescription = name
+            , tcValue       = BS.pack t
+            , tcType        = TestCaseSimple
+            , tcInfo        = ""
+            }
+      mtk <- R.testCaseOfAssignment p ak
+      tk <- case mtk of
+        Just tk -> R.modifyTestCase p tk testCase >> return tk
+        Nothing -> R.saveTestCase p tsk ak testCase
+      R.modifyTestScriptOfTestCase p tk tsk
+
+  tcDelete = do
+    withPersist $ \p -> do
+      mtk <- R.testCaseOfAssignment p ak
+      case mtk of
+        Nothing -> return ()
+        Just tk -> R.removeTestCaseAssignment p tk ak
+
+-- Interprets the TCCreation value, copying a binary file or filling up the
+-- normal test case file with the plain value, creating the test case for the
+-- given assingment
+testCaseCreationForAssignment :: AssignmentKey -> TCCreation -> UserStory ()
+testCaseCreationForAssignment ak = tcCreationCata noCreation fileCreation textCreation where
+
+  noCreation = return ()
+
+  fileCreation tsk usersfile = do
+    u <- username
+    withPersist $ \p -> do
+      let usersFileName = usersFileCata id usersfile
+          testCase = TestCase {
+              tcName        = usersFileName
+            , tcDescription = usersFileName
+            , tcValue       = ""
+            , tcType        = TestCaseZipped
+            , tcInfo        = usersFileName
+            }
+      tk <- R.saveTestCase p tsk ak testCase
+      copyTestCaseFile p tk u usersfile
+    return ()
+
+  -- Set plain text as test case value
+  textCreation tsk plain = do
+    withPersist $ \p -> do
+      a <- R.loadAssignment p ak
+      let name = assignmentName a
+          testCase = TestCase {
+              tcName        = name
+            , tcDescription = name
+            , tcValue       = BS.pack plain
+            , tcType        = TestCaseSimple
+            , tcInfo        = ""
+            }
+      R.saveTestCase p tsk ak testCase
+    return ()
+
+createGroupAssignment :: GroupKey -> Assignment -> TCCreation -> UserStory AssignmentKey
+createGroupAssignment gk a tc = logAction INFO msg $ do
   authorize P_Open   P_Group
   authorize P_Create P_Assignment
   ak <- create descriptor (\p -> saveGroupAssignment p gk) a
+  testCaseCreationForAssignment ak tc
   statusMsg a
   return ak
   where
@@ -521,11 +621,12 @@ createGroupAssignment gk a = logAction INFO msg $ do
     statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
       putStatusMessage $ Msg_UserStory_NewGroupAssignment "The group assignment has been created."
 
-createCourseAssignment :: CourseKey -> Assignment -> UserStory AssignmentKey
-createCourseAssignment ck a = logAction INFO msg $ do
+createCourseAssignment :: CourseKey -> Assignment -> TCCreation -> UserStory AssignmentKey
+createCourseAssignment ck a tc = logAction INFO msg $ do
   authorize P_Open P_Course
   authorize P_Create P_Assignment
   ak <- create descriptor (\p -> saveCourseAssignment p ck) a
+  testCaseCreationForAssignment ak tc
   statusMsg a
   return ak
   where
@@ -863,8 +964,8 @@ userSubmissions s ak = logAction INFO msg $ do
   where
     msg = join ["lists ",show s,"'s submissions for assignment ", show ak]
 
-modifyAssignment :: AssignmentKey -> Assignment -> UserStory ()
-modifyAssignment ak a = logAction INFO ("modifies assignment " ++ show ak) $ do
+modifyAssignment :: AssignmentKey -> Assignment -> TCModification -> UserStory ()
+modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ do
   authorize P_Modify P_Assignment
   withUserAndPersist $ \u p -> do
     courseOrGroup <- R.courseOrGroupOfAssignment p ak
@@ -873,7 +974,8 @@ modifyAssignment ak a = logAction INFO ("modifies assignment " ++ show ak) $ do
       Right gk -> (elem gk . map fst) <$> R.administratedGroups  p u
     when ownedAssignment $ R.modifyAssignment p ak a
     -- TODO: Log invalid access
-    return ()
+  testCaseModificationForAssignment ak tc
+
 
 -- * User Story combinators
 

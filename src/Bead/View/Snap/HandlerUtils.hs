@@ -8,6 +8,7 @@ module Bead.View.Snap.HandlerUtils (
   , getParameter
   , getParameterValues -- Calculates a list of values for the given parameter
   , getParameterOrError
+  , getOptionalParameter -- Calculates the value of the given parameter if it is defined
   , getJSONParam
   , getDictionaryInfos -- Calculates a list of language and dictionaryInfo
   , i18nE
@@ -213,6 +214,19 @@ getParameterValues param = do
     (throwError . strMsg $ notFound param) -- TODO: I18N
     (mapM (decodeParamValue param))
     (Map.lookup (fromString paramName) params)
+
+-- Calculates a Just value named and decoded by the given paramater,
+-- supposing that the parameter are optional, if it not presented
+-- calculates Nothing, if decoding fails, throws an Error
+getOptionalParameter :: Parameter a -> HandlerError App b (Maybe a)
+getOptionalParameter param = do
+  params <- getParams
+  let paramName = name param
+  case Map.lookup (fromString paramName) params of
+    Nothing  -> return Nothing
+    Just []  -> throwError . strMsg $ concat [paramName, " contains zero values."] -- TODO: I18N
+    Just [x] -> Just <$> decodeParamValue param x
+    Just (_:_) -> throwError . strMsg $ concat [paramName, " has more than one value."] -- TODO: I18N
 
 getJSONParam :: (Data a) => String -> String -> HandlerError App b a
 getJSONParam param msg = do

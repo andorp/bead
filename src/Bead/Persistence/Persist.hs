@@ -103,6 +103,9 @@ data Persist = Persist {
   , assignmentOfTestCase :: TestCaseKey -> TIO AssignmentKey
   , testScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
   , modifyTestCase :: TestCaseKey -> TestCase -> TIO ()
+  , removeTestCaseAssignment :: TestCaseKey -> AssignmentKey -> TIO ()
+  , copyTestCaseFile :: TestCaseKey -> Username -> UsersFile -> TIO ()
+  , modifyTestScriptOfTestCase :: TestCaseKey -> TestScriptKey -> TIO ()
 
   -- Test Jobs
   , saveTestJob :: SubmissionKey -> TIO () -- Saves the test job for the test daemon

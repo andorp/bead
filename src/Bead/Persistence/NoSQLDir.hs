@@ -77,6 +77,9 @@ noSqlDirPersist = Persist {
   , assignmentOfTestCase = nAssignmentOfTestCase
   , testScriptOfTestCase = nTestScriptOfTestCase
   , modifyTestCase = nModifyTestCase
+  , removeTestCaseAssignment = nRemoveTestCaseAssignment
+  , copyTestCaseFile = nCopyTestCaseFile
+  , modifyTestScriptOfTestCase = nModifyTestScriptOfTestCase
 
   , saveTestJob = nSaveTestJob
 
@@ -865,6 +868,17 @@ nSaveTestCase tk ak tc = do
   link tk key "test-script"
   return key
 
+nRemoveTestCaseAssignment :: TestCaseKey -> AssignmentKey -> TIO ()
+nRemoveTestCaseAssignment tk ak = do
+  unlink tk ak "test-case"
+  unlink ak tk "assignment"
+
+nModifyTestScriptOfTestCase :: TestCaseKey -> TestScriptKey -> TIO ()
+nModifyTestScriptOfTestCase tck tsk = do
+  tskOld <- nTestScriptOfTestCase tck
+  unlink tskOld tck "test-script"
+  link   tsk    tck "test-script"
+
 nLoadTestCase :: TestCaseKey -> TIO TestCase
 nLoadTestCase tk = do
   let p = testCaseDirPath tk
@@ -887,6 +901,14 @@ nModifyTestCase tk tc = do
   isTC <- isTestCaseDir p
   unless isTC . throwEx $ userError "Test Case does not exist"
   update p tc
+
+nCopyTestCaseFile :: TestCaseKey -> Username -> UsersFile -> TIO ()
+nCopyTestCaseFile tk u uf = do
+  let p = testCaseDirPath tk
+  isTC <- isTestCaseDir p
+  unless isTC . throwEx $ userError "Test Case does not exist"
+  ufp <- nGetFile u uf
+  overwriteFile ufp (p </> "value")
 
 -- Collects the test script, test case and the submission and copies them to the
 -- the directory named after the submission key placed in the test-outgoing directory

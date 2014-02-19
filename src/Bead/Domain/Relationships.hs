@@ -8,6 +8,7 @@ import Bead.Domain.Evaluation
 
 -- Haskell imports
 
+import Control.Applicative
 import Data.Either (either)
 import Data.Function (on)
 import Data.Time (UTCTime(..))
@@ -223,6 +224,39 @@ userSubmissionDescPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment), (P_Open, P_Submission)
   ]
 
+data TCCreation
+  = NoCreation
+  | FileCreation TestScriptKey UsersFile
+  | TextCreation TestScriptKey String
+  deriving (Eq)
+
+tcCreationCata
+  noCreation
+  fileCreation
+  textCreation
+  t = case t of
+    NoCreation -> noCreation
+    FileCreation tsk uf -> fileCreation tsk uf
+    TextCreation tsk t  -> textCreation tsk t
+
+data TCModification
+  = NoModification
+  | FileOverwrite TestScriptKey UsersFile
+  | TextOverwrite TestScriptKey String
+  | TCDelete
+  deriving (Eq)
+
+tcModificationCata
+  noModification
+  fileOverwrite
+  textOverwrite
+  delete
+  t = case t of
+    NoModification -> noModification
+    FileOverwrite tsk uf -> fileOverwrite tsk uf
+    TextOverwrite tsk t  -> textOverwrite tsk t
+    TCDelete -> delete
+
 -- * Entity keys
 
 newtype AssignmentKey = AssignmentKey String
@@ -254,7 +288,7 @@ submissionKeyMap f (SubmissionKey s) = f s
 
 -- Key for a given Test Script in the persistence layer
 newtype TestScriptKey = TestScriptKey String
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read)
 
 -- Template function for the TestScriptKey value
 testScriptKeyCata f (TestScriptKey x) = f x
