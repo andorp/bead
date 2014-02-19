@@ -938,7 +938,7 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
 -- Test agent user story, that reads out all the comments that the test daemon left
 -- and saves the comments
 testAgentComments :: UserStory ()
-testAgentComments = logAction INFO "saves incoming comments" $ do
+testAgentComments = do
   authorize P_Open P_TestIncoming
   authorize P_Open P_Submission
   authorize P_Create P_Comment
