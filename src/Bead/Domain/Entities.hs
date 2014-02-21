@@ -75,6 +75,7 @@ data CommentType
   | CT_Admin
   | CT_Evaluation
   | CT_TestAgent
+  | CT_Message   -- Highlighted message to the student
   deriving (Show, Read, Eq)
 
 commentTypeCata
@@ -84,6 +85,7 @@ commentTypeCata
   admin
   evaluation
   testAgent
+  message
   c = case c of
     CT_Student     -> student
     CT_GroupAdmin  -> groupAdmin
@@ -91,6 +93,7 @@ commentTypeCata
     CT_Admin       -> admin
     CT_Evaluation  -> evaluation
     CT_TestAgent   -> testAgent
+    CT_Message     -> message
 
 -- | Comment on the text of exercise, on the evaluation
 data Comment = Comment {
@@ -116,6 +119,7 @@ isStudentComment = commentCata $ \_comment _owner _date -> student where
     False -- Admin
     True  -- Evaluation
     False -- Test Agent
+    True  -- Message
 
 type CourseName = String
 

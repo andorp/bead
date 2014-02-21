@@ -12,7 +12,7 @@ import Control.Monad.Transaction.TIO
 
 import Control.Applicative ((<$>))
 import Control.Monad (join, liftM, filterM, when, unless, forM)
-import System.FilePath ((</>), joinPath, takeBaseName, takeFileName, splitFileName)
+import System.FilePath ((</>), joinPath, takeBaseName, takeFileName, splitFileName, splitExtension)
 import System.Directory (doesDirectoryExist, createDirectory, doesFileExist)
 import System.Posix.Types (COff(..))
 import System.Posix.Files (getFileStatus, fileSize, modificationTime)
@@ -939,19 +939,31 @@ nSaveTestJob sk = do
 nTestComments :: TIO [(SubmissionKey, Comment)]
 nTestComments = getFilesInFolder testIncomingDataDir >>= createComments
   where
+    testCommentType fname =
+      case splitExtension fname of
+        (_name, ".message") -> CT_Message
+        _                   -> CT_TestAgent
+
+    submissionKey fname =
+      let (name,_ext) = splitExtension fname
+      in SubmissionKey name
+
     createComments = mapM createComment
     createComment fp = do
       let (dir,fname) = splitFileName fp
       comment <- commentAna (fileLoad dir fname Just)
                             (return "Testing")
                             (fileModificationInUTCTime <$> (hasNoRollback $ getFileStatus fp))
-                            (return CT_TestAgent)
-      return (SubmissionKey $ takeFileName fp, comment)
+                            (return $ testCommentType fname)
+      return (submissionKey fname, comment)
 
--- Deletes the comment contained file from the test-incomming directory, named after
+-- Deletes the comments (test-agent and message as well)
+-- contained file from the test-incomming directory, named after
 -- an existing submission
 nDeleteTestComment :: SubmissionKey -> TIO ()
-nDeleteTestComment = submissionKeyMap (fileDelete testIncomingDataDir)
+nDeleteTestComment = submissionKeyMap $ \sk -> do
+  fileDelete testIncomingDataDir sk
+  fileDelete testIncomingDataDir $ concat [sk, ".message"]
 
 -- * Tools
 

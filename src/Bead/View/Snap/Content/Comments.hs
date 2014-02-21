@@ -25,10 +25,20 @@ commentsDiv t cs = do
     mapM_ (commentPar t) $ sortBy ((flip compare) `on` commentDate) cs
 
 commentPar :: UserTimeConverter -> Comment -> Html
-commentPar t c = H.div # commentTextDiv $ do
+commentPar t c = H.div # (commentDiv c) $ do
   H.p # textAlign "left" $ fromString $
     (showDate . t . commentDate $ c) ++ ", " ++ (commentAuthor $ c)
   H.pre # commentTextPre $ fromString $ comment $ c
+  where
+    commentDiv = commentCata $ \_comment _author _date ->
+      commentTypeCata
+        commentTextDiv -- student
+        commentTextDiv -- groupAdmin
+        commentTextDiv -- courseAdmin
+        commentTextDiv -- admin
+        commentTextDiv -- evaluation
+        commentTextDiv -- testAgent
+        messageCommentTextDiv -- message
 
 -- Creates a post form for the given route assignment key and submission key, where
 -- a comment can be placed and the result is submitted to the given page, which is

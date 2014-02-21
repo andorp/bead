@@ -111,7 +111,9 @@ data Persist = Persist {
   , saveTestJob :: SubmissionKey -> TIO () -- Saves the test job for the test daemon
 
   -- Test Comments
-  , testComments :: TIO [(SubmissionKey, Comment)] -- List the comments that the test daemon left in the test-incomming
+    -- | List the comments that the test daemon left in the test-incomming, comment for the
+    -- groups admin, and comments for the student
+  , testComments :: TIO [(SubmissionKey, Comment)]
   , deleteTestComment :: SubmissionKey -> TIO ()   -- Deletes the test daemon's comment from the test-incomming
 
   -- Assignment Persistence
