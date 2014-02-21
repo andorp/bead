@@ -125,6 +125,11 @@ commentTextDiv = assignmentTextDiv
 
 commentTextPre = assignmentTextPre
 
+messageCommentTextDiv = mconcat [
+    marginLeft 0
+  , background "yellow"
+  ]
+
 textAlignLeft  = create $ "text-align: left"
 textAlignRight = create $ "text-align: right"
 grayBackground = backgroundColor $ "lightgray"
