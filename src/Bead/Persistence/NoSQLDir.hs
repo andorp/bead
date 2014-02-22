@@ -15,7 +15,7 @@ import Control.Monad (join, liftM, filterM, when, unless, forM)
 import System.FilePath ((</>), joinPath, takeBaseName, takeFileName, splitFileName, splitExtension)
 import System.Directory (doesDirectoryExist, createDirectory, doesFileExist)
 import System.Posix.Types (COff(..))
-import System.Posix.Files (getFileStatus, fileSize, modificationTime)
+import System.Posix.Files (getFileStatus, fileExist, fileSize, modificationTime)
 import Data.Function (on)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
@@ -688,8 +688,14 @@ nPlaceToOpened ak u sk = do
 
 nRemoveFromOpened :: AssignmentKey -> Username -> SubmissionKey -> TIO ()
 nRemoveFromOpened ak u sk = do
-  removeSymLink (joinPath [openSubmissionAllDataDir, baseName sk])
-  removeSymLink (joinPath [openedSubmissionDataDirPath ak u, baseName sk])
+
+  let openedAllSubmissionKeyPath = joinPath [openSubmissionAllDataDir, baseName sk]
+  exist <- hasNoRollback $ fileExist openedAllSubmissionKeyPath
+  when exist $ removeSymLink openedAllSubmissionKeyPath
+
+  let openedSubmissionDataDir = joinPath [openedSubmissionDataDirPath ak u, baseName sk]
+  exist <- hasNoRollback $ fileExist openedSubmissionDataDir
+  when exist $ removeSymLink openedSubmissionDataDir
 
 nUsersOpenedSubmissions :: AssignmentKey -> Username -> TIO [SubmissionKey]
 nUsersOpenedSubmissions ak u = do
