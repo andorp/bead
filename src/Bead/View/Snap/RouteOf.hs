@@ -180,8 +180,8 @@ pageRoutePath = fromString . r where
     evaluationTablePath
     (const evaluationPath)
     (const $ const modifyEvaluationPath)
-    newGroupAssignmentPath
-    newCourseAssignmentPath
+    (const newGroupAssignmentPath)
+    (const newCourseAssignmentPath)
     modifyAssignmentPath
     submissionPath
     submissionListPath
@@ -216,6 +216,8 @@ pageRequestParams = r where
   r (DeleteUsersFromGroup gk) = [requestParam gk]
   r (UnsubscribeFromCourse ck) = [requestParam ck]
   r (ModifyTestScript tsk) = [requestParam tsk]
+  r (NewCourseAssignment ck) = [requestParam ck]
+  r (NewGroupAssignment gk) = [requestParam gk]
   r _ = []
 
 -- Calculates the full path from a page value, including the base path and the

@@ -159,8 +159,8 @@ menuId = P.pageCata
   "link-evaluation-table"
   (const "link-evaluation")
   (const2 "link-modify-evaluation")
-  "link-new-group-assignment"
-  "link-new-course-assignment"
+  (const "link-new-group-assignment")
+  (const "link-new-course-assignment")
   "link-modify-assignment"
   "link-submission"
   "link-submission-list"

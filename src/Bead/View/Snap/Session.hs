@@ -85,8 +85,8 @@ instance SessionStore P.Page where
           "EvaluationTable"
           (\(R.SubmissionKey s) -> join ["Evaluation:",s])
           (\(R.SubmissionKey s) (R.EvaluationKey e) -> join ["ModifyEvaluation:", s, ":", e])
-          "NewGroupAssignment"
-          "NewCourseAssignment"
+          (\(R.GroupKey s) -> join ["NewGroupAssignment:", s])
+          (\(R.CourseKey s) -> join ["NewCourseAssignment:", s])
           "ModifyAssignment"
           "Submission"
           "SubmissionList"
@@ -131,8 +131,6 @@ instance SessionRestore P.Page where
     Just "AssignCourseAdmin" -> Just P.AssignCourseAdmin
     Just "CreateGroup"  -> Just P.CreateGroup
     Just "AssignGroupAdmin" -> Just P.AssignGroupAdmin
-    Just "NewCourseAssignment" -> Just P.NewCourseAssignment
-    Just "NewGroupAssignment" -> Just P.NewGroupAssignment
     Just "ModifyAssignment" -> Just P.ModifyAssignment
     Just "ChangePassword" -> Just P.ChangePassword
     Just "SetUserPassword" -> Just P.SetUserPassword
@@ -183,6 +181,18 @@ instance SessionRestore P.Page where
           let se = splitValues "ModifyTestScript:" ts
           in case se of
               [t] -> Just $ P.ModifyTestScript (testScriptKey t)
+              _   -> Nothing
+
+      | startsWith "NewCourseAssignment:" ts ->
+          let se = splitValues "NewCourseAssignment:" ts
+          in case se of
+              [t] -> Just $ P.NewCourseAssignment (courseKey t)
+              _   -> Nothing
+
+      | startsWith "NewGroupAssignment:" ts ->
+          let se = splitValues "NewGroupAssignment:" ts
+          in case se of
+              [t] -> Just $ P.NewGroupAssignment (groupKey t)
               _   -> Nothing
 
     Just _ -> Nothing
