@@ -11,6 +11,7 @@ import Control.Applicative ((<*>))
 import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.UserStories (submissionListDesc)
 import Bead.Controller.Pages as P (Page(SubmissionList, SubmissionDetails))
+import Bead.Domain.Shared.Evaluation
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content
 import Bead.View.Snap.Content.Submission (resolveStatus)
@@ -85,6 +86,22 @@ submissionListContent p = do
         (routeOf $ P.SubmissionDetails (asKey p) sk)
         (fromString . showDate $ (uTime p) time)
       H.td # informationalCell $ (resolveStatus msg status)
+
+    resolveStatus msg = fromString . submissionInfoCata
+      (msg $ Msg_SubmissionList_NotFound "Not Found")
+      (msg $ Msg_SubmissionList_NotEvaluatedYet "Not evaluated yet")
+      (msg $ Msg_SubmissionList_Tested "Tested")
+      (\_key result -> evaluationResultMsg result)
+      where
+        evaluationResultMsg = evaluationResultCata
+          (binaryCata (resultCata
+            (msg $ Msg_SubmissionList_Failed "Failed")
+            (msg $ Msg_SubmissionList_Passed "Passed")))
+          (percentageCata (fromString . scores))
+
+        scores (Scores [])  = "0%"
+        scores (Scores [p]) = concat [show . round $ 100 * p, "%"]
+        scores _            = "???%"
 
     submissionTimeLine time =
       H.tr $ (H.td # informationalCell) $ fromString $ showDate $ (uTime p) time

@@ -189,6 +189,7 @@ translationList =
   , Msg_UserSubmissions_Discarded ()
   , Msg_UserSubmissions_NotFound ()
   , Msg_UserSubmissions_NonEvaluated ()
+  , Msg_UserSubmissions_Tested ()
 
   , Msg_SubmissionList_CourseOrGroup ()
   , Msg_SubmissionList_Admin ()
@@ -201,6 +202,10 @@ translationList =
   , Msg_SubmissionList_NonAssociatedAssignment ()
   , Msg_SubmissionList_NonReachableAssignment ()
   , Msg_SubmissionList_Info ()
+  , Msg_SubmissionList_NotFound ()
+  , Msg_SubmissionList_Tested ()
+  , Msg_SubmissionList_Passed ()
+  , Msg_SubmissionList_Failed ()
 
   , Msg_ResetPassword_UserDoesNotExist ()
   , Msg_ResetPassword_PasswordIsSet ()
@@ -260,6 +265,7 @@ translationList =
   , Msg_Home_ClosedSubmission ()
   , Msg_Home_SubmissionCell_NoSubmission ()
   , Msg_Home_SubmissionCell_NonEvaluated ()
+  , Msg_Home_SubmissionCell_Tested ()
   , Msg_Home_SubmissionCell_Accepted ()
   , Msg_Home_SubmissionCell_Rejected ()
   , Msg_Home_SubmissionTable_NoCoursesOrStudents ()

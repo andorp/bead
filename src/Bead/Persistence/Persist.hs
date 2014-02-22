@@ -29,7 +29,7 @@ import Bead.Domain.Relationships
 
 import Data.Function (on)
 import Data.Time (UTCTime)
-import Data.List (nub, sortBy, intersect)
+import Data.List (nub, sortBy, intersect, find)
 import Data.Map (Map(..))
 import qualified Data.Map as Map
 import Data.Maybe (catMaybes)
@@ -295,8 +295,8 @@ submissionListDesc p u ak = do
   where
     submissionStatus sk = do
       time <- solutionPostDate <$> loadSubmission p sk
-      s <- submissionEvalStr p sk
-      return (sk, time, s, "TODO: EvaluatedBy")
+      si <- submissionInfo p sk
+      return (sk, time, si, "TODO: EvaluatedBy")
 
     submissionTime sk = solutionPostDate <$> loadSubmission p sk
 
@@ -448,7 +448,11 @@ submissionInfo :: Persist -> SubmissionKey -> TIO SubmissionInfo
 submissionInfo p sk = do
   mEk <- evaluationOfSubmission p sk
   case mEk of
-    Nothing -> return Submission_Unevaluated
+    Nothing -> do
+      cs <- mapM (loadComment p) =<< (commentsOfSubmission p sk)
+      return $ case find isMessageComment cs of
+        Nothing -> Submission_Unevaluated
+        Just _t -> Submission_Tested
     Just ek -> (Submission_Result ek . evaluationResult) <$> loadEvaluation p ek
 
 -- Produces information of the last submission for the given user and assignment
