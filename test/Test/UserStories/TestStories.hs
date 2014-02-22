@@ -11,6 +11,7 @@ import Bead.Controller.Pages as P
 import Bead.Persistence.NoSQLDir
 import Bead.Persistence.Persist
 import Bead.Domain.Shared.Evaluation
+import Bead.Domain.Relationships (TCCreation(..))
 
 import Test.HUnit hiding (Test(..))
 import Test.Framework (Test(..), testGroup)
@@ -163,8 +164,8 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
     ck2 <- createCourse c2
     gk1 <- createGroup ck1 g1
     gk2 <- createGroup ck2 g2
-    a1 <- createGroupAssignment gk1 ga
-    a2 <- createCourseAssignment ck2 ca
+    a1 <- createGroupAssignment gk1 ga NoCreation
+    a2 <- createCourseAssignment ck2 ca NoCreation
     subscribeToGroup gk1
     subscribeToGroup gk2
     as <- fmap (maybe [] id) userAssignments
