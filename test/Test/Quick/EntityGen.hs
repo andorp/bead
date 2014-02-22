@@ -21,6 +21,7 @@ import Data.List (nub)
 
 import Data.Map (Map)
 import qualified Data.Map as Map
+import qualified Data.ByteString.Char8 as BS (pack)
 
 word = listOf1 $ elements ['a' .. 'z' ]
 numbers = listOf1 $ elements ['0' .. '9']
@@ -167,6 +168,6 @@ testScripts = testScriptAppAna
 testCases = testCaseAppAna
   word      -- name
   manyWords -- desc
-  manyWords -- value
+  (BS.pack <$> manyWords) -- value
   enumGenerator -- type
   manyWords -- info

@@ -41,8 +41,6 @@ pageGen = oneof [
         , Administration
         , CourseAdmin
         , EvaluationTable
-        , NewGroupAssignment
-        , NewCourseAssignment
         , ModifyAssignment
         , Submission
         , SubmissionList
@@ -69,4 +67,6 @@ pageGen = oneof [
         , DeleteUsersFromGroup <$> groupKey
         , UnsubscribeFromCourse <$> groupKey
         , ModifyTestScript <$> testScriptKey
+        , NewCourseAssignment <$> courseKey
+        , NewGroupAssignment <$> groupKey
         ]
