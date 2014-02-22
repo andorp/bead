@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# PROVIDE: beadd
+# REQUIRE: DAEMON
+
+. /etc/rc.subr
+
+name="beadd"
+rcvar=`set_rcvar`
+
+: ${beadd_enable=NO}
+
+start_cmd="beadd_start"
+stop_cmd="beadd_stop"
+pidfile_template="/var/run/beadd.%s.pid"
+logfile_template="/var/log/beadd.%s.log"
+
+usage() {
+    echo "No beadd instances to start or stop!"
+    exit 1
+}
+
+beadd_start()
+{
+    local logfile
+    local pidfile
+
+    echo "Starting the BE-AD tester service."
+
+    test -z "${beadd_instances}" && usage
+
+    for i in ${beadd_instances}; do
+        logfile=$(printf ${logfile_template} ${i})
+        pidfile=$(printf ${pidfile_template} ${i})
+        /usr/local/bead/bead bulk ${i} >> ${logfile} 2>&1 &
+        echo $! > ${pidfile}
+    done
+}
+
+beadd_stop()
+{
+    local pidfile
+
+    echo "Stopping the BE-AD tester service."
+
+    test -z "${beadd_instances}" && usage
+
+    for i in ${beadd_instances}; do
+        pidfile=$(printf ${pidfile_template} ${i})
+        kill -9 $(cat $pidfile)
+        rm -f ${pidfile}
+    done
+}
+
+load_rc_config ${name}
+run_rc_command "$1"
