@@ -384,8 +384,10 @@ requestToPage path params
   | path == assignCourseAdminPath = j P.AssignCourseAdmin
   | path == createGroupPath       = j P.CreateGroup
   | path == assignGroupAdminPath  = j P.AssignGroupAdmin
-  | path == newGroupAssignmentPath  = j P.NewGroupAssignment
-  | path == newCourseAssignmentPath = j P.NewCourseAssignment
+  | path == newGroupAssignmentPath
+    = P.NewGroupAssignment <$> groupKey
+  | path == newCourseAssignmentPath
+    = P.NewCourseAssignment <$> courseKey
   | path == modifyAssignmentPath    = j P.ModifyAssignment
   | path == changePasswordPath      = j P.ChangePassword
   | path == setUserPasswordPath     = j P.SetUserPassword

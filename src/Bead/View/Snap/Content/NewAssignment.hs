@@ -261,9 +261,9 @@ newAssignmentContent pd = do
 
       page :: PageData -> Page
       page = pageDataCata
-                   (const5 P.NewCourseAssignment)
-                   (const5 P.NewGroupAssignment)
-                   (const6 P.ModifyAssignment)
+        (\_tz _t (key,_course) _tsType _fs -> P.NewCourseAssignment key)
+        (\_tz _t (key,_group)  _tsType _fs -> P.NewGroupAssignment key)
+        (const6 P.ModifyAssignment)
 
       amap :: (Assignment -> a) -> PageData -> Maybe a
       amap f (PD_Assignment _ _ a _ _ _) = Just . f $ a

@@ -386,18 +386,18 @@ assignmentCreationMenu msg pd = either groupMenu courseMenu
     groupMenu gk = maybe
       (return ())
       (const $ do
-        navigationWithRoute [(P.NewGroupAssignment,[requestParam gk])])
+        navigationWithRoute [P.NewGroupAssignment gk])
       (Map.lookup gk (administratedGroupMap pd))
 
     courseMenu ck = maybe
       (return ())
       (const $ do
-        navigationWithRoute [(P.NewCourseAssignment,[requestParam ck])])
+        navigationWithRoute [P.NewCourseAssignment ck])
       (Map.lookup ck (administratedCourseMap pd))
 
     navigationWithRoute links = H.div ! A.id "menu" $ H.ul $ mapM_ elem links
       where
-        elem (page,params) = link (routeWithParams page params) (msg $ linkText page)
+        elem page = link (routeOf page) (msg $ linkText page)
 
 
 -- Create a table cell for the evaulation value, where

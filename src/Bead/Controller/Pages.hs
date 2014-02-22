@@ -43,13 +43,10 @@ module Bead.Controller.Pages (
 import qualified Bead.Domain.Entities      as E
 import qualified Bead.Domain.Relationships as R
 
-import Data.List ((\\),nub)
 import Control.Monad (join)
 
-import Data.Set (Set(..))
-import qualified Data.Set as Set hiding ((\\))
 #ifdef TEST
-import Bead.Invariants (Invariants(..), UnitTests(..))
+import Bead.Invariants (Invariants(..))
 #endif
 
 -- * Page types and necessary data
@@ -65,8 +62,8 @@ data Page
   | EvaluationTable
   | Evaluation R.SubmissionKey
   | ModifyEvaluation R.SubmissionKey R.EvaluationKey
-  | NewGroupAssignment
-  | NewCourseAssignment
+  | NewGroupAssignment R.GroupKey
+  | NewCourseAssignment R.CourseKey
   | ModifyAssignment
   | Submission
   | SubmissionList
@@ -139,8 +136,8 @@ pageCata
     EvaluationTable -> evaluationTable
     Evaluation sk -> evaluation sk
     ModifyEvaluation sk ek -> modifyEvaluation sk ek
-    NewGroupAssignment -> newGroupAssignment
-    NewCourseAssignment -> newCourseAssignment
+    NewGroupAssignment gk -> newGroupAssignment gk
+    NewCourseAssignment ck -> newCourseAssignment ck
     ModifyAssignment -> modifyAssignment
     Submission -> submission
     SubmissionList -> submissionList
@@ -194,11 +191,11 @@ isEvaluation _              = False
 isModifyEvaluation (ModifyEvaluation _ _) = True
 isModifyEvaluation _                      = False
 
-isNewGroupAssignment NewGroupAssignment = True
-isNewGroupAssignment _                  = False
+isNewGroupAssignment (NewGroupAssignment _) = True
+isNewGroupAssignment _                      = False
 
-isNewCourseAssignment NewCourseAssignment = True
-isNewCourseAssignment _                   = False
+isNewCourseAssignment (NewCourseAssignment _) = True
+isNewCourseAssignment _                       = False
 
 isModifyAssignment ModifyAssignment = True
 isModifyAssignment _                = False
@@ -296,8 +293,8 @@ pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
   p (ModifyEvaluation _ _) = [isHome, isProfile, isEvaluationTable, isCommentFromModifyEvaluation, isModifyEvaluation]
   p UserDetails      = [isAdministration, isUserDetails]
   p GroupRegistration = [isHome, isProfile, isGroupRegistration]
-  p NewGroupAssignment = [isHome, isProfile, isNewGroupAssignment, isNewGroupAssignment]
-  p NewCourseAssignment = [isHome, isProfile, isNewCourseAssignment, isNewCourseAssignment]
+  p (NewGroupAssignment _) = [isHome, isProfile, isNewGroupAssignment, isNewGroupAssignment]
+  p (NewCourseAssignment _) = [isHome, isProfile, isNewCourseAssignment, isNewCourseAssignment]
   p ModifyAssignment    = [isHome, isProfile, isModifyAssignment]
 
   p CreateCourse      = [isAdministration, isCreateCourse]
@@ -435,8 +432,8 @@ parentPage = pageCata
   Home    -- evaluationTable
   (const EvaluationTable)  -- evaluation
   (const2 EvaluationTable) -- modifyEvaluation
-  Home -- newGroupAssignment
-  Home -- newCourseAssignment
+  (const Home) -- newGroupAssignment
+  (const Home) -- newCourseAssignment
   Home -- modifyAssignment
   Home -- submission
   Home -- submissionList
