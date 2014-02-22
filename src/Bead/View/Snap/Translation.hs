@@ -180,6 +180,7 @@ data Translation a
   | Msg_UserSubmissions_Discarded { trans :: a }
   | Msg_UserSubmissions_NotFound { trans :: a }
   | Msg_UserSubmissions_NonEvaluated { trans :: a }
+  | Msg_UserSubmissions_Tested { trans :: a }
 
   | Msg_SubmissionList_CourseOrGroup { trans :: a }
   | Msg_SubmissionList_Admin { trans :: a }
@@ -192,6 +193,10 @@ data Translation a
   | Msg_SubmissionList_NonAssociatedAssignment { trans :: a }
   | Msg_SubmissionList_NonReachableAssignment { trans :: a }
   | Msg_SubmissionList_Info { trans :: a }
+  | Msg_SubmissionList_NotFound { trans :: a }
+  | Msg_SubmissionList_Tested { trans :: a }
+  | Msg_SubmissionList_Passed { trans :: a }
+  | Msg_SubmissionList_Failed { trans :: a }
 
   | Msg_ResetPassword_UserDoesNotExist { trans :: a }
   | Msg_ResetPassword_PasswordIsSet { trans :: a }
@@ -253,6 +258,7 @@ data Translation a
   | Msg_Home_SubmissionCell_NonEvaluated { trans :: a }
   | Msg_Home_SubmissionCell_Accepted { trans :: a }
   | Msg_Home_SubmissionCell_Rejected { trans :: a }
+  | Msg_Home_SubmissionCell_Tested { trans :: a }
   | Msg_Home_SubmissionTable_NoCoursesOrStudents { trans :: a }
 
   | Msg_Home_SubmissionTable_StudentName { trans :: a}

@@ -121,11 +121,31 @@ isStudentComment = commentCata $ \_comment _owner _date -> student where
     False -- Test Agent
     True  -- Message
 
+-- Returns True if the comment is a Message comment from the test agent
+-- otherwise False
+isMessageComment :: Comment -> Bool
+isMessageComment = commentCata $ \_comment _owner _date -> message where
+  message = commentTypeCata
+    False -- student
+    False -- groupAdmin
+    False -- courseAdmin
+    False -- admin
+    False -- evaluation
+    False -- testAgent
+    True  -- message
+
 type CourseName = String
 
 type UsersFullname = String
 
 type EvaluationResult = EvaluationData Binary Percentage
+
+evaluationResultCata
+  binary
+  percentage
+  e = case e of
+    BinEval b -> binary b
+    PctEval p -> percentage p
 
 type EvaluationConfig = EvaluationData () PctConfig
 

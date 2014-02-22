@@ -51,8 +51,12 @@ data Scores a = Scores { unScores :: [a] }
 data Binary = Binary Result
   deriving (Eq, Show, Read, Data, Typeable)
 
+binaryCata f (Binary x) = f x
+
 data Percentage = Percentage (Scores Double)
   deriving (Eq, Show, Read, Data, Typeable)
+
+percentageCata f (Percentage x) = f x
 
 data EvResult = EvResult {
     evResult :: EvaluationData Binary Percentage

@@ -158,6 +158,7 @@ DictionaryFile {
     , Msg_UserSubmissions_SubmissionDate { trans = "Beküldés dátuma" }
     , Msg_UserSubmissions_Evaluation { trans = "Evaluation" }
     , Msg_UserSubmissions_Accepted { trans = "Elfogadott" }
+    , Msg_UserSubmissions_Tested { trans = "Tesztelve" }
     , Msg_UserSubmissions_Discarded { trans = "Elutasított" }
     , Msg_UserSubmissions_NotFound { trans = "Nem található" }
     , Msg_UserSubmissions_NonEvaluated { trans = "Nem értékelt" }
@@ -171,6 +172,10 @@ DictionaryFile {
     , Msg_SubmissionList_NonAssociatedAssignment { trans = "Ezzel a felhasználóval ezt a feladatot nem lehet elérni!" }
     , Msg_SubmissionList_NonReachableAssignment { trans = "Ez a feladat nem érhető el!" }
     , Msg_SubmissionList_Info { trans = "A beadott megoldásokhoz a beadás után még hozzászólások írhatóak." }
+    , Msg_SubmissionList_NotFound { trans = "Megoldás nem található" }
+    , Msg_SubmissionList_Tested { trans = "Tesztelve" }
+    , Msg_SubmissionList_Passed { trans = "Elfogadva" }
+    , Msg_SubmissionList_Failed { trans = "Elutasítva" }
     , Msg_ResetPassword_UserDoesNotExist { trans = "A felhasználó nem létezik!" }
     , Msg_ResetPassword_PasswordIsSet { trans = "Beállítottuk a jelszót." }
     , Msg_ResetPassword_GoBackToLogin { trans = "Vissza a főoldalra" }
@@ -225,6 +230,7 @@ DictionaryFile {
     , Msg_Home_ClosedSubmission { trans = "Lezárva" }
     , Msg_Home_SubmissionCell_NoSubmission { trans = "Nincs megoldás" }
     , Msg_Home_SubmissionCell_NonEvaluated { trans = "Nem értékelt" }
+    , Msg_Home_SubmissionCell_Tested { trans = "Tesztelve" }
     , Msg_Home_SubmissionCell_Accepted { trans = "Elfogadott" }
     , Msg_Home_SubmissionCell_Rejected { trans = "Elutasított" }
     , Msg_Home_SubmissionTable_NoCoursesOrStudents { trans = "Nincsenek feladatok vagy hallgatók a csoporthoz:" }

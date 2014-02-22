@@ -62,15 +62,14 @@ submissionDescPermissions = ObjectPermissions [
   , (P_Open, P_Comment)
   ]
 
-type Status = Maybe String
 type EvaluatedBy = String
 
 -- List of the submissions made by a student for a given assignment
-type UserSubmissionInfo = [(SubmissionKey, UTCTime, Status, EvaluatedBy)]
+type UserSubmissionInfo = [(SubmissionKey, UTCTime, SubmissionInfo, EvaluatedBy)]
 
 userSubmissionInfoCata
   :: ([a] -> b)
-  -> ((SubmissionKey, UTCTime, Status, EvaluatedBy) -> a)
+  -> ((SubmissionKey, UTCTime, SubmissionInfo, EvaluatedBy) -> a)
   -> UserSubmissionInfo
   -> b
 userSubmissionInfoCata list info us = list $ map info us
@@ -124,21 +123,31 @@ submissionDetailsDescPermissions = ObjectPermissions [
   , (P_Open, P_Comment)
   ]
 
+-- Information about a submission for a given assignment
 data SubmissionInfo
-  = Submission_Not_Found
-  | Submission_Unevaluated
-  | Submission_Result EvaluationKey EvaluationResult
+  = Submission_Not_Found   -- There is no submission
+  | Submission_Unevaluated -- There is at least one submission which is not evaluated yet
+  | Submission_Tested      -- There is at least one submission which is tested by the automation testing framework
+  | Submission_Result EvaluationKey EvaluationResult -- There is at least submission with the evaluation
   deriving (Show)
 
-submissionInfoCata notFound unevaluated result s = case s of
-  Submission_Not_Found   -> notFound
-  Submission_Unevaluated -> unevaluated
-  Submission_Result k r  -> result k r
+submissionInfoCata
+  notFound
+  unevaluated
+  tested
+  result
+  s = case s of
+    Submission_Not_Found   -> notFound
+    Submission_Unevaluated -> unevaluated
+    Submission_Tested      -> tested
+    Submission_Result k r  -> result k r
 
 siEvaluationKey :: SubmissionInfo -> Maybe EvaluationKey
-siEvaluationKey Submission_Not_Found     = Nothing
-siEvaluationKey Submission_Unevaluated   = Nothing
-siEvaluationKey (Submission_Result ek _) = Just ek
+siEvaluationKey = submissionInfoCata
+  Nothing -- notFound
+  Nothing -- unevaluated
+  Nothing -- tested
+  (\key _result -> Just key) -- result
 
 -- Simple name for the assignment
 type AssignmentName = String

@@ -212,6 +212,7 @@ availableAssignments timeconverter (Just as) = do
       (coloredSubmissionCell dataCell' (H.td) fromString
         (msg $ Msg_Home_SubmissionCell_NoSubmission "No submission")
         (msg $ Msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
+        (msg $ Msg_Home_SubmissionCell_Tested "Tested")
         (msg $ Msg_Home_SubmissionCell_Accepted "Accepted")
         (msg $ Msg_Home_SubmissionCell_Rejected "Rejected")
         s)
@@ -290,8 +291,9 @@ htmlSubmissionTable pd (i,s) = do
         dataCell
         (H.td)
         (linkWithText (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]))
-        "░░░"
+        "░░░" -- not found
         "░░░" -- non-evaluated
+        "░░░" -- tested
         "░░░" -- accepted
         "░░░" -- rejected
         s      -- of percent
@@ -407,12 +409,14 @@ assignmentCreationMenu msg pd = either groupMenu courseMenu
 -- passed message for the passed binary evaulation
 -- failed message for the failed binary evaulation
 -- s the submission information itself
-coloredSubmissionCell simpleCell rgbCell content notFound unevaluated passed failed s =
+coloredSubmissionCell simpleCell rgbCell content notFound unevaluated tested passed failed s =
   coloredCell $ content (sc s)
   where
-    sc Submission_Not_Found   = notFound
-    sc Submission_Unevaluated = unevaluated
-    sc (Submission_Result _ r) = val r
+    sc = submissionInfoCata
+           notFound
+           unevaluated
+           tested
+           (\_key result -> val result) -- evaluated
 
     val (BinEval (Binary Passed)) = passed
     val (BinEval (Binary Failed)) = failed
@@ -424,6 +428,7 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated passed fai
       submissionInfoCata
         (simpleCell noStyle)        -- Not Found
         (simpleCell unevaluatedStyle) -- Unevulated
+        (simpleCell testedStyle)      -- Tested
         (const resultCell)        -- Result
 
     resultCell (BinEval (Binary Passed)) = simpleCell binaryPassedStyle
@@ -452,6 +457,7 @@ calculateSubmissionResult msg si e =
     evaluated = submissionInfoCata
                   False -- not found
                   False -- unevaulated
+                  False -- tested
                   (\_ _ -> True) -- result
 
 -- Produces the result of a user's submission list for a binary evaluation.
@@ -501,7 +507,7 @@ calcEvaluationResult selectResult calculateResult
 
     -- Filters only the evaluation results
     filterEvaluation :: [SubmissionInfo] -> [EvaluationResult]
-    filterEvaluation = catMaybes . map (submissionInfoCata Nothing Nothing result)
+    filterEvaluation = catMaybes . map (submissionInfoCata Nothing Nothing Nothing result)
 
     -- Checks if no error is found.
     -- Produces (Left "error") when at least one element has an error,
@@ -516,6 +522,8 @@ calcEvaluationResult selectResult calculateResult
 binaryPassedStyle = backgroundColor "lightgreen"
 binaryFailedStyle = backgroundColor "red"
 unevaluatedStyle  = backgroundColor "gray"
+testedStyle       = backgroundColor "yellow"
+
 summaryPassedStyle = backgroundColor "lightgreen"
 summaryFailedStyle = backgroundColor "red"
 summaryErrorStyle  = backgroundColor "yellow"
