@@ -109,7 +109,6 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
         setSessionVersion
         setLanguageInSession language
         setUsernameInSession username
-        setActPageInSession  page
       withTop serviceContext $ do
         logMessage DEBUG $ "Username is set in session to: " ++ show username
         logMessage DEBUG $ "User's actual page is set in session to: " ++ show page

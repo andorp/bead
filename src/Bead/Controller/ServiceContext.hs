@@ -49,13 +49,13 @@ data UserState
   | Registration
   | TestAgent
   | UserState {
-    user :: Username
-  , page :: Page
-  , name :: String
-  , role :: Role
-  , token :: String
-  , timezone :: TimeZone
-  , status :: Maybe (Translation String)
+    user :: Username -- Username
+  , page :: Page     -- The last requested page
+  , name :: String   -- User's full name
+  , role :: Role     -- User's role
+  , token :: String  -- Token for the active user session
+  , timezone :: TimeZone -- Timezone of the user
+  , status :: Maybe (Translation String) -- The last status message
   } deriving (Show)
 
 userStateCata

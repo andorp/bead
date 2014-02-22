@@ -30,7 +30,7 @@ import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQLDirFile as L (unitTests)
 import qualified Bead.View.Snap.Content.All as VA (invariants)
 import qualified Bead.View.Snap.Pagelets as VP (invariants)
-import qualified Bead.View.Snap.Session as VS (invariants, unitTests)
+import qualified Bead.View.Snap.Session as VS (unitTests)
 import qualified Bead.View.Snap.TemplateAndComponentNames as TC (unitTests)
 import qualified Bead.View.Snap.Validators as V (assertEmailAddress)
 import qualified Bead.View.Snap.EmailTemplate as E (unitTests)
@@ -78,7 +78,6 @@ tests = [
   , invariantsGroup "Content handler definitions" VA.invariants
   , unitTestGroup   "NoSQL untilities" L.unitTests
   , invariantsGroup "Pages need to have link text" VP.invariants
-  , invariantsGroup "Page Session Cookie values" VS.invariants
   , unitTestGroup   "Page Session Keys" VS.unitTests
   , invariantsGroup "Role invariants" E.roleInvariants
   , unitTestGroup   "Assignment active period" E.assignmentTests

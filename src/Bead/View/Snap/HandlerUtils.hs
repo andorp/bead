@@ -302,15 +302,14 @@ runStory story = withTop serviceContext $ do
             Left e -> return . Left $ e
             Right (a,state') -> do
               liftIO $ modifyUserData users usrToken (const state')
-              saveActPage state'
+              refreshSession
               return $ Right a
   case result of
     Left msg -> return . Left . strMsg . show $ msg
     Right x -> return x
 
   where
-    saveActPage state = withTop sessionManager $ do
-      setActPageInSession $ page state
+    refreshSession = withTop sessionManager $ do
       commitSession
       touchSession
 
