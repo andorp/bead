@@ -153,15 +153,6 @@ userIsLoggedInFilter inside outside onError = do
       isLoggedIn <- lift (liftIO $ users `isUserLoggedIn` usrToken)
       unless (isLoggedIn) . CME.throwError . strMsg  $ "A felhasználó a szerveren nincs bejelentkezve!"
 
-      -- Guard: User's actul page differs from the one that is stored on the server
-      pageFromSession <- lift . withTop sessionManager $ actPageFromSession
-      mUserData       <- lift . liftIO $ userData users usrToken -- unameFromAuth
-      when (isNothing mUserData) . CME.throwError . strMsg  $
-        printf "Nem található a felhasználóhoz adat: %s" (show unameFromAuth)
-      when (Just (page (fromJust mUserData)) /= pageFromSession) . CME.throwError . strMsg $
-        printf "Nem egyezik a szerveren és a munkamenetben tárolt oldal: %s (szerver) <=> %s (kliens)"
-          (show $ page $ fromJust mUserData) (show pageFromSession)
-
       -- Correct user is logged in, run the handler and save the data
       result <- lift inside
       case result of
@@ -172,21 +163,9 @@ userIsLoggedInFilter inside outside onError = do
           when (isNothing mUserData) . CME.throwError . contentHandlerError $
             printf "Nem található adat a felhasználóhoz: %s" (show unameFromAuth)
 
-          lift $ (CMC.catch
-                    (withTop sessionManager . setActPageInSession . page . fromJust $ mUserData)
-                    (someExceptionHandler onError))
-
--- | The 'redirectToActPage' redirects to the page if the user's state stored in the cookie
---   and the service state are the same, otherwise it's raises an exception
-redirectToActPage :: HandlerError App b ()
-redirectToActPage = do
-  pageInSession <- lift $ withTop sessionManager $ actPageFromSession
-  withUserState $ \uState ->
-    case pageInSession == Just (page uState) of
-      False -> do
-        lift $ logMessage ERROR $ "Actual page data stored in session and in the server differ"
-        throwError . strMsg $ "A munkamenetben és a szerveren tárolt adatok nem egyeznek meg!"
-      True ->  redirect . routeOf . page $ uState
+-- Redirects to the parent page of the given page
+redirectToParentPage :: P.Page -> HandlerError App b ()
+redirectToParentPage = redirect . routeOf . P.parentPage
 
 -- | Represents the result of a GET or POST handler
 -- HandSuccess when no exception occured during the execution
@@ -246,7 +225,7 @@ runPOSTHandler onError p h
             userStoryFor userAction
             S.changePage . P.parentPage $ p
           lift $ with sessionManager $ (commitSession >> touchSession)
-          redirectToActPage)
+          redirectToParentPage p)
 
 logoutAndResetRoute :: Handler App App ()
 logoutAndResetRoute = do
@@ -339,10 +318,7 @@ handlePage (path,c) = do
 allowedPageByTransition
   :: P.Page -> HandlerError App App a -> HandlerError App App a -> HandlerError App App a
 allowedPageByTransition p allowed restricted = withUserState $ \state ->
-  let allow = and [
-          P.reachable (page state) p
-        , P.allowedPage (role state) p
-        ]
+  let allow = P.allowedPage (role state) p
   in case allow of
     False -> restricted
     True  -> allowed

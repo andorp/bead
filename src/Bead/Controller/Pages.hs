@@ -2,12 +2,10 @@
 module Bead.Controller.Pages (
     Page(..)
   , pageCata -- Template function for the page data structure
-  , pageTransition
   , parentPage
   , allowedPage
   , contentPages
   , menuPages
-  , reachable
   , isLogin
   , isLogout
   , isHome
@@ -265,50 +263,6 @@ contentPages :: Page -> Bool
 contentPages Error = False
 contentPages _     = True
 
--- Returns True if the page transition is allowed
--- from the first page to the second page
-pageTransition :: Page -> Page -> Bool
-pageTransition Logout = isPage [isLogin, isLogout]
-pageTransition Login  = isPage [isLogin, isHome]
-pageTransition s = isPage (p s) <||> isPage [isError, isLogout] where
-  p Error = []
-  p Home = [ isLogout, isCourseAdmin, isEvaluationTable, isNewGroupAssignment, isNewCourseAssignment
-           , isSubmission, isSubmissionList, isGroupRegistration, isAdministration, isProfile
-           , isUserSubmissions, isSubmissionDetails, isModifyAssignment
-           , isSetUserPassword, isHome, isDeleteUsersFromCourse, isDeleteUsersFromGroup
-           , isUnsubscribeFromCourse, isNewTestScript, isModifyTestScript, isUploadFile
-           ]
-  p CourseAdmin = [isHome, isProfile, isCreateGroup, isAssignGroupAdmin, isCourseAdmin]
-  p EvaluationTable  = [isHome, isProfile, isEvaluation, isModifyEvaluation, isEvaluationTable]
-  p (Evaluation _)   = [isHome, isProfile, isEvaluationTable, isCommentFromEvaluation, isEvaluation]
-  p Submission       = [isHome, isProfile, isSubmissionList, isSubmission]
-  p SubmissionList   = [isHome, isProfile, isSubmissionDetails, isSubmissionList]
-  p (SubmissionDetails _ _) = [isHome, isProfile, isSubmissionList, isSubmissionDetails]
-  p Administration   = [isHome, isProfile, isCreateCourse, isUserDetails, isAssignCourseAdmin, isAdministration]
-  p Profile          = [isHome, isChangePassword, isProfile]
-  p UserSubmissions  = [isHome, isProfile, isModifyEvaluation, isEvaluation, isUserSubmissions]
-  p NewTestScript    = [isHome, isProfile]
-  p (ModifyTestScript _)   = [isHome, isProfile]
-  p UploadFile             = [isHome, isProfile, isUploadFile]
-  p (ModifyEvaluation _ _) = [isHome, isProfile, isEvaluationTable, isCommentFromModifyEvaluation, isModifyEvaluation]
-  p UserDetails      = [isAdministration, isUserDetails]
-  p GroupRegistration = [isHome, isProfile, isGroupRegistration]
-  p (NewGroupAssignment _) = [isHome, isProfile, isNewGroupAssignment, isNewGroupAssignment]
-  p (NewCourseAssignment _) = [isHome, isProfile, isNewCourseAssignment, isNewCourseAssignment]
-  p ModifyAssignment    = [isHome, isProfile, isModifyAssignment]
-
-  p CreateCourse      = [isAdministration, isCreateCourse]
-  p AssignCourseAdmin = [isAdministration, isAssignCourseAdmin]
-  p CreateGroup       = [isCourseAdmin, isCreateGroup]
-  p AssignGroupAdmin  = [isCourseAdmin, isAssignGroupAdmin]
-  p ChangePassword    = [isProfile, isChangePassword]
-  p SetUserPassword   = [isHome, isProfile, isSetUserPassword]
-  p (CommentFromEvaluation _) = [isCommentFromEvaluation, isEvaluation]
-  p (CommentFromModifyEvaluation _ _) = [isCommentFromModifyEvaluation, isModifyEvaluation]
-  p (DeleteUsersFromCourse _) = [isHome]
-  p (DeleteUsersFromGroup _) = [isHome]
-  p (UnsubscribeFromCourse _) = [isHome]
-
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
 isPage :: [Page -> Bool] -> Page -> Bool
@@ -319,10 +273,6 @@ isPage fs p = or $ map ($ p) fs
 f <||> g = \x -> case f x of
                    True -> True
                    False -> g x
-
--- Returns True is the q is reachable form the p
-reachable :: Page -> Page -> Bool
-reachable p q = pageTransition p q
 
 regularPages = [
     isHome
@@ -463,11 +413,7 @@ parentPage = pageCata
 -- * Invariants
 
 invariants = Invariants [
-    -- For each page the following property is hold:
-    -- Every parent page of a page has a transition to the given page
-    ("Each parent page of a page has a transition to the given page",
-      \p -> pageTransition (parentPage p) p)
-  , ("Regular, Admin and NonMenu pages should cover all pages",
+    ("Regular, Admin and NonMenu pages should cover all pages",
       isPage (join [ regularPages, groupAdminPages, courseAdminPages
                    , adminPages, dataModificationPages, menuPagePred
                    , nonActivePages ]))

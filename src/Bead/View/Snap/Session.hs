@@ -72,151 +72,6 @@ resetPublicSessionData = removeSessionKeys isPublicKey
 pageSessionKey :: T.Text
 pageSessionKey = "Page"
 
-instance SessionStore P.Page where
-  sessionStore p = [(pageSessionKey, T.pack $ s p)] where
-    s = P.pageCata
-          "Login"
-          "Logout"
-          "Home"
-          "Profile"
-          "Error"
-          "Administration"
-          "CourseAdmin"
-          "EvaluationTable"
-          (\(R.SubmissionKey s) -> join ["Evaluation:",s])
-          (\(R.SubmissionKey s) (R.EvaluationKey e) -> join ["ModifyEvaluation:", s, ":", e])
-          (\(R.GroupKey s) -> join ["NewGroupAssignment:", s])
-          (\(R.CourseKey s) -> join ["NewCourseAssignment:", s])
-          "ModifyAssignment"
-          "Submission"
-          "SubmissionList"
-          (\(R.AssignmentKey a) (R.SubmissionKey s) -> join ["SubmissionDetails:", a, ":", s])
-          "GroupRegistration"
-          "UserDetails"
-          "UserSubmissions"
-          "NewTestScript"
-          (\(R.TestScriptKey t) -> join ["ModifyTestScript:", t])
-          "UploadFile"
-          "CreateCourse"
-          "CreateGroup"
-          "AssignCourseAdmin"
-          "AssignGroupAdmin"
-          "ChangePassword"
-          "SetUserPassword"
-          (\(R.SubmissionKey s) -> join ["CommentFromEvaluation:", s])
-          (\(R.SubmissionKey s) (R.EvaluationKey e) -> join ["CommentFromModifyEvaluation:", s, ":", e])
-          (\(R.CourseKey c) -> join $ ["DeleteUsersFromCourse:", c])
-          (\(R.GroupKey g) -> join $ ["DeleteUsersFromGroup:", g])
-          (\(R.GroupKey g) -> join $ ["UnsubscribeFromCourse:", g])
-
-instance SessionRestore P.Page where
-  restoreFromSession kv = case L.lookup pageSessionKey kv of
-    Nothing           -> Nothing
-    Just "Login"      -> Just P.Login
-    Just "Logout"     -> Just P.Logout
-    Just "Home"       -> Just P.Home
-    Just "Error"      -> Just P.Error
-    Just "Profile"    -> Just P.Profile
-    Just "CourseAdmin" -> Just P.CourseAdmin
-    Just "EvaluationTable" -> Just P.EvaluationTable
-    Just "Submission"      -> Just P.Submission
-    Just "SubmissionList"  -> Just P.SubmissionList
-    Just "UserSubmissions" -> Just P.UserSubmissions
-    Just "NewTestScript" -> Just P.NewTestScript
-    Just "Administration"   -> Just P.Administration
-    Just "GroupRegistration" -> Just P.GroupRegistration
-    Just "UploadFile" -> Just P.UploadFile
-    Just "CreateCourse" -> Just P.CreateCourse
-    Just "UserDetails"  -> Just P.UserDetails
-    Just "AssignCourseAdmin" -> Just P.AssignCourseAdmin
-    Just "CreateGroup"  -> Just P.CreateGroup
-    Just "AssignGroupAdmin" -> Just P.AssignGroupAdmin
-    Just "ModifyAssignment" -> Just P.ModifyAssignment
-    Just "ChangePassword" -> Just P.ChangePassword
-    Just "SetUserPassword" -> Just P.SetUserPassword
-    Just ts
-      | startsWith "CommentFromEvaluation:" ts ->
-          Just . P.CommentFromEvaluation . submissionKey $ dropPreffix "CommentFromEvaluation:" ts
-
-      | startsWith "CommentFromModifyEvaluation:" ts ->
-          let se = splitValues "CommentFromModifyEvaluation:" ts
-          in case se of
-              [s,e] -> Just $ P.CommentFromModifyEvaluation (submissionKey s) (evaluationKey e)
-              _     -> Nothing
-
-      | startsWith "SubmissionDetails:" ts ->
-          let as = splitValues "SubmissionDetails:" ts
-          in case as of
-               [a,s] -> Just $ P.SubmissionDetails (assignmentKey a) (submissionKey s)
-               _     -> Nothing
-
-      | startsWith "Evaluation:" ts ->
-          Just . P.Evaluation . submissionKey $ dropPreffix "Evaluation:" ts
-
-      | startsWith "ModifyEvaluation:" ts ->
-          let se = splitValues "ModifyEvaluation:" ts
-          in case se of
-              [s,e] -> Just $ P.ModifyEvaluation (submissionKey s) (evaluationKey e)
-              _     -> Nothing
-
-      | startsWith "DeleteUsersFromCourse:" ts ->
-          let se = splitValues "DeleteUsersFromCourse:" ts
-          in case se of
-               [c] -> Just $ P.DeleteUsersFromCourse (courseKey c)
-               _   -> Nothing
-
-      | startsWith "DeleteUsersFromGroup:" ts ->
-          let se = splitValues "DeleteUsersFromGroup:" ts
-          in case se of
-               [g] -> Just $ P.DeleteUsersFromGroup (groupKey g)
-               _   -> Nothing
-
-      | startsWith "UnsubscribeFromCourse:" ts ->
-          let se = splitValues "UnsubscribeFromCourse:" ts
-          in case se of
-               [g] -> Just $ P.UnsubscribeFromCourse (groupKey g)
-               _   -> Nothing
-
-      | startsWith "ModifyTestScript:" ts ->
-          let se = splitValues "ModifyTestScript:" ts
-          in case se of
-              [t] -> Just $ P.ModifyTestScript (testScriptKey t)
-              _   -> Nothing
-
-      | startsWith "NewCourseAssignment:" ts ->
-          let se = splitValues "NewCourseAssignment:" ts
-          in case se of
-              [t] -> Just $ P.NewCourseAssignment (courseKey t)
-              _   -> Nothing
-
-      | startsWith "NewGroupAssignment:" ts ->
-          let se = splitValues "NewGroupAssignment:" ts
-          in case se of
-              [t] -> Just $ P.NewGroupAssignment (groupKey t)
-              _   -> Nothing
-
-    Just _ -> Nothing
-    where
-      assignmentKey = R.AssignmentKey . T.unpack
-
-      submissionKey = R.SubmissionKey . T.unpack
-
-      evaluationKey = R.EvaluationKey . T.unpack
-
-      courseKey = R.CourseKey . T.unpack
-
-      groupKey = R.GroupKey . T.unpack
-
-      testScriptKey = R.TestScriptKey . T.unpack
-
-      username = E.Username . T.unpack
-
-      startsWith preffix t = preffix == (T.take (T.length preffix) t)
-
-      dropPreffix preffix t = T.drop (T.length preffix) t
-
-      splitValues preffix t = T.splitOn ":" $ dropPreffix preffix t
-
 -- * Session Key Values for Username
 
 usernameSessionKey :: T.Text
@@ -279,12 +134,6 @@ usernameFromSession = fromSession usernameSessionKey
 setUsernameInSession :: Username -> Handler App SessionManager ()
 setUsernameInSession = setInSessionKeyValues . sessionStore
 
-actPageFromSession :: Handler App SessionManager (Maybe P.Page)
-actPageFromSession = fromSession pageSessionKey
-
-setActPageInSession :: P.Page -> Handler App SessionManager ()
-setActPageInSession = setInSessionKeyValues . sessionStore
-
 languageFromSession :: Handler App SessionManager (Maybe Language)
 languageFromSession = fromSession languageSessionKey
 
@@ -326,18 +175,6 @@ sessionCookies = do
 #ifdef TEST
 
 -- * Invariants
-
-invariants :: Invariants P.Page
-invariants = Invariants [
-    ("Each page must have session store value defined", \p -> 
-        case (sessionStore p) of
-          [] -> False
-          [(key, val)] -> and [T.length key > 0, T.length val > 0])
-  , ("Each page description must be restorable from session cookie", \p ->
-        case (restoreFromSession (sessionStore p)) of
-          Nothing -> False
-          Just p' -> p == p')
-  ]
 
 sessionKeys = [
     pageSessionKey
