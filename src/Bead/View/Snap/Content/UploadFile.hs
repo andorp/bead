@@ -61,18 +61,18 @@ postUploadFile =
     tmpDir <- withTop tempDirContext $ getTempDirectory
     handleFileUploads tmpDir uploadPolicy perPartUploadPolicy $ \parts -> do
       case parts of
-        [] -> return . return . StatusMessage $ Msg_UploadFile_NoFileReceived "No file was received"
+        [] -> return . return . StatusMessage $ Msg_UploadFile_NoFileReceived "No file was received."
         [part] -> do result <- handlePart part
                      return . return . StatusMessage $ successCata
-                       (const $ Msg_UploadFile_PolicyFailure "Upload Policy violation")
-                       (Msg_UploadFile_UnnamedFile "Unnamed file was received")
-                       (const $ Msg_UploadFile_InternalError "Internal error happened during upload")
-                       (Msg_UploadFile_Successful "File upload was sucessful")
+                       (const $ Msg_UploadFile_PolicyFailure "Upload policy violation.")
+                       (Msg_UploadFile_UnnamedFile "No file was chosen.")
+                       (const $ Msg_UploadFile_InternalError "Internal error happened during upload.")
+                       (Msg_UploadFile_Successful "File upload was sucessful.")
                        result
         _ -> do results <- mapM handlePart parts
                 return . return . StatusMessage $ if (null $ filter isFailure results)
-                  then (Msg_UploadFile_Successful "File upload was sucessful")
-                  else (Msg_UploadFile_ErrorInManyUploads "An error occured uploading one or more files")
+                  then (Msg_UploadFile_Successful "File upload was sucessful.")
+                  else (Msg_UploadFile_ErrorInManyUploads "An error occured uploading one or more files.")
   where
     size128Kb = 128 * 1024
     perPartUploadPolicy = const $ allowWithMaximumSize size128Kb
