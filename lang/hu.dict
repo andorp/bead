@@ -257,11 +257,12 @@ DictionaryFile {
     , Msg_NewTestScript_Course { trans = "Tárgy:" }
     , Msg_NewTestScript_HasNoCourses { trans = "Ez a felhasználó egyik tárgynak sem a felelőse!" }
     , Msg_NewTestScript_ScriptTypeHelp { trans = "A tesztesetek fajtái" }
-    , Msg_UploadFile_PleaseSelectFile { trans = "Válasszuk ki a feltölteni kívánt állományt!" }
-    , Msg_UploadFile_MaxSize { trans = "Az állományok mérete egyenként legfeljebb 128 KB lehet." }
+    , Msg_UploadFile_FileSelection { trans = "Állomány kiválasztása" }
+    , Msg_UploadFile_Directory { trans = "Feltöltött állományok" }
+    , Msg_UploadFile_Info { trans = "Válasszuk ki a feltöltendő állományt!  Az állományok mérete egyenként legfeljebb 128 KB lehet." }
     , Msg_UploadFile_UploadButton { trans = "Feltöltés" }
     , Msg_UploadFile_FileName { trans = "Név" }
-    , Msg_UploadFile_FileSize { trans = "Méret" }
+    , Msg_UploadFile_FileSize { trans = "Méret (byte)" }
     , Msg_UploadFile_FileDate { trans = "Dátum" }
     , Msg_UploadFile_Successful { trans = "Sikeres feltöltés!" }
     , Msg_UploadFile_NoFileReceived { trans = "Nem érkezett állomány!" }
@@ -312,8 +313,8 @@ DictionaryFile {
     , Msg_LinkText_SubmissionList { trans = "Beadott megoldások" }
     , Msg_LinkText_UserSubmissions { trans = "Megoldások" }
     , Msg_LinkText_NewTestScript { trans = "Új tesztelő" }
-    , Msg_LinkText_ModifyTestScript { trans = "Tesztelő szkript módosítása" }
-    , Msg_LinkText_UploadFile { trans = "Fájlfeltöltés" }
+    , Msg_LinkText_ModifyTestScript { trans = "Tesztelő módosítása" }
+    , Msg_LinkText_UploadFile { trans = "Állományok feltöltése" }
     , Msg_LinkText_ModifyEvaluation { trans = "Értékelés" }
     , Msg_LinkText_SubmissionDetails { trans = "Megoldás" }
     , Msg_LinkText_Administration { trans = "Adminisztráció" }
