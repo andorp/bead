@@ -177,7 +177,7 @@ data Translation a
   | Msg_UserSubmissions_Evaluation { trans :: a }
 
   | Msg_UserSubmissions_Accepted { trans :: a }
-  | Msg_UserSubmissions_Discarded { trans :: a }
+  | Msg_UserSubmissions_Rejected { trans :: a }
   | Msg_UserSubmissions_NotFound { trans :: a }
   | Msg_UserSubmissions_NonEvaluated { trans :: a }
   | Msg_UserSubmissions_Tested { trans :: a }

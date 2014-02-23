@@ -186,7 +186,7 @@ translationList =
   , Msg_UserSubmissions_Evaluation ()
 
   , Msg_UserSubmissions_Accepted ()
-  , Msg_UserSubmissions_Discarded ()
+  , Msg_UserSubmissions_Rejected ()
   , Msg_UserSubmissions_NotFound ()
   , Msg_UserSubmissions_NonEvaluated ()
   , Msg_UserSubmissions_Tested ()

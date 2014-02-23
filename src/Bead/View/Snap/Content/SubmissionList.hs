@@ -95,8 +95,8 @@ submissionListContent p = do
       where
         evaluationResultMsg = evaluationResultCata
           (binaryCata (resultCata
-            (msg $ Msg_SubmissionList_Failed "Failed")
-            (msg $ Msg_SubmissionList_Passed "Passed")))
+            (msg $ Msg_SubmissionList_Passed "Passed")
+            (msg $ Msg_SubmissionList_Failed "Failed")))
           (percentageCata (fromString . scores))
 
         scores (Scores [])  = "0%"

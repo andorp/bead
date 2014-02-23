@@ -87,7 +87,7 @@ submissionTable userTime s = do
       (const (evaluationDataMap bin pct))
       where
         bin (Binary b) = msg $ resultCata (Msg_UserSubmissions_Accepted "Accepted")
-                                          (Msg_UserSubmissions_Discarded "Rejected")
+                                          (Msg_UserSubmissions_Rejected "Rejected")
                                           b
         pct (Percentage (Scores [x])) = fromString $ printf "%3.2f%%" (100 * x)
         pct (Percentage _) = fromString "Error: ???%"
