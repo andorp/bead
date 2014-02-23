@@ -841,7 +841,7 @@ userAssignments = logAction INFO "lists assignments" $ do
     createDesc :: Persist -> Username -> UTCTime -> AssignmentKey -> TIO (Maybe (AssignmentKey, AssignmentDesc, SubmissionInfo))
     createDesc p u now ak = do
       a <- R.loadAssignment p ak
-      case and [assignmentType a == Urn, now < assignmentStart a] of
+      case (now < assignmentStart a) of
         True -> return Nothing
         False -> do
           (name, adminNames) <- R.courseNameAndAdmins p ak
