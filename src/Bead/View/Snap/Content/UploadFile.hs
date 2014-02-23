@@ -93,15 +93,16 @@ uploadFileContent :: PageData -> IHtml
 uploadFileContent pd = do
   i18n <- getI18N
   return $ do
-    H.p $ do
+    H.h2 . fromString . i18n $ Msg_UploadFile_FileSelection "File Selection"
+    do
       postForm (routeOf P.UploadFile) ! A.enctype "multipart/form-data" $ do
-        H.b . fromString . i18n $ Msg_UploadFile_PleaseSelectFile "Please select a file to upload to your personal files"
+        fromString . i18n $ Msg_UploadFile_Info "Please choose a file to upload.  Note that the maximum file size is 128 KB."
         H.br
-        fromString . i18n $ Msg_UploadFile_MaxSize "The maximum file size is 128K"
         H.br
         fileInput (fieldName fileUploadField)
         H.br
         submitButton (fieldName fileUploadSubmit) (i18n $ Msg_UploadFile_UploadButton "Upload")
+    H.h2 . fromString . i18n $ Msg_UploadFile_Directory "Uploaded Files"
     H.p $ do
       table (fieldName usersFileTableName) (className usersFileTableClass) # informationalTable $ do
         headerLine i18n
@@ -110,9 +111,9 @@ uploadFileContent pd = do
     dataCell   x = H.td # informationalCell $ x
     headerCell x = H.th # (informationalCell <> grayBackground) $ x
     headerLine i18n = H.tr $ do
-      headerCell . fromString . i18n $ Msg_UploadFile_FileName "File name"
-      headerCell . fromString . i18n $ Msg_UploadFile_FileSize "File size"
-      headerCell . fromString . i18n $ Msg_UploadFile_FileDate "File date"
+      headerCell . fromString . i18n $ Msg_UploadFile_FileName "File Name"
+      headerCell . fromString . i18n $ Msg_UploadFile_FileSize "File Size (bytes)"
+      headerCell . fromString . i18n $ Msg_UploadFile_FileDate "File Date"
     usersFileLines = pageDataCata (mapM_ usersFileLine)
       where
         usersFileLine (usersfile, fileInfo) = H.tr $ do

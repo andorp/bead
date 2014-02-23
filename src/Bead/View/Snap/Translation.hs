@@ -286,8 +286,9 @@ data Translation a
   | Msg_NewTestScript_HasNoCourses { trans :: a }
   | Msg_NewTestScript_ScriptTypeHelp { trans :: a }
 
-  | Msg_UploadFile_PleaseSelectFile { trans :: a }
-  | Msg_UploadFile_MaxSize { trans :: a }
+  | Msg_UploadFile_FileSelection { trans :: a }
+  | Msg_UploadFile_Directory { trans :: a }
+  | Msg_UploadFile_Info { trans :: a }
   | Msg_UploadFile_UploadButton { trans :: a }
   | Msg_UploadFile_FileName { trans :: a }
   | Msg_UploadFile_FileSize { trans :: a }

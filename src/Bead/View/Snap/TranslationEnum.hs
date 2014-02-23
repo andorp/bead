@@ -295,8 +295,9 @@ translationList =
   , Msg_NewTestScript_HasNoCourses ()
   , Msg_NewTestScript_ScriptTypeHelp ()
 
-  , Msg_UploadFile_PleaseSelectFile ()
-  , Msg_UploadFile_MaxSize ()
+  , Msg_UploadFile_FileSelection ()
+  , Msg_UploadFile_Directory ()
+  , Msg_UploadFile_Info ()
   , Msg_UploadFile_UploadButton ()
   , Msg_UploadFile_FileName ()
   , Msg_UploadFile_FileSize ()
