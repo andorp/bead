@@ -105,11 +105,12 @@ uploadFileContent pd = do
         fileInput (fieldName fileUploadField)
         H.br
         submitButton (fieldName fileUploadSubmit) (i18n $ Msg_UploadFile_UploadButton "Upload")
-    H.h2 . fromString . i18n $ Msg_UploadFile_Directory "Uploaded Files"
-    H.p $ do
-      table (fieldName usersFileTableName) (className usersFileTableClass) # informationalTable $ do
-        headerLine i18n
-        usersFileLines pd
+    when (numFiles > 0) $ do
+      H.h2 . fromString . i18n $ Msg_UploadFile_Directory "Uploaded Files"
+      H.p $ do
+        table (fieldName usersFileTableName) (className usersFileTableClass) # informationalTable $ do
+          headerLine i18n
+          usersFileLines pd
   where
     dataCell   x = H.td # informationalCell $ x
     headerCell x = H.th # (informationalCell <> grayBackground) $ x
@@ -117,6 +118,7 @@ uploadFileContent pd = do
       headerCell . fromString . i18n $ Msg_UploadFile_FileName "File Name"
       headerCell . fromString . i18n $ Msg_UploadFile_FileSize "File Size (bytes)"
       headerCell . fromString . i18n $ Msg_UploadFile_FileDate "File Date"
+    numFiles       = pageDataCata length pd
     usersFileLines = pageDataCata (mapM_ usersFileLine)
       where
         usersFileLine (usersfile, fileInfo) = H.tr $ do
