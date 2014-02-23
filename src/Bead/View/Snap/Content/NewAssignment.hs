@@ -20,7 +20,8 @@ import Bead.View.Snap.RequestParams
 
 import Text.Printf (printf)
 import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A (id, style, href, target)
+import qualified Text.Blaze.Html5.Attributes as A
+  (id, style, href, target, required, value)
 import qualified Text.Blaze.Html5 as H
 
 
@@ -198,7 +199,9 @@ newAssignmentContent pd = do
     postForm (routeOf . page $ pd) `withId` (hookId assignmentForm) $ H.div ! formDiv $ do
     H.div ! slimRightCell $ do
       H.b $ (fromString . msg $ Msg_NewAssignment_Title "Title")
-      textInput (fieldName assignmentNameField) 10 (amap assignmentName pd) ! fillDiv
+      textInput (fieldName assignmentNameField) 10 (amap assignmentName
+        (Just . fromString . msg $ Msg_NewAssignment_Title_Default "Unnamed Assignment") pd)
+        ! fillDiv ! A.required ""
       H.br
     H.div ! leftCell $ do
       H.b $ (fromString . msg $ Msg_NewAssignment_SubmissionDeadline "Visibility")
@@ -221,9 +224,36 @@ newAssignmentContent pd = do
     H.div ! rightCell $ do
       H.br
       H.b $ (fromString . msg $ Msg_NewAssignment_Description "Description")
-      textAreaInput (fieldName assignmentDescField) (amap assignmentDesc pd) ! fillDiv
+      textAreaInput (fieldName assignmentDescField) (amap assignmentDesc (Just . fromString . msg $
+        Msg_NewAssignment_Description_Default $ unlines
+          [ concat
+             [ "This text shall be in markdown format.  Here are some quick "
+             , "examples:"
+             ]
+          , ""
+          , "  - This is a bullet list item with *emphasis* (italic)."
+          , "  - And this is another item in the list with "
+          , "    **strong** (bold). Note that the rest of the item"
+          , "    shall be aligned."
+          , ""
+          , concat
+              [ "Sometimes one may want to write verbatim text, this how it can "
+              , "be done.  However, `verbatim` words may be inlined any time by "
+              , "using the backtick (`` ` ``) symbol."
+              ]
+          , ""
+          , "~~~~~"
+          , "verbatim text"
+          , "~~~~~"
+          , ""
+          , concat
+              [ "Note that links may be also [inserted](http://haskell.org/). And "
+              , "when everything else fails, <a>pure</a> <b>HTML code</b> "
+              , "<i>may be embedded</i>."
+              ]
+          ]) pd) ! fillDiv ! A.required ""
       H.a ! A.href linkToPandocMarkdown ! A.target "_blank" $ (fromString . msg $ Msg_NewAssignment_Markdown "Markdown syntax")
-      (fromString . msg $ Msg_NewAssignment_CanBeUsed " may be used for formatting.")
+      (fromString . msg $ Msg_NewAssignment_CanBeUsed " is recommended for study to learn more about formatting.")
       H.p $ do
         H.i (fromString . msg $ Msg_NewAssignment_Title_Normal "Normal")
         ": "
@@ -243,7 +273,7 @@ newAssignmentContent pd = do
     H.div ! leftCell $ do
       H.b (fromString . msg $ Msg_NewAssignment_Type "Type")
       H.br
-      defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType $ pd)
+      defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType Nothing $ pd)
       H.br
       H.p $ do
         H.b $ pageDataCata (const5 . fromString . msg $ Msg_NewAssignment_Course "Course")
@@ -265,9 +295,9 @@ newAssignmentContent pd = do
         (\_tz _t (key,_group)  _tsType _fs -> P.NewGroupAssignment key)
         (const6 P.ModifyAssignment)
 
-      amap :: (Assignment -> a) -> PageData -> Maybe a
-      amap f (PD_Assignment _ _ a _ _ _) = Just . f $ a
-      amap _ _                           = Nothing
+      amap :: (Assignment -> a) -> Maybe a -> PageData -> Maybe a
+      amap f _   (PD_Assignment _ _ a _ _ _) = Just . f $ a
+      amap _ def _                           = def
 
       courseOrGroupName = pageDataCata
         (\_tz _t (_key,course) _tsType _fs -> fromString $ courseName course)

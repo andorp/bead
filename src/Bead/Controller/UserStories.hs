@@ -611,6 +611,12 @@ createGroupAssignment :: GroupKey -> Assignment -> TCCreation -> UserStory Assig
 createGroupAssignment gk a tc = logAction INFO msg $ do
   authorize P_Open   P_Group
   authorize P_Create P_Assignment
+  when (null $ assignmentName a) $
+    errorPage . userError $ Msg_UserStoryError_EmptyAssignmentTitle
+      "Assignment title is empty."
+  when (null $ assignmentDesc a) $
+    errorPage . userError $ Msg_UserStoryError_EmptyAssignmentDescription
+      "Assignment description is empty."
   ak <- create descriptor (\p -> saveGroupAssignment p gk) a
   testCaseCreationForAssignment ak tc
   statusMsg a
@@ -625,6 +631,12 @@ createCourseAssignment :: CourseKey -> Assignment -> TCCreation -> UserStory Ass
 createCourseAssignment ck a tc = logAction INFO msg $ do
   authorize P_Open P_Course
   authorize P_Create P_Assignment
+  when (null $ assignmentName a) $
+    errorPage . userError $ Msg_UserStoryError_EmptyAssignmentTitle
+      "Assignment title is empty."
+  when (null $ assignmentDesc a) $
+    errorPage . userError $ Msg_UserStoryError_EmptyAssignmentDescription
+      "Assignment description is empty."
   ak <- create descriptor (\p -> saveCourseAssignment p ck) a
   testCaseCreationForAssignment ak tc
   statusMsg a
