@@ -147,7 +147,7 @@ homeContent d = do
       when (hasCourse || hasGroup) $ H.p $ do
         when (not . null $ concatMap stAssignments $ sTables d) $ do
           H.p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
-            [ "Assignments may be modified by clicking on their identifiers (their names are shown in the tooltip).  "
+            [ "Assignments may be modified by clicking on their identifiers if you have rights for the modification (their names are shown in the tooltip).  "
             , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
             , "then clicking on the button."
             ]
@@ -271,10 +271,20 @@ htmlSubmissionTable pd (i,s) = do
       deleteHeaderCell msg
 
     modifyAssignmentLink (i,ak) =
-      linkWithTitle
-        (routeWithParams P.ModifyAssignment [requestParam ak])
-        (maybe "" id . Map.lookup ak $ stAssignmentNames s)
-        (show i)
+      infoSourceCata course group groupAdmin (stOrigin s)
+      where
+        course = assignmentLink
+        group  = assignmentLink
+        groupAdmin = assignmentTitle
+
+        assignmentName = maybe "" id . Map.lookup ak $ stAssignmentNames s
+
+        assignmentLink = linkWithTitle
+          (routeWithParams P.ModifyAssignment [requestParam ak])
+          assignmentName
+          (show i)
+
+        assignmentTitle = spanWithTitle assignmentName (show i)
 
     userLine msg (u, p, as) = H.tr $ do
       let username = ud_username u

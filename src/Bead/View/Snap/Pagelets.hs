@@ -263,6 +263,10 @@ linkWithTitle route title text =
 linkToRoute :: String -> Html
 linkToRoute = link "/"
 
+-- Html text in span tag with title attribute
+spanWithTitle :: String -> String -> Html
+spanWithTitle title text = H.span ! A.title (fromString title) $ fromString text
+
 navigationMenu :: UserState -> IHtml
 navigationMenu s = do
   msg <- getI18N
