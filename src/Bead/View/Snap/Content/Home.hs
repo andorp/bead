@@ -222,6 +222,9 @@ htmlSubmissionTables pd = do
   tables <- mapM (htmlSubmissionTable pd) $ zip [1..] (sTables pd)
   return $ sequence_ tables
 
+headLine   = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
+dataCell r = H.td # (informationalCell <> r)
+
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
 -- group or course students, an informational text is shown.
@@ -231,13 +234,14 @@ htmlSubmissionTable :: HomePageData -> (Int,SubmissionTableInfo) -> IHtml
 htmlSubmissionTable pd (i,s)
   | and [null . stAssignments $ s, null . stUsers $ s] = do
     msg <- getI18N
-    return $ H.p $ do
-      (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "There are no assignments or students for the following groups:")
-      H.br
-      fromString . stCourse $ s
-      H.br
+    return $ do
+      table tableId (className groupSubmissionTable) # informationalTable $ do
+        headLine (stCourse s)
+        dataCell noStyle (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "There are no assignments or students yet.")
       courseTestScriptTable msg pd (stKey s)
       assignmentCreationMenu msg pd (stKey s)
+    where
+      tableId = join ["st", show i]
 
 -- Non empty table
 htmlSubmissionTable pd (i,s) = do
@@ -258,9 +262,7 @@ htmlSubmissionTable pd (i,s) = do
         key
 
     tableId = join ["st", show i]
-    headLine = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
     headerCell = H.th # (informationalCell <> grayBackground)
-    dataCell r = H.td # (informationalCell <> r)
     assignmentLine msg as = H.tr $ do
       headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_StudentName "Name"
       headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Username "Username"
@@ -360,13 +362,13 @@ testScriptTable :: CourseTestScriptInfos -> CourseKey -> IHtml
 testScriptTable cti ck = maybe (return "") courseFound $ Map.lookup ck cti where
   courseFound ts = do
     msg <- getI18N
-    return $ case ts of
-      [] -> fromString . msg $
-        Msg_Home_NoTestScriptsWereDefined "There are no test scripts for the course."
-      ts' -> do
-        table tableId (className groupSubmissionTable) # informationalTable $ do
-          headLine . msg $ Msg_Home_ModifyTestScriptTable "Modify test scripts"
-          mapM_ testScriptLine ts'
+    return $ do
+      table tableId (className groupSubmissionTable) # informationalTable $ do
+        headLine . msg $ Msg_Home_ModifyTestScriptTable "Testers"
+        case ts of
+          []  -> dataCell noStyle $ fromString . msg $
+                   Msg_Home_NoTestScriptsWereDefined "There are no testers for the course."
+          ts' -> mapM_ testScriptLine ts'
     where
       headLine = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
       tableId = join ["tst-", courseKeyMap id ck]
