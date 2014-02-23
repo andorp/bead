@@ -76,10 +76,10 @@ data Translation a
   | Msg_NewAssignment_Info_Urn { trans :: a }
   | Msg_NewAssignment_TestCase { trans :: a }
   | Msg_NewAssignment_TestScripts { trans :: a }
-  | Msg_NewAssignment_SelectATestCaseFile { trans :: a }
   | Msg_NewAssignment_DoNotOverwrite { trans :: a }
   | Msg_NewAssignment_NoTesting { trans :: a }
-  | Msg_NewAssignment_ActualTestFileIs { trans :: a }
+  | Msg_NewAssignment_TestFile { trans :: a }
+  | Msg_NewAssignment_TestFile_Info { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }

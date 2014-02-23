@@ -239,6 +239,11 @@ linkToPage g = do
   msg <- getI18N
   return $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString $ msg $ linkText g
 
+linkToPageBlank :: P.Page -> IHtml
+linkToPageBlank g = do
+  msg <- getI18N
+  return $ H.a ! A.href (routeOf g) ! A.target "_blank" ! A.id (fieldName g) $ fromString $ msg $ linkText g
+
 linkToPageWithText :: P.Page -> String -> Html
 linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString t
 

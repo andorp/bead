@@ -85,10 +85,10 @@ translationList =
   , Msg_NewAssignment_Info_Urn ()
   , Msg_NewAssignment_TestCase ()
   , Msg_NewAssignment_TestScripts ()
-  , Msg_NewAssignment_SelectATestCaseFile ()
   , Msg_NewAssignment_DoNotOverwrite ()
   , Msg_NewAssignment_NoTesting ()
-  , Msg_NewAssignment_ActualTestFileIs ()
+  , Msg_NewAssignment_TestFile ()
+  , Msg_NewAssignment_TestFile_Info ()
 
   , Msg_GroupRegistration_RegisteredCourses ()
   , Msg_GroupRegistration_SelectGroup ()
