@@ -3,7 +3,7 @@
 __MESSAGE=
 
 say() {
-    __MESSAGE=${__MESSAGE}$1'\n'
+    __MESSAGE=${__MESSAGE}$1$'\n'
 }
 
 export PATH=$PATH:/usr/local/bin
