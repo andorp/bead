@@ -20,7 +20,7 @@ import Bead.View.Snap.RequestParams
 
 import Text.Printf (printf)
 import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A (id, style, href)
+import qualified Text.Blaze.Html5.Attributes as A (id, style, href, target)
 import qualified Text.Blaze.Html5 as H
 
 
@@ -222,7 +222,7 @@ newAssignmentContent pd = do
       H.br
       H.b $ (fromString . msg $ Msg_NewAssignment_Description "Description")
       textAreaInput (fieldName assignmentDescField) (amap assignmentDesc pd) ! fillDiv
-      H.a ! A.href linkToPandocMarkdown $ (fromString . msg $ Msg_NewAssignment_Markdown "Markdown syntax")
+      H.a ! A.href linkToPandocMarkdown ! A.target "_blank" $ (fromString . msg $ Msg_NewAssignment_Markdown "Markdown syntax")
       (fromString . msg $ Msg_NewAssignment_CanBeUsed " may be used for formatting.")
       H.p $ do
         H.b (fromString . msg $ Msg_NewAssignment_Title_Normal "Normal")
