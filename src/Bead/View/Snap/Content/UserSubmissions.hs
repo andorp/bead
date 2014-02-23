@@ -43,7 +43,7 @@ userSubmissionHtml :: UserTimeConverter -> UserSubmissionDesc -> IHtml
 userSubmissionHtml ut u = do
   msg <- getI18N
   return $ do
-    H.table # centerTable $ do
+    H.table $ do
       H.tr $ do
         firstCol  . msg $ Msg_UserSubmissions_Course "Course:"
         secondCol . usCourse $ u
@@ -57,8 +57,8 @@ userSubmissionHtml ut u = do
       H.h3 . fromString . msg $ Msg_UserSubmissions_SubmittedSolutions "Submissions"
       i18n msg . submissionTable ut . sortDescendingByTime . usSubmissions $ u
   where
-    firstCol  t = H.td # textAlignRight $ H.b $ fromString $ t
-    secondCol t = H.td # textAlignLeft  $ fromString t
+    firstCol  t = H.td # textAlignLeft $ H.b $ fromString $ t
+    secondCol t = H.td # textAlignLeft $ fromString t
 
     submissionTime (_submissionKey, time, _submissionInfo) = time
 

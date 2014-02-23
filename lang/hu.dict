@@ -156,7 +156,7 @@ DictionaryFile {
     , Msg_UserSubmissions_Student { trans = "Hallgató:" }
     , Msg_UserSubmissions_SubmittedSolutions { trans = "Beadott megoldások" }
     , Msg_UserSubmissions_SubmissionDate { trans = "Beküldés dátuma" }
-    , Msg_UserSubmissions_Evaluation { trans = "Evaluation" }
+    , Msg_UserSubmissions_Evaluation { trans = "Értékelés" }
     , Msg_UserSubmissions_Accepted { trans = "Elfogadott" }
     , Msg_UserSubmissions_Tested { trans = "Letesztelt" }
     , Msg_UserSubmissions_Rejected { trans = "Elutasított" }
