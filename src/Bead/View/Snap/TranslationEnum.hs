@@ -69,10 +69,12 @@ translationList =
   , Msg_NewAssignment_IsNoGroupAdmin ()
   , Msg_NewAssignment_IsNoCreator ()
   , Msg_NewAssignment_Title ()
+  , Msg_NewAssignment_Title_Default ()
   , Msg_NewAssignment_SubmissionDeadline ()
   , Msg_NewAssignment_StartDate ()
   , Msg_NewAssignment_EndDate ()
   , Msg_NewAssignment_Description ()
+  , Msg_NewAssignment_Description_Default ()
   , Msg_NewAssignment_Markdown ()
   , Msg_NewAssignment_CanBeUsed ()
   , Msg_NewAssignment_Type ()
@@ -340,6 +342,8 @@ translationList =
   , Msg_UserStoryError_SubmissionDeadlineIsReached ()
   , Msg_UserStoryError_XID ()
   , Msg_UserStoryError_TestAgentError ()
+  , Msg_UserStoryError_EmptyAssignmentTitle ()
+  , Msg_UserStoryError_EmptyAssignmentDescription ()
 
   , Msg_UserActions_ChangedUserDetails ()
 

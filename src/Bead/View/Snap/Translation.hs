@@ -60,10 +60,12 @@ data Translation a
   | Msg_NewAssignment_IsNoGroupAdmin { trans :: a }
   | Msg_NewAssignment_IsNoCreator { trans :: a }
   | Msg_NewAssignment_Title { trans :: a }
+  | Msg_NewAssignment_Title_Default { trans :: a }
   | Msg_NewAssignment_SubmissionDeadline { trans :: a }
   | Msg_NewAssignment_StartDate { trans :: a }
   | Msg_NewAssignment_EndDate { trans :: a }
   | Msg_NewAssignment_Description { trans :: a }
+  | Msg_NewAssignment_Description_Default { trans :: a }
   | Msg_NewAssignment_Markdown { trans :: a }
   | Msg_NewAssignment_CanBeUsed { trans :: a }
   | Msg_NewAssignment_Type { trans :: a }
@@ -331,6 +333,8 @@ data Translation a
   | Msg_UserStoryError_SubmissionDeadlineIsReached { trans :: a }
   | Msg_UserStoryError_XID { trans :: a }
   | Msg_UserStoryError_TestAgentError { trans :: a }
+  | Msg_UserStoryError_EmptyAssignmentTitle { trans :: a }
+  | Msg_UserStoryError_EmptyAssignmentDescription { trans :: a }
 
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 

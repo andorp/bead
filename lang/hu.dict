@@ -54,12 +54,14 @@ DictionaryFile {
     , Msg_NewAssignment_IsNoGroupAdmin { trans = "Ehhez a felhasználóhoz nem tartozik egyetlen csoport sem!" }
     , Msg_NewAssignment_IsNoCreator { trans = "Ezt a feladatot más hozta létre!" }
     , Msg_NewAssignment_Title { trans = "Cím" }
+    , Msg_NewAssignment_Title_Default { trans = "Névtelen feladat" }
     , Msg_NewAssignment_SubmissionDeadline { trans = "Beadás ideje" }
     , Msg_NewAssignment_StartDate { trans = "Nyitás" }
     , Msg_NewAssignment_EndDate { trans = "Zárás" }
     , Msg_NewAssignment_Description { trans = "Szöveges leírás" }
-    , Msg_NewAssignment_Markdown { trans = "Markdown formázás" }
-    , Msg_NewAssignment_CanBeUsed { trans = " használható a feladat leírásában." }
+    , Msg_NewAssignment_Description_Default { trans = "Ennek a szövegnek markdown formátumban kell lennie.  Íme erre néhány egyszerű példa:\n\n  - Ez egy lista egyik eleme, *dőlt betűvel*.\n  - Ez pedig egy másik elem, **félkövérrel**.  Ügyeljünk\n    arra, hogy a szöveg többi része igazítva maradjon.\n\nNéha egyszerűen csak formázatlan szöveget akarunk írni.  Lentebb látható egy példa, miként lehet ezt megcsinálni.  Habár a `formázatlan` szavakat bármikor írhatunk a backtick (`` ` ``) szimbólum segítségével.\n\n~~~~\nformázatlan szöveg\n~~~~~\n\nEmellett még linkek is [illeszthetőek](http://haskell.org/) a szövegbe.  És ha végképp semmi sem jut az eszünkbe, akkor akár <a>sima</a> <b>HTML kódot</b> <i>is be lehet ágyazni</i>." }
+    , Msg_NewAssignment_Markdown { trans = "A markdown formázás" }
+    , Msg_NewAssignment_CanBeUsed { trans = " tanulmányozása javasolt a további lehetőségek megismeréséhez." }
     , Msg_NewAssignment_Type { trans = "Típus" }
     , Msg_NewAssignment_Course { trans = "Tárgy" }
     , Msg_NewAssignment_Group { trans = "Csoport" }
@@ -302,6 +304,8 @@ DictionaryFile {
     , Msg_UserStoryError_NoGroupAdmin { trans = "%s nem oktató!" }
     , Msg_UserStoryError_NoGroupAdminOfGroup { trans = "Nem oktatója a csoportnak!" }
     , Msg_UserStoryError_AlreadyHasSubmission { trans = "Ennek a felhasználónak már van beadott megoldása a kurzushoz tartozó feladatokhoz!" }
+    , Msg_UserStoryError_EmptyAssignmentTitle { trans = "Nincs a feladatnak címe!" }
+    , Msg_UserStoryError_EmptyAssignmentDescription { trans = "Nincs a feladatnak szövege!" }
     , Msg_UserActions_ChangedUserDetails { trans = "A felhasználói beállításai megváltoztak!" }
     , Msg_LinkText_Login { trans = "Bejelentkezés" }
     , Msg_LinkText_Logout { trans = "Kijelentkezés" }
