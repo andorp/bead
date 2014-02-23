@@ -225,14 +225,14 @@ newAssignmentContent pd = do
       H.a ! A.href linkToPandocMarkdown ! A.target "_blank" $ (fromString . msg $ Msg_NewAssignment_Markdown "Markdown syntax")
       (fromString . msg $ Msg_NewAssignment_CanBeUsed " may be used for formatting.")
       H.p $ do
-        H.b (fromString . msg $ Msg_NewAssignment_Title_Normal "Normal")
+        H.i (fromString . msg $ Msg_NewAssignment_Title_Normal "Normal")
         ": "
         fromString . msg $ Msg_NewAssignment_Info_Normal $ concat
           [ "Solutions may be submitted from the time of opening until the time of closing.  The assignment will not "
           , "be visible until it is opened.  The assignments open and close automatically."
           ]
       H.p $ do
-        H.b (fromString . msg $ Msg_NewAssignment_Title_Urn "Urn")
+        H.i (fromString . msg $ Msg_NewAssignment_Title_Urn "Urn")
         ": "
         fromString . msg $ Msg_NewAssignment_Info_Urn $ concat
           [ "(Recommended for tests.)  Solutions may be submitted from the time of opening until the time of closing, "
@@ -285,7 +285,6 @@ newAssignmentContent pd = do
         (\_tz _k _a tsType fs tc -> overwriteTestCaseArea fs tsType tc)
         where
           textArea val = do
-            H.br
             H.b . fromString . msg $ Msg_NewAssignment_TestCase "Test cases"
             textAreaInput (fieldName assignmentTestCaseField) val ! fillDiv
 
@@ -299,9 +298,13 @@ newAssignmentContent pd = do
                 usersFileSelection
 
               usersFileSelection = do
-                H.b . fromString . msg $ Msg_NewAssignment_SelectATestCaseFile "Please select a test case file"
+                H.b $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
                 H.br
                 valueSelection keyValue (fieldName assignmentUsersFileField) fs
+                H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
+                  "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
+                  (msg $ Msg_LinkText_UploadFile "Upload File")
+                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank P.UploadFile
                 where
                   keyValue uf = flip usersFileCata uf $ \u -> (show uf, u)
 
@@ -321,13 +324,15 @@ newAssignmentContent pd = do
                 usersFileSelection           -- zipped
 
               usersFileSelection = do
-                H.b . fromString . msg $ Msg_NewAssignment_SelectATestCaseFile "Please select a test case file"
-                fromString . msg $ Msg_NewAssignment_ActualTestFileIs "Actually test case file is:"
-                testCaseFileName tc
-                H.br
+                H.b $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
+                H.pre $ testCaseFileName tc
                 valueSelection keyValue (fieldName assignmentUsersFileField) ((Left ()):map Right fs)
+                H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
+                  "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
+                  (msg $ Msg_LinkText_UploadFile "Upload File")
+                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank P.UploadFile
                 where
-                  keyValue l@(Left ()) = (show l, msg $ Msg_NewAssignment_DoNotOverwrite "Do not overwrite")
+                  keyValue l@(Left ()) = (show l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
                   keyValue r@(Right uf) = flip usersFileCata uf $ \u -> (show r, u)
 
       -- TODO
@@ -344,7 +349,7 @@ newAssignmentContent pd = do
 
           tsSelection ts = do
             H.br
-            H.b . fromString . msg $ Msg_NewAssignment_TestScripts "Test scripts"
+            H.b . fromString . msg $ Msg_NewAssignment_TestScripts "Tester"
             H.br
             valueSelection keyValue (fieldName assignmentTestScriptField) (Nothing:map Just ts)
 
