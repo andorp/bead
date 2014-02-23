@@ -6,6 +6,7 @@ module Bead.View.Snap.Content.UploadFile (
 import           Control.Monad.Error
 import           Data.String (fromString)
 import qualified Data.Text as T
+import qualified Data.ByteString.Char8 as B
 
 import           Snap.Util.FileUploads
 import           Text.Blaze.Html5 ((!))
@@ -80,7 +81,9 @@ postUploadFile =
 
     handlePart (partInfo, Left exception) = return . PolicyFailure . T.unpack $ policyViolationExceptionReason exception
     handlePart (partInfo, Right filePath) =
-      maybe (return $ UnnamedFile) saveFile $ partFileName partInfo
+      case (partFileName partInfo) of
+        Just fp | not (B.null fp) -> saveFile fp
+        _                         -> return UnnamedFile
       where
         saveFile name = do
           i18n <- i18nH
