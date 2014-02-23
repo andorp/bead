@@ -7,7 +7,7 @@ show_program() {
 __MESSAGE=
 
 say() {
-    __MESSAGE="${__MESSAGE}$1\n"
+    __MESSAGE=${__MESSAGE}$1$'\n'
 }
 
 export PATH=$PATH:/usr/local/bin
@@ -18,6 +18,6 @@ cd /bead/build
 build
 __BUILD_RESULT=$?
 if [ "${__MESSAGE}" != "" ]; then
-    echo -e "${__MESSAGE}" > .message
+    echo "${__MESSAGE}" > .message
 fi
 exit ${__BUILD_RESULT}

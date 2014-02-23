@@ -3,7 +3,7 @@
 __MESSAGE=
 
 say() {
-    __MESSAGE="${__MESSAGE}$1\n"
+    __MESSAGE=${__MESSAGE}$1'\n'
 }
 
 export PATH=$PATH:/usr/local/bin
@@ -13,6 +13,6 @@ cd /bead/run
 run
 __RUN_RESULT=$?
 if [ "${__MESSAGE}" != "" ]; then
-    echo -e ${__MESSAGE} > .message
+    echo "${__MESSAGE}" > .message
 fi
 exit ${__RUN_RESULT}
