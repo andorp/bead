@@ -122,6 +122,10 @@ navigation links = do
   msg <- getI18N
   return $ H.div ! A.id "menu" $ H.ul $ mapM_ (i18n msg . linkToPage) links
 
+submissionTableInfoAssignments = submissionTableInfoCata course group where
+  course _n _c _us as _uls _ans _ck = as
+  group _n _c _us cgas _uls _ans _ck _gk = map (cgInfoCata id id) cgas
+
 homeContent :: HomePageData -> IHtml
 homeContent d = do
   let s = userState d
@@ -145,7 +149,7 @@ homeContent d = do
       when (not hasGroup) $ (fromString $ msg $ Msg_Home_NoGroupsYet "There are no groups.")
     when ((courseAdminUser r) || (groupAdminUser r)) $ do
       when (hasCourse || hasGroup) $ H.p $ do
-        when (not . null $ concatMap stiAssignments $ sTables d) $ do
+        when (not . null $ concatMap submissionTableInfoAssignments $ sTables d) $ do
           H.p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
             [ "Assignments may be modified by clicking on their identifiers if you have rights for the modification (their names are shown in the tooltip).  "
             , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
@@ -225,9 +229,6 @@ htmlSubmissionTables pd = do
 headLine   = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
 dataCell r = H.td # (informationalCell <> r)
 
-submissionTableInfoAssignments = submissionTableInfoCata course group where
-  course _n _c _us as _uls _ans _ck = as
-  group _n _c _us cgas _uls _ans _ck _gk = map (cgInfoCata id id) cgas
 
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
@@ -270,7 +271,6 @@ htmlSubmissionTable pd (i,s) = do
       headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_StudentName "Name"
       headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Username "Username"
       assignmentLinks
-      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Summary "Summary"
       deleteHeaderCell msg
       where
         assignmentLinks = submissionTableInfoCata course group s
@@ -305,10 +305,6 @@ htmlSubmissionTable pd (i,s) = do
       dataCell noStyle . fromString $ ud_fullname u
       dataCell noStyle . fromString $ show username
       submissionCells username s
-      case calculateSubmissionResult msg (submissionInfos s) (stiEvalConfig s) of
-        Left  e      -> dataCell summaryErrorStyle  $ fromString e
-        Right Passed -> dataCell summaryPassedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Accepted "Accepted"
-        Right Failed -> dataCell summaryFailedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Rejected "Rejected"
       deleteUserCheckbox u
       where
         submissionInfos = submissionTableInfoCata course group where
