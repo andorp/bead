@@ -355,94 +355,107 @@ submissionTables p u = do
   courseTables <- mapM (courseSubmissionTableInfo p) courseKeys
   groupKeys <- map fst <$> administratedGroups p u
   groupTables  <- mapM (groupSubmissionTableInfo p) groupKeys
-  courseOfGroupTables <- catMaybes <$> mapM (courseSubmissionTableInfoForGroupAdmin p courseKeys) groupKeys
-  return $ courseTables ++ courseOfGroupTables ++ groupTables
+  return $ courseTables ++ groupTables
 
 groupSubmissionTableInfo :: Persist -> GroupKey -> TIO SubmissionTableInfo
 groupSubmissionTableInfo p gk = do
-  assignments <- groupAssignments p gk
+  ck <- courseOfGroup p gk
+  gassignments <- groupAssignments p gk
+  cassignments <- courseAssignments p ck
   usernames   <- subscribedToGroup p gk
   name <- fullGroupName p gk
   evalCfg <- groupEvalConfig <$> loadGroup p gk
-  submissionTableInfo p name GroupInfSrc evalCfg assignments usernames (Left gk)
+  mkGroupSubmissionTableInfo p name evalCfg usernames cassignments gassignments ck gk
 
 courseSubmissionTableInfo :: Persist -> CourseKey -> TIO SubmissionTableInfo
 courseSubmissionTableInfo p ck = do
   assignments <- courseAssignments p ck
   usernames   <- subscribedToCourse p ck
   (name,evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
-  submissionTableInfo p name CourseInfSrc evalCfg assignments usernames (Right ck)
+  mkCourseSubmissionTableInfo p name evalCfg usernames assignments ck
 
--- Produces a submission table information, which is Just info, for the courses expect that the user is already
--- administrates, otherwise Nothing
-courseSubmissionTableInfoForGroupAdmin :: Persist -> [CourseKey] -> GroupKey -> TIO (Maybe SubmissionTableInfo)
-courseSubmissionTableInfoForGroupAdmin p cks gk = do
-  ck <- courseOfGroup p gk
-  if elem ck cks
-    then return Nothing
-    else do
-      usernames <- subscribedToGroup p gk
-      assignments <- courseAssignments p ck
-      (name, evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
-      Just <$> submissionTableInfo p name GroupAdminCourseInfSrc evalCfg assignments usernames (Right ck)
-
-submissionTableInfo
-  :: Persist
-  -> String
-  -> InfoSource
-  -> EvaluationConfig
-  -> [AssignmentKey]
-  -> [Username]
-  -> Either GroupKey CourseKey
-  -> TIO SubmissionTableInfo
-submissionTableInfo p courseName source evalCfg as usernames key = do
-  assignments <- sortAssignments as
-  assignmentNames <- loadAssignmentNames as
-
-  ulines <- flip mapM usernames $ \u -> do
-    ud  <- userDescription p u
-    asi <- mapM (submissionInfo' u) as
-    let result = case asi of
-                   [] -> Nothing
-                   _  -> calculateResult . map snd $ asi
-    return (ud, result, asi)
-
-  return SubmissionTableInfo {
-    stCourse      = courseName
-  , stOrigin      = source
-  , stNumberOfAssignments = length assignments
-  , stEvalConfig  = evalCfg
-  , stAssignments = assignments
-  , stUsers       = usernames
-  , stUserLines   = ulines
-  , stAssignmentNames = assignmentNames
-  , stKey         = key
-  }
+-- Sort the given keys into an ordered list based on the time function
+sortKeysByTime :: Persist -> (Persist -> key -> TIO UTCTime) -> [key] -> TIO [key]
+sortKeysByTime persist time keys = map snd . sortBy (compare `on` fst) <$> mapM getTime keys
   where
-    sortAssignments :: [AssignmentKey] -> TIO [AssignmentKey]
-    sortAssignments ks = map snd . sortBy (compare `on` fst) <$> mapM (assignmentCreatedTime') ks
-
-    assignmentCreatedTime' k = do
-      t <- assignmentCreatedTime p k
+    getTime k = do
+      t <- time persist k
       return (t,k)
 
-    submissionInfo' u ak = addKey <$> (userLastSubmissionInfo p u ak)
-      where
-        addKey s = (ak,s)
-
-    loadAssignmentNames as = Map.fromList <$> mapM loadAssignmentName as
-
+loadAssignmentNames :: Persist -> [AssignmentKey] -> TIO (Map AssignmentKey AssignmentName)
+loadAssignmentNames p as = Map.fromList <$> mapM loadAssignmentName as
+  where
     loadAssignmentName a = do
-      name <- assignmentName <$> loadAssignment p a
-      return (a,name)
+       name <- assignmentName <$> loadAssignment p a
+       return (a,name)
 
-    calculateResult = evaluateResults evalCfg . map sbmResult . filter hasResult
+submissionInfoAsgKey :: Persist -> Username -> AssignmentKey -> TIO (AssignmentKey, SubmissionInfo)
+submissionInfoAsgKey p u ak = addKey <$> (userLastSubmissionInfo p u ak)
+  where
+    addKey s = (ak,s)
 
+calculateResult evalCfg = evaluateResults evalCfg . map sbmResult . filter hasResult
+  where
     hasResult (Submission_Result _ _) = True
     hasResult _                       = False
 
     sbmResult (Submission_Result _ r) = r
     sbmResult _ = error "sbmResult: impossible"
+
+
+mkCourseSubmissionTableInfo
+  :: Persist -> String -> EvaluationConfig -> [Username] -> [AssignmentKey] -> CourseKey
+  -> TIO SubmissionTableInfo
+mkCourseSubmissionTableInfo p courseName evalCfg us as key = do
+  assignments <- sortKeysByTime p assignmentCreatedTime as
+  assignmentNames <- loadAssignmentNames p as
+  ulines <- forM us $ \u -> do
+    ud <- userDescription p u
+    asi <- mapM (submissionInfoAsgKey p u) as
+    let result = case asi of
+                   [] -> Nothing
+                   _  -> calculateResult evalCfg $ map snd asi
+    return (ud, result, Map.fromList asi)
+  return CourseSubmissionTableInfo {
+      stiCourse = courseName
+    , stiEvalConfig = evalCfg
+    , stiUsers = us
+    , stiAssignments = assignments
+    , stiUserLines = ulines
+    , stiAssignmentNames = assignmentNames
+    , stiCourseKey = key
+    }
+
+mkGroupSubmissionTableInfo
+  :: Persist -> String -> EvaluationConfig
+  -> [Username] -> [AssignmentKey] -> [AssignmentKey]
+  -> CourseKey -> GroupKey
+  -> TIO SubmissionTableInfo
+mkGroupSubmissionTableInfo p courseName evalCfg us cas gas ckey gkey = do
+  cgAssignments   <- sortKeysByTime p createdTime ((map CourseInfo cas) ++ (map GroupInfo gas))
+  assignmentNames <- loadAssignmentNames p (cas ++ gas)
+  ulines <- forM us $ \u -> do
+    ud <- userDescription p u
+    casi <- mapM (submissionInfoAsgKey p u) cas
+    gasi <- mapM (submissionInfoAsgKey p u) gas
+    let result = case gasi of
+                   [] -> Nothing
+                   _  -> calculateResult evalCfg $ map snd gasi
+    return (ud, result, Map.fromList (casi ++ gasi))
+  return GroupSubmissionTableInfo {
+      stiCourse = courseName
+    , stiEvalConfig = evalCfg
+    , stiUsers = us
+    , stiCGAssignments = cgAssignments
+    , stiUserLines = ulines
+    , stiAssignmentNames = assignmentNames
+    , stiCourseKey = ckey
+    , stiGroupKey  = gkey
+    }
+  where
+    createdTime p = cgInfoCata
+      (assignmentCreatedTime p)
+      (assignmentCreatedTime p)
 
 submissionInfo :: Persist -> SubmissionKey -> TIO SubmissionInfo
 submissionInfo p sk = do

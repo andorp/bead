@@ -286,6 +286,8 @@ translationList =
   , Msg_Home_NotAdministratedTestScripts ()
   , Msg_Home_NoTestScriptsWereDefined ()
   , Msg_Home_ModifyTestScriptTable ()
+  , Msg_Home_CourseAssignmentIDPreffix ()
+  , Msg_Home_GroupAssignmentIDPreffix ()
 
   , Msg_NewTestScript_Name ()
   , Msg_NewTestScript_Type ()
