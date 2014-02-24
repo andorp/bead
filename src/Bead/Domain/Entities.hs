@@ -206,6 +206,21 @@ newtype CourseCode = CourseCode String
 instance Str CourseCode where
   str (CourseCode s) = s
 
+-- Course or Group info. Some information is attached to
+-- course or group
+data CGInfo a
+  = CourseInfo a
+  | GroupInfo a
+  deriving (Show)
+
+-- Template function for the course or group info value
+cgInfoCata
+  course
+  group
+  cg = case cg of
+    CourseInfo x -> course x
+    GroupInfo  x -> group  x
+
 -- | A course represent a university course
 data Course = Course {
     courseName :: String

@@ -145,7 +145,7 @@ homeContent d = do
       when (not hasGroup) $ (fromString $ msg $ Msg_Home_NoGroupsYet "There are no groups.")
     when ((courseAdminUser r) || (groupAdminUser r)) $ do
       when (hasCourse || hasGroup) $ H.p $ do
-        when (not . null $ concatMap stAssignments $ sTables d) $ do
+        when (not . null $ concatMap stiAssignments $ sTables d) $ do
           H.p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
             [ "Assignments may be modified by clicking on their identifiers if you have rights for the modification (their names are shown in the tooltip).  "
             , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
@@ -225,6 +225,10 @@ htmlSubmissionTables pd = do
 headLine   = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
 dataCell r = H.td # (informationalCell <> r)
 
+submissionTableInfoAssignments = submissionTableInfoCata course group where
+  course _n _c _us as _uls _ans _ck = as
+  group _n _c _us cgas _uls _ans _ck _gk = map (cgInfoCata id id) cgas
+
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
 -- group or course students, an informational text is shown.
@@ -232,14 +236,14 @@ htmlSubmissionTable :: HomePageData -> (Int,SubmissionTableInfo) -> IHtml
 
 -- Empty table
 htmlSubmissionTable pd (i,s)
-  | and [null . stAssignments $ s, null . stUsers $ s] = do
+  | and [null $ submissionTableInfoAssignments s, null $ stiUsers s] = do
     msg <- getI18N
     return $ do
       table tableId (className groupSubmissionTable) # informationalTable $ do
-        headLine (stCourse s)
+        headLine (stiCourse s)
         dataCell noStyle (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "There are no assignments or students yet.")
-      courseTestScriptTable msg pd (stKey s)
-      assignmentCreationMenu msg pd (stKey s)
+      courseTestScriptTable msg pd s
+      assignmentCreationMenu msg pd s
     where
       tableId = join ["st", show i]
 
@@ -248,57 +252,86 @@ htmlSubmissionTable pd (i,s) = do
   msg <- getI18N
   return $ do
     courseForm $ table tableId (className groupSubmissionTable) # informationalTable $ do
-      headLine (stCourse s)
-      assignmentLine msg (stAssignments s)
-      mapM_ (userLine msg) (stUserLines s)
-    courseTestScriptTable msg pd (stKey s)
-    assignmentCreationMenu msg pd (stKey s)
+      headLine (stiCourse s)
+      assignmentLine msg
+      mapM_ (userLine msg s) (stiUserLines s)
+    courseTestScriptTable msg pd s
+    assignmentCreationMenu msg pd s
   where
 
-    courseForm = infoSourceCata createForm createForm id infoSrc where
-      createForm = either
-        (postForm . routeOf . P.DeleteUsersFromGroup)
-        (postForm . routeOf . P.DeleteUsersFromCourse)
-        key
+    courseForm = submissionTableInfoCata course group s where
+      course _n _c _us _as _uls _ns ck      = postForm (routeOf $ P.DeleteUsersFromCourse ck)
+      group _n _c _us _cgas _uls _ns _ck gk = postForm (routeOf $ P.DeleteUsersFromGroup gk)
 
     tableId = join ["st", show i]
     headerCell = H.th # (informationalCell <> grayBackground)
-    assignmentLine msg as = H.tr $ do
+
+    assignmentLine msg = H.tr $ do
       headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_StudentName "Name"
       headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Username "Username"
-      mapM_ (headerCell . modifyAssignmentLink) . zip [1..] $ as
+      assignmentLinks
       headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Summary "Summary"
       deleteHeaderCell msg
-
-    modifyAssignmentLink (i,ak) =
-      infoSourceCata course group groupAdmin (stOrigin s)
       where
-        course = assignmentLink
-        group  = assignmentLink
-        groupAdmin = assignmentTitle
+        assignmentLinks = submissionTableInfoCata course group s
 
-        assignmentName = maybe "" id . Map.lookup ak $ stAssignmentNames s
+        course _name _cfg _users as _ulines _anames _key =
+          mapM_ (headerCell . modifyAssignmentLink "") $ zip [1..] as
 
-        assignmentLink = linkWithTitle
-          (routeWithParams P.ModifyAssignment [requestParam ak])
-          assignmentName
-          (show i)
+        group  _name _cfg _users cgas _ulines _anames _ckey _gkey = do
+          let as = reverse . snd $ foldl numbering ((1,1),[]) cgas
+          mapM_ header as
+          where
+            numbering ((c,g),as) = cgInfoCata
+              (\ak -> ((c+1,g),(CourseInfo (c,ak):as)))
+              (\ak -> ((c,g+1),(GroupInfo  (g,ak):as)))
 
-        assignmentTitle = spanWithTitle assignmentName (show i)
+            header = headerCell . cgInfoCata
+              (assignmentTitle (msg $ Msg_Home_CourseAssignmentIDPreffix "C"))
+              (modifyAssignmentLink (msg $ Msg_Home_GroupAssignmentIDPreffix "G"))
 
-    userLine msg (u, p, as) = H.tr $ do
+    assignmentName ak = maybe "" id . Map.lookup ak $ stiAssignmentNames s
+
+    modifyAssignmentLink pfx (i,ak) =
+      linkWithTitle
+        (routeWithParams P.ModifyAssignment [requestParam ak])
+        (assignmentName ak)
+        (concat [pfx, show i])
+
+    assignmentTitle pfx (i,ak) = spanWithTitle (assignmentName ak) (concat [pfx, show i])
+
+    userLine msg s (u,p,submissionInfoMap) = do
       let username = ud_username u
-          submissionInfos = map snd as
-      dataCell noStyle . fromString . ud_fullname $ u
-      dataCell noStyle . fromString . show $ username
-      mapM_ (submissionCell username) $ as
-      case calculateSubmissionResult msg submissionInfos (stEvalConfig s) of
+      dataCell noStyle . fromString $ ud_fullname u
+      dataCell noStyle . fromString $ show username
+      submissionCells username s
+      case calculateSubmissionResult msg (submissionInfos s) (stiEvalConfig s) of
         Left  e      -> dataCell summaryErrorStyle  $ fromString e
         Right Passed -> dataCell summaryPassedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Accepted "Accepted"
         Right Failed -> dataCell summaryFailedStyle $ fromString $ msg $ Msg_Home_SubmissionTable_Rejected "Rejected"
       deleteUserCheckbox u
+      where
+        submissionInfos = submissionTableInfoCata course group where
+          course _n _c _users as _ulines _anames _key =
+            catMaybes $ map (\ak -> Map.lookup ak submissionInfoMap) as
 
-    submissionCell u (ak,s) =
+          group _n _c _users as _ulines _anames _ckey _gkey =
+            catMaybes $ map lookup as
+            where
+              lookup = cgInfoCata (const Nothing) (flip Map.lookup submissionInfoMap)
+
+
+        submissionCells username = submissionTableInfoCata course group where
+          course _n _c _users as _ulines _anames _key = mapM_ (submissionInfoCell username) as
+
+          group _n _c _users as _ulines _anames _ck _gk =
+            mapM_ (cgInfoCata (submissionInfoCell username) (submissionInfoCell username)) as
+
+        submissionInfoCell u ak = case Map.lookup ak submissionInfoMap of
+          Nothing -> dataCell noStyle $ fromString "░░░"
+          Just si -> submissionCell u (ak,si)
+
+    submissionCell u (ak,si) =
       coloredSubmissionCell
         dataCell
         (H.td)
@@ -308,61 +341,36 @@ htmlSubmissionTable pd (i,s) = do
         "░░░" -- tested
         "░░░" -- accepted
         "░░░" -- rejected
-        s      -- of percent
+        si    -- of percent
 
-    deleteHeaderCell msg =
-      either
-        (infoSourceCata -- GroupKey
-          (const emptyHtml)
-          deleteForGroupButton
-          (const emptyHtml)
-          infoSrc)
-        (infoSourceCata -- CourseKey
-           deleteForCourseButton
-           (const emptyHtml)
-           (const emptyHtml)
-           infoSrc)
-        key
-      where
-        deleteForCourseButton ck =
+    deleteHeaderCell msg = submissionTableInfoCata deleteForCourseButton deleteForGroupButton s where
+        deleteForCourseButton _n _c _us _as _uls _ans _ck =
           headerCell $ submitButton
             (fieldName delUsersFromCourseBtn)
             (msg $ Msg_Home_DeleteUsersFromCourse "Remove")
 
-        deleteForGroupButton gk =
+        deleteForGroupButton _n _c _us _as _uls _ans _ck _gk =
           headerCell $ submitButton
             (fieldName delUsersFromGroupBtn)
             (msg $ Msg_Home_DeleteUsersFromGroup "Remove")
 
-    deleteUserCheckbox u =
-      infoSourceCata
-        deleteCourseCheckbox
-        deleteGroupCheckbox
-        emptyHtml
-        infoSrc
-      where
-        deleteCourseCheckbox =
+    deleteUserCheckbox u = submissionTableInfoCata deleteCourseCheckbox deleteGroupCheckbox s where
+        deleteCourseCheckbox _n _c _us _as _uls _ans _ck =
           dataCell noStyle $ checkBox
             (Param.name delUserFromCoursePrm)
             (encode delUserFromCoursePrm $ ud_username u)
             False
 
-        deleteGroupCheckbox =
+        deleteGroupCheckbox _n _c _us _as _uls _ans _ck _gk =
           dataCell noStyle $ checkBox
             (Param.name delUserFromGroupPrm)
             (encode delUserFromGroupPrm $ ud_username u)
             False
 
-    emptyHtml = return ()
-
-    infoSrc = stOrigin s
-
-    key = stKey s
-
--- TODO: refactor
-courseTestScriptTable msg pd = either
-  (const $ return ())
-  (i18n msg . testScriptTable (courseTestScripts pd))
+courseTestScriptTable :: I18N -> HomePageData -> SubmissionTableInfo -> H.Html
+courseTestScriptTable msg pd = submissionTableInfoCata course group where
+  course _n _c _us _as _uls _ans ck = (i18n msg . testScriptTable (courseTestScripts pd)) ck
+  group _n _c _us _as _uls _ans _ck _gk = (return ())
 
 -- Renders a course test script modification table if the information is found in the
 -- for the course, otherwise an error message. If the course is found, and there is no
@@ -390,18 +398,18 @@ testScriptTable cti ck = maybe (return "") courseFound $ Map.lookup ck cti where
           (tsiName tsi)
 
 
--- Renders a menu for the creation of the course of group assignment if the
+-- Renders a menu for the creation of the course or group assignment if the
 -- user administrates the given group or course
-assignmentCreationMenu :: I18N -> HomePageData -> Either GroupKey CourseKey -> H.Html
-assignmentCreationMenu msg pd = either groupMenu courseMenu
+assignmentCreationMenu :: I18N -> HomePageData -> SubmissionTableInfo -> H.Html
+assignmentCreationMenu msg pd = submissionTableInfoCata courseMenu groupMenu
   where
-    groupMenu gk = maybe
+    groupMenu _n _c _us _as _uls _ans _ck gk = maybe
       (return ())
       (const $ do
         navigationWithRoute [P.NewGroupAssignment gk])
       (Map.lookup gk (administratedGroupMap pd))
 
-    courseMenu ck = maybe
+    courseMenu _n _c _us _as _uls _ans ck = maybe
       (return ())
       (const $ do
         navigationWithRoute [P.NewCourseAssignment ck])
@@ -557,23 +565,14 @@ colorStyle (RGB (r,g,b)) = join ["background-color:#", hex r, hex g, hex b]
 
 -- * Tools
 
--- Sorts the userlines alphabetically ordered in submissionTableInfo
-sortUserLines = submissionTableInfoCata
-  id -- course
-  id -- information source
-  id -- number
-  id -- config
-  id -- assignment
-  id -- assignments
-  id -- user
-  id -- users
-  id -- userline
-  sort -- userlines
-  id -- assignment names
-  id -- key
-  SubmissionTableInfo
-  where
-   sort = sortBy (compareHun `on` fst3)
+sortUserLines = submissionTableInfoCata course group where
+  course name cfg users assignments userlines names key =
+    CourseSubmissionTableInfo name cfg users assignments (sort userlines) names key
+
+  group name cfg users assignments userlines names ckey gkey =
+    GroupSubmissionTableInfo name cfg users assignments (sort userlines) names ckey gkey
+
+  sort = sortBy (compareHun `on` fst3)
 
 fst3 :: (a,b,c) -> a
 fst3 (x,_,_) = x

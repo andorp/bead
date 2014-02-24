@@ -277,6 +277,8 @@ data Translation a
   | Msg_Home_NotAdministratedTestScripts { trans :: a }
   | Msg_Home_NoTestScriptsWereDefined { trans :: a }
   | Msg_Home_ModifyTestScriptTable { trans :: a }
+  | Msg_Home_CourseAssignmentIDPreffix { trans :: a }
+  | Msg_Home_GroupAssignmentIDPreffix { trans :: a }
 
   | Msg_NewTestScript_Name { trans :: a }
   | Msg_NewTestScript_Type { trans :: a }

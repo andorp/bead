@@ -210,11 +210,11 @@ getFilePath usersfile = logAction INFO logMessage $ do
   where
     logMessage = usersFileCata (\u -> " asks the file path: " ++ show u) usersfile
 
--- Produces true if the given user is the student of the actual one
+-- Produces true if the given user is the student of the actual course or group
 courseOrGroupStudent :: Username -> UserStory Bool
 courseOrGroupStudent student = logAction INFO
   (concat ["Student ", str student, " of the actual user"])
-  ((elem student . concatMap stUsers) <$> submissionTables)
+  ((elem student . concatMap stiUsers) <$> submissionTables)
 
 administratedCourses :: UserStory [(CourseKey, Course)]
 administratedCourses = logAction INFO "selects adminstrated courses" $ do
