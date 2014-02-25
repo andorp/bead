@@ -18,14 +18,10 @@ import qualified Data.Map as Map
 import Data.List (intersperse, sortBy)
 import Data.String (fromString)
 import Data.Time
-import Control.Monad (join, when, liftM)
 import Control.Monad.Identity
-import Control.Monad.Trans.Error
 
-import Bead.Domain.Entities as E (Role(..))
+import Bead.Domain.Entities as E (Role(..), Assignment(..))
 import Bead.Domain.Evaluation
-import Bead.Domain.Relationships (AssignmentDesc(..))
-import Bead.Controller.ServiceContext (UserState(..))
 import Bead.Controller.Pages as P (Page(..))
 import Bead.View.Snap.Pagelets
 import Bead.View.Snap.Content hiding (userState)
@@ -40,9 +36,8 @@ import Bead.Controller.UserStories (
   )
 
 import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A (class_, style, id, colspan)
+import qualified Text.Blaze.Html5.Attributes as A (style, id, colspan)
 
-import Bead.View.Snap.I18N (IHtml)
 import qualified Text.Blaze.Html5 as H
 
 #ifdef TEST
@@ -78,7 +73,8 @@ data HomePageData = HomePageData {
 homePage :: GETContentHandler
 homePage = withUserState $ \s -> do
   converter <- usersTimeZoneConverter
-  (renderPagelet . withUserFrame s . homeContent) =<< do
+  now <- liftIO getCurrentTime
+  (renderPagelet . withUserFrame s . homeContent now) =<< do
     (userStory $ do
        adminCourses <- administratedCourses
        adminGroups  <- administratedGroups
@@ -126,8 +122,8 @@ submissionTableInfoAssignments = submissionTableInfoCata course group where
   course _n _c _us as _uls _ans _ck = as
   group _n _c _us cgas _uls _ans _ck _gk = map (cgInfoCata id id) cgas
 
-homeContent :: HomePageData -> IHtml
-homeContent d = do
+homeContent :: UTCTime -> HomePageData -> IHtml
+homeContent now d = do
   let s = userState d
       r = role s
       hasCourse = hasCourses d
@@ -155,7 +151,7 @@ homeContent d = do
             , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
             , "then clicking on the button."
             ]
-        i18n msg $ htmlSubmissionTables d
+        i18n msg $ htmlSubmissionTables d now
     when (courseAdminUser r && hasCourse) $ H.p $ do
       H.p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
         [ "New groups for courses may be created in the Course Settings menu.  Teachers may be also assigned to "
@@ -221,9 +217,9 @@ availableAssignments timeconverter (Just as) = do
         (msg $ Msg_Home_SubmissionCell_Rejected "Rejected")
         s)
 
-htmlSubmissionTables :: HomePageData -> IHtml
-htmlSubmissionTables pd = do
-  tables <- mapM (htmlSubmissionTable pd) $ zip [1..] (sTables pd)
+htmlSubmissionTables :: HomePageData -> UTCTime -> IHtml
+htmlSubmissionTables pd now = do
+  tables <- mapM (htmlSubmissionTable pd now) $ zip [1..] (sTables pd)
   return $ sequence_ tables
 
 headLine   = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
@@ -233,10 +229,10 @@ dataCell r = H.td # (informationalCell <> r)
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
 -- group or course students, an informational text is shown.
-htmlSubmissionTable :: HomePageData -> (Int,SubmissionTableInfo) -> IHtml
+htmlSubmissionTable :: HomePageData -> UTCTime -> (Int,SubmissionTableInfo) -> IHtml
 
 -- Empty table
-htmlSubmissionTable pd (i,s)
+htmlSubmissionTable pd now (i,s)
   | and [null $ submissionTableInfoAssignments s, null $ stiUsers s] = do
     msg <- getI18N
     return $ do
@@ -249,7 +245,7 @@ htmlSubmissionTable pd (i,s)
       tableId = join ["st", show i]
 
 -- Non empty table
-htmlSubmissionTable pd (i,s) = do
+htmlSubmissionTable pd now (i,s) = do
   msg <- getI18N
   return $ do
     courseForm $ table tableId (className groupSubmissionTable) # informationalTable $ do
@@ -273,10 +269,17 @@ htmlSubmissionTable pd (i,s) = do
       assignmentLinks
       deleteHeaderCell msg
       where
+        openedHeaderCell o c (_i,ak) =
+          if isActiveAssignment ak
+            then (H.th # (informationalCell <> o))
+            else (H.th # (informationalCell <> c))
+
         assignmentLinks = submissionTableInfoCata course group s
 
         course _name _cfg _users as _ulines _anames _key =
-          mapM_ (headerCell . modifyAssignmentLink "") $ zip [1..] as
+          mapM_ (\x -> openedHeaderCell openCourseAssignmentStyle closedCourseAssignmentStyle x
+                         $ modifyAssignmentLink "" x)
+              $ zip [1..] as
 
         group  _name _cfg _users cgas _ulines _anames _ckey _gkey = do
           let as = reverse . snd $ foldl numbering ((1,1),[]) cgas
@@ -286,11 +289,17 @@ htmlSubmissionTable pd (i,s) = do
               (\ak -> ((c+1,g),(CourseInfo (c,ak):as)))
               (\ak -> ((c,g+1),(GroupInfo  (g,ak):as)))
 
-            header = headerCell . cgInfoCata
-              (viewAssignmentLink (msg $ Msg_Home_CourseAssignmentIDPreffix "C"))
-              (modifyAssignmentLink (msg $ Msg_Home_GroupAssignmentIDPreffix "G"))
+            header = cgInfoCata
+              (\x -> openedHeaderCell openCourseAssignmentStyle closedCourseAssignmentStyle x $
+                       viewAssignmentLink (msg $ Msg_Home_CourseAssignmentIDPreffix "C") x)
+              (\x -> openedHeaderCell openGroupAssignmentStyle closedGroupAssignmentStyle x $
+                       modifyAssignmentLink (msg $ Msg_Home_GroupAssignmentIDPreffix "G") x)
 
-    assignmentName ak = maybe "" id . Map.lookup ak $ stiAssignmentNames s
+    assignmentName ak = maybe "" E.assignmentName . Map.lookup ak $ stiAssignmentInfos s
+
+    isActiveAssignment ak = maybe False isActive . Map.lookup ak $ stiAssignmentInfos s
+      where
+        isActive a = and [E.assignmentStart a < now, now < E.assignmentEnd a]
 
     modifyAssignmentLink pfx (i,ak) =
       linkWithTitle
@@ -538,6 +547,11 @@ calcEvaluationResult selectResult calculateResult
     checkErrors ((Right b):bs) = fmap (b:) (checkErrors bs)
 
 -- * CSS Section
+
+openCourseAssignmentStyle = backgroundColor "#52B017"
+openGroupAssignmentStyle  = backgroundColor "#00FF00"
+closedCourseAssignmentStyle = backgroundColor "#736F6E"
+closedGroupAssignmentStyle = backgroundColor "#A3AFAE"
 
 binaryPassedStyle = backgroundColor "lightgreen"
 binaryFailedStyle = backgroundColor "red"
