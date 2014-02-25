@@ -536,12 +536,11 @@ submissionTablesTest = do
     ags <- runPersistCmd $ administratedGroups  persist u
     ts  <- runPersistCmd $ submissionTables     persist u
     forM ts $ \t -> do
-      assertNonEmpty (stCourse t) "Course name was empty"
-      assertTrue (stNumberOfAssignments t >= 0) "Number of assignments was negative"
-      assertNonEmpty (show . stEvalConfig $ t) "Evaluation config was empty"
-      assertTrue (length (stAssignments t) >= 0) "Invalid assignment list"
-      forM (stUsers t) $ usernameCata (\u -> assertNonEmpty u "Username was empty")
-      assertTrue (length (stUserLines t) >= 0) "Invalid user line number"
+      assertNonEmpty (stiCourse t) "Course name was empty"
+      assertNonEmpty (show . stiEvalConfig $ t) "Evaluation config was empty"
+--      assertTrue (length (stAssignments t) >= 0) "Invalid assignment list" TODO
+      forM (stiUsers t) $ usernameCata (\u -> assertNonEmpty u "Username was empty")
+      assertTrue (length (stiUserLines t) >= 0) "Invalid user line number"
 
 -- The user can have submissions for the given assignment, and information can be
 -- calculated about these submissions
