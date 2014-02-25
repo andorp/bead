@@ -287,7 +287,7 @@ htmlSubmissionTable pd (i,s) = do
               (\ak -> ((c,g+1),(GroupInfo  (g,ak):as)))
 
             header = headerCell . cgInfoCata
-              (assignmentTitle (msg $ Msg_Home_CourseAssignmentIDPreffix "C"))
+              (viewAssignmentLink (msg $ Msg_Home_CourseAssignmentIDPreffix "C"))
               (modifyAssignmentLink (msg $ Msg_Home_GroupAssignmentIDPreffix "G"))
 
     assignmentName ak = maybe "" id . Map.lookup ak $ stiAssignmentNames s
@@ -298,7 +298,11 @@ htmlSubmissionTable pd (i,s) = do
         (assignmentName ak)
         (concat [pfx, show i])
 
-    assignmentTitle pfx (i,ak) = spanWithTitle (assignmentName ak) (concat [pfx, show i])
+    viewAssignmentLink pfx (i,ak) =
+      linkWithTitle
+        (routeOf (P.ViewAssignment ak))
+        (assignmentName ak)
+        (concat [pfx, show i])
 
     userLine msg s (u,p,submissionInfoMap) = do
       let username = ud_username u

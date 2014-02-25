@@ -65,9 +65,6 @@ translationList =
   , Msg_Administration_SelectUser ()
   , Msg_Administration_HowToAddMoreAdmins ()
 
-  , Msg_NewAssignment_IsNoCourseAdmin ()
-  , Msg_NewAssignment_IsNoGroupAdmin ()
-  , Msg_NewAssignment_IsNoCreator ()
   , Msg_NewAssignment_Title ()
   , Msg_NewAssignment_Title_Default ()
   , Msg_NewAssignment_SubmissionDeadline ()
@@ -362,6 +359,7 @@ translationList =
   , Msg_LinkText_ModifyTestScript ()
   , Msg_LinkText_UploadFile ()
   , Msg_LinkText_ModifyEvaluation ()
+  , Msg_LinkText_ViewAssignment ()
   , Msg_LinkText_SubmissionDetails ()
   , Msg_LinkText_Administration ()
   , Msg_LinkText_Evaluation ()

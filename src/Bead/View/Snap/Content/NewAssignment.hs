@@ -3,6 +3,7 @@ module Bead.View.Snap.Content.NewAssignment (
     newGroupAssignment
   , newCourseAssignment
   , modifyAssignment
+  , viewAssignment
   ) where
 
 import Control.Monad.Error
@@ -10,6 +11,7 @@ import Data.Time (UTCTime, getCurrentTime)
 import qualified Data.Time as Time
 import Data.String (fromString)
 import qualified Data.ByteString.Char8 as BS
+import qualified Data.Map as Map
 
 import Bead.Controller.Pages (Page)
 import qualified Bead.Controller.Pages as P (Page(..))
@@ -21,7 +23,7 @@ import Bead.View.Snap.RequestParams
 import Text.Printf (printf)
 import Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
-  (id, style, href, target, required, value)
+  (id, style, href, target, required, readonly)
 import qualified Text.Blaze.Html5 as H
 
 
@@ -35,6 +37,9 @@ newGroupAssignment = getPostContentHandler newGroupAssignmentPage postGroupAssig
 
 modifyAssignment :: Content
 modifyAssignment = getPostContentHandler modifyAssignmentPage postModifyAssignment
+
+viewAssignment :: Content
+viewAssignment = getContentHandler viewAssignmentPage
 
 data PageData
   = PD_Course {
@@ -59,10 +64,17 @@ data PageData
     , pdUsersFile     :: [UsersFile]
     , pdTestCase      :: Maybe (TestCaseKey, TestCase, TestScriptKey)
     }
+  | PD_ViewAssignment {
+      pdTimeZone      :: Time.TimeZone
+    , pdAssignmentKey :: AssignmentKey
+    , pdAssignment    :: Assignment
+    , pdTestScript    :: Maybe TestScriptInfo
+    , pdTestCaseInfo  :: Maybe (TestCaseKey, TestCase, TestScriptKey)
+    }
   -- TODO: Calculate the time differences and shows the values in
   -- the actual time zone
 
-pageDataCata course group assignment p = case p of
+pageDataCata course group assignment viewAssignment p = case p of
 
   PD_Course timezone time courses tsType files ->
      course timezone time courses tsType files
@@ -73,13 +85,14 @@ pageDataCata course group assignment p = case p of
   PD_Assignment timezone key asg tsType files testcase ->
      assignment timezone key asg tsType files testcase
 
+  PD_ViewAssignment timezone key asg tsInfo testcase ->
+     viewAssignment timezone key asg tsInfo testcase
+
 const2 = const  . const
 const3 = const2 . const
 const4 = const3 . const
 const5 = const4 . const
 const6 = const5 . const
-
-isEmptyData _ = False
 
 -- * Course Assignment
 
@@ -176,6 +189,19 @@ postModifyAssignment :: POSTContentHandler
 postModifyAssignment = do
   ModifyAssignment <$> getValue <*> getValue <*> readTCModification
 
+viewAssignmentPage :: GETContentHandler
+viewAssignmentPage = withUserState $ \s -> do
+  ak <- getValue
+  (as,tss,tc) <- userStory $ do
+    as <- S.loadAssignment ak
+    tss' <- S.testScriptInfosOfAssignment ak
+    ts   <- S.testCaseOfAssignment ak
+    return (as, tss', ts)
+  tz <- dataTimeZone <$> userTimeZone
+  let ti = do (_tck, _tc, tsk) <- tc
+              Map.lookup tsk $ Map.fromList tss
+  renderPagelet $ withUserFrame s (newAssignmentContent (PD_ViewAssignment tz ak as ti tc))
+
 -- * Helpers
 
 -- | Returns Nothing if the given list was empty, otherwise Just list
@@ -185,21 +211,13 @@ nonEmptyList xs = Just xs
 -- * Page rendering
 
 newAssignmentContent :: PageData -> IHtml
-newAssignmentContent pd
-  | isEmptyData pd = do
-      msg <- getI18N
-      return . H.p . fromString . msg $ pageDataCata
-        (const5 $ Msg_NewAssignment_IsNoCourseAdmin "No courses are assigned to this user.")
-        (const5 $ Msg_NewAssignment_IsNoGroupAdmin "No groups are assigned to this user.")
-        (const6 $ Msg_NewAssignment_IsNoCreator "This assignment was created by somebody else.")
-        pd
 newAssignmentContent pd = do
   msg <- getI18N
   return $ do
     postForm (routeOf . page $ pd) `withId` (hookId assignmentForm) $ H.div ! formDiv $ do
     H.div ! slimRightCell $ do
       H.b $ (fromString . msg $ Msg_NewAssignment_Title "Title")
-      textInput (fieldName assignmentNameField) 10 (amap assignmentName
+      editOrReadonly pd $ textInput (fieldName assignmentNameField) 10 (amap assignmentName
         (Just . fromString . msg $ Msg_NewAssignment_Title_Default "Unnamed Assignment") pd)
         ! fillDiv ! A.required ""
       H.br
@@ -209,22 +227,16 @@ newAssignmentContent pd = do
          (fromString . msg $ Msg_NewAssignment_StartDate "Opens")
          (fromString $ concat [" (", Time.timeZoneName timezone, ")"])
          H.br
-         hiddenInput (fieldName assignmentStartDefaultDate) (fromString startDefDate)
-         hiddenInput (fieldName assignmentStartDefaultHour) (fromString startDefHour)
-         hiddenInput (fieldName assignmentStartDefaultMin)  (fromString startDefMin)
-         hiddenInput (fieldName assignmentStartField) (fromString $ concat [startDefDate, " ", startDefHour, ":", startDefMin, ":00"])
+         startTimePart pd
       H.div ! A.id (fieldName endDateDivId) $ do
          (fromString . msg $ Msg_NewAssignment_EndDate "Closes")
          (fromString $ concat [" (", Time.timeZoneName timezone, ")"])
          H.br
-         hiddenInput (fieldName assignmentEndDefaultDate) (fromString endDefDate)
-         hiddenInput (fieldName assignmentEndDefaultHour) (fromString endDefHour)
-         hiddenInput (fieldName assignmentEndDefaultMin)  (fromString endDefMin)
-         hiddenInput (fieldName assignmentEndField) (fromString $ concat [endDefDate, " ", endDefHour, ":", endDefMin, ":00"])
+         endTimePart pd
     H.div ! rightCell $ do
       H.br
       H.b $ (fromString . msg $ Msg_NewAssignment_Description "Description")
-      textAreaInput (fieldName assignmentDescField) (amap assignmentDesc (Just . fromString . msg $
+      editOrReadonly pd $ textAreaInput (fieldName assignmentDescField) (amap assignmentDesc (Just . fromString . msg $
         Msg_NewAssignment_Description_Default $ unlines
           [ concat
              [ "This text shall be in markdown format.  Here are some quick "
@@ -271,22 +283,42 @@ newAssignmentContent pd = do
           ]
       testCaseArea msg pd
     H.div ! leftCell $ do
-      H.b (fromString . msg $ Msg_NewAssignment_Type "Type")
-      H.br
-      defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType Nothing $ pd)
+      typeSelection msg pd
       H.br
       H.p $ do
         H.b $ pageDataCata (const5 . fromString . msg $ Msg_NewAssignment_Course "Course")
                            (const5 . fromString . msg $ Msg_NewAssignment_Group "Group")
                            (const6 $ "")
+                           (const5 $ "")
                            pd
         H.br
         courseOrGroupName pd
         hiddenKeyField pd
         testScriptSelection msg pd
-      H.p $ submitButton (fieldName saveSubmitBtn) (fromString . msg $ Msg_NewAssignment_SaveButton "Commit")
-
+      submit msg pd
     where
+      button msg = H.p $ submitButton (fieldName saveSubmitBtn) (fromString . msg $ Msg_NewAssignment_SaveButton "Commit")
+
+      submit msg = pageDataCata
+        (const5 (button msg))
+        (const5 (button msg))
+        (const6 (button msg))
+        (const5 (return ()))
+
+      typeSelection msg pd = do
+        H.b (fromString . msg $ Msg_NewAssignment_Type "Type")
+        H.br
+        pageDataCata
+          (const5 ts)
+          (const5 ts)
+          (const6 ts)
+          (\_tz _k a _ts _tc -> fromString . show $ assignmentType a)
+          pd
+        where
+          ts = defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType Nothing $ pd)
+
+      editOrReadonly = pageDataCata (const5 id) (const5 id) (const6 id) (const5 (! A.readonly ""))
+
       linkToPandocMarkdown = "http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html"
 
       page :: PageData -> Page
@@ -294,29 +326,58 @@ newAssignmentContent pd = do
         (\_tz _t (key,_course) _tsType _fs -> P.NewCourseAssignment key)
         (\_tz _t (key,_group)  _tsType _fs -> P.NewGroupAssignment key)
         (const6 P.ModifyAssignment)
+        (\_tz k _a _ts _tc -> P.ViewAssignment k)
 
       amap :: (Assignment -> a) -> Maybe a -> PageData -> Maybe a
       amap f _   (PD_Assignment _ _ a _ _ _) = Just . f $ a
+      amap f _ (PD_ViewAssignment _ _ a _ _) = Just . f $ a
       amap _ def _                           = def
+
+      startTimePart = pageDataCata
+        (const5 hiddenStartTime)
+        (const5 hiddenStartTime)
+        (const6 hiddenStartTime)
+        (const5 (fromString $ concat [startDefDate, " ", startDefHour, ":", startDefMin, ":00"]))
+
+      hiddenStartTime = do
+        hiddenInput (fieldName assignmentStartDefaultDate) (fromString startDefDate)
+        hiddenInput (fieldName assignmentStartDefaultHour) (fromString startDefHour)
+        hiddenInput (fieldName assignmentStartDefaultMin)  (fromString startDefMin)
+        hiddenInput (fieldName assignmentStartField) (fromString $ concat [startDefDate, " ", startDefHour, ":", startDefMin, ":00"])
+
+      endTimePart = pageDataCata
+        (const5 hiddenEndTime)
+        (const5 hiddenEndTime)
+        (const6 hiddenEndTime)
+        (const5 (fromString $ concat [endDefDate, " ", endDefHour, ":", endDefMin, ":00"]))
+
+      hiddenEndTime = do
+        hiddenInput (fieldName assignmentEndDefaultDate) (fromString endDefDate)
+        hiddenInput (fieldName assignmentEndDefaultHour) (fromString endDefHour)
+        hiddenInput (fieldName assignmentEndDefaultMin)  (fromString endDefMin)
+        hiddenInput (fieldName assignmentEndField) (fromString $ concat [endDefDate, " ", endDefHour, ":", endDefMin, ":00"])
 
       courseOrGroupName = pageDataCata
         (\_tz _t (_key,course) _tsType _fs -> fromString $ courseName course)
         (\_tz _t (_key,group)  _tsType _fs -> fromString $ groupName group)
         (const6 (return ()))
+        (const5 (return ()))
 
       hiddenKeyField = pageDataCata
         (\_tz _t (key,_course) _tsType _fs -> hiddenInput (fieldName selectedCourse) (courseKeyMap id key))
         (\_tz _t (key,_group)  _tsType _fs -> hiddenInput (fieldName selectedGroup) (groupKeyMap id key))
         (\_tz key _asg _tsType _fs _tc -> hiddenInput (fieldName assignmentKeyField) $ paramValue key)
+        (const5 (return ()))
 
       testCaseArea msg = pageDataCata
         (\_tz _t _c tsType fs -> createTestCaseArea fs tsType)
         (\_tz _t _g tsType fs -> createTestCaseArea fs tsType)
         (\_tz _k _a tsType fs tc -> overwriteTestCaseArea fs tsType tc)
+        (\_tz _k _a ts tc -> viewTestCaseArea ts tc)
         where
           textArea val = do
             H.b . fromString . msg $ Msg_NewAssignment_TestCase "Test cases"
-            textAreaInput (fieldName assignmentTestCaseField) val ! fillDiv
+            editOrReadonly pd $ textAreaInput (fieldName assignmentTestCaseField) val ! fillDiv
 
           createTestCaseArea fs ts = maybe
             (return ())
@@ -338,16 +399,30 @@ newAssignmentContent pd = do
                 where
                   keyValue uf = flip usersFileCata uf $ \u -> (show uf, u)
 
+          testCaseText Nothing = Nothing
+          testCaseText (Just (_,tc',_)) = Just . BS.unpack $ tcValue tc'
+
+          testCaseFileName Nothing = return ()
+          testCaseFileName (Just (_,tc',_)) = fromString $ tcInfo tc'
+
+          viewTestCaseArea ts tc = maybe
+            (return ())
+            (selectionOrTextArea)
+            (testScriptType'' ts)
+            where
+              selectionOrTextArea = testScriptTypeCata
+                (textArea (testCaseText tc))
+                (usersFile)
+
+              usersFile = do
+                H.b $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
+                H.pre $ testCaseFileName tc
+
           overwriteTestCaseArea fs ts tc = maybe
             (return ())
             (selectionOrTextArea)
             (testScriptType' ts)
             where
-              testCaseText Nothing = Nothing
-              testCaseText (Just (_,tc',_)) = Just . BS.unpack $ tcValue tc'
-
-              testCaseFileName Nothing = return ()
-              testCaseFileName (Just (_,tc',_)) = fromString $ tcInfo tc'
 
               selectionOrTextArea = testScriptTypeCata
                 (textArea (testCaseText tc)) -- simple
@@ -371,6 +446,7 @@ newAssignmentContent pd = do
         (\_tz _t _c tsType _fs -> scriptSelection tsType)
         (\_tz _t _g tsType _fs -> scriptSelection tsType)
         (\_tz _k _a tsType _fs mts -> modificationScriptSelection tsType mts)
+        (const5 (return ()))
         where
           scriptSelection ts = maybe
             (return ())
@@ -411,6 +487,7 @@ newAssignmentContent pd = do
         (\tz _t _c _ts _fs -> tz)
         (\tz _t _g _ts _fs -> tz)
         (\tz _k _a _ts _fs _tc -> tz)
+        (\tz _k _a _ts _tc -> tz)
         pd
 
       date t =
@@ -425,17 +502,21 @@ newAssignmentContent pd = do
         (\_tz t _c _ts _fs -> t)
         (\_tz t _g _ts _fs -> t)
         (\_tz _k a _ts _fs _tc -> assignmentStart a)
+        (\_tz _k a _ts _tc -> assignmentStart a)
         pd
 
       (endDefDate, endDefHour, endDefMin) = date $ pageDataCata
         (\_tz t _c _ts _fs -> t)
         (\_tz t _g _ts _fs -> t)
         (\_tz _k a _ts _fs _tc -> assignmentEnd a)
+        (\_tz _k a _ts _tc -> assignmentEnd a)
         pd
 
       testScriptType' Nothing   = Nothing
       testScriptType' (Just []) = Nothing
       testScriptType' (Just ((_tk,tsi):_)) = Just $ tsiType tsi
+
+      testScriptType'' = fmap tsiType
 
 -- CSS Section
 

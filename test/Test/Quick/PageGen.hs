@@ -69,4 +69,5 @@ pageGen = oneof [
         , ModifyTestScript <$> testScriptKey
         , NewCourseAssignment <$> courseKey
         , NewGroupAssignment <$> groupKey
+        , ViewAssignment <$> assignmentKey
         ]
