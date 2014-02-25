@@ -63,6 +63,7 @@ data Page
   | NewGroupAssignment R.GroupKey
   | NewCourseAssignment R.CourseKey
   | ModifyAssignment
+  | ViewAssignment R.AssignmentKey
   | Submission
   | SubmissionList
   | SubmissionDetails R.AssignmentKey R.SubmissionKey
@@ -103,6 +104,7 @@ pageCata
   newGroupAssignment
   newCourseAssignment
   modifyAssignment
+  viewAssignment
   submission
   submissionList
   submissionDetails
@@ -137,6 +139,7 @@ pageCata
     NewGroupAssignment gk -> newGroupAssignment gk
     NewCourseAssignment ck -> newCourseAssignment ck
     ModifyAssignment -> modifyAssignment
+    ViewAssignment ak -> viewAssignment ak
     Submission -> submission
     SubmissionList -> submissionList
     SubmissionDetails ak sk -> submissionDetails ak sk
@@ -197,6 +200,9 @@ isNewCourseAssignment _                       = False
 
 isModifyAssignment ModifyAssignment = True
 isModifyAssignment _                = False
+
+isViewAssignment (ViewAssignment _) = True
+isViewAssignment _                  = False
 
 isSubmission Submission = True
 isSubmission _          = False
@@ -291,6 +297,7 @@ groupAdminPages = [
   , isModifyEvaluation
   , isNewGroupAssignment
   , isModifyAssignment
+  , isViewAssignment
   , isUserSubmissions
   , isSetUserPassword
   , isUploadFile
@@ -306,6 +313,7 @@ courseAdminPages = [
   , isNewCourseAssignment
   , isNewGroupAssignment
   , isModifyAssignment
+  , isViewAssignment
   , isUserSubmissions
   , isSetUserPassword
   , isNewTestScript
@@ -385,6 +393,7 @@ parentPage = pageCata
   (const Home) -- newGroupAssignment
   (const Home) -- newCourseAssignment
   Home -- modifyAssignment
+  (const Home) -- viewAssignment
   Home -- submission
   Home -- submissionList
   SubmissionDetails -- submissionDetails

@@ -56,9 +56,6 @@ data Translation a
   | Msg_Administration_SelectUser { trans :: a }
   | Msg_Administration_HowToAddMoreAdmins { trans :: a }
 
-  | Msg_NewAssignment_IsNoCourseAdmin { trans :: a }
-  | Msg_NewAssignment_IsNoGroupAdmin { trans :: a }
-  | Msg_NewAssignment_IsNoCreator { trans :: a }
   | Msg_NewAssignment_Title { trans :: a }
   | Msg_NewAssignment_Title_Default { trans :: a }
   | Msg_NewAssignment_SubmissionDeadline { trans :: a }
@@ -353,6 +350,7 @@ data Translation a
   | Msg_LinkText_ModifyTestScript { trans :: a }
   | Msg_LinkText_UploadFile { trans :: a }
   | Msg_LinkText_ModifyEvaluation { trans :: a }
+  | Msg_LinkText_ViewAssignment { trans :: a }
   | Msg_LinkText_SubmissionDetails { trans :: a }
   | Msg_LinkText_Administration { trans :: a }
   | Msg_LinkText_Evaluation { trans :: a }

@@ -8,7 +8,6 @@ module Bead.View.Snap.Content.All (
 #endif
   ) where
 
-import Data.Map (Map)
 import qualified Data.Map as Map
 
 import Bead.Controller.Pages hiding (invariants)
@@ -27,7 +26,7 @@ import Bead.View.Snap.Content.Evaluation (
     modifyEvaluation,
     commentFromEvaluation,
     commentFromModifyEvaluation)
-import Bead.View.Snap.Content.NewAssignment (newCourseAssignment, newGroupAssignment, modifyAssignment)
+import Bead.View.Snap.Content.NewAssignment
 import Bead.View.Snap.Content.Submission (submission)
 import Bead.View.Snap.Content.SubmissionList (submissionList)
 import Bead.View.Snap.Content.SubmissionDetails (submissionDetails)
@@ -38,8 +37,6 @@ import Bead.View.Snap.Content.UserSubmissions (userSubmissions)
 import Bead.View.Snap.Content.SetUserPassword (setUserPassword)
 import Bead.View.Snap.Content.NewTestScript (newTestScript, modifyTestScript)
 import Bead.View.Snap.Content.UploadFile (uploadFile)
-
-import qualified Bead.Controller.Pages as P hiding (invariants)
 
 #ifdef TEST
 import Bead.Invariants (Invariants(..))
@@ -84,6 +81,7 @@ content = [
   route newGroupAssignmentPath newGroupAssignment,
   route newCourseAssignmentPath newCourseAssignment,
   route modifyAssignmentPath modifyAssignment,
+  route viewAssignmentPath viewAssignment,
   route changePasswordPath changePassword,
   route setUserPasswordPath setUserPassword,
   route commentFromEvaluationPath commentFromEvaluation,

@@ -365,6 +365,8 @@ requestToPage path params
   | path == newCourseAssignmentPath
     = P.NewCourseAssignment <$> courseKey
   | path == modifyAssignmentPath    = j P.ModifyAssignment
+  | path == viewAssignmentPath
+    = P.ViewAssignment <$> assignmentKey
   | path == changePasswordPath      = j P.ChangePassword
   | path == setUserPasswordPath     = j P.SetUserPassword
   | path == commentFromEvaluationPath
