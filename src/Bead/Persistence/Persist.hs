@@ -382,12 +382,12 @@ sortKeysByTime persist time keys = map snd . sortBy (compare `on` fst) <$> mapM 
       t <- time persist k
       return (t,k)
 
-loadAssignmentNames :: Persist -> [AssignmentKey] -> TIO (Map AssignmentKey AssignmentName)
-loadAssignmentNames p as = Map.fromList <$> mapM loadAssignmentName as
+loadAssignmentInfos :: Persist -> [AssignmentKey] -> TIO (Map AssignmentKey Assignment)
+loadAssignmentInfos p as = Map.fromList <$> mapM loadAssignmentInfo as
   where
-    loadAssignmentName a = do
-       name <- assignmentName <$> loadAssignment p a
-       return (a,name)
+    loadAssignmentInfo a = do
+       asg <- loadAssignment p a
+       return (a,asg)
 
 submissionInfoAsgKey :: Persist -> Username -> AssignmentKey -> TIO (AssignmentKey, SubmissionInfo)
 submissionInfoAsgKey p u ak = addKey <$> (userLastSubmissionInfo p u ak)
@@ -408,7 +408,7 @@ mkCourseSubmissionTableInfo
   -> TIO SubmissionTableInfo
 mkCourseSubmissionTableInfo p courseName evalCfg us as key = do
   assignments <- sortKeysByTime p assignmentCreatedTime as
-  assignmentNames <- loadAssignmentNames p as
+  assignmentInfos <- loadAssignmentInfos p as
   ulines <- forM us $ \u -> do
     ud <- userDescription p u
     asi <- mapM (submissionInfoAsgKey p u) as
@@ -422,7 +422,7 @@ mkCourseSubmissionTableInfo p courseName evalCfg us as key = do
     , stiUsers = us
     , stiAssignments = assignments
     , stiUserLines = ulines
-    , stiAssignmentNames = assignmentNames
+    , stiAssignmentInfos = assignmentInfos
     , stiCourseKey = key
     }
 
@@ -433,7 +433,7 @@ mkGroupSubmissionTableInfo
   -> TIO SubmissionTableInfo
 mkGroupSubmissionTableInfo p courseName evalCfg us cas gas ckey gkey = do
   cgAssignments   <- sortKeysByTime p createdTime ((map CourseInfo cas) ++ (map GroupInfo gas))
-  assignmentNames <- loadAssignmentNames p (cas ++ gas)
+  assignmentInfos <- loadAssignmentInfos p (cas ++ gas)
   ulines <- forM us $ \u -> do
     ud <- userDescription p u
     casi <- mapM (submissionInfoAsgKey p u) cas
@@ -448,7 +448,7 @@ mkGroupSubmissionTableInfo p courseName evalCfg us cas gas ckey gkey = do
     , stiUsers = us
     , stiCGAssignments = cgAssignments
     , stiUserLines = ulines
-    , stiAssignmentNames = assignmentNames
+    , stiAssignmentInfos = assignmentInfos
     , stiCourseKey = ckey
     , stiGroupKey  = gkey
     }

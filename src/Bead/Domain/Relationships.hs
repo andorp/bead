@@ -8,8 +8,6 @@ import Bead.Domain.Evaluation
 
 -- Haskell imports
 
-import Control.Applicative
-import Data.Either (either)
 import Data.Function (on)
 import Data.Time (UTCTime(..))
 import Data.Map (Map)
@@ -149,9 +147,6 @@ siEvaluationKey = submissionInfoCata
   Nothing -- tested
   (\key _result -> Just key) -- result
 
--- Simple name for the assignment
-type AssignmentName = String
-
 -- Information to display on the UI
 data TestScriptInfo = TestScriptInfo {
     tsiName :: String
@@ -166,7 +161,7 @@ data SubmissionTableInfo
     , stiUsers       :: [Username]      -- Alphabetically ordered list of usernames
     , stiAssignments :: [AssignmentKey] -- Cronologically ordered list of assignments
     , stiUserLines   :: [(UserDesc, Maybe Result, Map AssignmentKey SubmissionInfo)]
-    , stiAssignmentNames :: Map AssignmentKey AssignmentName
+    , stiAssignmentInfos :: Map AssignmentKey Assignment
     , stiCourseKey :: CourseKey
     }
   | GroupSubmissionTableInfo {
@@ -175,7 +170,7 @@ data SubmissionTableInfo
     , stiUsers      :: [Username] -- Alphabetically ordered list of usernames
     , stiCGAssignments :: [CGInfo AssignmentKey] -- Cronologically ordered list of course and group assignments
     , stiUserLines :: [(UserDesc, Maybe Result, Map AssignmentKey SubmissionInfo)]
-    , stiAssignmentNames :: Map AssignmentKey AssignmentName
+    , stiAssignmentInfos :: Map AssignmentKey Assignment
     , stiCourseKey :: CourseKey
     , stiGroupKey :: GroupKey
     }
@@ -185,10 +180,10 @@ submissionTableInfoCata
   course
   group
   ti = case ti of
-    CourseSubmissionTableInfo crs eval users asgs lines anames key ->
-                       course crs eval users asgs lines anames key
-    GroupSubmissionTableInfo  crs eval users asgs lines anames ckey gkey ->
-                       group  crs eval users asgs lines anames ckey gkey
+    CourseSubmissionTableInfo crs eval users asgs lines ainfos key ->
+                       course crs eval users asgs lines ainfos key
+    GroupSubmissionTableInfo  crs eval users asgs lines ainfos ckey gkey ->
+                       group  crs eval users asgs lines ainfos ckey gkey
 
 submissionTableInfoPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment)
