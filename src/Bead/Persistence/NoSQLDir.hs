@@ -535,16 +535,16 @@ objectsIn subdir keyConstructor isValidDir sourceKey = do
   let dirname = joinPath [dirName sourceKey, subdir]
   map (keyConstructor . takeBaseName) <$> (selectValidDirsFrom dirname isValidDir)
 
-objectIn s k v sk = fmap just $ objectsIn s k v sk
+objectIn s k v sk = objectsIn s k v sk >>= just
   where
-    just []  = Nothing
-    just [k] = Just k
-    just _   = error $ "Impossible: found more than one object found for: " ++ show sk
+    just []  = return Nothing
+    just [k] = return $ Just k
+    just _   = throwEx . userError $ "Impossible: found more than one object found for: " ++ show sk
 
 objectIn' msg subdir keyConstructor isValidDir sourceKey = do
   m <- objectIn subdir keyConstructor isValidDir sourceKey
   case m of
-    Nothing -> error $ msg ++ show sourceKey
+    Nothing -> throwEx . userError $ msg ++ show sourceKey
     Just  x -> return x
 
 nCourseOfAssignment :: AssignmentKey -> TIO (Maybe CourseKey)

@@ -14,6 +14,7 @@ import qualified Bead.Persistence.Persist as R
 import           Bead.View.Snap.Translation
 
 import           Control.Applicative
+import           Control.Exception
 import           Control.Monad (filterM, forM_, when, unless)
 import           Control.Monad.Error (Error(..))
 import           Control.Concurrent.MVar
@@ -916,13 +917,23 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
   authorize P_Create P_Evaluation
   now <- liftIO $ getCurrentTime
   userData <- currentUser
-  withUserAndPersist $ \u p -> do
+  msg <- withUserAndPersist $ \u p -> do
     a <- R.isAdminedSubmission p u sk
-    when a $ do
-      R.saveEvaluation p sk e
-      R.removeOpenedSubmission p sk
-      R.saveComment p sk (evaluationComment now userData e)
-      return ()
+    case a of
+      True -> do
+        mek <- R.evaluationOfSubmission p sk
+        case mek of
+          Nothing -> do
+            R.saveEvaluation p sk e
+            R.removeOpenedSubmission p sk
+            R.saveComment p sk (evaluationComment now userData e)
+            return Nothing
+          Just _ -> return . Just $ Msg_UserStory_AlreadyEvaluated
+            "Other admin just evaluated this submission"
+      False -> do
+        return Nothing
+
+  maybe (return ()) putStatusMessage msg
 
 modifyEvaluation :: EvaluationKey -> Evaluation -> UserStory ()
 modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
@@ -1013,19 +1024,32 @@ withUserAndPersist f = do
 withPersist :: (Persist -> TIO a) -> UserStory a
 withPersist m = do
   mp <- CMR.asks persist
-  x <- liftIO $ modifyMVar mp $ \p -> do
+  x <- liftIO . try . modifyMVar mp $ \p -> do
          ea <- R.runPersist (m p)
          return (p,ea)
   case x of
-    Left e -> do
+    (Left e) -> do
+      -- Exception happened somewhere
+      up <- userPart
+      let err = showSomeException e
+      let xid = encodeMessage (concat [up, " ", err])
+      logMessage ERROR $ concat ["Exception in persistence layer: ", err, " XID: ", xid]
+      CME.throwError $ userParamError
+        (Msg_UserStoryError_XID "Some internal error happened, XID: %s")
+        xid
+    (Right (Left e)) -> do
+      -- No exception but error processing the persistence command
       up <- userPart
       let xid = encodeMessage (concat [up, " ", e])
       logMessage ERROR $ concat ["Persistence error: ", e, "XID: ", xid]
       CME.throwError $ userParamError
         (Msg_UserStoryError_XID "Some internal error happened, XID: %s")
         xid
-    Right x -> return x
+    (Right (Right x)) -> return x -- Everything went fine
   where
+    showSomeException :: SomeException -> String
+    showSomeException = show
+
     encodeMessage :: String -> String
     encodeMessage = flip showHex "" . abs . hash
 
