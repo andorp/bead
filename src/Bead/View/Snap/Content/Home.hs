@@ -314,11 +314,12 @@ htmlSubmissionTable pd now (i,s) = do
         (concat [pfx, show i])
 
     userLine msg s (u,p,submissionInfoMap) = do
-      let username = ud_username u
-      dataCell noStyle . fromString $ ud_fullname u
-      dataCell noStyle . fromString $ show username
-      submissionCells username s
-      deleteUserCheckbox u
+      H.tr $ do
+        let username = ud_username u
+        dataCell noStyle . fromString $ ud_fullname u
+        dataCell noStyle . fromString $ show username
+        submissionCells username s
+        deleteUserCheckbox u
       where
         submissionInfos = submissionTableInfoCata course group where
           course _n _c _users as _ulines _anames _key =
