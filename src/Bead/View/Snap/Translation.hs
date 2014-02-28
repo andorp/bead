@@ -316,6 +316,7 @@ data Translation a
   | Msg_UserStory_SuccessfulCourseUnsubscription { trans :: a }
   | Msg_UserStory_NewTestScriptIsCreated { trans :: a }
   | Msg_UserStory_ModifyTestScriptIsDone { trans :: a }
+  | Msg_UserStory_AlreadyEvaluated { trans :: a }
 
   | Msg_UserStoryError_UnknownError { trans :: a }
   | Msg_UserStoryError_Message { trans :: a }

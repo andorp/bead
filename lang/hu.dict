@@ -288,6 +288,7 @@ DictionaryFile {
     , Msg_UserStory_SuccessfulCourseUnsubscription { trans = "A tárgyról sikerült leiratkozni!" }
     , Msg_UserStory_NewTestScriptIsCreated { trans = "A tesztelő létrejött!" }
     , Msg_UserStory_ModifyTestScriptIsDone { trans = "A tesztelő módosítva lett!" }
+    , Msg_UserStory_AlreadyEvaluated { trans = "Ezt a megoldást egy másik admin éppont értekelte!" }
     , Msg_UserStoryError_XID { trans = "Belső hiba történt, XID: %s" }
     , Msg_UserStoryError_SubmissionDeadlineIsReached { trans = "A beküldési határidő lejárt!" }
     , Msg_UserStoryError_UserIsNotLoggedIn { trans = "A felhasználó nincs bejelentkezve" }
