@@ -21,6 +21,7 @@ import Bead.View.Snap.PageHandlers (routes)
 import Bead.View.Snap.Registration (createAdminUser)
 import Bead.View.Snap.ErrorPage (msgErrorPage)
 import Bead.View.Snap.DataDir
+import Bead.View.Snap.Dictionary (Language(..))
 import Bead.View.Snap.DictionaryLoader (loadDictionaries)
 
 import System.FilePath ((</>))
@@ -65,7 +66,8 @@ appInit config user s tempDir = makeSnaplet "bead" description dataDir $ do
 
   ss <- nestSnaplet "context" A.serviceContext $ contextSnaplet s
 
-  ds <- nestSnaplet "dictionary" dictionaryContext $ dictionarySnaplet dictionaries
+  ds <- nestSnaplet "dictionary" dictionaryContext $
+          dictionarySnaplet dictionaries (Language $ defaultLoginLanguage config)
 
   se <- nestSnaplet "sendemail" sendEmailContext (emailSenderSnaplet config)
 

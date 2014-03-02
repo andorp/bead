@@ -42,31 +42,36 @@ getServiceContext = do
 
 -- * Mini snaplet : Dictionary snaplet
 
-newtype DictionaryContext = DictionaryContext (IORef Dictionaries)
+newtype DictionaryContext = DictionaryContext (IORef (Dictionaries, Language))
 
-dictionarySnaplet :: Dictionaries -> SnapletInit a DictionaryContext
-dictionarySnaplet d = makeSnaplet
+-- Create a Dictionary context from the given dictionaries and a defualt language
+dictionarySnaplet :: Dictionaries -> Language -> SnapletInit a DictionaryContext
+dictionarySnaplet d l = makeSnaplet
   "Dictionaries"
   "A snaplet providing the i18 dictionary context"
   Nothing $ liftIO $ do
-    ref <- newIORef (addDefault d)
+    ref <- newIORef ((addDefault d), l)
     return $! DictionaryContext ref
   where
-    -- The source code contains hungarian text by default
+    -- The source code contains english comments by default
     addDefault = Map.insert (Language "en") (idDictionary, DictionaryInfo "en.ico" "English")
 
 -- Maps the stored dictionaries into a value within the Handler monad
-dictionarySnapletMap :: (Dictionaries -> a) -> Handler b DictionaryContext a
+dictionarySnapletMap :: (Dictionaries -> Language -> a) -> Handler b DictionaryContext a
 dictionarySnapletMap f = do
   DictionaryContext ref <- get
-  m <- liftIO . readIORef $ ref
-  return (f m)
+  (m, l) <- liftIO . readIORef $ ref
+  return (f m l)
+
+-- Calculates the default language which comes from the configuration
+configuredDefaultDictionaryLanguage :: Handler b DictionaryContext Language
+configuredDefaultDictionaryLanguage = dictionarySnapletMap (\_dic lang -> lang)
 
 -- | getDictionary returns a (Just dictionary) for the given language
 --   if the dictionary is registered for the given language,
 --   otherwise returns Nothing
 getDictionary :: Language -> Handler b DictionaryContext (Maybe Dictionary)
-getDictionary l = dictionarySnapletMap (fmap fst . Map.lookup l)
+getDictionary l = dictionarySnapletMap (\d _l -> fmap fst $ Map.lookup l d)
 
 -- A dictionary infos is a list that contains the language of and information
 -- about the dictionaries contained by the DictionarySnaplet
@@ -76,9 +81,9 @@ dictionaryInfosCata list item d = list $ map item d
 
 -- Computes a list with the defined languages and dictionary info
 dcGetDictionaryInfos :: Handler b DictionaryContext DictionaryInfos
-dcGetDictionaryInfos = dictionarySnapletMap (Map.toList . Map.map snd)
+dcGetDictionaryInfos = dictionarySnapletMap (\d l -> Map.toList $ Map.map snd d)
 
--- * Email sending spanplet
+-- * Email sending snaplet
 
 type Subject = String -- The subject of an email message
 type Message = String -- The content of an email message
