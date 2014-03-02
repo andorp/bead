@@ -114,6 +114,7 @@ translationList =
 
   , Msg_Comments_Title ()
   , Msg_Comments_SubmitButton ()
+  , Msg_Comments_AuthorTestScript ()
 
   , Msg_Evaluation_Title ()
   , Msg_Evaluation_Course ()

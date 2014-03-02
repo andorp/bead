@@ -4,32 +4,39 @@ module Bead.View.Snap.Content.Comments (
   , commentPostForm
   ) where
 
-import Data.Function (on)
-import Data.List (sortBy)
-import Data.String
-import Data.Time (UTCTime, LocalTime)
+import           Data.Function (on)
+import           Data.List (sortBy)
+import           Data.String
 
-import Bead.Domain.Entities (Comment(..))
-import Bead.Controller.Pages (Page(..))
-import Bead.View.Snap.Content
-
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5.Attributes as A
+import           Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
-import Bead.View.Snap.I18N (IHtml)
+import qualified Text.Blaze.Html5.Attributes as A
+
+import           Bead.Controller.Pages (Page(..))
+import           Bead.View.Snap.Content
 
 commentsDiv :: UserTimeConverter -> [Comment] -> IHtml
 commentsDiv t cs = do
   msg <- getI18N
   return $ H.div ! A.id "comments" $ do
-    mapM_ (commentPar t) $ sortBy ((flip compare) `on` commentDate) cs
+    mapM_ (commentPar msg t) $ sortBy ((flip compare) `on` commentDate) cs
 
-commentPar :: UserTimeConverter -> Comment -> Html
-commentPar t c = H.div # (commentDiv c) $ do
+commentPar :: I18N -> UserTimeConverter -> Comment -> Html
+commentPar i18n t c = H.div # (commentDiv c) $ do
   H.p # textAlign "left" $ fromString $
     (showDate . t . commentDate $ c) ++ ", " ++ (commentAuthor $ c)
   H.pre # commentTextPre $ fromString $ comment $ c
   where
+    commentAuthor = commentCata $ \_comment author _date ->
+      commentTypeCata
+        author -- student
+        author -- groupAdmin
+        author -- courseAdmin
+        author -- admin
+        author -- evaluation
+        (i18n $ Msg_Comments_AuthorTestScript "Test Script") -- test agent
+        (i18n $ Msg_Comments_AuthorTestScript "Test Script") -- message
+
     commentDiv = commentCata $ \_comment _author _date ->
       commentTypeCata
         commentTextDiv -- student

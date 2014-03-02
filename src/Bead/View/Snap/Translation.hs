@@ -107,6 +107,7 @@ data Translation a
 
   | Msg_Comments_Title { trans :: a }
   | Msg_Comments_SubmitButton { trans :: a }
+  | Msg_Comments_AuthorTestScript { trans :: a }
 
   | Msg_Evaluation_Title { trans :: a }
   | Msg_Evaluation_Course { trans :: a }

@@ -95,6 +95,7 @@ DictionaryFile {
     , Msg_Submission_Invalid_Assignment { trans = "Ez a feladat nem érhető el ezzel a felhasználóval!" }
     , Msg_Comments_Title { trans = "Hozzászólások" }
     , Msg_Comments_SubmitButton { trans = "Beküld" }
+    , Msg_Comments_AuthorTestScript { trans = "Automata tesztelői komment" }
     , Msg_Evaluation_Title { trans = "Értékelés" }
     , Msg_Evaluation_Course { trans = "Tárgy, csoport: " }
     , Msg_Evaluation_Student { trans = "Hallgató: " }
