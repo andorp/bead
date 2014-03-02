@@ -59,6 +59,13 @@ import Bead.View.Snap.I18N (IHtml)
 login :: Maybe AuthFailure -> Handler App b ()
 login authError = do
   languages <- withTop dictionaryContext dcGetDictionaryInfos
+  mLangInSession <- withTop sessionManager languageFromSession
+  maybe -- Set the default language in session if no information is found
+    (withTop sessionManager $
+       do defaultLang <- withTop dictionaryContext configuredDefaultDictionaryLanguage
+          setLanguageInSession defaultLang)
+    (const $ return ())
+    mLangInSession
   renderPublicPage $ loginPage authError languages
 
 loginSubmit :: Handler App b ()

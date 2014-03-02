@@ -15,8 +15,7 @@ module Bead.Configuration (
 
 import Control.Monad (join)
 
-import System.Console.GetOpt
-import System.FilePath (FilePath, joinPath)
+import System.FilePath (joinPath)
 import System.Directory (doesFileExist)
 
 import Bead.Domain.Types (readMaybe)
@@ -48,6 +47,8 @@ data Config = Config {
   , emailHostname :: Hostname
     -- The value for from field for every email sent by the system
   , emailFromAddress :: String
+    -- The default language of the login page if there is no language set in the session
+  , defaultLoginLanguage :: String
   } deriving (Eq, Show, Read)
 
 -- The defualt system parameters
@@ -56,10 +57,11 @@ defaultConfiguration = Config {
   , sessionTimeout    = 1200
   , emailHostname     = "http://127.0.0.1:8000"
   , emailFromAddress  = "noreply@bead.org"
+  , defaultLoginLanguage = "en"
   }
 
-configCata f (Config useraction timeout host from) =
-  f useraction timeout host from
+configCata f (Config useraction timeout host from loginlang) =
+  f useraction timeout host from loginlang
 
 readConfiguration :: FilePath -> IO Config
 readConfiguration path = do
