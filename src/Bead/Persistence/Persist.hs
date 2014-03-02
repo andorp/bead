@@ -24,6 +24,7 @@ module Bead.Persistence.Persist (
   , testScriptInfo -- Calculates the test script information for the given test key
   ) where
 
+-- <<<<<<< HEAD
 import           Control.Applicative ((<$>))
 import           Control.Arrow
 import           Control.Exception (IOException)
@@ -39,6 +40,7 @@ import           Data.Time (UTCTime, getCurrentTime)
 import           Bead.Domain.Types (Erroneous)
 import           Bead.Domain.Entities
 import           Bead.Domain.Relationships
+import           Bead.View.Snap.Translation
 
 data Persist = Persist {
   -- User Persistence
@@ -306,7 +308,7 @@ submissionEvalStr p sk = do
     Nothing -> return Nothing
     Just ek -> eString <$> loadEvaluation p ek
   where
-    eString = Just . resultString . evaluationResult
+    eString = Just . translateMessage trans . resultString . evaluationResult
 
 submissionDetailsDesc :: Persist -> SubmissionKey -> TIO SubmissionDetailsDesc
 submissionDetailsDesc p sk = do
