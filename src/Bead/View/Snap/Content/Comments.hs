@@ -34,8 +34,8 @@ commentPar i18n t c = H.div # (commentDiv c) $ do
         author -- courseAdmin
         author -- admin
         author -- evaluation
-        (i18n $ Msg_Comments_AuthorTestScript "Test Script") -- test agent
-        (i18n $ Msg_Comments_AuthorTestScript "Test Script") -- message
+        (i18n $ Msg_Comments_AuthorTestScript_Private "Test Script (seen by only admins)") -- test agent
+        (i18n $ Msg_Comments_AuthorTestScript_Public "Test Script") -- message
 
     commentDiv = commentCata $ \_comment _author _date ->
       commentTypeCata
