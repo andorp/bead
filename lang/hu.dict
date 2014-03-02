@@ -341,5 +341,9 @@ DictionaryFile {
     , Msg_LinkText_DeleteUsersFromCourse { trans = "Hallgatók törlése" }
     , Msg_LinkText_DeleteUsersFromGroup { trans = "Hallgatók törlése" }
     , Msg_LinkText_UnsubscribeFromCourse { trans = "Leiratkozás" }
+    , Msg_Domain_EvalPassed { trans = "Elfogadva" }
+    , Msg_Domain_EvalFailed { trans = "Elutasítva" }
+    , Msg_Domain_EvalNoResultError { trans = "Ismeretlen hiba folyamán nem található értékelés!" }
+    , Msg_Domain_EvalPercentage { trans = "%s%%" }
     ]
 }

@@ -1,5 +1,7 @@
 module Bead.View.Snap.Translation where
 
+import Text.Printf (printf)
+
 -- Translation is an enumeration all the possbile messages that could be rendered
 -- on every page with the associated value.
 data Translation a
@@ -376,6 +378,11 @@ data Translation a
   | Msg_TestScriptTypeSimple { trans :: a }
   | Msg_TestScriptTypeZipped { trans :: a }
 
+  | Msg_Domain_EvalPassed { trans :: a }
+  | Msg_Domain_EvalFailed { trans :: a }
+  | Msg_Domain_EvalNoResultError { trans :: a }
+  | Msg_Domain_EvalPercentage { trans :: a }
+
   deriving (Show, Read, Eq, Ord)
 
 -- The I18N is a mapping from a given translation key
@@ -403,3 +410,11 @@ transMsgCata
     TransPrmMsg  t p1       -> transPrmMsg  (g t) p1
     TransPrm2Msg t p1 p2    -> transPrm2Msg (h t) p1 p2
     TransPrm3Msg t p1 p2 p3 -> transPrm3Msg (i t) p1 p2 p3
+
+-- Translate the parametrized message with the given localization
+translateMessage :: I18N -> TransMsg -> String
+translateMessage i18n = transMsgCata
+  id     i18n
+  printf i18n
+  printf i18n
+  printf i18n

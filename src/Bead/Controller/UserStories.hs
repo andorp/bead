@@ -62,12 +62,7 @@ userPrm3Error t p1 p2 p3 = UserError (TransPrm3Msg t p1 p2 p3)
 -- Translates the given user error with the given translation function,
 -- applying the parameters if necessary to the parametrized messages
 translateUserError :: (Translation String -> String) -> UserError -> String
-translateUserError f = userErrorCata translation where
-  translation = transMsgCata
-    id     f
-    printf f
-    printf f
-    printf f
+translateUserError = userErrorCata . translateMessage
 
 instance Error UserError where
   noMsg    = userError (Msg_UserStoryError_UnknownError "Unknown Error: No message.")
@@ -924,6 +919,7 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
   authorize P_Create P_Evaluation
   now <- liftIO $ getCurrentTime
   userData <- currentUser
+  i18n <- asksI18N
   msg <- withUserAndPersist $ \u p -> do
     a <- R.isAdminedSubmission p u sk
     case a of
@@ -933,7 +929,7 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
           Nothing -> do
             R.saveEvaluation p sk e
             R.removeOpenedSubmission p sk
-            R.saveComment p sk (evaluationComment now userData e)
+            R.saveComment p sk (evaluationComment i18n now userData e)
             return Nothing
           Just _ -> return . Just $ Msg_UserStory_AlreadyEvaluated
             "Other admin just evaluated this submission"
@@ -947,12 +943,13 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
   authorize P_Modify P_Evaluation
   now <- liftIO $ getCurrentTime
   userData <- currentUser
+  i18n <- asksI18N
   withUserAndPersist $ \u p -> do
     sk <- R.submissionOfEvaluation p ek
     a <- R.isAdminedSubmission p u sk
     when a $ do
       R.modifyEvaluation p ek e
-      saveComment p sk (evaluationComment now userData e)
+      saveComment p sk (evaluationComment i18n now userData e)
       return ()
 
 createComment :: SubmissionKey -> Comment -> UserStory ()

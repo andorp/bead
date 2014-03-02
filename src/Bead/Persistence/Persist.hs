@@ -26,6 +26,7 @@ module Bead.Persistence.Persist (
 import Bead.Domain.Types (Erroneous)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
+import Bead.View.Snap.Translation
 
 import Data.Function (on)
 import Data.Time (UTCTime)
@@ -307,7 +308,7 @@ submissionEvalStr p sk = do
     Nothing -> return Nothing
     Just ek -> eString <$> loadEvaluation p ek
   where
-    eString = Just . resultString . evaluationResult
+    eString = Just . translateMessage trans . resultString . evaluationResult
 
 submissionDetailsDesc :: Persist -> SubmissionKey -> TIO SubmissionDetailsDesc
 submissionDetailsDesc p sk = do

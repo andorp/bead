@@ -384,6 +384,11 @@ translationList =
   , Msg_TestScriptTypeSimple ()
   , Msg_TestScriptTypeZipped ()
 
+  , Msg_Domain_EvalPassed ()
+  , Msg_Domain_EvalFailed ()
+  , Msg_Domain_EvalNoResultError ()
+  , Msg_Domain_EvalPercentage ()
+
   ]
 
 translationMaxIndex = (length translationList) - 1

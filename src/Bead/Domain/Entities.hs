@@ -1,23 +1,22 @@
 {-# LANGUAGE CPP #-}
 module Bead.Domain.Entities where
 
-import Bead.Domain.Types
-import Bead.Domain.Evaluation
-#ifdef TEST
-import Bead.Invariants (Invariants(..), UnitTests(..))
-#endif
-
-import Data.Char (toLower)
-import Data.List (findIndex)
-import Data.Time (UTCTime(..), LocalTime, timeZoneName)
-import Data.Time.Format (formatTime)
+import           Control.Applicative
+import           Control.Monad (join)
+import           Data.ByteString.Char8 (ByteString)
+import           Data.List (findIndex)
+import           Data.Time (UTCTime(..), LocalTime, timeZoneName)
+import           Data.Time.Format (formatTime)
 import qualified Data.Time as Time
-import Control.Monad (join)
-import Control.Applicative
-import System.Locale (defaultTimeLocale)
-import Text.Printf (printf)
-import Data.ByteString.Char8 (ByteString)
-import qualified Data.ByteString.Char8 as BS
+import           System.Locale (defaultTimeLocale)
+
+import           Bead.Domain.Types
+import           Bead.Domain.Evaluation
+import           Bead.View.Snap.Translation
+
+#ifdef TEST
+import           Bead.Invariants (Invariants(..), UnitTests(..))
+#endif
 
 -- * Course, exams, exercises, solutions
 
@@ -180,16 +179,16 @@ data Evaluation = Evaluation {
   , writtenEvaluation :: String
   } deriving (Eq, Show)
 
-resultString :: EvaluationResult -> String
-resultString (BinEval (Binary Passed)) = "Passed"
-resultString (BinEval (Binary Failed)) = "Failed"
+resultString :: EvaluationResult -> TransMsg
+resultString (BinEval (Binary Passed)) = TransMsg $ Msg_Domain_EvalPassed "Passed"
+resultString (BinEval (Binary Failed)) = TransMsg $ Msg_Domain_EvalFailed "Failed"
 resultString (PctEval p) =
   case point p of
-    Nothing -> "No evaluation result, some internal error happened!"
-    Just q  -> printf "%3.2f%%" (100.0 * q)
+    Nothing -> TransMsg $ Msg_Domain_EvalNoResultError "No evaluation result, some internal error happened!"
+    Just q  -> TransPrmMsg (Msg_Domain_EvalPercentage "%s%%") (show . round $ 100.0 * q)
 
-evaluationComment :: UTCTime -> User -> Evaluation -> Comment
-evaluationComment t u e = Comment {
+evaluationComment :: I18N -> UTCTime -> User -> Evaluation -> Comment
+evaluationComment i t u e = Comment {
     comment = c
   , commentAuthor = u_name u
   , commentDate = t
@@ -197,7 +196,7 @@ evaluationComment t u e = Comment {
   } where
      c = join [
            writtenEvaluation e, "\r\n"
-         , resultString . evaluationResult $ e
+         , translateMessage i . resultString . evaluationResult $ e
          ]
 
 newtype CourseCode = CourseCode String
