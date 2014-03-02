@@ -378,6 +378,10 @@ data Translation a
 
   deriving (Show, Read, Eq, Ord)
 
+-- The I18N is a mapping from a given translation key
+-- to the actual translation of the message
+type I18N = Translation String -> String
+
 -- | The Translation Message represents a message that
 -- can rendered out the the UI, the message could
 -- be a normal message or a parametrized one

@@ -262,7 +262,7 @@ userStory story = do
 -- Runs a UserStory in the registration context
 registrationStory :: S.UserStory a -> Handler App b (Either S.UserError a)
 registrationStory s = withTop serviceContext getServiceContext >>=
-  \context -> liftIO $ (forgetUserState <$> S.runUserStory context Registration s)
+  \context -> do i18n <- i18nH; liftIO $ (forgetUserState <$> S.runUserStory context i18n Registration s)
   where
     forgetUserState = either Left (Right . fst)
 
@@ -297,7 +297,8 @@ runStory story = withTop serviceContext $ do
       case ustate of
         Nothing -> return . Left . strMsg $ "The user was not authenticated: " ++ show unameFromAuth
         Just state -> do
-          eResult <- liftIO $ S.runUserStory context state story
+          i18n <- i18nH
+          eResult <- liftIO $ S.runUserStory context i18n state story
           case eResult of
             Left e -> return . Left $ e
             Right (a,state') -> do

@@ -18,25 +18,16 @@ module Bead.View.Snap.Dictionary (
 
 -- Haskell imports
 
-import Data.String
-import Data.Maybe (maybe)
 import Data.Map (Map)
 import qualified Data.Map as Map
-import Control.Applicative ((<$>))
 import Control.Arrow ((&&&))
-import System.IO
 
 -- Bead imports
 
 import Bead.Domain.Entities (Language(..), languageCata)
-import Bead.Domain.Types (readMaybe)
 import Bead.View.Snap.Translation
 
 -- * Definitions
-
--- I18N is a mapping from a given translation key
--- to the actual translation of the value
-type I18N = Translation String -> String
 
 -- Dictionary is just a translation
 newtype Dictionary = Dictionary { unDictionary :: I18N }
