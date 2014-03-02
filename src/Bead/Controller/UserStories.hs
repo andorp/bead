@@ -73,24 +73,31 @@ instance Error UserError where
   noMsg    = userError (Msg_UserStoryError_UnknownError "Unknown Error: No message.")
   strMsg m = userParamError (Msg_UserStoryError_Message "Some error happened: %s") m
 
+-- The User Story Context contains a service context and the localization transformation.
+-- The service context is used for user manipulation.
+-- The localization is used for translation of the messages that will be stored in
+--  the persistence layer
+type UserStoryContext = (ServiceContext, I18N)
+
 newtype UserStory a = UserStory {
-    unStory :: CMR.ReaderT ServiceContext (CMS.StateT UserState (CME.ErrorT UserError IO)) a
+    unStory :: CMR.ReaderT UserStoryContext (CMS.StateT UserState (CME.ErrorT UserError IO)) a
   } deriving (Monad, CMS.MonadState UserState
                    , CME.MonadError UserError
-                   , CMR.MonadReader ServiceContext
+                   , CMR.MonadReader UserStoryContext
                    , Functor
                    , Applicative
                    , MonadIO)
 
 runUserStory
   :: ServiceContext
+  -> I18N
   -> UserState
   -> UserStory a
   -> IO (Either UserError (a, UserState))
-runUserStory context userState
+runUserStory context i18n userState
   = CME.runErrorT
   . flip CMS.runStateT userState
-  . flip CMR.runReaderT context
+  . flip CMR.runReaderT (context,i18n)
   . unStory
 
 -- * High level user stories
@@ -100,7 +107,7 @@ runUserStory context userState
 --   ANSWER:   No, the user can log in once at a time
 login :: Username -> String -> UserStory ()
 login username token = do
-  usrContainer <- CMR.asks userContainer
+  usrContainer <- asksUserContainer
   validUser <- withPersist $ flip R.doesUserExist username
   notLoggedIn  <- liftIO $ isUserLoggedIn usrContainer (userToken (username, token))
   case (validUser, notLoggedIn) of
@@ -115,7 +122,7 @@ login username token = do
 logout :: UserStory ()
 logout = do
   state <- userState
-  users <- CMR.asks userContainer
+  users <- asksUserContainer
   liftIO $ userLogsOut users (userToken state)
   CMS.put userNotLoggedIn
 
@@ -138,7 +145,7 @@ createUser :: User -> UserStory ()
 createUser newUser = do
   authorize P_Create P_User
   withPersist $ \p -> saveUser p newUser
-  logger      <- CMR.asks logger
+  logger      <- asksLogger
   liftIO $ log logger INFO $ "User is created: " ++ show (u_username newUser)
 
 -- Updates the timezone of the current user
@@ -739,7 +746,7 @@ logMessage level msg = do
       loggedIn
   where
     logMsg preffix =
-      CMR.asks logger >>= (\lgr -> (liftIO $ log lgr level $ join [preffix, " ", msg, "."]))
+      asksLogger >>= (\lgr -> (liftIO $ log lgr level $ join [preffix, " ", msg, "."]))
 
     userNotLoggedIn    = logMsg "Not logged in user!"
     registration       = logMsg "Registration"
@@ -1009,6 +1016,18 @@ modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ 
 
 -- * Tools
 
+asksUserContainer :: UserStory (UserContainer UserState)
+asksUserContainer = CMR.asks (userContainer . fst)
+
+asksLogger :: UserStory Logger
+asksLogger = CMR.asks (logger . fst)
+
+asksPersist :: UserStory (MVar Persist)
+asksPersist = CMR.asks (persist . fst)
+
+asksI18N :: UserStory I18N
+asksI18N = CMR.asks snd
+
 -- | The 'logAction' first logs the message after runs the given operation
 logAction :: LogLevel -> String -> UserStory a -> UserStory a
 logAction level msg s = do
@@ -1028,7 +1047,7 @@ withUserAndPersist f = do
 -- ticket itself
 withPersist :: (Persist -> TIO a) -> UserStory a
 withPersist m = do
-  mp <- CMR.asks persist
+  mp <- asksPersist
   x <- liftIO . try . modifyMVar mp $ \p -> do
          ea <- R.runPersist (m p)
          return (p,ea)

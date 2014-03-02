@@ -21,6 +21,7 @@ import qualified Bead.Persistence.NoSQLDir as P
 import           Bead.View.Snap.AppInit
 import           Bead.View.Snap.Logger
 import           Bead.View.Snap.Validators hiding (toLower)
+import           Bead.View.Snap.Translation (trans)
 
 
 -- Creates a service context that includes the given logger
@@ -138,7 +139,7 @@ createBeadTempDir = do
 startTestCommentsAgent :: L.Logger -> Int -> Int -> ServiceContext -> IO ()
 startTestCommentsAgent logger initWait wait context = do
   let agent = do threadDelay (secToMicroSec wait)
-                 ((runUserStory context TestAgent testAgentComments) >> return ()) `catch` someException
+                 ((runUserStory context trans TestAgent testAgentComments) >> return ()) `catch` someException
                  agent
   forkIO $ do
     threadDelay (secToMicroSec initWait)
