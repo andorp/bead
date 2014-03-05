@@ -899,6 +899,11 @@ submissionListDesc ak = logAction INFO ("lists submissions for assignment " ++ s
   authPerms submissionListDescPermissions
   withUserAndPersist $ \uname p -> R.submissionListDesc p uname ak
 
+courseSubmissionTable :: CourseKey -> UserStory SubmissionTableInfo
+courseSubmissionTable ck = logAction INFO ("gets submission table for course " ++ show ck) $ do
+  authPerms submissionTableInfoPermissions
+  withPersist $ \p -> R.courseSubmissionTableInfo p ck
+
 submissionTables :: UserStory [SubmissionTableInfo]
 submissionTables = logAction INFO "lists submission tables" $ do
   authPerms submissionTableInfoPermissions

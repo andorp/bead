@@ -61,6 +61,7 @@ pageGen = oneof [
           CommentFromEvaluation <$> submissionKey
         , CommentFromModifyEvaluation <$> submissionKey <*> evaluationKey
         , Evaluation <$> submissionKey
+        , CourseOverview <$> courseKey
         , ModifyEvaluation <$> submissionKey <*> evaluationKey
         , SubmissionDetails <$> assignmentKey <*> submissionKey
         , DeleteUsersFromCourse <$> courseKey

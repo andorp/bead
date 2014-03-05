@@ -16,6 +16,7 @@ module Bead.View.Snap.RouteOf (
   , errorPath
   , profilePath
   , courseAdminPath
+  , courseOverviewPath
   , modifyEvaluationPath
   , evaluationTablePath
   , evaluationPath
@@ -85,6 +86,9 @@ profilePath = "/profile"
 
 courseAdminPath :: RoutePath
 courseAdminPath = "/course-admin"
+
+courseOverviewPath :: RoutePath
+courseOverviewPath = "/course-overview"
 
 modifyEvaluationPath :: RoutePath
 modifyEvaluationPath = "/modify-evaluation"
@@ -181,6 +185,7 @@ pageRoutePath = fromString . r where
     errorPath
     administrationPath
     courseAdminPath
+    (const courseOverviewPath)
     evaluationTablePath
     (const evaluationPath)
     (const $ const modifyEvaluationPath)
@@ -214,6 +219,7 @@ pageRequestParams :: Page -> [ReqParam]
 pageRequestParams = r where
   r (ModifyEvaluation sk ek)   = [requestParam sk, requestParam ek]
   r (Evaluation sk)            = [requestParam sk]
+  r (CourseOverview ck)        = [requestParam ck]
   r (SubmissionDetails ak sk)  = [requestParam ak, requestParam sk]
   r (CommentFromEvaluation ek) = [requestParam ek]
   r (CommentFromModifyEvaluation ek sk) = [requestParam ek, requestParam sk]

@@ -156,6 +156,7 @@ menuId = P.pageCata
   "link-error"
   "link-admin"
   "link-course-admin"
+  (const "link-course-overview")
   "link-evaluation-table"
   (const "link-evaluation")
   (const2 "link-modify-evaluation")

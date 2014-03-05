@@ -205,6 +205,7 @@ linkText = P.pageCata
   (Msg_LinkText_Error "Error")
   (Msg_LinkText_Administration "Administration")
   (Msg_LinkText_CourseAdministration "Course Settings")
+  (const $ Msg_LinkText_CourseOverview "Course Overview")
   (Msg_LinkText_EvaluationTable "Evaluations")
   (const $ Msg_LinkText_Evaluation "Evaluation")
   (const2 $ Msg_LinkText_ModifyEvaluation "Modify Evaluation")

@@ -13,6 +13,7 @@ module Bead.Controller.Pages (
   , isError
   , isAdministration
   , isCourseAdmin
+  , isCourseOverview
   , isEvaluationTable
   , isEvaluation
   , isModifyEvaluation
@@ -57,6 +58,7 @@ data Page
   | Error
   | Administration
   | CourseAdmin
+  | CourseOverview R.CourseKey
   | EvaluationTable
   | Evaluation R.SubmissionKey
   | ModifyEvaluation R.SubmissionKey R.EvaluationKey
@@ -98,6 +100,7 @@ pageCata
   error
   administration
   courseAdmin
+  courseOverview
   evaluationTable
   evaluation
   modifyEvaluation
@@ -133,6 +136,7 @@ pageCata
     Error -> error
     Administration -> administration
     CourseAdmin -> courseAdmin
+    CourseOverview ck -> courseOverview ck
     EvaluationTable -> evaluationTable
     Evaluation sk -> evaluation sk
     ModifyEvaluation sk ek -> modifyEvaluation sk ek
@@ -182,6 +186,9 @@ isAdministration _              = False
 
 isCourseAdmin CourseAdmin = True
 isCourseAdmin _           = False
+
+isCourseOverview (CourseOverview _) = True
+isCourseOverview _                  = False
 
 isEvaluationTable EvaluationTable = True
 isEvaluationTable _               = False
@@ -305,6 +312,7 @@ groupAdminPages = [
 
 courseAdminPages = [
     isCourseAdmin
+  , isCourseOverview
   , isCreateGroup
   , isAssignGroupAdmin
   , isEvaluationTable
@@ -387,6 +395,7 @@ parentPage = pageCata
   Error   -- error
   Home    -- administration
   Home    -- courseAdmin
+  (const Home) -- courseOverview
   Home    -- evaluationTable
   (const EvaluationTable)  -- evaluation
   (const2 EvaluationTable) -- modifyEvaluation
