@@ -10,38 +10,30 @@ module Bead.View.Snap.Content.Home (
 #endif
   ) where
 
-import Numeric (showHex)
-import Data.Function (on)
-import Data.Maybe (catMaybes)
-import Data.Map (Map)
+import           Control.Monad.Identity
+import           Data.Function (on)
+import           Data.List (intersperse, sortBy)
+import           Data.Map (Map)
 import qualified Data.Map as Map
-import Data.List (intersperse, sortBy)
-import Data.String (fromString)
-import Data.Time
-import Control.Monad.Identity
+import           Data.Maybe (catMaybes)
+import           Data.String (fromString)
+import           Data.Time
 
-import Bead.Domain.Entities as E (Role(..), Assignment(..))
-import Bead.Domain.Evaluation
-import Bead.Controller.Pages as P (Page(..))
-import Bead.View.Snap.Pagelets
-import Bead.View.Snap.Content hiding (userState)
-import Bead.View.Snap.DataBridge as Param (Parameter(name))
-import qualified Bead.View.UserActions as UA
-import Bead.Controller.UserStories (
-    userAssignments
-  , submissionTables
-  , administratedCourses
-  , administratedGroups
-  , testScriptInfos
-  )
-
-import Text.Blaze.Html5 ((!))
+import           Text.Blaze.Html5 ((!))
+import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A (style, id, colspan)
 
-import qualified Text.Blaze.Html5 as H
+import           Bead.Controller.Pages as P (Page(..))
+import qualified Bead.Controller.UserStories as S
+import           Bead.Domain.Entities as E (Role(..))
+import           Bead.Domain.Evaluation
+import           Bead.View.Snap.Content hiding (userState)
+import           Bead.View.Snap.Pagelets
+import qualified Bead.View.UserActions as UA
+import           Bead.View.Snap.Content.SubmissionTable
 
 #ifdef TEST
-import Bead.Invariants
+import           Bead.Invariants
 #endif
 
 home :: Content
@@ -76,10 +68,10 @@ homePage = withUserState $ \s -> do
   now <- liftIO getCurrentTime
   (renderPagelet . withUserFrame s . homeContent now) =<< do
     (userStory $ do
-       adminCourses <- administratedCourses
-       adminGroups  <- administratedGroups
-       ua <- userAssignments
-       sbmTables <- (map sortUserLines <$> submissionTables)
+       adminCourses <- S.administratedCourses
+       adminGroups  <- S.administratedGroups
+       ua <- S.userAssignments
+       sbmTables <- (map sortUserLines <$> S.submissionTables)
        testScripts <- Map.fromList <$> mapM (testScriptForCourse . fst) adminCourses
        return $
          HomePageData
@@ -94,7 +86,7 @@ homePage = withUserState $ \s -> do
            (adminGroupMap adminGroups))
   where
     testScriptForCourse ck = do
-      infos <- testScriptInfos ck
+      infos <- S.testScriptInfos ck
       return (ck, infos)
 
     adminCourseMap = Map.fromList
@@ -144,7 +136,16 @@ homeContent now d = do
       H.h3 . fromString . msg $ Msg_Home_GroupAdminTasks "Teacher Menu"
       when (not hasGroup) $ (fromString $ msg $ Msg_Home_NoGroupsYet "There are no groups.")
     when ((courseAdminUser r) || (groupAdminUser r)) $ do
-      when (hasCourse || hasGroup) $ H.p $ do
+      when hasCourse $ H.p $ do
+        H.p $ fromString . msg $ Msg_Home_CourseSubmissionTableList_Info $ concat
+          [ "Submission table for courses can be found on separate pages, please click on the "
+          , "name of a course."
+          ]
+        H.ul ! A.style "list-style-type: none" $ do
+          let courseList = sortBy (compareHun `on` (courseName . snd)) $ Map.toList $ administratedCourseMap d
+          forM_ courseList $ \(ck, c) ->
+            H.li $ linkWithText (routeOf (P.CourseOverview ck)) (courseName c)
+      when hasGroup $ H.p $ do
         when (not . null $ concatMap submissionTableInfoAssignments $ sTables d) $ do
           H.p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
             [ "Assignments may be modified by clicking on their identifiers if you have rights for the modification (their names are shown in the tooltip).  "
@@ -172,6 +173,7 @@ homeContent now d = do
     where
       courseAdminUser = (==E.CourseAdmin)
       groupAdminUser  = (==E.GroupAdmin)
+
 
 availableAssignments :: UserTimeConverter -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> IHtml
 availableAssignments _ Nothing = do
@@ -221,166 +223,18 @@ htmlSubmissionTables :: HomePageData -> UTCTime -> IHtml
 htmlSubmissionTables pd now = do
   tables <- mapM (htmlSubmissionTable pd now) $ zip [1..] (sTables pd)
   return $ sequence_ tables
-
-headLine   = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
-dataCell r = H.td # (informationalCell <> r)
-
-
--- Produces the HTML table from the submission table information,
--- if there is no users registered and submission posted to the
--- group or course students, an informational text is shown.
-htmlSubmissionTable :: HomePageData -> UTCTime -> (Int,SubmissionTableInfo) -> IHtml
-
--- Empty table
-htmlSubmissionTable pd now (i,s)
-  | and [null $ submissionTableInfoAssignments s, null $ stiUsers s] = do
-    msg <- getI18N
-    return $ do
-      table tableId (className groupSubmissionTable) # informationalTable $ do
-        headLine (stiCourse s)
-        dataCell noStyle (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "There are no assignments or students yet.")
-      courseTestScriptTable msg pd s
-      assignmentCreationMenu msg pd s
-    where
-      tableId = join ["st", show i]
-
--- Non empty table
-htmlSubmissionTable pd now (i,s) = do
-  msg <- getI18N
-  return $ do
-    courseForm $ table tableId (className groupSubmissionTable) # informationalTable $ do
-      headLine (stiCourse s)
-      assignmentLine msg
-      mapM_ (userLine msg s) (stiUserLines s)
-    courseTestScriptTable msg pd s
-    assignmentCreationMenu msg pd s
   where
+    htmlSubmissionTable pd now (i,s) = do
+      msg <- getI18N
+      return $ do
+        i18n msg $ submissionTable (concat ["st", show i]) now s
+        i18n msg $ courseTestScriptTable pd s
+        i18n msg $ assignmentCreationMenu pd s
 
-    courseForm = submissionTableInfoCata course group s where
-      course _n _c _us _as _uls _ns ck      = postForm (routeOf $ P.DeleteUsersFromCourse ck)
-      group _n _c _us _cgas _uls _ns _ck gk = postForm (routeOf $ P.DeleteUsersFromGroup gk)
-
-    tableId = join ["st", show i]
-    headerCell = H.th # (informationalCell <> grayBackground)
-
-    assignmentLine msg = H.tr $ do
-      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_StudentName "Name"
-      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Username "Username"
-      assignmentLinks
-      deleteHeaderCell msg
-      where
-        openedHeaderCell o c (_i,ak) =
-          if isActiveAssignment ak
-            then (H.th # (informationalCell <> o))
-            else (H.th # (informationalCell <> c))
-
-        assignmentLinks = submissionTableInfoCata course group s
-
-        course _name _cfg _users as _ulines _anames _key =
-          mapM_ (\x -> openedHeaderCell openCourseAssignmentStyle closedCourseAssignmentStyle x
-                         $ modifyAssignmentLink "" x)
-              $ zip [1..] as
-
-        group  _name _cfg _users cgas _ulines _anames _ckey _gkey = do
-          let as = reverse . snd $ foldl numbering ((1,1),[]) cgas
-          mapM_ header as
-          where
-            numbering ((c,g),as) = cgInfoCata
-              (\ak -> ((c+1,g),(CourseInfo (c,ak):as)))
-              (\ak -> ((c,g+1),(GroupInfo  (g,ak):as)))
-
-            header = cgInfoCata
-              (\x -> openedHeaderCell openCourseAssignmentStyle closedCourseAssignmentStyle x $
-                       viewAssignmentLink (msg $ Msg_Home_CourseAssignmentIDPreffix "C") x)
-              (\x -> openedHeaderCell openGroupAssignmentStyle closedGroupAssignmentStyle x $
-                       modifyAssignmentLink (msg $ Msg_Home_GroupAssignmentIDPreffix "G") x)
-
-    assignmentName ak = maybe "" E.assignmentName . Map.lookup ak $ stiAssignmentInfos s
-
-    isActiveAssignment ak = maybe False isActive . Map.lookup ak $ stiAssignmentInfos s
-      where
-        isActive a = and [E.assignmentStart a < now, now < E.assignmentEnd a]
-
-    modifyAssignmentLink pfx (i,ak) =
-      linkWithTitle
-        (routeWithParams P.ModifyAssignment [requestParam ak])
-        (assignmentName ak)
-        (concat [pfx, show i])
-
-    viewAssignmentLink pfx (i,ak) =
-      linkWithTitle
-        (routeOf (P.ViewAssignment ak))
-        (assignmentName ak)
-        (concat [pfx, show i])
-
-    userLine msg s (u,p,submissionInfoMap) = do
-      H.tr $ do
-        let username = ud_username u
-        dataCell noStyle . fromString $ ud_fullname u
-        dataCell noStyle . fromString $ show username
-        submissionCells username s
-        deleteUserCheckbox u
-      where
-        submissionInfos = submissionTableInfoCata course group where
-          course _n _c _users as _ulines _anames _key =
-            catMaybes $ map (\ak -> Map.lookup ak submissionInfoMap) as
-
-          group _n _c _users as _ulines _anames _ckey _gkey =
-            catMaybes $ map lookup as
-            where
-              lookup = cgInfoCata (const Nothing) (flip Map.lookup submissionInfoMap)
-
-
-        submissionCells username = submissionTableInfoCata course group where
-          course _n _c _users as _ulines _anames _key = mapM_ (submissionInfoCell username) as
-
-          group _n _c _users as _ulines _anames _ck _gk =
-            mapM_ (cgInfoCata (submissionInfoCell username) (submissionInfoCell username)) as
-
-        submissionInfoCell u ak = case Map.lookup ak submissionInfoMap of
-          Nothing -> dataCell noStyle $ fromString "░░░"
-          Just si -> submissionCell u (ak,si)
-
-    submissionCell u (ak,si) =
-      coloredSubmissionCell
-        dataCell
-        (H.td)
-        (linkWithText (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]))
-        "░░░" -- not found
-        "░░░" -- non-evaluated
-        "░░░" -- tested
-        "░░░" -- accepted
-        "░░░" -- rejected
-        si    -- of percent
-
-    deleteHeaderCell msg = submissionTableInfoCata deleteForCourseButton deleteForGroupButton s where
-        deleteForCourseButton _n _c _us _as _uls _ans _ck =
-          headerCell $ submitButton
-            (fieldName delUsersFromCourseBtn)
-            (msg $ Msg_Home_DeleteUsersFromCourse "Remove")
-
-        deleteForGroupButton _n _c _us _as _uls _ans _ck _gk =
-          headerCell $ submitButton
-            (fieldName delUsersFromGroupBtn)
-            (msg $ Msg_Home_DeleteUsersFromGroup "Remove")
-
-    deleteUserCheckbox u = submissionTableInfoCata deleteCourseCheckbox deleteGroupCheckbox s where
-        deleteCourseCheckbox _n _c _us _as _uls _ans _ck =
-          dataCell noStyle $ checkBox
-            (Param.name delUserFromCoursePrm)
-            (encode delUserFromCoursePrm $ ud_username u)
-            False
-
-        deleteGroupCheckbox _n _c _us _as _uls _ans _ck _gk =
-          dataCell noStyle $ checkBox
-            (Param.name delUserFromGroupPrm)
-            (encode delUserFromGroupPrm $ ud_username u)
-            False
-
-courseTestScriptTable :: I18N -> HomePageData -> SubmissionTableInfo -> H.Html
-courseTestScriptTable msg pd = submissionTableInfoCata course group where
-  course _n _c _us _as _uls _ans ck = (i18n msg . testScriptTable (courseTestScripts pd)) ck
-  group _n _c _us _as _uls _ans _ck _gk = (return ())
+courseTestScriptTable :: HomePageData -> SubmissionTableInfo -> IHtml
+courseTestScriptTable pd = submissionTableInfoCata course group where
+  course _n _c _us _as _uls _ans ck = testScriptTable (courseTestScripts pd) ck
+  group _n _c _us _as _uls _ans _ck _gk = (return (return ()))
 
 -- Renders a course test script modification table if the information is found in the
 -- for the course, otherwise an error message. If the course is found, and there is no
@@ -410,64 +264,26 @@ testScriptTable cti ck = maybe (return "") courseFound $ Map.lookup ck cti where
 
 -- Renders a menu for the creation of the course or group assignment if the
 -- user administrates the given group or course
-assignmentCreationMenu :: I18N -> HomePageData -> SubmissionTableInfo -> H.Html
-assignmentCreationMenu msg pd = submissionTableInfoCata courseMenu groupMenu
+assignmentCreationMenu :: HomePageData -> SubmissionTableInfo -> IHtml
+assignmentCreationMenu pd = submissionTableInfoCata courseMenu groupMenu
   where
     groupMenu _n _c _us _as _uls _ans _ck gk = maybe
-      (return ())
+      (return (return ()))
       (const $ do
-        navigationWithRoute [P.NewGroupAssignment gk])
+        msg <- getI18N
+        return (navigationWithRoute msg [P.NewGroupAssignment gk]))
       (Map.lookup gk (administratedGroupMap pd))
 
     courseMenu _n _c _us _as _uls _ans ck = maybe
-      (return ())
+      (return (return ()))
       (const $ do
-        navigationWithRoute [P.NewCourseAssignment ck])
+        msg <- getI18N
+        return (navigationWithRoute msg [P.NewCourseAssignment ck]))
       (Map.lookup ck (administratedCourseMap pd))
 
-    navigationWithRoute links = H.div ! A.id "menu" $ H.ul $ mapM_ elem links
+    navigationWithRoute msg links = H.div ! A.id "menu" $ H.ul $ mapM_ elem links
       where
         elem page = link (routeOf page) (msg $ linkText page)
-
-
--- Create a table cell for the evaulation value, where
--- simpleCell is the combinator for the non RGB colored cells
--- rgbCell is a cell combinator where the rgb value will be set
--- content how the computed text value is wrapped
--- notFound text for the non evaulated submission
--- unevaluated text for the unevaluated submission
--- passed message for the passed binary evaulation
--- failed message for the failed binary evaulation
--- s the submission information itself
-coloredSubmissionCell simpleCell rgbCell content notFound unevaluated tested passed failed s =
-  coloredCell $ content (sc s)
-  where
-    sc = submissionInfoCata
-           notFound
-           unevaluated
-           tested
-           (\_key result -> val result) -- evaluated
-
-    val (BinEval (Binary Passed)) = passed
-    val (BinEval (Binary Failed)) = failed
-    val (PctEval (Percentage (Scores [p]))) = percent p
-
-    coloredCell = color s
-
-    color =
-      submissionInfoCata
-        (simpleCell noStyle)        -- Not Found
-        (simpleCell unevaluatedStyle) -- Unevulated
-        (simpleCell testedStyle)      -- Tested
-        (const resultCell)        -- Result
-
-    resultCell (BinEval (Binary Passed)) = simpleCell binaryPassedStyle
-    resultCell (BinEval (Binary Failed)) = simpleCell binaryFailedStyle
-    resultCell p@(PctEval {}) = withRGBClass (EvResult p) rgbCell
-
-    percent x = join [show . round $ (100 * x), "%"]
-
-    withRGBClass r = maybe id (\pct html -> html ! (A.style . fromString . colorStyle . pctCellColor $ pct)) (percentValue r)
 
 -- * Evaluation
 
@@ -546,51 +362,6 @@ calcEvaluationResult selectResult calculateResult
     checkErrors [] = Right []
     checkErrors ((Left msg):_) = Left msg
     checkErrors ((Right b):bs) = fmap (b:) (checkErrors bs)
-
--- * CSS Section
-
-openCourseAssignmentStyle = backgroundColor "#52B017"
-openGroupAssignmentStyle  = backgroundColor "#00FF00"
-closedCourseAssignmentStyle = backgroundColor "#736F6E"
-closedGroupAssignmentStyle = backgroundColor "#A3AFAE"
-
-binaryPassedStyle = backgroundColor "lightgreen"
-binaryFailedStyle = backgroundColor "red"
-unevaluatedStyle  = backgroundColor "gray"
-testedStyle       = backgroundColor "yellow"
-
-summaryPassedStyle = backgroundColor "lightgreen"
-summaryFailedStyle = backgroundColor "red"
-summaryErrorStyle  = backgroundColor "yellow"
-
--- * Colors
-
-newtype RGB = RGB (Int, Int, Int)
-
-pctCellColor :: Double -> RGB
-pctCellColor x = RGB (round ((1 - x) * 255), round (x * 255), 0)
-
-colorStyle :: RGB -> String
-colorStyle (RGB (r,g,b)) = join ["background-color:#", hex r, hex g, hex b]
-  where
-    twoDigits [d] = ['0',d]
-    twoDigits ds  = ds
-
-    hex x = twoDigits (showHex x "")
-
--- * Tools
-
-sortUserLines = submissionTableInfoCata course group where
-  course name cfg users assignments userlines names key =
-    CourseSubmissionTableInfo name cfg users assignments (sort userlines) names key
-
-  group name cfg users assignments userlines names ckey gkey =
-    GroupSubmissionTableInfo name cfg users assignments (sort userlines) names ckey gkey
-
-  sort = sortBy (compareHun `on` fst3)
-
-fst3 :: (a,b,c) -> a
-fst3 (x,_,_) = x
 
 -- * Tests
 

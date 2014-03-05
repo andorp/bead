@@ -243,6 +243,7 @@ data Translation a
   | Msg_Home_GroupAdminTasks { trans :: a }
   | Msg_Home_NoGroupsYet { trans :: a }
   | Msg_Home_SubmissionTable_Info { trans :: a }
+  | Msg_Home_CourseSubmissionTableList_Info { trans :: a }
   | Msg_Home_StudentTasks { trans :: a }
   | Msg_Home_HasNoRegisteredCourses { trans :: a }
   | Msg_Home_HasNoAssignments { trans :: a }
@@ -344,6 +345,7 @@ data Translation a
   | Msg_LinkText_Profile { trans :: a }
   | Msg_LinkText_Error { trans :: a }
   | Msg_LinkText_CourseAdministration { trans :: a }
+  | Msg_LinkText_CourseOverview { trans :: a }
   | Msg_LinkText_Submission { trans :: a }
   | Msg_LinkText_SubmissionList { trans :: a }
   | Msg_LinkText_UserSubmissions { trans :: a }

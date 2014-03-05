@@ -339,6 +339,8 @@ requestToPage path params
   | path == errorPath       = j P.Error
   | path == profilePath     = j P.Profile
   | path == courseAdminPath = j P.CourseAdmin
+  | path == courseOverviewPath
+    = P.CourseOverview <$> courseKey
   | path == modifyEvaluationPath
     = P.ModifyEvaluation <$> submissionKey <*> evaluationKey
   | path == evaluationTablePath  = j P.EvaluationTable

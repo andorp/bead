@@ -19,6 +19,7 @@ import Bead.View.Snap.Content.Home (
     deleteUsersFromGroup)
 import Bead.View.Snap.Content.Profile (profile, changePassword)
 import Bead.View.Snap.Content.CourseAdmin (courseAdmin, createGroup, assignGroupAdmin)
+import Bead.View.Snap.Content.CourseOverview (courseOverview)
 import Bead.View.Snap.Content.Administration (administration, assignCourseAdmin)
 import Bead.View.Snap.Content.EvaluationTable (evaluationTable)
 import Bead.View.Snap.Content.Evaluation (
@@ -61,6 +62,7 @@ content = [
   route errorPath emptyContent,
   route profilePath profile,
   route courseAdminPath courseAdmin,
+  route courseOverviewPath courseOverview,
   route administrationPath administration,
   route evaluationTablePath evaluationTable,
   route evaluationPath evaluation,

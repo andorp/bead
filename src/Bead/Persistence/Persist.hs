@@ -10,6 +10,7 @@ module Bead.Persistence.Persist (
   , isAdminedSubmission
   , canUserCommentOn
   , submissionTables
+  , courseSubmissionTableInfo
   , userSubmissionDesc
   , userLastSubmissionInfo
   , courseOrGroupOfAssignment
@@ -23,23 +24,21 @@ module Bead.Persistence.Persist (
   , testScriptInfo -- Calculates the test script information for the given test key
   ) where
 
-import Bead.Domain.Types (Erroneous)
-import Bead.Domain.Entities
-import Bead.Domain.Relationships
-
-import Data.Function (on)
-import Data.Time (UTCTime)
-import Data.List (nub, sortBy, intersect, find)
-import Data.Map (Map(..))
+import           Control.Applicative ((<$>))
+import           Control.Arrow
+import           Control.Exception (IOException)
+import           Control.Monad (forM, liftM, when)
+import           Control.Monad.Transaction.TIO
+import           Data.Function (on)
+import           Data.List (nub, sortBy, intersect, find)
+import           Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe (catMaybes)
-import Data.Time (getCurrentTime)
+import           Data.Maybe (catMaybes)
+import           Data.Time (UTCTime, getCurrentTime)
 
-import Control.Applicative ((<$>))
-import Control.Arrow
-import Control.Monad (mapM, liftM, liftM2, forM, when)
-import Control.Exception (IOException)
-import Control.Monad.Transaction.TIO
+import           Bead.Domain.Types (Erroneous)
+import           Bead.Domain.Entities
+import           Bead.Domain.Relationships
 
 data Persist = Persist {
   -- User Persistence
@@ -347,15 +346,13 @@ isAdminedSubmission p u sk = do
 canUserCommentOn :: Persist -> Username -> SubmissionKey -> TIO Bool
 canUserCommentOn p u sk = return True
 
--- Returns all the submissions of the users for the groups and courses that the
+-- Returns all the submissions of the users for the groups that the
 -- user administrates
 submissionTables :: Persist -> Username -> TIO [SubmissionTableInfo]
 submissionTables p u = do
-  courseKeys <- map fst <$> administratedCourses p u
-  courseTables <- mapM (courseSubmissionTableInfo p) courseKeys
   groupKeys <- map fst <$> administratedGroups p u
   groupTables  <- mapM (groupSubmissionTableInfo p) groupKeys
-  return $ courseTables ++ groupTables
+  return groupTables
 
 groupSubmissionTableInfo :: Persist -> GroupKey -> TIO SubmissionTableInfo
 groupSubmissionTableInfo p gk = do
@@ -367,6 +364,7 @@ groupSubmissionTableInfo p gk = do
   evalCfg <- groupEvalConfig <$> loadGroup p gk
   mkGroupSubmissionTableInfo p name evalCfg usernames cassignments gassignments ck gk
 
+-- Returns the course submission table information for the given course key
 courseSubmissionTableInfo :: Persist -> CourseKey -> TIO SubmissionTableInfo
 courseSubmissionTableInfo p ck = do
   assignments <- courseAssignments p ck
