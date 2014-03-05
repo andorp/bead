@@ -216,8 +216,8 @@ DictionaryFile {
     , Msg_Home_CourseAdminTasks { trans = "Tárgyfelelősi feladatok" }
     , Msg_Home_CourseAdministration_Info { trans = "A tárgyhoz új csoportokat a Tárgyi beállítások almenüben lehet létrehozni.  Ugyanitt lehet egyúttal az egyes csoportokhoz oktatókat rendelni." }
     , Msg_Home_NoCoursesYet { trans = "Még nincsenek tárgyak!  Meg kell kérni az adminisztrátort, hogy rendeljen hozzánk tárgyat!" }
-    , Msg_Home_SubmissionTable_Info { trans = "A feladat sorszámára kattintva módosítható már kiírt feladat, ha van jogosultságod a feladat módosításához (a nevét ld. tooltipben).  Hallgatókat törölhetőek kurzusról vagy csoportból a Törlés oszlopban bejelölve, majd a gombra kattintva." }
-    , Msg_Home_CourseSubmissionTableList_Info { trans = "A kurzusokhoz tartozó összesítő táblázatok külön oldalon találhatóak. Kattints a kurzus nevére az alábbi listában." }
+    , Msg_Home_SubmissionTable_Info { trans = "A feladat sorszámára kattintva módosítható már kiírt feladat, ha van jogosultságunk a feladat módosításához (a nevét ld. tooltipben).  Hallgatókat törölhetőek kurzusról vagy csoportból a Törlés oszlopban bejelölve, majd a gombra kattintva." }
+    , Msg_Home_CourseSubmissionTableList_Info { trans = "A kurzusokhoz tartozó összesítő táblázatok külön oldalon találhatóak. Kattintsunk a kurzus nevére az alábbi listában." }
     , Msg_Home_GroupAdminTasks { trans = "Oktatói feladatok" }
     , Msg_Home_NoGroupsYet { trans = "Még nincsenek csoportok!" }
     , Msg_Home_StudentTasks { trans = "Hallgatói feladatok" }
