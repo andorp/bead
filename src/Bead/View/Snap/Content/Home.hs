@@ -21,16 +21,15 @@ import           Data.Time
 
 import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A (style, id, colspan)
+import qualified Text.Blaze.Html5.Attributes as A (style, id)
 
 import           Bead.Controller.Pages as P (Page(..))
 import qualified Bead.Controller.UserStories as S
 import           Bead.Domain.Entities as E (Role(..))
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Content hiding (userState)
-import           Bead.View.Snap.Pagelets
 import qualified Bead.View.UserActions as UA
-import           Bead.View.Snap.Content.SubmissionTable
+import           Bead.View.Snap.Content.SubmissionTable as ST
 
 #ifdef TEST
 import           Bead.Invariants
@@ -45,9 +44,6 @@ deleteUsersFromCourse = postContentHandler deleteUsersFromCourseHandler
 deleteUsersFromGroup :: Content
 deleteUsersFromGroup = postContentHandler deleteUsersFromGroupHandler
 
--- Maps a course to its defined test scripts
-type CourseTestScriptInfos = Map CourseKey [(TestScriptKey, TestScriptInfo)]
-
 data HomePageData = HomePageData {
     userState   :: UserState
   , hasCourses  :: Bool -- True if the user has administrated courses
@@ -56,11 +52,12 @@ data HomePageData = HomePageData {
   , sTables     :: [SubmissionTableInfo]
     -- ^ The convertes function that convert a given utc time into the users local timezone
   , timeConverter :: UserTimeConverter
-  , courseTestScripts :: CourseTestScriptInfos
-    -- ^ Test scripts for the courses
-  , administratedCourseMap :: Map CourseKey Course
-  , administratedGroupMap  :: Map GroupKey (Group, String)
+  , submissionTableCtx :: SubmissionTableContext
   }
+
+administratedCourseMap = stcAdminCourses . submissionTableCtx
+administratedGroupMap  = stcAdminGroups  . submissionTableCtx
+courseTestScripts      = stcCourseTestScriptInfos . submissionTableCtx
 
 homePage :: GETContentHandler
 homePage = withUserState $ \s -> do
@@ -68,30 +65,18 @@ homePage = withUserState $ \s -> do
   now <- liftIO getCurrentTime
   (renderPagelet . withUserFrame s . homeContent now) =<< do
     (userStory $ do
-       adminCourses <- S.administratedCourses
-       adminGroups  <- S.administratedGroups
        ua <- S.userAssignments
        sbmTables <- (map sortUserLines <$> S.submissionTables)
-       testScripts <- Map.fromList <$> mapM (testScriptForCourse . fst) adminCourses
+       stc <- ST.submissionTableContext
        return $
          HomePageData
            s
-           (not $ null adminCourses)
-           (not $ null adminGroups)
+           (not . Map.null $ stcAdminCourses stc)
+           (not . Map.null $ stcAdminGroups stc)
            ua
            sbmTables
            converter
-           testScripts
-           (adminCourseMap adminCourses)
-           (adminGroupMap adminGroups))
-  where
-    testScriptForCourse ck = do
-      infos <- S.testScriptInfos ck
-      return (ck, infos)
-
-    adminCourseMap = Map.fromList
-
-    adminGroupMap = Map.fromList . map (\(k,g,c) -> (k,(g,c)))
+           stc)
 
 deleteUsersFromCourseHandler :: POSTContentHandler
 deleteUsersFromCourseHandler =
@@ -225,65 +210,7 @@ htmlSubmissionTables pd now = do
   return $ sequence_ tables
   where
     htmlSubmissionTable pd now (i,s) = do
-      msg <- getI18N
-      return $ do
-        i18n msg $ submissionTable (concat ["st", show i]) now s
-        i18n msg $ courseTestScriptTable pd s
-        i18n msg $ assignmentCreationMenu pd s
-
-courseTestScriptTable :: HomePageData -> SubmissionTableInfo -> IHtml
-courseTestScriptTable pd = submissionTableInfoCata course group where
-  course _n _c _us _as _uls _ans ck = testScriptTable (courseTestScripts pd) ck
-  group _n _c _us _as _uls _ans _ck _gk = (return (return ()))
-
--- Renders a course test script modification table if the information is found in the
--- for the course, otherwise an error message. If the course is found, and there is no
--- test script found for the course a message indicating that will be rendered, otherwise
--- the modification table is rendered
-testScriptTable :: CourseTestScriptInfos -> CourseKey -> IHtml
-testScriptTable cti ck = maybe (return "") courseFound $ Map.lookup ck cti where
-  courseFound ts = do
-    msg <- getI18N
-    return $ do
-      table tableId (className groupSubmissionTable) # informationalTable $ do
-        headLine . msg $ Msg_Home_ModifyTestScriptTable "Testers"
-        case ts of
-          []  -> dataCell noStyle $ fromString . msg $
-                   Msg_Home_NoTestScriptsWereDefined "There are no testers for the course."
-          ts' -> mapM_ testScriptLine ts'
-    where
-      headLine = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
-      tableId = join ["tst-", courseKeyMap id ck]
-      dataCell r = H.td # (informationalCell <> r)
-
-      testScriptLine (tsk,tsi) = do
-        dataCell noStyle $ linkWithText
-          (routeOf (P.ModifyTestScript tsk))
-          (tsiName tsi)
-
-
--- Renders a menu for the creation of the course or group assignment if the
--- user administrates the given group or course
-assignmentCreationMenu :: HomePageData -> SubmissionTableInfo -> IHtml
-assignmentCreationMenu pd = submissionTableInfoCata courseMenu groupMenu
-  where
-    groupMenu _n _c _us _as _uls _ans _ck gk = maybe
-      (return (return ()))
-      (const $ do
-        msg <- getI18N
-        return (navigationWithRoute msg [P.NewGroupAssignment gk]))
-      (Map.lookup gk (administratedGroupMap pd))
-
-    courseMenu _n _c _us _as _uls _ans ck = maybe
-      (return (return ()))
-      (const $ do
-        msg <- getI18N
-        return (navigationWithRoute msg [P.NewCourseAssignment ck]))
-      (Map.lookup ck (administratedCourseMap pd))
-
-    navigationWithRoute msg links = H.div ! A.id "menu" $ H.ul $ mapM_ elem links
-      where
-        elem page = link (routeOf page) (msg $ linkText page)
+      submissionTable (concat ["st", show i]) now (submissionTableCtx pd) s
 
 -- * Evaluation
 

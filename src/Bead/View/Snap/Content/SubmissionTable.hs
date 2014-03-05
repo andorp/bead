@@ -1,55 +1,88 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Content.SubmissionTable (
-    submissionTable
+    AdministratedCourses
+  , AdministratedGroups
+  , CourseTestScriptInfos
+  , SubmissionTableContext(..)
+  , submissionTable
+  , submissionTableContext
   , sortUserLines
   , coloredSubmissionCell
   ) where
 
+import           Data.Function
+import           Data.List
+import           Data.Map (Map)
 import qualified Data.Map as Map
-import Data.Maybe
-import Data.Function
-import Data.List
-import Data.String
-import Data.Time
-import Numeric
+import           Data.Maybe
+import           Data.String
+import           Data.Time
+import           Numeric
 
 import qualified Bead.Domain.Entities as E
-import Bead.Domain.Evaluation
+import           Bead.Domain.Relationships
+import           Bead.Domain.Evaluation
 import qualified Bead.Controller.Pages as P
-import Bead.View.Snap.Content
+import           Bead.Controller.UserStories (UserStory)
+import qualified Bead.Controller.UserStories as S
+import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.DataBridge as Param
 
-import Text.Blaze.Html5 ((!))
+import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-sortUserLines = submissionTableInfoCata course group where
-  course name cfg users assignments userlines names key =
-      CourseSubmissionTableInfo name cfg users assignments (sort userlines) names key
 
-  group name cfg users assignments userlines names ckey gkey =
-      GroupSubmissionTableInfo name cfg users assignments (sort userlines) names ckey gkey
+type AdministratedCourses = Map CourseKey E.Course
 
-  sort = sortBy (compareHun `on` fst3)
+type AdministratedGroups  = Map GroupKey  (E.Group, String)
 
-  fst3 :: (a,b,c) -> a
-  fst3 (x,_,_) = x
+type CourseTestScriptInfos = Map CourseKey [(TestScriptKey, TestScriptInfo)]
 
-submissionTableInfoAssignments = submissionTableInfoCata course group where
-  course _n _c _us as _uls _ans _ck = as
-  group _n _c _us cgas _uls _ans _ck _gk = map (cgInfoCata id id) cgas
+data SubmissionTableContext = SubmissionTableContext {
+    stcAdminCourses :: AdministratedCourses
+  , stcAdminGroups  :: AdministratedGroups
+  , stcCourseTestScriptInfos :: CourseTestScriptInfos
+  }
 
-headLine   = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
-dataCell r = H.td # (informationalCell <> r)
+submissionTableContextCata f (SubmissionTableContext courses groups testscripts)
+  = f courses groups testscripts
 
+submissionTableContext :: UserStory SubmissionTableContext
+submissionTableContext = do
+  ac <- S.administratedCourses
+  ag <- S.administratedGroups
+  ts <- Map.fromList <$> mapM (testScriptForCourse . fst) ac
+  return $! SubmissionTableContext {
+      stcAdminCourses = adminCourseMap ac
+    , stcAdminGroups  = adminGroupMap ag
+    , stcCourseTestScriptInfos = ts
+    }
+  where
+    testScriptForCourse ck = do
+      infos <- S.testScriptInfos ck
+      return (ck, infos)
+
+    adminCourseMap = Map.fromList
+
+    adminGroupMap = Map.fromList . map (\(k,g,c) -> (k,(g,c)))
+
+submissionTable :: String -> UTCTime -> SubmissionTableContext -> SubmissionTableInfo -> IHtml
+submissionTable tableId now stb table = submissionTableContextCata html stb where
+  html courses groups testscripts = do
+    msg <- getI18N
+    return $ do
+      i18n msg $ submissionTablePart tableId now table
+      i18n msg $ courseTestScriptTable testscripts table
+      i18n msg $ assignmentCreationMenu courses groups table
 
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
 -- group or course students, an informational text is shown.
-submissionTable :: String -> UTCTime -> SubmissionTableInfo -> IHtml
+submissionTablePart :: String -> UTCTime -> SubmissionTableInfo -> IHtml
 
 -- Empty table
-submissionTable tableId now s
+submissionTablePart tableId now s
   | and [null $ submissionTableInfoAssignments s, null $ stiUsers s] = do
     msg <- getI18N
     return $ do
@@ -58,7 +91,7 @@ submissionTable tableId now s
         dataCell noStyle (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "There are no assignments or students yet.")
 
 -- Non empty table
-submissionTable tableId now s = do
+submissionTablePart tableId now s = do
   msg <- getI18N
   return $ do
     courseForm $ table tableId (className groupSubmissionTable) # informationalTable $ do
@@ -226,6 +259,65 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated tested pas
 
     withRGBClass r = maybe id (\pct html -> html ! (A.style . fromString . colorStyle . pctCellColor $ pct)) (percentValue r)
 
+courseTestScriptTable :: CourseTestScriptInfos -> SubmissionTableInfo -> IHtml
+courseTestScriptTable cti = submissionTableInfoCata course group where
+  course _n _c _us _as _uls _ans ck = testScriptTable cti ck
+  group _n _c _us _as _uls _ans _ck _gk = (return (return ()))
+
+-- Renders a course test script modification table if the information is found in the
+-- for the course, otherwise an error message. If the course is found, and there is no
+-- test script found for the course a message indicating that will be rendered, otherwise
+-- the modification table is rendered
+testScriptTable :: CourseTestScriptInfos -> CourseKey -> IHtml
+testScriptTable cti ck = maybe (return "") courseFound $ Map.lookup ck cti where
+  courseFound ts = do
+    msg <- getI18N
+    return $ do
+      table tableId (className groupSubmissionTable) # informationalTable $ do
+        headLine . msg $ Msg_Home_ModifyTestScriptTable "Testers"
+        case ts of
+          []  -> dataCell noStyle $ fromString . msg $
+                   Msg_Home_NoTestScriptsWereDefined "There are no testers for the course."
+          ts' -> mapM_ testScriptLine ts'
+    where
+      headLine = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
+      tableId = join ["tst-", courseKeyMap id ck]
+      dataCell r = H.td # (informationalCell <> r)
+
+      testScriptLine (tsk,tsi) = do
+        dataCell noStyle $ linkWithText
+          (routeOf (P.ModifyTestScript tsk))
+          (tsiName tsi)
+
+-- Renders a menu for the creation of the course or group assignment if the
+-- user administrates the given group or course
+assignmentCreationMenu
+  :: AdministratedCourses
+  -> AdministratedGroups
+  -> SubmissionTableInfo
+  -> IHtml
+assignmentCreationMenu courses groups = submissionTableInfoCata courseMenu groupMenu
+  where
+    groupMenu _n _c _us _as _uls _ans _ck gk = maybe
+      (return (return ()))
+      (const $ do
+        msg <- getI18N
+        return (navigationWithRoute msg [P.NewGroupAssignment gk]))
+      (Map.lookup gk groups)
+
+    courseMenu _n _c _us _as _uls _ans ck = maybe
+      (return (return ()))
+      (const $ do
+        msg <- getI18N
+        return (navigationWithRoute msg [P.NewCourseAssignment ck]))
+      (Map.lookup ck courses)
+
+    navigationWithRoute msg links = H.div ! A.id "menu" $ H.ul $ mapM_ elem links
+      where
+        elem page = link (routeOf page) (msg $ linkText page)
+
+
+
 -- * CSS Section
 
 openCourseAssignmentStyle = backgroundColor "#52B017"
@@ -256,3 +348,24 @@ colorStyle (RGB (r,g,b)) = join ["background-color:#", hex r, hex g, hex b]
     twoDigits ds  = ds
 
     hex x = twoDigits (showHex x "")
+
+-- * Tools
+
+sortUserLines = submissionTableInfoCata course group where
+  course name cfg users assignments userlines names key =
+      CourseSubmissionTableInfo name cfg users assignments (sort userlines) names key
+
+  group name cfg users assignments userlines names ckey gkey =
+      GroupSubmissionTableInfo name cfg users assignments (sort userlines) names ckey gkey
+
+  sort = sortBy (compareHun `on` fst3)
+
+  fst3 :: (a,b,c) -> a
+  fst3 (x,_,_) = x
+
+submissionTableInfoAssignments = submissionTableInfoCata course group where
+  course _n _c _us as _uls _ans _ck = as
+  group _n _c _us cgas _uls _ans _ck _gk = map (cgInfoCata id id) cgas
+
+headLine   = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
+dataCell r = H.td # (informationalCell <> r)
