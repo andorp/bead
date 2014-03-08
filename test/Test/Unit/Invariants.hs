@@ -25,6 +25,7 @@ import Test.Quick.RolePermissionGen
 import qualified Bead.View.Snap.RouteOf as R (routeOfInvariants)
 import qualified Bead.View.Snap.PageHandlers as PH (pageHandlersInvariants)
 import qualified Bead.Controller.Pages as P (invariants)
+import qualified Bead.Controller.LogoutDaemon as LD (unitTests)
 import qualified Bead.Domain.Entities as E (roleInvariants, assignmentTests, compareHunTests)
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQLDirFile as L (unitTests)
@@ -74,6 +75,7 @@ tests = [
     invariantsGroup "Route Of" R.routeOfInvariants
   , invariantsGroup "Page Handlers" PH.pageHandlersInvariants
   , invariantsGroup "Page invariants" P.invariants
+  , unitTestGroup   "Logout daemon" LG.unitTests
   , invariantsGroup "Role permission invariants" RP.invariants
   , invariantsGroup "Content handler definitions" VA.invariants
   , unitTestGroup   "NoSQL untilities" L.unitTests

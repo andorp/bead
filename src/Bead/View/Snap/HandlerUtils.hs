@@ -60,6 +60,7 @@ import           Text.Blaze.Html5 (Html)
 -- Bead imports
 
 import           Bead.Controller.Logging as L
+import           Bead.Controller.LogoutDaemon
 import           Bead.Controller.ServiceContext hiding (serviceContext, name)
 import qualified Bead.Controller.UserStories as S
 import           Bead.Domain.Entities (TimeZone, dataTimeZone)
@@ -289,14 +290,17 @@ fileUpload = do
 --   into the service context
 runStory :: S.UserStory a -> Handler App b (Either S.UserError a)
 runStory story = withTop serviceContext $ do
-  result <- serviceContextAndUserData $ \context users authUser -> do
+  result <- serviceContextAndUserData $ \context logoutDaemon users authUser -> do
       let unameFromAuth = usernameFromAuthUser authUser
       token  <- sessionToken
       let usrToken = userToken (unameFromAuth, token)
       ustate <- liftIO $ userData users usrToken
       case ustate of
-        Nothing -> return . Left . strMsg $ "The user was not authenticated: " ++ show unameFromAuth
+        Nothing -> return . Left . strMsg $ "The user is timed out: " ++ show unameFromAuth
         Just state -> do
+          liftIO $ do
+            now <- Time.getCurrentTime
+            userActivity logoutDaemon usrToken now
           i18n <- i18nH
           eResult <- liftIO $ S.runUserStory context i18n state story
           case eResult of
@@ -315,15 +319,15 @@ runStory story = withTop serviceContext $ do
       touchSession
 
     serviceContextAndUserData
-      :: (ServiceContext -> UserContainer UserState -> AuthUser -> Handler App SnapletServiceContext a)
+      :: (ServiceContext -> LogoutDaemon -> UserContainer UserState -> AuthUser -> Handler App SnapletServiceContext a)
       -> Handler App SnapletServiceContext (Either String a)
     serviceContextAndUserData f = do
-      context <- getServiceContext
+      (context, logoutDaemon) <- getServiceContextAndLogoutDaemon
       let users = userContainer context
       um <- withTop auth $ currentUser
       case um of
         Nothing -> return . Left $ "Unauthenticated user"
-        Just authUser -> liftM Right $ f context users authUser
+        Just authUser -> liftM Right $ f context logoutDaemon users authUser
 
 logout :: Handler App b ()
 logout = do

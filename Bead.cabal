@@ -71,6 +71,7 @@ Executable Bead
     MonadCatchIO-transformers,
     old-locale,
     pandoc,
+    pqueue >= 1.2.1 && < 2.0,
     mtl,
     random,
     snap,

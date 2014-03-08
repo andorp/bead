@@ -20,23 +20,34 @@ import Bead.Configuration (Config(..))
 import Bead.Domain.Entities
 import Bead.View.Snap.Dictionary
 import Bead.View.Snap.EmailTemplate
+import Bead.Controller.LogoutDaemon
 import Bead.Controller.ServiceContext
 
 -- * Mini snaplet : Service context
 
-newtype SnapletServiceContext = SnapletServiceContext (IORef ServiceContext)
+newtype SnapletServiceContext = SnapletServiceContext (IORef (ServiceContext, LogoutDaemon))
 
-contextSnaplet :: ServiceContext -> SnapletInit b SnapletServiceContext
-contextSnaplet s = makeSnaplet
+contextSnaplet :: ServiceContext -> LogoutDaemon -> SnapletInit b SnapletServiceContext
+contextSnaplet s l = makeSnaplet
   "ServiceContext"
   "A snaplet providing the service context of the user stories"
   Nothing $
   liftIO $ do
-    ref <- newIORef s
+    ref <- newIORef (s,l)
     return $! SnapletServiceContext ref
 
 getServiceContext :: Handler b SnapletServiceContext ServiceContext
 getServiceContext = do
+  SnapletServiceContext ref <- get
+  fmap fst $ liftIO . readIORef $ ref
+
+getLogoutDaemon :: Handler b SnapletServiceContext LogoutDaemon
+getLogoutDaemon = do
+  SnapletServiceContext ref <- get
+  fmap snd $ liftIO . readIORef $ ref
+
+getServiceContextAndLogoutDaemon :: Handler b SnapletServiceContext (ServiceContext, LogoutDaemon)
+getServiceContextAndLogoutDaemon = do
   SnapletServiceContext ref <- get
   liftIO . readIORef $ ref
 
