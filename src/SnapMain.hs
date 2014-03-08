@@ -13,6 +13,7 @@ import           System.IO.Temp (createTempDirectory)
 
 import           Bead.Configuration
 import qualified Bead.Controller.Logging as L
+import           Bead.Controller.LogoutDaemon
 import           Bead.Controller.ServiceContext as S
 import           Bead.Controller.UserStories (runUserStory, testAgentComments)
 import           Bead.Domain.Entities (UserRegInfo(..), TimeZone(..))
@@ -111,14 +112,17 @@ readAdminUser = do
 startService :: Config -> AppInitTasks -> IO ()
 startService config appInitTasks = do
   userActionLogs <- creating "logger" $ createSnapLogger . userActionLogFile $ config
+  let userActionLogger = snapLogger userActionLogs
 
-  context <- creating "service context" $ createContext (snapLogger userActionLogs)
+  context <- creating "service context" $ createContext userActionLogger
 
   tempDir <- creating "temporary directory" createBeadTempDir
 
-  creating "test comments agent" $ startTestCommentsAgent (snapLogger userActionLogs) 30 5 {-s-} context
+  creating "test comments agent" $ startTestCommentsAgent userActionLogger 30 5 {-s-} context
+  logoutDaemon <- creating "logout daemin" $
+    startLogoutDaemon userActionLogger (sessionTimeout config) 30 {-s-} (userContainer context)
 
-  serveSnaplet defaultConfig (appInit config appInitTasks context tempDir)
+  serveSnaplet defaultConfig (appInit config appInitTasks context logoutDaemon tempDir)
   stopLogger userActionLogs
   removeDirectoryRecursive tempDir
   where

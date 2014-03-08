@@ -1,7 +1,6 @@
-{-# LANGUAGE CPP #-}
 module Bead.Invariants where
 
-import Control.Monad (join, mapM_)
+import Control.Monad (forM_, join, mapM_)
 
 -- * Invariants for testing
 
@@ -57,3 +56,9 @@ testAssertion = putStrLn . assertionMap check checkOracle where
 testAssertions :: (Eq a, Show a) => [Assertion a] -> IO ()
 testAssertions = mapM_ testAssertion
 
+testUnitTests :: UnitTests -> IO ()
+testUnitTests (UnitTests uts) = do
+  forM_ uts $ \(name, passed) ->
+    putStrLn $ if passed
+      then concat ["[PASSED] ", name]
+      else concat ["[FAILED] ", name]

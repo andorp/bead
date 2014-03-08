@@ -14,6 +14,7 @@ import qualified Data.Map as Map
 
 import Bead.Configuration (Config(..))
 import Bead.Domain.Entities (UserRegInfo)
+import Bead.Controller.LogoutDaemon
 import Bead.Controller.ServiceContext as S
 
 import Bead.View.Snap.Application as A
@@ -41,8 +42,8 @@ usersJson = "users.json"
 -- Nothing means there is no additional init task to be done.
 type AppInitTasks = Maybe UserRegInfo
 
-appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> FilePath -> SnapletInit App App
-appInit config user s tempDir = makeSnaplet "bead" description dataDir $ do
+appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> LogoutDaemon -> FilePath -> SnapletInit App App
+appInit config user s logoutDaemon tempDir = makeSnaplet "bead" description dataDir $ do
 
   copyDataContext
 
@@ -64,7 +65,7 @@ appInit config user s tempDir = makeSnaplet "bead" description dataDir $ do
   as <- nestSnaplet "auth" auth $
           initSafeJsonFileAuthManager defAuthSettings sessionManager usersJson
 
-  ss <- nestSnaplet "context" A.serviceContext $ contextSnaplet s
+  ss <- nestSnaplet "context" A.serviceContext $ contextSnaplet s logoutDaemon
 
   ds <- nestSnaplet "dictionary" dictionaryContext $
           dictionarySnaplet dictionaries (Language $ defaultLoginLanguage config)
