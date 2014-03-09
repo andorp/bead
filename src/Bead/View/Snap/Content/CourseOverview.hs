@@ -30,7 +30,7 @@ courseSubmissionsPage = withUserState $ \s -> do
   now <- liftIO $ getCurrentTime
   (stc,sti) <- userStory $ do
     stc <- submissionTableContext
-    sti <- Story.courseSubmissionTable ck
+    sti <- sortUserLines <$> Story.courseSubmissionTable ck
     return (stc, sti)
   renderPagelet . withUserFrame s . content $ CourseSubmissions now stc sti
 
