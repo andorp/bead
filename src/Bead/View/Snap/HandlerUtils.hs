@@ -339,9 +339,12 @@ logout = do
 
     Just authUser -> do
       let unameFromAuth = usernameFromAuthUser authUser
-      context <- withTop serviceContext $ getServiceContext
+      (context, logoutDaemon) <- withTop serviceContext $ getServiceContextAndLogoutDaemon
       let users = userContainer context
       token <- sessionToken
-      liftIO $ users `userLogsOut` (userToken (unameFromAuth, token))
+      liftIO $ do
+        let usrToken = userToken (unameFromAuth, token)
+        users `userLogsOut` usrToken
+        userLogout logoutDaemon usrToken
       resetPrivateSessionData
       withTop auth A.logout
