@@ -252,6 +252,7 @@ translationList =
   , Msg_Home_CourseAdministration_Info ()
   , Msg_Home_NoCoursesYet ()
   , Msg_Home_SubmissionTable_Info ()
+  , Msg_Home_CourseAdministration ()
   , Msg_Home_CourseSubmissionTableList_Info ()
   , Msg_Home_GroupAdminTasks ()
   , Msg_Home_NoGroupsYet ()

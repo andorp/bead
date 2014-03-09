@@ -298,11 +298,14 @@ assignmentCreationMenu
   -> IHtml
 assignmentCreationMenu courses groups = submissionTableInfoCata courseMenu groupMenu
   where
-    groupMenu _n _c _us _as _uls _ans _ck gk = maybe
+    groupMenu _n _c _us _as _uls _ans ck gk = maybe
       (return (return ()))
       (const $ do
         msg <- getI18N
-        return (navigationWithRoute msg [P.NewGroupAssignment gk]))
+        return . navigationWithRoute msg $
+          case Map.lookup ck courses of
+            Nothing -> [P.NewGroupAssignment gk]
+            Just _  -> [P.NewGroupAssignment gk, P.NewCourseAssignment ck] )
       (Map.lookup gk groups)
 
     courseMenu _n _c _us _as _uls _ans ck = maybe

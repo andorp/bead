@@ -121,15 +121,6 @@ homeContent now d = do
       H.h3 . fromString . msg $ Msg_Home_GroupAdminTasks "Teacher Menu"
       when (not hasGroup) $ (fromString $ msg $ Msg_Home_NoGroupsYet "There are no groups.")
     when ((courseAdminUser r) || (groupAdminUser r)) $ do
-      when hasCourse $ H.p $ do
-        H.p $ fromString . msg $ Msg_Home_CourseSubmissionTableList_Info $ concat
-          [ "Submission table for courses can be found on separate pages, please click on the "
-          , "name of a course."
-          ]
-        H.ul ! A.style "list-style-type: none" $ do
-          let courseList = sortBy (compareHun `on` (courseName . snd)) $ Map.toList $ administratedCourseMap d
-          forM_ courseList $ \(ck, c) ->
-            H.li $ linkWithText (routeOf (P.CourseOverview ck)) (courseName c)
       when hasGroup $ H.p $ do
         when (not . null $ concatMap submissionTableInfoAssignments $ sTables d) $ do
           H.p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
@@ -138,6 +129,16 @@ homeContent now d = do
             , "then clicking on the button."
             ]
         i18n msg $ htmlSubmissionTables d now
+      when hasCourse $ H.p $ do
+        H.h3 $ fromString . msg $ Msg_Home_CourseAdministration "Course Administration"
+        H.p $ fromString . msg $ Msg_Home_CourseSubmissionTableList_Info $ concat
+          [ "Submission table for courses can be found on separate pages, please click on the "
+          , "name of a course."
+          ]
+        H.ul ! A.style "list-style-type: none" $ do
+          let courseList = sortBy (compareHun `on` (courseName . snd)) $ Map.toList $ administratedCourseMap d
+          forM_ courseList $ \(ck, c) ->
+            H.li $ linkWithText (routeOf (P.CourseOverview ck)) (courseName c)
     when (courseAdminUser r && hasCourse) $ H.p $ do
       H.p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
         [ "New groups for courses may be created in the Course Settings menu.  Teachers may be also assigned to "
