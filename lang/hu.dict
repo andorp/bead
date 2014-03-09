@@ -214,6 +214,7 @@ DictionaryFile {
     , Msg_Home_NewSolution { trans = "Új megoldás" }
     , Msg_Home_AdminTasks { trans = "Rendszergazdai feladatok" }
     , Msg_Home_CourseAdminTasks { trans = "Tárgyfelelősi feladatok" }
+    , Msg_Home_CourseAdministration { trans = "Tárgyi adminisztráció" }
     , Msg_Home_CourseAdministration_Info { trans = "A tárgyhoz új csoportokat a Tárgyi beállítások almenüben lehet létrehozni.  Ugyanitt lehet egyúttal az egyes csoportokhoz oktatókat rendelni." }
     , Msg_Home_NoCoursesYet { trans = "Még nincsenek tárgyak!  Meg kell kérni az adminisztrátort, hogy rendeljen hozzánk tárgyat!" }
     , Msg_Home_SubmissionTable_Info { trans = "A feladat sorszámára kattintva módosítható már kiírt feladat, ha van jogosultságunk a feladat módosításához (a nevét ld. tooltipben).  Hallgatókat törölhetőek kurzusról vagy csoportból a Törlés oszlopban bejelölve, majd a gombra kattintva." }

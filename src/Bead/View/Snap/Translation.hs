@@ -247,6 +247,7 @@ data Translation a
   | Msg_Home_GroupAdminTasks { trans :: a }
   | Msg_Home_NoGroupsYet { trans :: a }
   | Msg_Home_SubmissionTable_Info { trans :: a }
+  | Msg_Home_CourseAdministration { trans :: a }
   | Msg_Home_CourseSubmissionTableList_Info { trans :: a }
   | Msg_Home_StudentTasks { trans :: a }
   | Msg_Home_HasNoRegisteredCourses { trans :: a }
