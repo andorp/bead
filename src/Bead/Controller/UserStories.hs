@@ -102,6 +102,8 @@ runUserStory context i18n userState
 --   ANSWER:   No, the user can log in once at a time
 login :: Username -> String -> UserStory ()
 login username token = do
+  withUsername username $ \uname ->
+    logMessage INFO $ concat [uname, " is trying to login, with session ", token, " ."]
   usrContainer <- asksUserContainer
   validUser <- withPersist $ flip R.doesUserExist username
   notLoggedIn  <- liftIO $ isUserLoggedIn usrContainer (userToken (username, token))
@@ -743,9 +745,9 @@ logMessage level msg = do
     logMsg preffix =
       asksLogger >>= (\lgr -> (liftIO $ log lgr level $ join [preffix, " ", msg, "."]))
 
-    userNotLoggedIn    = logMsg "Not logged in user!"
-    registration       = logMsg "Registration"
-    testAgent          = logMsg "Test Agent"
+    userNotLoggedIn    = logMsg "[USER NOT LOGGED IN]"
+    registration       = logMsg "[REGISTRATION]"
+    testAgent          = logMsg "[TEST AGENT]"
     loggedIn u _ _ _ t _ _ = logMsg (join [str u, " ", t])
 
 

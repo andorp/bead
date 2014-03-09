@@ -377,6 +377,9 @@ newtype Username = Username String
 usernameCata :: (String -> a) -> Username -> a
 usernameCata f (Username u) = f u
 
+withUsername :: Username -> (String -> a) -> a
+withUsername (Username u) f = f u
+
 class AsUsername c where
   asUsername :: c -> Username
 
