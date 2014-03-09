@@ -19,7 +19,8 @@ their sessions without inactivating it by logging out from the service
 import           Prelude hiding (log)
 
 import           Control.Concurrent
-import           Control.Monad (forM)
+import           Control.Monad (forM, when)
+import           Data.IORef
 import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Maybe (isJust)
@@ -102,25 +103,39 @@ data LogoutDaemon = LogoutDaemon {
 startLogoutDaemon :: Logger -> Int -> Int -> UserContainer UserState -> IO LogoutDaemon
 startLogoutDaemon logger dt inv container = do
   varQueue <- newMVar emptyQueue
+  ldInfoRef <- newIORef (0,0,0)
 
   let invMs = secondsToMicroseconds inv
 
+  -- Activated by other thread, when the given user has some activity
   let activity usrToken now =
         modifyMVar_ varQueue (return . updateTimeout usrToken now dt)
 
+  -- The daemon checks the timeout queue and logs out the users from
+  -- time to time
   let daemon = do
         now <- getCurrentTime
-        msg <- modifyMVar varQueue $ \queue -> do
+        -- Log out all the timed out user from the user container
+        (userMapSize, noOfUsers) <- modifyMVar varQueue $ \queue -> do
           let (queue', users) = usersLogout now queue
+              usersMapSize = withQueue queue' $ \_queue usersMap -> Map.size usersMap
+              noOfUsers    = length users
           forM users $ \user -> userLogsOut container user
-          let msg' = withQueue queue' $ \_queue usersMap ->
-                      concat [ "LOGOUT DAEMON: Number of users logged in: ", show $ Map.size usersMap
-                             , ". Number of users logging out: ", show $ length users
-                             ]
-          return (queue', msg')
+          return (queue', (usersMapSize, noOfUsers))
+        -- Checks if there is a difference from the last invocation in
+        -- the stored information
         after <- getCurrentTime
         let delta = round' (1000 * diffUTCTime after now)
-        log logger INFO $ concat [msg, " in ", show delta, "ms."]
+            actLDInfo = (userMapSize, noOfUsers, delta)
+        prevLDInfo <- readIORef ldInfoRef
+        when (prevLDInfo /= actLDInfo) $ do
+          -- If there is a difference update the info and log
+          writeIORef ldInfoRef actLDInfo
+          let msg = concat [ "LOGOUT DAEMON: Number of users logged in: ", show userMapSize
+                           , ". Number of users logging out: ", show noOfUsers
+                           , " in ", show delta, "ms."
+                           ]
+          log logger INFO msg
         threadDelay invMs
         daemon
 
