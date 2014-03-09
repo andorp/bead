@@ -85,6 +85,16 @@ updateTimeout user now delta = queueCata update where
               PQueue.filterWithKey (\time' user' -> not (time == time' && user == user')) queue)
            userMap'
 
+-- Removes the user from the queue
+removeUser :: (Ord u) => u -> Queue u -> Queue u
+removeUser user = queueCata remove where
+  remove queue userMap = case Map.lookup user userMap of
+    Nothing   -> Queue queue userMap
+    Just time ->
+      let userMap' = Map.delete user userMap
+          queue'   = PQueue.filterWithKey (\time' user' -> not (time == time' && user == user')) queue
+      in Queue queue' userMap'
+
 -- Returns True if the user is in the queue otherwise False
 isUserInQueue :: (Ord u) => u -> Queue u -> Bool
 isUserInQueue user = queueCata $ \_queue userMap -> isJust $ Map.lookup user userMap
@@ -95,6 +105,8 @@ isUserInQueue user = queueCata $ \_queue userMap -> isJust $ Map.lookup user use
 data LogoutDaemon = LogoutDaemon {
     userActivity :: UsrToken -> UTCTime -> IO ()
     -- ^ Updates the user activity at the given time of the call
+  , userLogout :: UsrToken -> IO ()
+    -- ^ Deletes the information related to the user
   }
 
 -- Start a logout deamon, which logs the events with the logger, the default
@@ -110,6 +122,10 @@ startLogoutDaemon logger dt inv container = do
   -- Activated by other thread, when the given user has some activity
   let activity usrToken now =
         modifyMVar_ varQueue (return . updateTimeout usrToken now dt)
+
+  -- Activated by other thread, when the given user logs out
+  let userlogout usrToken =
+        modifyMVar_ varQueue (return . removeUser usrToken)
 
   -- The daemon checks the timeout queue and logs out the users from
   -- time to time
@@ -140,7 +156,7 @@ startLogoutDaemon logger dt inv container = do
         daemon
 
   forkIO $ daemon
-  return $ LogoutDaemon activity
+  return $ LogoutDaemon activity userlogout
   where
     secondsToMicroseconds = (* 1000000)
 
@@ -197,6 +213,21 @@ unitTests = UnitTests [
           step $ updateTimeout user1 (utcTimer 0) dt10
           step $ updateTimeout user2 (utcTimer 1) dt10
           info $ usersLogout (utcTimer 20)) == Set.fromList [user1, user2])
+  , ("Non logged in user logs out",
+      (snd . runTest $ do
+         step $ removeUser user1
+         info $ usersLogout (utcTimer 20)) == [])
+  , ("Logged in user logs out",
+      (snd . runTest $ do
+         step $ updateTimeout user1 (utcTimer 0) dt10
+         step $ removeUser user1
+         info $ usersLogout (utcTimer 20)) == [])
+  , ("One user logs out",
+      (snd . runTest $ do
+         step $ updateTimeout user1 (utcTimer 0) dt10
+         step $ updateTimeout user2 (utcTimer 0) dt10
+         step $ removeUser user2
+         info $ usersLogout (utcTimer 20)) == [user1])
   ]
 
 #endif
