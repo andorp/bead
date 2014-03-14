@@ -18,7 +18,6 @@ import           Bead.Controller.ServiceContext as S
 import           Bead.Controller.UserStories (runUserStory, testAgentComments)
 import           Bead.Domain.Entities (UserRegInfo(..), TimeZone(..))
 import           Bead.Persistence.Persist (initPersistence, isPersistenceSetUp)
-import qualified Bead.Persistence.NoSQLDir as P
 import           Bead.View.Snap.AppInit
 import           Bead.View.Snap.Logger
 import           Bead.View.Snap.Validators hiding (toLower)
@@ -29,11 +28,11 @@ import           Bead.View.Snap.Translation (trans)
 createContext :: L.Logger -> IO ServiceContext
 createContext logger = do
   userContainer <- ioUserContainer
-  isPersistSetUp <- isPersistenceSetUp P.noSqlDirPersist
+  isPersistSetUp <- isPersistenceSetUp
   case isPersistSetUp of
     True -> return ()
-    False -> initPersistence P.noSqlDirPersist
-  S.serviceContext P.noSqlDirPersist userContainer logger
+    False -> initPersistence
+  S.serviceContext userContainer logger
 
 -- Reads the command line arguments, interprets the init tasks and start
 -- the service with the given config

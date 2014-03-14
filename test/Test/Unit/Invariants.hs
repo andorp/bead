@@ -4,41 +4,36 @@ module Test.Unit.Invariants (
 
 -- * Bead imports
 
-import Bead.Invariants
+import Control.Monad (join)
 
 -- * Test Framework imports
 
-import Test.HUnit hiding (Test(..), Assertion (..))
-import Test.QuickCheck.Arbitrary
-import Test.QuickCheck.Monadic
-import Test.Framework (Test(..), testGroup)
-import Test.Framework.Providers.HUnit
-import Test.Framework.Providers.QuickCheck2
+import           Test.HUnit hiding (Test(..), Assertion (..))
+import           Test.QuickCheck.Arbitrary
+import           Test.QuickCheck.Monadic
+import           Test.Framework (Test(..), testGroup)
+import           Test.Framework.Providers.HUnit
+import           Test.Framework.Providers.QuickCheck2
 
--- * Generators
-
-import Test.Quick.PageGen
-import Test.Quick.RolePermissionGen
-
--- * Unit tests and invariants import from Bead modules
-
-import qualified Bead.View.Snap.RouteOf as R (routeOfInvariants)
-import qualified Bead.View.Snap.PageHandlers as PH (pageHandlersInvariants)
-import qualified Bead.Controller.Pages as P (invariants)
+import           Bead.Configuration (initTaskAssertions)
 import qualified Bead.Controller.LogoutDaemon as LD (unitTests)
+import qualified Bead.Controller.Pages as P (invariants)
 import qualified Bead.Domain.Entities as E (roleInvariants, assignmentTests, compareHunTests)
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQLDirFile as L (unitTests)
+import           Bead.Invariants
 import qualified Bead.View.Snap.Content.All as VA (invariants)
+import           Bead.View.Snap.Content.Home
+import qualified Bead.View.Snap.EmailTemplate as E (unitTests)
 import qualified Bead.View.Snap.Pagelets as VP (invariants)
+import qualified Bead.View.Snap.PageHandlers as PH (pageHandlersInvariants)
+import qualified Bead.View.Snap.RouteOf as R (routeOfInvariants)
 import qualified Bead.View.Snap.Session as VS (unitTests)
 import qualified Bead.View.Snap.TemplateAndComponentNames as TC (unitTests)
 import qualified Bead.View.Snap.Validators as V (assertEmailAddress)
-import qualified Bead.View.Snap.EmailTemplate as E (unitTests)
-import Bead.View.Snap.Content.Home
-import Bead.Configuration (initTaskAssertions)
+import           Test.Quick.PageGen()
+import           Test.Quick.RolePermissionGen()
 
-import Control.Monad (join)
 
 unitTestGroup :: String -> UnitTests -> Test
 unitTestGroup name (UnitTests ts) = testGroup name
@@ -75,7 +70,7 @@ tests = [
     invariantsGroup "Route Of" R.routeOfInvariants
   , invariantsGroup "Page Handlers" PH.pageHandlersInvariants
   , invariantsGroup "Page invariants" P.invariants
-  , unitTestGroup   "Logout daemon" LG.unitTests
+  , unitTestGroup   "Logout daemon" LD.unitTests
   , invariantsGroup "Role permission invariants" RP.invariants
   , invariantsGroup "Content handler definitions" VA.invariants
   , unitTestGroup   "NoSQL untilities" L.unitTests

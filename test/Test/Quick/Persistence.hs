@@ -17,7 +17,8 @@ import System.FilePath ((</>))
 
 import Control.Monad.Transaction.TIO
 import Bead.Persistence.Persist
-import Bead.Persistence.NoSQLDir
+import Bead.Persistence.Relations
+import Bead.Persistence.NoSQLDir (referredPath)
 import Bead.Persistence.NoSQLDirFile
 
 import qualified Test.Quick.EntityGen as Gen
@@ -55,105 +56,103 @@ modification name save modify load gen = do
   assertEquals v v' (name ++ ": Modifed and load was different")
   return k
 
-persist = noSqlDirPersist
-
 assignmentSaveAndLoad = saveAndLoadIdenpotent
   "Assignment"
-  (saveAssignment persist)
-  (loadAssignment persist)
+  (saveAssignment)
+  (loadAssignment)
   (Gen.assignments startDate endDate)
 
 courseSaveAndLoad = saveAndLoadIdenpotent
   "Course"
-  (saveCourse persist)
-  (loadCourse persist)
+  (saveCourse)
+  (loadCourse)
   Gen.courses
 
 groupSaveAndLoad = do
-  ck <- saveAndLoadIdenpotent "Course" (saveCourse persist)  (loadCourse persist) Gen.courses
-  gk <- saveAndLoadIdenpotent "Group"  (saveGroup persist ck) (loadGroup persist) Gen.groups
-  gks <- runPersistCmd $ groupKeysOfCourse persist ck
+  ck <- saveAndLoadIdenpotent "Course" (saveCourse)  (loadCourse) Gen.courses
+  gk <- saveAndLoadIdenpotent "Group"  (saveGroup ck) (loadGroup) Gen.groups
+  gks <- runPersistCmd $ groupKeysOfCourse ck
   assertEquals [gk] gks "Group keys were different"
-  ck' <- runPersistCmd $ courseOfGroup persist gk
+  ck' <- runPersistCmd $ courseOfGroup gk
   assertEquals ck ck' "Course keys were different"
 
 courseAssignmentSaveAndLoad = do
-  key <- saveAndLoadIdenpotent "Courses" (saveCourse persist) (loadCourse persist) Gen.courses
+  key <- saveAndLoadIdenpotent "Courses" (saveCourse) (loadCourse) Gen.courses
   saveAndLoadIdenpotent
     "Assignment"
-    (saveCourseAssignment persist key)
-    (loadAssignment persist)
+    (saveCourseAssignment key)
+    (loadAssignment)
     (Gen.assignments startDate endDate)
 
 groupAssignmentSaveAndLoad = do
-  key <- saveAndLoadIdenpotent "Courses" (saveCourse persist) (loadCourse persist) Gen.courses
-  key1 <- saveAndLoadIdenpotent "Groups" (saveGroup persist key) (loadGroup persist) Gen.groups
+  key <- saveAndLoadIdenpotent "Courses" (saveCourse) (loadCourse) Gen.courses
+  key1 <- saveAndLoadIdenpotent "Groups" (saveGroup key) (loadGroup) Gen.groups
   saveAndLoadIdenpotent
     "Assignment"
-    (saveGroupAssignment persist key1)
-    (loadAssignment persist)
+    (saveGroupAssignment key1)
+    (loadAssignment)
     (Gen.assignments startDate endDate)
 
 userSaveAndLoad u = do
   saveAndLoadIdenpotent "User"
-    (\usr -> saveUser persist usr) (const (loadUser persist (u_username u))) (return u)
+    (\usr -> saveUser usr) (const (loadUser (u_username u))) (return u)
 
 createOrLoadUser u = do
-  exist <- runPersistCmd $ doesUserExist persist (u_username u)
+  exist <- runPersistCmd $ doesUserExist (u_username u)
   case exist of
     True  -> return ()
     False -> userSaveAndLoad u
   return u
 
 multipleGroupsForCourse = do
-  ck <- saveAndLoadIdenpotent "Course" (saveCourse persist) (loadCourse persist)  Gen.courses
-  gk1 <- saveAndLoadIdenpotent "Group" (saveGroup persist ck) (loadGroup persist) Gen.groups
-  gk2 <- saveAndLoadIdenpotent "Group" (saveGroup persist ck) (loadGroup persist) Gen.groups
-  gks <- runPersistCmd $ groupKeysOfCourse persist ck
+  ck <- saveAndLoadIdenpotent "Course" (saveCourse) (loadCourse)  Gen.courses
+  gk1 <- saveAndLoadIdenpotent "Group" (saveGroup ck) (loadGroup) Gen.groups
+  gk2 <- saveAndLoadIdenpotent "Group" (saveGroup ck) (loadGroup) Gen.groups
+  gks <- runPersistCmd $ groupKeysOfCourse ck
   assertEquals (Set.fromList gks) (Set.fromList [gk1,gk2]) "Groups key set were different"
 
 -- Tries to save and load a submission for a given user and assignment
 saveAndLoadSubmissionFor u ak =
   saveAndLoadIdenpotent "Submission"
-    (saveSubmission persist ak u) (loadSubmission persist) (Gen.submissions startDate)
+    (saveSubmission ak u) (loadSubmission) (Gen.submissions startDate)
 
 saveAndLoadSubmission = do
   ak <- groupAssignmentSaveAndLoad
   u <- pick Gen.users
   createOrLoadUser u
   sk <- saveAndLoadIdenpotent "Submission"
-          (saveSubmission persist ak (u_username u)) (loadSubmission persist) (Gen.submissions startDate)
+          (saveSubmission ak (u_username u)) (loadSubmission) (Gen.submissions startDate)
   return (ak,u,sk)
 
 
 
 assignmentAndUserOfSubmission = do
   (ak, u, sk) <- saveAndLoadSubmission
-  ak' <- runPersistCmd $ assignmentOfSubmission persist sk
+  ak' <- runPersistCmd $ assignmentOfSubmission sk
   assertEquals ak ak' "Assertion keys were different"
-  un <- runPersistCmd $ usernameOfSubmission persist sk
+  un <- runPersistCmd $ usernameOfSubmission sk
   assertEquals (u_username u) un "Username were different"
 
 saveAndLoadComment = do
   (ak, u, sk) <- saveAndLoadSubmission
-  ck <- saveAndLoadIdenpotent "Comment" (saveComment persist sk) (loadComment persist) (Gen.comments startDate)
-  sk' <- runPersistCmd $ submissionOfComment persist ck
+  ck <- saveAndLoadIdenpotent "Comment" (saveComment sk) (loadComment) (Gen.comments startDate)
+  sk' <- runPersistCmd $ submissionOfComment ck
   assertEquals sk sk' "Submission keys were different"
 
 evaluationConfigForSubmission sk = do
-  ak <- runPersistCmd $ assignmentOfSubmission persist sk
-  s <- runPersistCmd $ loadSubmission persist sk
-  key <- runPersistCmd $ courseOrGroupOfAssignment persist ak
+  ak <- runPersistCmd $ assignmentOfSubmission sk
+  s <- runPersistCmd $ loadSubmission sk
+  key <- runPersistCmd $ courseOrGroupOfAssignment ak
   either
-    (runPersistCmd . fmap courseEvalConfig . loadCourse persist)
-    (runPersistCmd . fmap groupEvalConfig  . loadGroup  persist)
+    (runPersistCmd . fmap courseEvalConfig . loadCourse)
+    (runPersistCmd . fmap groupEvalConfig  . loadGroup )
     key
 
 evaluationGroupSaveAndLoad = do
   (ak, u, sk) <- saveAndLoadSubmission
   cfg <- evaluationConfigForSubmission sk
   saveAndLoadIdenpotent
-    "Evaluation" (saveEvaluation persist sk) (loadEvaluation persist) (Gen.evaluations cfg)
+    "Evaluation" (saveEvaluation sk) (loadEvaluation) (Gen.evaluations cfg)
 
 success n = stdArgs { maxSuccess = n, chatty = False }
 
@@ -207,7 +206,7 @@ groups n cs = do
   list <- createListRef
   quick n $ do
     ck <- pick $ elements cs
-    gk <- saveAndLoadIdenpotent "Group" (saveGroup persist ck) (loadGroup persist) (Gen.groups)
+    gk <- saveAndLoadIdenpotent "Group" (saveGroup ck) (loadGroup) (Gen.groups)
     run $ insertListRef list gk
   listInRef list
 
@@ -218,7 +217,7 @@ groupAssignmentGen n gs = do
   quick n $ do
     gk <- pick $ elements gs
     ak <- saveAndLoadIdenpotent "Group assignment"
-      (saveGroupAssignment persist gk) (loadAssignment persist) (Gen.assignments startDate endDate)
+      (saveGroupAssignment gk) (loadAssignment) (Gen.assignments startDate endDate)
     run $ insertListRef list ak
   listInRef list
 
@@ -229,7 +228,7 @@ courseAssignmentGen n gs = do
   quick n $ do
     gk <- pick $ elements gs
     ak <- saveAndLoadIdenpotent "Group assignment"
-      (saveCourseAssignment persist gk) (loadAssignment persist) (Gen.assignments startDate endDate)
+      (saveCourseAssignment gk) (loadAssignment) (Gen.assignments startDate endDate)
     run $ insertListRef list ak
   listInRef list
 
@@ -263,7 +262,7 @@ submissions n us as = do
     u <- pick $ elements us
     ak <- pick $ elements as
     sk <- saveAndLoadIdenpotent "Submission"
-      (saveSubmission persist ak u) (loadSubmission persist) (Gen.submissions startDate)
+      (saveSubmission ak u) (loadSubmission) (Gen.submissions startDate)
     run $ insertListRef list ((u,ak),sk)
   listInRef list
 
@@ -275,7 +274,7 @@ evaluations n ss = do
     sk <- pick $ elements ss
     cfg <- evaluationConfigForSubmission sk
     ek <- saveAndLoadIdenpotent "Evaluation"
-      (saveEvaluation persist sk) (loadEvaluation persist) (Gen.evaluations cfg)
+      (saveEvaluation sk) (loadEvaluation) (Gen.evaluations cfg)
     run $ insertListRef list ek
   listInRef list
 
@@ -286,7 +285,7 @@ testScripts n cs = do
   quick n $ do
     ck <- pick $ elements cs
     tsk <- saveAndLoadIdenpotent "TestScript"
-      (saveTestScript persist ck) (loadTestScript persist) (Gen.testScripts)
+      (saveTestScript ck) (loadTestScript) (Gen.testScripts)
     run $ insertListRef list tsk
   listInRef list
 
@@ -297,11 +296,11 @@ testCases n tcs as = do
   quick n $ do
     tsk <- pick $ elements tcs
     ak  <- pick $ elements as
-    mtk <- runPersistCmd $ testCaseOfAssignment persist ak
+    mtk <- runPersistCmd $ testCaseOfAssignment ak
     case mtk of
       Just tk -> return ()
       Nothing -> do tck <- saveAndLoadIdenpotent "TestCase"
-                             (saveTestCase persist tsk ak) (loadTestCase persist) (Gen.testCases)
+                             (saveTestCase tsk ak) (loadTestCase) (Gen.testCases)
                     run $ insertListRef list tck
   listInRef list
 
@@ -333,7 +332,7 @@ check cleanup m = do
 
 reinitPersistence = do
   whenM (doesDirectoryExist "data") (removeDirectoryRecursive "data")
-  initPersistence persist
+  initPersistence
 
 courseAndGroupAssignments cn gn cs gs = do
   cas <- courseAssignmentGen cn cs
@@ -353,12 +352,12 @@ userAssignmentKeyTests = do
   quick 300 $ do
     u <- pick $ elements us
     gk <- pick $ elements gs
-    ck <- runPersistCmd $ courseOfGroup persist gk
-    runPersistCmd $ subscribe persist u ck gk
-    gas <- runPersistCmd $ groupAssignments persist gk
-    cas <- runPersistCmd $ courseAssignments persist ck
+    ck <- runPersistCmd $ courseOfGroup gk
+    runPersistCmd $ subscribe u ck gk
+    gas <- runPersistCmd $ groupAssignments gk
+    cas <- runPersistCmd $ courseAssignments ck
     let uas = gas ++ cas
-    as <- runPersistCmd $ fmap (maybe [] id) $ userAssignmentKeys persist u
+    as <- runPersistCmd $ fmap (maybe [] id) $ userAssignmentKeys u
     when (null as) $ assertTrue (null gas)
       "Group has assignment, but user does not see it"
     unless (or [null uas, null as]) $ assertTrue
@@ -379,7 +378,7 @@ courseOrGroupAssignmentTest = do
   let as = cas ++ gas
   quick 500 $ do
     ak <- pick $ elements as
-    k <- runPersistCmd $ courseOrGroupOfAssignment persist ak
+    k <- runPersistCmd $ courseOrGroupOfAssignment ak
     either
       (\c -> assertTrue (elem c cs) "Course is not in the courses")
       (\g -> assertTrue (elem g gs) "Group is not in the groups")
@@ -394,15 +393,15 @@ groupDescriptionTest = do
   quick 300 $ do
     groupAdmin <- pick $ elements us
     gk         <- pick $ elements gs
-    runPersistCmd $ createGroupAdmin persist groupAdmin gk
-    groupAdmins <- runPersistCmd $ groupAdmins persist gk
+    runPersistCmd $ createGroupAdmin groupAdmin gk
+    groupAdmins <- runPersistCmd $ groupAdmins gk
     assertTrue (elem groupAdmin groupAdmins) "Group admin was not in the group admins"
   quick 500 $ do
     gk <- pick $ elements gs
-    (gk', desc) <- runPersistCmd $ groupDescription persist gk
+    (gk', desc) <- runPersistCmd $ groupDescription gk
     assertEquals gk gk' "Group keys are different"
     assertTrue (not . null . gName $ desc) "Name was empty"
-    admins <- runPersistCmd $ groupAdmins persist gk
+    admins <- runPersistCmd $ groupAdmins gk
     assertTrue (length (gAdmins desc) == length admins) "Group admin numbers was different"
 
 -- Every submission has some kind of description
@@ -415,7 +414,7 @@ submissionDescTest = do
   ss <- submissionKeys <$> submissions 500 us as
   quick 500 $ do
     sk <- pick $ elements ss
-    desc <- runPersistCmd $ submissionDesc persist sk
+    desc <- runPersistCmd $ submissionDesc sk
     assertNonEmpty (eGroup desc) "Group name was empty"
     assertNonEmpty (eStudent desc) "Student name was empty"
     assertNonEmpty (eSolution desc) "Solution was empty"
@@ -435,11 +434,11 @@ courseNameAndAdminsTest = do
     u <- pick $ elements us
     c <- pick $ elements cs
     a <- pick $ elements as
-    (name, admins) <- runPersistCmd $ courseNameAndAdmins persist a
-    ek <- runPersistCmd $ courseOrGroupOfAssignment persist a
+    (name, admins) <- runPersistCmd $ courseNameAndAdmins a
+    ek <- runPersistCmd $ courseOrGroupOfAssignment a
     admins' <- either
-      (runPersistCmd . courseAdmins persist)
-      (runPersistCmd . groupAdmins persist)
+      (runPersistCmd . courseAdmins)
+      (runPersistCmd . groupAdmins)
       ek
     assertNonEmpty name "Course name was empty"
     assertTrue (length admins' == length admins) "Admin numbers are different"
@@ -457,7 +456,7 @@ submissionListDescTest = do
   quick 500 $ do
     u <- pick $ elements us
     a <- pick $ elements as
-    desc <- runPersistCmd $ submissionListDesc persist u a
+    desc <- runPersistCmd $ submissionListDesc u a
     assertNonEmpty (slGroup desc) "Group was empty"
     assertNonEmpty (assignmentDesc $ slAssignment desc) "Assignment was empty"
     assertEmpty (slTeacher desc) "There was teachers to the group"
@@ -482,15 +481,15 @@ lastEvaluationTest = do
 
 createCourseAdmins n us cs = quick n $ do
   u <- pick $ elements us
-  usr <- runPersistCmd $ loadUser persist u
+  usr <- runPersistCmd $ loadUser u
   pre (atLeastCourseAdmin . u_role $ usr)
   c <- pick $ elements cs
-  runPersistCmd $ createCourseAdmin persist u c
+  runPersistCmd $ createCourseAdmin u c
 
 createGroupAdmins n us gs = quick n $ do
   u <- pick $ elements us
   g <- pick $ elements gs
-  runPersistCmd $ createGroupAdmin persist u g
+  runPersistCmd $ createGroupAdmin u g
 
 -- Every submission has a description, this description must be loaded
 submissionDetailsDescTest = do
@@ -504,7 +503,7 @@ submissionDetailsDescTest = do
   ss <- submissionKeys <$> submissions 400 us as
   quick 1000 $ do
     sk <- pick $ elements ss
-    desc <- runPersistCmd $ submissionDetailsDesc persist sk
+    desc <- runPersistCmd $ submissionDetailsDesc sk
     assertNonEmpty (sdGroup desc) "Group name was empty"
     forM (sdTeacher desc) $ \t -> assertNonEmpty t "Admin name was empty"
     assertNonEmpty (assignmentDesc $ sdAssignment desc) "Description was empty"
@@ -527,14 +526,14 @@ submissionTablesTest = do
   quick 500 $ do
     u <- pick $ elements us
     g <- pick $ elements gs
-    c <- runPersistCmd $ courseOfGroup persist g
-    runPersistCmd $ subscribe persist u c g
+    c <- runPersistCmd $ courseOfGroup g
+    runPersistCmd $ subscribe u c g
 
   quick 1000 $ do
     u <- pick $ elements us
-    acs <- runPersistCmd $ administratedCourses persist u
-    ags <- runPersistCmd $ administratedGroups  persist u
-    ts  <- runPersistCmd $ submissionTables     persist u
+    acs <- runPersistCmd $ administratedCourses u
+    ags <- runPersistCmd $ administratedGroups  u
+    ts  <- runPersistCmd $ submissionTables     u
     forM ts $ \t -> do
       assertNonEmpty (stiCourse t) "Course name was empty"
       assertNonEmpty (show . stiEvalConfig $ t) "Evaluation config was empty"
@@ -554,11 +553,11 @@ userSubmissionDescTest = do
   quick 1000 $ do
     u <- pick $ elements us
     a <- pick $ elements as
-    desc <- runPersistCmd $ userSubmissionDesc persist u a
+    desc <- runPersistCmd $ userSubmissionDesc u a
     assertNonEmpty (usCourse desc) "Course was empty"
     assertNonEmpty (usAssignmentName desc) "Assignment name was empty"
     assertNonEmpty (usStudent desc) "Student name was empty"
-    ss <- runPersistCmd $ userSubmissions persist u a
+    ss <- runPersistCmd $ userSubmissions u a
     assertEquals
       (Set.fromList ss) (Set.fromList (map fst3 (usSubmissions desc)))
       "Submission numbers were different"
@@ -570,10 +569,10 @@ userSubmissionDescTest = do
 courseKeysTest = do
   reinitPersistence
   savedKeys  <- Set.fromList <$> courses 100
-  loadedKeys <- Set.fromList <$> (runPersistIOCmd $ courseKeys persist)
+  loadedKeys <- Set.fromList <$> (runPersistIOCmd $ courseKeys)
   assertEquals savedKeys loadedKeys "Saved and loaded courses were different"
   savedKeys2  <- Set.fromList <$> courses 50
-  loadedKeys2 <- Set.fromList <$> (runPersistIOCmd $ courseKeys persist)
+  loadedKeys2 <- Set.fromList <$> (runPersistIOCmd $ courseKeys)
   assertTrue (Set.isSubsetOf loadedKeys loadedKeys2) "Not all old course keys were in the loaded set"
   assertTrue (Set.isSubsetOf savedKeys2 loadedKeys2) "New course keys were not in the loaded set"
 
@@ -583,10 +582,10 @@ assignmentKeyTest = do
   cs <- courses 100
   gs <- groups 300 cs
   saved  <- Set.fromList <$> (courseAndGroupAssignments 150 150 cs gs)
-  loaded <- Set.fromList <$> (runPersistIOCmd $ assignmentKeys persist)
+  loaded <- Set.fromList <$> (runPersistIOCmd $ assignmentKeys)
   assertEquals saved loaded "Saved and loaded assignment keys were different"
   saved2  <- Set.fromList <$> (courseAndGroupAssignments 50 50 cs gs)
-  loaded2 <- Set.fromList <$> (runPersistIOCmd $ assignmentKeys persist)
+  loaded2 <- Set.fromList <$> (runPersistIOCmd $ assignmentKeys)
   assertTrue (Set.isSubsetOf loaded loaded2) "Not all assignment keys were in the loaded set"
   assertTrue (Set.isSubsetOf saved2 loaded2) "New assignment keys were not in the loaded set"
 
@@ -598,10 +597,10 @@ filterSubmissionsTest = do
   as <- courseAndGroupAssignments 200 200 cs gs
   us <- users 400
   saved  <- (Set.fromList . submissionKeys) <$> (submissions 500 us as)
-  loaded <- (Set.fromList . map fst) <$> (runPersistIOCmd $ filterSubmissions persist (\_ _ -> True))
+  loaded <- (Set.fromList . map fst) <$> (runPersistIOCmd $ filterSubmissions (\_ _ -> True))
   assertEquals saved loaded "Saved and loaded submission keys were different"
   saved2  <- (Set.fromList . submissionKeys) <$> (submissions 100 us as)
-  loaded2 <- (Set.fromList . map fst) <$> (runPersistIOCmd $ filterSubmissions persist (\_ _ -> True))
+  loaded2 <- (Set.fromList . map fst) <$> (runPersistIOCmd $ filterSubmissions (\_ _ -> True))
   assertTrue (Set.isSubsetOf loaded loaded2) "Not all submission keys were in the loaded set"
   assertTrue (Set.isSubsetOf saved2 loaded2) "New submission keys were not in the loaded set"
 
@@ -612,14 +611,14 @@ updatePwdTest = do
   quick 1000 $ do
     u <- pick Gen.users
     let username = u_username u
-    exist <- runPersistCmd $ doesUserExist persist username
+    exist <- runPersistCmd $ doesUserExist username
     pre (not exist)
-    runPersistCmd $ saveUser persist u
---    loginable <- runPersistCmd $ canUserLogin persist username pwd
+    runPersistCmd $ saveUser u
+--    loginable <- runPersistCmd $ canUserLogin username pwd
 --    assertTrue loginable "User is not loginable"
     p <- pick Gen.passwords
---    runPersistCmd $ updatePwd persist username
---    loginable <- runPersistCmd $ canUserLogin persist username p
+--    runPersistCmd $ updatePwd username
+--    loginable <- runPersistCmd $ canUserLogin username p
 --    assertTrue loginable "User is not loginable #2"
     return ()
 
@@ -629,12 +628,12 @@ userCanLoginTest = do
   quick 1000 $ do
     u <- pick Gen.users
     let username = u_username u
-    exist <- runPersistCmd $ doesUserExist persist username
+    exist <- runPersistCmd $ doesUserExist username
     pre (not exist)
-    runPersistCmd $ saveUser persist u
---    loginable <- runPersistCmd $ canUserLogin persist username pwd
+    runPersistCmd $ saveUser u
+--    loginable <- runPersistCmd $ canUserLogin username pwd
 --    assertTrue loginable "User is not loginable"
---    loginable <- runPersistCmd $ canUserLogin persist username 
+--    loginable <- runPersistCmd $ canUserLogin username 
 --    assertFalse loginable "User could login with invalid password"
     return ()
 
@@ -645,10 +644,10 @@ modifyAssignmentsTest = do
   as <- courseAndGroupAssignments 200 200 cs gs
   quick 1000 $ do
     ak <- pick $ elements as
-    a0 <- runPersistCmd $ loadAssignment persist ak
+    a0 <- runPersistCmd $ loadAssignment ak
     a  <- pick (Gen.assignments startDate endDate)
-    runPersistCmd $ modifyAssignment persist ak a
-    a1 <- runPersistCmd $ loadAssignment persist ak
+    runPersistCmd $ modifyAssignment ak a
+    a1 <- runPersistCmd $ loadAssignment ak
     assertEquals a a1 "Modified and loaded assignments were differents"
 
 -- Modified evaluations must be untouched after loading them
@@ -661,11 +660,11 @@ modifyEvaluationTest = do
   es <- evaluations 600 ss
   quick 1000 $ do
     ek <- pick $ elements es
-    sk <- runPersistCmd $ submissionOfEvaluation persist ek
+    sk <- runPersistCmd $ submissionOfEvaluation ek
     cfg <- evaluationConfigForSubmission sk
     e <- pick $ Gen.evaluations cfg
-    runPersistCmd $ modifyEvaluation persist ek e
-    e1 <- runPersistCmd $ loadEvaluation persist ek
+    runPersistCmd $ modifyEvaluation ek e
+    e1 <- runPersistCmd $ loadEvaluation ek
     assertEquals e e1 "Modified and loaded evaluations were different"
 
 -- Subscribe users to groups
@@ -674,8 +673,8 @@ subscribeUsers n us gs =
     u <- pick $ elements us
     g <- pick $ elements gs
     runPersistCmd $ do
-      c <- courseOfGroup persist g
-      subscribe persist u c g
+      c <- courseOfGroup g
+      subscribe u c g
 
 -- Test if the users make unsubscribe from the courses by the admin
 deleteUsersFromCourseTest = do
@@ -685,7 +684,7 @@ deleteUsersFromCourseTest = do
   subscribeUsers 500 us gs
   quick 1000 $ do
     u <- pick $ elements us
-    ucs <- runPersistCmd $ userCourses persist u
+    ucs <- runPersistCmd $ userCourses u
     case ucs of
       [] -> testEmptyCourse cs u
       [c] -> testOneCourse u c
@@ -695,21 +694,21 @@ deleteUsersFromCourseTest = do
     -- produce error and the number of the subscriptions does not change
     testEmptyCourse cs u = do
       c <- pick $ elements cs
-      runPersistCmd $ deleteUserFromCourse persist c u
-      ucs <- runPersistCmd $ userCourses persist u
+      runPersistCmd $ deleteUserFromCourse c u
+      ucs <- runPersistCmd $ userCourses u
       assertEquals [] ucs "Subscirbed to some course."
 
     -- Test if subscribing from the course produces an empty course list
     testOneCourse u c = do
-      runPersistCmd $ deleteUserFromCourse persist c u
-      ucs <- runPersistCmd $ userCourses persist u
+      runPersistCmd $ deleteUserFromCourse c u
+      ucs <- runPersistCmd $ userCourses u
       assertEquals [] ucs "Subscirbed to some course."
 
     -- Check if the deletion of one course removes only the deleted course
     testMoreCourses u cs' = do
       c <- pick $ elements cs'
-      runPersistCmd $ deleteUserFromCourse persist c u
-      ucs <- runPersistCmd $ userCourses persist u
+      runPersistCmd $ deleteUserFromCourse c u
+      ucs <- runPersistCmd $ userCourses u
       assertEquals ((length cs') - 1) (length ucs) "No only one courses was deleted"
       assertEquals (cs' \\ [c]) ucs "No the right course was deleted"
 
@@ -721,10 +720,10 @@ deleteUsersFromCourseNegativeTest = do
   -- Tries to subscribe students from groups that are not attended in
   quick 1000 $ do
     u <- pick $ elements us
-    ucs <- runPersistCmd $ userCourses persist u
+    ucs <- runPersistCmd $ userCourses u
     c' <- pick $ elements (cs \\ ucs)
-    runPersistCmd $ deleteUserFromCourse persist c' u
-    ucs' <- runPersistCmd $ userCourses persist u
+    runPersistCmd $ deleteUserFromCourse c' u
+    ucs' <- runPersistCmd $ userCourses u
     assertEquals ucs ucs' "User's course list has changed"
 
 unsubscribeFromSubscribedGroupsTest = do
@@ -734,20 +733,20 @@ unsubscribeFromSubscribedGroupsTest = do
   subscribeUsers 500 us gs
   quick 1000 $ do
     u <- pick $ elements us
-    ugs <- runPersistCmd $ userGroups persist u
+    ugs <- runPersistCmd $ userGroups u
     when (not $ null ugs) $ do
     g <- pick $ elements ugs
     join $ runPersistCmd $ do
-      ucsb <- userCourses persist u
-      ugsb <- userGroups  persist u
-      c <- courseOfGroup  persist g
-      unregscb <- unsubscribedFromCourse persist c
-      unregsgb <- unsubscribedFromGroup  persist g
-      unsubscribe persist u c g
-      ucsa <- userCourses persist u
-      ugsa <- userGroups  persist u
-      unregsca <- unsubscribedFromCourse persist c
-      unregsga <- unsubscribedFromGroup  persist g
+      ucsb <- userCourses u
+      ugsb <- userGroups  u
+      c <- courseOfGroup  g
+      unregscb <- unsubscribedFromCourse c
+      unregsgb <- unsubscribedFromGroup  g
+      unsubscribe u c g
+      ucsa <- userCourses u
+      ugsa <- userGroups  u
+      unregsca <- unsubscribedFromCourse c
+      unregsga <- unsubscribedFromGroup  g
       return $ case g `elem` ugsb of
         True -> do
           assertEquals (length ugsa) (length ugsb - 1) "User is not unsubscribed from group"
@@ -768,10 +767,10 @@ saveLoadAndModifyTestScriptsTest = do
     ts <- pick $ elements tss
     nts <- pick $ Gen.testScripts
     join $ runPersistCmd $ do
-      modifyTestScript persist ts nts
-      nts' <- loadTestScript persist ts
-      ck <- courseOfTestScript persist ts
-      ctss <- testScriptsOfCourse persist ck
+      modifyTestScript ts nts
+      nts' <- loadTestScript ts
+      ck <- courseOfTestScript ts
+      ctss <- testScriptsOfCourse ck
       return $ do
         assertEquals nts nts' "Modifing the test script failed"
         assertTrue (elem ts ctss) "Test Script is not in it's course"
@@ -788,10 +787,10 @@ saveLoadAndModifyTestCasesTest = do
     tc  <- pick $ elements tcs
     ntc <- pick $ Gen.testCases
     join $ runPersistCmd $ do
-      modifyTestCase persist tc ntc
-      ntc' <- loadTestCase persist tc
-      ak <- assignmentOfTestCase persist tc
-      asg <- loadAssignment persist ak
+      modifyTestCase tc ntc
+      ntc' <- loadTestCase tc
+      ak <- assignmentOfTestCase tc
+      asg <- loadAssignment ak
       return $ do
         assertEquals ntc ntc' "Modification of the test case has failed"
         assertTrue (not . null $ assignmentName asg) "Invalid assignment"
@@ -812,24 +811,24 @@ userFileHandlingTest = do
     u <- pick $ elements us
     f <- pick $ elements fs
     fn <- UsersFile <$> (pick $ vectorOf 8 $ elements ['a'..'z'])
-    ufs <- map fst <$> (runPersistCmd $ listFiles persist u)
+    ufs <- map fst <$> (runPersistCmd $ listFiles u)
     join $ case fn `elem` ufs of
       True  -> testOverwriteFile u f fn ufs
       False -> testNewFile u f fn ufs
   where
     testNewFile u f fn ufs = runPersistCmd $ do
-      copyFile persist u f fn
-      ufs' <- map fst <$> listFiles persist u
-      path <- getFile persist u fn
+      copyFile u f fn
+      ufs' <- map fst <$> listFiles u
+      path <- getFile u fn
       return $ do
         assertSetEquals (fn:ufs) ufs' "New file was not copied into the user's dir"
         assertTrue (length path > 0) "Invalid path"
 
     testOverwriteFile u f fn ufs = runPersistCmd $ do
-      path  <- getFile persist u fn
-      copyFile persist u f fn
+      path  <- getFile u fn
+      copyFile u f fn
       content <- hasNoRollback $ readFile f
-      path' <- getFile persist u fn
+      path' <- getFile u fn
       content' <- hasNoRollback $ readFile path'
       return $ do
         assertEquals path path' "The overwritted file path's has changed"
@@ -843,19 +842,19 @@ userOverwriteFileTest = do
   forM_ us $ \u -> quick 5 $ do
     f <- pick $ elements fs
     fn <- UsersFile <$> (pick $ vectorOf 8 $ elements ['a'..'z'])
-    runPersistCmd $ copyFile persist u f fn
+    runPersistCmd $ copyFile u f fn
   quickWithCleanUp (removeDirectoryRecursive tmpDir) 1000 $ do
     u <- pick $ elements us
-    ufs <- map fst <$> (runPersistCmd $ listFiles persist u)
+    ufs <- map fst <$> (runPersistCmd $ listFiles u)
     f <- pick $ elements fs
     fn <- pick $ elements ufs
     join $ runPersistCmd $ do
-      path <- getFile persist u fn
-      copyFile persist u f fn
+      path <- getFile u fn
+      copyFile u f fn
       content <- hasNoRollback $ readFile f
-      path' <- getFile persist u fn
+      path' <- getFile u fn
       content' <- hasNoRollback $ readFile path'
-      ufs' <- map fst <$> listFiles persist u
+      ufs' <- map fst <$> listFiles u
       return $ do
         assertSetEquals ufs ufs' "The user's file set was changed"
         assertEquals path path' "The user's file path was changed"
@@ -879,9 +878,9 @@ testJobCreationTest = do
       False -> do
         run $ insertListRef testedSks sk
         join $ runPersistCmd $ do
-          saveTestJob persist sk
-          ak <- assignmentOfSubmission persist sk
-          mtck <- testCaseOfAssignment persist ak
+          saveTestJob sk
+          ak <- assignmentOfSubmission sk
+          mtck <- testCaseOfAssignment ak
           maybe (testIfHasNoTestJob sk) (testIfHasTestJob sk) mtck
 
   where
@@ -893,7 +892,7 @@ testJobCreationTest = do
 
     testIfHasTestJob sk tck = do
       -- Domain knowledge is used
-      tsk <- testScriptOfTestCase persist tck
+      tsk <- testScriptOfTestCase tck
       let tk = submissionKeyToTestJobKey sk
       submission  <- hasNoRollback $ readFile $ referredPath sk  </> "solution"
       script      <- hasNoRollback $ readFile $ referredPath tsk </> "script"
@@ -923,7 +922,7 @@ incomingCommentsTest = do
   where
     checkIfThereIsAComment sk =
       join $ runPersistCmd $ do
-        cks <- map fst <$> testComments persist
+        cks <- map fst <$> testComments
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
 
@@ -932,7 +931,7 @@ incomingCommentsTest = do
       comment <- pick $ Gen.manyWords
       join $ runPersistCmd $ do
         fileSave testIncomingDataDir (submissionKeyMap id sk) comment
-        cks <- map fst <$> testComments persist
+        cks <- map fst <$> testComments
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
 
@@ -945,15 +944,15 @@ deleteIncomingCommentsTest = do
   ss <- submissions 1500 us as
   quick 1000 $ do
     ((_u,_ak),sk) <- pick $ elements ss
-    sks <- runPersistCmd $ (map fst <$> testComments persist)
+    sks <- runPersistCmd $ (map fst <$> testComments)
     case sk `elem` sks of
       True  -> checkIfCanBeDeleted   sk
       False -> checkIfCanBeCommented sk
   where
     checkIfCanBeDeleted sk = do
       join $ runPersistCmd $ do
-        deleteTestComment persist sk
-        cks <- map fst <$> testComments persist
+        deleteTestComment sk
+        cks <- map fst <$> testComments
         return $ do
           assertFalse (sk `elem` cks) ("Comment was not deleted: " ++ show sk)
 
@@ -961,7 +960,7 @@ deleteIncomingCommentsTest = do
       comment <- pick $ Gen.manyWords
       join $ runPersistCmd $ do
         fileSave testIncomingDataDir (submissionKeyMap id sk) comment
-        cks <- map fst <$> testComments persist
+        cks <- map fst <$> testComments
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
 
@@ -1042,7 +1041,7 @@ complexTests = testGroup "Persistence Layer Complex tests" [
 monadicProperty gen prop = monadicIO (forAllM gen prop)
 
 initPersistenceLayer = testCase "Initialization" $ do
-  initPersistence noSqlDirPersist
+  initPersistence
 
 cleanUpPersistence = testCase "Clean up" $ do
   removeDirectoryRecursive "data"

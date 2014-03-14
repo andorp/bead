@@ -1,555 +1,426 @@
 module Bead.Persistence.Persist (
-    Persist(..)
+    Persist
   , runPersist
-  , userAssignmentKeys
-  , userAssignmentKeyList
-  , submissionDesc
-  , submissionListDesc
-  , submissionDetailsDesc
-  , groupDescription
-  , isAdminedSubmission
-  , canUserCommentOn
-  , submissionTables
-  , courseSubmissionTableInfo
-  , userSubmissionDesc
-  , userLastSubmissionInfo
-  , courseOrGroupOfAssignment
-  , courseNameAndAdmins
-  , administratedGroupsWithCourseName
-  , groupsOfUsersCourse
-  , removeOpenedSubmission
-  , deleteUserFromCourse -- Deletes a user from a course, searching the group id for the unsubscription
-  , isThereASubmissionForGroup -- Checks if the user submitted any solutions for the group
-  , isThereASubmissionForCourse -- Checks if the user submitted any solutions for the course
-  , testScriptInfo -- Calculates the test script information for the given test key
+
+  , saveUser
+  , personalInfo
+  , filterUsers
+  , loadUser
+  , updateUser
+  , doesUserExist
+  , userDescription
+  , userSubmissions
+  , administratedCourses
+  , administratedGroups
+
+  -- Users file upload
+  , copyFile  -- Copies the given file with the given filename to the users data directory
+  , listFiles -- List all the user's files
+  , getFile   -- Get the current path for the user's file
+
+  -- Registration
+  , saveUserReg
+  , loadUserReg
+
+  -- Course Persistence
+  , saveCourse
+  , courseKeys
+  , filterCourses
+  , loadCourse
+  , groupKeysOfCourse
+  , isUserInCourse
+  , userCourses
+  , createCourseAdmin
+  , courseAdmins
+  , subscribedToCourse
+  , unsubscribedFromCourse
+  , testScriptsOfCourse
+
+  -- Group Persistence
+  , saveGroup
+  , loadGroup
+  , courseOfGroup
+  , filterGroups
+  , isUserInGroup
+  , userGroups
+  , subscribe
+  , unsubscribe
+  , groupAdmins
+  , createGroupAdmin
+  , subscribedToGroup
+  , unsubscribedFromGroup
+
+  -- Test Scripts
+  , saveTestScript
+  , loadTestScript
+  , courseOfTestScript
+  , modifyTestScript
+
+  -- Test Cases
+  , saveTestCase
+  , loadTestCase
+  , assignmentOfTestCase
+  , testScriptOfTestCase
+  , modifyTestCase
+  , removeTestCaseAssignment
+  , copyTestCaseFile
+  , modifyTestScriptOfTestCase
+
+  -- Test Jobs
+  , saveTestJob -- Saves the test job for the test daemon
+
+  -- Test Comments
+  , testComments
+  , deleteTestComment -- Deletes the test daemon's comment from the test-incomming
+
+  -- Assignment Persistence
+  , filterAssignment
+  , assignmentKeys
+  , saveAssignment
+  , loadAssignment
+  , modifyAssignment
+  , courseAssignments
+  , groupAssignments
+  , saveCourseAssignment
+  , saveGroupAssignment
+  , courseOfAssignment
+  , groupOfAssignment
+  , submissionsForAssignment
+  , assignmentCreatedTime
+  , testCaseOfAssignment
+
+  -- Submission
+  , saveSubmission
+  , loadSubmission
+  , assignmentOfSubmission
+  , usernameOfSubmission
+  , filterSubmissions
+  , evaluationOfSubmission
+  , commentsOfSubmission
+  , lastSubmission
+
+  , removeFromOpened
+  , openedSubmissions
+  , usersOpenedSubmissions
+
+  -- Evaluation
+  , saveEvaluation
+  , loadEvaluation
+  , modifyEvaluation
+  , submissionOfEvaluation
+
+  -- Comment
+  , saveComment
+  , loadComment
+  , submissionOfComment
+
+  -- Persistence initialization
+  , isPersistenceSetUp
+  , initPersistence
   ) where
 
-import           Control.Applicative ((<$>))
-import           Control.Arrow
-import           Control.Exception (IOException)
-import           Control.Monad (forM, liftM, when)
-import           Control.Monad.Transaction.TIO
-import           Data.Function (on)
-import           Data.List (nub, sortBy, intersect, find)
-import           Data.Map (Map)
-import qualified Data.Map as Map
-import           Data.Maybe (catMaybes)
-import           Data.Time (UTCTime, getCurrentTime)
+import           Data.Time (UTCTime)
 
 import           Bead.Domain.Types (Erroneous)
 import           Bead.Domain.Entities
 import           Bead.Domain.Relationships
-import           Bead.View.Snap.Translation
 
-data Persist = Persist {
-  -- User Persistence
-    saveUser      :: User -> TIO ()
-  , personalInfo  :: Username -> TIO PersonalInfo
-  , filterUsers   :: (User -> Bool) -> TIO [User]
-  , loadUser      :: Username -> TIO User
-  , updateUser    :: User -> TIO ()
-  , doesUserExist :: Username -> TIO Bool
-  , userDescription :: Username -> TIO UserDesc
-  , userSubmissions :: Username -> AssignmentKey -> TIO [SubmissionKey]
-  , administratedCourses :: Username -> TIO [(CourseKey, Course)]
-  , administratedGroups  :: Username -> TIO [(GroupKey, Group)]
+import qualified Bead.Persistence.NoSQLDir as PersistImpl
 
-  -- Users file upload
-  , copyFile  :: Username -> FilePath -> UsersFile -> TIO () -- Copies the given file with the given filename to the users data directory
-  , listFiles :: Username -> TIO [(UsersFile, FileInfo)] -- List all the user's files
-  , getFile   :: Username -> UsersFile -> TIO FilePath -- Get the current path for the user's file
+type Persist a = PersistImpl.Persist a
 
-  -- Registration
-  , saveUserReg   :: UserRegistration -> TIO UserRegKey
-  , loadUserReg   :: UserRegKey -> TIO UserRegistration
+saveUser :: User -> Persist ()
+saveUser = PersistImpl.saveUser
 
-  -- Course Persistence
-  , saveCourse        :: Course -> TIO CourseKey
-  , courseKeys        :: TIO [CourseKey]
-  , filterCourses     :: (CourseKey -> Course -> Bool) -> TIO [(CourseKey, Course)]
-  , loadCourse        :: CourseKey -> TIO Course
-  , groupKeysOfCourse :: CourseKey -> TIO [GroupKey]
-  , isUserInCourse    :: Username -> CourseKey -> TIO Bool
-  , userCourses       :: Username -> TIO [CourseKey]
-  , createCourseAdmin :: Username -> CourseKey -> TIO ()
-  , courseAdmins      :: CourseKey -> TIO [Username]
-  , subscribedToCourse :: CourseKey -> TIO [Username]
-  , unsubscribedFromCourse :: CourseKey -> TIO [Username]
-  , testScriptsOfCourse :: CourseKey -> TIO [TestScriptKey]
+personalInfo :: Username -> Persist PersonalInfo
+personalInfo = PersistImpl.personalInfo
 
-  -- Group Persistence
-  , saveGroup     :: CourseKey -> Group -> TIO GroupKey
-  , loadGroup     :: GroupKey -> TIO Group
-  , courseOfGroup :: GroupKey -> TIO CourseKey
-  , filterGroups  :: (GroupKey -> Group -> Bool) -> TIO [(GroupKey, Group)]
-  , isUserInGroup :: Username -> GroupKey -> TIO Bool
-  , userGroups    :: Username -> TIO [GroupKey]
-  , subscribe     :: Username -> CourseKey -> GroupKey -> TIO ()
-  , unsubscribe   :: Username -> CourseKey -> GroupKey -> TIO ()
-  , groupAdmins   :: GroupKey -> TIO [Username]
-  , createGroupAdmin  :: Username -> GroupKey -> TIO ()
-  , subscribedToGroup     :: GroupKey -> TIO [Username]
-  , unsubscribedFromGroup :: GroupKey -> TIO [Username]
+filterUsers :: (User -> Bool) -> Persist [User]
+filterUsers = PersistImpl.filterUsers
 
-  -- Test Scripts
-  , saveTestScript :: CourseKey -> TestScript -> TIO TestScriptKey
-  , loadTestScript :: TestScriptKey -> TIO TestScript
-  , courseOfTestScript :: TestScriptKey -> TIO CourseKey
-  , modifyTestScript :: TestScriptKey -> TestScript -> TIO ()
+loadUser :: Username -> Persist User
+loadUser = PersistImpl.loadUser
 
-  -- Test Cases
-  , saveTestCase :: TestScriptKey -> AssignmentKey -> TestCase -> TIO TestCaseKey
-  , loadTestCase :: TestCaseKey -> TIO TestCase
-  , assignmentOfTestCase :: TestCaseKey -> TIO AssignmentKey
-  , testScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
-  , modifyTestCase :: TestCaseKey -> TestCase -> TIO ()
-  , removeTestCaseAssignment :: TestCaseKey -> AssignmentKey -> TIO ()
-  , copyTestCaseFile :: TestCaseKey -> Username -> UsersFile -> TIO ()
-  , modifyTestScriptOfTestCase :: TestCaseKey -> TestScriptKey -> TIO ()
+updateUser :: User -> Persist ()
+updateUser = PersistImpl.updateUser
 
-  -- Test Jobs
-  , saveTestJob :: SubmissionKey -> TIO () -- Saves the test job for the test daemon
+doesUserExist :: Username -> Persist Bool
+doesUserExist = PersistImpl.doesUserExist
 
-  -- Test Comments
-    -- | List the comments that the test daemon left in the test-incomming, comment for the
-    -- groups admin, and comments for the student
-  , testComments :: TIO [(SubmissionKey, Comment)]
-  , deleteTestComment :: SubmissionKey -> TIO ()   -- Deletes the test daemon's comment from the test-incomming
+userDescription :: Username -> Persist UserDesc
+userDescription = PersistImpl.userDescription
 
-  -- Assignment Persistence
-  , filterAssignment  :: (AssignmentKey -> Assignment -> Bool) -> TIO [(AssignmentKey, Assignment)]
-  , assignmentKeys    :: TIO [AssignmentKey]
-  , saveAssignment    :: Assignment -> TIO AssignmentKey
-  , loadAssignment    :: AssignmentKey -> TIO Assignment
-  , modifyAssignment  :: AssignmentKey -> Assignment -> TIO ()
-  , courseAssignments :: CourseKey -> TIO [AssignmentKey]
-  , groupAssignments  :: GroupKey -> TIO [AssignmentKey]
-  , saveCourseAssignment :: CourseKey -> Assignment -> TIO AssignmentKey
-  , saveGroupAssignment  :: GroupKey  -> Assignment -> TIO AssignmentKey
-  , courseOfAssignment   :: AssignmentKey -> TIO (Maybe CourseKey)
-  , groupOfAssignment    :: AssignmentKey -> TIO (Maybe GroupKey)
-  , submissionsForAssignment :: AssignmentKey -> TIO [SubmissionKey]
-  , assignmentCreatedTime    :: AssignmentKey -> TIO UTCTime
-  , testCaseOfAssignment :: AssignmentKey -> TIO (Maybe TestCaseKey)
+userSubmissions :: Username -> AssignmentKey -> Persist [SubmissionKey]
+userSubmissions = PersistImpl.userSubmissions
 
-  -- Submission
-  , saveSubmission :: AssignmentKey -> Username -> Submission -> TIO SubmissionKey
-  , loadSubmission :: SubmissionKey -> TIO Submission
-  , assignmentOfSubmission :: SubmissionKey -> TIO AssignmentKey
-  , usernameOfSubmission   :: SubmissionKey -> TIO Username
-  , filterSubmissions :: (SubmissionKey -> Submission -> Bool) -> TIO [(SubmissionKey, Submission)]
-  , evaluationOfSubmission :: SubmissionKey -> TIO (Maybe EvaluationKey)
-  , commentsOfSubmission :: SubmissionKey -> TIO [CommentKey]
-  , lastSubmission :: AssignmentKey -> Username -> TIO (Maybe SubmissionKey)
+administratedCourses :: Username -> Persist [(CourseKey, Course)]
+administratedCourses = PersistImpl.administratedCourses
 
-  , removeFromOpened  :: AssignmentKey -> Username -> SubmissionKey -> TIO ()
-  , openedSubmissions :: TIO [SubmissionKey]
-  , usersOpenedSubmissions :: AssignmentKey -> Username -> TIO [SubmissionKey]
-  -- ^ Calculates all the opened submisison for a given user and a given assignment
+administratedGroups :: Username -> Persist [(GroupKey, Group)]
+administratedGroups = PersistImpl.administratedGroups
 
-  -- Evaluation
-  , saveEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
-  , loadEvaluation :: EvaluationKey -> TIO Evaluation
-  , modifyEvaluation :: EvaluationKey -> Evaluation -> TIO ()
-  , submissionOfEvaluation :: EvaluationKey -> TIO SubmissionKey
+-- * Users file upload
 
-  -- Comment
-  , saveComment :: SubmissionKey -> Comment -> TIO CommentKey
-  , loadComment :: CommentKey -> TIO Comment
-  , submissionOfComment :: CommentKey -> TIO SubmissionKey
+copyFile :: Username -> FilePath -> UsersFile -> Persist () -- Copies the given file with the given filename to the users data directory
+copyFile = PersistImpl.copyFile
 
-  -- Persistence initialization
-  , isPersistenceSetUp :: IO Bool
-  , initPersistence    :: IO ()
-  }
+listFiles :: Username -> Persist [(UsersFile, FileInfo)] -- List all the user's files
+listFiles = PersistImpl.listFiles
 
--- * Combined Persistence Tasks
+getFile :: Username -> UsersFile -> Persist FilePath -- Get the current path for the user's file
+getFile = PersistImpl.getFile
 
--- Computes the Group key list, which should contain one element,
--- for a course key and a user, which the user attends in.
-groupsOfUsersCourse :: Persist -> Username -> CourseKey -> TIO [GroupKey]
-groupsOfUsersCourse p u ck = do
-  ugs <- nub <$> userGroups p u
-  cgs <- nub <$> groupKeysOfCourse p ck
-  return $ intersect ugs cgs
+-- * Registration
 
--- Produces a Just Assignment list, if the user is registered for some courses,
--- otherwise Nothing.
-userAssignmentKeys :: Persist -> Username -> TIO (Maybe [AssignmentKey])
-userAssignmentKeys p u = do
-  gs <- userGroups p u
-  cs <- userCourses p u
-  case (cs,gs) of
-    ([],[]) -> return Nothing
-    _       -> do
-      asg <- concat <$> (mapM (groupAssignments p)  (nub gs))
-      asc <- concat <$> (mapM (courseAssignments p) (nub cs))
-      return . Just $ nub (asg ++ asc)
+saveUserReg :: UserRegistration -> Persist UserRegKey
+saveUserReg = PersistImpl.saveUserReg
 
--- Produces the assignment key list for the user, it the user
--- is not registered in any course the result is the empty list
-userAssignmentKeyList :: Persist -> Username -> TIO [AssignmentKey]
-userAssignmentKeyList p u = (maybe [] id) <$> (userAssignmentKeys p u)
+loadUserReg :: UserRegKey -> Persist UserRegistration
+loadUserReg = PersistImpl.loadUserReg
 
-courseOrGroupOfAssignment :: Persist -> AssignmentKey -> TIO (Either CourseKey GroupKey)
-courseOrGroupOfAssignment p ak = do
-  mGk <- groupOfAssignment p ak
-  case mGk of
-    Just gk -> return . Right $ gk
-    Nothing -> do
-      mCk <- courseOfAssignment p ak
-      case mCk of
-        Just ck -> return . Left $ ck
-        Nothing -> error $ "Impossible: No course or groupkey was found for the assignment:" ++ show ak
+-- * Course Persistence
 
-administratedGroupsWithCourseName :: Persist -> Username -> TIO [(GroupKey, Group, String)]
-administratedGroupsWithCourseName p u = do
-  gs <- administratedGroups p u
-  forM gs $ \(gk,g) -> do
-    fn <- fullGroupName p gk
-    return (gk,g,fn)
+saveCourse :: Course -> Persist CourseKey
+saveCourse = PersistImpl.saveCourse
 
--- Produces a full name for a group including the name of the course.
-fullGroupName :: Persist -> GroupKey -> TIO String
-fullGroupName p gk = do
-  ck <- courseOfGroup p gk
-  course <- loadCourse p ck
-  group <- loadGroup p gk
-  return $ concat [(courseName course), " - ", (groupName group)]
+courseKeys :: Persist [CourseKey]
+courseKeys = PersistImpl.courseKeys
 
-groupDescription :: Persist -> GroupKey -> TIO (GroupKey, GroupDesc)
-groupDescription p gk = do
-  name <- fullGroupName p gk
-  admins <- mapM (userDescription p) =<< (groupAdmins p gk)
-  let gd = GroupDesc {
-    gName   = name
-  , gAdmins = map ud_fullname admins
-  }
-  return (gk,gd)
+filterCourses :: (CourseKey -> Course -> Bool) -> Persist [(CourseKey, Course)]
+filterCourses = PersistImpl.filterCourses
 
-submissionDesc :: Persist -> SubmissionKey -> TIO SubmissionDesc
-submissionDesc p sk = do
-  s  <- solution <$> loadSubmission p sk
-  un <- usernameOfSubmission p sk
-  u  <- u_name <$> loadUser p un
-  ak <- assignmentOfSubmission p sk
-  asg <- loadAssignment p ak
-  cgk <- courseOrGroupOfAssignment p ak
-  (c,gr) <- case cgk of
-    Left ck  -> (courseEvalConfig &&& courseName) <$> loadCourse p ck
-    Right gk -> do
-      cfg  <- groupEvalConfig <$> loadGroup p gk
-      name <- fullGroupName p gk
-      return (cfg, name)
-  cs  <- mapM (loadComment p) =<< (commentsOfSubmission p sk)
-  return SubmissionDesc {
-    eGroup    = gr
-  , eStudent  = u
-  , eSolution = s
-  , eConfig = c
-  , eAssignmentKey   = ak
-  , eAssignmentTitle = assignmentName asg
-  , eAssignmentDesc  = assignmentDesc asg
-  , eComments = cs
-  }
+loadCourse :: CourseKey -> Persist Course
+loadCourse = PersistImpl.loadCourse
 
-courseNameAndAdmins :: Persist -> AssignmentKey -> TIO (CourseName, [UsersFullname])
-courseNameAndAdmins p ak = do
-  eCkGk <- courseOrGroupOfAssignment p ak
-  (name, admins) <- case eCkGk of
-    Left  ck -> do
-      name   <- courseName <$> loadCourse p ck
-      admins <- courseAdmins p ck
-      return (name, admins)
-    Right gk -> do
-      name   <- fullGroupName p gk
-      admins <- groupAdmins p gk
-      return (name, admins)
-  adminNames <- mapM (fmap ud_fullname . userDescription p) admins
-  return (name, adminNames)
+groupKeysOfCourse :: CourseKey -> Persist [GroupKey]
+groupKeysOfCourse = PersistImpl.groupKeysOfCourse
 
+isUserInCourse :: Username -> CourseKey -> Persist Bool
+isUserInCourse = PersistImpl.isUserInCourse
 
-submissionListDesc :: Persist -> Username -> AssignmentKey -> TIO SubmissionListDesc
-submissionListDesc p u ak = do
-  (name, adminNames) <- courseNameAndAdmins p ak
-  asg <- loadAssignment p ak
-  now <- hasNoRollback getCurrentTime
+userCourses :: Username -> Persist [CourseKey]
+userCourses = PersistImpl.userCourses
 
-  -- User submissions should not shown for urn typed assignments, only after the end
-  -- period
-  submissions <- assignmentTypeCata
-    -- Normal assignment
-    (Right <$> (mapM submissionStatus =<< userSubmissions p u ak))
-    -- Urn assignment
-    (case (assignmentEnd asg < now) of
-       True  -> Right <$> (mapM submissionStatus =<< userSubmissions p u ak)
-       False -> Left  <$> (mapM submissionTime =<< userSubmissions p u ak))
-    (assignmentType asg)
+createCourseAdmin :: Username -> CourseKey -> Persist ()
+createCourseAdmin = PersistImpl.createCourseAdmin
 
-  return SubmissionListDesc {
-    slGroup = name
-  , slTeacher = adminNames
-  , slAssignment = asg
-  , slSubmissions = submissions
-  }
-  where
-    submissionStatus sk = do
-      time <- solutionPostDate <$> loadSubmission p sk
-      si <- submissionInfo p sk
-      return (sk, time, si, "TODO: EvaluatedBy")
+courseAdmins :: CourseKey -> Persist [Username]
+courseAdmins = PersistImpl.courseAdmins
 
-    submissionTime sk = solutionPostDate <$> loadSubmission p sk
+subscribedToCourse :: CourseKey -> Persist [Username]
+subscribedToCourse = PersistImpl.subscribedToCourse
 
-submissionEvalStr :: Persist -> SubmissionKey -> TIO (Maybe String)
-submissionEvalStr p sk = do
-  mEk <- evaluationOfSubmission p sk
-  case mEk of
-    Nothing -> return Nothing
-    Just ek -> eString <$> loadEvaluation p ek
-  where
-    eString = Just . translateMessage trans . resultString . evaluationResult
+unsubscribedFromCourse :: CourseKey -> Persist [Username]
+unsubscribedFromCourse = PersistImpl.unsubscribedFromCourse
 
-submissionDetailsDesc :: Persist -> SubmissionKey -> TIO SubmissionDetailsDesc
-submissionDetailsDesc p sk = do
-  ak <- assignmentOfSubmission p sk
-  (name, adminNames) <- courseNameAndAdmins p ak
-  asg <- loadAssignment p ak
-  sol <- solution       <$> loadSubmission p sk
-  cs  <- mapM (loadComment p) =<< (commentsOfSubmission p sk)
-  s   <- submissionEvalStr p sk
-  return SubmissionDetailsDesc {
-    sdGroup   = name
-  , sdTeacher = adminNames
-  , sdAssignment = asg
-  , sdStatus     = s
-  , sdSubmission = sol
-  , sdComments   = cs
-  }
+testScriptsOfCourse :: CourseKey -> Persist [TestScriptKey]
+testScriptsOfCourse = PersistImpl.testScriptsOfCourse
 
--- | Checks if the assignment of the submission is adminstrated by the user
-isAdminedSubmission :: Persist -> Username -> SubmissionKey -> TIO Bool
-isAdminedSubmission p u sk = do
-  -- Assignment of the submission
-  ak <- assignmentOfSubmission p sk
+-- * Group Persistence
 
-  -- Assignment Course Key
-  ack <- either return (courseOfGroup p) =<< (courseOrGroupOfAssignment p ak)
+saveGroup :: CourseKey -> Group -> Persist GroupKey
+saveGroup = PersistImpl.saveGroup
 
-  -- All administrated courses
-  groupCourses <- mapM (courseOfGroup p . fst) =<< (administratedGroups p u)
-  courses <- map fst <$> administratedCourses p u
-  let allCourses = nub (groupCourses ++ courses)
+loadGroup :: GroupKey -> Persist Group
+loadGroup = PersistImpl.loadGroup
 
-  return $ elem ack allCourses
+courseOfGroup :: GroupKey -> Persist CourseKey
+courseOfGroup = PersistImpl.courseOfGroup
 
+filterGroups :: (GroupKey -> Group -> Bool) -> Persist [(GroupKey, Group)]
+filterGroups = PersistImpl.filterGroups
 
--- TODO
-canUserCommentOn :: Persist -> Username -> SubmissionKey -> TIO Bool
-canUserCommentOn p u sk = return True
+isUserInGroup :: Username -> GroupKey -> Persist Bool
+isUserInGroup = PersistImpl.isUserInGroup
 
--- Returns all the submissions of the users for the groups that the
--- user administrates
-submissionTables :: Persist -> Username -> TIO [SubmissionTableInfo]
-submissionTables p u = do
-  groupKeys <- map fst <$> administratedGroups p u
-  groupTables  <- mapM (groupSubmissionTableInfo p) groupKeys
-  return groupTables
+userGroups :: Username -> Persist [GroupKey]
+userGroups = PersistImpl.userGroups
 
-groupSubmissionTableInfo :: Persist -> GroupKey -> TIO SubmissionTableInfo
-groupSubmissionTableInfo p gk = do
-  ck <- courseOfGroup p gk
-  gassignments <- groupAssignments p gk
-  cassignments <- courseAssignments p ck
-  usernames   <- subscribedToGroup p gk
-  name <- fullGroupName p gk
-  evalCfg <- groupEvalConfig <$> loadGroup p gk
-  mkGroupSubmissionTableInfo p name evalCfg usernames cassignments gassignments ck gk
+subscribe :: Username -> CourseKey -> GroupKey -> Persist ()
+subscribe = PersistImpl.subscribe
 
--- Returns the course submission table information for the given course key
-courseSubmissionTableInfo :: Persist -> CourseKey -> TIO SubmissionTableInfo
-courseSubmissionTableInfo p ck = do
-  assignments <- courseAssignments p ck
-  usernames   <- subscribedToCourse p ck
-  (name,evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse p ck
-  mkCourseSubmissionTableInfo p name evalCfg usernames assignments ck
+unsubscribe :: Username -> CourseKey -> GroupKey -> Persist ()
+unsubscribe = PersistImpl.unsubscribe
 
--- Sort the given keys into an ordered list based on the time function
-sortKeysByTime :: Persist -> (Persist -> key -> TIO UTCTime) -> [key] -> TIO [key]
-sortKeysByTime persist time keys = map snd . sortBy (compare `on` fst) <$> mapM getTime keys
-  where
-    getTime k = do
-      t <- time persist k
-      return (t,k)
+groupAdmins :: GroupKey -> Persist [Username]
+groupAdmins = PersistImpl.groupAdmins
 
-loadAssignmentInfos :: Persist -> [AssignmentKey] -> TIO (Map AssignmentKey Assignment)
-loadAssignmentInfos p as = Map.fromList <$> mapM loadAssignmentInfo as
-  where
-    loadAssignmentInfo a = do
-       asg <- loadAssignment p a
-       return (a,asg)
+createGroupAdmin :: Username -> GroupKey -> Persist ()
+createGroupAdmin = PersistImpl.createGroupAdmin
 
-submissionInfoAsgKey :: Persist -> Username -> AssignmentKey -> TIO (AssignmentKey, SubmissionInfo)
-submissionInfoAsgKey p u ak = addKey <$> (userLastSubmissionInfo p u ak)
-  where
-    addKey s = (ak,s)
+subscribedToGroup :: GroupKey -> Persist [Username]
+subscribedToGroup = PersistImpl.subscribedToGroup
 
-calculateResult evalCfg = evaluateResults evalCfg . map sbmResult . filter hasResult
-  where
-    hasResult (Submission_Result _ _) = True
-    hasResult _                       = False
+unsubscribedFromGroup :: GroupKey -> Persist [Username]
+unsubscribedFromGroup = PersistImpl.unsubscribedFromGroup
 
-    sbmResult (Submission_Result _ r) = r
-    sbmResult _ = error "sbmResult: impossible"
+-- * Test Scripts
 
+saveTestScript :: CourseKey -> TestScript -> Persist TestScriptKey
+saveTestScript = PersistImpl.saveTestScript
 
-mkCourseSubmissionTableInfo
-  :: Persist -> String -> EvaluationConfig -> [Username] -> [AssignmentKey] -> CourseKey
-  -> TIO SubmissionTableInfo
-mkCourseSubmissionTableInfo p courseName evalCfg us as key = do
-  assignments <- sortKeysByTime p assignmentCreatedTime as
-  assignmentInfos <- loadAssignmentInfos p as
-  ulines <- forM us $ \u -> do
-    ud <- userDescription p u
-    asi <- mapM (submissionInfoAsgKey p u) as
-    let result = case asi of
-                   [] -> Nothing
-                   _  -> calculateResult evalCfg $ map snd asi
-    return (ud, result, Map.fromList asi)
-  return CourseSubmissionTableInfo {
-      stiCourse = courseName
-    , stiEvalConfig = evalCfg
-    , stiUsers = us
-    , stiAssignments = assignments
-    , stiUserLines = ulines
-    , stiAssignmentInfos = assignmentInfos
-    , stiCourseKey = key
-    }
+loadTestScript :: TestScriptKey -> Persist TestScript
+loadTestScript = PersistImpl.loadTestScript
 
-mkGroupSubmissionTableInfo
-  :: Persist -> String -> EvaluationConfig
-  -> [Username] -> [AssignmentKey] -> [AssignmentKey]
-  -> CourseKey -> GroupKey
-  -> TIO SubmissionTableInfo
-mkGroupSubmissionTableInfo p courseName evalCfg us cas gas ckey gkey = do
-  cgAssignments   <- sortKeysByTime p createdTime ((map CourseInfo cas) ++ (map GroupInfo gas))
-  assignmentInfos <- loadAssignmentInfos p (cas ++ gas)
-  ulines <- forM us $ \u -> do
-    ud <- userDescription p u
-    casi <- mapM (submissionInfoAsgKey p u) cas
-    gasi <- mapM (submissionInfoAsgKey p u) gas
-    let result = case gasi of
-                   [] -> Nothing
-                   _  -> calculateResult evalCfg $ map snd gasi
-    return (ud, result, Map.fromList (casi ++ gasi))
-  return GroupSubmissionTableInfo {
-      stiCourse = courseName
-    , stiEvalConfig = evalCfg
-    , stiUsers = us
-    , stiCGAssignments = cgAssignments
-    , stiUserLines = ulines
-    , stiAssignmentInfos = assignmentInfos
-    , stiCourseKey = ckey
-    , stiGroupKey  = gkey
-    }
-  where
-    createdTime p = cgInfoCata
-      (assignmentCreatedTime p)
-      (assignmentCreatedTime p)
+courseOfTestScript :: TestScriptKey -> Persist CourseKey
+courseOfTestScript = PersistImpl.courseOfTestScript
 
-submissionInfo :: Persist -> SubmissionKey -> TIO SubmissionInfo
-submissionInfo p sk = do
-  mEk <- evaluationOfSubmission p sk
-  case mEk of
-    Nothing -> do
-      cs <- mapM (loadComment p) =<< (commentsOfSubmission p sk)
-      return $ case find isMessageComment cs of
-        Nothing -> Submission_Unevaluated
-        Just _t -> Submission_Tested
-    Just ek -> (Submission_Result ek . evaluationResult) <$> loadEvaluation p ek
+modifyTestScript :: TestScriptKey -> TestScript -> Persist ()
+modifyTestScript = PersistImpl.modifyTestScript
 
--- Produces information of the last submission for the given user and assignment
-userLastSubmissionInfo :: Persist -> Username -> AssignmentKey -> TIO SubmissionInfo
-userLastSubmissionInfo p u ak =
-  (maybe (return Submission_Not_Found) (submissionInfo p)) =<< (lastSubmission p ak u)
+-- *  Test Cases
 
-userSubmissionDesc :: Persist -> Username -> AssignmentKey -> TIO UserSubmissionDesc
-userSubmissionDesc p u ak = do
-  -- Calculate the normal fields
-  asgName       <- assignmentName <$> loadAssignment p ak
-  courseOrGroup <- courseOrGroupOfAssignment p ak
-  crName <- case courseOrGroup of
-              Left  ck -> courseName <$> loadCourse p ck
-              Right gk -> fullGroupName p gk
-  student <- ud_fullname <$> userDescription p u
-  keys    <- userSubmissions p u ak
-  -- Calculate the submission information list
-  submissions <- flip mapM keys $ \sk -> do
-    time  <- solutionPostDate <$> loadSubmission p sk
-    sinfo <- submissionInfo p sk
-    return (sk, time, sinfo)
+saveTestCase :: TestScriptKey -> AssignmentKey -> TestCase -> Persist TestCaseKey
+saveTestCase = PersistImpl.saveTestCase
 
-  return UserSubmissionDesc {
-    usCourse         = crName
-  , usAssignmentName = asgName
-  , usStudent        = student
-  , usSubmissions    = submissions
-  }
+loadTestCase :: TestCaseKey -> Persist TestCase
+loadTestCase = PersistImpl.loadTestCase
 
--- Helper computation which removes the given submission from
--- the opened submission directory, which is optimized by
--- assignment and username keys, for the quickier lookup
-removeOpenedSubmission :: Persist -> SubmissionKey -> TIO ()
-removeOpenedSubmission p sk = do
-  ak <- assignmentOfSubmission p sk
-  u  <- usernameOfSubmission p sk
-  removeFromOpened p ak u sk
+assignmentOfTestCase :: TestCaseKey -> Persist AssignmentKey
+assignmentOfTestCase = PersistImpl.assignmentOfTestCase
 
--- Make unsibscribe a user from a course if the user attends in the course
--- otherwise do nothing
-deleteUserFromCourse :: Persist -> CourseKey -> Username -> TIO ()
-deleteUserFromCourse p ck u = do
-  cs <- userCourses p u
-  when (ck `elem` cs) $ do
-    gs <- userGroups p u
-    -- Collects all the courses for the user's group
-    cgMap <- Map.fromList <$> (forM gs $ runKleisli ((k (courseOfGroup p)) &&& (k return)))
-    -- Unsubscribe the user from a given course with the found group
-    maybe
-      (return ()) -- TODO: Logging should be usefull
-      (unsubscribe p u ck)
-      (Map.lookup ck cgMap)
-  where
-    k = Kleisli
+testScriptOfTestCase :: TestCaseKey -> Persist TestScriptKey
+testScriptOfTestCase = PersistImpl.testScriptOfTestCase
 
-testScriptInfo :: Persist -> TestScriptKey -> TIO TestScriptInfo
-testScriptInfo p tk = do
-  script <- loadTestScript p tk
-  return TestScriptInfo {
-      tsiName = tsName script
-    , tsiDescription = tsDescription script
-    , tsiType = tsType script
-    }
+modifyTestCase :: TestCaseKey -> TestCase -> Persist ()
+modifyTestCase = PersistImpl.modifyTestCase
 
--- Returns True if the given student submitted at least one solution for the
--- assignments for the given group, otherwise False
-isThereASubmissionForGroup :: Persist -> Username -> GroupKey -> TIO Bool
-isThereASubmissionForGroup p u gk = do
-  aks <- groupAssignments p gk
-  (not . null . catMaybes) <$> mapM (flip (lastSubmission p) u) aks
+removeTestCaseAssignment :: TestCaseKey -> AssignmentKey -> Persist ()
+removeTestCaseAssignment = PersistImpl.removeTestCaseAssignment
 
--- Returns True if the given student submitted at least one solution for the
--- assignments for the given group, otherwise False
-isThereASubmissionForCourse :: Persist -> Username -> CourseKey -> TIO Bool
-isThereASubmissionForCourse p u ck = do
-  aks <- courseAssignments p ck
-  (not . null . catMaybes) <$> mapM (flip (lastSubmission p) u) aks
+copyTestCaseFile :: TestCaseKey -> Username -> UsersFile -> Persist ()
+copyTestCaseFile = PersistImpl.copyTestCaseFile
 
--- * Runner Tools
+modifyTestScriptOfTestCase :: TestCaseKey -> TestScriptKey -> Persist ()
+modifyTestScriptOfTestCase = PersistImpl.modifyTestScriptOfTestCase
 
-reason :: Either IOException a -> (Erroneous a)
-reason (Left e)  = Left . show $ e
-reason (Right x) = Right x
+-- * Test Jobs
 
-runPersist :: TIO a -> IO (Erroneous a)
-runPersist = liftM reason . atomically
+saveTestJob :: SubmissionKey -> Persist () -- Saves the test job for the test daemon
+saveTestJob = PersistImpl.saveTestJob
+
+-- * Test Comments
+
+-- | List the comments that the test daemon left in the test-incomming, comment for the
+-- groups admin, and comments for the student
+testComments :: Persist [(SubmissionKey, Comment)]
+testComments = PersistImpl.testComments
+
+deleteTestComment :: SubmissionKey -> Persist ()   -- Deletes the test daemon's comment from the test-incomming
+deleteTestComment = PersistImpl.deleteTestComment
+
+-- * Assignment Persistence
+
+filterAssignment :: (AssignmentKey -> Assignment -> Bool) -> Persist [(AssignmentKey, Assignment)]
+filterAssignment = PersistImpl.filterAssignment
+
+assignmentKeys :: Persist [AssignmentKey]
+assignmentKeys = PersistImpl.assignmentKeys
+
+saveAssignment :: Assignment -> Persist AssignmentKey
+saveAssignment = PersistImpl.saveAssignment
+
+loadAssignment :: AssignmentKey -> Persist Assignment
+loadAssignment = PersistImpl.loadAssignment
+
+modifyAssignment :: AssignmentKey -> Assignment -> Persist ()
+modifyAssignment = PersistImpl.modifyAssignment
+
+courseAssignments :: CourseKey -> Persist [AssignmentKey]
+courseAssignments = PersistImpl.courseAssignments
+
+groupAssignments :: GroupKey -> Persist [AssignmentKey]
+groupAssignments = PersistImpl.groupAssignments
+
+saveCourseAssignment :: CourseKey -> Assignment -> Persist AssignmentKey
+saveCourseAssignment = PersistImpl.saveCourseAssignment
+
+saveGroupAssignment :: GroupKey  -> Assignment -> Persist AssignmentKey
+saveGroupAssignment = PersistImpl.saveGroupAssignment
+
+courseOfAssignment :: AssignmentKey -> Persist (Maybe CourseKey)
+courseOfAssignment = PersistImpl.courseOfAssignment
+
+groupOfAssignment :: AssignmentKey -> Persist (Maybe GroupKey)
+groupOfAssignment = PersistImpl.groupOfAssignment
+
+submissionsForAssignment :: AssignmentKey -> Persist [SubmissionKey]
+submissionsForAssignment = PersistImpl.submissionsForAssignment
+
+assignmentCreatedTime :: AssignmentKey -> Persist UTCTime
+assignmentCreatedTime = PersistImpl.assignmentCreatedTime
+
+testCaseOfAssignment :: AssignmentKey -> Persist (Maybe TestCaseKey)
+testCaseOfAssignment = PersistImpl.testCaseOfAssignment
+
+-- * Submission
+
+saveSubmission :: AssignmentKey -> Username -> Submission -> Persist SubmissionKey
+saveSubmission = PersistImpl.saveSubmission
+
+loadSubmission :: SubmissionKey -> Persist Submission
+loadSubmission = PersistImpl.loadSubmission
+
+assignmentOfSubmission :: SubmissionKey -> Persist AssignmentKey
+assignmentOfSubmission = PersistImpl.assignmentOfSubmission
+
+usernameOfSubmission :: SubmissionKey -> Persist Username
+usernameOfSubmission = PersistImpl.usernameOfSubmission
+
+filterSubmissions :: (SubmissionKey -> Submission -> Bool) -> Persist [(SubmissionKey, Submission)]
+filterSubmissions = PersistImpl.filterSubmissions
+
+evaluationOfSubmission :: SubmissionKey -> Persist (Maybe EvaluationKey)
+evaluationOfSubmission = PersistImpl.evaluationOfSubmission
+
+commentsOfSubmission :: SubmissionKey -> Persist [CommentKey]
+commentsOfSubmission = PersistImpl.commentsOfSubmission
+
+lastSubmission :: AssignmentKey -> Username -> Persist (Maybe SubmissionKey)
+lastSubmission = PersistImpl.lastSubmission
+
+removeFromOpened :: AssignmentKey -> Username -> SubmissionKey -> Persist ()
+removeFromOpened = PersistImpl.removeFromOpened
+
+openedSubmissions :: Persist [SubmissionKey]
+openedSubmissions = PersistImpl.openedSubmissions
+
+usersOpenedSubmissions :: AssignmentKey -> Username -> Persist [SubmissionKey] -- ^ Calculates all the opened submisison for a given user and a given assignment
+usersOpenedSubmissions = PersistImpl.usersOpenedSubmissions
+
+-- * Evaluation
+
+saveEvaluation :: SubmissionKey -> Evaluation -> Persist EvaluationKey
+saveEvaluation = PersistImpl.saveEvaluation
+
+loadEvaluation :: EvaluationKey -> Persist Evaluation
+loadEvaluation = PersistImpl.loadEvaluation
+
+modifyEvaluation :: EvaluationKey -> Evaluation -> Persist ()
+modifyEvaluation = PersistImpl.modifyEvaluation
+
+submissionOfEvaluation :: EvaluationKey -> Persist SubmissionKey
+submissionOfEvaluation = PersistImpl.submissionOfEvaluation
+
+-- * Comment
+
+saveComment :: SubmissionKey -> Comment -> Persist CommentKey
+saveComment = PersistImpl.saveComment
+
+loadComment :: CommentKey -> Persist Comment
+loadComment = PersistImpl.loadComment
+
+submissionOfComment :: CommentKey -> Persist SubmissionKey
+submissionOfComment = PersistImpl.submissionOfComment
+
+-- * Persistence initialization
+
+isPersistenceSetUp :: IO Bool
+isPersistenceSetUp = PersistImpl.isPersistenceSetUp
+
+initPersistence :: IO ()
+initPersistence = PersistImpl.initPersistence
+
+runPersist :: Persist a -> IO (Erroneous a)
+runPersist = PersistImpl.runPersist
 
