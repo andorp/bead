@@ -119,20 +119,22 @@ data UserContainer a = UserContainer {
   }
 
 data ServiceContext = ServiceContext {
-    persist       :: MVar Persist
+    persist       :: MVar ()
   , userContainer :: UserContainer UserState
   , logger        :: Logger
   }
 
-serviceContext :: Persist -> UserContainer UserState -> Logger -> IO ServiceContext
-serviceContext p u l = do
-  mp <- newMVar p
+serviceContext :: UserContainer UserState -> Logger -> IO ServiceContext
+serviceContext u l = do
+  mp <- newMVar ()
   return $ ServiceContext mp u l
 
-scRunPersist :: ServiceContext -> (Persist -> IO a) -> IO a
+-- Runs the IO computation, after having the access to the persistent
+-- layer
+scRunPersist :: ServiceContext -> IO a -> IO a
 scRunPersist sc m =
   modifyMVar (persist sc) $ \p -> do
-    x <- m p
+    x <- m
     return (p,x)
 
 ioUserContainer :: IO (UserContainer a)

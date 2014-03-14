@@ -8,10 +8,10 @@ import Bead.Controller.Logging
 import Bead.Controller.UserStories as U
 import Bead.Controller.ServiceContext
 import Bead.Controller.Pages as P
-import Bead.Persistence.NoSQLDir
 import Bead.Persistence.Persist
 import Bead.Domain.Shared.Evaluation
 import Bead.Domain.Relationships (TCCreation(..))
+import Bead.View.Snap.Translation (trans)
 
 import Test.HUnit hiding (Test(..))
 import Test.Framework (Test(..), testGroup)
@@ -29,7 +29,7 @@ errorLogger = Logger {
 context :: IO ServiceContext
 context = do
   container <- ioUserContainer
-  serviceContext noSqlDirPersist container errorLogger
+  serviceContext container errorLogger
 
 adminUserState = UserState {
     user = Username "admin"
@@ -72,7 +72,7 @@ adminUser = User {
 -- * Test Tooles
 
 runStory c u s = do
-  e <- runUserStory c u s
+  e <- runUserStory c trans u s
   case e of
     Left ue -> error $ show ue
     Right a -> return a
@@ -97,10 +97,10 @@ tests = testGroup "User Stories" [
   ]
 
 initPersist = testCase "Initalizing persistence layer" $ do
-  setUp <- isPersistenceSetUp noSqlDirPersist
+  setUp <- isPersistenceSetUp
   assertBool "Persistence was set up" (not setUp)
-  initPersistence noSqlDirPersist
-  setUp <- isPersistenceSetUp noSqlDirPersist
+  initPersistence
+  setUp <- isPersistenceSetUp
   assertBool "Setting up persistence was failed" setUp
 
 saveAndLoadUserReg = testCase "Save and load user reg data" $ do

@@ -6,52 +6,35 @@ module Bead.View.Snap.Registration (
   , finalizeRegistration
   ) where
 
--- Bead imports
-
-import Bead.Controller.Logging as L
-
-import qualified Bead.Controller.UserStories as S
-import qualified Bead.Controller.Pages as P (Page(Login))
-import Bead.Configuration (Config(..))
-import Bead.View.Snap.Application
-import Bead.View.Snap.Session
-import Bead.View.Snap.HandlerUtils
-import Bead.View.Snap.DataBridge
-import Bead.View.Snap.ErrorPage
-import Bead.View.Snap.RouteOf (requestRoute)
-import Bead.View.Snap.EmailTemplate
-import qualified Bead.Persistence.Persist as P (Persist(..), runPersist)
-
-import Bead.View.Snap.Content hiding (
-    BlazeTemplate, name, template, empty, method
-  )
-
--- Haskell imports
-
-import Data.Maybe (fromJust, isNothing)
-import Data.String (fromString)
-import Data.Time hiding (TimeZone)
-import qualified Data.Text as T
-import Data.Text.Encoding (decodeUtf8)
-import qualified Data.List as L
 import qualified Data.ByteString.Char8 as B
-import Network.Mail.Mime
-import Text.Printf (printf)
+import           Data.Maybe (fromJust, isNothing)
+import           Data.String (fromString)
+import           Data.Time hiding (TimeZone)
+import qualified Data.Text as T
+import           Data.Text.Encoding (decodeUtf8)
 
--- Snap and Blaze imports
-
-import Snap hiding (Config(..), get)
-import Snap.Snaplet.Auth as A hiding (createUser)
-import Snap.Snaplet.Auth.Backends.JsonFile (mkJsonAuthMgr)
-
-import Text.Blaze (textTag)
-import Text.Blaze.Html5 ((!))
+import           Snap hiding (Config(..), get)
+import           Snap.Snaplet.Auth as A hiding (createUser)
+import           Snap.Snaplet.Auth.Backends.JsonFile (mkJsonAuthMgr)
+import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A hiding (title, rows, accept)
-import Bead.View.Snap.I18N (IHtml)
 import qualified Text.Blaze.Html5 as H
 
-createUser :: P.Persist -> FilePath -> User -> String -> IO ()
-createUser persist usersdb user password = do
+import           Bead.Controller.Logging
+import qualified Bead.Controller.UserStories as S
+import           Bead.Configuration (Config(..))
+import           Bead.View.Snap.Application
+import           Bead.View.Snap.DataBridge as DataBridge
+import           Bead.View.Snap.EmailTemplate
+import           Bead.View.Snap.ErrorPage
+import           Bead.View.Snap.HandlerUtils
+import           Bead.View.Snap.RouteOf (requestRoute)
+import           Bead.View.Snap.Session
+import qualified Bead.Persistence.Persist as Persist
+import           Bead.View.Snap.Content
+
+createUser :: FilePath -> User -> String -> IO ()
+createUser usersdb user password = do
   let name = usernameCata id $ u_username user
   mgr <- mkJsonAuthMgr usersdb
   pwd <- encryptPassword . ClearText . fromString $ password
@@ -65,11 +48,11 @@ createUser persist usersdb user password = do
     Nothing -> error "Nem jött létre felhasználó!"
     Just u' -> case passwordFromAuthUser u' of
       Nothing  -> error "Nem lett jelszó megadva!"
-      Just pwd -> P.runPersist $ P.saveUser persist user
+      Just pwd -> Persist.runPersist $ Persist.saveUser user
   return ()
 
-createAdminUser :: P.Persist -> FilePath -> UserRegInfo -> IO ()
-createAdminUser persist usersdb = userRegInfoCata $
+createAdminUser :: FilePath -> UserRegInfo -> IO ()
+createAdminUser usersdb = userRegInfoCata $
   \name password email fullName timeZone ->
     let usr = User {
         u_role = Admin
@@ -79,7 +62,7 @@ createAdminUser persist usersdb = userRegInfoCata $
       , u_timezone = timeZone
       , u_language = Language "hu" -- TODO: I18N
       }
-    in createUser persist usersdb usr password
+    in createUser usersdb usr password
 
 -- * User registration handler
 
@@ -93,7 +76,7 @@ instance Error RegError where
 
 readParameter :: (MonadSnap m) => Parameter a -> m (Maybe a)
 readParameter param = do
-  reqParam <- getParam . B.pack . name $ param
+  reqParam <- getParam . B.pack . DataBridge.name $ param
   return (reqParam >>= decode param . T.unpack . decodeUtf8)
 
 registrationTitle :: Translation String
@@ -133,9 +116,9 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     return $ do
       postForm "/reg_request" ! (A.id . formId $ regForm) $ do
         table (fieldName registrationTable) (fieldName registrationTable) $ do
-          tableLine (msg $ Msg_Registration_Username "Username:") $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
-          tableLine (msg $ Msg_Registration_Email "Email:") $ textInput (name regEmailPrm) 20 Nothing ! A.required ""
-          tableLine (msg $ Msg_Registration_FullName "Full name:") $ textInput (name regFullNamePrm) 20 Nothing ! A.required ""
+          tableLine (msg $ Msg_Registration_Username "Username:") $ textInput (DataBridge.name regUsernamePrm) 20 Nothing ! A.required ""
+          tableLine (msg $ Msg_Registration_Email "Email:") $ textInput (DataBridge.name regEmailPrm) 20 Nothing ! A.required ""
+          tableLine (msg $ Msg_Registration_FullName "Full name:") $ textInput (DataBridge.name regFullNamePrm) 20 Nothing ! A.required ""
         submitButton (fieldName regSubmitBtn) (msg $ Msg_Registration_SubmitButton "Registration")
       linkToRoute (msg $ Msg_Registration_GoBackToLogin "Back to login")
 
@@ -246,9 +229,9 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                 return $ do
                   postForm "reg_final" ! (A.id . formId $ regFinalForm) $ do
                     table (fieldName registrationTable) (fieldName registrationTable) $ do
-                      tableLine (i18n $ Msg_RegistrationFinalize_Password "Password:") $ passwordInput (name regPasswordPrm) 20 Nothing ! A.required ""
-                      tableLine (i18n $ Msg_RegistrationFinalize_PwdAgain "Password (again):") $ passwordInput (name regPasswordAgainPrm) 20 Nothing ! A.required ""
-                      tableLine (i18n $ Msg_RegistrationFinalize_Timezone "Time zone:") $ defEnumSelection (name regTimeZonePrm) UTC ! A.required ""
+                      tableLine (i18n $ Msg_RegistrationFinalize_Password "Password:") $ passwordInput (DataBridge.name regPasswordPrm) 20 Nothing ! A.required ""
+                      tableLine (i18n $ Msg_RegistrationFinalize_PwdAgain "Password (again):") $ passwordInput (DataBridge.name regPasswordAgainPrm) 20 Nothing ! A.required ""
+                      tableLine (i18n $ Msg_RegistrationFinalize_Timezone "Time zone:") $ defEnumSelection (DataBridge.name regTimeZonePrm) UTC ! A.required ""
                     hiddenParam regUserRegKeyPrm key
                     hiddenParam regTokenPrm      token
                     hiddenParam regUsernamePrm   username
@@ -258,7 +241,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                   H.br
                   linkToRoute (i18n $ Msg_RegistrationFinalize_GoBackToLogin "Back to login")
 
-  hiddenParam parameter value = hiddenInput (name parameter) (encode parameter value)
+  hiddenParam parameter value = hiddenInput (DataBridge.name parameter) (DataBridge.encode parameter value)
 
   createStudent = do
     values <- readRegParameters
@@ -293,7 +276,7 @@ createNewUser reg password timezone language = runErrorT $ do
   when userExistence . throwError $ (RegErrorUserExist username)
 
   -- Registers the user in the Snap authentication module
-  lift $ registerUser (B.pack $ name regUsernamePrm) (B.pack $ name regPasswordPrm)
+  lift $ registerUser (B.pack $ DataBridge.name regUsernamePrm) (B.pack $ DataBridge.name regPasswordPrm)
   let user = User {
       u_role = Student
     , u_username = username

@@ -1,16 +1,119 @@
 module Bead.Persistence.NoSQLDir (
-    noSqlDirPersist
+    Persist
+  , runPersist
   , ForeignKey(..)
+  , saveUser
+  , personalInfo
+  , filterUsers
+  , loadUser
+  , updateUser
+  , doesUserExist
+  , userDescription
+  , userSubmissions
+  , administratedCourses
+  , administratedGroups
+
+  , copyFile
+  , listFiles
+  , getFile
+
+  , saveUserReg
+  , loadUserReg
+
+  , saveCourse
+  , courseKeys
+  , filterCourses
+  , loadCourse
+  , groupKeysOfCourse
+  , isUserInCourse
+  , userCourses
+  , createCourseAdmin
+  , courseAdmins
+  , subscribedToCourse
+  , unsubscribedFromCourse
+  , testScriptsOfCourse
+
+  , saveGroup
+  , loadGroup
+  , courseOfGroup
+  , filterGroups
+  , isUserInGroup
+  , userGroups
+  , subscribe
+  , unsubscribe
+  , groupAdmins
+  , createGroupAdmin
+  , subscribedToGroup
+  , unsubscribedFromGroup
+
+  , saveTestScript
+  , loadTestScript
+  , courseOfTestScript
+  , modifyTestScript
+
+  , saveTestCase
+  , loadTestCase
+  , assignmentOfTestCase
+  , testScriptOfTestCase
+  , modifyTestCase
+  , removeTestCaseAssignment
+  , copyTestCaseFile
+  , modifyTestScriptOfTestCase
+
+  , saveTestJob
+
+  , testComments
+  , deleteTestComment
+
+  , filterAssignment
+  , assignmentKeys
+  , saveAssignment
+  , loadAssignment
+  , modifyAssignment
+  , saveCourseAssignment
+  , saveGroupAssignment
+  , courseAssignments
+  , groupAssignments
+  , courseOfAssignment
+  , groupOfAssignment
+  , submissionsForAssignment
+  , assignmentCreatedTime
+  , lastSubmission
+  , testCaseOfAssignment
+
+  , saveSubmission
+  , loadSubmission
+  , assignmentOfSubmission
+  , usernameOfSubmission
+  , filterSubmissions
+  , evaluationOfSubmission
+  , commentsOfSubmission
+
+  , removeFromOpened
+  , openedSubmissions
+  , usersOpenedSubmissions
+
+  , saveEvaluation
+  , loadEvaluation
+  , modifyEvaluation
+  , submissionOfEvaluation
+
+  , saveComment
+  , loadComment
+  , submissionOfComment
+
+  , isPersistenceSetUp
+  , initPersistence
   ) where
 
 import Bead.Domain.Types
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
-import Bead.Persistence.Persist
 import Bead.Persistence.NoSQLDirFile
 import Control.Monad.Transaction.TIO
 
 import Control.Applicative ((<$>))
+import Control.Exception (IOException)
 import Control.Monad (join, liftM, filterM, when, unless, forM)
 import System.FilePath ((</>), joinPath, takeBaseName, takeFileName, splitFileName, splitExtension)
 import System.Directory (doesDirectoryExist, createDirectory, doesFileExist)
@@ -21,111 +124,117 @@ import Data.Time (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.List (sortBy)
 
--- | Simple directory and file based NoSQL persistence implementation
-noSqlDirPersist = Persist {
-    saveUser      = nSaveUser
-  , personalInfo  = nPersonalInfo
-  , filterUsers   = nFilterUsers
-  , loadUser      = nLoadUser
-  , updateUser    = nUpdateUser
-  , doesUserExist = nDoesUserExist
-  , userDescription = nUserDescription
-  , userSubmissions = nUserSubmissions
-  , administratedCourses = nAdministratedCourses
-  , administratedGroups = nAdministratedGroups
+type Persist a = TIO a
 
-  , copyFile  = nCopyFile
-  , listFiles = nListFiles
-  , getFile   = nGetFile
+reason :: Either IOException a -> (Erroneous a)
+reason (Left e)  = Left . show $ e
+reason (Right x) = Right x
 
-  , saveUserReg = nSaveUserReg
-  , loadUserReg = nLoadUserReg
+runPersist :: TIO a -> IO (Erroneous a)
+runPersist = liftM reason . atomically
 
-  , saveCourse    = nSaveCourse
-  , courseKeys    = nCourseKeys
-  , filterCourses = nFilterCourses
-  , loadCourse    = nLoadCourse
-  , groupKeysOfCourse = nGroupKeysOfCourse
-  , isUserInCourse = nIsUserInCourse
-  , userCourses = nUserCourses
-  , createCourseAdmin = nCreateCourseAdmin
-  , courseAdmins = nCourseAdmins
-  , subscribedToCourse = nSubscribedToCourse
-  , unsubscribedFromCourse = nUnsubscribedFromCourse
-  , testScriptsOfCourse = nTestScriptsOfCourse
+saveUser      = nSaveUser
+personalInfo  = nPersonalInfo
+filterUsers   = nFilterUsers
+loadUser      = nLoadUser
+updateUser    = nUpdateUser
+doesUserExist = nDoesUserExist
+userDescription = nUserDescription
+userSubmissions = nUserSubmissions
+administratedCourses = nAdministratedCourses
+administratedGroups = nAdministratedGroups
 
-  , saveGroup     = nSaveGroup
-  , loadGroup     = nLoadGroup
-  , courseOfGroup = nCourseOfGroup
-  , filterGroups  = nFilterGroups
-  , isUserInGroup = nIsUserInGroup
-  , userGroups    = nUserGroups
-  , subscribe     = nSubscribe
-  , unsubscribe   = nUnsubscribe
-  , groupAdmins   = nGroupAdmins
-  , createGroupAdmin    = nCreateGroupAdmin
-  , subscribedToGroup   = nSubscribedToGroup
-  , unsubscribedFromGroup = nUnsubscribedFromGroup
+copyFile  = nCopyFile
+listFiles = nListFiles
+getFile   = nGetFile
 
-  , saveTestScript = nSaveTestScript
-  , loadTestScript = nLoadTestScript
-  , courseOfTestScript = nCourseOfTestScript
-  , modifyTestScript = nModifyTestScript
+saveUserReg = nSaveUserReg
+loadUserReg = nLoadUserReg
 
-  , saveTestCase = nSaveTestCase
-  , loadTestCase = nLoadTestCase
-  , assignmentOfTestCase = nAssignmentOfTestCase
-  , testScriptOfTestCase = nTestScriptOfTestCase
-  , modifyTestCase = nModifyTestCase
-  , removeTestCaseAssignment = nRemoveTestCaseAssignment
-  , copyTestCaseFile = nCopyTestCaseFile
-  , modifyTestScriptOfTestCase = nModifyTestScriptOfTestCase
+saveCourse    = nSaveCourse
+courseKeys    = nCourseKeys
+filterCourses = nFilterCourses
+loadCourse    = nLoadCourse
+groupKeysOfCourse = nGroupKeysOfCourse
+isUserInCourse = nIsUserInCourse
+userCourses = nUserCourses
+createCourseAdmin = nCreateCourseAdmin
+courseAdmins = nCourseAdmins
+subscribedToCourse = nSubscribedToCourse
+unsubscribedFromCourse = nUnsubscribedFromCourse
+testScriptsOfCourse = nTestScriptsOfCourse
 
-  , saveTestJob = nSaveTestJob
+saveGroup     = nSaveGroup
+loadGroup     = nLoadGroup
+courseOfGroup = nCourseOfGroup
+filterGroups  = nFilterGroups
+isUserInGroup = nIsUserInGroup
+userGroups    = nUserGroups
+subscribe     = nSubscribe
+unsubscribe   = nUnsubscribe
+groupAdmins   = nGroupAdmins
+createGroupAdmin    = nCreateGroupAdmin
+subscribedToGroup   = nSubscribedToGroup
+unsubscribedFromGroup = nUnsubscribedFromGroup
 
-  , testComments = nTestComments
-  , deleteTestComment = nDeleteTestComment
+saveTestScript = nSaveTestScript
+loadTestScript = nLoadTestScript
+courseOfTestScript = nCourseOfTestScript
+modifyTestScript = nModifyTestScript
 
-  , filterAssignment     = nFilterAssignment
-  , assignmentKeys       = nAssignmentKeys
-  , saveAssignment       = nSaveAssignment
-  , loadAssignment       = nLoadAssignment
-  , modifyAssignment     = nModifyAssignment
-  , saveCourseAssignment = nSaveCourseAssignment
-  , saveGroupAssignment  = nSaveGroupAssignment
-  , courseAssignments    = nCourseAssignments
-  , groupAssignments     = nGroupAssignments
-  , courseOfAssignment   = nCourseOfAssignment
-  , groupOfAssignment    = nGroupOfAssignment
-  , submissionsForAssignment = nSubmissionsForAssignment
-  , assignmentCreatedTime    = nAssignmentCreatedTime
-  , lastSubmission           = nLastSubmission
-  , testCaseOfAssignment = nTestCaseOfAssignment
+saveTestCase = nSaveTestCase
+loadTestCase = nLoadTestCase
+assignmentOfTestCase = nAssignmentOfTestCase
+testScriptOfTestCase = nTestScriptOfTestCase
+modifyTestCase = nModifyTestCase
+removeTestCaseAssignment = nRemoveTestCaseAssignment
+copyTestCaseFile = nCopyTestCaseFile
+modifyTestScriptOfTestCase = nModifyTestScriptOfTestCase
 
-  , saveSubmission = nSaveSubmission
-  , loadSubmission = nLoadSubmission
-  , assignmentOfSubmission = nAssignmentOfSubmission
-  , usernameOfSubmission   = nUsernameOfSubmission
-  , filterSubmissions      = nFilterSubmissions
-  , evaluationOfSubmission = nEvaluationOfSubmission
-  , commentsOfSubmission   = nCommentsOfSubmission
+saveTestJob = nSaveTestJob
 
-  , removeFromOpened  = nRemoveFromOpened
-  , openedSubmissions = nOpenedSubmission
-  , usersOpenedSubmissions = nUsersOpenedSubmissions
+testComments = nTestComments
+deleteTestComment = nDeleteTestComment
 
-  , saveEvaluation = nSaveEvaluation
-  , loadEvaluation = nLoadEvaluation
-  , modifyEvaluation = nModifyEvaluation
-  , submissionOfEvaluation = nSubmissionOfEvaluation
+filterAssignment     = nFilterAssignment
+assignmentKeys       = nAssignmentKeys
+saveAssignment       = nSaveAssignment
+loadAssignment       = nLoadAssignment
+modifyAssignment     = nModifyAssignment
+saveCourseAssignment = nSaveCourseAssignment
+saveGroupAssignment  = nSaveGroupAssignment
+courseAssignments    = nCourseAssignments
+groupAssignments     = nGroupAssignments
+courseOfAssignment   = nCourseOfAssignment
+groupOfAssignment    = nGroupOfAssignment
+submissionsForAssignment = nSubmissionsForAssignment
+assignmentCreatedTime    = nAssignmentCreatedTime
+lastSubmission           = nLastSubmission
+testCaseOfAssignment = nTestCaseOfAssignment
 
-  , saveComment = nSaveComment
-  , loadComment = nLoadComment
-  , submissionOfComment = nSubmissionOfComment
+saveSubmission = nSaveSubmission
+loadSubmission = nLoadSubmission
+assignmentOfSubmission = nAssignmentOfSubmission
+usernameOfSubmission   = nUsernameOfSubmission
+filterSubmissions      = nFilterSubmissions
+evaluationOfSubmission = nEvaluationOfSubmission
+commentsOfSubmission   = nCommentsOfSubmission
 
-  , isPersistenceSetUp = nIsPersistenceSetUp
-  , initPersistence    = nInitPersistence
-  }
+removeFromOpened  = nRemoveFromOpened
+openedSubmissions = nOpenedSubmission
+usersOpenedSubmissions = nUsersOpenedSubmissions
+
+saveEvaluation = nSaveEvaluation
+loadEvaluation = nLoadEvaluation
+modifyEvaluation = nModifyEvaluation
+submissionOfEvaluation = nSubmissionOfEvaluation
+
+saveComment = nSaveComment
+loadComment = nLoadComment
+submissionOfComment = nSubmissionOfComment
+
+isPersistenceSetUp = nIsPersistenceSetUp
+initPersistence    = nInitPersistence
 
 -- Returns True if all the necessary persistence directories exist on the disk
 -- otherwise false

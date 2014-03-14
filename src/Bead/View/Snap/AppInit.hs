@@ -5,28 +5,29 @@ module Bead.View.Snap.AppInit (
   , AppInitTasks
   ) where
 
-import Snap hiding (Config(..))
-import Snap.Snaplet.Session.Backends.CookieSession
-import Snap.Snaplet.Auth
-import Snap.Snaplet.Auth.Backends.SafeJsonFile
-import Snap.Snaplet.Fay
 import qualified Data.Map as Map
 
-import Bead.Configuration (Config(..))
-import Bead.Domain.Entities (UserRegInfo)
-import Bead.Controller.LogoutDaemon
-import Bead.Controller.ServiceContext as S
+import           Snap hiding (Config(..))
+import           Snap.Snaplet.Auth
+import           Snap.Snaplet.Auth.Backends.SafeJsonFile
+import           Snap.Snaplet.Fay
+import           Snap.Snaplet.Session.Backends.CookieSession
+import           System.FilePath ((</>))
+import           System.Directory
 
-import Bead.View.Snap.Application as A
-import Bead.View.Snap.PageHandlers (routes)
-import Bead.View.Snap.Registration (createAdminUser)
-import Bead.View.Snap.ErrorPage (msgErrorPage)
-import Bead.View.Snap.DataDir
-import Bead.View.Snap.Dictionary (Language(..))
-import Bead.View.Snap.DictionaryLoader (loadDictionaries)
+import           Bead.Configuration (Config(..))
+import           Bead.Controller.LogoutDaemon
+import           Bead.Controller.ServiceContext as S
+import           Bead.Domain.Entities (UserRegInfo)
 
-import System.FilePath ((</>))
-import System.Directory
+import           Bead.View.Snap.Application as A
+import           Bead.View.Snap.DataDir
+import           Bead.View.Snap.Dictionary (Language(..))
+import           Bead.View.Snap.DictionaryLoader (loadDictionaries)
+import           Bead.View.Snap.ErrorPage (msgErrorPage)
+import           Bead.View.Snap.PageHandlers (routes)
+import           Bead.View.Snap.Registration (createAdminUser)
+
 
 beadConfigFileName :: String
 beadConfigFileName = "bead.config"
@@ -57,7 +58,7 @@ appInit config user s logoutDaemon tempDir = makeSnaplet "bead" description data
 
   case user of
     Nothing        -> return ()
-    Just userRegInfo -> liftIO $ S.scRunPersist s $ \p -> createAdminUser p usersJson userRegInfo
+    Just userRegInfo -> liftIO $ S.scRunPersist s $ createAdminUser usersJson userRegInfo
 
   sm <- nestSnaplet "session" sessionManager $
           initCookieSessionManager "cookie" "session" (Just (sessionTimeout config))
