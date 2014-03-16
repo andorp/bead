@@ -40,6 +40,7 @@ submissionDetailsPage :: GETContentHandler
 submissionDetailsPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
   sk <- getParameter submissionKeyPrm
+  -- TODO: Refactor use guards
   usersSubmission ak sk $ \submission -> do
     case submission of
       Nothing -> renderPagelet . withUserFrame s $ invalidSubmission

@@ -342,6 +342,14 @@ data Translation a
   | Msg_UserStoryError_EmptyAssignmentTitle { trans :: a }
   | Msg_UserStoryError_EmptyAssignmentDescription { trans :: a }
 
+  | Msg_UserStoryError_NonAdministratedCourse { trans :: a }
+  | Msg_UserStoryError_NonAdministratedGroup { trans :: a }
+  | Msg_UserStoryError_NonAdministratedAssignment { trans :: a }
+  | Msg_UserStoryError_NonRelatedAssignment { trans :: a }
+  | Msg_UserStoryError_NonAdministratedSubmission { trans :: a }
+  | Msg_UserStoryError_NonAdministratedTestScript { trans :: a }
+  | Msg_UserStoryError_NonCommentableSubmission { trans :: a }
+
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 
   | Msg_LinkText_Login { trans :: a }

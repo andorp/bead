@@ -19,8 +19,8 @@ evaluationTable = getContentHandler evaluationTablePage
 
 evaluationTablePage :: GETContentHandler
 evaluationTablePage = withUserState $ \s -> do
-  keys <- userStory (openSubmissions)
-  renderPagelet $ withUserFrame s (evaluationTableContent keys)
+  keys <- userStory openSubmissions
+  renderPagelet . withUserFrame s $ evaluationTableContent keys
 
 evaluationTableContent :: [(SubmissionKey, SubmissionDesc)] -> IHtml
 evaluationTableContent ks = do

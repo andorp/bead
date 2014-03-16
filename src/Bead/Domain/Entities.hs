@@ -485,6 +485,8 @@ newtype PersonalInfo = PersonalInfo (Role, String, TimeZone)
 personalInfoCata f (PersonalInfo (role, name, timezone))
   = f role name timezone
 
+withPersonalInfo p f = personalInfoCata f p
+
 data UserDesc = UserDesc {
     ud_username :: Username
   , ud_fullname :: String

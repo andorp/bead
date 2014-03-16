@@ -2,7 +2,7 @@
 module Bead.View.Snap.Content.Utils where
 
 import Data.List (find)
-import Data.Maybe (maybe)
+import Data.Maybe (fromMaybe)
 
 import Bead.Domain.Relationships (AssignmentDesc)
 import Bead.View.Snap.Content
@@ -33,7 +33,7 @@ userAssignmentForSubmission
   -> HandlerError App App b
 userAssignmentForSubmission key found notFound = do
   action <- userStory $ do
-    ks <- (maybe [] id) <$> userAssignments
+    ks <- (fromMaybe []) <$> userAssignments
     maybe
       (return notFound)
       foundAssignment

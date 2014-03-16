@@ -310,6 +310,13 @@ DictionaryFile {
     , Msg_UserStoryError_AlreadyHasSubmission { trans = "Ennek a felhasználónak már van beadott megoldása a kurzushoz tartozó feladatokhoz!" }
     , Msg_UserStoryError_EmptyAssignmentTitle { trans = "Nincs a feladatnak címe!" }
     , Msg_UserStoryError_EmptyAssignmentDescription { trans = "Nincs a feladatnak szövege!" }
+    , Msg_UserStoryError_NonAdministratedCourse { trans = "Nem vagy oktatója a kurzusnak!" }
+    , Msg_UserStoryError_NonAdministratedGroup { trans = "Nem vagy oktatója a csoportnak!" }
+    , Msg_UserStoryError_NonAdministratedAssignment { trans = "Nem vagy oktatója a feladat csoportjának vagy kurzusának!" }
+    , Msg_UserStoryError_NonRelatedAssignment { trans = "Nem hozzád tartozó feladat!" }
+    , Msg_UserStoryError_NonAdministratedSubmission { trans = "Nem vagy oktatója a megoldás kurzusának vagy csoportjának!" }
+    , Msg_UserStoryError_NonAdministratedTestScript { trans = "Nem vagy oktatója a teszt szkript kurzusának!" }
+    , Msg_UserStoryError_NonCommentableSubmission { trans = "Nem kommentelhető feladat!" }
     , Msg_UserActions_ChangedUserDetails { trans = "A felhasználói beállításai megváltoztak!" }
     , Msg_LinkText_Login { trans = "Bejelentkezés" }
     , Msg_LinkText_Logout { trans = "Kijelentkezés" }

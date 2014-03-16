@@ -55,6 +55,7 @@ postNewTestScript = do
     <*> (replaceCrlf <$> getParameter (stringParameter (fieldName testScriptScriptField) "Test Script"))
   ck <- CourseKey <$> getParameter (stringParameter (fieldName testScriptCourseKeyField) "Course Key")
   script <- userStory $ do
+    Story.isAdministratedCourse ck
     (course,_groupkeys) <- Story.loadCourse ck
     return (script' $ courseTestScriptType course)
   return $ UA.CreateTestScript ck script
@@ -63,6 +64,7 @@ modifyTestScriptPage :: GETContentHandler
 modifyTestScriptPage = withUserState $ \s -> do
   tsk <- getParameter testScriptKeyPrm
   (course, script) <- userStory $ do
+    Story.isAdministratedTestScript tsk
     (script, ck)  <- Story.loadTestScript tsk
     (course, _gk) <- Story.loadCourse ck
     return (course, script)

@@ -100,6 +100,7 @@ newCourseAssignmentPage :: GETContentHandler
 newCourseAssignmentPage = withUserState $ \s -> do
   ck <- getParameter (customCourseKeyPrm courseKeyParamName)
   (c,tss, ufs) <- userStory $ do
+    S.isAdministratedCourse ck
     (course, _groupKeys) <- S.loadCourse ck
     tss' <- S.testScriptInfosOfCourse ck
     ufs  <- map fst <$> S.listUsersFiles
@@ -157,6 +158,7 @@ newGroupAssignmentPage = withUserState $ \s -> do
   now <- liftIO $ getCurrentTime
   gk <- getParameter (customGroupKeyPrm groupKeyParamName)
   (g,tss,ufs) <- userStory $ do
+    S.isAdministratedGroup gk
     group <- S.loadGroup gk
     tss' <- S.testScriptInfosOfGroup gk
     ufs  <- map fst <$> S.listUsersFiles
@@ -177,6 +179,7 @@ modifyAssignmentPage :: GETContentHandler
 modifyAssignmentPage = withUserState $ \s -> do
   ak <- getValue
   (as,tss,ufs,tc) <- userStory $ do
+    S.isAdministratedAssignment ak
     as <- S.loadAssignment ak
     tss' <- S.testScriptInfosOfAssignment ak
     ufs  <- map fst <$> S.listUsersFiles
@@ -193,6 +196,7 @@ viewAssignmentPage :: GETContentHandler
 viewAssignmentPage = withUserState $ \s -> do
   ak <- getValue
   (as,tss,tc) <- userStory $ do
+    S.isAdministratedAssignment ak
     as <- S.loadAssignment ak
     tss' <- S.testScriptInfosOfAssignment ak
     ts   <- S.testCaseOfAssignment ak
