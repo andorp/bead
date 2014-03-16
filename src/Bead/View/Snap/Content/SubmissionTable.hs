@@ -72,17 +72,17 @@ submissionTable tableId now stb table = submissionTableContextCata html stb wher
   html courses groups testscripts = do
     msg <- getI18N
     return $ do
-      i18n msg $ submissionTablePart tableId now table
+      i18n msg $ submissionTablePart tableId now stb table
       i18n msg $ courseTestScriptTable testscripts table
       i18n msg $ assignmentCreationMenu courses groups table
 
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
 -- group or course students, an informational text is shown.
-submissionTablePart :: String -> UTCTime -> SubmissionTableInfo -> IHtml
+submissionTablePart :: String -> UTCTime -> SubmissionTableContext -> SubmissionTableInfo -> IHtml
 
 -- Empty table
-submissionTablePart tableId now s
+submissionTablePart tableId now ctx s
   | and [null $ submissionTableInfoAssignments s, null $ stiUsers s] = do
     msg <- getI18N
     return $ do
@@ -91,7 +91,7 @@ submissionTablePart tableId now s
         dataCell noStyle (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "There are no assignments or students yet.")
 
 -- Non empty table
-submissionTablePart tableId now s = do
+submissionTablePart tableId now ctx s = do
   msg <- getI18N
   return $ do
     courseForm $ table tableId (className groupSubmissionTable) # informationalTable $ do
@@ -124,7 +124,7 @@ submissionTablePart tableId now s = do
                          $ modifyAssignmentLink "" x)
               $ zip [1..] as
 
-        group  _name _cfg _users cgas _ulines _anames _ckey _gkey = do
+        group  _name _cfg _users cgas _ulines _anames ckey _gkey = do
           let as = reverse . snd $ foldl numbering ((1,1),[]) cgas
           mapM_ header as
           where
@@ -134,7 +134,7 @@ submissionTablePart tableId now s = do
 
             header = cgInfoCata
               (\x -> openedHeaderCell openCourseAssignmentStyle closedCourseAssignmentStyle x $
-                       viewAssignmentLink (msg $ Msg_Home_CourseAssignmentIDPreffix "C") x)
+                       viewAssignmentLink ckey (msg $ Msg_Home_CourseAssignmentIDPreffix "C") x)
               (\x -> openedHeaderCell openGroupAssignmentStyle closedGroupAssignmentStyle x $
                        modifyAssignmentLink (msg $ Msg_Home_GroupAssignmentIDPreffix "G") x)
 
@@ -150,11 +150,17 @@ submissionTablePart tableId now s = do
         (assignmentName ak)
         (concat [pfx, show i])
 
-    viewAssignmentLink pfx (i,ak) =
+
+    viewAssignmentLink ck pfx (i,ak) =
       linkWithTitle
-        (routeOf (P.ViewAssignment ak))
+        (viewOrModifyAssignmentLink ck ak)
         (assignmentName ak)
         (concat [pfx, show i])
+      where
+        viewOrModifyAssignmentLink ck ak =
+          case Map.lookup ck (stcAdminCourses ctx) of
+            Nothing -> routeOf (P.ViewAssignment ak)
+            Just _  -> routeWithParams P.ModifyAssignment [requestParam ak]
 
     userLine msg s (u,p,submissionInfoMap) = do
       H.tr $ do
