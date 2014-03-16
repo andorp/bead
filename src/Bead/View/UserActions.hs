@@ -88,7 +88,7 @@ userStoryFor (ModifyTestScript tsk s) = Story.modifyTestScript tsk s
 userStoryFor (ChangeUserDetails n t l) =
   do Story.changeUserDetails n t l
      Story.setTimeZone t
-     Story.putStatusMessage $ Msg_UserActions_ChangedUserDetails "Az adatok módosultak."
+     Story.putStatusMessage $ Msg_UserActions_ChangedUserDetails "Settings of the user are changed."
 
 userStoryFor _                      = Story.logMessage L.DEBUG "No story was selected"
 -- etc ...
