@@ -4,24 +4,20 @@ module Bead.View.Snap.Content.Submission (
   , resolveStatus
   ) where
 
-import Data.List (intersperse)
-import Data.Time
-import Data.String (fromString)
-import Control.Monad (liftM)
-import Control.Applicative ((<*>))
+import           Data.List (intersperse)
+import           Data.String (fromString)
+import           Data.Time
 
-import Bead.Controller.ServiceContext (UserState(..))
-import Bead.Controller.UserStories (userAssignmentKeys, loadAssignment)
-import Bead.Controller.Pages as P (Page(Submission))
-import Bead.View.Snap.Pagelets
-import Bead.View.Snap.Content
-import Bead.View.Snap.Markdown (markdownToHtml)
-import Bead.View.Snap.Content.Utils
+import           Bead.Controller.Pages as P (Page(Submission))
 import qualified Bead.Domain.Entities as E
+import           Bead.View.Snap.Content
+import           Bead.View.Snap.Content.Utils
+import           Bead.View.Snap.Markdown (markdownToHtml)
+import           Bead.View.Snap.Pagelets
 
-import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A
+import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A
 
 submission :: Content
 submission = getPostContentHandler submissionPage submissionPostHandler
@@ -38,6 +34,7 @@ submissionPage = withUserState $ \s -> do
   let render p = renderPagelet $ withUserFrame s p
   ak <- getParameter assignmentKeyPrm
   ut <- usersTimeZoneConverter
+  -- TODO: Refactor use guards
   userAssignmentForSubmission
     ak
     (\desc asg -> render $ submissionContent

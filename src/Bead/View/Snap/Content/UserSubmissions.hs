@@ -3,22 +3,18 @@ module Bead.View.Snap.Content.UserSubmissions (
     userSubmissions
   ) where
 
-import Bead.View.Snap.Content
-import Bead.Domain.Types (Str(..))
-import Bead.Domain.Entities (Email(..), roles, showDate)
-import Bead.Domain.Shared.Evaluation
-import qualified Bead.Controller.UserStories as U (userSubmissions)
-import Bead.Controller.Pages as P (Page(ModifyEvaluation, Evaluation))
+import           Data.Function (on)
+import           Data.List (sortBy)
+import           Data.String (fromString)
+import           Data.Time (UTCTime)
 
-import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A
+import           Bead.Controller.Pages as P (Page(ModifyEvaluation, Evaluation))
+import qualified Bead.Controller.UserStories as Story
+import           Bead.Domain.Shared.Evaluation
+import           Bead.View.Snap.Content
+
 import qualified Text.Blaze.Html5 as H
-import Bead.View.Snap.I18N (IHtml)
-import Data.Function (on)
-import Data.List (sortBy)
-import Data.String (fromString)
-import Data.Time (UTCTime, LocalTime)
-import Text.Printf (printf)
+import           Text.Printf (printf)
 
 userSubmissions :: Content
 userSubmissions = getContentHandler userSubmissionPage
@@ -27,7 +23,9 @@ userSubmissionPage :: GETContentHandler
 userSubmissionPage = withUserState $ \s -> do
   username <- getParameter usernamePrm
   aKey     <- getParameter assignmentKeyPrm
-  mDesc <- userStory $ U.userSubmissions username aKey
+  mDesc <- userStory $ do
+             Story.isAdministratedAssignment aKey
+             Story.userSubmissions username aKey
   case mDesc of
     Nothing -> renderPagelet $ withUserFrame s unauthorized
     Just  d -> do

@@ -348,6 +348,14 @@ translationList =
   , Msg_UserStoryError_EmptyAssignmentTitle ()
   , Msg_UserStoryError_EmptyAssignmentDescription ()
 
+  , Msg_UserStoryError_NonAdministratedCourse ()
+  , Msg_UserStoryError_NonAdministratedGroup ()
+  , Msg_UserStoryError_NonAdministratedAssignment ()
+  , Msg_UserStoryError_NonRelatedAssignment ()
+  , Msg_UserStoryError_NonAdministratedSubmission ()
+  , Msg_UserStoryError_NonAdministratedTestScript ()
+  , Msg_UserStoryError_NonCommentableSubmission ()
+
   , Msg_UserActions_ChangedUserDetails ()
 
   , Msg_LinkText_Login ()

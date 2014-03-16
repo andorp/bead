@@ -36,6 +36,7 @@ data PageData = PageData {
 submissionListPage :: GETContentHandler
 submissionListPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
+  -- TODO: Refactor use guards
   usersAssignment ak $ \assignment -> do
     case assignment of
       Nothing -> renderPagelet . withUserFrame s $ invalidAssignment

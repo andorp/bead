@@ -2,7 +2,7 @@
 {-# LANGUAGE OverloadedStrings          #-}
 module Bead.Controller.UserStories where
 
-import           Bead.Domain.Entities     as E
+import           Bead.Domain.Entities as E
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Domain.Types
@@ -10,8 +10,9 @@ import           Bead.Controller.ServiceContext
 import           Bead.Controller.Logging  as L
 import           Bead.Controller.Pages    as P
 import           Bead.Persistence.Persist (Persist)
-import qualified Bead.Persistence.Persist as Persist
+import qualified Bead.Persistence.Persist   as Persist
 import qualified Bead.Persistence.Relations as Persist
+import qualified Bead.Persistence.Guards    as Persist
 import           Bead.View.Snap.Translation
 
 import           Control.Applicative
@@ -240,19 +241,19 @@ administratedGroups = logAction INFO "selects administrated groups" $ do
 --   for other creators like, createCourse and createExercise
 create
   :: (PermissionObj o)
-  => (o -> k -> String)      -- ^ Descriptor for the logger
-  -> (o -> TIO k)            -- ^ Saver function of the persistence
+  => (o -> v -> String)      -- ^ Descriptor for the logger
   -> o                       -- ^ The object to save
-  -> UserStory k
-create descriptor saver object = do
+  -> (o -> TIO v)            -- ^ Saver function of the persistence
+  -> UserStory v
+create descriptor object saver = do
   authorize P_Create (permissionObject object)
-  key <- persistence (saver object)
-  logMessage INFO $ descriptor object key
-  return key
+  value <- persistence (saver object)
+  logMessage INFO $ descriptor object value
+  return value
 
 createUserReg :: UserRegistration -> UserStory UserRegKey
 createUserReg u = logAction INFO "Creates user registration" $ do
-  create descriptor Persist.saveUserReg u
+  create descriptor u Persist.saveUserReg
   where
     descriptor x _ = reg_username x
 
@@ -265,7 +266,7 @@ loadUserReg k = logAction INFO "Loading user registration" $ do
 createCourse :: Course -> UserStory CourseKey
 createCourse course = logAction INFO "creates course" $ do
   authorize P_Create P_Course
-  key <- create descriptor Persist.saveCourse course
+  key <- create descriptor course Persist.saveCourse
   putStatusMessage $ Msg_UserStory_CreateCourse "The course has been created."
   return key
   where
@@ -302,13 +303,14 @@ deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ 
   authorize P_Modify P_Course
   u <- username
   join $ persistence $ do
-    cs <- map fst <$> Persist.administratedCourses u
-    case ck `elem` cs of
-      False -> return . errorPage . userError $ Msg_UserStoryError_NoCourseAdminOfCourse "The user is not course admin for the course."
-      True -> do
-        mapM_ (Persist.deleteUserFromCourse ck) sts
-        return . putStatusMessage $
-          Msg_UserStory_UsersAreDeletedFromCourse "The students have been removed from the course."
+    admined <- Persist.isAdministratedCourse u ck
+    if admined
+      then do mapM_ (Persist.deleteUserFromCourse ck) sts
+              return . putStatusMessage $
+                Msg_UserStory_UsersAreDeletedFromCourse "The students have been removed from the course."
+      else return $ do
+             logMessage INFO . violation $ printf "The user tries to delete users from a course (%s) which not belongs to him" (str ck)
+             errorPage . userError $ Msg_UserStoryError_NoCourseAdminOfCourse "The user is not course admin for the course."
 
 -- Saves the given test script associated with the given course, if the
 -- current user have authorization for the operation and if he administrates the
@@ -414,28 +416,29 @@ deleteUsersFromGroup gk sts = logAction INFO ("delets users form group: " ++ sho
   authorize P_Modify P_Group
   u <- username
   join $ persistence $ do
-    gs <- map fst <$> Persist.administratedGroups u
-    case gk `elem` gs of
-      False -> return . errorPage . userError $ Msg_UserStoryError_NoGroupAdminOfGroup "You are not a group admin for the group."
-      True -> do
-        ck <- Persist.courseOfGroup gk
-        mapM_ (\student -> Persist.unsubscribe student ck gk) sts
-        return . putStatusMessage $
-          Msg_UserStory_UsersAreDeletedFromGroup "The students have been removed from the group."
+    admined <- Persist.isAdministratedGroup u gk
+    if admined
+      then do ck <- Persist.courseOfGroup gk
+              mapM_ (\student -> Persist.unsubscribe student ck gk) sts
+              return . putStatusMessage $
+                Msg_UserStory_UsersAreDeletedFromGroup "The students have been removed from the group."
+      else return $ do
+             logMessage INFO . violation $ printf "The user tries to delete users from group (%s) which is not administrated by him" (str gk)
+             errorPage . userError $ Msg_UserStoryError_NoGroupAdminOfGroup "You are not a group admin for the group."
 
 createGroupAdmin :: Username -> GroupKey -> UserStory ()
 createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $ do
   authorize P_Create P_GroupAdmin
   authorize P_Open   P_User
-  groupAdminSetted <- persistence $ do
+  admin <- username
+  join . persistence $ do
     info <- Persist.personalInfo u
-    flip personalInfoCata info $ \role _name _tz ->
-      if (groupAdmin role)
-        then Persist.createGroupAdmin u gk >> return True
-        else return False
-  if groupAdminSetted
-    then putStatusMessage $ Msg_UserStory_SetGroupAdmin "The user has become a teacher."
-    else CME.throwError $ userParamError (Msg_UserStoryError_NoGroupAdmin "%s is not a group admin!") (user u)
+    withPersonalInfo info $ \role _name _tz -> do
+      admined <- Persist.isAdministratedCourseOfGroup admin gk
+      if (and [groupAdmin role, admined])
+        then do Persist.createGroupAdmin u gk
+                return $ putStatusMessage $ Msg_UserStory_SetGroupAdmin "The user has become a teacher."
+        else return . CME.throwError $ userParamError (Msg_UserStoryError_NoGroupAdmin "%s is not a group admin!") (user u)
   where
     user = usernameCata id
 
@@ -463,9 +466,15 @@ unsubscribeFromCourse gk = logAction INFO ("unsubscribes from group: " ++ show g
 createGroup :: CourseKey -> Group -> UserStory GroupKey
 createGroup ck g = logAction INFO ("creats group " ++ show (groupName g)) $ do
   authorize P_Create P_Group
-  key <- persistence $ Persist.saveGroup ck g
-  putStatusMessage $ Msg_UserStory_CreateGroup "The group has been created."
-  return key
+  u <- username
+  join $ persistence $ do
+    admined <- Persist.isAdministratedCourse u ck
+    if admined
+      then do key <- Persist.saveGroup ck g
+              return $ do
+                putStatusMessage $ Msg_UserStory_CreateGroup "The group has been created."
+                return key
+      else return . errorPage $ userError nonAdministratedCourse
 
 loadGroup :: GroupKey -> UserStory Group
 loadGroup gk = logAction INFO ("loads group " ++ show gk) $ do
@@ -529,13 +538,11 @@ attendedGroups = logAction INFO "selects courses attended in" $ do
                 <*> Persist.isThereASubmissionForCourse u ck
       return (gk,desc,s)
 
-testCaseModificationForAssignment :: AssignmentKey -> TCModification -> UserStory ()
-testCaseModificationForAssignment ak = tcModificationCata noModification fileOverwrite textOverwrite tcDelete where
+testCaseModificationForAssignment :: Username -> AssignmentKey -> TCModification -> Persist ()
+testCaseModificationForAssignment u ak = tcModificationCata noModification fileOverwrite textOverwrite tcDelete where
   noModification = return ()
 
   fileOverwrite tsk uf = do
-    u <- username
-    persistence $ do
       let usersFileName = usersFileCata id uf
           testCase = TestCase {
               tcName        = usersFileName
@@ -550,10 +557,9 @@ testCaseModificationForAssignment ak = tcModificationCata noModification fileOve
         Nothing -> Persist.saveTestCase tsk ak testCase
       Persist.modifyTestScriptOfTestCase tk tsk
       Persist.copyTestCaseFile tk u uf
-    return ()
+      return ()
 
   textOverwrite tsk t = do
-    persistence $ do
       a <- Persist.loadAssignment ak
       let name = assignmentName a
           testCase = TestCase {
@@ -570,7 +576,6 @@ testCaseModificationForAssignment ak = tcModificationCata noModification fileOve
       Persist.modifyTestScriptOfTestCase tk tsk
 
   tcDelete = do
-    persistence $ do
       mtk <- Persist.testCaseOfAssignment ak
       case mtk of
         Nothing -> return ()
@@ -579,14 +584,12 @@ testCaseModificationForAssignment ak = tcModificationCata noModification fileOve
 -- Interprets the TCCreation value, copying a binary file or filling up the
 -- normal test case file with the plain value, creating the test case for the
 -- given assingment
-testCaseCreationForAssignment :: AssignmentKey -> TCCreation -> UserStory ()
-testCaseCreationForAssignment ak = tcCreationCata noCreation fileCreation textCreation where
+testCaseCreationForAssignment :: Username -> AssignmentKey -> TCCreation -> Persist ()
+testCaseCreationForAssignment u ak = tcCreationCata noCreation fileCreation textCreation where
 
   noCreation = return ()
 
   fileCreation tsk usersfile = do
-    u <- username
-    persistence $ do
       let usersFileName = usersFileCata id usersfile
           testCase = TestCase {
               tcName        = usersFileName
@@ -597,11 +600,10 @@ testCaseCreationForAssignment ak = tcCreationCata noCreation fileCreation textCr
             }
       tk <- Persist.saveTestCase tsk ak testCase
       Persist.copyTestCaseFile tk u usersfile
-    return ()
+      return ()
 
   -- Set plain text as test case value
   textCreation tsk plain = do
-    persistence $ do
       a <- Persist.loadAssignment ak
       let name = assignmentName a
           testCase = TestCase {
@@ -612,7 +614,7 @@ testCaseCreationForAssignment ak = tcCreationCata noCreation fileCreation textCr
             , tcInfo        = ""
             }
       Persist.saveTestCase tsk ak testCase
-    return ()
+      return ()
 
 createGroupAssignment :: GroupKey -> Assignment -> TCCreation -> UserStory AssignmentKey
 createGroupAssignment gk a tc = logAction INFO msg $ do
@@ -624,12 +626,22 @@ createGroupAssignment gk a tc = logAction INFO msg $ do
   when (null $ assignmentDesc a) $
     errorPage . userError $ Msg_UserStoryError_EmptyAssignmentDescription
       "Assignment description is empty."
-  ak <- create descriptor (Persist.saveGroupAssignment gk) a
-  testCaseCreationForAssignment ak tc
-  statusMsg a
-  return ak
+
+  u <- username
+  join . persistence $ do
+    admined <- Persist.isAdministratedGroup u gk
+    if admined
+      then do ak <- Persist.saveGroupAssignment gk a
+              testCaseCreationForAssignment u ak tc
+              return $ do
+                statusMsg a
+                logMessage INFO $ descriptor ak
+                return ak
+      else return $ do
+             logMessage INFO . violation $ printf "User tries to access to group: %s" (str gk)
+             errorPage $ userError nonAdministratedGroup
   where
-    descriptor _ key = printf "Exercise is created with id: %s" (str key)
+    descriptor key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for group " ++ show gk
     statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
       putStatusMessage $ Msg_UserStory_NewGroupAssignment "The group assignment has been created."
@@ -644,12 +656,22 @@ createCourseAssignment ck a tc = logAction INFO msg $ do
   when (null $ assignmentDesc a) $
     errorPage . userError $ Msg_UserStoryError_EmptyAssignmentDescription
       "Assignment description is empty."
-  ak <- create descriptor (Persist.saveCourseAssignment ck) a
-  testCaseCreationForAssignment ak tc
-  statusMsg a
-  return ak
+
+  u <- username
+  join . persistence $ do
+    admined <- Persist.isAdministratedCourse u ck
+    if admined
+      then do ak <- Persist.saveCourseAssignment ck a
+              testCaseCreationForAssignment u ak tc
+              return $ do
+                statusMsg a
+                logMessage INFO $ descriptor ak
+                return ak
+      else return $ do
+             logMessage INFO . violation $ printf "User tries to access to course: %s" (str ck)
+             errorPage $ userError nonAdministratedCourse
   where
-    descriptor _ key = printf "Exercise is created with id: %s" (str key)
+    descriptor key = printf "Exercise is created with id: %s" (str key)
     msg = "creates assignment for course " ++ show ck
     statusMsg = assignmentCata $ \name _ _ _ _ _ _ ->
       putStatusMessage $ Msg_UserStory_NewCourseAssignment "The course assignment has been created."
@@ -674,7 +696,7 @@ clearStatusMessage :: UserStory ()
 clearStatusMessage = changeUserState clearStatus
 
 -- Logs the error message into the logfile and, also throw as an error
-errorPage :: UserError -> UserStory ()
+errorPage :: UserError -> UserStory a
 errorPage e = do
   logMessage ERROR $ translateUserError trans e
   CME.throwError e
@@ -783,11 +805,17 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
   authorize P_Open   P_Assignment
   authorize P_Create P_Submission
   checkActiveAssignment
-  withUserAndPersist $ \u -> do
-    removeUserOpenedSubmissions u ak
-    sk <- Persist.saveSubmission ak u s
-    Persist.saveTestJob sk
-    return ()
+  join $ withUserAndPersist $ \u -> do
+    attended <- Persist.isUsersAssignment u ak
+    if attended
+      then do removeUserOpenedSubmissions u ak
+              sk <- Persist.saveSubmission ak u s
+              Persist.saveTestJob sk
+              return (return ())
+      else return $ do
+             logMessage INFO . violation $
+               printf "The user tries to submit a solution for an assignment which not belongs to him: (%s)" (str ak)
+             errorPage $ userError nonRelatedAssignment
   where
     checkActiveAssignment :: UserStory ()
     checkActiveAssignment = do
@@ -877,7 +905,15 @@ userAssignments = logAction INFO "lists assignments" $ do
 submissionDescription :: SubmissionKey -> UserStory SubmissionDesc
 submissionDescription sk = logAction INFO msg $ do
   authPerms submissionDescPermissions
-  persistence $ Persist.submissionDesc sk
+  u <- username
+  join . persistence $ do
+    admined <- Persist.isAdministratedSubmission u sk
+    if admined
+      then do sd <- Persist.submissionDesc sk
+              return (return sd)
+      else return $ do
+             logMessage INFO . violation $ printf "The user tries to evaluate a submission that not belongs to him."
+             errorPage $ userError nonAdministratedSubmission
   where
     msg = "loads submission infomation for " ++ show sk
 
@@ -906,7 +942,15 @@ submissionListDesc ak = logAction INFO ("lists submissions for assignment " ++ s
 courseSubmissionTable :: CourseKey -> UserStory SubmissionTableInfo
 courseSubmissionTable ck = logAction INFO ("gets submission table for course " ++ show ck) $ do
   authPerms submissionTableInfoPermissions
-  persistence $ Persist.courseSubmissionTableInfo ck
+  u  <- username
+  join . persistence $ do
+    admined <- Persist.isAdministratedCourse u ck
+    if admined
+      then do sti <- Persist.courseSubmissionTableInfo ck
+              return (return sti)
+      else return $ do
+             logMessage INFO . violation $ printf "The user tries to open a course overview (%s) that is not administrated by him." (str ck)
+             errorPage $ userError nonAdministratedCourse
 
 submissionTables :: UserStory [SubmissionTableInfo]
 submissionTables = logAction INFO "lists submission tables" $ do
@@ -929,23 +973,23 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
   now <- liftIO $ getCurrentTime
   userData <- currentUser
   i18n <- asksI18N
-  msg <- withUserAndPersist $ \u -> do
-    a <- Persist.isAdminedSubmission u sk
-    case a of
-      True -> do
-        mek <- Persist.evaluationOfSubmission sk
-        case mek of
-          Nothing -> do
-            Persist.saveEvaluation sk e
-            Persist.removeOpenedSubmission sk
-            Persist.saveComment sk (evaluationComment i18n now userData e)
-            return Nothing
-          Just _ -> return . Just $ Msg_UserStory_AlreadyEvaluated
-            "Other admin just evaluated this submission"
-      False -> do
-        return Nothing
-
-  maybe (return ()) putStatusMessage msg
+  join . withUserAndPersist $ \u -> do
+    admined <- Persist.isAdminedSubmission u sk
+    if admined
+      then do mek <- Persist.evaluationOfSubmission sk
+              case mek of
+                Nothing -> do
+                  Persist.saveEvaluation sk e
+                  Persist.removeOpenedSubmission sk
+                  Persist.saveComment sk (evaluationComment i18n now userData e)
+                  return (return ())
+                Just _ -> return $ do
+                            logMessage INFO "Other admin just evaluated this submission"
+                            putStatusMessage $ Msg_UserStory_AlreadyEvaluated
+                              "Other admin just evaluated this submission"
+      else return $ do
+             logMessage INFO . violation $ printf "The user tries to save evalution for a submission (%s) that not belongs to him" (show sk)
+             errorPage $ userError nonAdministratedSubmission
 
 modifyEvaluation :: EvaluationKey -> Evaluation -> UserStory ()
 modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
@@ -953,23 +997,31 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
   now <- liftIO $ getCurrentTime
   userData <- currentUser
   i18n <- asksI18N
-  withUserAndPersist $ \u -> do
+  join . withUserAndPersist $ \u -> do
     sk <- Persist.submissionOfEvaluation ek
-    a <- Persist.isAdminedSubmission u sk
-    when a $ do
-      Persist.modifyEvaluation ek e
-      Persist.saveComment sk (evaluationComment i18n now userData e)
-      return ()
+    admined <- Persist.isAdminedSubmission u sk
+    if admined
+      then do Persist.modifyEvaluation ek e
+              Persist.saveComment sk (evaluationComment i18n now userData e)
+              return (return ())
+      else return $ do
+              logMessage INFO . violation $ printf "The user tries to modify an evaluation (%s) that not belongs to him." (show ek)
+              errorPage $ userError nonAdministratedSubmission
 
 createComment :: SubmissionKey -> Comment -> UserStory ()
 createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
   authorize P_Open   P_Submission
   authorize P_Create P_Comment
-  withUserAndPersist $ \u -> do
-    can <- Persist.canUserCommentOn u sk
-    when can $ do
-      Persist.saveComment sk c
-      return ()
+  join $ withUserAndPersist $ \u -> do
+    canComment <- Persist.canUserCommentOn u sk
+    admined  <- Persist.isAdministratedSubmission u sk
+    attended <- Persist.isUserSubmission u sk
+    if (canComment && (admined || attended))
+      then do Persist.saveComment sk c
+              return (return ())
+      else return $ do
+              logMessage INFO . violation $ printf "The user tries to comment on a submission (%s) that not belongs to him" (show sk)
+              errorPage . userError $ Msg_UserStoryError_NonCommentableSubmission "The submission is not commentable"
 
 -- Test agent user story, that reads out all the comments that the test daemon left
 -- and saves the comments
@@ -1003,19 +1055,83 @@ userSubmissions s ak = logAction INFO msg $ do
 modifyAssignment :: AssignmentKey -> Assignment -> TCModification -> UserStory ()
 modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ do
   authorize P_Modify P_Assignment
-  withUserAndPersist $ \u -> do
-    courseOrGroup <- Persist.courseOrGroupOfAssignment ak
-    ownedAssignment <- case courseOrGroup of
-      Left  ck -> (elem ck . map fst) <$> Persist.administratedCourses u
-      Right gk -> (elem gk . map fst) <$> Persist.administratedGroups  u
-    when ownedAssignment $ Persist.modifyAssignment ak a
-    -- TODO: Log invalid access
-  testCaseModificationForAssignment ak tc
+  join . withUserAndPersist $ \u -> do
+    admined <- Persist.isAdministratedAssignment u ak
+    if admined
+      then do Persist.modifyAssignment ak a
+              testCaseModificationForAssignment u ak tc
+              return (return ())
+      else return $ do
+             logMessage INFO . violation $ printf "User tries to modify the assignment: (%s)" (str ak)
+             errorPage $ userError nonAdministratedAssignment
 
+-- * Guards
+
+-- Checks with the given guard function if the user has passed the guard,
+-- otherwise logs a violation printf message, and renders the error page with
+-- the given user error
+guard
+  :: (Show a)
+  => (Username -> a -> Persist Bool) -- Guard
+  -> String                          -- Violation printf message
+  -> UserError                       -- Error for the error page
+  -> a                               -- The value for the guard
+  -> UserStory ()
+guard g m e x = do
+  u <- username
+  join . persistence $ do
+    passed <- g u x
+    if passed
+      then (return (return ()))
+      else return $ do
+             logMessage INFO . violation $ printf m (show x)
+             errorPage e
+
+-- Checks if the given course is administrated by the actual user and
+-- throws redirects to the error page if not, otherwise do nothing
+isAdministratedCourse :: CourseKey -> UserStory ()
+isAdministratedCourse = guard
+  Persist.isAdministratedCourse
+  "The user tries to access a course (%s) which is not administrated by him."
+  (userError nonAdministratedCourse)
+
+-- Checks if the given group is administrated by the actual user and
+-- throws redirects to the error page if not, otherwise do nothing
+isAdministratedGroup :: GroupKey -> UserStory ()
+isAdministratedGroup = guard
+  Persist.isAdministratedGroup
+  "The user tries to access a group (%s) which is not administrated by him."
+  (userError nonAdministratedGroup)
+
+-- Checks if the given assignment is administrated by the actual user and
+-- throws redirects to the error page if not, otherwise do nothing
+isAdministratedAssignment :: AssignmentKey -> UserStory ()
+isAdministratedAssignment = guard
+  Persist.isAdministratedAssignment
+  "The user tries to access an assignment (%s) which is not administrated by him."
+  (userError nonAdministratedAssignment)
+
+-- Checks if the given assignment is an assignment of a course or group that
+-- the users attend otherwise, renders the error page
+isUsersAssignment :: AssignmentKey -> UserStory ()
+isUsersAssignment = guard
+  Persist.isUsersAssignment
+  "The user tries to access an assignment (%s) which is not of him's."
+  (userError nonRelatedAssignment)
+
+isAdministratedTestScript :: TestScriptKey -> UserStory ()
+isAdministratedTestScript = guard
+  Persist.isAdministratedTestScript
+  "The user tries to access a test script (%s) which is not administrated by him."
+  (userError nonAdministratedTestScript)
 
 -- * User Story combinators
 
 -- * Tools
+
+-- Creates a message adding the "VIOLATION: " preffix to it
+violation :: String -> String
+violation = ("[GUARD VIOLATION]: " ++)
 
 asksUserContainer :: UserStory (UserContainer UserState)
 asksUserContainer = CMR.asks (userContainer . fst)
@@ -1084,3 +1200,13 @@ persistence m = do
         registration       = "Registration"
         testAgent          = "Test Agent"
         loggedIn u _ _ _ t _ _ = concat [str u, " ", t]
+
+-- * User Error Messages
+
+nonAdministratedCourse = Msg_UserStoryError_NonAdministratedCourse "The course is not administrated by you"
+nonAdministratedGroup  = Msg_UserStoryError_NonAdministratedGroup "This group is not administrated by you."
+nonAdministratedAssignment = Msg_UserStoryError_NonAdministratedAssignment "This assignment is not administrated by you."
+nonAdministratedSubmission = Msg_UserStoryError_NonAdministratedSubmission "The submission is not administrated by you."
+nonAdministratedTestScript = Msg_UserStoryError_NonAdministratedTestScript "The test script is not administrated by you."
+nonRelatedAssignment = Msg_UserStoryError_NonRelatedAssignment "The assignment is not belongs to you."
+
