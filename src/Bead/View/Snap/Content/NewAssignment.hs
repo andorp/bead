@@ -10,7 +10,7 @@ module Bead.View.Snap.Content.NewAssignment (
   ) where
 
 import           Control.Monad.Error
-import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.UTF8 as BsUTF8
 import qualified Data.Map as Map
 import           Data.String (fromString)
 import           Data.Time (UTCTime, getCurrentTime)
@@ -26,7 +26,6 @@ import qualified Bead.Controller.Pages as P (Page(..))
 import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Markdown
-import           Bead.View.Snap.Pagelets
 import           Bead.View.Snap.RequestParams
 
 
@@ -614,7 +613,7 @@ newAssignmentContent pd = do
                   keyValue uf = flip usersFileCata uf $ \u -> (show uf, u)
 
           testCaseText Nothing = Nothing
-          testCaseText (Just (_,tc',_)) = Just . BS.unpack $ tcValue tc'
+          testCaseText (Just (_,tc',_)) = Just . BsUTF8.toString $ tcValue tc'
 
           testCaseFileName Nothing = return ()
           testCaseFileName (Just (_,tc',_)) = fromString $ tcInfo tc'
