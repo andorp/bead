@@ -25,6 +25,7 @@ import           Control.Monad.Trans
 import           Control.Monad (join)
 import           Prelude hiding (log, userError)
 import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.UTF8  as BsUTF8 (fromString)
 import           Data.Hashable
 import           Data.List (nub)
 import           Data.Maybe (catMaybes)
@@ -557,7 +558,7 @@ testCaseModificationForAssignment ak = tcModificationCata noModification fileOve
           testCase = TestCase {
               tcName        = name
             , tcDescription = name
-            , tcValue       = BS.pack t
+            , tcValue       = BsUTF8.fromString t
             , tcType        = TestCaseSimple
             , tcInfo        = ""
             }
@@ -605,7 +606,7 @@ testCaseCreationForAssignment ak = tcCreationCata noCreation fileCreation textCr
           testCase = TestCase {
               tcName        = name
             , tcDescription = name
-            , tcValue       = BS.pack plain
+            , tcValue       = BsUTF8.fromString plain
             , tcType        = TestCaseSimple
             , tcInfo        = ""
             }

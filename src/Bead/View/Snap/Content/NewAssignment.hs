@@ -10,7 +10,7 @@ import Control.Monad.Error
 import Data.Time (UTCTime, getCurrentTime)
 import qualified Data.Time as Time
 import Data.String (fromString)
-import qualified Data.ByteString.Char8 as BS
+import qualified Data.ByteString.UTF8 as BsUTF8
 import qualified Data.Map as Map
 
 import Bead.Controller.Pages (Page)
@@ -400,7 +400,7 @@ newAssignmentContent pd = do
                   keyValue uf = flip usersFileCata uf $ \u -> (show uf, u)
 
           testCaseText Nothing = Nothing
-          testCaseText (Just (_,tc',_)) = Just . BS.unpack $ tcValue tc'
+          testCaseText (Just (_,tc',_)) = Just . BsUTF8.toString $ tcValue tc'
 
           testCaseFileName Nothing = return ()
           testCaseFileName (Just (_,tc',_)) = fromString $ tcInfo tc'
