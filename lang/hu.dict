@@ -63,6 +63,7 @@ DictionaryFile {
     , Msg_NewAssignment_Course { trans = "Tárgy" }
     , Msg_NewAssignment_Group { trans = "Csoport" }
     , Msg_NewAssignment_SaveButton { trans = "Mentés" }
+    , Msg_NewAssignment_PreviewButton { trans = "Előnézet" }
     , Msg_NewAssignment_Title_Normal { trans = "Normal" }
     , Msg_NewAssignment_Title_Urn { trans = "Urn" }
     , Msg_NewAssignment_Info_Normal { trans = "A feladatot a kezdés idejétől a befejezés idejéig lehet beadni.  A feladat nem fog látszani a kezdés idejéig.  A feladatok mindig automatikusan nyílnak és záródnak." }
@@ -73,6 +74,7 @@ DictionaryFile {
     , Msg_NewAssignment_NoTesting { trans = "Tesztelés nélküli feladat" }
     , Msg_NewAssignment_TestFile { trans = "Tesztállomány" }
     , Msg_NewAssignment_TestFile_Info { trans = "Egy (tesztadatokat tartalmazó) állomány adható meg itt, amelyet a tesztelő megkap.  Állományok az \"%s\" oldalon keresztül tölthetőek fel." }
+    , Msg_NewAssignment_AssignmentPreview { trans = "A feladat előnézete" }
     , Msg_GroupRegistration_RegisteredCourses { trans = "Felvett csoportok" }
     , Msg_GroupRegistration_SelectGroup { trans = "Tárgy és csoport kiválasztása" }
     , Msg_GroupRegistration_NoRegisteredCourses { trans = "Nincsenek felvett tárgyak.  Válasszunk egy  csoportot!" }
@@ -345,6 +347,9 @@ DictionaryFile {
     , Msg_LinkText_NewGroupAssignment { trans = "Új csoportszintű feladat" }
     , Msg_LinkText_NewCourseAssignment { trans = "Új tárgyszintű feladat" }
     , Msg_LinkText_ModifyAssignment { trans = "Feladat módosítása" }
+    , Msg_LinkText_NewGroupAssignmentPreview { trans = "Új csoportszintű feladat" }
+    , Msg_LinkText_NewCourseAssignmentPreview { trans = "Új tárgyszintű feladat" }
+    , Msg_LinkText_ModifyAssignmentPreview { trans = "Feladat módosítása" }
     , Msg_LinkText_ViewAssignment { trans = "Feladat megtekintése" }
     , Msg_LinkText_ChangePassword { trans = "Jelszócsere" }
     , Msg_LinkText_SetUserPassword { trans = "Hallgató jelszavának beállítása" }

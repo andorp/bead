@@ -34,6 +34,7 @@ module Bead.Controller.Pages (
   , isSetUserPassword
   , isCommentFromEvaluation
   , isCommentFromModifyEvaluation
+  , isTemporaryViewPage
 #ifdef TEST
   , invariants
 #endif
@@ -47,8 +48,6 @@ import Control.Monad (join)
 #ifdef TEST
 import Bead.Invariants (Invariants(..))
 #endif
-
--- * Page types and necessary data
 
 data Page
   = Login
@@ -64,8 +63,11 @@ data Page
   | ModifyEvaluation R.SubmissionKey R.EvaluationKey
   | NewGroupAssignment R.GroupKey
   | NewCourseAssignment R.CourseKey
-  | ModifyAssignment
+  | ModifyAssignment R.AssignmentKey
   | ViewAssignment R.AssignmentKey
+  | NewGroupAssignmentPreview R.GroupKey
+  | NewCourseAssignmentPreview R.CourseKey
+  | ModifyAssignmentPreview R.AssignmentKey
   | Submission
   | SubmissionList
   | SubmissionDetails R.AssignmentKey R.SubmissionKey
@@ -108,6 +110,9 @@ pageCata
   newCourseAssignment
   modifyAssignment
   viewAssignment
+  newGroupAssignmentPreview
+  newCourseAssignmentPreview
+  modifyAssignmentPreview
   submission
   submissionList
   submissionDetails
@@ -142,8 +147,11 @@ pageCata
     ModifyEvaluation sk ek -> modifyEvaluation sk ek
     NewGroupAssignment gk -> newGroupAssignment gk
     NewCourseAssignment ck -> newCourseAssignment ck
-    ModifyAssignment -> modifyAssignment
+    ModifyAssignment ak -> modifyAssignment ak
     ViewAssignment ak -> viewAssignment ak
+    NewGroupAssignmentPreview gk -> newGroupAssignmentPreview gk
+    NewCourseAssignmentPreview ck -> newCourseAssignmentPreview ck
+    ModifyAssignmentPreview ak -> modifyAssignmentPreview ak
     Submission -> submission
     SubmissionList -> submissionList
     SubmissionDetails ak sk -> submissionDetails ak sk
@@ -205,11 +213,20 @@ isNewGroupAssignment _                      = False
 isNewCourseAssignment (NewCourseAssignment _) = True
 isNewCourseAssignment _                       = False
 
-isModifyAssignment ModifyAssignment = True
-isModifyAssignment _                = False
+isModifyAssignment (ModifyAssignment _ ) = True
+isModifyAssignment _                     = False
 
 isViewAssignment (ViewAssignment _) = True
 isViewAssignment _                  = False
+
+isNewGroupAssignmentPreview (NewGroupAssignmentPreview _) = True
+isNewGroupAssignmentPreview _ = False
+
+isNewCourseAssignmentPreview (NewCourseAssignmentPreview _) = True
+isNewCourseAssignmentPreview _ = False
+
+isModifyAssignmentPreview (ModifyAssignmentPreview _) = True
+isModifyAssignmentPreview _ = False
 
 isSubmission Submission = True
 isSubmission _          = False
@@ -305,6 +322,8 @@ groupAdminPages = [
   , isNewGroupAssignment
   , isModifyAssignment
   , isViewAssignment
+  , isNewGroupAssignmentPreview
+  , isModifyAssignmentPreview
   , isUserSubmissions
   , isSetUserPassword
   , isUploadFile
@@ -321,6 +340,9 @@ courseAdminPages = [
   , isNewCourseAssignment
   , isNewGroupAssignment
   , isModifyAssignment
+  , isNewCourseAssignmentPreview
+  , isNewGroupAssignmentPreview
+  , isModifyAssignmentPreview
   , isViewAssignment
   , isUserSubmissions
   , isSetUserPassword
@@ -348,6 +370,20 @@ dataModificationPages = [
   , isDeleteUsersFromGroup
   , isUnsubscribeFromCourse
   ]
+
+-- Temporary data is rendered on the UI depending
+-- on the user input. Temporary data pages, does
+-- not redirect to a view page after submission
+tempViewPages = [
+    isNewGroupAssignmentPreview
+  , isNewCourseAssignmentPreview
+  , isModifyAssignmentPreview
+  ]
+
+-- Returns True if the given page is a temporary view page
+-- otherwise False
+isTemporaryViewPage :: Page -> Bool
+isTemporaryViewPage p = or (map ($ p) tempViewPages)
 
 -- Pages that not part of the site content
 nonActivePages = [
@@ -401,8 +437,11 @@ parentPage = pageCata
   (const2 EvaluationTable) -- modifyEvaluation
   (const Home) -- newGroupAssignment
   (const Home) -- newCourseAssignment
-  Home -- modifyAssignment
+  (const Home) -- modifyAssignment
   (const Home) -- viewAssignment
+  (const Home) -- newGroupAssignmentPreview
+  (const Home) -- newCourseAssignmentPreview
+  (const Home) -- modifyAssignmentPreview
   Home -- submission
   Home -- submissionList
   SubmissionDetails -- submissionDetails

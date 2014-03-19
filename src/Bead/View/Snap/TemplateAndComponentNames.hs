@@ -162,8 +162,11 @@ menuId = P.pageCata
   (const2 "link-modify-evaluation")
   (const "link-new-group-assignment")
   (const "link-new-course-assignment")
-  "link-modify-assignment"
+  (const "link-modify-assignment")
   (const "link-view-assignment")
+  (const "link-new-group-assignment-preview")
+  (const "link-new-course-assignment-preview")
+  (const "link-modify-assignment-preview")
   "link-submission"
   "link-submission-list"
   (const2 "link-submission-details")

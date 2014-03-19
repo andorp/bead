@@ -146,7 +146,7 @@ submissionTablePart tableId now ctx s = do
 
     modifyAssignmentLink pfx (i,ak) =
       linkWithTitle
-        (routeWithParams P.ModifyAssignment [requestParam ak])
+        (routeOf $ P.ModifyAssignment ak)
         (assignmentName ak)
         (concat [pfx, show i])
 
@@ -160,7 +160,7 @@ submissionTablePart tableId now ctx s = do
         viewOrModifyAssignmentLink ck ak =
           case Map.lookup ck (stcAdminCourses ctx) of
             Nothing -> routeOf (P.ViewAssignment ak)
-            Just _  -> routeWithParams P.ModifyAssignment [requestParam ak]
+            Just _  -> routeOf $ P.ModifyAssignment ak
 
     userLine msg s (u,p,submissionInfoMap) = do
       H.tr $ do

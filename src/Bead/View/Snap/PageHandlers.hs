@@ -7,60 +7,40 @@ module Bead.View.Snap.PageHandlers (
 #endif
   ) where
 
--- Bead imports
-
-import Prelude hiding (id)
+import qualified Control.Exception as CE
+import qualified Control.Monad.Error as CME
+import           Data.Maybe
+import qualified Data.Map as Map
+import           Data.String (fromString)
+import           Prelude hiding (id)
 import qualified Prelude as P
-import Bead.Configuration (Config(..))
-import Bead.Domain.Types
-import Bead.Domain.Entities as E
-import Bead.Controller.ServiceContext hiding (serviceContext)
-import Bead.Controller.Logging as L
+
+import           Snap.Snaplet.Auth as A
+import           Snap.Snaplet.Fay
+import           Snap.Snaplet.Session
+import           Snap.Util.FileServe (serveDirectory)
+import           Text.Printf (printf)
+
+import           Bead.Configuration (Config(..))
+import           Bead.Controller.Logging as L
+import           Bead.Controller.ServiceContext hiding (serviceContext)
 import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.UserStories as S
-import Bead.View.Snap.TemplateAndComponentNames
-import Bead.View.UserActions
-import Bead.View.Snap.Application
-import Bead.View.Snap.RouteOf
-import Bead.View.Snap.RequestParams
-import Bead.View.Snap.Session
-import Bead.View.Snap.HandlerUtils as HU
-
-import Bead.View.Snap.Login as L
-import Bead.View.Snap.Registration
-import Bead.View.Snap.ResetPassword
-import Bead.View.Snap.Content hiding (BlazeTemplate, template)
-import Bead.View.Snap.Content.All
-import Bead.View.Snap.ErrorPage
-
--- Haskell imports
-
-import Data.Maybe
-import Data.Map (Map)
-import qualified Data.Map as Map
-import Data.String (fromString)
-import qualified Data.Text as T
-import qualified Data.List as L
-import Control.Monad (join)
-import Control.Arrow ((&&&), (>>>))
-import Control.Monad.Error (Error(..))
-import qualified Control.Monad.CatchIO as CMC
-import qualified Control.Exception as CE
-import Control.Monad.Trans (lift)
-import qualified Control.Monad.Error as CME
-import Text.Printf (printf)
-
--- Snap and Blaze imports
-
-import Snap hiding (Config(..), get)
-import Snap.Blaze (blaze)
-import Snap.Snaplet.Auth as A
-import Snap.Snaplet.Fay
-import Snap.Snaplet.Session
-import Snap.Util.FileServe (serveDirectory)
+import           Bead.Domain.Entities as E
+import           Bead.View.Snap.Application
+import           Bead.View.Snap.Content hiding (BlazeTemplate, template)
+import           Bead.View.Snap.Content.All
+import           Bead.View.Snap.HandlerUtils as HU
+import           Bead.View.Snap.ErrorPage
+import           Bead.View.Snap.Login as L
+import           Bead.View.Snap.Registration
+import           Bead.View.Snap.ResetPassword
+import           Bead.View.Snap.RouteOf
+import           Bead.View.Snap.RequestParams
+import           Bead.View.Snap.Session
 
 #ifdef TEST
-import Bead.Invariants (Invariants(..))
+import           Bead.Invariants (Invariants(..))
 #endif
 
 -- * Route table
@@ -209,7 +189,8 @@ runGETHandler onError handler
 -- Runs the 'h' handler if no error occurs during the run of the handler
 -- calculates the parent page for the given 'p', and runs the attached userstory
 -- from the calculated user action
--- and redirects at the end, otherwise runs the onError handler
+-- and redirects at the end to the parent page, if the page is not
+-- a temporary view page, otherwise runs the onError handler
 -- in both ways returns information about the successfulness.
 runPOSTHandler
   :: (ContentHandlerError -> Handler App App ())
@@ -221,11 +202,12 @@ runPOSTHandler onError p h
       (hfailure . onError)
       (\_ -> return HSuccess)
       (do userAction <- h
+          let tempView = P.isTemporaryViewPage p
           userStory $ do
             userStoryFor userAction
-            S.changePage . P.parentPage $ p
+            unless tempView . S.changePage . P.parentPage $ p
           lift $ with sessionManager $ (commitSession >> touchSession)
-          redirectToParentPage p)
+          unless tempView $ redirectToParentPage p)
 
 logoutAndResetRoute :: Handler App App ()
 logoutAndResetRoute = do
@@ -366,9 +348,16 @@ requestToPage path params
     = P.NewGroupAssignment <$> groupKey
   | path == newCourseAssignmentPath
     = P.NewCourseAssignment <$> courseKey
-  | path == modifyAssignmentPath    = j P.ModifyAssignment
+  | path == modifyAssignmentPath
+    = P.ModifyAssignment <$> assignmentKey
   | path == viewAssignmentPath
     = P.ViewAssignment <$> assignmentKey
+  | path == newGroupAssignmentPreviewPath
+    = P.NewGroupAssignmentPreview <$> groupKey
+  | path == newCourseAssignmentPreviewPath
+    = P.NewCourseAssignmentPreview <$> courseKey
+  | path == modifyAssignmentPreviewPath
+    = P.ModifyAssignmentPreview <$> assignmentKey
   | path == changePasswordPath      = j P.ChangePassword
   | path == setUserPasswordPath     = j P.SetUserPassword
   | path == commentFromEvaluationPath

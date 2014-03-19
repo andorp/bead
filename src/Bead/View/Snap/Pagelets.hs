@@ -5,6 +5,7 @@
 module Bead.View.Snap.Pagelets where
 
 import           Control.Monad (join)
+import           Data.Char (isAlphaNum)
 import           Data.String (IsString(..), fromString)
 
 import           Text.Blaze.Html5 (Html, (!))
@@ -180,6 +181,27 @@ postForm action = H.form ! A.method "post" ! A.action (fromString action) ! A.ac
 getForm :: String -> Html -> Html
 getForm action = H.form ! A.method "get" ! A.action (fromString action) ! A.acceptCharset "UTF-8"
 
+-- Creates a POST form with multiple choices of actions. Each action is described in a pair
+-- (action, buttonText), all the buttons are added after the given html
+-- NOTE: JavaScript functions are named after the given id, except that all non
+-- alphanumeric characters are stripped out.
+multiActionPostForm :: String -> [(String, String)] -> Html -> Html
+multiActionPostForm id actions html =
+  H.form ! A.id (fromString id) ! A.method "post" ! A.acceptCharset "UTF-8" $ do
+    html
+    mapM_ actionButton ([1..] `zip` actions)
+  where
+    actionButton (i,(action, button)) = do
+      let fname = concat [filter isAlphaNum id, show i, "onClick()"]
+      H.p $ do
+        H.input ! A.type_ "button" ! A.onclick (fromString fname) ! A.value (fromString button)
+        H.script $ fromString $ concat
+          [ "function ", fname, "{"
+          ,    "document.getElementById(\"",id,"\").setAttribute(\"action\",\"",action,"\");"
+          ,    "document.getElementById(\"",id,"\").submit();"
+          , "}"
+          ]
+
 -- * Table
 table :: String -> String -> Html -> Html
 table i c = H.table ! A.id (fromString i) ! A.class_ (fromString c)
@@ -211,8 +233,11 @@ linkText = P.pageCata
   (const2 $ Msg_LinkText_ModifyEvaluation "Modify Evaluation")
   (const $ Msg_LinkText_NewGroupAssignment "New Group Assignment")
   (const $ Msg_LinkText_NewCourseAssignment "New Course Assignment")
-  (Msg_LinkText_ModifyAssignment "Modify Assignment")
+  (const $ Msg_LinkText_ModifyAssignment "Modify Assignment")
   (const $ Msg_LinkText_ViewAssignment "View Assignment")
+  (const $ Msg_LinkText_NewGroupAssignmentPreview "New Group Assignment")
+  (const $ Msg_LinkText_NewCourseAssignmentPreview "New Course Assignment")
+  (const $ Msg_LinkText_ModifyAssignmentPreview "Modify Assignment")
   (Msg_LinkText_Submission "Submit")
   (Msg_LinkText_SubmissionList "Submissions")
   (const2 $ Msg_LinkText_SubmissionDetails "Submission Details")

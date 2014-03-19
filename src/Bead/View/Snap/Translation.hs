@@ -71,6 +71,7 @@ data Translation a
   | Msg_NewAssignment_Course { trans :: a }
   | Msg_NewAssignment_Group { trans :: a }
   | Msg_NewAssignment_SaveButton { trans :: a }
+  | Msg_NewAssignment_PreviewButton { trans :: a }
   | Msg_NewAssignment_Title_Normal { trans :: a }
   | Msg_NewAssignment_Title_Urn { trans :: a }
   | Msg_NewAssignment_Info_Normal { trans :: a }
@@ -81,6 +82,7 @@ data Translation a
   | Msg_NewAssignment_NoTesting { trans :: a }
   | Msg_NewAssignment_TestFile { trans :: a }
   | Msg_NewAssignment_TestFile_Info { trans :: a }
+  | Msg_NewAssignment_AssignmentPreview { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }
@@ -380,6 +382,9 @@ data Translation a
   | Msg_LinkText_NewGroupAssignment { trans :: a }
   | Msg_LinkText_NewCourseAssignment { trans :: a }
   | Msg_LinkText_ModifyAssignment { trans :: a }
+  | Msg_LinkText_NewGroupAssignmentPreview { trans :: a }
+  | Msg_LinkText_NewCourseAssignmentPreview { trans :: a }
+  | Msg_LinkText_ModifyAssignmentPreview { trans :: a }
   | Msg_LinkText_ChangePassword { trans :: a }
   | Msg_LinkText_SetUserPassword { trans :: a }
   | Msg_LinkText_CommentFromEvaluation { trans :: a }
