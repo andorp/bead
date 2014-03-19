@@ -38,6 +38,9 @@ module Bead.View.Snap.RouteOf (
   , newCourseAssignmentPath
   , modifyAssignmentPath
   , viewAssignmentPath
+  , newGroupAssignmentPreviewPath
+  , newCourseAssignmentPreviewPath
+  , modifyAssignmentPreviewPath
   , changePasswordPath
   , setUserPasswordPath
   , commentFromEvaluationPath
@@ -153,6 +156,15 @@ modifyAssignmentPath = "/modify-assignment"
 viewAssignmentPath :: RoutePath
 viewAssignmentPath = "/view-assignment"
 
+newGroupAssignmentPreviewPath :: RoutePath
+newGroupAssignmentPreviewPath = "/new-group-assignment-preview"
+
+newCourseAssignmentPreviewPath :: RoutePath
+newCourseAssignmentPreviewPath = "/new-course-assignment-preview"
+
+modifyAssignmentPreviewPath :: RoutePath
+modifyAssignmentPreviewPath = "/modify-assignment-preview"
+
 changePasswordPath :: RoutePath
 changePasswordPath = "/change-password"
 
@@ -188,14 +200,17 @@ pageRoutePath = fromString . r where
     (const courseOverviewPath)
     evaluationTablePath
     (const evaluationPath)
-    (const $ const modifyEvaluationPath)
+    (const2 modifyEvaluationPath)
     (const newGroupAssignmentPath)
     (const newCourseAssignmentPath)
-    modifyAssignmentPath
+    (const modifyAssignmentPath)
     (const viewAssignmentPath)
+    (const newGroupAssignmentPreviewPath)
+    (const newCourseAssignmentPreviewPath)
+    (const modifyAssignmentPreviewPath)
     submissionPath
     submissionListPath
-    (const $ const submissionDetailsPath)
+    (const2 submissionDetailsPath)
     groupRegistrationPath
     userDetailsPath
     userSubmissionsPath
@@ -209,10 +224,12 @@ pageRoutePath = fromString . r where
     changePasswordPath
     setUserPasswordPath
     (const commentFromEvaluationPath)
-    (const $ const commentFromModifyEvaluationPath)
+    (const2 commentFromModifyEvaluationPath)
     (const deleteUsersFromCoursePath)
     (const deleteUsersFromGroupPath)
     (const unsubscribeFromCoursePath)
+    where
+      const2 = const . const
 
 -- Calculates a request parameter list from the given page value
 pageRequestParams :: Page -> [ReqParam]
@@ -229,7 +246,11 @@ pageRequestParams = r where
   r (ModifyTestScript tsk) = [requestParam tsk]
   r (NewCourseAssignment ck) = [requestParam ck]
   r (NewGroupAssignment gk) = [requestParam gk]
+  r (NewCourseAssignmentPreview ck) = [requestParam ck]
+  r (NewGroupAssignmentPreview gk) = [requestParam gk]
+  r (ModifyAssignmentPreview ak) = [requestParam ak]
   r (ViewAssignment ak) = [requestParam ak]
+  r (ModifyAssignment ak) = [requestParam ak]
   r _ = []
 
 -- Calculates the full path from a page value, including the base path and the

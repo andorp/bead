@@ -55,6 +55,7 @@ data UserAction
   | CreateUser User
   | UpdateUser User
   -- etc
+  | NoUserAction
   deriving (Eq)
 
 -- TODO: I18N
@@ -90,5 +91,6 @@ userStoryFor (ChangeUserDetails n t l) =
      Story.setTimeZone t
      Story.putStatusMessage $ Msg_UserActions_ChangedUserDetails "Settings of the user are changed."
 
-userStoryFor _                      = Story.logMessage L.DEBUG "No story was selected"
+userStoryFor NoUserAction = return ()
+userStoryFor _            = Story.logMessage L.DEBUG "No story was selected"
 -- etc ...
