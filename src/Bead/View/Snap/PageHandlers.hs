@@ -184,7 +184,10 @@ runGETHandler onError handler
       (hfailure . onError)
       (\_ -> return HSuccess)
       (do handler
-          userStory S.clearStatusMessage)
+          userStory S.clearStatusMessage
+          lift . with sessionManager $ do
+            touchSession
+            commitSession)
 
 -- Runs the 'h' handler if no error occurs during the run of the handler
 -- calculates the parent page for the given 'p', and runs the attached userstory
@@ -206,7 +209,9 @@ runPOSTHandler onError p h
           userStory $ do
             userStoryFor userAction
             unless tempView . S.changePage . P.parentPage $ p
-          lift $ with sessionManager $ (commitSession >> touchSession)
+          lift . with sessionManager $ do
+            touchSession
+            commitSession
           unless tempView $ redirectToParentPage p)
 
 logoutAndResetRoute :: Handler App App ()
