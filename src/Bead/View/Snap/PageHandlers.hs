@@ -293,7 +293,9 @@ handlePage (path,c) = do
            logMessage DEBUG $ "No POST handler found for " ++ show page
            logoutAndResetRoute
          -- POST handler is found
-         Just handlerUserAction -> runPOSTHandler errorPage page handlerUserAction
+         Just handlerUserAction -> do
+           runStory $ S.changePage page
+           runPOSTHandler errorPage page handlerUserAction
       )
 
       -- Not logged in user tires to post some data
