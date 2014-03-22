@@ -17,6 +17,7 @@ module Bead.View.Snap.HandlerUtils (
   , renderPagelet
   , renderDynamicPagelet
   , renderPublicPage
+  , renderPublicPageWithLanguage
   , setInSessionE
   , setReqParamInSession
   , sessionToken
@@ -34,8 +35,6 @@ module Bead.View.Snap.HandlerUtils (
   , module Control.Monad.Error
   ) where
 
--- Haskell imports
-
 import           Control.Monad.Error
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.UTF8  as BU
@@ -47,8 +46,6 @@ import qualified Data.Text.Encoding as TE
 import           Data.Time (UTCTime, LocalTime)
 import qualified Data.Time as Time
 
--- Snap and Blaze imports
-
 import           Snap hiding (get)
 import           Snap.Blaze (blaze)
 import           Snap.Snaplet.Auth hiding (logout)
@@ -56,8 +53,6 @@ import qualified Snap.Snaplet.Auth as A (logout)
 import           Snap.Snaplet.Session
 import           Snap.Util.FileUploads
 import           Text.Blaze.Html5 (Html)
-
--- Bead imports
 
 import           Bead.Controller.Logging as L
 import           Bead.Controller.LogoutDaemon
@@ -73,10 +68,7 @@ import           Bead.View.Snap.RouteOf (ReqParam(..))
 import           Bead.View.Snap.Session
 import           Bead.View.Snap.Translation
 
--- Fay imports
-
 import           Bead.View.Snap.Fay.JSON.ServerSide
-
 
 newtype ContentHandlerError = ContentHandlerError (Maybe String)
   deriving (Show)
