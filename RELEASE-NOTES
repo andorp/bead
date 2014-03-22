@@ -1,2 +1,8 @@
-Course admin can edit course level assignments from the Home page, not only on the Course Overview page.
-Guards against invalid data access
+2014-03-22
+- Session countdown timer in the page header
+- Countdown timer for the submission deadline
+- FIX: Session timeout
+- Assignment Preview
+
+- Course admin can edit course level assignments from the Home page, not only on the Course Overview page.
+- Guards against invalid data access
