@@ -432,8 +432,8 @@ newAssignmentContent pd = do
         testScriptSelection msg pd
 
         multiActionPostForm (hookId assignmentForm)
-          [ ((routeOf . page $ pd),        (fromString . msg $ Msg_NewAssignment_SaveButton "Commit"))
-          , ((routeOf . pagePreview $ pd), (fromString . msg $ Msg_NewAssignment_PreviewButton "Preview"))
+          [ ((routeOf . pagePreview $ pd), (fromString . msg $ Msg_NewAssignment_PreviewButton "Preview"))
+          , ((routeOf . page $ pd),        (fromString . msg $ Msg_NewAssignment_SaveButton "Commit"))
           ] empty
 
     where
