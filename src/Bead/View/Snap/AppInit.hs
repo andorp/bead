@@ -79,10 +79,12 @@ appInit config user s logoutDaemon tempDir = makeSnaplet "bead" description data
 
   ts <- nestSnaplet "tempdir" tempDirContext $ tempDirectorySnaplet tempDir
 
+  cs <- nestSnaplet "config" configContext $ configurationServiceContext config
+
   addRoutes (routes config)
   wrapSite (<|> msgErrorPage "Invalid address") -- TODO: I18N
 
-  return $ App sm as ss ds se rp fs ts
+  return $ App sm as ss ds se rp fs ts cs
   where
     description = "The BEAD website"
 

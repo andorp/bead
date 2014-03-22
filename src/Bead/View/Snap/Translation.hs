@@ -106,6 +106,9 @@ data Translation a
   | Msg_Submission_Solution { trans :: a }
   | Msg_Submission_Submit { trans :: a }
   | Msg_Submission_Invalid_Assignment { trans :: a }
+  | Msg_Submission_TimeLeft { trans :: a }
+  | Msg_Submission_Days { trans :: a }
+  | Msg_Submission_DeadlineReached { trans :: a }
 
   | Msg_Comments_Title { trans :: a }
   | Msg_Comments_SubmitButton { trans :: a }

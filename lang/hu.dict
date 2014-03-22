@@ -95,6 +95,9 @@ DictionaryFile {
     , Msg_Submission_Solution { trans = "Megoldás" }
     , Msg_Submission_Submit { trans = "Beküld" }
     , Msg_Submission_Invalid_Assignment { trans = "Ez a feladat nem érhető el ezzel a felhasználóval!" }
+    , Msg_Submission_TimeLeft { trans = "Hátralévő idő:" }
+    , Msg_Submission_Days { trans = "nap" }
+    , Msg_Submission_DeadlineReached { trans = "A határidő lejárt" }
     , Msg_Comments_Title { trans = "Hozzászólások" }
     , Msg_Comments_SubmitButton { trans = "Beküld" }
     , Msg_Comments_AuthorTestScript_Private { trans = "Automata tesztelői komment (csak az oktató láthatja)" }

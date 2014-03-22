@@ -58,37 +58,33 @@ module Bead.View.Snap.Content (
   , module Bead.View.Snap.Fay.JSON.ServerSide
   ) where
 
-import Snap hiding (Config(..), empty, get, route, (<$>))
-import Snap.Blaze (blaze)
-import Data.ByteString.Char8 (ByteString, unpack)
+import Control.Applicative ((<$>))
 import Data.Monoid ((<>))
 
-import Bead.Controller.Pages as P
+import Data.ByteString.Char8 (ByteString, unpack)
+import Snap hiding (Config(..), empty, get, route, (<$>))
+import Snap.Blaze (blaze)
+
 import Bead.Controller.ServiceContext (UserState(..), userStateCata)
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.View.UserActions
-import Bead.View.Snap.I18N
-import Bead.View.Snap.Translation
-import Bead.View.Snap.Application (App)
-import Bead.View.Snap.Dictionary (I18N)
+import Bead.View.Snap.Application
 import Bead.View.Snap.DataBridge hiding (name)
-import Bead.View.Snap.Style
-import Bead.View.Snap.RouteOf
-import Bead.View.Snap.HandlerUtils
-import Bead.View.Snap.RequestParams
-import Bead.View.Snap.InputHandlers
-import Bead.View.Snap.TemplateAndComponentNames hiding (tcName)
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Fay.JSON.ServerSide
+import Bead.View.Snap.HandlerUtils
+import Bead.View.Snap.I18N
+import Bead.View.Snap.InputHandlers
+import Bead.View.Snap.Translation
+import Bead.View.Snap.TemplateAndComponentNames hiding (tcName)
+import Bead.View.Snap.RouteOf
+import Bead.View.Snap.Style
 #ifdef TEST
 import Bead.View.Snap.Pagelets hiding (invariants)
 #else
 import Bead.View.Snap.Pagelets
 #endif
-
-import Control.Applicative ((<$>))
-import Control.Monad.Error
 
 -- Pages have the following structure. A header, a context-sensitive menu,
 -- a footer, and the content area. Every content area has its GET and POST handlers, its
@@ -119,7 +115,7 @@ mkContent
   -> Content
 mkContent g p = Content { get = g, post = p }
 
+
 withUserStateAndFrame :: (UserState -> IHtml) -> HandlerError App App ()
 withUserStateAndFrame f = withUserState $ \state ->
   renderPagelet $ withUserFrame state (f state)
-

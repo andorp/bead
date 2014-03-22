@@ -7,6 +7,7 @@ module Bead.View.Snap.Pagelets where
 import           Control.Monad (join)
 import           Data.Char (isAlphaNum)
 import           Data.String (IsString(..), fromString)
+import           Data.Time.Clock
 
 import           Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5.Attributes as A
@@ -17,7 +18,6 @@ import           Bead.Controller.ServiceContext (UserState(..))
 import           Bead.Domain.Entities
 import           Bead.Domain.Relationships
 import           Bead.Domain.Types (Str(..))
-import           Bead.View.Snap.Dictionary (I18N)
 import           Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.Snap.I18N as I18N
 import           Bead.View.Snap.I18N (IHtml, translate, getI18N)
@@ -82,11 +82,11 @@ dynamicTitleAndHead = titleAndHead dynamicDocument
 withTitleAndHead :: Translation String -> IHtml -> IHtml
 withTitleAndHead = titleAndHead document
 
-withUserFrame :: UserState -> IHtml -> IHtml
-withUserFrame s = withUserFrame'
+withUserFrame :: UserState -> IHtml -> Int -> IHtml
+withUserFrame s content secs = withUserFrame' content
   where
     withUserFrame' content = do
-      header <- pageHeader s
+      header <- pageHeader s secs
       content <- content
       status <- pageStatus s
       return $ do
@@ -192,15 +192,77 @@ multiActionPostForm id actions html =
     mapM_ actionButton ([1..] `zip` actions)
   where
     actionButton (i,(action, button)) = do
-      let fname = concat [filter isAlphaNum id, show i, "onClick()"]
+      let fname = jsFunctionName $ concat [id, show i, "onClick"]
       H.p $ do
-        H.input ! A.type_ "button" ! A.onclick (fromString fname) ! A.value (fromString button)
+        H.input ! A.type_ "button" ! A.onclick (fromString (fname ++ "()")) ! A.value (fromString button)
         H.script $ fromString $ concat
-          [ "function ", fname, "{"
+          [ "function ", fname, "(){"
           ,    "document.getElementById(\"",id,"\").setAttribute(\"action\",\"",action,"\");"
           ,    "document.getElementById(\"",id,"\").submit();"
           , "}"
           ]
+
+-- Returns a string which contains only alphanum caracters
+jsFunctionName :: String -> String
+jsFunctionName = filter isAlphaNum
+
+-- Creates an HTML div which represents a countdown timer, showing
+-- the time left in days hours:min:secs format from the given
+-- now time beetwen the given until time.
+startEndCountdownDiv :: String -> String -> String -> UTCTime -> UTCTime -> Html
+startEndCountdownDiv divId daystr overstr now until =
+  countdownDiv divId daystr overstr True (floor $ diffUTCTime until now)
+
+-- Creates an HTML dic which represents a countdown timer, showing
+-- the time left in hours:min format for the given seconds, mainly
+-- to show
+minSecCountdown :: String -> String -> Int -> Html
+minSecCountdown divId overstr secs =
+  countdownDiv divId "" overstr False secs
+
+-- Creates an HTML div which represents a countdown timer, showing
+-- the ETA time in days hours:min:secs format from the given
+-- now time in seconds.
+countdownDiv :: String -> String -> String -> Bool -> Int -> Html
+countdownDiv divId daystr overstr showDays seconds = do
+  H.div ! A.id (fromString divId) $ fromString $
+    if showDays
+         then concat ["-", daystr, " --:--:--"]
+         else "--:--"
+  H.script $ fromString countdown
+  where
+    fname = jsFunctionName (divId ++ "countdown")
+
+    countdown = concat
+      [ fname, "();"
+      , "function ", fname, "() {"
+      ,      "var minsecs = 60;"
+      ,      "var hoursecs = minsecs * 60;"
+      ,      "var daysecs = hoursecs* 24;"
+      ,      "var time = ", show seconds, ";"
+      ,      "var interval = setInterval(function() {"
+      ,           "var el = document.getElementById(\"", divId, "\");"
+      ,           "if(time == 0) {"
+      ,                "el.innerHTML = \"",overstr,"\";"
+      ,                "clearInterval(interval);"
+      ,                "return;"
+      ,           "}"      ,      "var edays   = Math.floor( time / daysecs );"
+      ,      "var ehours1 = time % daysecs;"
+      ,      "var ehours  = Math.floor( ehours1 / hoursecs );"
+      ,      "if (ehours < 10) ehours = \"0\" + ehours;"
+      ,      "var emins1  = ehours1 % hoursecs;"
+      ,      "var emins   = Math.floor( emins1 / minsecs );"
+      ,      "if (emins < 10) emins = \"0\" + emins;"
+      ,      "var esecs   = emins1 % minsecs;"
+      ,      "if (esecs < 10) esecs = \"0\" + esecs;"
+      ,      if showDays
+                 then concat ["var text = edays + \"", daystr, " \" + ehours + ':' + emins + ':' + esecs;"]
+                 else "var text = emins + ':' + esecs;"
+      ,      "el.innerHTML = text;"
+      ,      "time--;"
+      ,      "}, 1000);"
+      , "}"
+      ]
 
 -- * Table
 table :: String -> String -> Html -> Html
@@ -299,12 +361,13 @@ navigationMenu s = do
   msg <- getI18N
   return $ H.ul $ mapM_ (H.li . (I18N.i18n msg . linkToPage)) $ P.menuPages (role s) (page s)
 
-pageHeader :: UserState -> IHtml
-pageHeader s = do
+pageHeader :: UserState -> Int -> IHtml
+pageHeader s secs = do
   msg <- getI18N
   return $ do
     H.div ! A.id "logo" $ "BE-AD"
     H.div ! A.id "user" $ do
+      minSecCountdown "hdctd" "--:--" secs
       (fromString . str . user $ s)
       H.br
       (I18N.i18n msg $ linkToPage P.Home)

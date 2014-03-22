@@ -27,6 +27,7 @@ data PageData = PageData {
   , asValue :: Assignment
   , asDesc  :: AssignmentDesc
   , asTimeConv :: UserTimeConverter
+  , asNow :: UTCTime
   }
 
 submissionPage :: GETContentHandler
@@ -34,11 +35,12 @@ submissionPage = withUserState $ \s -> do
   let render p = renderPagelet $ withUserFrame s p
   ak <- getParameter assignmentKeyPrm
   ut <- usersTimeZoneConverter
+  now <- liftIO $ getCurrentTime
   -- TODO: Refactor use guards
   userAssignmentForSubmission
     ak
     (\desc asg -> render $ submissionContent
-       (PageData { asKey = ak, asValue = asg, asDesc = desc, asTimeConv = ut }))
+       (PageData { asKey = ak, asValue = asg, asDesc = desc, asTimeConv = ut, asNow = now }))
     (render invalidAssignment)
 
 submissionPostHandler :: POSTContentHandler
@@ -66,6 +68,14 @@ submissionContent p = do
       H.tr $ do
         H.td $ H.b $ (fromString . msg $ Msg_Submission_Deadline "Deadline: ")
         H.td $ (fromString . showDate . (asTimeConv p) . assignmentEnd $ asValue p)
+      H.tr $ do
+        H.td $ H.b $ fromString . msg $ Msg_Submission_TimeLeft "Time left: "
+        H.td $ startEndCountdownDiv
+          "ctd"
+          (msg $ Msg_Submission_Days "day(s)")
+          (msg $ Msg_Submission_DeadlineReached "Deadline is reached")
+          (asNow p)
+          (assignmentEnd $ asValue p)
     H.h2 $ (fromString . msg $ Msg_Submission_Description "Description")
     H.div # assignmentTextDiv $
       markdownToHtml . assignmentDesc . asValue $ p

@@ -25,6 +25,32 @@ import Bead.Controller.ServiceContext
 
 -- * Mini snaplet : Service context
 
+newtype SrvContext c = SrvContext (IORef c)
+
+createServiceContext :: String -> String -> c -> SnapletInit b (SrvContext c)
+createServiceContext name desc c = makeSnaplet
+  (fromString name)
+  (fromString desc)
+  Nothing $
+  liftIO $ do
+    ref <- newIORef c
+    return $! SrvContext ref
+
+serviceContextCata :: (c -> a) -> Handler b (SrvContext c) a
+serviceContextCata f = do
+  SrvContext ref <- get
+  f <$> (liftIO $ readIORef ref)
+
+type ConfigServiceContext = SrvContext Config
+
+configurationServiceContext :: Config -> SnapletInit b ConfigServiceContext
+configurationServiceContext = createServiceContext
+  "Configuration"
+  "A snaplet providin the service context of the configuration"
+
+getConfiguration :: Handler b ConfigServiceContext Config
+getConfiguration = serviceContextCata id
+
 newtype SnapletServiceContext = SnapletServiceContext (IORef (ServiceContext, LogoutDaemon))
 
 contextSnaplet :: ServiceContext -> LogoutDaemon -> SnapletInit b SnapletServiceContext
@@ -232,6 +258,7 @@ data App = App {
   , _randomPasswordContext :: Snaplet PasswordGeneratorContext
   , _fayContext     :: Snaplet Fay
   , _tempDirContext :: Snaplet TempDirectoryContext
+  , _configContext  :: Snaplet ConfigServiceContext
   }
 
 makeLenses ''App
