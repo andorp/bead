@@ -17,7 +17,6 @@ module Bead.View.Snap.HandlerUtils (
   , renderPagelet
   , renderDynamicPagelet
   , renderPublicPage
-  , renderPublicPageWithLanguage
   , setInSessionE
   , setReqParamInSession
   , sessionToken
@@ -54,6 +53,7 @@ import           Snap.Snaplet.Session
 import           Snap.Util.FileUploads
 import           Text.Blaze.Html5 (Html)
 
+import           Bead.Configuration
 import           Bead.Controller.Logging as L
 import           Bead.Controller.LogoutDaemon
 import           Bead.Controller.ServiceContext hiding (serviceContext, name)
@@ -152,11 +152,19 @@ i18nH = do
 blazeI18n :: (I18N -> Html) -> HandlerError App b ()
 blazeI18n h = i18nE >>= blaze . h
 
-renderPagelet :: IHtml -> HandlerError App b ()
-renderPagelet p = i18nE >>= blaze . (runPagelet p)
+-- Renders a Page from the given IHtml function which
+-- needs the session timeout seconds
+renderPagelet :: (Int -> IHtml) -> HandlerError App b ()
+renderPagelet p = do
+  secs <- fmap sessionTimeout . lift . withTop configContext $ getConfiguration
+  i18nE >>= blaze . (runPagelet (p secs))
 
-renderDynamicPagelet :: IHtml -> HandlerError App b ()
-renderDynamicPagelet p = i18nE >>= blaze . (runDynamicPagelet p)
+-- Renders a Page from the given IHtml function which
+-- needs the session timeout seconds
+renderDynamicPagelet :: (Int -> IHtml) -> HandlerError App b ()
+renderDynamicPagelet p = do
+  secs <- fmap sessionTimeout . lift . withTop configContext $ getConfiguration
+  i18nE >>= blaze . (runDynamicPagelet (p secs))
 
 -- Renders the public page selecting the I18N translation based on the
 -- language stored in the session, if there is no such value, the

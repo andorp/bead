@@ -113,6 +113,9 @@ translationList =
   , Msg_Submission_Solution ()
   , Msg_Submission_Submit ()
   , Msg_Submission_Invalid_Assignment ()
+  , Msg_Submission_TimeLeft ()
+  , Msg_Submission_Days ()
+  , Msg_Submission_DeadlineReached ()
 
   , Msg_Comments_Title ()
   , Msg_Comments_SubmitButton ()
