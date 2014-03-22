@@ -256,7 +256,18 @@ countdownDiv divId daystr overstr showDays seconds = do
       ,      "var esecs   = emins1 % minsecs;"
       ,      "if (esecs < 10) esecs = \"0\" + esecs;"
       ,      if showDays
-                 then concat ["var text = edays + \"", daystr, " \" + ehours + ':' + emins + ':' + esecs;"]
+                 then concat
+                    [ "var text=\"\";"
+                    , "if(edays == 0) {"
+                    ,      "if(ehours == 0) {"
+                    ,           "text = emins + ':' + esecs;"
+                    ,      "} else {"
+                    ,           "text = ehours + ':' + emins + ':' + esecs;"
+                    ,      "}"
+                    , "} else {"
+                    ,      "text = edays + \" ", daystr, " \" + ehours + ':' + emins + ':' + esecs;"
+                    , "}"
+                    ]
                  else "var text = emins + ':' + esecs;"
       ,      "el.innerHTML = text;"
       ,      "time--;"
