@@ -6,66 +6,44 @@ module Bead.View.Snap.Login (
   , changeLanguage
   ) where
 
--- Bead imports
-
-import Bead.Controller.ServiceContext hiding (serviceContext)
-import Bead.Controller.Logging as L
-import qualified Bead.Controller.Pages as P
-import qualified Bead.Controller.UserStories as S
-import Bead.View.Snap.Application
-import Bead.View.Snap.Dictionary
-import Bead.View.Snap.Session
-import Bead.View.Snap.RouteOf
-import Bead.View.Snap.HandlerUtils
-import Bead.View.Snap.Pagelets
-import Bead.View.Snap.ErrorPage (
-    errorPageWithTitle
-  , errorPage
-  , errorPageWithTitleTrans
-  )
-import Bead.View.Snap.I18N
-import Bead.View.Snap.Translation
-
-import Bead.View.Snap.Content hiding (BlazeTemplate, template)
-import Bead.View.Snap.Content.All
-
--- Haskell imports
-
-import Prelude as P
-import Data.Either (either)
-import Data.String
-import Data.ByteString.Char8 hiding (index, putStrLn)
+import           Data.ByteString.Char8 hiding (index, putStrLn)
+import           Data.Maybe (isNothing)
+import           Data.String
 import qualified Data.Text as T
-import Control.Monad (join)
+import           Prelude as P
 
--- Snap and Blaze imports
-
-import Snap hiding (get)
-import Snap.Blaze (blaze)
-import Snap.Snaplet.Auth as A
-import Snap.Snaplet.Session
-
--- import Control.Monad (mapM_)
-
-import Text.Blaze (textTag)
-import Text.Blaze.Html5 ((!))
-import Text.Blaze.Html5.Attributes hiding (title, rows, accept, method)
-import qualified Text.Blaze.Html5.Attributes as A
+import           Snap.Snaplet.Auth as A
+import           Snap.Snaplet.Session
+import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
-import Bead.View.Snap.I18N (IHtml)
+import qualified Text.Blaze.Html5.Attributes as A
+
+import           Bead.Controller.Logging as L
+import qualified Bead.Controller.Pages as P
+import           Bead.Controller.ServiceContext hiding (serviceContext)
+import qualified Bead.Controller.UserStories as S
+import           Bead.View.Snap.Application
+import           Bead.View.Snap.Content hiding (BlazeTemplate, template)
+import           Bead.View.Snap.Dictionary
+import           Bead.View.Snap.ErrorPage (errorPageWithTitleTrans)
+import           Bead.View.Snap.HandlerUtils
+import           Bead.View.Snap.RouteOf
+import           Bead.View.Snap.Session
+
 
 -- * Login and Logout handlers
 
 login :: Maybe AuthFailure -> Handler App b ()
 login authError = do
+  -- Set the default language in session if no information is found
   languages <- withTop dictionaryContext dcGetDictionaryInfos
   mLangInSession <- withTop sessionManager languageFromSession
-  maybe -- Set the default language in session if no information is found
-    (withTop sessionManager $
-       do defaultLang <- withTop dictionaryContext configuredDefaultDictionaryLanguage
-          setLanguageInSession defaultLang)
-    (const $ return ())
-    mLangInSession
+  when (isNothing mLangInSession) . withTop sessionManager $ do
+    defaultLang <- withTop dictionaryContext configuredDefaultDictionaryLanguage
+    setLanguageInSession defaultLang
+    commitSession
+
+  -- Render the page content
   renderPublicPage $ loginPage authError languages
 
 loginSubmit :: Handler App b ()
