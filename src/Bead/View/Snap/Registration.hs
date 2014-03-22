@@ -16,6 +16,7 @@ import           Data.Text.Encoding (decodeUtf8)
 import           Snap hiding (Config(..), get)
 import           Snap.Snaplet.Auth as A hiding (createUser)
 import           Snap.Snaplet.Auth.Backends.JsonFile (mkJsonAuthMgr)
+import           Snap.Snaplet.Session
 import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A hiding (title, rows, accept)
 import qualified Text.Blaze.Html5 as H
@@ -204,15 +205,20 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
 
   renderForm = do
     values <- readRegParameters
-    i18n <- i18nH
     case values of
-      Nothing -> registrationErrorPage $ i18n $
-        Msg_RegistrationFinalize_NoRegistrationParametersAreFound "No registration parameters found."
+      Nothing -> do
+        i18n <- i18nH
+        registrationErrorPage $ i18n $
+          Msg_RegistrationFinalize_NoRegistrationParametersAreFound "No registration parameters found."
       Just (key, token, username, language) -> do
         result <- registrationStory $ do
                     userReg   <- S.loadUserReg key
                     existence <- S.doesUserExist username
                     return (userReg, existence)
+        withTop sessionManager $ do
+          setLanguageInSession (Language language)
+          commitSession
+        i18n <- i18nH
         case result of
           Left e -> registrationErrorPage $ S.translateUserError i18n e
           Right (userRegData,exist) -> do
