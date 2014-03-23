@@ -26,8 +26,8 @@ import qualified Bead.View.Snap.Content.All as VA (invariants)
 import           Bead.View.Snap.Content.Home
 import qualified Bead.View.Snap.EmailTemplate as E (unitTests)
 import qualified Bead.View.Snap.Pagelets as VP (invariants)
-import qualified Bead.View.Snap.PageHandlers as PH (pageHandlersInvariants)
 import qualified Bead.View.Snap.RouteOf as R (routeOfInvariants)
+import qualified Bead.View.Snap.Routing as R (routingInvariants)
 import qualified Bead.View.Snap.Session as VS (unitTests)
 import qualified Bead.View.Snap.TemplateAndComponentNames as TC (unitTests)
 import qualified Bead.View.Snap.Validators as V (assertEmailAddress)
@@ -68,7 +68,7 @@ assertionTestGroup name as = testGroup name
 
 tests = [
     invariantsGroup "Route Of" R.routeOfInvariants
-  , invariantsGroup "Page Handlers" PH.pageHandlersInvariants
+  , invariantsGroup "Rounting" R.routingInvariants
   , invariantsGroup "Page invariants" P.invariants
   , unitTestGroup   "Logout daemon" LD.unitTests
   , invariantsGroup "Role permission invariants" RP.invariants

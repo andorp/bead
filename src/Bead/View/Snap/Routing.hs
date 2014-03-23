@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE CPP #-}
-module Bead.View.Snap.PageHandlers (
+module Bead.View.Snap.Routing (
     routes
 #ifdef TEST
-  , pageHandlersInvariants
+  , routingInvariants
 #endif
   ) where
 
@@ -42,6 +42,11 @@ import           Bead.View.Snap.Session
 #ifdef TEST
 import           Bead.Invariants (Invariants(..))
 #endif
+
+{-
+Routing of a given request based on the path of the request. A page handler
+is selected of the path is known otherwise an error page is rendered.
+-}
 
 -- * Route table
 
@@ -403,7 +408,7 @@ requestToParams = foldl insert Map.empty
     insert m (ReqParam (name, value)) =
       Map.insert (fromString name) [(fromString value)] m
 
-pageHandlersInvariants = Invariants [
+routingInvariants = Invariants [
     ("For each page must be requestToPage must be defined",
      \p -> let rp = pageRoutePath p
                ps = requestToParams $ pageRequestParams p
