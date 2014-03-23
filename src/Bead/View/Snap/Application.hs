@@ -1,114 +1,101 @@
 {-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
 module Bead.View.Snap.Application where
 
-import Snap hiding (Config(..))
-import Snap.Snaplet.Session
-import Snap.Snaplet.Auth
-import Snap.Snaplet.Fay
-import Control.Lens.TH
-import Data.IORef
-import qualified Data.Map as Map
-
+import           Control.Lens.TH
 import qualified Data.ByteString.Lazy.Char8 as BL
-import Data.String (fromString)
+import           Data.IORef
+import qualified Data.Map as Map
+import           Data.String (fromString)
 import qualified Data.Text as DT
 import qualified Data.Text.Lazy as LT
-import Network.Mail.Mime
-import System.Random
+import           Network.Mail.Mime
+import           System.Random
 
-import Bead.Configuration (Config(..))
-import Bead.Domain.Entities
-import Bead.View.Snap.Dictionary
-import Bead.View.Snap.EmailTemplate
-import Bead.Controller.LogoutDaemon
-import Bead.Controller.ServiceContext
+import           Snap hiding (Config(..))
+import           Snap.Snaplet.Auth
+import           Snap.Snaplet.Fay
+import           Snap.Snaplet.Session
+
+import           Bead.Configuration (Config(..))
+import           Bead.Controller.LogoutDaemon
+import           Bead.Controller.ServiceContext
+import           Bead.Domain.Entities
+import           Bead.View.Snap.Dictionary
+import           Bead.View.Snap.EmailTemplate
 
 -- * Mini snaplet : Service context
 
-newtype SrvContext c = SrvContext (IORef c)
+newtype SnapContext c = SnapContext (IORef c)
 
-createServiceContext :: String -> String -> c -> SnapletInit b (SrvContext c)
-createServiceContext name desc c = makeSnaplet
+makeSnapContext :: String -> String -> c -> SnapletInit b (SnapContext c)
+makeSnapContext name desc c = makeSnaplet
   (fromString name)
   (fromString desc)
   Nothing $
   liftIO $ do
     ref <- newIORef c
-    return $! SrvContext ref
+    return $! SnapContext ref
 
-serviceContextCata :: (c -> a) -> Handler b (SrvContext c) a
-serviceContextCata f = do
-  SrvContext ref <- get
+snapContextCata :: (c -> a) -> Handler b (SnapContext c) a
+snapContextCata f = do
+  SnapContext ref <- get
   f <$> (liftIO $ readIORef ref)
 
-type ConfigServiceContext = SrvContext Config
+snapContextHandlerCata :: (c -> Handler b (SnapContext c) a) -> Handler b (SnapContext c) a
+snapContextHandlerCata k = do
+  SnapContext ref <- get
+  (liftIO $ readIORef ref) >>= k
+
+type ConfigServiceContext = SnapContext Config
 
 configurationServiceContext :: Config -> SnapletInit b ConfigServiceContext
-configurationServiceContext = createServiceContext
+configurationServiceContext = makeSnapContext
   "Configuration"
   "A snaplet providin the service context of the configuration"
 
 getConfiguration :: Handler b ConfigServiceContext Config
-getConfiguration = serviceContextCata id
+getConfiguration = snapContextCata id
 
-newtype SnapletServiceContext = SnapletServiceContext (IORef (ServiceContext, LogoutDaemon))
+type SnapletServiceContext = SnapContext (ServiceContext, LogoutDaemon)
 
 contextSnaplet :: ServiceContext -> LogoutDaemon -> SnapletInit b SnapletServiceContext
-contextSnaplet s l = makeSnaplet
+contextSnaplet s l = makeSnapContext
   "ServiceContext"
   "A snaplet providing the service context of the user stories"
-  Nothing $
-  liftIO $ do
-    ref <- newIORef (s,l)
-    return $! SnapletServiceContext ref
+  (s,l)
 
 getServiceContext :: Handler b SnapletServiceContext ServiceContext
-getServiceContext = do
-  SnapletServiceContext ref <- get
-  fmap fst $ liftIO . readIORef $ ref
+getServiceContext = snapContextCata fst
 
 getLogoutDaemon :: Handler b SnapletServiceContext LogoutDaemon
-getLogoutDaemon = do
-  SnapletServiceContext ref <- get
-  fmap snd $ liftIO . readIORef $ ref
+getLogoutDaemon = snapContextCata snd
 
 getServiceContextAndLogoutDaemon :: Handler b SnapletServiceContext (ServiceContext, LogoutDaemon)
-getServiceContextAndLogoutDaemon = do
-  SnapletServiceContext ref <- get
-  liftIO . readIORef $ ref
+getServiceContextAndLogoutDaemon = snapContextCata id
 
 -- * Mini snaplet : Dictionary snaplet
 
-newtype DictionaryContext = DictionaryContext (IORef (Dictionaries, Language))
+type DictionaryContext = SnapContext (Dictionaries, Language)
 
 -- Create a Dictionary context from the given dictionaries and a defualt language
 dictionarySnaplet :: Dictionaries -> Language -> SnapletInit a DictionaryContext
-dictionarySnaplet d l = makeSnaplet
+dictionarySnaplet d l = makeSnapContext
   "Dictionaries"
   "A snaplet providing the i18 dictionary context"
-  Nothing $ liftIO $ do
-    ref <- newIORef ((addDefault d), l)
-    return $! DictionaryContext ref
+  ((addDefault d), l)
   where
     -- The source code contains english comments by default
     addDefault = Map.insert (Language "en") (idDictionary, DictionaryInfo "en.ico" "English")
 
--- Maps the stored dictionaries into a value within the Handler monad
-dictionarySnapletMap :: (Dictionaries -> Language -> a) -> Handler b DictionaryContext a
-dictionarySnapletMap f = do
-  DictionaryContext ref <- get
-  (m, l) <- liftIO . readIORef $ ref
-  return (f m l)
-
 -- Calculates the default language which comes from the configuration
 configuredDefaultDictionaryLanguage :: Handler b DictionaryContext Language
-configuredDefaultDictionaryLanguage = dictionarySnapletMap (\_dic lang -> lang)
+configuredDefaultDictionaryLanguage = snapContextCata snd
 
 -- | getDictionary returns a (Just dictionary) for the given language
 --   if the dictionary is registered for the given language,
 --   otherwise returns Nothing
 getDictionary :: Language -> Handler b DictionaryContext (Maybe Dictionary)
-getDictionary l = dictionarySnapletMap (\d _l -> fmap fst $ Map.lookup l d)
+getDictionary l = snapContextCata (\(d,_l) -> fmap fst $ Map.lookup l d)
 
 -- A dictionary infos is a list that contains the language of and information
 -- about the dictionaries contained by the DictionarySnaplet
@@ -118,7 +105,7 @@ dictionaryInfosCata list item d = list $ map item d
 
 -- Computes a list with the defined languages and dictionary info
 dcGetDictionaryInfos :: Handler b DictionaryContext DictionaryInfos
-dcGetDictionaryInfos = dictionarySnapletMap (\d l -> Map.toList $ Map.map snd d)
+dcGetDictionaryInfos = snapContextCata (\(d,l) -> Map.toList $ Map.map snd d)
 
 -- * Email sending snaplet
 
@@ -131,7 +118,7 @@ type EmailSender = Email -> Subject -> Message -> IO ()
 
 -- SendEmailContext is a reference to the email sender function, we keep only
 -- one of the email senders.
-newtype SendEmailContext = SendEmailContext (IORef EmailSender)
+type SendEmailContext = SnapContext EmailSender
 
 verySimpleMail :: Address -> Address -> DT.Text -> LT.Text -> IO Mail
 verySimpleMail to from subject plainBody = return Mail
@@ -147,12 +134,10 @@ verySimpleMail to from subject plainBody = return Mail
         }
 
 emailSenderSnaplet :: Config -> SnapletInit a SendEmailContext
-emailSenderSnaplet config = makeSnaplet
+emailSenderSnaplet config = makeSnapContext
   "Email sending"
   "A snaplet providing email sender functionality"
-  Nothing $ liftIO $ do
-    ref <- newIORef sender
-    return $! SendEmailContext ref
+  sender
   where
     sender :: Email -> Subject -> Message -> IO ()
     sender address sub msg = do
@@ -168,9 +153,7 @@ emailSenderSnaplet config = makeSnaplet
 -- E.g: Registration or ForgottenPassword
 sendEmail :: (Template t)
   => Email -> Subject -> Message -> t -> Handler b SendEmailContext ()
-sendEmail address sub body value = do
-  SendEmailContext ref <- get
-  send <- liftIO . readIORef $ ref
+sendEmail address sub body value = snapContextHandlerCata $ \send -> do
   msg <- liftIO . runEmailTemplate (emailTemplate body) $ value
   liftIO $ send address sub msg
 
@@ -178,27 +161,22 @@ sendEmail address sub body value = do
 
 -- Bead temp directory holds a reference to the created temp directory
 -- where the handlers can place temporary files
-newtype TempDirectoryContext = TempDirectoryContext (IORef FilePath)
+type TempDirectoryContext = SnapContext FilePath
 
 tempDirectorySnaplet :: FilePath -> SnapletInit a TempDirectoryContext
-tempDirectorySnaplet tempPath = makeSnaplet
+tempDirectorySnaplet = makeSnapContext
   "Template directory"
   "A snaplet holding a reference to the temporary directory"
-  Nothing $ liftIO $ do
-    ref <- newIORef tempPath
-    return $! TempDirectoryContext ref
 
 -- Returns the bead temp directory
 getTempDirectory :: Handler b TempDirectoryContext FilePath
-getTempDirectory = do
-  TempDirectoryContext ref <- get
-  liftIO $ readIORef ref
+getTempDirectory = snapContextCata id
 
 -- * Password generation
 
 -- PasswordGeneratorContext is a reference to the password generator computation,
 -- we keep only one of it
-newtype PasswordGeneratorContext = PasswordGeneratorContext (IORef (IO String))
+type PasswordGeneratorContext = SnapContext (IO String)
 
 passwordGeneratorSnaplet :: SnapletInit a PasswordGeneratorContext
 passwordGeneratorSnaplet = makeSnaplet
@@ -207,14 +185,11 @@ passwordGeneratorSnaplet = makeSnaplet
   Nothing $ liftIO $ do
     pwdGen <- createPasswordGenerator
     ref <- newIORef pwdGen
-    return $! PasswordGeneratorContext ref
+    return $! SnapContext ref
 
 -- Generates a new password string
 getRandomPassword :: Handler b PasswordGeneratorContext String
-getRandomPassword = do
-  PasswordGeneratorContext ref <- get
-  gen <- liftIO . readIORef $ ref
-  liftIO gen
+getRandomPassword = snapContextHandlerCata liftIO
 
 -- Creates a password generator that generates 12 length passwords containing
 -- upper, lowercase letters, and digits.
