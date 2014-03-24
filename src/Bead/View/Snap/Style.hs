@@ -70,6 +70,10 @@ textAlign v = create . join $ ["text-align:", v]
 marginLeft :: Int -> StyleElement
 marginLeft v = create . join $ ["margin-left:", show v, "px"]
 
+display :: Bool -> StyleElement
+display True  = noStyle
+display False = create $ "display:none"
+
 -- Produces an HTML element attaching the style element onto it
 -- infix notation is handy here
 (#) :: Attributable h => h -> StyleElement -> h

@@ -410,6 +410,9 @@ translationList =
   , Msg_Domain_EvalNoResultError ()
   , Msg_Domain_EvalPercentage ()
 
+  , Msg_SeeMore_SeeMore ()
+  , Msg_SeeMore_SeeLess ()
+
   ]
 
 translationMaxIndex = (length translationList) - 1

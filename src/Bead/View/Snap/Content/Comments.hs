@@ -14,6 +14,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 import           Bead.Controller.Pages (Page(..))
 import           Bead.View.Snap.Content
+import           Bead.View.Snap.Content.SeeMore
 
 commentsDiv :: UserTimeConverter -> [Comment] -> IHtml
 commentsDiv t cs = do
@@ -23,9 +24,9 @@ commentsDiv t cs = do
 
 commentPar :: I18N -> UserTimeConverter -> Comment -> Html
 commentPar i18n t c = H.div # (commentDiv c) $ do
-  H.p # textAlign "left" $ fromString $
-    (showDate . t . commentDate $ c) ++ ", " ++ (commentAuthor $ c)
-  H.pre # commentTextPre $ fromString $ comment $ c
+  H.p # textAlign "left" $
+    fromString $ (showDate . t . commentDate $ c) ++ ", " ++ (commentAuthor $ c)
+  seeMorePre i18n maxLength maxLines (comment c)
   where
     commentAuthor = commentCata $ \_comment author _date ->
       commentTypeCata
@@ -46,6 +47,9 @@ commentPar i18n t c = H.div # (commentDiv c) $ do
         commentTextDiv -- evaluation
         commentTextDiv -- testAgent
         messageCommentTextDiv -- message
+
+    maxLength = 100
+    maxLines = 5
 
 -- Creates a post form for the given route assignment key and submission key, where
 -- a comment can be placed and the result is submitted to the given page, which is

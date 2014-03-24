@@ -13,7 +13,6 @@ import qualified Bead.Domain.Entities as E
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Utils
 import           Bead.View.Snap.Markdown (markdownToHtml)
-import           Bead.View.Snap.Pagelets
 
 import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H

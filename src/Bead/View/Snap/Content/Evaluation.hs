@@ -6,25 +6,19 @@ module Bead.View.Snap.Content.Evaluation (
   , commentFromModifyEvaluation
   ) where
 
-import Data.String (fromString)
-import Data.Time (UTCTime, LocalTime, getCurrentTime)
-import Control.Monad (liftM)
+import           Data.String (fromString)
+import           Data.Time (getCurrentTime)
 
-import Bead.Domain.Types (readMsg)
-import Bead.Domain.Relationships (SubmissionDesc(..))
-import Bead.Controller.Pages as P(Page(..))
-import Bead.Controller.ServiceContext (UserState(..))
-import Bead.Controller.UserStories (submissionDescription)
-import Bead.View.Snap.Pagelets
-import Bead.View.Snap.Content as C
-import Bead.View.Snap.Content.Comments
+import           Bead.Controller.Pages as P(Page(..))
+import           Bead.Controller.UserStories (submissionDescription)
+import           Bead.Domain.Evaluation
+import           Bead.View.Snap.Content as C
+import           Bead.View.Snap.Content.Comments
+import           Bead.View.Snap.Content.SeeMore
 
-import Bead.Domain.Evaluation
-
-import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A (id, class_, style)
+import           Text.Blaze.Html5 ((!))
+import qualified Text.Blaze.Html5.Attributes as A (id, style)
 import qualified Text.Blaze.Html5 as H
-import Bead.View.Snap.I18N (IHtml)
 
 evaluation :: Content
 evaluation = getPostContentHandler evaluationPage evaluationPostHandler
@@ -54,7 +48,7 @@ data PageData = PageData {
   , userTime :: UserTimeConverter
   }
 
-render (BinEval _) = renderPagelet
+render (BinEval _) = renderDynamicPagelet
 render (PctEval _) = renderDynamicPagelet
 
 evaluationPage :: GETContentHandler
@@ -166,14 +160,13 @@ evaluationContent pd = do
           H.tr $ do
             H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Student "Student: ")
             H.td $ (fromString . eStudent $ sd)
-        H.div ! A.id (fieldName evaluationPercentageDiv) $
-          i18n msg $ inputEvalResult . eConfig $ sd
+        evaluationDiv . i18n msg . inputEvalResult $ eConfig sd
         submitButton (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Evaluate")
       H.div ! rightText $ do
         textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv
     H.div $ H.h2 $ (fromString . msg $ Msg_Evaluation_Submited_Solution "Submission")
-    H.div # submissionTextDiv $ H.pre # submissionTextPre $ do
-      (fromString . eSolution $ sd)
+    H.div # submissionTextDiv $ do
+      seeMorePre msg maxLength maxLines (eSolution sd)
     H.h2 (fromString . msg $ Msg_Comments_Title "Comments")
     -- Renders the comment area where the user can place a comment
     H.div $ H.h3 $ (fromString . msg $ Msg_Evaluation_New_Comment "New comment")
@@ -183,6 +176,11 @@ evaluationContent pd = do
       i18n msg $ commentsDiv tc . eComments $ sd
 
   where
+    evaluationDiv = withEvaluationData
+      (eConfig $ sbmDesc pd)
+      (const H.div)
+      (const $ H.div ! A.id (fieldName evaluationPercentageDiv))
+
     submissionKey = sbmSubmissionKey pd
     maybeEvalKey  = sbmEvaluationKey pd
 
@@ -194,6 +192,9 @@ evaluationContent pd = do
 
     commentPage (Just ek) = P.CommentFromModifyEvaluation submissionKey ek
     commentPage Nothing   = P.CommentFromEvaluation submissionKey
+
+    maxLength = 100
+    maxLines  = 5
 
 inputEvalResult :: EvaluationConfig -> IHtml
 inputEvalResult (BinEval cfg) = do

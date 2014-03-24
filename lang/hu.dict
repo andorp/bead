@@ -365,5 +365,7 @@ DictionaryFile {
     , Msg_Domain_EvalFailed { trans = "Elutasítva" }
     , Msg_Domain_EvalNoResultError { trans = "Ismeretlen hiba folyamán nem található értékelés!" }
     , Msg_Domain_EvalPercentage { trans = "%s%%" }
+    , Msg_SeeMore_SeeMore { trans = "Kinyit" }
+    , Msg_SeeMore_SeeLess { trans = "Becsuk" }
     ]
 }

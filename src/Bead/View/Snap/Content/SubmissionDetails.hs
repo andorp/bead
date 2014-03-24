@@ -3,28 +3,22 @@ module Bead.View.Snap.Content.SubmissionDetails (
     submissionDetails
   ) where
 
-import Data.Time (UTCTime, LocalTime, getCurrentTime)
-import Data.List (intersperse)
-import Data.String (fromString)
-import Control.Monad (liftM)
-import Control.Applicative ((<*>))
+import           Data.List (intersperse)
+import           Data.Time (getCurrentTime)
+import           Data.String (fromString)
 
-import Bead.Controller.ServiceContext (UserState(..))
-import Bead.Controller.Pages as P (Page(SubmissionDetails))
-import Bead.Controller.UserStories (submissionDetailsDesc)
-import Bead.View.Snap.Pagelets
-import Bead.View.Snap.Content
-import Bead.View.Snap.Markdown
-import Bead.View.Snap.Content.Utils
-import Bead.View.Snap.Content.Comments
-import Bead.View.Snap.Content.Submission (resolveStatus)
-import Bead.Domain.Entities (Comment(..))
-import Bead.Domain.Relationships
+import           Bead.Controller.Pages as P (Page(SubmissionDetails))
+import           Bead.Controller.UserStories (submissionDetailsDesc)
+import           Bead.View.Snap.Content
+import           Bead.View.Snap.Content.Comments
+import           Bead.View.Snap.Content.Utils
+import           Bead.View.Snap.Content.SeeMore
+import           Bead.View.Snap.Content.Submission (resolveStatus)
+import           Bead.View.Snap.Markdown
 
-
-import Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5.Attributes as A (class_, style)
+import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A (style)
 
 submissionDetails :: Content
 submissionDetails = getPostContentHandler submissionDetailsPage submissionDetailsPostHandler
@@ -47,7 +41,7 @@ submissionDetailsPage = withUserState $ \s -> do
       Just sm -> do
         sd <- userStory $ submissionDetailsDesc sk
         tc <- usersTimeZoneConverter
-        renderPagelet . withUserFrame s $
+        renderDynamicPagelet . withUserFrame s $
           submissionDetailsContent PageData {
               smKey = sk
             , aKey  = ak
@@ -104,7 +98,7 @@ submissionDetailsContent p = do
     H.div # assignmentTextDiv $
       markdownToHtml . assignmentDesc . sdAssignment $ sm
     H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "Submission text"
-    H.div # submissionTextDiv $ H.pre # submissionTextPre $ fromString . sdSubmission $ sm
+    H.div # submissionTextDiv $ seeMorePre msg maxLength maxLines . sdSubmission $ sm
     H.h2 . fromString . msg $ Msg_SubmissionDetails_Evaluation "Evaluation"
     (resolveStatus msg $ sdStatus sm)
     H.h2 (fromString . msg $ Msg_Comments_Title "Comments")
@@ -118,6 +112,9 @@ submissionDetailsContent p = do
     when (not $ null studentComments) $ do
       H.hr
       i18n msg $ commentsDiv tc studentComments
+  where
+    maxLength = 100
+    maxLines  = 5
 
 invalidSubmission :: IHtml
 invalidSubmission = do

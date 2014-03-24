@@ -23,6 +23,8 @@ evaluationDataMap :: (b -> a) -> (p -> a) -> EvaluationData b p -> a
 evaluationDataMap f _ (BinEval x) = f x
 evaluationDataMap _ f (PctEval x) = f x
 
+withEvaluationData d f g = evaluationDataMap f g d
+
 evaluationTypes :: [EvaluationData () ()]
 evaluationTypes = [BinEval (), PctEval ()]
 

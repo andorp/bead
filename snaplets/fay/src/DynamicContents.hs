@@ -35,6 +35,7 @@ onload = do
   hookPasswordField (rFormId changePwdForm) (cpf oldPasswordField)
   hookSamePasswords (rFormId changePwdForm) (cpf newPasswordField) (cpf newPasswordAgainField)
   hookSamePasswords (rFormId setStudentPwdForm) (cpf studentNewPwdField) (cpf studentNewPwdAgainField)
+  hookLargeComments
 
 pctValue :: String -> String
 pctValue = toEvResultJSON . percentageResult . parseDouble
@@ -339,6 +340,36 @@ hookEvaluationTypeForm hook = do
       where
         value (BinEval ()) = "BinEval ()"
         value (PctEval d) = "PctEval " ++ d
+
+hookLargeComments :: Fay ()
+hookLargeComments = void $ do
+  moreButton <- select (fromString "a.morebutton")
+  click toggle moreButton
+  where
+    a_morebutton = fromString ("a." ++ hookClass moreButtonClass)
+    pre_more     = fromString ("pre." ++ hookClass moreClass)
+    morebutton   = fromString (hookClass moreButtonClass)
+    lessbutton   = fromString (hookClass lessButtonClass)
+    span_seeless = fromString ("span." ++ hookClass seeLessClass)
+    span_seemore = fromString ("span." ++ hookClass seeMoreClass)
+
+    toggle :: Event -> Fay ()
+    toggle e = void $ do
+      seeMore <- (target e) >>= selectElement
+      full <- (nextSelector pre_more seeMore >>= first)
+      slideToggle full
+      preview <- (prevSelector pre_more seeMore >>= first)
+      slideToggle preview
+      seeMoreClass <- hasClass morebutton seeMore
+      if (seeMoreClass)
+        then do seeLessText <- (prevAllSelector span_seeless seeMore) >>= getText
+                setText     seeLessText seeMore
+                removeClass morebutton  seeMore
+                addClass    lessbutton  seeMore
+        else do seeMoreText <- (prevAllSelector span_seemore seeMore) >>= getText
+                setText     seeMoreText seeMore
+                removeClass lessbutton  seeMore
+                addClass    morebutton  seeMore
 
 cssId :: String -> Text
 cssId i = fromString ('#':i)
