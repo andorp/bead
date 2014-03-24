@@ -439,7 +439,8 @@ classList :: [String]
 classList = map className [
     SCN evaluationClassTable, SCN groupSubmissionTable, SCN assignmentTable
   , SCN submissionListTable, SCN submissionListDiv, SCN datePickerClass, SCN minuteSpinnerClass
-  , SCN hourSpinnerClass, SCN usersFileTableClass
+  , SCN hourSpinnerClass, SCN usersFileTableClass, SCN seeMoreClass, SCN seeLessClass, SCN moreClass
+  , SCN moreButtonClass, SCN lessButtonClass
   ]
 
 names = fieldList ++ classList

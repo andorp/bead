@@ -39,6 +39,11 @@ data HookClass = HookClass { hookClass :: String }
 datePickerClass = HookClass "datepicker"
 hourSpinnerClass = HookClass "hourspinner"
 minuteSpinnerClass = HookClass "minutespinner"
+seeMoreClass = HookClass "seemore"
+seeLessClass = HookClass "seeless"
+moreClass = HookClass "more"
+moreButtonClass = HookClass "morebutton"
+lessButtonClass = HookClass "lessbutton"
 
 data LoginField = LoginField { lcFieldName :: String }
 

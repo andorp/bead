@@ -404,6 +404,9 @@ data Translation a
   | Msg_Domain_EvalNoResultError { trans :: a }
   | Msg_Domain_EvalPercentage { trans :: a }
 
+  | Msg_SeeMore_SeeMore { trans :: a }
+  | Msg_SeeMore_SeeLess { trans :: a }
+
   deriving (Show, Read, Eq, Ord)
 
 -- The I18N is a mapping from a given translation key

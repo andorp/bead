@@ -32,3 +32,7 @@ setMinDatePickers = ffi "(%1).datepicker('option', 'onClose', function(selectedD
 -- Sets the first date picker's max date to the selected date in the second date picker
 setMaxDatePickers :: JQuery -> JQuery -> Fay ()
 setMaxDatePickers = ffi "(%2).datepicker('option', 'onClose', function(selectDate) { (%1).datepicker('option', 'maxDate', selectedDate); })"
+
+slideToggle :: JQuery -> Fay ()
+slideToggle = ffi "(%1).slideToggle(\"fast\")"
+
