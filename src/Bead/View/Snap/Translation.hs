@@ -169,12 +169,19 @@ data Translation a
   | Msg_RegistrationTokenSend_GoBackToLogin { trans :: a }
 
   | Msg_EvaluationTable_EmptyUnevaluatedSolutions { trans :: a }
+  | Msg_EvaluationTable_Course { trans :: a }
   | Msg_EvaluationTable_Group { trans :: a }
   | Msg_EvaluationTable_Student { trans :: a }
   | Msg_EvaluationTable_Assignment { trans :: a }
   | Msg_EvaluationTable_Link { trans :: a }
   | Msg_EvaluationTable_Solution { trans :: a }
   | Msg_EvaluationTable_Info { trans :: a }
+  | Msg_EvaluationTable_CourseAssignment { trans :: a }
+  | Msg_EvaluationTable_GroupAssignment { trans :: a }
+  | Msg_EvaluationTable_MiscCourseAssignment { trans :: a }
+  | Msg_EvaluationTable_CourseAssignmentInfo { trans :: a }
+  | Msg_EvaluationTable_GroupAssignmentInfo { trans :: a }
+  | Msg_EvaluationTable_MiscCourseAssignmentInfo { trans :: a }
 
   | Msg_UserSubmissions_NonAccessibleSubmissions { trans :: a }
   | Msg_UserSubmissions_Course { trans :: a }

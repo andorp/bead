@@ -156,7 +156,7 @@ evaluationContent pd = do
         H.table $ do
           H.tr $ do
             H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Course "Course, group: ")
-            H.td $ (fromString . eGroup $ sd)
+            H.td $ (fromString . courseGroupName $ sd)
           H.tr $ do
             H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Student "Student: ")
             H.td $ (fromString . eStudent $ sd)
@@ -192,6 +192,8 @@ evaluationContent pd = do
 
     commentPage (Just ek) = P.CommentFromModifyEvaluation submissionKey ek
     commentPage Nothing   = P.CommentFromEvaluation submissionKey
+
+    courseGroupName sd = concat [ eCourse sd, maybe "" (" - " ++) $ eGroup sd ]
 
     maxLength = 100
     maxLines  = 5

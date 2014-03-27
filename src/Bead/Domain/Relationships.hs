@@ -44,11 +44,15 @@ groupDescPermissions = ObjectPermissions [
   ]
 
 data SubmissionDesc = SubmissionDesc {
-    eGroup    :: String
+    eCourse   :: String
+  , eGroup    :: Maybe String
   , eStudent  :: String
+  , eUsername :: Username
   , eSolution :: String
   , eConfig   :: EvaluationConfig
   , eAssignmentKey   :: AssignmentKey
+  , eAssignmentDate  :: UTCTime
+  , eSubmissionDate  :: UTCTime
   , eAssignmentTitle :: String
   , eAssignmentDesc  :: String
   , eComments :: [Comment]
@@ -59,6 +63,21 @@ submissionDescPermissions = ObjectPermissions [
   , (P_Open, P_Submission), (P_Open, P_Assignment)
   , (P_Open, P_Comment)
   ]
+
+-- Sets of the submission which are not evaluated yet.
+data OpenedSubmissions = OpenedSubmissions {
+    osAdminedCourse :: [(SubmissionKey, SubmissionDesc)]
+    -- ^ Submissions by the users which are in the set of the users which attends on a course
+    -- which is related to the user's registered group, and attends one of the user's group
+  , osAdminedGroup  :: [(SubmissionKey, SubmissionDesc)]
+    -- ^ Submissions by the users which are in the set of the users which attends on the user's groups
+  , osRelatedCourse :: [(SubmissionKey, SubmissionDesc)]
+    -- ^ Submissions by the users which are in the set of the users which attends on a course
+    -- which is related to the user's registered group, and does not attend one of the user's group
+  }
+
+openedSubmissionsCata f (OpenedSubmissions admincourse admingroup relatedcourse)
+  = f admincourse admingroup relatedcourse
 
 type EvaluatedBy = String
 
