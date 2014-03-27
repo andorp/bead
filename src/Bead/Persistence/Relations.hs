@@ -20,6 +20,7 @@ module Bead.Persistence.Relations (
   , isThereASubmissionForGroup -- Checks if the user submitted any solutions for the group
   , isThereASubmissionForCourse -- Checks if the user submitted any solutions for the course
   , testScriptInfo -- Calculates the test script information for the given test key
+  , openedSubmissionInfo -- Calculates the opened submissions for the user from the administrated groups and courses
   ) where
 
 {-
@@ -30,13 +31,15 @@ related information is computed.
 
 import           Control.Applicative ((<$>))
 import           Control.Arrow
-import           Control.Monad (forM, when)
+import           Control.Monad (foldM, forM, when)
 import           Control.Monad.Transaction.TIO
 import           Data.Function (on)
-import           Data.List (nub, sortBy, intersect, find)
+import           Data.List ((\\), nub, sortBy, intersect, find)
 import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Data.Time (UTCTime, getCurrentTime)
 
 import           Bead.Domain.Entities
@@ -110,29 +113,82 @@ groupDescription gk = do
 
 submissionDesc :: SubmissionKey -> Persist SubmissionDesc
 submissionDesc sk = do
-  s  <- solution <$> loadSubmission sk
+  submission <- loadSubmission sk
   un <- usernameOfSubmission sk
   u  <- u_name <$> loadUser un
   ak <- assignmentOfSubmission sk
   asg <- loadAssignment ak
+  created <- assignmentCreatedTime ak
   cgk <- courseOrGroupOfAssignment ak
-  (c,gr) <- case cgk of
-    Left ck  -> (courseEvalConfig &&& courseName) <$> loadCourse ck
-    Right gk -> do
-      cfg  <- groupEvalConfig <$> loadGroup gk
-      name <- fullGroupName gk
-      return (cfg, name)
   cs  <- mapM (loadComment) =<< (commentsOfSubmission sk)
-  return SubmissionDesc {
-    eGroup    = gr
-  , eStudent  = u
-  , eSolution = s
-  , eConfig = c
-  , eAssignmentKey   = ak
-  , eAssignmentTitle = assignmentName asg
-  , eAssignmentDesc  = assignmentDesc asg
-  , eComments = cs
-  }
+  case cgk of
+    Left ck  -> do
+      course <- loadCourse ck
+      return SubmissionDesc {
+          eCourse   = courseName course
+        , eGroup    = Nothing
+        , eStudent  = u
+        , eUsername = un
+        , eSolution = solution submission
+        , eConfig = courseEvalConfig course
+        , eAssignmentKey   = ak
+        , eAssignmentDate  = created
+        , eSubmissionDate  = solutionPostDate submission
+        , eAssignmentTitle = assignmentName asg
+        , eAssignmentDesc  = assignmentDesc asg
+        , eComments = cs
+        }
+    Right gk -> do
+      group <- loadGroup gk
+      let cfg   = groupEvalConfig group
+          gname = groupName       group
+      ck   <- courseOfGroup gk
+      cname <- courseName <$> loadCourse ck
+      return SubmissionDesc {
+          eCourse   = cname
+        , eGroup    = Just $ groupName group
+        , eStudent  = u
+        , eUsername = un
+        , eSolution = solution submission
+        , eConfig = groupEvalConfig group
+        , eAssignmentKey   = ak
+        , eAssignmentDate  = created
+        , eSubmissionDate  = solutionPostDate submission
+        , eAssignmentTitle = assignmentName asg
+        , eAssignmentDesc  = assignmentDesc asg
+        , eComments = cs
+        }
+
+-- Calculates the opened submissions for the user from the administrated groups and courses
+openedSubmissionInfo :: Username -> Persist OpenedSubmissions
+openedSubmissionInfo u = do
+  acs <- map fst <$> administratedCourses u
+  ags <- map fst <$> administratedGroups  u
+  agcs <- (\\ acs) <$> mapM courseOfGroup ags
+  isCourseAsg <- (flip elem . concat) <$> mapM courseAssignments acs
+  isGroupAsg  <- (flip elem . concat) <$> mapM groupAssignments  ags
+  isRelatedCourseAsg <- (flip elem . concat) <$> mapM courseAssignments agcs
+  courseUser  <- (Set.fromList . concat) <$> mapM subscribedToCourse acs
+  isGroupUser <- (flip Set.member . Set.fromList . concat) <$> mapM subscribedToGroup ags
+  isRelatedCourseUser <- (flip Set.member . flip Set.difference courseUser . Set.fromList . concat)
+                            <$> mapM subscribedToCourse agcs
+  let isCourseUser = flip Set.member courseUser
+  nonEvalSubs  <- openedSubmissions -- Non Evaluated Submissions
+  submissionDescs <- mapM (withKey submissionDesc) nonEvalSubs
+  let filterSubmissions os s@(sk,sd) =
+        let separate ak student
+              | (isRelatedCourseAsg ak && isGroupUser student)  = os { osAdminedCourse = s:osAdminedCourse os }
+              | (isGroupAsg ak && isGroupUser student)   = os { osAdminedGroup  = s:osAdminedGroup os  }
+              | (isRelatedCourseAsg ak && isRelatedCourseUser student) = os { osRelatedCourse = s:osRelatedCourse os }
+              | (isCourseAsg ak && isRelatedCourseUser student) = os { osRelatedCourse = s:osRelatedCourse os }
+              | otherwise = os
+        in separate (eAssignmentKey sd) (eUsername sd)
+  return $ foldl filterSubmissions empty submissionDescs
+    where
+      empty = OpenedSubmissions [] [] []
+      withKey m k = do
+        x <- m k
+        return (k,x)
 
 courseNameAndAdmins :: AssignmentKey -> Persist (CourseName, [UsersFullname])
 courseNameAndAdmins ak = do

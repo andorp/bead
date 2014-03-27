@@ -917,22 +917,11 @@ submissionDescription sk = logAction INFO msg $ do
   where
     msg = "loads submission infomation for " ++ show sk
 
-openSubmissions :: UserStory [(SubmissionKey, SubmissionDesc)]
+openSubmissions :: UserStory OpenedSubmissions
 openSubmissions = logAction INFO ("lists unevaluated submissions") $ do
   authorize P_Open P_Submission
-  withUserAndPersist $ \uname -> do
-    cs <- (map fst) <$> Persist.administratedCourses uname
-    gs <- (map fst) <$> Persist.administratedGroups  uname
-    cas <- concat <$> mapM Persist.courseAssignments cs
-    gas <- concat <$> mapM Persist.groupAssignments gs
-    let as = nub (cas ++ gas)
-        adminFor (_,a,_) = elem a as
-    nonEvaluated <- Persist.openedSubmissions
-    assignments  <- mapM Persist.assignmentOfSubmission nonEvaluated
-    descriptions <- mapM Persist.submissionDesc nonEvaluated
-    return $ map select $ filter adminFor $ zip3 nonEvaluated assignments descriptions
-  where
-    select (a,_,c) = (a,c)
+  u <- username
+  persistence $ Persist.openedSubmissionInfo u
 
 submissionListDesc :: AssignmentKey -> UserStory SubmissionListDesc
 submissionListDesc ak = logAction INFO ("lists submissions for assignment " ++ show ak) $ do
