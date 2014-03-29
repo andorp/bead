@@ -12,7 +12,7 @@ import           Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-import           Bead.Controller.Pages (Page(..))
+import           Bead.Controller.Pages as Pages
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.SeeMore
 
@@ -54,7 +54,7 @@ commentPar i18n t c = H.div # (commentDiv c) $ do
 -- Creates a post form for the given route assignment key and submission key, where
 -- a comment can be placed and the result is submitted to the given page, which is
 -- need to understand the given parameters
-commentPostForm :: Page -> AssignmentKey -> IHtml
+commentPostForm :: Page a -> AssignmentKey -> IHtml
 commentPostForm p ak = do
   msg <- getI18N
   return $ postForm (routeOf p) $ do

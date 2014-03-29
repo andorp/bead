@@ -4,20 +4,14 @@ module Bead.View.Snap.Content.GroupRegistration (
   , unsubscribeFromCourse
   ) where
 
-import Data.List (intersperse)
-import Control.Applicative ((<$>))
-import Control.Monad (liftM)
+import           Data.List (intersperse)
+import           Data.String (fromString)
 
-import Bead.Controller.ServiceContext (UserState(..))
-import Bead.Controller.UserStories (availableGroups, attendedGroups)
-import qualified Bead.Controller.Pages as P (Page(GroupRegistration, UnsubscribeFromCourse))
-import Bead.View.Snap.Pagelets
-import Bead.View.Snap.Content
-
-import Data.String (fromString)
-import Text.Blaze.Html5 ((!))
-import Bead.View.Snap.I18N (IHtml)
 import qualified Text.Blaze.Html5 as H
+
+import           Bead.Controller.UserStories (availableGroups, attendedGroups)
+import qualified Bead.Controller.Pages as Pages
+import           Bead.View.Snap.Content
 
 groupRegistration :: Content
 groupRegistration = getPostContentHandler groupRegistrationPage postGroupReg
@@ -81,6 +75,8 @@ groupsAlreadyRegistered ds = do
         H.th # (grayBackground <> informationalCell) $ (fromString . msg $ Msg_GroupRegistration_Unsubscribe "Unregister")
       mapM_ (groupLine msg) ds)
   where
+    unsubscribeFromCourse k = Pages.unsubscribeFromCourse k ()
+
     groupLine msg (key, desc, hasSubmission) = flip groupDescFold desc $ \n as -> do
       H.tr $ do
         H.td # informationalCell $ fromString $ n
@@ -89,7 +85,7 @@ groupsAlreadyRegistered ds = do
           if hasSubmission
             then (fromString . msg $ Msg_GroupRegistration_NoUnsubscriptionAvailable
               "Unregistration is not allowed.")
-            else postForm (routeOf $ P.UnsubscribeFromCourse key) $
+            else postForm (routeOf $ unsubscribeFromCourse key) $
                    submitButton
                      (fieldName unsubscribeFromCourseSubmitBtn)
                      (msg $ Msg_GroupRegistration_Unsubscribe "Unregister")
@@ -100,13 +96,15 @@ groupsForTheUser gs = do
   return $
     nonEmpty gs (fromString . msg $ Msg_GroupRegistration_NoAvailableCourses
       "There are no available groups yet.") $
-    postForm (routeOf P.GroupRegistration) $ do
+    postForm (routeOf groupRegistration) $ do
       selection (fieldName groupRegistrationField) $ do
         mapM_ (\(gk,gd) -> option (paramValue gk) (descriptive gd) False) gs
       H.br
       submitButton (fieldName regGroupSubmitBtn) (msg $ Msg_GroupRegistration_Register "Register")
 
   where
+    groupRegistration = Pages.groupRegistration ()
+
     descriptive :: GroupDesc -> String
     descriptive g = join [gName g, " / ", join (intersperse " , " (gAdmins g))]
 

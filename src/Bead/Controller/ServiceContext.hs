@@ -19,9 +19,9 @@ module Bead.Controller.ServiceContext (
   ) where
 
 import Bead.Domain.Types
-import Bead.Domain.Entities
+import Bead.Domain.Entities as Entities
 import Bead.Persistence.Persist
-import Bead.Controller.Pages (Page(..))
+import Bead.Controller.Pages as Pages
 import Bead.Controller.Logging
 
 import Data.Map (Map)
@@ -52,7 +52,7 @@ data UserState
   | TestAgent
   | UserState {
     user :: Username -- Username
-  , page :: Page     -- The last requested page
+  , page :: PageDesc -- The page descriptor of the last requested one
   , name :: String   -- User's full name
   , role :: Role     -- User's role
   , token :: String  -- Token for the active user session
@@ -104,13 +104,15 @@ instance UserToken UserState where
 
 instance InRole UserState where
   isAdmin = userStateCata False False False (\_u _p _n role _t _tz _s -> isAdmin role)
-  isCourseAdmin = userStateCata False False False (\_u _p _n role _t _tz _s -> isCourseAdmin role)
+  isCourseAdmin = userStateCata False False False (\_u _p _n role _t _tz _s -> Entities.isCourseAdmin role)
   isGroupAdmin = userStateCata False False False (\_u _p _n role _t _tz _s -> isGroupAdmin role)
   isStudent = userStateCata False False False (\_u _p _n role _t _tz _s -> isStudent role)
 
 -- | The actual page that corresponds to the user's state
-actualPage :: UserState -> Page
-actualPage = userStateCata Login Login Login (\_u page _n _r _t _tz _s -> page)
+actualPage :: UserState -> Page ()
+actualPage = userStateCata login' login' login' (\_u page _n _r _t _tz _s -> page)
+  where
+    login' = login ()
 
 data UserContainer a = UserContainer {
     isUserLoggedIn :: UsrToken -> IO Bool

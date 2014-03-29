@@ -147,50 +147,51 @@ userTimeZoneField = UserTimeZoneField "usertimezone"
 instance SnapFieldName ChangePwdField where
   fieldName = fromString . cpf
 
-menuId :: P.Page -> String
+menuId :: P.Page a -> String
 menuId = P.pageCata
-  "link-login"
-  "link-logout"
-  "link-home"
-  "link-profile"
-  "link-error"
-  "link-admin"
-  "link-course-admin"
-  (const "link-course-overview")
-  "link-evaluation-table"
-  (const "link-evaluation")
-  (const2 "link-modify-evaluation")
-  (const "link-new-group-assignment")
-  (const "link-new-course-assignment")
-  (const "link-modify-assignment")
-  (const "link-view-assignment")
-  (const "link-new-group-assignment-preview")
-  (const "link-new-course-assignment-preview")
-  (const "link-modify-assignment-preview")
-  "link-submission"
-  "link-submission-list"
-  (const2 "link-submission-details")
-  "link-group-registration"
-  "link-user-details"
-  "link-user-submissions"
-  "link-new-test-script"
-  (const "link-modify-test-script")
-  "link-upload-files"
-  "link-create-course"
-  "link-create-group"
-  "link-assign-course-admin"
-  "link-assign-group-admin"
-  "link-change-password"
-  "link-set-user-password"
-  (const "link-comment-from-evaluation")
-  (const2 "link-comment-from-modify-evaluation")
-  (const "link-delete-users-from-course")
-  (const "link-delete-users-from-group")
-  (const "link-unsubscribe-from-course")
-  where
-    const2 = const . const
+  (c "link-login")
+  (c "link-logout")
+  (c "link-home")
+  (c "link-profile")
+  (c "link-admin")
+  (c "link-course-admin")
+  (c2 "link-course-overview")
+  (c "link-evaluation-table")
+  (c2 "link-evaluation")
+  (c3 "link-modify-evaluation")
+  (c2 "link-new-group-assignment")
+  (c2 "link-new-course-assignment")
+  (c2 "link-modify-assignment")
+  (c2 "link-view-assignment")
+  (c2 "link-new-group-assignment-preview")
+  (c2 "link-new-course-assignment-preview")
+  (c2 "link-modify-assignment-preview")
+  (c "link-submission")
+  (c "link-submission-list")
+  (c3 "link-submission-details")
+  (c "link-group-registration")
+  (c "link-user-details")
+  (c "link-user-submissions")
+  (c "link-new-test-script")
+  (c2 "link-modify-test-script")
+  (c "link-upload-files")
+  (c "link-create-course")
+  (c "link-create-group")
+  (c "link-assign-course-admin")
+  (c "link-assign-group-admin")
+  (c "link-change-password")
+  (c "link-set-user-password")
+  (c2 "link-comment-from-evaluation")
+  (c3 "link-comment-from-modify-evaluation")
+  (c2 "link-delete-users-from-course")
+  (c2 "link-delete-users-from-group")
+  (c2 "link-unsubscribe-from-course")
+    where
+      c = const
+      c2 = c . const
+      c3 = c2 . const
 
-instance SnapFieldName P.Page where
+instance SnapFieldName (P.Page a) where
   fieldName = fromString . menuId
 
 newtype AssignmentField = AssignmentField { aFieldName :: String }

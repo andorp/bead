@@ -112,11 +112,13 @@ login username token = do
   notLoggedIn  <- liftIO $ isUserLoggedIn usrContainer (userToken (username, token))
   case (validUser, notLoggedIn) of
     (True, False) -> do
-      loadUserData username token P.Home
+      loadUserData username token home'
       s <- userState
       liftIO $ userLogsIn usrContainer (userToken s) s
     (True , True)  -> errorPage . userError $ Msg_UserStoryError_SameUserIsLoggedIn "This user is logged in somewhere else."
     (False,    _)  -> errorPage . userError $ Msg_UserStoryError_InvalidUsernameOrPassword "Invalid username or password."
+  where
+    home' = home ()
 
 -- | The user logs out
 logout :: UserStory ()
@@ -132,13 +134,14 @@ doesUserExist u = logAction INFO ("searches after user " ++ show u) $ do
   persistence $ Persist.doesUserExist u
 
 -- | The user navigates to the next page
-changePage :: P.Page -> UserStory ()
+changePage :: P.PageDesc -> UserStory ()
 changePage p = do
   authorize P_Open (pageAsPermObj p)
   changeUserState $ \userState -> userState { page = p }
   where
-    pageAsPermObj P.Administration = P_AdminPage
-    pageAsPermObj _                = P_PlainPage
+    pageAsPermObj p
+      | isAdministration p = P_AdminPage
+      | otherwise          = P_PlainPage
 
 -- | The authorized user creates a new user
 createUser :: User -> UserStory ()
@@ -783,7 +786,7 @@ changeUserState f = do
     UserNotLoggedIn -> return ()
     state' -> CMS.put (f state')
 
-loadUserData :: Username -> String -> Page -> UserStory ()
+loadUserData :: Username -> String -> PageDesc -> UserStory ()
 loadUserData uname t p = do
   info <- persistence $ Persist.personalInfo uname
   flip personalInfoCata info $ \r n tz -> do

@@ -7,7 +7,7 @@ import           Data.List (intersperse)
 import           Data.Time (getCurrentTime)
 import           Data.String (fromString)
 
-import           Bead.Controller.Pages as P (Page(SubmissionDetails))
+import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (submissionDetailsDesc)
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Comments
@@ -103,7 +103,7 @@ submissionDetailsContent p = do
     (resolveStatus msg $ sdStatus sm)
     H.h2 (fromString . msg $ Msg_Comments_Title "Comments")
     H.h3 (fromString . msg $ Msg_SubmissionDetails_NewComment "New comment")
-    postForm (routeOf $ P.SubmissionDetails (aKey p) (smKey p)) $ do
+    postForm (routeOf $ submissionDetails (aKey p) (smKey p)) $ do
       H.div ! formDiv $ do
         textAreaInput (fieldName commentValueField) Nothing ! fillDiv
       H.br
@@ -113,6 +113,7 @@ submissionDetailsContent p = do
       H.hr
       i18n msg $ commentsDiv tc studentComments
   where
+    submissionDetails ak sk = Pages.submissionDetails ak sk ()
     maxLength = 100
     maxLines  = 5
 

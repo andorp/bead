@@ -415,7 +415,8 @@ submissionDescTest = do
   quick 500 $ do
     sk <- pick $ elements ss
     desc <- runPersistCmd $ submissionDesc sk
-    assertNonEmpty (eGroup desc) "Group name was empty"
+    assertNonEmpty (eCourse desc) "Course name was empty"
+    maybe (return ()) (flip assertNonEmpty "Group name was empty") $ eGroup desc
     assertNonEmpty (eStudent desc) "Student name was empty"
     assertNonEmpty (eSolution desc) "Solution was empty"
     assertNonEmpty (eAssignmentTitle desc) "Assignment title was empty"

@@ -187,35 +187,34 @@ unsubscribeFromCoursePath :: RoutePath
 unsubscribeFromCoursePath = "/unsubscribe-from-course"
 
 -- Returns a base path for the given page
-pageRoutePath :: Page -> RoutePath
-pageRoutePath = fromString . r where
-  r = pageCata
+pageRoutePath :: Page a -> Page RoutePath
+pageRoutePath = fmap fromString . r where
+  r = constantsP
     loginPath
     logoutPath
     homePath
     profilePath
-    errorPath
     administrationPath
     courseAdminPath
-    (const courseOverviewPath)
+    courseOverviewPath
     evaluationTablePath
-    (const evaluationPath)
-    (const2 modifyEvaluationPath)
-    (const newGroupAssignmentPath)
-    (const newCourseAssignmentPath)
-    (const modifyAssignmentPath)
-    (const viewAssignmentPath)
-    (const newGroupAssignmentPreviewPath)
-    (const newCourseAssignmentPreviewPath)
-    (const modifyAssignmentPreviewPath)
+    evaluationPath
+    modifyEvaluationPath
+    newGroupAssignmentPath
+    newCourseAssignmentPath
+    modifyAssignmentPath
+    viewAssignmentPath
+    newGroupAssignmentPreviewPath
+    newCourseAssignmentPreviewPath
+    modifyAssignmentPreviewPath
     submissionPath
     submissionListPath
-    (const2 submissionDetailsPath)
+    submissionDetailsPath
     groupRegistrationPath
     userDetailsPath
     userSubmissionsPath
     newTestScriptPath
-    (const modifyTestScriptPath)
+    modifyTestScriptPath
     uploadFilePath
     createCoursePath
     createGroupPath
@@ -223,40 +222,59 @@ pageRoutePath = fromString . r where
     assignGroupAdminPath
     changePasswordPath
     setUserPasswordPath
-    (const commentFromEvaluationPath)
-    (const2 commentFromModifyEvaluationPath)
-    (const deleteUsersFromCoursePath)
-    (const deleteUsersFromGroupPath)
-    (const unsubscribeFromCoursePath)
-    where
-      const2 = const . const
+    commentFromEvaluationPath
+    commentFromModifyEvaluationPath
+    deleteUsersFromCoursePath
+    deleteUsersFromGroupPath
+    unsubscribeFromCoursePath
 
 -- Calculates a request parameter list from the given page value
-pageRequestParams :: Page -> [ReqParam]
-pageRequestParams = r where
-  r (ModifyEvaluation sk ek)   = [requestParam sk, requestParam ek]
-  r (Evaluation sk)            = [requestParam sk]
-  r (CourseOverview ck)        = [requestParam ck]
-  r (SubmissionDetails ak sk)  = [requestParam ak, requestParam sk]
-  r (CommentFromEvaluation ek) = [requestParam ek]
-  r (CommentFromModifyEvaluation ek sk) = [requestParam ek, requestParam sk]
-  r (DeleteUsersFromCourse ck) = [requestParam ck]
-  r (DeleteUsersFromGroup gk) = [requestParam gk]
-  r (UnsubscribeFromCourse ck) = [requestParam ck]
-  r (ModifyTestScript tsk) = [requestParam tsk]
-  r (NewCourseAssignment ck) = [requestParam ck]
-  r (NewGroupAssignment gk) = [requestParam gk]
-  r (NewCourseAssignmentPreview ck) = [requestParam ck]
-  r (NewGroupAssignmentPreview gk) = [requestParam gk]
-  r (ModifyAssignmentPreview ak) = [requestParam ak]
-  r (ViewAssignment ak) = [requestParam ak]
-  r (ModifyAssignment ak) = [requestParam ak]
-  r _ = []
+pageRequestParams :: Page a -> Page [ReqParam]
+pageRequestParams = liftsP
+  (c []) -- login
+  (c []) -- logout
+  (c []) -- home
+  (c []) -- profile
+  (c []) -- administration
+  (c []) -- courseAdmin
+  (\ck _ -> [requestParam ck]) -- courseOverview
+  (c []) -- evaluationTable
+  (\ek _ -> [requestParam ek]) -- evaluation
+  (\sk ek _ -> [requestParam sk, requestParam ek]) -- modifyEvaluation
+  (\gk _ -> [requestParam gk]) -- newGroupAssignment
+  (\ck _ -> [requestParam ck]) -- newCourseAssignment
+  (\ak _ -> [requestParam ak]) -- modifyAssignment
+  (\ak _ -> [requestParam ak]) -- viewAssignment
+  (\gk _ -> [requestParam gk]) -- newGroupAssignmentPreview
+  (\ck _ -> [requestParam ck]) -- newCourseAssignmentPreview
+  (\ak _ -> [requestParam ak]) -- modifyAssignmentPreview
+  (c []) -- submission
+  (c []) -- submissionList
+  (\ak sk _ -> [requestParam ak, requestParam sk]) -- submissionDetails
+  (c []) -- groupRegistration
+  (c []) -- userDetails
+  (c []) -- userSubmissions
+  (c []) -- newTestScript
+  (\tsk _ -> [requestParam tsk]) -- modifyTestScript
+  (c []) -- uploadFile
+  (c []) -- createCourse
+  (c []) -- createGroup
+  (c []) -- assignCourseAdmin
+  (c []) -- assignGroupAdmin
+  (c []) -- changePassword
+  (c []) -- setUserPassword
+  (\sk _ -> [requestParam sk]) -- commentFromEvaluation
+  (\sk ek _ -> [requestParam sk, requestParam ek]) -- commentFromModifyEvaluation
+  (\ck _ -> [requestParam ck]) -- deleteUsersFromCourse
+  (\gk _ -> [requestParam gk]) -- deleteUsersFromGroup
+  (\gk _ -> [requestParam gk]) -- unsubscribeFromCourse
+    where
+      c = const
 
 -- Calculates the full path from a page value, including the base path and the
 -- request parameters
-routeOf :: (IsString s) => Page -> s
-routeOf p = queryString (pageRoutePath p) (pageRequestParams p)
+routeOf :: (IsString s) => Page a -> s
+routeOf p = queryString (pageValue (pageRoutePath p)) (pageValue (pageRequestParams p))
 
 -- Produces a query string for a GET request from the given base name, and the
 -- given parameters
@@ -264,7 +282,7 @@ queryString :: (IsString s) => String -> [ReqParam] -> s
 queryString base []     = fromString base
 queryString base params = fromString . join $ [base, "?"] ++ (intersperse "&" (map queryStringParam params))
 
-routeWithParams :: (IsString s) => Page -> [ReqParam] -> s
+routeWithParams :: (IsString s) => Page a -> [ReqParam] -> s
 routeWithParams p rs = fromString . join $
   [routeOf p, "?"] ++ (intersperse "&" (map queryStringParam rs))
 
@@ -280,7 +298,7 @@ requestRoute route rs = fromString . join $
 routeOfInvariants = Invariants [
     ("RouteOf strings must not be empty", \p -> length (routeOf' p) > 0)
   ] where
-    routeOf' :: Page -> String
+    routeOf' :: Page () -> String
     routeOf' = routeOf
 
 #endif

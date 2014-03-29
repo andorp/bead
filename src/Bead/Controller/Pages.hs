@@ -1,47 +1,9 @@
 {-# LANGUAGE CPP #-}
-module Bead.Controller.Pages (
-    Page(..)
-  , pageCata -- Template function for the page data structure
-  , parentPage
-  , allowedPage
-  , contentPages
-  , menuPages
-  , isLogin
-  , isLogout
-  , isHome
-  , isProfile
-  , isError
-  , isAdministration
-  , isCourseAdmin
-  , isCourseOverview
-  , isEvaluationTable
-  , isEvaluation
-  , isModifyEvaluation
-  , isNewGroupAssignment
-  , isNewCourseAssignment
-  , isModifyAssignment
-  , isSubmission
-  , isSubmissionList
-  , isSubmissionDetails
-  , isGroupRegistration
-  , isUserDetails
-  , isUserSubmissions
-  , isCreateCourse
-  , isCreateGroup
-  , isAssignCourseAdmin
-  , isAssignGroupAdmin
-  , isChangePassword
-  , isSetUserPassword
-  , isCommentFromEvaluation
-  , isCommentFromModifyEvaluation
-  , isTemporaryViewPage
-#ifdef TEST
-  , invariants
-#endif
-  ) where
+{-# LANGUAGE DeriveFunctor #-}
+module Bead.Controller.Pages where
 
 import qualified Bead.Domain.Entities      as E
-import qualified Bead.Domain.Relationships as R
+import           Bead.Domain.Relationships as R
 
 import Control.Monad (join)
 
@@ -49,49 +11,273 @@ import Control.Monad (join)
 import Bead.Invariants (Invariants(..))
 #endif
 
-data Page
-  = Login
-  | Logout
-  | Home
-  | Profile
-  | Error
-  | Administration
-  | CourseAdmin
-  | CourseOverview R.CourseKey
-  | EvaluationTable
-  | Evaluation R.SubmissionKey
-  | ModifyEvaluation R.SubmissionKey R.EvaluationKey
-  | NewGroupAssignment R.GroupKey
-  | NewCourseAssignment R.CourseKey
-  | ModifyAssignment R.AssignmentKey
-  | ViewAssignment R.AssignmentKey
-  | NewGroupAssignmentPreview R.GroupKey
-  | NewCourseAssignmentPreview R.CourseKey
-  | ModifyAssignmentPreview R.AssignmentKey
-  | Submission
-  | SubmissionList
-  | SubmissionDetails R.AssignmentKey R.SubmissionKey
-  | GroupRegistration
-  | UserDetails
-  | UserSubmissions
-  | NewTestScript
-  | ModifyTestScript R.TestScriptKey
-  | UploadFile
+-- View pages are rendered using the data stored in the
+-- persistence layer. Mainly for information propagation
+-- for the user.
+data ViewPage a
+  = Login a
+  | Logout a
+  | Home a
+  | CourseOverview CourseKey a
+  | EvaluationTable a
+  | ViewAssignment AssignmentKey a
+  | Submission a
+  | SubmissionList a
+  | SubmissionDetails AssignmentKey SubmissionKey a
+  | UserSubmissions a
+  deriving (Eq, Ord, Show, Functor)
 
-  -- Only Post handlers
-  | CreateCourse
-  | CreateGroup
-  | AssignCourseAdmin
-  | AssignGroupAdmin
-  | ChangePassword
-  | SetUserPassword
-  | CommentFromEvaluation R.SubmissionKey
-  | CommentFromModifyEvaluation R.SubmissionKey R.EvaluationKey
-  | DeleteUsersFromCourse R.CourseKey -- NOTE: Users will be defined in parameters
-  | DeleteUsersFromGroup R.GroupKey -- NOTE: Users will be defined in parameters
-  | UnsubscribeFromCourse R.GroupKey -- NOTE: There is no course without an active group
-  -- etc ...
-  deriving (Eq, Ord, Show)
+viewPageCata
+  login
+  home
+  courseOverview
+  evaluationTable
+  viewAssignment
+  submission
+  submissionList
+  submissionDetails
+  userSubmissions
+  p = case p of
+    Login a -> login a
+    Home a -> home a
+    CourseOverview ck a -> courseOverview ck a
+    EvaluationTable a -> evaluationTable a
+    ViewAssignment ak a -> viewAssignment ak a
+    Submission a -> submission a
+    SubmissionList a -> submissionList a
+    SubmissionDetails ak sk a -> submissionDetails ak sk a
+    UserSubmissions a -> userSubmissions a
+
+viewPageValue :: ViewPage a -> a
+viewPageValue = viewPageCata
+  id -- login
+  id -- home
+  cid -- courseOverview
+  id -- evaluationTable
+  cid -- viewAssignment
+  id -- submission
+  id -- submissionList
+  c2id -- submissionDetails
+  id -- userSubmissions
+  where
+    cid = const id
+    c2id = const . cid
+
+-- User View pages are rendered using the data stored in the
+-- persistence and some temporary data given by the user. Mainly
+-- is for the information propagation to the user in a stated way.
+data UserViewPage a
+  = NewGroupAssignmentPreview GroupKey a
+  | NewCourseAssignmentPreview CourseKey a
+  | ModifyAssignmentPreview AssignmentKey a
+  deriving (Eq, Ord, Show, Functor)
+
+userViewPageCata
+  newGroupAssignmentPreview
+  newCourseAssignmentPreview
+  modifyAssignmentPreview
+  p = case p of
+    NewGroupAssignmentPreview gk a -> newGroupAssignmentPreview gk a
+    NewCourseAssignmentPreview ck a -> newCourseAssignmentPreview ck a
+    ModifyAssignmentPreview ak a -> modifyAssignmentPreview ak a
+
+userViewPageValue :: UserViewPage a -> a
+userViewPageValue = userViewPageCata
+  cid -- newGroupAssignmentPreview
+  cid -- newCourseAssignmentPreview
+  cid -- modifyAssignmentPreview
+  where
+    cid = const id
+
+-- View and Modify pages which rendered using data stored in the
+-- persistence and after some user input it modifies the information
+-- stored in the persistence.
+data ViewModifyPage a
+  = Profile a
+  | Administration a
+  | CourseAdmin a
+  | Evaluation SubmissionKey a
+  | ModifyEvaluation SubmissionKey EvaluationKey a
+  | NewGroupAssignment GroupKey a
+  | NewCourseAssignment CourseKey a
+  | ModifyAssignment AssignmentKey a
+  | GroupRegistration a
+  | UserDetails a
+  | NewTestScript a
+  | ModifyTestScript TestScriptKey a
+  | UploadFile a
+  deriving (Eq, Ord, Show, Functor)
+
+viewModifyPageCata
+  profile
+  administration
+  courseAdmin
+  evaluation
+  modifyEvaluation
+  newGroupAssignment
+  newCourseAssignment
+  modifyAssignment
+  groupRegistration
+  userDetails
+  newTestScript
+  modifyTestScript
+  uploadFile
+  p = case p of
+    Profile a -> profile a
+    Administration a -> administration a
+    CourseAdmin a -> courseAdmin a
+    Evaluation sk a -> evaluation sk a
+    ModifyEvaluation sk ek a -> modifyEvaluation sk ek a
+    NewGroupAssignment gk a -> newGroupAssignment gk a
+    NewCourseAssignment ck a -> newCourseAssignment ck a
+    ModifyAssignment ak a -> modifyAssignment ak a
+    GroupRegistration a -> groupRegistration a
+    UserDetails a -> userDetails a
+    NewTestScript a -> newTestScript a
+    ModifyTestScript tk a -> modifyTestScript tk a
+    UploadFile a -> uploadFile a
+
+viewModifyPageValue :: ViewModifyPage a -> a
+viewModifyPageValue = viewModifyPageCata
+  id -- profile
+  id -- administration
+  id -- courseAdmin
+  cid -- evaluation
+  c2id -- modifyEvaluation
+  cid -- newGroupAssignment
+  cid -- newCourseAssignment
+  cid -- modifyAssignment
+  id -- groupRegistration
+  id -- userDetails
+  id -- newTestScript
+  cid -- modifyTestScript
+  id -- uploadFile
+  where
+    cid = const id
+    c2id = const . cid
+
+-- Modify page is a following and lously coupled page of a
+-- view page, uses the information gathered from the user input
+-- and changes information in the persistence layer
+data ModifyPage a
+  = CreateCourse a
+  | CreateGroup a
+  | AssignCourseAdmin a
+  | AssignGroupAdmin a
+  | ChangePassword a
+  | SetUserPassword a
+  | CommentFromEvaluation R.SubmissionKey a
+  | CommentFromModifyEvaluation R.SubmissionKey R.EvaluationKey a
+  | DeleteUsersFromCourse R.CourseKey a
+  | DeleteUsersFromGroup R.GroupKey a
+  | UnsubscribeFromCourse R.GroupKey a
+  deriving (Eq, Ord, Show, Functor)
+
+modifyPageCata
+  createCourse
+  createGroup
+  assignCourseAdmin
+  assignGroupAdmin
+  changePassword
+  setUserPassword
+  commentFromEvaluation
+  commentFromModifyEvaluation
+  deleteUsersFromCourse
+  deleteUsersFromGroup
+  unsubscribeFromCourse
+  p = case p of
+    CreateCourse a -> createCourse a
+    CreateGroup a -> createGroup a
+    AssignCourseAdmin a -> assignCourseAdmin a
+    AssignGroupAdmin a -> assignGroupAdmin a
+    ChangePassword a -> changePassword a
+    SetUserPassword a -> setUserPassword a
+    CommentFromEvaluation sk a -> commentFromEvaluation sk a
+    CommentFromModifyEvaluation sk ek a -> commentFromModifyEvaluation sk ek a
+    DeleteUsersFromCourse ck a -> deleteUsersFromCourse ck a
+    DeleteUsersFromGroup gk a -> deleteUsersFromGroup gk a
+    UnsubscribeFromCourse gk a -> unsubscribeFromCourse gk a
+
+modifyPageValue :: ModifyPage a -> a
+modifyPageValue = modifyPageCata
+  id -- createCourse
+  id -- createGroup
+  id -- assignCourseAdmin
+  id -- assignGroupAdmin
+  id -- changePassword
+  id -- setUserPassword
+  cid -- commentFromEvaluation
+  c2id -- commentFromModifyEvaluation
+  cid -- deleteUsersFromCourse
+  cid -- deleteUsersFromGroup
+  cid -- unsubscribeFromCourse
+  where
+    cid = const id
+    c2id = const . cid
+
+data Page a
+  = View (ViewPage a)
+  | UserView (UserViewPage a)
+  | ViewModify (ViewModifyPage a)
+  | Modify (ModifyPage a)
+  deriving (Eq, Ord, Show, Functor)
+
+pageCata'
+  view
+  userView
+  viewModify
+  modify
+  q = case q of
+    View p -> view p
+    UserView p -> userView p
+    ViewModify p -> viewModify p
+    Modify p -> modify p
+
+pageValue :: Page a -> a
+pageValue = pageCata' viewPageValue userViewPageValue viewModifyPageValue modifyPageValue
+
+type PageDesc = Page ()
+
+login                   = View . Login
+logout                  = View . Logout
+home                    = View . Home
+courseOverview ck       = View . CourseOverview ck
+evaluationTable         = View . EvaluationTable
+viewAssignment ak       = View . ViewAssignment ak
+submission              = View . Submission
+submissionList          = View . SubmissionList
+submissionDetails ak sk = View . SubmissionDetails ak sk
+userSubmissions         = View . UserSubmissions
+
+newGroupAssignmentPreview gk  = UserView . NewGroupAssignmentPreview gk
+newCourseAssignmentPreview ck = UserView . NewCourseAssignmentPreview ck
+modifyAssignmentPreview ak    = UserView . ModifyAssignmentPreview ak
+
+profile                = ViewModify . Profile
+administration         = ViewModify . Administration
+courseAdmin            = ViewModify . CourseAdmin
+evaluation sk          = ViewModify . Evaluation sk
+modifyEvaluation sk ek = ViewModify . ModifyEvaluation sk ek
+newGroupAssignment gk  = ViewModify . NewGroupAssignment gk
+newCourseAssignment ck = ViewModify . NewCourseAssignment ck
+modifyAssignment ak    = ViewModify . ModifyAssignment ak
+groupRegistration      = ViewModify . GroupRegistration
+userDetails            = ViewModify . UserDetails
+newTestScript          = ViewModify . NewTestScript
+modifyTestScript tk    = ViewModify . ModifyTestScript tk
+uploadFile             = ViewModify . UploadFile
+
+createCourse      = Modify . CreateCourse
+createGroup       = Modify . CreateGroup
+assignCourseAdmin = Modify . AssignCourseAdmin
+assignGroupAdmin  = Modify . AssignGroupAdmin
+changePassword    = Modify . ChangePassword
+setUserPassword   = Modify . SetUserPassword
+commentFromEvaluation sk = Modify . CommentFromEvaluation sk
+commentFromModifyEvaluation sk ek = Modify . CommentFromModifyEvaluation sk ek
+deleteUsersFromCourse ck          = Modify . DeleteUsersFromCourse ck
+deleteUsersFromGroup gk           = Modify . DeleteUsersFromGroup gk
+unsubscribeFromCourse gk          = Modify . UnsubscribeFromCourse gk
 
 -- Template method for the page data structure
 pageCata
@@ -99,7 +285,6 @@ pageCata
   logout
   home
   profile
-  error
   administration
   courseAdmin
   courseOverview
@@ -134,168 +319,315 @@ pageCata
   deleteUsersFromGroup
   unsubscribeFromCourse
   p = case p of
-    Login -> login
-    Logout -> logout
-    Home -> home
-    Profile -> profile
-    Error -> error
-    Administration -> administration
-    CourseAdmin -> courseAdmin
-    CourseOverview ck -> courseOverview ck
-    EvaluationTable -> evaluationTable
-    Evaluation sk -> evaluation sk
-    ModifyEvaluation sk ek -> modifyEvaluation sk ek
-    NewGroupAssignment gk -> newGroupAssignment gk
-    NewCourseAssignment ck -> newCourseAssignment ck
-    ModifyAssignment ak -> modifyAssignment ak
-    ViewAssignment ak -> viewAssignment ak
-    NewGroupAssignmentPreview gk -> newGroupAssignmentPreview gk
-    NewCourseAssignmentPreview ck -> newCourseAssignmentPreview ck
-    ModifyAssignmentPreview ak -> modifyAssignmentPreview ak
-    Submission -> submission
-    SubmissionList -> submissionList
-    SubmissionDetails ak sk -> submissionDetails ak sk
-    GroupRegistration -> groupRegistration
-    UserDetails -> userDetails
-    UserSubmissions -> userSubmissions
-    NewTestScript -> newTestScript
-    ModifyTestScript tsk -> modifyTestScript tsk
-    UploadFile -> uploadFile
-    CreateCourse -> createCourse
-    CreateGroup -> createGroup
-    AssignCourseAdmin -> assignCourseAdmin
-    AssignGroupAdmin -> assignGroupAdmin
-    ChangePassword -> changePassword
-    SetUserPassword -> setUserPassword
-    CommentFromEvaluation sk -> commentFromEvaluation sk
-    CommentFromModifyEvaluation sk ek -> commentFromModifyEvaluation sk ek
-    DeleteUsersFromCourse ck -> deleteUsersFromCourse ck
-    DeleteUsersFromGroup gk -> deleteUsersFromGroup gk
-    UnsubscribeFromCourse gk -> unsubscribeFromCourse gk
+    (View (Login a)) -> login a
+    (View (Logout a)) -> logout a
+    (View (Home a)) -> home a
+    (ViewModify (Profile a)) -> profile a
+    (ViewModify (Administration a)) -> administration a
+    (ViewModify (CourseAdmin a)) -> courseAdmin a
+    (View (CourseOverview ck a)) -> courseOverview ck a
+    (View (EvaluationTable a)) -> evaluationTable a
+    (ViewModify (Evaluation sk a)) -> evaluation sk a
+    (ViewModify (ModifyEvaluation sk ek a)) -> modifyEvaluation sk ek a
+    (ViewModify (NewGroupAssignment gk a)) -> newGroupAssignment gk a
+    (ViewModify (NewCourseAssignment ck a)) -> newCourseAssignment ck a
+    (ViewModify (ModifyAssignment ak a)) -> modifyAssignment ak a
+    (View (ViewAssignment ak a)) -> viewAssignment ak a
+    (UserView (NewGroupAssignmentPreview gk a)) -> newGroupAssignmentPreview gk a
+    (UserView (NewCourseAssignmentPreview ck a)) -> newCourseAssignmentPreview ck a
+    (UserView (ModifyAssignmentPreview ak a)) -> modifyAssignmentPreview ak a
+    (View (Submission a)) -> submission a
+    (View (SubmissionList a)) -> submissionList a
+    (View (SubmissionDetails ak sk a)) -> submissionDetails ak sk a
+    (ViewModify (GroupRegistration a)) -> groupRegistration a
+    (ViewModify (UserDetails a)) -> userDetails a
+    (View (UserSubmissions a)) -> userSubmissions a
+    (ViewModify (NewTestScript a)) -> newTestScript a
+    (ViewModify (ModifyTestScript tsk a)) -> modifyTestScript tsk a
+    (ViewModify (UploadFile a)) -> uploadFile a
+    (Modify (CreateCourse a)) -> createCourse a
+    (Modify (CreateGroup a)) -> createGroup a
+    (Modify (AssignCourseAdmin a)) -> assignCourseAdmin a
+    (Modify (AssignGroupAdmin a)) -> assignGroupAdmin a
+    (Modify (ChangePassword a)) -> changePassword a
+    (Modify (SetUserPassword a)) -> setUserPassword a
+    (Modify (CommentFromEvaluation sk a)) -> commentFromEvaluation sk a
+    (Modify (CommentFromModifyEvaluation sk ek a)) -> commentFromModifyEvaluation sk ek a
+    (Modify (DeleteUsersFromCourse ck a)) -> deleteUsersFromCourse ck a
+    (Modify (DeleteUsersFromGroup gk a)) -> deleteUsersFromGroup gk a
+    (Modify (UnsubscribeFromCourse gk a)) -> unsubscribeFromCourse gk a
 
+-- Constants that attached each of the page constructor
+constantsP
+  login_
+  logout_
+  home_
+  profile_
+  administration_
+  courseAdmin_
+  courseOverview_
+  evaluationTable_
+  evaluation_
+  modifyEvaluation_
+  newGroupAssignment_
+  newCourseAssignment_
+  modifyAssignment_
+  viewAssignment_
+  newGroupAssignmentPreview_
+  newCourseAssignmentPreview_
+  modifyAssignmentPreview_
+  submission_
+  submissionList_
+  submissionDetails_
+  groupRegistration_
+  userDetails_
+  userSubmissions_
+  newTestScript_
+  modifyTestScript_
+  uploadFile_
+  createCourse_
+  createGroup_
+  assignCourseAdmin_
+  assignGroupAdmin_
+  changePassword_
+  setUserPassword_
+  commentFromEvaluation_
+  commentFromModifyEvaluation_
+  deleteUsersFromCourse_
+  deleteUsersFromGroup_
+  unsubscribeFromCourse_
+  = pageCata
+      (c $ login login_)
+      (c $ logout logout_)
+      (c $ home home_)
+      (c $ profile profile_)
+      (c $ administration administration_)
+      (c $ courseAdmin courseAdmin_)
+      (\ck _ -> courseOverview ck courseOverview_)
+      (c $ evaluationTable evaluationTable_)
+      (\ek _ -> evaluation ek evaluation_)
+      (\sk ek _ -> modifyEvaluation sk ek modifyEvaluation_)
+      (\gk _ -> newGroupAssignment gk newGroupAssignment_)
+      (\ck _ -> newCourseAssignment ck newCourseAssignment_)
+      (\ak _ -> modifyAssignment ak modifyAssignment_)
+      (\ak _ -> viewAssignment ak viewAssignment_)
+      (\gk _ -> newGroupAssignmentPreview gk newGroupAssignmentPreview_)
+      (\ck _ -> newCourseAssignmentPreview ck newCourseAssignmentPreview_)
+      (\ak _ -> modifyAssignmentPreview ak modifyAssignmentPreview_)
+      (c $ submission submission_)
+      (c $ submissionList submissionList_)
+      (\ak sk _ -> submissionDetails ak sk submissionDetails_)
+      (c $ groupRegistration groupRegistration_)
+      (c $ userDetails userDetails_)
+      (c $ userSubmissions userSubmissions_)
+      (c $ newTestScript newTestScript_)
+      (\tsk _ -> modifyTestScript tsk modifyTestScript_)
+      (c $ uploadFile uploadFile_)
+      (c $ createCourse createCourse_)
+      (c $ createGroup createGroup_)
+      (c $ assignCourseAdmin assignCourseAdmin_)
+      (c $ assignGroupAdmin assignGroupAdmin_)
+      (c $ changePassword changePassword_)
+      (c $ setUserPassword setUserPassword_)
+      (\sk _ -> commentFromEvaluation sk commentFromEvaluation_)
+      (\sk ek _ -> commentFromModifyEvaluation sk ek commentFromModifyEvaluation_)
+      (\ck _ -> deleteUsersFromCourse ck deleteUsersFromCourse_)
+      (\gk _ -> deleteUsersFromGroup gk deleteUsersFromGroup_)
+      (\gk _ -> unsubscribeFromCourse gk unsubscribeFromCourse_)
+  where
+    c = const
 
-isLogin Login = True
-isLogin _     = False
+liftsP
+  login_
+  logout_
+  home_
+  profile_
+  administration_
+  courseAdmin_
+  courseOverview_
+  evaluationTable_
+  evaluation_
+  modifyEvaluation_
+  newGroupAssignment_
+  newCourseAssignment_
+  modifyAssignment_
+  viewAssignment_
+  newGroupAssignmentPreview_
+  newCourseAssignmentPreview_
+  modifyAssignmentPreview_
+  submission_
+  submissionList_
+  submissionDetails_
+  groupRegistration_
+  userDetails_
+  userSubmissions_
+  newTestScript_
+  modifyTestScript_
+  uploadFile_
+  createCourse_
+  createGroup_
+  assignCourseAdmin_
+  assignGroupAdmin_
+  changePassword_
+  setUserPassword_
+  commentFromEvaluation_
+  commentFromModifyEvaluation_
+  deleteUsersFromCourse_
+  deleteUsersFromGroup_
+  unsubscribeFromCourse_
+  = pageCata
+      (login . login_)
+      (logout . logout_)
+      (home . home_)
+      (profile . profile_)
+      (administration . administration_)
+      (courseAdmin . courseAdmin_)
+      (\ck a -> courseOverview ck (courseOverview_ ck a))
+      (evaluationTable . evaluationTable_)
+      (\ek a -> evaluation ek (evaluation_ ek a))
+      (\sk ek a -> modifyEvaluation sk ek (modifyEvaluation_ sk ek a))
+      (\gk a -> newGroupAssignment gk (newGroupAssignment_ gk a))
+      (\ck a -> newCourseAssignment ck (newCourseAssignment_ ck a))
+      (\ak a -> modifyAssignment ak (modifyAssignment_ ak a))
+      (\ak a -> viewAssignment ak (viewAssignment_ ak a))
+      (\gk a -> newGroupAssignmentPreview gk (newGroupAssignmentPreview_ gk a))
+      (\ck a -> newCourseAssignmentPreview ck (newCourseAssignmentPreview_ ck a))
+      (\ak a -> modifyAssignmentPreview ak (modifyAssignmentPreview_ ak a))
+      (submission . submission_)
+      (submissionList . submissionList_)
+      (\ak sk a -> submissionDetails ak sk (submissionDetails_ ak sk a))
+      (groupRegistration . groupRegistration_)
+      (userDetails . userDetails_)
+      (userSubmissions . userSubmissions_)
+      (newTestScript . newTestScript_)
+      (\tsk a -> modifyTestScript tsk (modifyTestScript_ tsk a))
+      (uploadFile . uploadFile_)
+      (createCourse . createCourse_)
+      (createGroup . createGroup_)
+      (assignCourseAdmin . assignCourseAdmin_)
+      (assignGroupAdmin . assignGroupAdmin_)
+      (changePassword . changePassword_)
+      (setUserPassword . setUserPassword_)
+      (\sk a -> commentFromEvaluation sk (commentFromEvaluation_ sk a))
+      (\sk ek a -> commentFromModifyEvaluation sk ek (commentFromModifyEvaluation_ sk ek a))
+      (\ck a -> deleteUsersFromCourse ck (deleteUsersFromCourse_ ck a))
+      (\gk a -> deleteUsersFromGroup gk (deleteUsersFromGroup_ gk a))
+      (\gk a -> unsubscribeFromCourse gk (unsubscribeFromCourse_ gk a))
 
-isLogout Logout = True
-isLogout _      = False
+isLogin (View (Login _)) = True
+isLogin _ = False
 
-isHome Home = True
-isHome _    = False
+isLogout (View (Logout _)) = True
+isLogout _ = False
 
-isProfile Profile = True
-isProfile _       = False
+isHome (View (Home _)) = True
+isHome _ = False
 
-isError Error = True
-isError _     = False
+isProfile (ViewModify (Profile _)) = True
+isProfile _ = False
 
-isAdministration Administration = True
-isAdministration _              = False
+isAdministration (ViewModify (Administration _)) = True
+isAdministration _ = False
 
-isCourseAdmin CourseAdmin = True
-isCourseAdmin _           = False
+isCourseAdmin (ViewModify (CourseAdmin _)) = True
+isCourseAdmin _ = False
 
-isCourseOverview (CourseOverview _) = True
-isCourseOverview _                  = False
+isCourseOverview (View (CourseOverview _ _)) = True
+isCourseOverview _ = False
 
-isEvaluationTable EvaluationTable = True
-isEvaluationTable _               = False
+isEvaluationTable (View (EvaluationTable _)) = True
+isEvaluationTable _ = False
 
-isEvaluation (Evaluation _) = True
-isEvaluation _              = False
+isEvaluation (ViewModify (Evaluation _ _)) = True
+isEvaluation _ = False
 
-isModifyEvaluation (ModifyEvaluation _ _) = True
-isModifyEvaluation _                      = False
+isModifyEvaluation (ViewModify (ModifyEvaluation _ _ _)) = True
+isModifyEvaluation _ = False
 
-isNewGroupAssignment (NewGroupAssignment _) = True
-isNewGroupAssignment _                      = False
+isNewGroupAssignment (ViewModify (NewGroupAssignment _ _)) = True
+isNewGroupAssignment _ = False
 
-isNewCourseAssignment (NewCourseAssignment _) = True
-isNewCourseAssignment _                       = False
+isNewCourseAssignment (ViewModify (NewCourseAssignment _ _)) = True
+isNewCourseAssignment _ = False
 
-isModifyAssignment (ModifyAssignment _ ) = True
-isModifyAssignment _                     = False
+isModifyAssignment (ViewModify (ModifyAssignment _ _)) = True
+isModifyAssignment _ = False
 
-isViewAssignment (ViewAssignment _) = True
-isViewAssignment _                  = False
+isViewAssignment (View (ViewAssignment _ _)) = True
+isViewAssignment _ = False
 
-isNewGroupAssignmentPreview (NewGroupAssignmentPreview _) = True
+isNewGroupAssignmentPreview (UserView (NewGroupAssignmentPreview _ _)) = True
 isNewGroupAssignmentPreview _ = False
 
-isNewCourseAssignmentPreview (NewCourseAssignmentPreview _) = True
+isNewCourseAssignmentPreview (UserView (NewCourseAssignmentPreview _ _)) = True
 isNewCourseAssignmentPreview _ = False
 
-isModifyAssignmentPreview (ModifyAssignmentPreview _) = True
+isModifyAssignmentPreview (UserView (ModifyAssignmentPreview _ _)) = True
 isModifyAssignmentPreview _ = False
 
-isSubmission Submission = True
-isSubmission _          = False
+isSubmission (View (Submission _)) = True
+isSubmission _ = False
 
-isSubmissionList SubmissionList = True
-isSubmissionList _              = False
+isSubmissionList (View (SubmissionList _)) = True
+isSubmissionList _ = False
 
-isSubmissionDetails (SubmissionDetails _ _) = True
-isSubmissionDetails _                       = False
+isSubmissionDetails (View (SubmissionDetails _ _ _)) = True
+isSubmissionDetails _ = False
 
-isGroupRegistration GroupRegistration = True
-isGroupRegistration _                 = False
+isGroupRegistration (ViewModify (GroupRegistration _)) = True
+isGroupRegistration _ = False
 
-isUserDetails UserDetails = True
-isUserDetails _           = False
+isUserDetails (ViewModify (UserDetails _)) = True
+isUserDetails _ = False
 
-isUserSubmissions UserSubmissions = True
-isUserSubmissions _               = False
+isUserSubmissions (View (UserSubmissions _)) = True
+isUserSubmissions _ = False
 
-isNewTestScript NewTestScript = True
-isNewTestScript _             = False
+isNewTestScript (ViewModify (NewTestScript _)) = True
+isNewTestScript _ = False
 
-isModifyTestScript (ModifyTestScript _) = True
-isModifyTestScript _                    = False
+isModifyTestScript (ViewModify (ModifyTestScript _ _)) = True
+isModifyTestScript _ = False
 
-isUploadFile UploadFile = True
-isUploadFile _          = False
+isUploadFile (ViewModify (UploadFile _)) = True
+isUploadFile _ = False
 
-isCreateCourse CreateCourse = True
-isCreateCourse _            = False
+isCreateCourse (Modify (CreateCourse _)) = True
+isCreateCourse _ = False
 
-isCreateGroup CreateGroup = True
-isCreateGroup _           = False
+isCreateGroup (Modify (CreateGroup _)) = True
+isCreateGroup _ = False
 
-isAssignCourseAdmin AssignCourseAdmin = True
-isAssignCourseAdmin _                 = False
+isAssignCourseAdmin (Modify (AssignCourseAdmin _))= True
+isAssignCourseAdmin _ = False
 
-isAssignGroupAdmin AssignGroupAdmin = True
-isAssignGroupAdmin _                = False
+isAssignGroupAdmin (Modify (AssignGroupAdmin _)) = True
+isAssignGroupAdmin _ = False
 
-isChangePassword ChangePassword = True
-isChangePassword _              = False
+isChangePassword (Modify (ChangePassword _)) = True
+isChangePassword _ = False
 
-isSetUserPassword SetUserPassword = True
-isSetUserPassword _               = False
+isSetUserPassword (Modify (SetUserPassword _))= True
+isSetUserPassword _ = False
 
-isCommentFromEvaluation (CommentFromEvaluation _) = True
-isCommentFromEvaluation _                         = False
+isCommentFromEvaluation (Modify (CommentFromEvaluation _ _)) = True
+isCommentFromEvaluation _ = False
 
-isCommentFromModifyEvaluation (CommentFromModifyEvaluation _ _) = True
-isCommentFromModifyEvaluation _                                 = False
+isCommentFromModifyEvaluation (Modify (CommentFromModifyEvaluation _ _ _)) = True
+isCommentFromModifyEvaluation _ = False
 
-isDeleteUsersFromCourse (DeleteUsersFromCourse _) = True
-isDeleteUsersFromCourse _                         = False
+isDeleteUsersFromCourse (Modify (DeleteUsersFromCourse _ _)) = True
+isDeleteUsersFromCourse _ = False
 
-isDeleteUsersFromGroup (DeleteUsersFromGroup _) = True
-isDeleteUsersFromGroup _                        = False
+isDeleteUsersFromGroup (Modify (DeleteUsersFromGroup _ _)) = True
+isDeleteUsersFromGroup _ = False
 
-isUnsubscribeFromCourse (UnsubscribeFromCourse _) = True
-isUnsubscribeFromCourse _                         = False
-
--- Returns True if the page need to be rendered
-contentPages :: Page -> Bool
-contentPages Error = False
-contentPages _     = True
+isUnsubscribeFromCourse (Modify (UnsubscribeFromCourse _ _)) = True
+isUnsubscribeFromCourse _ = False
 
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
-isPage :: [Page -> Bool] -> Page -> Bool
+isPage :: [Page a -> Bool] -> Page a -> Bool
 isPage fs p = or $ map ($ p) fs
 
 -- Shortcut binary or for the given predicates
@@ -308,7 +640,6 @@ regularPages = [
     isHome
   , isProfile
   , isChangePassword
-  , isError
   , isSubmission
   , isSubmissionList
   , isSubmissionDetails
@@ -382,30 +713,31 @@ tempViewPages = [
 
 -- Returns True if the given page is a temporary view page
 -- otherwise False
-isTemporaryViewPage :: Page -> Bool
+isTemporaryViewPage :: Page a -> Bool
 isTemporaryViewPage p = or (map ($ p) tempViewPages)
 
 -- Pages that not part of the site content
+
 nonActivePages = [
     isLogin
   , isLogout
   ]
 
-menuPageList = [
-    Home
-  , Profile
-  , Administration
-  , CourseAdmin
-  , EvaluationTable
-  , GroupRegistration
-  , UserSubmissions
-  , NewTestScript
-  , UploadFile
+menuPageList = map ($ ()) [
+    home
+  , profile
+  , administration
+  , courseAdmin
+  , evaluationTable
+  , groupRegistration
+  , userSubmissions
+  , newTestScript
+  , uploadFile
   ]
 
 -- Returns a page predicate function depending on the role, which page transition is allowed,
 -- from a given page
-allowedPage :: E.Role -> (Page -> Bool)
+allowedPage :: E.Role -> (Page a -> Bool)
 allowedPage = E.roleCata student groupAdmin courseAdmin admin
   where
     student     = isPage regularPages
@@ -414,7 +746,7 @@ allowedPage = E.roleCata student groupAdmin courseAdmin admin
     admin       = isPage (adminPages ++ regularPages)
 
 -- Produces a Page list that must be rendered in the page menu for the given role
-menuPages :: E.Role -> Page -> [Page]
+menuPages :: E.Role -> PageDesc -> [PageDesc]
 menuPages r p = filter allowedPage' menuPageList
   where
     allowedPage' p' = and [
@@ -422,48 +754,44 @@ menuPages r p = filter allowedPage' menuPageList
       , p' /= p
       ]
 
-parentPage :: Page -> Page
-parentPage = pageCata
-  Login   --login
-  Logout  -- logout
-  Home    -- home
-  Profile -- profile
-  Error   -- error
-  Home    -- administration
-  Home    -- courseAdmin
-  (const Home) -- courseOverview
-  Home    -- evaluationTable
-  (const EvaluationTable)  -- evaluation
-  (const2 EvaluationTable) -- modifyEvaluation
-  (const Home) -- newGroupAssignment
-  (const Home) -- newCourseAssignment
-  (const Home) -- modifyAssignment
-  (const Home) -- viewAssignment
-  (const Home) -- newGroupAssignmentPreview
-  (const Home) -- newCourseAssignmentPreview
-  (const Home) -- modifyAssignmentPreview
-  Home -- submission
-  Home -- submissionList
-  SubmissionDetails -- submissionDetails
-  Home -- groupRegistration
-  Administration -- userDetails
-  Home -- userSubmissions
-  Home -- newTestScript
-  (const Home) -- modifyTestScript
-  UploadFile  -- uploadFile
-  Administration -- createCourse
-  CourseAdmin    -- createGroup
-  Administration -- sassignCourseAdmin
-  CourseAdmin -- assignGroupAdmin
-  Profile -- changePassword
-  Home -- setUserPassword
-  Evaluation -- commentFromEvaluation
-  ModifyEvaluation -- commentFromModifyEvaluation
-  (const Home) -- deleteUsersFromCourse
-  (const Home) -- deleteUsersFromGroup
-  (const Home) -- unsubscribeFromCourse
+-- Returns a Page descriptior for the given Modify or ViewModify
+-- parent page, where the page needs to be redirected after the
+-- modification of the data.
+parentPage :: PageDesc -> Maybe PageDesc
+parentPage = pageCata'
+  (const Nothing) -- view
+  (const Nothing) -- userView
+  viewModifyParent
+  modifyParent
   where
-    const2 = const . const
+    c2 = const . const
+    viewModifyParent = Just . viewModifyPageCata
+      profile -- profile
+      home    -- administration
+      home    -- courseAdmin
+      (const evaluationTable) -- evaluation
+      (c2 evaluationTable) -- modifyEvaluation
+      (const home) -- newGroupAssignment
+      (const home) -- newCourseAssignment
+      (const home) -- modifyAssignment
+      home -- groupRegistration
+      administration -- userDetails
+      home           -- newTestScript
+      (const home)   -- modifyTestScript
+      uploadFile     -- uploadFile
+
+    modifyParent = Just . modifyPageCata
+      administration -- createCourse
+      courseAdmin    -- createGroup
+      administration -- assignCourseAdmin
+      courseAdmin    -- assignGroupAdmin
+      profile        -- changePassword
+      home           -- setUserPassword
+      evaluation     -- commentFromEvaluation
+      modifyEvaluation -- commentFromModifyEvaluation
+      (const home)     -- deleteUsersFromCourse
+      (const home)     -- deleteUsersFromGroup
+      (const home)     -- unsubscribeFromCourse
 
 #ifdef TEST
 
@@ -478,3 +806,4 @@ invariants = Invariants [
       menuPagePred = [flip elem menuPageList]
 
 #endif
+

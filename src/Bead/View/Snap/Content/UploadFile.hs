@@ -13,7 +13,7 @@ import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html5 as H
 
-import qualified Bead.Controller.Pages as P (Page(..))
+import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content
@@ -98,7 +98,7 @@ uploadFileContent pd = do
   return $ do
     H.h2 . fromString . i18n $ Msg_UploadFile_FileSelection "File Selection"
     do
-      postForm (routeOf P.UploadFile) ! A.enctype "multipart/form-data" $ do
+      postForm (routeOf uploadFile) ! A.enctype "multipart/form-data" $ do
         fromString . i18n $ Msg_UploadFile_Info "Please choose a file to upload.  Note that the maximum file size is 128 KB."
         H.br
         H.br
@@ -112,6 +112,7 @@ uploadFileContent pd = do
           headerLine i18n
           usersFileLines pd
   where
+    uploadFile = Pages.uploadFile ()
     dataCell   x = H.td # informationalCell $ x
     headerCell x = H.th # (informationalCell <> grayBackground) $ x
     headerLine i18n = H.tr $ do

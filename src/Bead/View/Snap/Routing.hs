@@ -77,7 +77,7 @@ index :: Handler App App ()
 index =
   ifTop $ requireUser auth
             (with auth $ login Nothing)
-            (redirect (routeOf P.Home))
+            (redirect (routeOf $ P.home ()))
 
 -- TODO: I18N
 {- Logged In user combinator. It tries to authenticate the user with three methods.
@@ -149,8 +149,8 @@ userIsLoggedInFilter inside outside onError = do
             printf "Nem található adat a felhasználóhoz: %s" (show unameFromAuth)
 
 -- Redirects to the parent page of the given page
-redirectToParentPage :: P.Page -> HandlerError App b ()
-redirectToParentPage = redirect . routeOf . P.parentPage
+redirectToParentPage :: P.PageDesc -> HandlerError App b ()
+redirectToParentPage = maybe (return ()) (redirect . routeOf) . P.parentPage
 
 -- | Represents the result of a GET or POST handler
 -- HandSuccess when no exception occured during the execution
@@ -202,7 +202,7 @@ runGETHandler onError handler
 -- in both ways returns information about the successfulness.
 runPOSTHandler
   :: (ContentHandlerError -> Handler App App ())
-  -> P.Page
+  -> P.PageDesc
   -> HandlerError App App UserAction
   -> Handler App App HandlerResult
 runPOSTHandler onError p h
@@ -213,7 +213,7 @@ runPOSTHandler onError p h
           let tempView = P.isTemporaryViewPage p
           userStory $ do
             userStoryFor userAction
-            unless tempView . S.changePage . P.parentPage $ p
+            unless tempView . (maybe (return ()) S.changePage) . P.parentPage $ p
           lift . with sessionManager $ do
             touchSession
             commitSession
@@ -254,7 +254,7 @@ handlePage (path,c) = do
     success = const . return $ HSuccess
     forgetResult h = h >> return ()
 
-    handleRenderPage :: P.Page -> Handler App App ()
+    handleRenderPage :: P.PageDesc -> Handler App App ()
     handleRenderPage p = userIsLoggedInFilter
 
       -- If the GET handler is not found for the given page, the logout action is
@@ -287,7 +287,7 @@ handlePage (path,c) = do
           lift $ logoutAndResetRoute
 
 
-    handleSubmitPage :: P.Page -> Handler App App ()
+    handleSubmitPage :: P.PageDesc -> Handler App App ()
     handleSubmitPage page = userIsLoggedInFilter
 
       -- If the POST handler is not found for the given page, logout action is
@@ -310,7 +310,7 @@ handlePage (path,c) = do
       logoutAndErrorPage
 
 allowedPageByTransition
-  :: P.Page -> HandlerError App App a -> HandlerError App App a -> HandlerError App App a
+  :: P.Page a -> HandlerError App App a -> HandlerError App App a -> HandlerError App App a
 allowedPageByTransition p allowed restricted = withUserState $ \state ->
   let allow = P.allowedPage (role state) p
   in case allow of
@@ -319,71 +319,72 @@ allowedPageByTransition p allowed restricted = withUserState $ \state ->
 
 -- Creates a handler, that tries to calculate a Page value
 -- from the requested route and the parameters of the request uri
-requestToPageHandler :: RoutePath -> Handler App App (Maybe P.Page)
+requestToPageHandler :: RoutePath -> Handler App App (Maybe P.PageDesc)
 requestToPageHandler path = requestToPage path <$> getParams
 
 -- Calculates a Just page if the route is a valid route path
 -- and all the parameters were given is the params for the
 -- routePath necesary for the Page value, otherwise Nothing
-requestToPage :: RoutePath -> Params -> Maybe P.Page
+requestToPage :: RoutePath -> Params -> Maybe P.PageDesc
 requestToPage path params
-  | path == loginPath       = j P.Login
-  | path == logoutPath      = j P.Logout
-  | path == homePath        = j P.Home
-  | path == errorPath       = j P.Error
-  | path == profilePath     = j P.Profile
-  | path == courseAdminPath = j P.CourseAdmin
+  | path == loginPath       = j $ P.login ()
+  | path == logoutPath      = j $ P.logout ()
+  | path == homePath        = j $ P.home ()
+--  | path == errorPath       = j P.Error
+  | path == profilePath     = j $ P.profile ()
+  | path == courseAdminPath = j $ P.courseAdmin ()
   | path == courseOverviewPath
-    = P.CourseOverview <$> courseKey
+    = P.courseOverview <$> courseKey <*> unit
   | path == modifyEvaluationPath
-    = P.ModifyEvaluation <$> submissionKey <*> evaluationKey
-  | path == evaluationTablePath  = j P.EvaluationTable
+    = P.modifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
+  | path == evaluationTablePath  = j $ P.evaluationTable ()
   | path == evaluationPath
-    = P.Evaluation <$> submissionKey
-  | path == submissionPath       = j P.Submission
-  | path == submissionListPath   = j P.SubmissionList
-  | path == userSubmissionsPath  = j P.UserSubmissions
-  | path == newTestScriptPath    = j P.NewTestScript
+    = P.evaluation <$> submissionKey <*> unit
+  | path == submissionPath       = j $ P.submission ()
+  | path == submissionListPath   = j $ P.submissionList ()
+  | path == userSubmissionsPath  = j $ P.userSubmissions ()
+  | path == newTestScriptPath    = j $ P.newTestScript ()
   | path == modifyTestScriptPath
-    = P.ModifyTestScript <$> testScriptKey
-  | path == uploadFilePath = j P.UploadFile
+    = P.modifyTestScript <$> testScriptKey <*> unit
+  | path == uploadFilePath = j $ P.uploadFile ()
   | path == submissionDetailsPath
-    = P.SubmissionDetails <$> assignmentKey <*> submissionKey
-  | path == administrationPath    = j P.Administration
-  | path == groupRegistrationPath = j P.GroupRegistration
-  | path == createCoursePath      = j P.CreateCourse
-  | path == userDetailsPath       = j P.UserDetails
-  | path == assignCourseAdminPath = j P.AssignCourseAdmin
-  | path == createGroupPath       = j P.CreateGroup
-  | path == assignGroupAdminPath  = j P.AssignGroupAdmin
+    = P.submissionDetails <$> assignmentKey <*> submissionKey <*> unit
+  | path == administrationPath    = j $ P.administration ()
+  | path == groupRegistrationPath = j $ P.groupRegistration ()
+  | path == createCoursePath      = j $ P.createCourse ()
+  | path == userDetailsPath       = j $ P.userDetails ()
+  | path == assignCourseAdminPath = j $ P.assignCourseAdmin ()
+  | path == createGroupPath       = j $ P.createGroup ()
+  | path == assignGroupAdminPath  = j $ P.assignGroupAdmin ()
   | path == newGroupAssignmentPath
-    = P.NewGroupAssignment <$> groupKey
+    = P.newGroupAssignment <$> groupKey <*> unit
   | path == newCourseAssignmentPath
-    = P.NewCourseAssignment <$> courseKey
+    = P.newCourseAssignment <$> courseKey <*> unit
   | path == modifyAssignmentPath
-    = P.ModifyAssignment <$> assignmentKey
+    = P.modifyAssignment <$> assignmentKey <*> unit
   | path == viewAssignmentPath
-    = P.ViewAssignment <$> assignmentKey
+    = P.viewAssignment <$> assignmentKey <*> unit
   | path == newGroupAssignmentPreviewPath
-    = P.NewGroupAssignmentPreview <$> groupKey
+    = P.newGroupAssignmentPreview <$> groupKey <*> unit
   | path == newCourseAssignmentPreviewPath
-    = P.NewCourseAssignmentPreview <$> courseKey
+    = P.newCourseAssignmentPreview <$> courseKey <*> unit
   | path == modifyAssignmentPreviewPath
-    = P.ModifyAssignmentPreview <$> assignmentKey
-  | path == changePasswordPath      = j P.ChangePassword
-  | path == setUserPasswordPath     = j P.SetUserPassword
+    = P.modifyAssignmentPreview <$> assignmentKey <*> unit
+  | path == changePasswordPath      = j $ P.changePassword ()
+  | path == setUserPasswordPath     = j $ P.setUserPassword ()
   | path == commentFromEvaluationPath
-    = P.CommentFromEvaluation <$> submissionKey
+    = P.commentFromEvaluation <$> submissionKey <*> unit
   | path == commentFromModifyEvaluationPath
-    = P.CommentFromModifyEvaluation <$> submissionKey <*> evaluationKey
+    = P.commentFromModifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
   | path == deleteUsersFromCoursePath
-    = P.DeleteUsersFromCourse <$> courseKey
+    = P.deleteUsersFromCourse <$> courseKey <*> unit
   | path == deleteUsersFromGroupPath
-    = P.DeleteUsersFromGroup <$> groupKey
+    = P.deleteUsersFromGroup <$> groupKey <*> unit
   | path == unsubscribeFromCoursePath
-    = P.UnsubscribeFromCourse <$> groupKey
+    = P.unsubscribeFromCourse <$> groupKey <*> unit
   | otherwise = Nothing
   where
+    unit = return ()
     j = Just
     courseKey     = (CourseKey     . unpack) <$> value courseKeyParamName
     groupKey      = (GroupKey      . unpack) <$> value groupKeyParamName
@@ -410,8 +411,8 @@ requestToParams = foldl insert Map.empty
 
 routingInvariants = Invariants [
     ("For each page must be requestToPage must be defined",
-     \p -> let rp = pageRoutePath p
-               ps = requestToParams $ pageRequestParams p
+     \p -> let rp = P.pageValue $ pageRoutePath p
+               ps = requestToParams . P.pageValue $ pageRequestParams p
            in requestToPage rp ps == Just p)
   ]
 

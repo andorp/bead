@@ -10,7 +10,7 @@ module Bead.View.Snap.Content.All (
 
 import qualified Data.Map as Map
 
-import Bead.Controller.Pages hiding (invariants)
+import qualified Bead.Controller.Pages as Pages hiding (invariants)
 import Bead.View.Snap.RouteOf hiding (invariants)
 import Bead.View.Snap.Content (Content(..), emptyContent)
 import Bead.View.Snap.Content.Home (
@@ -59,7 +59,6 @@ content = [
   route loginPath emptyContent,
   route logoutPath emptyContent,
   route homePath home,
-  route errorPath emptyContent,
   route profilePath profile,
   route courseAdminPath courseAdmin,
   route courseOverviewPath courseOverview,
@@ -95,15 +94,16 @@ content = [
   route deleteUsersFromGroupPath deleteUsersFromGroup,
   route unsubscribeFromCoursePath unsubscribeFromCourse]
 
-contentMap :: Page -> Content
+contentMap :: Pages.Page a -> Content
 contentMap p = maybe (error "Content is not defined") id
-             . Map.lookup (pageRoutePath p)
+             . Map.lookup (Pages.pageValue $ pageRoutePath p)
              . Map.fromList $ map routeToPair content
   where
     routeToPair = routeCata $ \path content -> (path,content)
 
 #ifdef TEST
 
+invariants :: Invariants Pages.PageDesc
 invariants = Invariants [
     ("Content handler must be defined ", \p -> getOrPost $ contentMap p)
   ]
