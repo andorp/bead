@@ -7,14 +7,14 @@ import Bead.Domain.Entities as E
 import Bead.Controller.Logging
 import Bead.Controller.UserStories as U
 import Bead.Controller.ServiceContext
-import Bead.Controller.Pages as P
+import qualified Bead.Controller.Pages as P
 import Bead.Persistence.Persist
 import Bead.Domain.Shared.Evaluation
 import Bead.Domain.Relationships (TCCreation(..))
 import Bead.View.Snap.Translation (trans)
 
 import Test.HUnit hiding (Test(..))
-import Test.Framework (Test(..), testGroup)
+import Test.Framework (testGroup)
 import Test.Framework.Providers.HUnit
 
 import Data.Time.Clock
@@ -33,7 +33,7 @@ context = do
 
 adminUserState = UserState {
     user = Username "admin"
-  , page = P.Home
+  , page = P.home ()
   , name = "Admin"
   , role = E.Admin
   , token = "token"
@@ -65,6 +65,15 @@ adminUser = User {
   , u_username = (Username "admin")
   , u_email = Email "admin@university.com"
   , u_name = "Admin"
+  , u_timezone = UTC
+  , u_language = Language "hu"
+  }
+
+groupAdminUser = User {
+    u_role = E.GroupAdmin
+  , u_username = Username "groupadmin"
+  , u_email = Email "groupadmin@university.com"
+  , u_name = "Group Admin"
   , u_timezone = UTC
   , u_language = Language "hu"
   }
@@ -156,20 +165,30 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
       c2  = E.Course "MA" "MA-DESC" binaryEvalConfig TestScriptZipped
       g1  = E.Group  "G1" "G1-DESC" binaryEvalConfig
       g2  = E.Group  "G2" "G2-DESC" $ percentageEvalConfig (PctConfig 0.4)
+      adminUsername = E.Username "admin"
+      groupAdminUsr = E.Username "groupadmin"
   runStory c adminUserState $ createUser adminUser
+  runStory c adminUserState $ createUser groupAdminUser
   runStory c adminUserState $ createUser student2
-  (_,l) <- runStory c UserNotLoggedIn $ login (E.Username "admin") "token"
-  ((a1,a2,as,ck2,gk2),_) <- runStory c l $ do
+  (_,l) <- runStory c UserNotLoggedIn $ login adminUsername "token"
+  ((ck1,ck2,gk1,gk2,a2),_) <- runStory c l $ do
     ck1 <- createCourse c1
     ck2 <- createCourse c2
+    U.createCourseAdmin adminUsername ck1
+    U.createCourseAdmin adminUsername ck2
     gk1 <- createGroup ck1 g1
     gk2 <- createGroup ck2 g2
-    a1 <- createGroupAssignment gk1 ga NoCreation
+    U.createGroupAdmin groupAdminUsr gk1
+    U.createGroupAdmin groupAdminUsr gk2
     a2 <- createCourseAssignment ck2 ca NoCreation
+    return (ck1,ck2,gk1,gk2,a2)
+  (_,l) <- runStory c UserNotLoggedIn $ login groupAdminUsr "token"
+  ((a1,as),_) <- runStory c l $ do
+    a1 <- createGroupAssignment gk1 ga NoCreation
     subscribeToGroup gk1
     subscribeToGroup gk2
     as <- fmap (maybe [] id) userAssignments
-    return (a1,a2,as,ck2,gk2)
+    return (a1,as)
   let as' = map fst3 as
   assertBool "Assignment does not found in the assignment list" ([a1,a2] == as' || [a2,a1] == as')
   (_,ul) <- runStory c UserNotLoggedIn $ login (E.Username "student2") "token"

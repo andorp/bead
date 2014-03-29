@@ -89,7 +89,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
     handleError m =
       m >>= (either (login . Just . AuthError . contentHandlerErrorMsg) (const $ return ()))
 
-    initSessionValues :: P.Page -> Username -> Language -> Handler App b ()
+    initSessionValues :: P.PageDesc -> Username -> Language -> Handler App b ()
     initSessionValues page username language = do
       withTop sessionManager $ do
         setSessionVersion

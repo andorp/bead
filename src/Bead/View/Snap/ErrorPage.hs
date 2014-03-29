@@ -6,22 +6,16 @@ module Bead.View.Snap.ErrorPage (
   , errorPageWithTitleTrans
   ) where
 
-import Data.String
+import           Data.String
 
-import Snap
-import Snap.Blaze (blaze)
-import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A
-
-import Bead.Controller.Pages (Page(Login))
-import Bead.View.Snap.Application (App)
-import Bead.View.Snap.HandlerUtils
-import Bead.View.Snap.Pagelets (
-    link, withTitleAndHead
-  )
-import Bead.View.Snap.I18N (IHtml, getI18N)
-import Bead.View.Snap.Translation
+import           Snap
 import qualified Text.Blaze.Html5 as H
+
+import           Bead.View.Snap.Application (App)
+import           Bead.View.Snap.HandlerUtils
+import           Bead.View.Snap.I18N (IHtml, getI18N)
+import           Bead.View.Snap.Pagelets (link, withTitleAndHead)
+import           Bead.View.Snap.Translation
 
 -- | Produces an error page showing the reason of an error, and redirects to
 --   login page after a while

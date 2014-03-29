@@ -8,7 +8,7 @@ import           Data.List (sortBy)
 import           Data.String (fromString)
 import           Data.Time (UTCTime)
 
-import           Bead.Controller.Pages as P (Page(ModifyEvaluation, Evaluation))
+import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
 import           Bead.Domain.Shared.Evaluation
 import           Bead.View.Snap.Content
@@ -92,9 +92,9 @@ submissionTable userTime s = do
 
     sbmLink si sk t = case siEvaluationKey si of
       Nothing -> linkWithText
-        (routeOf (P.Evaluation sk))
+        (routeOf (Pages.evaluation sk ()))
         (fromString . showDate $ userTime t)
       Just ek -> linkWithText
-        (routeOf (P.ModifyEvaluation sk ek))
+        (routeOf (Pages.modifyEvaluation sk ek ()))
         (showDate $ userTime t)
 

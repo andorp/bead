@@ -4,7 +4,6 @@ module Bead.View.Snap.Content.NewTestScript (
   , modifyTestScript
   ) where
 
-import           Control.Applicative ((<$>),(<*>))
 import           Control.Arrow ((***))
 import           Data.String (fromString)
 import           Data.String.Utils (replace)
@@ -14,8 +13,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html5 as H
 
 import           Bead.View.Snap.Content
-import           Bead.View.Snap.Pagelets
-import qualified Bead.Controller.Pages as P (Page(..))
+import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
 import qualified Bead.View.UserActions as UA
 
@@ -125,7 +123,7 @@ hasPageContent pd = do
   where
     const2 = const . const
     const3 = const2 . const
-    testScriptPage = pageDataCata (const P.NewTestScript) (\_name key _script -> P.ModifyTestScript key)
+    testScriptPage = pageDataCata (const (Pages.newTestScript ())) (\_name key _script -> Pages.modifyTestScript key ())
     testScriptName = pageDataCata (const Nothing) (const2 (Just . tsName))
     testScriptDesc = pageDataCata (const Nothing) (const2 (Just . tsDescription))
     testScriptNotes = pageDataCata (const Nothing) (const2 (Just . tsNotes))

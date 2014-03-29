@@ -22,7 +22,7 @@ import           Numeric
 import qualified Bead.Domain.Entities as E
 import           Bead.Domain.Relationships
 import           Bead.Domain.Evaluation
-import qualified Bead.Controller.Pages as P
+import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (UserStory)
 import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Content
@@ -101,8 +101,8 @@ submissionTablePart tableId now ctx s = do
   where
 
     courseForm = submissionTableInfoCata course group s where
-      course _n _c _us _as _uls _ns ck      = postForm (routeOf $ P.DeleteUsersFromCourse ck)
-      group _n _c _us _cgas _uls _ns _ck gk = postForm (routeOf $ P.DeleteUsersFromGroup gk)
+      course _n _c _us _as _uls _ns ck      = postForm (routeOf $ Pages.deleteUsersFromCourse ck ())
+      group _n _c _us _cgas _uls _ns _ck gk = postForm (routeOf $ Pages.deleteUsersFromGroup gk ())
 
     headerCell = H.th # (informationalCell <> grayBackground)
 
@@ -146,7 +146,7 @@ submissionTablePart tableId now ctx s = do
 
     modifyAssignmentLink pfx (i,ak) =
       linkWithTitle
-        (routeOf $ P.ModifyAssignment ak)
+        (routeOf $ Pages.modifyAssignment ak ())
         (assignmentName ak)
         (concat [pfx, show i])
 
@@ -159,8 +159,8 @@ submissionTablePart tableId now ctx s = do
       where
         viewOrModifyAssignmentLink ck ak =
           case Map.lookup ck (stcAdminCourses ctx) of
-            Nothing -> routeOf (P.ViewAssignment ak)
-            Just _  -> routeOf $ P.ModifyAssignment ak
+            Nothing -> routeOf $ Pages.viewAssignment ak ()
+            Just _  -> routeOf $ Pages.modifyAssignment ak ()
 
     userLine msg s (u,p,submissionInfoMap) = do
       H.tr $ do
@@ -194,7 +194,7 @@ submissionTablePart tableId now ctx s = do
       coloredSubmissionCell
         dataCell
         (H.td)
-        (linkWithText (routeWithParams P.UserSubmissions [requestParam u, requestParam ak]))
+        (linkWithText (routeWithParams (Pages.userSubmissions ()) [requestParam u, requestParam ak]))
         "░░░" -- not found
         "░░░" -- non-evaluated
         "░░░" -- tested
@@ -292,7 +292,7 @@ testScriptTable cti ck = maybe (return "") courseFound $ Map.lookup ck cti where
 
       testScriptLine (tsk,tsi) = do
         dataCell noStyle $ linkWithText
-          (routeOf (P.ModifyTestScript tsk))
+          (routeOf (Pages.modifyTestScript tsk ()))
           (tsiName tsi)
 
 -- Renders a menu for the creation of the course or group assignment if the
@@ -310,15 +310,15 @@ assignmentCreationMenu courses groups = submissionTableInfoCata courseMenu group
         msg <- getI18N
         return . navigationWithRoute msg $
           case Map.lookup ck courses of
-            Nothing -> [P.NewGroupAssignment gk]
-            Just _  -> [P.NewGroupAssignment gk, P.NewCourseAssignment ck] )
+            Nothing -> [Pages.newGroupAssignment gk ()]
+            Just _  -> [Pages.newGroupAssignment gk (), Pages.newCourseAssignment ck ()] )
       (Map.lookup gk groups)
 
     courseMenu _n _c _us _as _uls _ans ck = maybe
       (return (return ()))
       (const $ do
         msg <- getI18N
-        return (navigationWithRoute msg [P.NewCourseAssignment ck]))
+        return (navigationWithRoute msg [Pages.newCourseAssignment ck ()]))
       (Map.lookup ck courses)
 
     navigationWithRoute msg links = H.div ! A.id "menu" $ H.ul $ mapM_ elem links

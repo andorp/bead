@@ -297,60 +297,61 @@ hiddenTableLine value = H.tr . H.td $ value
 empty :: Html
 empty = return ()
 
-linkText :: P.Page -> Translation String
+linkText :: P.Page a -> Translation String
 linkText = P.pageCata
-  (Msg_LinkText_Login "Login")
-  (Msg_LinkText_Logout "Logout")
-  (Msg_LinkText_Home "Home")
-  (Msg_LinkText_Profile "Profile")
-  (Msg_LinkText_Error "Error")
-  (Msg_LinkText_Administration "Administration")
-  (Msg_LinkText_CourseAdministration "Course Settings")
-  (const $ Msg_LinkText_CourseOverview "Course Overview")
-  (Msg_LinkText_EvaluationTable "Evaluations")
-  (const $ Msg_LinkText_Evaluation "Evaluation")
-  (const2 $ Msg_LinkText_ModifyEvaluation "Modify Evaluation")
-  (const $ Msg_LinkText_NewGroupAssignment "New Group Assignment")
-  (const $ Msg_LinkText_NewCourseAssignment "New Course Assignment")
-  (const $ Msg_LinkText_ModifyAssignment "Modify Assignment")
-  (const $ Msg_LinkText_ViewAssignment "View Assignment")
-  (const $ Msg_LinkText_NewGroupAssignmentPreview "New Group Assignment")
-  (const $ Msg_LinkText_NewCourseAssignmentPreview "New Course Assignment")
-  (const $ Msg_LinkText_ModifyAssignmentPreview "Modify Assignment")
-  (Msg_LinkText_Submission "Submit")
-  (Msg_LinkText_SubmissionList "Submissions")
-  (const2 $ Msg_LinkText_SubmissionDetails "Submission Details")
-  (Msg_LinkText_GroupRegistration "Group Registration")
-  (Msg_LinkText_UserDetails "User Details")
-  (Msg_LinkText_UserSubmissions "Submissions")
-  (Msg_LinkText_NewTestScript "New Test")
-  (const $ Msg_LinkText_ModifyTestScript "Modify Test Script")
-  (Msg_LinkText_UploadFile "Upload file")
-  (Msg_LinkText_CreateCourse "Create Course")
-  (Msg_LinkText_CreateGroup "Create Group")
-  (Msg_LinkText_AssignCourseAdmin "Assign Course Admin")
-  (Msg_LinkText_AssignGroupAdmin "Assign Teacher")
-  (Msg_LinkText_ChangePassword "Change Password")
-  (Msg_LinkText_SetUserPassword "Set Student Password")
-  (const $ Msg_LinkText_CommentFromEvaluation "Comment")
-  (const2 $ Msg_LinkText_CommentFromModifyEvaluation "Comment")
-  (const $ Msg_LinkText_DeleteUsersFromCourse "Remove Students")
-  (const $ Msg_LinkText_DeleteUsersFromGroup "Remove Students")
-  (const $ Msg_LinkText_UnsubscribeFromCourse "Unregister")
+  (c $ Msg_LinkText_Login "Login")
+  (c $ Msg_LinkText_Logout "Logout")
+  (c $ Msg_LinkText_Home "Home")
+  (c $ Msg_LinkText_Profile "Profile")
+  (c $ Msg_LinkText_Administration "Administration")
+  (c $ Msg_LinkText_CourseAdministration "Course Settings")
+  (c2 $ Msg_LinkText_CourseOverview "Course Overview")
+  (c $ Msg_LinkText_EvaluationTable "Evaluations")
+  (c2 $ Msg_LinkText_Evaluation "Evaluation")
+  (c3 $ Msg_LinkText_ModifyEvaluation "Modify Evaluation")
+  (c2 $ Msg_LinkText_NewGroupAssignment "New Group Assignment")
+  (c2 $ Msg_LinkText_NewCourseAssignment "New Course Assignment")
+  (c2 $ Msg_LinkText_ModifyAssignment "Modify Assignment")
+  (c2 $ Msg_LinkText_ViewAssignment "View Assignment")
+  (c2 $ Msg_LinkText_NewGroupAssignmentPreview "New Group Assignment")
+  (c2 $ Msg_LinkText_NewCourseAssignmentPreview "New Course Assignment")
+  (c2 $ Msg_LinkText_ModifyAssignmentPreview "Modify Assignment")
+  (c $ Msg_LinkText_Submission "Submit")
+  (c $ Msg_LinkText_SubmissionList "Submissions")
+  (c3 $ Msg_LinkText_SubmissionDetails "Submission Details")
+  (c $ Msg_LinkText_GroupRegistration "Group Registration")
+  (c $ Msg_LinkText_UserDetails "User Details")
+  (c $ Msg_LinkText_UserSubmissions "Submissions")
+  (c $ Msg_LinkText_NewTestScript "New Test")
+  (c2 $ Msg_LinkText_ModifyTestScript "Modify Test Script")
+  (c $ Msg_LinkText_UploadFile "Upload file")
+  (c $ Msg_LinkText_CreateCourse "Create Course")
+  (c $ Msg_LinkText_CreateGroup "Create Group")
+  (c $ Msg_LinkText_AssignCourseAdmin "Assign Course Admin")
+  (c $ Msg_LinkText_AssignGroupAdmin "Assign Teacher")
+  (c $ Msg_LinkText_ChangePassword "Change Password")
+  (c $ Msg_LinkText_SetUserPassword "Set Student Password")
+  (c2 $ Msg_LinkText_CommentFromEvaluation "Comment")
+  (c3 $ Msg_LinkText_CommentFromModifyEvaluation "Comment")
+  (c2 $ Msg_LinkText_DeleteUsersFromCourse "Remove Students")
+  (c2 $ Msg_LinkText_DeleteUsersFromGroup "Remove Students")
+  (c2 $ Msg_LinkText_UnsubscribeFromCourse "Unregister")
   where
-    const2 = const . const
+    c = const
+    c2 = c . const
+    c3 = c2 . const
 
-linkToPage :: P.Page -> IHtml
+linkToPage :: P.Page a -> IHtml
 linkToPage g = do
   msg <- getI18N
   return $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString $ msg $ linkText g
 
-linkToPageBlank :: P.Page -> IHtml
+linkToPageBlank :: P.Page a -> IHtml
 linkToPageBlank g = do
   msg <- getI18N
   return $ H.a ! A.href (routeOf g) ! A.target "_blank" ! A.id (fieldName g) $ fromString $ msg $ linkText g
 
-linkToPageWithText :: P.Page -> String -> Html
+linkToPageWithText :: P.Page a -> String -> Html
 linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString t
 
 link :: String -> String -> Html
@@ -387,13 +388,17 @@ pageHeader s secs = do
       minSecCountdown "hdctd" "--:--" secs
       (fromString . str . user $ s)
       H.br
-      (I18N.i18n msg $ linkToPage P.Home)
+      (I18N.i18n msg $ linkToPage home)
       H.br
-      (I18N.i18n msg $ linkToPage P.Profile)
+      (I18N.i18n msg $ linkToPage profile)
       H.br
-      (I18N.i18n msg $ linkToPage P.Logout)
+      (I18N.i18n msg $ linkToPage logout)
     H.div ! A.id "title" $ title msg s
   where
+    logout = P.logout ()
+    profile = P.profile ()
+    home = P.home ()
+
     title msg u@(UserState {}) = fromString . msg . linkText . page $ u
     title _ _ = ""
 
@@ -518,10 +523,11 @@ evalSelectionDiv h = ((H.div `withId` (evSelectionDivId h)) $ empty)
 
 -- * Invariants
 
+invariants :: Invariants P.PageDesc
 invariants = Invariants [
     ("Page link text must be defined: ", \p -> length (linkText' p) > 0)
   ] where
-      linkText' :: P.Page -> String
+      linkText' :: P.Page a -> String
       linkText' = trans . linkText
 
 #endif

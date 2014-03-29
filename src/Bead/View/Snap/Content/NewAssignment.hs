@@ -21,8 +21,8 @@ import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html5 as H
 import           Text.Printf (printf)
 
-import           Bead.Controller.Pages (Page)
-import qualified Bead.Controller.Pages as P (Page(..))
+import           Bead.Controller.Pages (PageDesc)
+import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Markdown
@@ -465,25 +465,34 @@ newAssignmentContent pd = do
 
       linkToPandocMarkdown = "http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html"
 
-      pagePreview :: PageData -> Page
+      pagePreview :: PageData -> PageDesc
       pagePreview = pageDataCata
-        (\_tz _t (key,_course) _tsType _fs -> P.NewCourseAssignmentPreview key)
-        (\_tz _t (key,_group)  _tsType _fs -> P.NewGroupAssignmentPreview key)
-        (\_timezone key _asg _tsType _files _testcase -> P.ModifyAssignmentPreview key)
-        (\_tz k _a _ts _tc -> P.ViewAssignment k)
-        (\_tz _t (key,_course) _tsType _fs _a _tc -> P.NewCourseAssignmentPreview key)
-        (\_tz _t (key,_group)  _tsType _fs _a _tc -> P.NewGroupAssignmentPreview key)
-        (\_timezone key _asg _tsType _files _testcase _tc -> P.ModifyAssignmentPreview key)
+        (\_tz _t (key,_course) _tsType _fs -> newCourseAssignmentPreview key)
+        (\_tz _t (key,_group)  _tsType _fs -> newGroupAssignmentPreview key)
+        (\_timezone key _asg _tsType _files _testcase -> modifyAssignmentPreview key)
+        (\_tz k _a _ts _tc -> viewAssignment k)
+        (\_tz _t (key,_course) _tsType _fs _a _tc -> newCourseAssignmentPreview key)
+        (\_tz _t (key,_group)  _tsType _fs _a _tc -> newGroupAssignmentPreview key)
+        (\_timezone key _asg _tsType _files _testcase _tc -> modifyAssignmentPreview key)
 
-      page :: PageData -> Page
+      page :: PageData -> PageDesc
       page = pageDataCata
-        (\_tz _t (key,_course) _tsType _fs -> P.NewCourseAssignment key)
-        (\_tz _t (key,_group)  _tsType _fs -> P.NewGroupAssignment key)
-        (\_tz ak _asg _tsType _files _testcase -> P.ModifyAssignment ak)
-        (\_tz k _a _ts _tc -> P.ViewAssignment k)
-        (\_tz _t (key,_course) _tsType _fs _a _tc -> P.NewCourseAssignment key)
-        (\_tz _t (key,_group)  _tsType _fs _a _tc -> P.NewGroupAssignment key)
-        (\_tz k _a _fs _ts _tc _tm -> P.ModifyAssignment k)
+        (\_tz _t (key,_course) _tsType _fs -> newCourseAssignment key)
+        (\_tz _t (key,_group)  _tsType _fs -> newGroupAssignment key)
+        (\_tz ak _asg _tsType _files _testcase -> modifyAssignment ak)
+        (\_tz k _a _ts _tc -> viewAssignment k)
+        (\_tz _t (key,_course) _tsType _fs _a _tc -> newCourseAssignment key)
+        (\_tz _t (key,_group)  _tsType _fs _a _tc -> newGroupAssignment key)
+        (\_tz k _a _fs _ts _tc _tm -> modifyAssignment k)
+
+      newCourseAssignment k = Pages.newCourseAssignment k ()
+      newGroupAssignment k  = Pages.newGroupAssignment k ()
+      modifyAssignment k    = Pages.modifyAssignment k ()
+      newCourseAssignmentPreview k = Pages.newCourseAssignmentPreview k ()
+      newGroupAssignmentPreview k  = Pages.newGroupAssignmentPreview k ()
+      modifyAssignmentPreview k    = Pages.modifyAssignmentPreview k ()
+      viewAssignment k = Pages.viewAssignment k ()
+      uploadFile = Pages.uploadFile ()
 
       amap :: (Assignment -> a) -> Maybe a -> PageData -> Maybe a
       amap f _ (PD_Assignment _ _ a _ _ _)           = Just . f $ a
@@ -586,7 +595,7 @@ newAssignmentContent pd = do
                 H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
-                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank P.UploadFile
+                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue uf = flip usersFileCata uf $ \u -> (show uf, u)
 
@@ -608,7 +617,7 @@ newAssignmentContent pd = do
                 H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
-                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank P.UploadFile
+                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue uf = flip usersFileCata uf $ \u -> (show uf, u)
 
@@ -648,7 +657,7 @@ newAssignmentContent pd = do
                 H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
-                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank P.UploadFile
+                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue l@(Left ()) = (show l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
                   keyValue r@(Right uf) = flip usersFileCata uf $ \u -> (show r, u)
@@ -671,7 +680,7 @@ newAssignmentContent pd = do
                 H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
-                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank P.UploadFile
+                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue l@(Left ()) = (show l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
                   keyValue r@(Right uf) = flip usersFileCata uf $ \u -> (show r, u)

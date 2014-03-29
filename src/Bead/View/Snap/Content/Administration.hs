@@ -4,21 +4,17 @@ module Bead.View.Snap.Content.Administration (
   , assignCourseAdmin
   ) where
 
-import Control.Monad (liftM)
-import Data.String (fromString)
+import           Data.String (fromString)
 
-import Bead.Domain.Entities (User(..), Role(..))
-import Bead.Controller.Pages as P (Page(CreateCourse, UserDetails, AssignCourseAdmin))
-import Bead.Controller.ServiceContext (UserState(..))
-import Bead.Controller.UserStories (selectCourses, selectUsers)
-import Bead.View.Snap.Pagelets
-import Bead.View.Snap.Content
-import Bead.View.Snap.Fay.Hooks
+import qualified Bead.Controller.Pages as Pages
+import           Bead.Controller.UserStories (selectCourses, selectUsers)
+import           Bead.View.Snap.Content
+import           Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
 
-import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A
+import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A
 
 administration :: Content
 administration = getContentHandler administrationPage
@@ -59,7 +55,7 @@ administrationContent info = do
   return $ do
     H.div $ do
       H.h3 $ (fromString . msg $ Msg_Administration_NewCourse "New course")
-      (postForm (routeOf P.CreateCourse) `withId` (evFormId createCourseHook)) $ do
+      (postForm (routeOf createCourse) `withId` (evFormId createCourseHook)) $ do
         i18n msg $ inputPagelet emptyCourse
         -- Help message for the percentage
         H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $
@@ -79,17 +75,21 @@ administrationContent info = do
           H.p (fromString . msg $
             Msg_Administration_HowToAddMoreAdmins
             "Further teachers can be added by modifying roles of users, then assign them to courses.")
-          postForm (routeOf P.AssignCourseAdmin) $ do
+          postForm (routeOf assignCourseAdmin) $ do
             valueTextSelection (fieldName selectedCourse) (courses info)
             valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
             H.br
             submitButton (fieldName assignBtn) (fromString . msg $ Msg_Administration_AssignCourseAdminButton "Assign")
     H.div $ do
       H.h3 $ (fromString . msg $ Msg_Administration_ChangeUserProfile "Modify users")
-      getForm (routeOf P.UserDetails) $ do
+      getForm (routeOf userDetails) $ do
         i18n msg $ inputPagelet emptyUsername
         submitButton (fieldName selectBtn) (fromString . msg $ Msg_Administration_SelectUser "Select")
   where
+    createCourse      = Pages.createCourse ()
+    assignCourseAdmin = Pages.assignCourseAdmin ()
+    userDetails       = Pages.userDetails ()
+
     headerCell = H.th # (informationalCell <> grayBackground)
     dataCell   = H.td # informationalCell
 

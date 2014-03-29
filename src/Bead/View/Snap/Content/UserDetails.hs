@@ -3,20 +3,16 @@ module Bead.View.Snap.Content.UserDetails (
     userDetails
   ) where
 
-import Bead.View.Snap.Content
-import Bead.Domain.Types (Str(..))
-import Bead.Domain.Entities (Email(..), roles)
-import Bead.Controller.UserStories (loadUser, doesUserExist)
-import Bead.Controller.Pages as P (Page(UserDetails))
-import qualified Bead.View.Snap.DataBridge as B
-import Bead.View.Snap.Application
-import Bead.View.Snap.Dictionary
+import           Data.String (fromString)
 
-import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html5 as H
-import Data.Maybe
-import Data.String (fromString)
+
+import           Bead.Controller.UserStories (loadUser, doesUserExist)
+import qualified Bead.Controller.Pages as Pages
+import           Bead.Domain.Types (Str(..))
+import           Bead.View.Snap.Content
+import qualified Bead.View.Snap.DataBridge as B
+import           Bead.View.Snap.Dictionary
 
 userDetails :: Content
 userDetails = getPostContentHandler userDetailPage userDataChange
@@ -47,7 +43,7 @@ userDataChange = do
 userDetailForm :: User -> DictionaryInfos -> IHtml
 userDetailForm u languages = do
   msg <- getI18N
-  return $ postForm (routeOf P.UserDetails) $ do
+  return $ postForm (routeOf userDetails) $ do
     table "user-detail-table" "user-detail-table" $ do
       tableLine (msg $ Msg_Input_User_Role "Role")  $ required $ i18n msg $ inputPagelet (Just $ u_role u)
       tableLine (msg $ Msg_Input_User_Email "Email") $ required $ textInput (fieldName userEmailField) 20 (Just . str $ u_email u)
@@ -57,6 +53,8 @@ userDetailForm u languages = do
       hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username $ u
     submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Update")
   where
+    userDetails = Pages.userDetails ()
+
     langDef l (lang,_info) = lang == l
     langVal (lang,info) =
       ( languageCata id lang

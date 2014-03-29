@@ -23,7 +23,7 @@ import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A (style, id)
 
-import           Bead.Controller.Pages as P (Page(..))
+import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as S
 import           Bead.Domain.Entities as E (Role(..))
 import           Bead.Domain.Evaluation
@@ -90,7 +90,7 @@ deleteUsersFromGroupHandler =
     <$> (getParameter delUserFromGroupKeyPrm)
     <*> (getParameterValues delUserFromGroupPrm)
 
-navigation :: [P.Page] -> IHtml
+navigation :: [Pages.Page a] -> IHtml
 navigation links = do
   msg <- getI18N
   return $ H.div ! A.id "menu" $ H.ul $ mapM_ (i18n msg . linkToPage) links
@@ -110,7 +110,7 @@ homeContent now d = do
   return $ H.div # textAlign "left" $ do
     when (isAdmin s) $ H.p $ do
       H.h3 . fromString . msg $ Msg_Home_AdminTasks "Administrator Menu"
-      i18n msg $ navigation [P.Administration]
+      i18n msg $ navigation [administration]
       H.hr
     when (courseAdminUser r) $ H.p $ do
       H.h3 . fromString . msg $ Msg_Home_CourseAdminTasks "Course Administrator Menu"
@@ -138,7 +138,7 @@ homeContent now d = do
         H.ul ! A.style "list-style-type: none" $ do
           let courseList = sortBy (compareHun `on` (courseName . snd)) $ Map.toList $ administratedCourseMap d
           forM_ courseList $ \(ck, c) ->
-            H.li $ linkWithText (routeOf (P.CourseOverview ck)) (courseName c)
+            H.li $ linkWithText (routeOf (courseOverview ck)) (courseName c)
     when (courseAdminUser r && hasCourse) $ H.p $ do
       H.p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
         [ "New groups for courses may be created in the Course Settings menu.  Teachers may be also assigned to "
@@ -146,17 +146,28 @@ homeContent now d = do
         ]
       H.p $ do
         i18n msg $ navigation $ [
-            P.CourseAdmin, P.NewTestScript, P.EvaluationTable
-          , P.SetUserPassword, P.UploadFile ]
+            courseAdmin, newTestScript, evaluationTable
+          , setUserPassword, uploadFile ]
       H.hr
     when (groupAdminUser r && hasGroup) $ H.p $ do
-      i18n msg $ navigation [P.EvaluationTable, P.SetUserPassword, P.UploadFile ]
+      i18n msg $ navigation [evaluationTable, setUserPassword, uploadFile ]
       H.hr
     H.h3 . fromString . msg $ Msg_Home_StudentTasks "Student Menu"
     H.p $ do
       i18n msg $ availableAssignments (timeConverter d) (assignments d)
-      i18n msg $ navigation [P.GroupRegistration]
+      i18n msg $ navigation [groupRegistration]
     where
+      administration    = Pages.administration ()
+      courseAdmin       = Pages.courseAdmin ()
+      courseOverview ck = Pages.courseOverview ck ()
+      evaluationTable   = Pages.evaluationTable ()
+      groupRegistration = Pages.groupRegistration ()
+      newTestScript     = Pages.newTestScript ()
+      setUserPassword   = Pages.setUserPassword ()
+      submission     = Pages.submission ()
+      submissionList = Pages.submissionList ()
+      uploadFile     = Pages.uploadFile ()
+
       courseAdminUser = (==E.CourseAdmin)
       groupAdminUser  = (==E.GroupAdmin)
 
@@ -191,11 +202,11 @@ availableAssignments timeconverter (Just as) = do
       headerCell (fromString $ msg $ Msg_Home_Evaluation "Evaluation")
     assignmentLine msg (k,a,s) = H.tr $ do
       case aActive a of
-        True -> dataCell $ link (routeWithParams P.Submission [requestParam k]) (msg $ Msg_Home_NewSolution "New submission")
+        True -> dataCell $ link (routeWithParams (Pages.submission ()) [requestParam k]) (msg $ Msg_Home_NewSolution "New submission")
         False -> dataCell (fromString . msg $ Msg_Home_ClosedSubmission "Closed")
       dataCell (fromString . aGroup $ a)
       dataCell (fromString . join . intersperse ", " . aTeachers $ a)
-      dataCell $ linkWithText (routeWithParams P.SubmissionList [requestParam k]) (fromString (aTitle a))
+      dataCell $ linkWithText (routeWithParams (Pages.submissionList ()) [requestParam k]) (fromString (aTitle a))
       dataCell (fromString . showDate . timeconverter $ aEndDate a)
       (coloredSubmissionCell dataCell' (H.td) fromString
         (msg $ Msg_Home_SubmissionCell_NoSubmission "No submission")

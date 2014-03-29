@@ -9,7 +9,7 @@ module Bead.View.Snap.Content.Evaluation (
 import           Data.String (fromString)
 import           Data.Time (getCurrentTime)
 
-import           Bead.Controller.Pages as P(Page(..))
+import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (submissionDescription)
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Content as C
@@ -187,11 +187,11 @@ evaluationContent pd = do
     defaultEvalCfg :: EvaluationResult
     defaultEvalCfg = BinEval (Binary Passed)
 
-    evPage (Just ek) = P.ModifyEvaluation submissionKey ek
-    evPage Nothing   = P.Evaluation submissionKey
+    evPage (Just ek) = Pages.modifyEvaluation submissionKey ek ()
+    evPage Nothing   = Pages.evaluation submissionKey ()
 
-    commentPage (Just ek) = P.CommentFromModifyEvaluation submissionKey ek
-    commentPage Nothing   = P.CommentFromEvaluation submissionKey
+    commentPage (Just ek) = Pages.commentFromModifyEvaluation submissionKey ek ()
+    commentPage Nothing   = Pages.commentFromEvaluation submissionKey ()
 
     courseGroupName sd = concat [ eCourse sd, maybe "" (" - " ++) $ eGroup sd ]
 

@@ -1,23 +1,19 @@
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Test.Quick.PageGen where
 
-import Control.Monad (liftM)
 import Control.Applicative ((<$>),(<*>))
 
 import Bead.Controller.Pages
-import qualified Bead.Domain.Entities as E
 import Bead.Domain.Relationships
 
-import Test.QuickCheck.Gen
 import Test.QuickCheck.Arbitrary
-import Test.Quick.EnumGen
-import Test.Quick.RolePermissionGen
+import Test.QuickCheck.Gen
 
-
-
-instance Arbitrary Page where
+instance Arbitrary PageDesc where
   arbitrary = pageGen
 
-pageGen :: Gen Page
+pageGen :: Gen PageDesc
 pageGen = oneof [
     nonParametricPages
   , parametricPages
@@ -33,45 +29,46 @@ pageGen = oneof [
       testScriptKey = TestScriptKey . showInt <$> choose (1,5000)
 
       nonParametricPages = elements [
-          Login
-        , Logout
-        , Home
-        , Profile
-        , Error
-        , Administration
-        , CourseAdmin
-        , EvaluationTable
-        , Submission
-        , SubmissionList
-        , GroupRegistration
-        , UserDetails
-        , UserSubmissions
-        , UploadFile
-        , CreateCourse
-        , CreateGroup
-        , AssignCourseAdmin
-        , AssignGroupAdmin
-        , ChangePassword
-        , SetUserPassword
-        , NewTestScript
+          login ()
+        , logout ()
+        , home ()
+        , profile ()
+        , administration ()
+        , courseAdmin ()
+        , evaluationTable ()
+        , submission ()
+        , submissionList ()
+        , groupRegistration ()
+        , userDetails ()
+        , userSubmissions ()
+        , uploadFile ()
+        , createCourse ()
+        , createGroup ()
+        , assignCourseAdmin ()
+        , assignGroupAdmin ()
+        , changePassword ()
+        , setUserPassword ()
+        , newTestScript ()
         ]
 
       parametricPages = oneof [
-          CommentFromEvaluation <$> submissionKey
-        , CommentFromModifyEvaluation <$> submissionKey <*> evaluationKey
-        , Evaluation <$> submissionKey
-        , CourseOverview <$> courseKey
-        , ModifyEvaluation <$> submissionKey <*> evaluationKey
-        , SubmissionDetails <$> assignmentKey <*> submissionKey
-        , DeleteUsersFromCourse <$> courseKey
-        , DeleteUsersFromGroup <$> groupKey
-        , UnsubscribeFromCourse <$> groupKey
-        , ModifyTestScript <$> testScriptKey
-        , NewCourseAssignment <$> courseKey
-        , NewGroupAssignment <$> groupKey
-        , ModifyAssignment <$> assignmentKey
-        , ViewAssignment <$> assignmentKey
-        , NewCourseAssignmentPreview <$> courseKey
-        , NewGroupAssignmentPreview <$> groupKey
-        , ModifyAssignmentPreview <$> assignmentKey
+          commentFromEvaluation <$> submissionKey <*> unit
+        , commentFromModifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
+        , evaluation <$> submissionKey <*> unit
+        , courseOverview <$> courseKey <*> unit
+        , modifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
+        , submissionDetails <$> assignmentKey <*> submissionKey <*> unit
+        , deleteUsersFromCourse <$> courseKey <*> unit
+        , deleteUsersFromGroup <$> groupKey <*> unit
+        , unsubscribeFromCourse <$> groupKey <*> unit
+        , modifyTestScript <$> testScriptKey <*> unit
+        , newCourseAssignment <$> courseKey <*> unit
+        , newGroupAssignment <$> groupKey <*> unit
+        , modifyAssignment <$> assignmentKey <*> unit
+        , viewAssignment <$> assignmentKey <*> unit
+        , newCourseAssignmentPreview <$> courseKey <*> unit
+        , newGroupAssignmentPreview <$> groupKey <*> unit
+        , modifyAssignmentPreview <$> assignmentKey <*> unit
         ]
+
+      unit = return ()

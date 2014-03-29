@@ -11,7 +11,7 @@ import qualified Data.Map as Map
 import           Data.String (fromString)
 import           Data.Time (UTCTime)
 
-import           Bead.Controller.Pages as P (Page(Evaluation))
+import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (openSubmissions)
 import           Bead.View.Snap.Pagelets
 import           Bead.View.Snap.Content
@@ -81,7 +81,9 @@ submissionInfo msg isGroup (key, desc) = H.tr $ do
   when isGroup $ H.td . fromString . fromMaybe "" . eGroup $ desc
   H.td . fromString . eStudent $ desc
   H.td . fromString . eAssignmentTitle $ desc
-  H.td $ link (routeOf (P.Evaluation key)) (msg $ Msg_EvaluationTable_Solution "Submission")
+  H.td $ link (routeOf (evaluation key)) (msg $ Msg_EvaluationTable_Solution "Submission")
+  where
+    evaluation k = Pages.evaluation k ()
 
 -- * Sorting submissions
 

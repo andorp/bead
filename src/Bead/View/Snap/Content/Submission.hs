@@ -8,7 +8,7 @@ import           Data.List (intersperse)
 import           Data.String (fromString)
 import           Data.Time
 
-import           Bead.Controller.Pages as P (Page(Submission))
+import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Domain.Entities as E
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Utils
@@ -53,7 +53,7 @@ submissionPostHandler =
 submissionContent :: PageData -> IHtml
 submissionContent p = do
   msg <- getI18N
-  return $ postForm (routeOf P.Submission) $ H.div ! formDiv $ do
+  return $ postForm (routeOf submission) $ H.div ! formDiv $ do
     H.table $ do
       H.tr $ do
         H.td $ H.b $ (fromString . msg $ Msg_Submission_Course "Course: ")
@@ -83,6 +83,8 @@ submissionContent p = do
       textAreaInput (fieldName submissionTextField) Nothing ! A.rows "25" ! A.cols "80"
     submitButton (fieldName submitSolutionBtn) (msg $ Msg_Submission_Submit "Submit")
     hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
+  where
+    submission = Pages.submission ()
 
 invalidAssignment :: IHtml
 invalidAssignment = do

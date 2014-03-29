@@ -8,31 +8,25 @@ module Bead.View.Snap.ResetPassword (
   , loadAuthUser
   ) where
 
-import Control.Monad.Trans.Error
+import           Control.Monad.Trans.Error
 import qualified Data.ByteString.Char8 as B
-import Data.String
-import Data.Maybe
+import           Data.Maybe
+import           Data.String
 
-import Snap
-import Snap.Snaplet.Auth as A
-import Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A
+import           Snap
+import           Snap.Snaplet.Auth as A
+import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5  as H
-import Bead.View.Snap.I18N (IHtml)
-import Text.Printf (printf)
+import qualified Text.Blaze.Html5.Attributes as A
 
-import Bead.Domain.Entities
+import           Bead.Domain.Entities
 import qualified Bead.Controller.UserStories as S
-import Bead.Controller.Pages as P (Page(Login))
-import Bead.View.Snap.Application
-import Bead.View.Snap.Content hiding (name)
-import Bead.View.Snap.DataBridge
-import Bead.View.Snap.ErrorPage (errorPageWithTitle)
-import Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
-import Bead.View.Snap.HandlerUtils (registrationStory, userState, renderPublicPage, i18nH)
-import Bead.View.Snap.Session (passwordFromAuthUser)
-import Bead.View.Snap.Style
-import Bead.View.Snap.Translation
+import           Bead.View.Snap.Application
+import           Bead.View.Snap.Content hiding (name)
+import           Bead.View.Snap.DataBridge
+import           Bead.View.Snap.ErrorPage (errorPageWithTitle)
+import           Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
+import           Bead.View.Snap.HandlerUtils (registrationStory, renderPublicPage)
 
 backToLogin :: Translation String
 backToLogin = Msg_ResetPassword_GoBackToLogin "Back to login"
