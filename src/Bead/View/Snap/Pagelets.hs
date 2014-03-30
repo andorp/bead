@@ -243,6 +243,10 @@ countdownDiv divId daystr overstr showDays seconds = do
       ,    "var timestamp = new Date;"
       ,    "var interval = setInterval(function() {"
       ,       "var el = document.getElementById(\"", divId, "\");"
+      ,       "var now = new Date;"
+      ,       "var dt = now - timestamp;"
+      ,       "timestamp = now;"
+      ,       "mstime = mstime - dt;"
       ,       "var time = Math.round( mstime / 1000 );"
       ,       "if(time < 0) {"
       ,           "el.innerHTML = \"",overstr,"\";"
@@ -273,10 +277,6 @@ countdownDiv divId daystr overstr showDays seconds = do
                      ]
                   else "var text = emins + ':' + esecs;"
       ,       "el.innerHTML = text;"
-      ,       "var now = new Date;"
-      ,       "var dt = now - timestamp;"
-      ,       "timestamp = now;"
-      ,       "mstime = mstime - dt;"
       ,       "}, 1000);"
       , "}"
       ]
