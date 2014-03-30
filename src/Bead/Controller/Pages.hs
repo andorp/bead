@@ -29,6 +29,7 @@ data ViewPage a
 
 viewPageCata
   login
+  logout
   home
   courseOverview
   evaluationTable
@@ -39,6 +40,7 @@ viewPageCata
   userSubmissions
   p = case p of
     Login a -> login a
+    Logout a -> logout a
     Home a -> home a
     CourseOverview ck a -> courseOverview ck a
     EvaluationTable a -> evaluationTable a
@@ -51,6 +53,7 @@ viewPageCata
 viewPageValue :: ViewPage a -> a
 viewPageValue = viewPageCata
   id -- login
+  id -- logout
   id -- home
   cid -- courseOverview
   id -- evaluationTable

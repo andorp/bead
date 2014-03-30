@@ -1,111 +1,82 @@
 {-# LANGUAGE CPP #-}
 module Bead.View.Snap.Content.All (
-    Route
-  , routeCata
-  , content
+    pageContent
 #ifdef TEST
   , invariants
 #endif
   ) where
 
-import qualified Data.Map as Map
 
 import qualified Bead.Controller.Pages as Pages hiding (invariants)
-import Bead.View.Snap.RouteOf hiding (invariants)
 import Bead.View.Snap.Content (Content(..), emptyContent)
-import Bead.View.Snap.Content.Home (
-    home,
-    deleteUsersFromCourse,
-    deleteUsersFromGroup)
-import Bead.View.Snap.Content.Profile (profile, changePassword)
-import Bead.View.Snap.Content.CourseAdmin (courseAdmin, createGroup, assignGroupAdmin)
-import Bead.View.Snap.Content.CourseOverview (courseOverview)
-import Bead.View.Snap.Content.Administration (administration, assignCourseAdmin)
-import Bead.View.Snap.Content.EvaluationTable (evaluationTable)
-import Bead.View.Snap.Content.Evaluation (
-    evaluation,
-    modifyEvaluation,
-    commentFromEvaluation,
-    commentFromModifyEvaluation)
+import Bead.View.Snap.Content.Home
+import Bead.View.Snap.Content.Profile
+import Bead.View.Snap.Content.CourseAdmin
+import Bead.View.Snap.Content.CourseOverview
+import Bead.View.Snap.Content.Administration
+import Bead.View.Snap.Content.EvaluationTable
+import Bead.View.Snap.Content.Evaluation
 import Bead.View.Snap.Content.NewAssignment
-import Bead.View.Snap.Content.Submission (submission)
-import Bead.View.Snap.Content.SubmissionList (submissionList)
-import Bead.View.Snap.Content.SubmissionDetails (submissionDetails)
-import Bead.View.Snap.Content.GroupRegistration (groupRegistration, unsubscribeFromCourse)
-import Bead.View.Snap.Content.CreateCourse (createCourse)
-import Bead.View.Snap.Content.UserDetails (userDetails)
-import Bead.View.Snap.Content.UserSubmissions (userSubmissions)
-import Bead.View.Snap.Content.SetUserPassword (setUserPassword)
-import Bead.View.Snap.Content.NewTestScript (newTestScript, modifyTestScript)
-import Bead.View.Snap.Content.UploadFile (uploadFile)
+import Bead.View.Snap.Content.Submission
+import Bead.View.Snap.Content.SubmissionList
+import Bead.View.Snap.Content.SubmissionDetails
+import Bead.View.Snap.Content.GroupRegistration
+import Bead.View.Snap.Content.CreateCourse
+import Bead.View.Snap.Content.UserDetails
+import Bead.View.Snap.Content.UserSubmissions
+import Bead.View.Snap.Content.SetUserPassword
+import Bead.View.Snap.Content.NewTestScript
+import Bead.View.Snap.Content.UploadFile
 
 #ifdef TEST
 import Bead.Invariants (Invariants(..))
 #endif
 
--- Route consits of a route string and a content handler
--- routes are load up at the start of the server
-newtype Route = Route (String, Content)
-
-routeCata f (Route (route, contentHandler)) = f route contentHandler
-
--- Creates a Route value from the given path and the
--- content handler
-route path content = Route (path, content)
-
--- A Route list that defines routes for for every Page values
-content :: [Route]
-content = [
-  route loginPath emptyContent,
-  route logoutPath emptyContent,
-  route homePath home,
-  route profilePath profile,
-  route courseAdminPath courseAdmin,
-  route courseOverviewPath courseOverview,
-  route administrationPath administration,
-  route evaluationTablePath evaluationTable,
-  route evaluationPath evaluation,
-  route submissionPath submission,
-  route submissionListPath submissionList,
-  route userSubmissionsPath userSubmissions,
-  route newTestScriptPath newTestScript,
-  route modifyTestScriptPath modifyTestScript,
-  route uploadFilePath uploadFile,
-  route modifyEvaluationPath modifyEvaluation,
-  route submissionDetailsPath submissionDetails,
-  route groupRegistrationPath groupRegistration,
-  route createCoursePath createCourse,
-  route userDetailsPath userDetails,
-  route assignCourseAdminPath assignCourseAdmin,
-  route createGroupPath createGroup,
-  route assignGroupAdminPath assignGroupAdmin,
-  route newGroupAssignmentPath newGroupAssignment,
-  route newCourseAssignmentPath newCourseAssignment,
-  route modifyAssignmentPath modifyAssignment,
-  route viewAssignmentPath viewAssignment,
-  route newGroupAssignmentPreviewPath newGroupAssignmentPreview,
-  route newCourseAssignmentPreviewPath newCourseAssignmentPreview,
-  route modifyAssignmentPreviewPath modifyAssignmentPreview,
-  route changePasswordPath changePassword,
-  route setUserPasswordPath setUserPassword,
-  route commentFromEvaluationPath commentFromEvaluation,
-  route commentFromModifyEvaluationPath commentFromModifyEvaluation,
-  route deleteUsersFromCoursePath deleteUsersFromCourse,
-  route deleteUsersFromGroupPath deleteUsersFromGroup,
-  route unsubscribeFromCoursePath unsubscribeFromCourse]
-
-contentMap :: Pages.Page a -> Content
-contentMap p = maybe (error "Content is not defined") id
-             . Map.lookup (Pages.pageValue $ pageRoutePath p)
-             . Map.fromList $ map routeToPair content
-  where
-    routeToPair = routeCata $ \path content -> (path,content)
+pageContent :: Pages.Page a -> Pages.Page Content
+pageContent = Pages.constantsP
+  emptyContent -- login
+  emptyContent -- logout
+  home
+  profile
+  administration
+  courseAdmin
+  courseOverview
+  evaluationTable
+  evaluation
+  modifyEvaluation
+  newGroupAssignment
+  newCourseAssignment
+  modifyAssignment
+  viewAssignment
+  newGroupAssignmentPreview
+  newCourseAssignmentPreview
+  modifyAssignmentPreview
+  submission
+  submissionList
+  submissionDetails
+  groupRegistration
+  userDetails
+  userSubmissions
+  newTestScript
+  modifyTestScript
+  uploadFile
+  createCourse
+  createGroup
+  assignCourseAdmin
+  assignGroupAdmin
+  changePassword
+  setUserPassword
+  commentFromEvaluation
+  commentFromModifyEvaluation
+  deleteUsersFromCourse
+  deleteUsersFromGroup
+  unsubscribeFromCourse
 
 #ifdef TEST
 
 invariants :: Invariants Pages.PageDesc
 invariants = Invariants [
-    ("Content handler must be defined ", \p -> getOrPost $ contentMap p)
+    ("Content handler must be defined ", \p -> getOrPost . Pages.pageValue $ pageContent p)
   ]
   where
     getOrPost c =
