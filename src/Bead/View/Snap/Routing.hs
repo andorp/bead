@@ -1,12 +1,15 @@
 {-# LANGUAGE OverloadedStrings  #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE Arrows #-}
 module Bead.View.Snap.Routing (
     routes
+  , pages
 #ifdef TEST
   , routingInvariants
 #endif
   ) where
 
+import           Control.Arrow
 import qualified Control.Exception as CE
 import qualified Control.Monad.Error as CME
 import           Data.Maybe
@@ -15,6 +18,7 @@ import           Data.String (fromString)
 import           Prelude hiding (id)
 import qualified Prelude as P
 
+import qualified Data.ByteString.Char8 as BS
 import           Snap.Snaplet.Auth as A
 import           Snap.Snaplet.Fay
 import           Snap.Snaplet.Session
@@ -23,7 +27,7 @@ import           Text.Printf (printf)
 
 import           Bead.Configuration (Config(..))
 import           Bead.Controller.Logging as L
-import           Bead.Controller.ServiceContext hiding (serviceContext)
+import           Bead.Controller.ServiceContext as SC hiding (serviceContext)
 import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.UserStories as S
 import           Bead.Domain.Entities as E
@@ -62,14 +66,23 @@ routes config = join
     , ("/fay", with fayContext fayServe)
     , ("/upload", fileUpload)
     ]
-  , map toPathContentPair content
     -- Add static handlers
   , [ ("",          serveDirectory "static") ]
   ]
-  where
-    -- Ignores the predicate and creates a path, content pair
-    toPathContentPair = routeCata $ \path content ->
-      (fromString path,handlePage (path,content))
+
+pages :: Handler App App ()
+pages = do
+  path <- getRequest >>= return . proc req -> do
+            ctx <- rqContextPath -< req
+            pth <- rqPathInfo    -< req
+            returnA -< BS.unpack (BS.append ctx pth)
+  page <- requestToPageHandler path
+  case page of
+    -- No Page value is calculated from the request
+    Nothing -> logoutAndErrorPage "Pages: Invalid route in request"
+    Just pd
+      | P.isLogin pd -> loginSubmit
+      | otherwise ->  handlePage (pageContent pd)
 
 -- * Handlers
 
@@ -229,7 +242,6 @@ logoutAndErrorPage msg = do
   HU.logout
   msgErrorPage msg
 
--- TODO: I18N
 {- When a user logs in the home page is shown for her. An universal handler
    is used. E.g "/home" -> handlePage P.Home.
    * If the user can navigate to the
@@ -238,39 +250,31 @@ logoutAndErrorPage msg = do
    * When a user submits information with a POST request, from the submitted information
    we calculate the appropiate user action and runs it
 -}
-handlePage :: (RoutePath, Content) -> Handler App App ()
-handlePage (path,c)
-  | path == loginPath = loginSubmit
-handlePage (path,c) = do
-  mpage <- requestToPageHandler path
-  case mpage of
-    -- No Page value is calculated from the request
-    Nothing   -> logoutAndErrorPage "Invalid route in request"
-    -- Every parameter was found to create the Page value
-    Just page -> method GET (handleRenderPage page) <|> method POST (handleSubmitPage page)
+handlePage :: P.Page Content -> Handler App App ()
+handlePage page = method GET handleRenderPage <|> method POST handleSubmitPage
   where
+    p = (const ()) <$> page
     failure, success :: (Monad m) => a -> m HandlerResult
     failure = const . return $ HFailure
     success = const . return $ HSuccess
     forgetResult h = h >> return ()
 
-    handleRenderPage :: P.PageDesc -> Handler App App ()
-    handleRenderPage p = userIsLoggedInFilter
+    loggedInFilter m = userIsLoggedInFilter
+      m
+      -- Not logged in user tries to get some data
+      logoutAndResetRoute
+      -- Some internal error happened
+      logoutAndErrorPage
 
+    handleRenderPage :: Handler App App ()
+    handleRenderPage = loggedInFilter $ do
       -- If the GET handler is not found for the given page, the logout action is
       -- required as the user tries to do some invalid operation.
-      (case get c of
+      case (get $ P.pageValue page) of
          Nothing -> hsuccess $ do
            logMessage DEBUG $ "No GET handler found for " ++ show p
            logoutAndResetRoute
          Just getHandler -> runGETHandler errorPage $ changePage getHandler
-      )
-
-      -- Not logged in user tries to get some data
-      logoutAndResetRoute
-
-      -- Some internal error happened
-      logoutAndErrorPage
 
       where
         changePage h =
@@ -282,32 +286,24 @@ handlePage (path,c) = do
           lift $ logMessage ERROR . join $ [
               usernameCata show (user s)
             , ": Page transition is not allowed "
-            , show (page s), " -> ", show p
+            , show (SC.page s), " -> ", show p
             ]
           lift $ logoutAndResetRoute
 
 
-    handleSubmitPage :: P.PageDesc -> Handler App App ()
-    handleSubmitPage page = userIsLoggedInFilter
-
+    handleSubmitPage :: Handler App App ()
+    handleSubmitPage = loggedInFilter $ do
       -- If the POST handler is not found for the given page, logout action is
       -- required as the user tries to do some invalid operation
-      (case post c of
+      case (post $ P.pageValue page) of
          -- POST handler is not found
          Nothing -> hsuccess $ do
-           logMessage DEBUG $ "No POST handler found for " ++ show page
+           logMessage DEBUG $ "No POST handler found for " ++ show p
            logoutAndResetRoute
          -- POST handler is found
          Just handlerUserAction -> do
-           runStory $ S.changePage page
-           runPOSTHandler errorPage page handlerUserAction
-      )
-
-      -- Not logged in user tires to post some data
-      logoutAndResetRoute
-
-      -- Some internal error happened
-      logoutAndErrorPage
+           runStory $ S.changePage p
+           runPOSTHandler errorPage p handlerUserAction
 
 allowedPageByTransition
   :: P.Page a -> HandlerError App App a -> HandlerError App App a -> HandlerError App App a
@@ -330,7 +326,6 @@ requestToPage path params
   | path == loginPath       = j $ P.login ()
   | path == logoutPath      = j $ P.logout ()
   | path == homePath        = j $ P.home ()
---  | path == errorPath       = j P.Error
   | path == profilePath     = j $ P.profile ()
   | path == courseAdminPath = j $ P.courseAdmin ()
   | path == courseOverviewPath
