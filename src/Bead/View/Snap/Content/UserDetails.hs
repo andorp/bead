@@ -14,8 +14,7 @@ import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.DataBridge as B
 import           Bead.View.Snap.Dictionary
 
-userDetails :: Content
-userDetails = getPostContentHandler userDetailPage userDataChange
+userDetails = ViewModifyHandler userDetailPage userDataChange
 
 userDetailPage :: GETContentHandler
 userDetailPage = withUserState $ \s -> do

@@ -147,7 +147,7 @@ userTimeZoneField = UserTimeZoneField "usertimezone"
 instance SnapFieldName ChangePwdField where
   fieldName = fromString . cpf
 
-menuId :: P.Page a -> String
+menuId :: P.Page a b c d -> String
 menuId = P.pageCata
   (c "link-login")
   (c "link-logout")
@@ -191,7 +191,7 @@ menuId = P.pageCata
       c2 = c . const
       c3 = c2 . const
 
-instance SnapFieldName (P.Page a) where
+instance SnapFieldName (P.Page a b c d) where
   fieldName = fromString . menuId
 
 newtype AssignmentField = AssignmentField { aFieldName :: String }

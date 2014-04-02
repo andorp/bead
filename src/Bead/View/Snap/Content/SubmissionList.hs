@@ -17,8 +17,7 @@ import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Utils
 import           Bead.View.Snap.Markdown
 
-submissionList :: Content
-submissionList = getContentHandler submissionListPage
+submissionList = ViewHandler submissionListPage
 
 data PageData = PageData {
     asKey :: AssignmentKey

@@ -21,8 +21,8 @@ pageDataCata
   p = case p of
     CourseSubmissions now stc sti -> courseSubmissions now stc sti
 
-courseOverview :: Content
-courseOverview = getContentHandler courseSubmissionsPage
+courseOverview :: ViewHandler
+courseOverview = ViewHandler courseSubmissionsPage
 
 courseSubmissionsPage :: GETContentHandler
 courseSubmissionsPage = withUserState $ \s -> do

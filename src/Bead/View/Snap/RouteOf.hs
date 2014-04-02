@@ -186,9 +186,12 @@ deleteUsersFromGroupPath = "/delete-users-from-group"
 unsubscribeFromCoursePath :: RoutePath
 unsubscribeFromCoursePath = "/unsubscribe-from-course"
 
+type PageRoutePath = Page RoutePath RoutePath RoutePath RoutePath
+
 -- Returns a base path for the given page
-pageRoutePath :: Page a -> Page RoutePath
-pageRoutePath = fmap fromString . r where
+pageRoutePath :: Page a b c d -> PageRoutePath
+pageRoutePath = pfmap fs fs fs fs . r where
+  fs = fromString
   r = constantsP
     loginPath
     logoutPath
@@ -228,8 +231,10 @@ pageRoutePath = fmap fromString . r where
     deleteUsersFromGroupPath
     unsubscribeFromCoursePath
 
+type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam] 
+
 -- Calculates a request parameter list from the given page value
-pageRequestParams :: Page a -> Page [ReqParam]
+pageRequestParams :: Page a b c d -> PageReqParams
 pageRequestParams = liftsP
   (c []) -- login
   (c []) -- logout
@@ -273,7 +278,7 @@ pageRequestParams = liftsP
 
 -- Calculates the full path from a page value, including the base path and the
 -- request parameters
-routeOf :: (IsString s) => Page a -> s
+routeOf :: (IsString s) => Page a b c d -> s
 routeOf p = queryString (pageValue (pageRoutePath p)) (pageValue (pageRequestParams p))
 
 -- Produces a query string for a GET request from the given base name, and the
@@ -282,7 +287,7 @@ queryString :: (IsString s) => String -> [ReqParam] -> s
 queryString base []     = fromString base
 queryString base params = fromString . join $ [base, "?"] ++ (intersperse "&" (map queryStringParam params))
 
-routeWithParams :: (IsString s) => Page a -> [ReqParam] -> s
+routeWithParams :: (IsString s) => Page a b c d -> [ReqParam] -> s
 routeWithParams p rs = fromString . join $
   [routeOf p, "?"] ++ (intersperse "&" (map queryStringParam rs))
 
@@ -298,7 +303,7 @@ requestRoute route rs = fromString . join $
 routeOfInvariants = Invariants [
     ("RouteOf strings must not be empty", \p -> length (routeOf' p) > 0)
   ] where
-    routeOf' :: Page () -> String
+    routeOf' :: PageDesc -> String
     routeOf' = routeOf
 
 #endif

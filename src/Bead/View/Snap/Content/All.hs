@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE BangPatterns #-}
 module Bead.View.Snap.Content.All (
     pageContent
 #ifdef TEST
@@ -8,7 +9,7 @@ module Bead.View.Snap.Content.All (
 
 
 import qualified Bead.Controller.Pages as Pages hiding (invariants)
-import Bead.View.Snap.Content (Content(..), emptyContent)
+import Bead.View.Snap.Content
 import Bead.View.Snap.Content.Home
 import Bead.View.Snap.Content.Profile
 import Bead.View.Snap.Content.CourseAdmin
@@ -32,10 +33,10 @@ import Bead.View.Snap.Content.UploadFile
 import Bead.Invariants (Invariants(..))
 #endif
 
-pageContent :: Pages.Page a -> Pages.Page Content
+pageContent :: Pages.Page a b c d -> PageHandler
 pageContent = Pages.constantsP
-  emptyContent -- login
-  emptyContent -- logout
+  nullViewHandler -- login
+  nullViewHandler -- logout
   home
   profile
   administration
@@ -71,19 +72,19 @@ pageContent = Pages.constantsP
   deleteUsersFromCourse
   deleteUsersFromGroup
   unsubscribeFromCourse
+  where
+    nullViewHandler = ViewHandler (return ())
+
 
 #ifdef TEST
 
 invariants :: Invariants Pages.PageDesc
 invariants = Invariants [
-    ("Content handler must be defined ", \p -> getOrPost . Pages.pageValue $ pageContent p)
-  ]
-  where
-    getOrPost c =
-      case (get c, post c) of
-        (Just _, Just _)  -> True
-        (Just _, Nothing) -> True
-        (Nothing, Just _) -> True
-        (Nothing, Nothing) -> True
+    ("Content handler must be defined ", Pages.pageKindCata view userView viewModify modify . pageContent)
+  ] where
+      view !x = True
+      userView !x = True
+      viewModify !x = True
+      modify !x = True
 
 #endif

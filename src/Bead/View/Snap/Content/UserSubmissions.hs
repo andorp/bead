@@ -16,8 +16,7 @@ import           Bead.View.Snap.Content
 import qualified Text.Blaze.Html5 as H
 import           Text.Printf (printf)
 
-userSubmissions :: Content
-userSubmissions = getContentHandler userSubmissionPage
+userSubmissions = ViewHandler userSubmissionPage
 
 userSubmissionPage :: GETContentHandler
 userSubmissionPage = withUserState $ \s -> do

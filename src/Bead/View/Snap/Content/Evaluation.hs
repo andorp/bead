@@ -20,21 +20,21 @@ import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A (id, style)
 import qualified Text.Blaze.Html5 as H
 
-evaluation :: Content
-evaluation = getPostContentHandler evaluationPage evaluationPostHandler
+evaluation :: ViewModifyHandler
+evaluation = ViewModifyHandler evaluationPage evaluationPostHandler
 
-modifyEvaluation :: Content
-modifyEvaluation = getPostContentHandler modifyEvaluationPage modifyEvaluationPost
+modifyEvaluation :: ViewModifyHandler
+modifyEvaluation = ViewModifyHandler modifyEvaluationPage modifyEvaluationPost
 
 -- Comment on the given evaluation page, the admin does not want to evaluate
 -- the submission, only places a comment
-commentFromEvaluation :: Content
-commentFromEvaluation = postContentHandler commentOnSubmissionHandler
+commentFromEvaluation :: ModifyHandler
+commentFromEvaluation = ModifyHandler commentOnSubmissionHandler
 
 -- Comment on the given evaluation page, the admin does not want to
 -- modify the evaluation only places a comment
-commentFromModifyEvaluation :: Content
-commentFromModifyEvaluation = postContentHandler commentOnSubmissionHandler
+commentFromModifyEvaluation :: ModifyHandler
+commentFromModifyEvaluation = ModifyHandler commentOnSubmissionHandler
 
 -- Page Data consitits of a description for a submission key, which contains
 -- the assignment key as well, the submission key, an evautation key, and

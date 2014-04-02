@@ -32,26 +32,13 @@ import           Bead.View.Snap.RequestParams
 
 -- * Content Handlers
 
-newCourseAssignment :: Content
-newCourseAssignment = getPostContentHandler newCourseAssignmentPage postCourseAssignment
-
-newGroupAssignment :: Content
-newGroupAssignment = getPostContentHandler newGroupAssignmentPage postGroupAssignment
-
-modifyAssignment :: Content
-modifyAssignment = getPostContentHandler modifyAssignmentPage postModifyAssignment
-
-viewAssignment :: Content
-viewAssignment = getContentHandler viewAssignmentPage
-
-newCourseAssignmentPreview :: Content
-newCourseAssignmentPreview = postContentHandler newCourseAssignmentPreviewPage
-
-newGroupAssignmentPreview :: Content
-newGroupAssignmentPreview = postContentHandler newGroupAssignmentPreviewPage
-
-modifyAssignmentPreview :: Content
-modifyAssignmentPreview = postContentHandler modifyAssignmentPreviewPage
+newCourseAssignment = ViewModifyHandler newCourseAssignmentPage postCourseAssignment
+newGroupAssignment  = ViewModifyHandler newGroupAssignmentPage postGroupAssignment
+modifyAssignment    = ViewModifyHandler modifyAssignmentPage postModifyAssignment
+viewAssignment      = ViewHandler viewAssignmentPage
+newCourseAssignmentPreview = UserViewHandler newCourseAssignmentPreviewPage
+newGroupAssignmentPreview  = UserViewHandler newGroupAssignmentPreviewPage
+modifyAssignmentPreview    = UserViewHandler modifyAssignmentPreviewPage
 
 data PageData
   = PD_Course {
@@ -185,7 +172,7 @@ postCourseAssignment = do
     <*> getValue -- assignment
     <*> readTCCreation
 
-newCourseAssignmentPreviewPage :: POSTContentHandler
+newCourseAssignmentPreviewPage :: ViewPOSTContentHandler
 newCourseAssignmentPreviewPage = withUserState $ \s -> do
   ck <- getParameter (customCourseKeyPrm courseKeyParamName)
   assignment <- getValue
@@ -200,7 +187,6 @@ newCourseAssignmentPreviewPage = withUserState $ \s -> do
   tz <- dataTimeZone <$> userTimeZone
   renderDynamicPagelet . withUserFrame s . newAssignmentContent $
     PD_Course_Preview tz now c tss ufs assignment tc
-  return NoUserAction
 
 -- Tries to create a TCCreation descriptive value. If the test script, usersfile and testcase
 -- parameters are included returns Just tccreation otherwise Nothing
@@ -269,7 +255,7 @@ postGroupAssignment = do
   <*> getValue -- assignment
   <*> readTCCreation
 
-newGroupAssignmentPreviewPage :: POSTContentHandler
+newGroupAssignmentPreviewPage :: ViewPOSTContentHandler
 newGroupAssignmentPreviewPage = withUserState $ \s -> do
   gk <- getParameter (customGroupKeyPrm groupKeyParamName)
   assignment <- getValue
@@ -284,7 +270,6 @@ newGroupAssignmentPreviewPage = withUserState $ \s -> do
   now <- liftIO $ getCurrentTime
   renderDynamicPagelet $ withUserFrame s . newAssignmentContent $
     PD_Group_Preview tz now g tss ufs assignment tc
-  return NoUserAction
 
 -- * Modify Assignment
 
@@ -305,7 +290,7 @@ postModifyAssignment :: POSTContentHandler
 postModifyAssignment = do
   ModifyAssignment <$> getValue <*> getValue <*> readTCModification
 
-modifyAssignmentPreviewPage :: POSTContentHandler
+modifyAssignmentPreviewPage :: ViewPOSTContentHandler
 modifyAssignmentPreviewPage = withUserState $ \s -> do
   ak <- getValue
   as <- getValue
@@ -319,7 +304,6 @@ modifyAssignmentPreviewPage = withUserState $ \s -> do
   tz <- dataTimeZone <$> userTimeZone
   renderDynamicPagelet . withUserFrame s . newAssignmentContent $
     PD_Assignment_Preview tz ak as tss ufs tc tm
-  return NoUserAction
 
 viewAssignmentPage :: GETContentHandler
 viewAssignmentPage = withUserState $ \s -> do

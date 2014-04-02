@@ -13,7 +13,6 @@ module Bead.View.Snap.Content.Home (
 import           Control.Monad.Identity
 import           Data.Function (on)
 import           Data.List (intersperse, sortBy)
-import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
 import           Data.String (fromString)
@@ -35,14 +34,14 @@ import           Bead.View.Snap.Content.SubmissionTable as ST
 import           Bead.Invariants
 #endif
 
-home :: Content
-home = getContentHandler homePage
+home :: ViewHandler
+home = ViewHandler homePage
 
-deleteUsersFromCourse :: Content
-deleteUsersFromCourse = postContentHandler deleteUsersFromCourseHandler
+deleteUsersFromCourse :: ModifyHandler
+deleteUsersFromCourse = ModifyHandler deleteUsersFromCourseHandler
 
-deleteUsersFromGroup :: Content
-deleteUsersFromGroup = postContentHandler deleteUsersFromGroupHandler
+deleteUsersFromGroup :: ModifyHandler
+deleteUsersFromGroup = ModifyHandler deleteUsersFromGroupHandler
 
 data HomePageData = HomePageData {
     userState   :: UserState
@@ -90,7 +89,7 @@ deleteUsersFromGroupHandler =
     <$> (getParameter delUserFromGroupKeyPrm)
     <*> (getParameterValues delUserFromGroupPrm)
 
-navigation :: [Pages.Page a] -> IHtml
+navigation :: [Pages.Page a b c d] -> IHtml
 navigation links = do
   msg <- getI18N
   return $ H.div ! A.id "menu" $ H.ul $ mapM_ (i18n msg . linkToPage) links

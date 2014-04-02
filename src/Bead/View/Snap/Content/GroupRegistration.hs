@@ -13,12 +13,10 @@ import           Bead.Controller.UserStories (availableGroups, attendedGroups)
 import qualified Bead.Controller.Pages as Pages
 import           Bead.View.Snap.Content
 
-groupRegistration :: Content
-groupRegistration = getPostContentHandler groupRegistrationPage postGroupReg
+groupRegistration = ViewModifyHandler groupRegistrationPage postGroupReg
 
-unsubscribeFromCourse :: Content
 unsubscribeFromCourse =
-  postContentHandler (UnsubscribeFromCourse <$> getParameter unsubscribeUserGroupKeyPrm)
+  ModifyHandler (UnsubscribeFromCourse <$> getParameter unsubscribeUserGroupKeyPrm)
 
 data GroupRegData = GroupRegData {
     groups :: [(GroupKey, GroupDesc)]

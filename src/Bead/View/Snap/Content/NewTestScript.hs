@@ -33,11 +33,11 @@ pageDataCata
     Create cs    -> create cs
     Modify cn tk ts -> modify cn tk ts
 
-newTestScript :: Content
-newTestScript = getPostContentHandler newTestScriptPage postNewTestScript
+newTestScript :: ViewModifyHandler
+newTestScript = ViewModifyHandler newTestScriptPage postNewTestScript
 
-modifyTestScript :: Content
-modifyTestScript = getPostContentHandler modifyTestScriptPage postModifyTestScript
+modifyTestScript :: ViewModifyHandler
+modifyTestScript = ViewModifyHandler modifyTestScriptPage postModifyTestScript
 
 newTestScriptPage :: GETContentHandler
 newTestScriptPage = withUserState $ \s -> do

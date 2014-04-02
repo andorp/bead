@@ -17,8 +17,7 @@ import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-courseAdmin :: Content
-courseAdmin = getContentHandler courseAdminPage
+courseAdmin = ViewHandler courseAdminPage
 
 data PageData = PageData {
     courses     :: [(CourseKey, Course)]
@@ -86,8 +85,8 @@ courseAdminContent info = do
 
 -- * Create group
 
-createGroup :: Content
-createGroup = postContentHandler submitGroup
+createGroup :: ModifyHandler
+createGroup = ModifyHandler submitGroup
 
 submitGroup :: POSTContentHandler
 submitGroup = do
@@ -97,8 +96,8 @@ submitGroup = do
 
 -- * Assign GroupAdmin to a group
 
-assignGroupAdmin :: Content
-assignGroupAdmin = postContentHandler submitGroupAdmin
+assignGroupAdmin :: ModifyHandler
+assignGroupAdmin = ModifyHandler submitGroupAdmin
 
 submitGroupAdmin :: POSTContentHandler
 submitGroupAdmin = UA.CreateGroupAdmin
