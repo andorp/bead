@@ -107,7 +107,7 @@ instance InRole UserState where
   isStudent = userStateCata False False False (\_u _p _n role _t _tz _s -> isStudent role)
 
 -- | The actual page that corresponds to the user's state
-actualPage :: UserState -> Page ()
+actualPage :: UserState -> PageDesc
 actualPage = userStateCata login' login' login' (\_u page _n _r _t _tz _s -> page)
   where
     login' = login ()

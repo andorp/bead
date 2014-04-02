@@ -297,7 +297,7 @@ hiddenTableLine value = H.tr . H.td $ value
 empty :: Html
 empty = return ()
 
-linkText :: P.Page a -> Translation String
+linkText :: P.Page a b c d -> Translation String
 linkText = P.pageCata
   (c $ Msg_LinkText_Login "Login")
   (c $ Msg_LinkText_Logout "Logout")
@@ -341,17 +341,17 @@ linkText = P.pageCata
     c2 = c . const
     c3 = c2 . const
 
-linkToPage :: P.Page a -> IHtml
+linkToPage :: P.Page a b c d -> IHtml
 linkToPage g = do
   msg <- getI18N
   return $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString $ msg $ linkText g
 
-linkToPageBlank :: P.Page a -> IHtml
+linkToPageBlank :: P.Page a b c d -> IHtml
 linkToPageBlank g = do
   msg <- getI18N
   return $ H.a ! A.href (routeOf g) ! A.target "_blank" ! A.id (fieldName g) $ fromString $ msg $ linkText g
 
-linkToPageWithText :: P.Page a -> String -> Html
+linkToPageWithText :: P.Page a b c d -> String -> Html
 linkToPageWithText g t = H.p $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString t
 
 link :: String -> String -> Html
@@ -527,7 +527,7 @@ invariants :: Invariants P.PageDesc
 invariants = Invariants [
     ("Page link text must be defined: ", \p -> length (linkText' p) > 0)
   ] where
-      linkText' :: P.Page a -> String
+      linkText' :: P.Page a b c d -> String
       linkText' = trans . linkText
 
 #endif

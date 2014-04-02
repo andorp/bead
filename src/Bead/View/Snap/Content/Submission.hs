@@ -18,8 +18,7 @@ import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-submission :: Content
-submission = getPostContentHandler submissionPage submissionPostHandler
+submission = ViewModifyHandler submissionPage submissionPostHandler
 
 data PageData = PageData {
     asKey   :: AssignmentKey

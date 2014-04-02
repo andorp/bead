@@ -2,10 +2,12 @@
 {-# LANGUAGE DeriveFunctor #-}
 module Bead.Controller.Pages where
 
+import Control.Monad (join)
+import Control.Applicative ((<$>))
+
 import qualified Bead.Domain.Entities      as E
 import           Bead.Domain.Relationships as R
 
-import Control.Monad (join)
 
 #ifdef TEST
 import Bead.Invariants (Invariants(..))
@@ -21,10 +23,10 @@ data ViewPage a
   | CourseOverview CourseKey a
   | EvaluationTable a
   | ViewAssignment AssignmentKey a
-  | Submission a
   | SubmissionList a
-  | SubmissionDetails AssignmentKey SubmissionKey a
   | UserSubmissions a
+  | Administration a
+  | CourseAdmin a
   deriving (Eq, Ord, Show, Functor)
 
 viewPageCata
@@ -34,10 +36,10 @@ viewPageCata
   courseOverview
   evaluationTable
   viewAssignment
-  submission
   submissionList
-  submissionDetails
   userSubmissions
+  administration
+  courseAdmin
   p = case p of
     Login a -> login a
     Logout a -> logout a
@@ -45,10 +47,10 @@ viewPageCata
     CourseOverview ck a -> courseOverview ck a
     EvaluationTable a -> evaluationTable a
     ViewAssignment ak a -> viewAssignment ak a
-    Submission a -> submission a
     SubmissionList a -> submissionList a
-    SubmissionDetails ak sk a -> submissionDetails ak sk a
     UserSubmissions a -> userSubmissions a
+    Administration a -> administration a
+    CourseAdmin a -> courseAdmin a
 
 viewPageValue :: ViewPage a -> a
 viewPageValue = viewPageCata
@@ -58,13 +60,12 @@ viewPageValue = viewPageCata
   cid -- courseOverview
   id -- evaluationTable
   cid -- viewAssignment
-  id -- submission
   id -- submissionList
-  c2id -- submissionDetails
   id -- userSubmissions
+  id -- administration
+  id -- courseAdmin
   where
     cid = const id
-    c2id = const . cid
 
 -- User View pages are rendered using the data stored in the
 -- persistence and some temporary data given by the user. Mainly
@@ -97,8 +98,6 @@ userViewPageValue = userViewPageCata
 -- stored in the persistence.
 data ViewModifyPage a
   = Profile a
-  | Administration a
-  | CourseAdmin a
   | Evaluation SubmissionKey a
   | ModifyEvaluation SubmissionKey EvaluationKey a
   | NewGroupAssignment GroupKey a
@@ -109,12 +108,13 @@ data ViewModifyPage a
   | NewTestScript a
   | ModifyTestScript TestScriptKey a
   | UploadFile a
+  | SetUserPassword a
+  | SubmissionDetails AssignmentKey SubmissionKey a
+  | Submission a
   deriving (Eq, Ord, Show, Functor)
 
 viewModifyPageCata
   profile
-  administration
-  courseAdmin
   evaluation
   modifyEvaluation
   newGroupAssignment
@@ -125,10 +125,11 @@ viewModifyPageCata
   newTestScript
   modifyTestScript
   uploadFile
+  setUserPassword
+  submissionDetails
+  submission
   p = case p of
     Profile a -> profile a
-    Administration a -> administration a
-    CourseAdmin a -> courseAdmin a
     Evaluation sk a -> evaluation sk a
     ModifyEvaluation sk ek a -> modifyEvaluation sk ek a
     NewGroupAssignment gk a -> newGroupAssignment gk a
@@ -139,12 +140,13 @@ viewModifyPageCata
     NewTestScript a -> newTestScript a
     ModifyTestScript tk a -> modifyTestScript tk a
     UploadFile a -> uploadFile a
+    SetUserPassword a -> setUserPassword a
+    SubmissionDetails ak sk a -> submissionDetails ak sk a
+    Submission a -> submission a
 
 viewModifyPageValue :: ViewModifyPage a -> a
 viewModifyPageValue = viewModifyPageCata
   id -- profile
-  id -- administration
-  id -- courseAdmin
   cid -- evaluation
   c2id -- modifyEvaluation
   cid -- newGroupAssignment
@@ -155,6 +157,9 @@ viewModifyPageValue = viewModifyPageCata
   id -- newTestScript
   cid -- modifyTestScript
   id -- uploadFile
+  id -- setUserPassword
+  c2id -- submissionDetails
+  id -- submission
   where
     cid = const id
     c2id = const . cid
@@ -168,7 +173,6 @@ data ModifyPage a
   | AssignCourseAdmin a
   | AssignGroupAdmin a
   | ChangePassword a
-  | SetUserPassword a
   | CommentFromEvaluation R.SubmissionKey a
   | CommentFromModifyEvaluation R.SubmissionKey R.EvaluationKey a
   | DeleteUsersFromCourse R.CourseKey a
@@ -182,7 +186,6 @@ modifyPageCata
   assignCourseAdmin
   assignGroupAdmin
   changePassword
-  setUserPassword
   commentFromEvaluation
   commentFromModifyEvaluation
   deleteUsersFromCourse
@@ -194,7 +197,6 @@ modifyPageCata
     AssignCourseAdmin a -> assignCourseAdmin a
     AssignGroupAdmin a -> assignGroupAdmin a
     ChangePassword a -> changePassword a
-    SetUserPassword a -> setUserPassword a
     CommentFromEvaluation sk a -> commentFromEvaluation sk a
     CommentFromModifyEvaluation sk ek a -> commentFromModifyEvaluation sk ek a
     DeleteUsersFromCourse ck a -> deleteUsersFromCourse ck a
@@ -208,7 +210,6 @@ modifyPageValue = modifyPageCata
   id -- assignCourseAdmin
   id -- assignGroupAdmin
   id -- changePassword
-  id -- setUserPassword
   cid -- commentFromEvaluation
   c2id -- commentFromModifyEvaluation
   cid -- deleteUsersFromCourse
@@ -218,14 +219,28 @@ modifyPageValue = modifyPageCata
     cid = const id
     c2id = const . cid
 
-data Page a
-  = View (ViewPage a)
-  | UserView (UserViewPage a)
-  | ViewModify (ViewModifyPage a)
-  | Modify (ModifyPage a)
-  deriving (Eq, Ord, Show, Functor)
+-- The kind of the possible page types
+data Page a b c d
+  = View       (ViewPage a)
+  | UserView   (UserViewPage b)
+  | ViewModify (ViewModifyPage c)
+  | Modify     (ModifyPage d)
+  deriving (Eq, Ord, Show)
 
-pageCata'
+liftPK
+  view
+  userView
+  viewModify
+  modify
+  v = case v of
+    View v       -> View       $ view v
+    UserView u   -> UserView   $ userView u
+    ViewModify v -> ViewModify $ viewModify v
+    Modify m     -> Modify     $ modify m
+
+pfmap f0 f1 f2 f3 = liftPK (fmap f0) (fmap f1) (fmap f2) (fmap f3)
+
+pageKindCata
   view
   userView
   viewModify
@@ -236,10 +251,15 @@ pageCata'
     ViewModify p -> viewModify p
     Modify p -> modify p
 
-pageValue :: Page a -> a
+pageCata' = pageKindCata
+
+pageValue :: Page a a a a -> a
 pageValue = pageCata' viewPageValue userViewPageValue viewModifyPageValue modifyPageValue
 
-type PageDesc = Page ()
+type PageDesc = Page () () () ()
+
+pageToPageDesc = pfmap unit unit unit unit where
+  unit = const ()
 
 login                   = View . Login
 logout                  = View . Logout
@@ -247,18 +267,16 @@ home                    = View . Home
 courseOverview ck       = View . CourseOverview ck
 evaluationTable         = View . EvaluationTable
 viewAssignment ak       = View . ViewAssignment ak
-submission              = View . Submission
 submissionList          = View . SubmissionList
-submissionDetails ak sk = View . SubmissionDetails ak sk
 userSubmissions         = View . UserSubmissions
+administration          = View . Administration
+courseAdmin             = View . CourseAdmin
 
 newGroupAssignmentPreview gk  = UserView . NewGroupAssignmentPreview gk
 newCourseAssignmentPreview ck = UserView . NewCourseAssignmentPreview ck
 modifyAssignmentPreview ak    = UserView . ModifyAssignmentPreview ak
 
 profile                = ViewModify . Profile
-administration         = ViewModify . Administration
-courseAdmin            = ViewModify . CourseAdmin
 evaluation sk          = ViewModify . Evaluation sk
 modifyEvaluation sk ek = ViewModify . ModifyEvaluation sk ek
 newGroupAssignment gk  = ViewModify . NewGroupAssignment gk
@@ -269,13 +287,15 @@ userDetails            = ViewModify . UserDetails
 newTestScript          = ViewModify . NewTestScript
 modifyTestScript tk    = ViewModify . ModifyTestScript tk
 uploadFile             = ViewModify . UploadFile
+setUserPassword        = ViewModify . SetUserPassword
+submissionDetails ak sk = ViewModify . SubmissionDetails ak sk
+submission              = ViewModify . Submission
 
 createCourse      = Modify . CreateCourse
 createGroup       = Modify . CreateGroup
 assignCourseAdmin = Modify . AssignCourseAdmin
 assignGroupAdmin  = Modify . AssignGroupAdmin
 changePassword    = Modify . ChangePassword
-setUserPassword   = Modify . SetUserPassword
 commentFromEvaluation sk = Modify . CommentFromEvaluation sk
 commentFromModifyEvaluation sk ek = Modify . CommentFromModifyEvaluation sk ek
 deleteUsersFromCourse ck          = Modify . DeleteUsersFromCourse ck
@@ -326,8 +346,8 @@ pageCata
     (View (Logout a)) -> logout a
     (View (Home a)) -> home a
     (ViewModify (Profile a)) -> profile a
-    (ViewModify (Administration a)) -> administration a
-    (ViewModify (CourseAdmin a)) -> courseAdmin a
+    (View (Administration a)) -> administration a
+    (View (CourseAdmin a)) -> courseAdmin a
     (View (CourseOverview ck a)) -> courseOverview ck a
     (View (EvaluationTable a)) -> evaluationTable a
     (ViewModify (Evaluation sk a)) -> evaluation sk a
@@ -339,9 +359,9 @@ pageCata
     (UserView (NewGroupAssignmentPreview gk a)) -> newGroupAssignmentPreview gk a
     (UserView (NewCourseAssignmentPreview ck a)) -> newCourseAssignmentPreview ck a
     (UserView (ModifyAssignmentPreview ak a)) -> modifyAssignmentPreview ak a
-    (View (Submission a)) -> submission a
+    (ViewModify (Submission a)) -> submission a
     (View (SubmissionList a)) -> submissionList a
-    (View (SubmissionDetails ak sk a)) -> submissionDetails ak sk a
+    (ViewModify (SubmissionDetails ak sk a)) -> submissionDetails ak sk a
     (ViewModify (GroupRegistration a)) -> groupRegistration a
     (ViewModify (UserDetails a)) -> userDetails a
     (View (UserSubmissions a)) -> userSubmissions a
@@ -353,7 +373,7 @@ pageCata
     (Modify (AssignCourseAdmin a)) -> assignCourseAdmin a
     (Modify (AssignGroupAdmin a)) -> assignGroupAdmin a
     (Modify (ChangePassword a)) -> changePassword a
-    (Modify (SetUserPassword a)) -> setUserPassword a
+    (ViewModify (SetUserPassword a)) -> setUserPassword a
     (Modify (CommentFromEvaluation sk a)) -> commentFromEvaluation sk a
     (Modify (CommentFromModifyEvaluation sk ek a)) -> commentFromModifyEvaluation sk ek a
     (Modify (DeleteUsersFromCourse ck a)) -> deleteUsersFromCourse ck a
@@ -439,6 +459,7 @@ constantsP
       (\gk _ -> unsubscribeFromCourse gk unsubscribeFromCourse_)
   where
     c = const
+
 
 liftsP
   login_
@@ -529,10 +550,10 @@ isHome _ = False
 isProfile (ViewModify (Profile _)) = True
 isProfile _ = False
 
-isAdministration (ViewModify (Administration _)) = True
+isAdministration (View (Administration _)) = True
 isAdministration _ = False
 
-isCourseAdmin (ViewModify (CourseAdmin _)) = True
+isCourseAdmin (View (CourseAdmin _)) = True
 isCourseAdmin _ = False
 
 isCourseOverview (View (CourseOverview _ _)) = True
@@ -568,13 +589,13 @@ isNewCourseAssignmentPreview _ = False
 isModifyAssignmentPreview (UserView (ModifyAssignmentPreview _ _)) = True
 isModifyAssignmentPreview _ = False
 
-isSubmission (View (Submission _)) = True
+isSubmission (ViewModify (Submission _)) = True
 isSubmission _ = False
 
 isSubmissionList (View (SubmissionList _)) = True
 isSubmissionList _ = False
 
-isSubmissionDetails (View (SubmissionDetails _ _ _)) = True
+isSubmissionDetails (ViewModify (SubmissionDetails _ _ _)) = True
 isSubmissionDetails _ = False
 
 isGroupRegistration (ViewModify (GroupRegistration _)) = True
@@ -601,7 +622,7 @@ isCreateCourse _ = False
 isCreateGroup (Modify (CreateGroup _)) = True
 isCreateGroup _ = False
 
-isAssignCourseAdmin (Modify (AssignCourseAdmin _))= True
+isAssignCourseAdmin (Modify (AssignCourseAdmin _)) = True
 isAssignCourseAdmin _ = False
 
 isAssignGroupAdmin (Modify (AssignGroupAdmin _)) = True
@@ -610,7 +631,7 @@ isAssignGroupAdmin _ = False
 isChangePassword (Modify (ChangePassword _)) = True
 isChangePassword _ = False
 
-isSetUserPassword (Modify (SetUserPassword _))= True
+isSetUserPassword (ViewModify (SetUserPassword _)) = True
 isSetUserPassword _ = False
 
 isCommentFromEvaluation (Modify (CommentFromEvaluation _ _)) = True
@@ -630,7 +651,7 @@ isUnsubscribeFromCourse _ = False
 
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
-isPage :: [Page a -> Bool] -> Page a -> Bool
+isPage :: [Page a b c d -> Bool] -> Page a b c d -> Bool
 isPage fs p = or $ map ($ p) fs
 
 -- Shortcut binary or for the given predicates
@@ -705,19 +726,11 @@ dataModificationPages = [
   , isUnsubscribeFromCourse
   ]
 
--- Temporary data is rendered on the UI depending
--- on the user input. Temporary data pages, does
--- not redirect to a view page after submission
-tempViewPages = [
-    isNewGroupAssignmentPreview
-  , isNewCourseAssignmentPreview
-  , isModifyAssignmentPreview
-  ]
-
--- Returns True if the given page is a temporary view page
--- otherwise False
-isTemporaryViewPage :: Page a -> Bool
-isTemporaryViewPage p = or (map ($ p) tempViewPages)
+isUserViewPage :: Page a b c d -> Bool
+isUserViewPage = pageCata' false true false false
+  where
+    false = const False
+    true  = const True
 
 -- Pages that not part of the site content
 
@@ -740,7 +753,7 @@ menuPageList = map ($ ()) [
 
 -- Returns a page predicate function depending on the role, which page transition is allowed,
 -- from a given page
-allowedPage :: E.Role -> (Page a -> Bool)
+allowedPage :: E.Role -> (Page a b c d -> Bool)
 allowedPage = E.roleCata student groupAdmin courseAdmin admin
   where
     student     = isPage regularPages
@@ -770,8 +783,6 @@ parentPage = pageCata'
     c2 = const . const
     viewModifyParent = Just . viewModifyPageCata
       profile -- profile
-      home    -- administration
-      home    -- courseAdmin
       (const evaluationTable) -- evaluation
       (c2 evaluationTable) -- modifyEvaluation
       (const home) -- newGroupAssignment
@@ -782,6 +793,9 @@ parentPage = pageCata'
       home           -- newTestScript
       (const home)   -- modifyTestScript
       uploadFile     -- uploadFile
+      home           -- setUserPassword
+      submissionDetails -- submissionDetails
+      home           -- submission
 
     modifyParent = Just . modifyPageCata
       administration -- createCourse
@@ -789,7 +803,6 @@ parentPage = pageCata'
       administration -- assignCourseAdmin
       courseAdmin    -- assignGroupAdmin
       profile        -- changePassword
-      home           -- setUserPassword
       evaluation     -- commentFromEvaluation
       modifyEvaluation -- commentFromModifyEvaluation
       (const home)     -- deleteUsersFromCourse
@@ -800,13 +813,15 @@ parentPage = pageCata'
 
 -- * Invariants
 
+invariants :: Invariants PageDesc
 invariants = Invariants [
     ("Regular, Admin and NonMenu pages should cover all pages",
-      isPage (join [ regularPages, groupAdminPages, courseAdminPages
-                   , adminPages, dataModificationPages, menuPagePred
-                   , nonActivePages ]))
+      isPage ((join [ regularPages, groupAdminPages, courseAdminPages
+                    , adminPages, dataModificationPages, menuPagePred
+                    , nonActivePages ])))
   ] where
       menuPagePred = [flip elem menuPageList]
+
 
 #endif
 

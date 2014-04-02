@@ -13,8 +13,7 @@ import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.ResetPassword as P
 import qualified Bead.View.Snap.DataBridge as B
 
-setUserPassword :: Content
-setUserPassword = getPostContentHandler setUserPasswordPage setUsrPwd
+setUserPassword = ViewModifyHandler setUserPasswordPage setUsrPwd
 
 setUserPasswordPage :: GETContentHandler
 setUserPasswordPage = withUserState $ \s -> do

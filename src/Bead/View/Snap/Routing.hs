@@ -79,7 +79,7 @@ pages = do
   page <- requestToPageHandler path
   case page of
     -- No Page value is calculated from the request
-    Nothing -> logoutAndErrorPage "Pages: Invalid route in request"
+    Nothing -> logoutAndErrorPage "Invalid route in request"
     Just pd
       | P.isLogin pd -> loginSubmit
       | otherwise ->  handlePage (pageContent pd)
@@ -223,14 +223,29 @@ runPOSTHandler onError p h
       (hfailure . onError)
       (\_ -> return HSuccess)
       (do userAction <- h
-          let tempView = P.isTemporaryViewPage p
+          let userView = P.isUserViewPage p
           userStory $ do
             userStoryFor userAction
-            unless tempView . (maybe (return ()) S.changePage) . P.parentPage $ p
+            unless userView $ changeToParentPage p
           lift . with sessionManager $ do
             touchSession
             commitSession
-          unless tempView $ redirectToParentPage p)
+          unless userView $ redirectToParentPage p)
+  where
+    changeToParentPage = maybe (return ()) S.changePage . P.parentPage
+
+runUserViewPOSTHandler
+  :: (ContentHandlerError -> Handler App App ())
+  -> HandlerError App App ()
+  -> Handler App App HandlerResult
+runUserViewPOSTHandler onError userViewHandler
+  = evalHandlerError
+      (hfailure . onError)
+      (\_ -> return HSuccess)
+      (do userViewHandler
+          lift . with sessionManager $ do
+            touchSession
+            commitSession)
 
 logoutAndResetRoute :: Handler App App ()
 logoutAndResetRoute = do
@@ -250,63 +265,66 @@ logoutAndErrorPage msg = do
    * When a user submits information with a POST request, from the submitted information
    we calculate the appropiate user action and runs it
 -}
-handlePage :: P.Page Content -> Handler App App ()
-handlePage page = method GET handleRenderPage <|> method POST handleSubmitPage
-  where
-    p = (const ()) <$> page
-    failure, success :: (Monad m) => a -> m HandlerResult
-    failure = const . return $ HFailure
-    success = const . return $ HSuccess
-    forgetResult h = h >> return ()
+handlePage :: PageHandler -> Handler App App ()
+handlePage page = P.pageKindCata view userView viewModify modify page where
+  pageDesc = P.pageToPageDesc page
 
-    loggedInFilter m = userIsLoggedInFilter
-      m
-      -- Not logged in user tries to get some data
-      logoutAndResetRoute
-      -- Some internal error happened
-      logoutAndErrorPage
+  loggedInFilter m = userIsLoggedInFilter
+    m
+    -- Not logged in user tries to get some data
+    logoutAndResetRoute
+    -- Some internal error happened
+    logoutAndErrorPage
 
-    handleRenderPage :: Handler App App ()
-    handleRenderPage = loggedInFilter $ do
-      -- If the GET handler is not found for the given page, the logout action is
-      -- required as the user tries to do some invalid operation.
-      case (get $ P.pageValue page) of
-         Nothing -> hsuccess $ do
-           logMessage DEBUG $ "No GET handler found for " ++ show p
-           logoutAndResetRoute
-         Just getHandler -> runGETHandler errorPage $ changePage getHandler
+  invalidPOSTMethodCall = do
+     logMessage DEBUG $ "Invalid POST handler " ++ show pageDesc
+     logoutAndResetRoute
 
-      where
-        changePage h =
-          allowedPageByTransition p
-            ((lift $ runStory $ S.changePage p) >> h)
-            notAllowedPage
+  invalidGETMethodCall = do
+     logMessage DEBUG $ "Invalid GET handler" ++ show pageDesc
+     logoutAndResetRoute
 
-        notAllowedPage = withUserState $ \s -> do
-          lift $ logMessage ERROR . join $ [
-              usernameCata show (user s)
-            , ": Page transition is not allowed "
-            , show (SC.page s), " -> ", show p
-            ]
-          lift $ logoutAndResetRoute
+  changePage handler =
+    allowedPageByTransition pageDesc
+      ((lift $ runStory $ S.changePage pageDesc) >> handler)
+      notAllowedPage
 
+  notAllowedPage = withUserState $ \s -> do
+    lift $ logMessage ERROR . join $ [
+        usernameCata show (user s)
+      , ": Page transition is not allowed "
+      , show (SC.page s), " -> ", show pageDesc
+      ]
+    lift $ logoutAndResetRoute
 
-    handleSubmitPage :: Handler App App ()
-    handleSubmitPage = loggedInFilter $ do
-      -- If the POST handler is not found for the given page, logout action is
-      -- required as the user tries to do some invalid operation
-      case (post $ P.pageValue page) of
-         -- POST handler is not found
-         Nothing -> hsuccess $ do
-           logMessage DEBUG $ "No POST handler found for " ++ show p
-           logoutAndResetRoute
-         -- POST handler is found
-         Just handlerUserAction -> do
-           runStory $ S.changePage p
-           runPOSTHandler errorPage p handlerUserAction
+  get  h = method GET h <|> method POST invalidPOSTMethodCall
+  post h = method GET invalidGETMethodCall <|> method POST h
+  getPost g p = method GET g <|> method POST p
+
+  runGetOrError h = runGETHandler errorPage (changePage h)
+
+  runPostOrError h = do
+    runStory $ S.changePage pageDesc
+    runPOSTHandler errorPage pageDesc h
+
+  runUserViewPostOrError h = do
+    runStory $ S.changePage pageDesc
+    runUserViewPOSTHandler errorPage h
+
+  view = viewHandlerCata (get . loggedInFilter . runGetOrError) . P.viewPageValue
+
+  userView = userViewHandlerCata (post . loggedInFilter . runUserViewPostOrError) . P.userViewPageValue
+
+  viewModify = viewModifyHandlerCata
+    (\get post -> getPost (loggedInFilter $ runGetOrError  get)
+                          (loggedInFilter $ runPostOrError post))
+    . P.viewModifyPageValue
+
+  modify = modifyHandlerCata (post . loggedInFilter . runPostOrError) . P.modifyPageValue
+
 
 allowedPageByTransition
-  :: P.Page a -> HandlerError App App a -> HandlerError App App a -> HandlerError App App a
+  :: P.Page a b c d -> HandlerError App App a -> HandlerError App App a -> HandlerError App App a
 allowedPageByTransition p allowed restricted = withUserState $ \state ->
   let allow = P.allowedPage (role state) p
   in case allow of

@@ -16,8 +16,7 @@ import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-administration :: Content
-administration = getContentHandler administrationPage
+administration = ViewHandler administrationPage
 
 data PageInfo = PageInfo {
     courses      :: [(CourseKey, Course)]
@@ -95,8 +94,8 @@ administrationContent info = do
 
 -- Add Course Admin
 
-assignCourseAdmin :: Content
-assignCourseAdmin = postContentHandler submitCourse
+assignCourseAdmin :: ModifyHandler
+assignCourseAdmin = ModifyHandler submitCourse
 
 submitCourse :: POSTContentHandler
 submitCourse = UA.CreateCourseAdmin

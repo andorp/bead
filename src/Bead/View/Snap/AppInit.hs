@@ -24,7 +24,6 @@ import           Bead.View.Snap.Application as A
 import           Bead.View.Snap.DataDir
 import           Bead.View.Snap.Dictionary (Language(..))
 import           Bead.View.Snap.DictionaryLoader (loadDictionaries)
-import           Bead.View.Snap.ErrorPage (msgErrorPage)
 import           Bead.View.Snap.Registration (createAdminUser)
 import           Bead.View.Snap.Routing
 

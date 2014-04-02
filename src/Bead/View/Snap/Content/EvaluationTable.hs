@@ -18,8 +18,8 @@ import           Bead.View.Snap.Content
 
 import qualified Text.Blaze.Html5 as H
 
-evaluationTable :: Content
-evaluationTable = getContentHandler evaluationTablePage
+evaluationTable :: ViewHandler
+evaluationTable = ViewHandler evaluationTablePage
 
 evaluationTablePage :: GETContentHandler
 evaluationTablePage = withUserState $ \s -> do

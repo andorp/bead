@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Content.Profile (
-    profile, changePassword
+    profile
+  , changePassword
   ) where
 
 import           Data.String
@@ -18,8 +19,8 @@ import           Bead.View.Snap.Dictionary
 import           Bead.View.Snap.ResetPassword
 import           Bead.View.Snap.Session (setLanguageInSession)
 
-profile :: Content
-profile = getPostContentHandler profilePage changeUserDetails
+
+profile = ViewModifyHandler profilePage changeUserDetails
 
 profilePage :: GETContentHandler
 profilePage = withUserState $ \s -> do
@@ -65,9 +66,7 @@ profileContent user languages = do
     langValue (lang,info)  = (languageCata id lang, languageName info)
     langDef l (lang,_info) = l == lang
 
--- TODO: I18N
-changePassword :: Content
-changePassword = postContentHandler $ do
+changePassword = ModifyHandler $ do
   oldPwd <- getParameter oldPasswordPrm
   newPwd <- getParameter newPasswordPrm
   checkCurrentAuthPassword oldPwd

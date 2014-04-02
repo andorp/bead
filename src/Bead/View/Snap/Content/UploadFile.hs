@@ -22,7 +22,7 @@ newtype PageData = PageData [(UsersFile, FileInfo)]
 
 pageDataCata f (PageData x) = f x
 
-uploadFile = getPostContentHandler getUploadFile postUploadFile
+uploadFile = ViewModifyHandler getUploadFile postUploadFile
 
 getUploadFile :: GETContentHandler
 getUploadFile = withUserState $ \s -> do
