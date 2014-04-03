@@ -181,6 +181,7 @@ openedSubmissionInfo u = do
               | (isGroupAsg ak && isGroupUser student)   = os { osAdminedGroup  = s:osAdminedGroup os  }
               | (isRelatedCourseAsg ak && isRelatedCourseUser student) = os { osRelatedCourse = s:osRelatedCourse os }
               | (isCourseAsg ak && isRelatedCourseUser student) = os { osRelatedCourse = s:osRelatedCourse os }
+              | (isCourseAsg ak && isCourseUser student) = os { osRelatedCourse = s:osRelatedCourse os }
               | otherwise = os
         in separate (eAssignmentKey sd) (eUsername sd)
   return $ foldl filterSubmissions empty submissionDescs
