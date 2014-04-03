@@ -49,6 +49,9 @@ borderStyle s = create . join $ ["border-style: ", s]
 border :: Int -> String -> String -> StyleElement
 border width style color = create . join $ ["border: ", show width, "px ", style, " ", color]
 
+color :: String -> StyleElement
+color c = create $ join ["color: ", c]
+
 backgroundColor :: String -> StyleElement
 backgroundColor c = create . join $ ["background-color: ", c]
 
