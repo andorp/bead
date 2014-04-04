@@ -317,7 +317,7 @@ linkText = P.pageCata
   (const $ Msg_LinkText_NewGroupAssignmentPreview "New Group Assignment")
   (const $ Msg_LinkText_NewCourseAssignmentPreview "New Course Assignment")
   (const $ Msg_LinkText_ModifyAssignmentPreview "Modify Assignment")
-  (Msg_LinkText_Submission "Submit")
+  (Msg_LinkText_Submission "Submission")
   (Msg_LinkText_SubmissionList "Submissions")
   (const2 $ Msg_LinkText_SubmissionDetails "Submission Details")
   (Msg_LinkText_GroupRegistration "Group Registration")
