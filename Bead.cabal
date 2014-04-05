@@ -79,6 +79,7 @@ Executable Bead
     snap-server,
     snap-blaze,
     snaplet-fay,
+    stm,
     syb,
     temporary,
     text,

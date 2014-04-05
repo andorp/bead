@@ -30,6 +30,8 @@ import qualified Data.Map as Map
 import Data.IORef (IORef)
 import qualified Data.IORef as Ref
 import Control.Concurrent.MVar
+import Control.Concurrent.STM
+import Control.Concurrent.STM.TVar
 import Control.Monad (liftM)
 import Control.Monad.Transaction.TIO (TIO)
 
@@ -141,34 +143,25 @@ scRunPersist sc m =
 
 ioUserContainer :: IO (UserContainer a)
 ioUserContainer = do
-  v <- newMVar Map.empty
+  v <- newTVarIO Map.empty
 
-  let mvIsUserLoggedIn name = modifyMVar v $ \m -> do
-        let isMember = Map.member name m
-        return (m, isMember)
+  let mvIsUserLoggedIn name = atomically $
+        fmap (Map.member name) (readTVar v)
 
-      mvUserLogsIn name val = modifyMVar v $ \m -> do
-        -- Performace: Do not copy the whole value, again
-        -- and again, just the reference to it.
-        ref <- Ref.newIORef val
-        let m' = Map.insert name ref m
-        return (m', ())
+      mvUserLogsIn name val = atomically $
+        withTVar v (Map.insert name val)
 
-      mvUserLogsOut name = modifyMVar v $ \m -> do
-        let m' = Map.delete name m
-        return (m', ())
+      mvUserLogsOut name = atomically $
+        withTVar v (Map.delete name)
 
-      mvUserData name = modifyMVar v $ \m -> do
-        x <- case Map.lookup name m of
-          Nothing  -> return Nothing
-          Just ref -> liftM Just $ Ref.readIORef ref
-        return (m, x)
+      mvUserData name = atomically $ do
+        fmap (Map.lookup name) (readTVar v)
 
-      mvModifyUserData name f = modifyMVar v $ \m -> do
+      mvModifyUserData name f = atomically $ do
+        m <- readTVar v
         case Map.lookup name m of
-          Nothing  -> return ()
-          Just ref -> Ref.modifyIORef ref f
-        return (m, ())
+          Nothing -> return ()
+          Just x  -> writeTVar v (Map.insert name (f x) m)
 
   return UserContainer {
       isUserLoggedIn = mvIsUserLoggedIn
@@ -177,3 +170,9 @@ ioUserContainer = do
     , userData       = mvUserData
     , modifyUserData = mvModifyUserData
     }
+  where
+    withTVar :: TVar a -> (a -> a) -> STM ()
+    withTVar var f = do
+      x <- readTVar var
+      writeTVar var (f x)
+
