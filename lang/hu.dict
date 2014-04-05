@@ -39,6 +39,9 @@ DictionaryFile {
     , Msg_CourseAdmin_NoGroupAdmins { trans = "Nincsenek oktatók!" }
     , Msg_CourseAdmin_Group { trans = "Csoport" }
     , Msg_CourseAdmin_Admin { trans = "Oktató" }
+    , Msg_CourseAdmin_GroupAdmins_Info { trans = "Az alábbi táblázat(ok) minden sora egy csoport nevét tartalmazza és a csoporthoz hozzárendelt oktatók neptun kódját." }
+    , Msg_CourseAdmin_GroupAdmins_Group { trans = "Csoport" }
+    , Msg_CourseAdmin_GroupAdmins_Admins { trans = "Oktatók" }
     , Msg_Administration_NewCourse { trans = "Új tárgy" }
     , Msg_Administration_PctHelpMessage { trans = "A hallgatók által minimálisan teljesítendő százalék" }
     , Msg_Administration_CreatedCourses { trans = "Tárgyak" }

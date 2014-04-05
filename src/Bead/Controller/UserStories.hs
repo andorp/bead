@@ -17,7 +17,7 @@ import           Bead.View.Snap.Translation
 
 import           Control.Applicative
 import           Control.Exception
-import           Control.Monad (filterM, forM_, when, unless)
+import           Control.Monad hiding (guard)
 import           Control.Monad.Error (Error(..))
 import           Control.Concurrent.MVar
 import qualified Control.Monad.State  as CMS
@@ -307,6 +307,26 @@ courseAdministrators = logAction INFO "lists the course and admins" $ do
     Persist.filterCourses (\_ _ -> True) >>= (mapM $ \(ck,c) -> do
       admins <- mapM Persist.loadUser =<< Persist.courseAdmins ck
       return (c,admins))
+
+-- Produces a list of courses that the user administrates and for all the courses
+-- the list of groups and users who are groups admins for the given group
+groupAdministrators :: UserStory [(Course, [(Group, [User])])]
+groupAdministrators = logAction INFO "lists the groups and admins" $ do
+  authorize P_Open P_Course
+  authorize P_Open P_Group
+  authorize P_Open P_User
+  u <- username
+  persistence $ do
+    courses <- Persist.administratedCourses u
+    forM courses $ \(ck,course) -> do
+      gks <- Persist.groupKeysOfCourse ck
+      groups <- mapM groupAndAdmins gks
+      return (course, groups)
+  where
+    groupAndAdmins gk = do
+      g <- Persist.loadGroup gk
+      as <- mapM Persist.loadUser =<< Persist.groupAdmins gk
+      return (g,as)
 
 -- Deletes the given users from the given course if the current user is a course
 -- admin for the given course, otherwise redirects to the error page

@@ -5,6 +5,8 @@ module Bead.View.Snap.Content.CourseAdmin (
   , assignGroupAdmin
   ) where
 
+import           Data.Function (on)
+import           Data.List (intersperse, sortBy)
 import           Data.String (fromString)
 
 import qualified Bead.Controller.Pages as Pages
@@ -23,6 +25,7 @@ data PageData = PageData {
     courses     :: [(CourseKey, Course)]
   , groups      :: [(GroupKey, String)]
   , groupAdmins :: [User]
+  , assignedGroups :: [(Course,[(Group,[User])])]
   }
 
 courseAdminPage :: GETContentHandler
@@ -36,10 +39,12 @@ courseAdminPage = withUserState $ \s -> do
       let expandName x y = courseName x ++ " - " ++ groupName y
       return (gkeys `zip` (map (uncurry expandName) courseWithGroups))
     ps <- selectUsers group_admin
+    gs <- groupAdministrators
     return PageData {
         courses     = theCourses
       , groups      = concat theGroups
       , groupAdmins = ps
+      , assignedGroups = gs
       }
   renderDynamicPagelet $ withUserFrame s (courseAdminContent pageData)
   where
@@ -72,6 +77,7 @@ courseAdminContent info = do
                  (valueTextSelection (fieldName selectedGroupAdmin) (groupAdmins info)))
             H.br
             submitButton (fieldName assignGroupAdminBtn) (msg $ Msg_CourseAdmin_AssignAdmin_Button "Assign")
+    groupAdministratorsTable msg (assignedGroups info)
   where
     createGroup = Pages.createGroup ()
     assignGroupAdmin = Pages.assignGroupAdmin ()
@@ -82,6 +88,25 @@ courseAdminContent info = do
     selections s1 s2 = H.tr $ do
       H.td s1
       H.td s2
+
+groupAdministratorsTable :: I18N -> [(Course, [(Group, [User])])] -> H.Html
+groupAdministratorsTable _ [] = return ()
+groupAdministratorsTable i18n cgroups = H.p $ do
+  fromString . i18n $ Msg_CourseAdmin_GroupAdmins_Info
+    "The following table(s) contain(s) the course related groups and the username of the group admins."
+  let cgroups' = sortBy (compare `on` (courseName . fst)) cgroups
+  forM_ cgroups $ \(course, groups) -> do
+    let groups' = sortBy (compare `on` (groupName . fst)) groups
+        cname   = courseName course
+    H.p $ table (fieldName groupAdministratorsTableName) (fieldName groupAdministratorsTableName) # informationalTable $ do
+      H.tr # grayBackground $ H.th $ fromString cname
+      H.tr # grayBackground $ do
+        H.th (fromString . i18n $ Msg_CourseAdmin_GroupAdmins_Group "Group")
+        H.th (fromString . i18n $ Msg_CourseAdmin_GroupAdmins_Admins "Group Admins")
+      forM_ groups' $ \(group, admins) -> do
+        H.tr $ do
+          H.td (fromString $ groupName group)
+          H.td (fromString . concat . intersperse ", " $ map (usernameCata id . u_username) admins)
 
 -- * Create group
 

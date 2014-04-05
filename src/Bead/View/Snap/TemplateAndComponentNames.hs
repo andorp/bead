@@ -290,6 +290,7 @@ resetPasswordTable = TableName "rst-pwd-table"
 profileTable = TableName "profile-table"
 changePasswordTable = TableName "change-password-table"
 courseAdministratorsTableName = TableName "course-administrators-table"
+groupAdministratorsTableName = TableName "group-administrators-table"
 
 newtype HomeField = HomeField { hfFieldName :: String }
 
@@ -433,6 +434,7 @@ fieldList = map fieldName $ join [
   , SFN userTimeZoneField, SFN assignmentForm, SFI changePwdForm, SFI setStudentPwdForm
 
   , SFI regForm, SFI loginForm, SFI regFinalForm, SFN courseAdministratorsTableName
+  , SFN groupAdministratorsTableName
   ]
   ]
 
