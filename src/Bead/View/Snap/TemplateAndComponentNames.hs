@@ -289,6 +289,7 @@ registrationTable = TableName "reg-form-table"
 resetPasswordTable = TableName "rst-pwd-table"
 profileTable = TableName "profile-table"
 changePasswordTable = TableName "change-password-table"
+courseAdministratorsTableName = TableName "course-administrators-table"
 
 newtype HomeField = HomeField { hfFieldName :: String }
 
@@ -431,9 +432,8 @@ fieldList = map fieldName $ join [
   , SFN resetPasswordTable, SFN regPasswordAgain, SFN changeProfileBtn, SFN changePasswordBtn
   , SFN userTimeZoneField, SFN assignmentForm, SFI changePwdForm, SFI setStudentPwdForm
 
-  , SFI regForm, SFI loginForm, SFI regFinalForm
+  , SFI regForm, SFI loginForm, SFI regFinalForm, SFN courseAdministratorsTableName
   ]
---  ], (map SFN P.allPages)
   ]
 
 classList :: [String]

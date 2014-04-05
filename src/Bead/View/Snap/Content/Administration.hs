@@ -4,10 +4,12 @@ module Bead.View.Snap.Content.Administration (
   , assignCourseAdmin
   ) where
 
+import           Data.Function (on)
+import           Data.List
 import           Data.String (fromString)
 
 import qualified Bead.Controller.Pages as Pages
-import           Bead.Controller.UserStories (selectCourses, selectUsers)
+import           Bead.Controller.UserStories
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
@@ -22,18 +24,21 @@ data PageInfo = PageInfo {
     courses      :: [(CourseKey, Course)]
   , admins       :: [User]
   , courseAdmins :: [User]
+  , assignedCourseAdmins :: [(Course, [User])]
   }
 
 administrationPage :: GETContentHandler
 administrationPage = withUserState $ \s -> do
-  (cs,ausers) <- userStory $ do
+  (cs,ausers,assigned) <- userStory $ do
     cs <- selectCourses each
     ausers <- selectUsers adminOrCourseAdmin
-    return (cs,ausers)
+    assigned <- courseAdministrators
+    return (cs,ausers,assigned)
   let info = PageInfo {
       courses = cs
     , admins = filter admin ausers
     , courseAdmins = filter courseAdmin ausers
+    , assignedCourseAdmins = assigned
     }
   renderDynamicPagelet $ withUserFrame s (administrationContent info)
   where
@@ -79,6 +84,7 @@ administrationContent info = do
             valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
             H.br
             submitButton (fieldName assignBtn) (fromString . msg $ Msg_Administration_AssignCourseAdminButton "Assign")
+      courseAdministratorsTable msg (assignedCourseAdmins info)
     H.div $ do
       H.h3 $ (fromString . msg $ Msg_Administration_ChangeUserProfile "Modify users")
       getForm (routeOf userDetails) $ do
@@ -91,6 +97,25 @@ administrationContent info = do
 
     headerCell = H.th # (informationalCell <> grayBackground)
     dataCell   = H.td # informationalCell
+
+courseAdministratorsTable :: I18N -> [(Course,[User])] -> H.Html
+courseAdministratorsTable _ [] = return ()
+courseAdministratorsTable i18n courses = do
+  H.p . fromString . i18n . Msg_Administration_CourseAdmins_Info $ unlines
+    [ "Each line of the following table contains a course and the username of the administrators,"
+    , " that are assigned to the course."
+    ]
+  let courses' = sortBy (compare `on` (courseName . fst)) courses
+  H.p $ table (fieldName courseAdministratorsTableName) (fieldName courseAdministratorsTableName)
+      # informationalTable $ do
+    H.tr # grayBackground $ do
+      H.th (fromString . i18n $ Msg_Administration_CourseAdmins_Course "Course")
+      H.th (fromString . i18n $ Msg_Administration_CourseAdmins_Admins "Administrators")
+    forM_ courses' $ \(course, admins) -> do
+      H.tr $ do
+        H.td . fromString $ courseName course
+        let admins' = sort $ map (usernameCata id . u_username) admins
+        H.td . fromString . concat $ intersperse ", " admins'
 
 -- Add Course Admin
 

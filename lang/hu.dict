@@ -50,6 +50,9 @@ DictionaryFile {
     , Msg_Administration_ChangeUserProfile { trans = "Felhasználó adatainak módosítása" }
     , Msg_Administration_SelectUser { trans = "Kiválasztás" }
     , Msg_Administration_HowToAddMoreAdmins { trans = "További oktatókat a felhasználói adatok módosításával lehet létrehozni, majd ezt követően tudjuk őket a tárgyakhoz rendelni." }
+    , Msg_Administration_CourseAdmins_Info { trans = "A következő táblázat minden sora egy tárgyat és a tárgyhoz rendelt tárgyfelelősök felhasználói nevét tartalmazza." }
+    , Msg_Administration_CourseAdmins_Course { trans = "Tárgy" }
+    , Msg_Administration_CourseAdmins_Admins { trans = "Tárgyfelelősök" }
     , Msg_NewAssignment_Title { trans = "Cím" }
     , Msg_NewAssignment_Title_Default { trans = "Névtelen feladat" }
     , Msg_NewAssignment_SubmissionDeadline { trans = "Beadás ideje" }
