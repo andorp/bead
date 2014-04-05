@@ -64,6 +64,9 @@ translationList =
   , Msg_Administration_ChangeUserProfile ()
   , Msg_Administration_SelectUser ()
   , Msg_Administration_HowToAddMoreAdmins ()
+  , Msg_Administration_CourseAdmins_Info ()
+  , Msg_Administration_CourseAdmins_Course ()
+  , Msg_Administration_CourseAdmins_Admins ()
 
   , Msg_NewAssignment_Title ()
   , Msg_NewAssignment_Title_Default ()

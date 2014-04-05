@@ -57,6 +57,9 @@ data Translation a
   | Msg_Administration_ChangeUserProfile { trans :: a }
   | Msg_Administration_SelectUser { trans :: a }
   | Msg_Administration_HowToAddMoreAdmins { trans :: a }
+  | Msg_Administration_CourseAdmins_Info { trans :: a }
+  | Msg_Administration_CourseAdmins_Course { trans :: a }
+  | Msg_Administration_CourseAdmins_Admins { trans :: a }
 
   | Msg_NewAssignment_Title { trans :: a }
   | Msg_NewAssignment_Title_Default { trans :: a }

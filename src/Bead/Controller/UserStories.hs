@@ -26,7 +26,6 @@ import qualified Control.Monad.Reader as CMR
 import           Control.Monad.Trans
 import           Control.Monad (join)
 import           Prelude hiding (log, userError)
-import qualified Data.ByteString.Char8 as BS
 import qualified Data.ByteString.UTF8  as BsUTF8 (fromString)
 import           Data.Hashable
 import           Data.List (nub)
@@ -298,6 +297,16 @@ createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
   putStatusMessage $ Msg_UserStory_SetCourseAdmin "The user has become a course administrator."
   where
     user = usernameCata id
+
+-- Produces a list of courses and users who administrators for the courses
+courseAdministrators :: UserStory [(Course, [User])]
+courseAdministrators = logAction INFO "lists the course and admins" $ do
+  authorize P_Open P_Course
+  authorize P_Open P_User
+  persistence $ do
+    Persist.filterCourses (\_ _ -> True) >>= (mapM $ \(ck,c) -> do
+      admins <- mapM Persist.loadUser =<< Persist.courseAdmins ck
+      return (c,admins))
 
 -- Deletes the given users from the given course if the current user is a course
 -- admin for the given course, otherwise redirects to the error page
