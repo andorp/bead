@@ -45,6 +45,9 @@ data Translation a
   | Msg_CourseAdmin_NoGroupAdmins { trans :: a }
   | Msg_CourseAdmin_Group { trans :: a }
   | Msg_CourseAdmin_Admin { trans :: a }
+  | Msg_CourseAdmin_GroupAdmins_Info { trans :: a }
+  | Msg_CourseAdmin_GroupAdmins_Group { trans :: a }
+  | Msg_CourseAdmin_GroupAdmins_Admins { trans :: a }
 
   | Msg_Administration_NewCourse { trans :: a }
   | Msg_Administration_PctHelpMessage { trans :: a }

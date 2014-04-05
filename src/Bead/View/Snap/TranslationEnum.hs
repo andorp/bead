@@ -52,7 +52,9 @@ translationList =
   , Msg_CourseAdmin_NoGroupAdmins ()
   , Msg_CourseAdmin_Group ()
   , Msg_CourseAdmin_Admin ()
-
+  , Msg_CourseAdmin_GroupAdmins_Info ()
+  , Msg_CourseAdmin_GroupAdmins_Group ()
+  , Msg_CourseAdmin_GroupAdmins_Admins ()
   , Msg_Administration_NewCourse ()
   , Msg_Administration_PctHelpMessage ()
   , Msg_Administration_CreatedCourses ()
