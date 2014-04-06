@@ -55,19 +55,22 @@ module Bead.View.Snap.RouteOf (
 #endif
   ) where
 
-import Data.String
-import Data.List (intersperse, nub)
-import Control.Monad (join)
+import           Control.Monad (join)
+import           Data.ByteString.Char8 (ByteString)
+import qualified Data.ByteString.Char8 as Char8
+import           Data.List (intersperse)
+import           Data.String
+
+import           Bead.Controller.Pages
+import           Bead.View.Snap.RequestParams
+
 #ifdef TEST
-import Bead.Controller.Pages hiding (invariants, unitTests)
-import Bead.Invariants (Invariants(..), UnitTests(..))
-#else
-import Bead.Controller.Pages
+import           Bead.Invariants (Invariants(..))
 #endif
-import Bead.View.Snap.RequestParams
+
 
 -- Route Path represents the route in the HTTP request
-type RoutePath = String
+type RoutePath = ByteString
 
 loginPath :: RoutePath
 loginPath = "/login"
@@ -190,8 +193,7 @@ type PageRoutePath = Page RoutePath RoutePath RoutePath RoutePath
 
 -- Returns a base path for the given page
 pageRoutePath :: Page a b c d -> PageRoutePath
-pageRoutePath = pfmap fs fs fs fs . r where
-  fs = fromString
+pageRoutePath = pfmap id id id id . r where
   r = constantsP
     loginPath
     logoutPath
@@ -231,7 +233,7 @@ pageRoutePath = pfmap fs fs fs fs . r where
     deleteUsersFromGroupPath
     unsubscribeFromCoursePath
 
-type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam] 
+type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam]
 
 -- Calculates a request parameter list from the given page value
 pageRequestParams :: Page a b c d -> PageReqParams
@@ -283,9 +285,9 @@ routeOf p = queryString (pageValue (pageRoutePath p)) (pageValue (pageRequestPar
 
 -- Produces a query string for a GET request from the given base name, and the
 -- given parameters
-queryString :: (IsString s) => String -> [ReqParam] -> s
-queryString base []     = fromString base
-queryString base params = fromString . join $ [base, "?"] ++ (intersperse "&" (map queryStringParam params))
+queryString :: (IsString s) => ByteString -> [ReqParam] -> s
+queryString base []     = fromString $ Char8.unpack base
+queryString base params = fromString . join $ [Char8.unpack base, "?"] ++ (intersperse "&" (map queryStringParam params))
 
 routeWithParams :: (IsString s) => Page a b c d -> [ReqParam] -> s
 routeWithParams p rs = fromString . join $
@@ -301,9 +303,9 @@ requestRoute route rs = fromString . join $
 -- * Invariants
 
 routeOfInvariants = Invariants [
-    ("RouteOf strings must not be empty", \p -> length (routeOf' p) > 0)
+    ("RouteOf strings must not be empty", \p -> Char8.length (routeOf' p) > 0)
   ] where
-    routeOf' :: PageDesc -> String
+    routeOf' :: PageDesc -> ByteString
     routeOf' = routeOf
 
 #endif

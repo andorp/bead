@@ -13,6 +13,7 @@ import           Control.Arrow
 import qualified Control.Exception as CE
 import qualified Control.Monad.Error as CME
 import           Data.Maybe
+import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.String (fromString)
 import           Prelude hiding (id)
@@ -75,7 +76,7 @@ pages = do
   path <- getRequest >>= return . proc req -> do
             ctx <- rqContextPath -< req
             pth <- rqPathInfo    -< req
-            returnA -< BS.unpack (BS.append ctx pth)
+            returnA -< (BS.append ctx pth)
   page <- requestToPageHandler path
   case page of
     -- No Page value is calculated from the request
@@ -340,79 +341,68 @@ requestToPageHandler path = requestToPage path <$> getParams
 -- and all the parameters were given is the params for the
 -- routePath necesary for the Page value, otherwise Nothing
 requestToPage :: RoutePath -> Params -> Maybe P.PageDesc
-requestToPage path params
-  | path == loginPath       = j $ P.login ()
-  | path == logoutPath      = j $ P.logout ()
-  | path == homePath        = j $ P.home ()
-  | path == profilePath     = j $ P.profile ()
-  | path == courseAdminPath = j $ P.courseAdmin ()
-  | path == courseOverviewPath
-    = P.courseOverview <$> courseKey <*> unit
-  | path == modifyEvaluationPath
-    = P.modifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
-  | path == evaluationTablePath  = j $ P.evaluationTable ()
-  | path == evaluationPath
-    = P.evaluation <$> submissionKey <*> unit
-  | path == submissionPath       = j $ P.submission ()
-  | path == submissionListPath   = j $ P.submissionList ()
-  | path == userSubmissionsPath  = j $ P.userSubmissions ()
-  | path == newTestScriptPath    = j $ P.newTestScript ()
-  | path == modifyTestScriptPath
-    = P.modifyTestScript <$> testScriptKey <*> unit
-  | path == uploadFilePath = j $ P.uploadFile ()
-  | path == submissionDetailsPath
-    = P.submissionDetails <$> assignmentKey <*> submissionKey <*> unit
-  | path == administrationPath    = j $ P.administration ()
-  | path == groupRegistrationPath = j $ P.groupRegistration ()
-  | path == createCoursePath      = j $ P.createCourse ()
-  | path == userDetailsPath       = j $ P.userDetails ()
-  | path == assignCourseAdminPath = j $ P.assignCourseAdmin ()
-  | path == createGroupPath       = j $ P.createGroup ()
-  | path == assignGroupAdminPath  = j $ P.assignGroupAdmin ()
-  | path == newGroupAssignmentPath
-    = P.newGroupAssignment <$> groupKey <*> unit
-  | path == newCourseAssignmentPath
-    = P.newCourseAssignment <$> courseKey <*> unit
-  | path == modifyAssignmentPath
-    = P.modifyAssignment <$> assignmentKey <*> unit
-  | path == viewAssignmentPath
-    = P.viewAssignment <$> assignmentKey <*> unit
-  | path == newGroupAssignmentPreviewPath
-    = P.newGroupAssignmentPreview <$> groupKey <*> unit
-  | path == newCourseAssignmentPreviewPath
-    = P.newCourseAssignmentPreview <$> courseKey <*> unit
-  | path == modifyAssignmentPreviewPath
-    = P.modifyAssignmentPreview <$> assignmentKey <*> unit
-  | path == changePasswordPath      = j $ P.changePassword ()
-  | path == setUserPasswordPath     = j $ P.setUserPassword ()
-  | path == commentFromEvaluationPath
-    = P.commentFromEvaluation <$> submissionKey <*> unit
-  | path == commentFromModifyEvaluationPath
-    = P.commentFromModifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
-  | path == deleteUsersFromCoursePath
-    = P.deleteUsersFromCourse <$> courseKey <*> unit
-  | path == deleteUsersFromGroupPath
-    = P.deleteUsersFromGroup <$> groupKey <*> unit
-  | path == unsubscribeFromCoursePath
-    = P.unsubscribeFromCourse <$> groupKey <*> unit
-  | otherwise = Nothing
-  where
-    unit = return ()
-    j = Just
-    courseKey     = (CourseKey     . unpack) <$> value courseKeyParamName
-    groupKey      = (GroupKey      . unpack) <$> value groupKeyParamName
-    assignmentKey = (AssignmentKey . unpack) <$> value assignmentKeyParamName
-    submissionKey = (SubmissionKey . unpack) <$> value submissionKeyParamName
-    evaluationKey = (EvaluationKey . unpack) <$> value evaluationKeyParamName
-    testScriptKey = (TestScriptKey . unpack) <$> value testScriptKeyParamName
+requestToPage path params = do
+  page <- Map.lookup path routeToPageMap
+  page params
 
-    -- Returns Just x if only one x corresponds to the key in the request params
-    -- otherwise Nothing
-    value key = Map.lookup key params >>= oneValue
-      where
-        oneValue []  = Nothing
-        oneValue [l] = Just l
-        oneValue _   = Nothing
+routeToPageMap :: Map RoutePath (Params -> Maybe P.PageDesc)
+routeToPageMap = Map.fromList [
+    (loginPath       , j $ P.login ())
+  , (logoutPath      , j $ P.logout ())
+  , (homePath        , j $ P.home ())
+  , (profilePath     , j $ P.profile ())
+  , (courseAdminPath , j $ P.courseAdmin ())
+  , (courseOverviewPath , \ps -> P.courseOverview <$> courseKey ps <*> unit)
+  , (modifyEvaluationPath , \ps -> P.modifyEvaluation <$> submissionKey ps <*> evaluationKey ps <*> unit)
+  , (evaluationTablePath  , j $ P.evaluationTable ())
+  , (evaluationPath , \ps -> P.evaluation <$> submissionKey ps <*> unit)
+  , (submissionPath , j $ P.submission ())
+  , (submissionListPath   , j $ P.submissionList ())
+  , (userSubmissionsPath  , j $ P.userSubmissions ())
+  , (newTestScriptPath    , j $ P.newTestScript ())
+  , (modifyTestScriptPath , \ps -> P.modifyTestScript <$> testScriptKey ps <*> unit)
+  , (uploadFilePath , j $ P.uploadFile ())
+  , (submissionDetailsPath , \ps -> P.submissionDetails <$> assignmentKey ps <*> submissionKey ps <*> unit)
+  , (administrationPath    , j $ P.administration ())
+  , (groupRegistrationPath , j $ P.groupRegistration ())
+  , (createCoursePath      , j $ P.createCourse ())
+  , (userDetailsPath       , j $ P.userDetails ())
+  , (assignCourseAdminPath , j $ P.assignCourseAdmin ())
+  , (createGroupPath       , j $ P.createGroup ())
+  , (assignGroupAdminPath  , j $ P.assignGroupAdmin ())
+  , (newGroupAssignmentPath , \ps -> P.newGroupAssignment <$> groupKey ps <*> unit)
+  , (newCourseAssignmentPath , \ps -> P.newCourseAssignment <$> courseKey ps <*> unit)
+  , (modifyAssignmentPath , \ps -> P.modifyAssignment <$> assignmentKey ps <*> unit)
+  , (viewAssignmentPath , \ps -> P.viewAssignment <$> assignmentKey ps <*> unit)
+  , (newGroupAssignmentPreviewPath , \ps -> P.newGroupAssignmentPreview <$> groupKey ps <*> unit)
+  , (newCourseAssignmentPreviewPath , \ps -> P.newCourseAssignmentPreview <$> courseKey ps <*> unit)
+  , (modifyAssignmentPreviewPath , \ps -> P.modifyAssignmentPreview <$> assignmentKey ps <*> unit)
+  , (changePasswordPath      , j $ P.changePassword ())
+  , (setUserPasswordPath     , j $ P.setUserPassword ())
+  , (commentFromEvaluationPath , \ps -> P.commentFromEvaluation <$> submissionKey ps <*> unit)
+  , (commentFromModifyEvaluationPath , \ps -> P.commentFromModifyEvaluation <$> submissionKey ps <*> evaluationKey ps <*> unit)
+  , (deleteUsersFromCoursePath , \ps -> P.deleteUsersFromCourse <$> courseKey ps <*> unit)
+  , (deleteUsersFromGroupPath , \ps -> P.deleteUsersFromGroup <$> groupKey ps <*> unit)
+  , (unsubscribeFromCoursePath , \ps -> P.unsubscribeFromCourse <$> groupKey ps <*> unit)
+  ] where
+      j = const . Just
+      unit = return ()
+
+      courseKey     = fmap (CourseKey     . unpack) . value courseKeyParamName
+      groupKey      = fmap (GroupKey      . unpack) . value groupKeyParamName
+      assignmentKey = fmap (AssignmentKey . unpack) . value assignmentKeyParamName
+      submissionKey = fmap (SubmissionKey . unpack) . value submissionKeyParamName
+      evaluationKey = fmap (EvaluationKey . unpack) . value evaluationKeyParamName
+      testScriptKey = fmap (TestScriptKey . unpack) . value testScriptKeyParamName
+
+      -- Returns Just x if only one x corresponds to the key in the request params
+      -- otherwise Nothing
+      value key params = Map.lookup key params >>= oneValue
+        where
+          oneValue []  = Nothing
+          oneValue [l] = Just l
+          oneValue _   = Nothing
+
 
 #ifdef TEST
 
