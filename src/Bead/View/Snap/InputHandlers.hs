@@ -1,14 +1,12 @@
 module Bead.View.Snap.InputHandlers where
 
 import Control.Applicative ((<$>),(<*>))
-import Data.Maybe (maybe, isJust, fromJust)
 import Data.Time (UTCTime(..))
 
-import Bead.Domain.Types (Str(..), readMaybe, readMsg)
+import Bead.Domain.Types (Str(..))
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
 import Bead.Domain.Evaluation
-import qualified Bead.View.Snap.DataBridge as B
 
 import Bead.Controller.ServiceContext (UserState(..))
 import qualified Bead.Controller.UserStories as Story (userState)

@@ -302,9 +302,17 @@ hookEvaluationTypeForm hook = do
   when existForm $ do
     selection <- select . cssId . evSelectionId $ hook
     change (changeFormContent form) selection
+    setDefaultEvalValue form selection
     putStrLn $ "Evaluation form " ++ formId ++ " is loaded."
 
   where
+    setDefaultEvalValue :: JQuery -> JQuery -> Fay ()
+    setDefaultEvalValue form selection = do
+      value <- decodeEvalType <$> firstOptionValue selection
+      case value of
+        (BinEval _) -> setEvaluationValue (BinEval ())
+        (PctEval _) -> addPercentageField form
+
     changeFormContent :: JQuery -> Event -> Fay ()
     changeFormContent form e = void $ do
       t <- target e
@@ -327,6 +335,7 @@ hookEvaluationTypeForm hook = do
       numberField pctInput 0 100
       pctSpinner setEvalLimit pctInput
       change setEvalLimit pctInput
+      setEvaluationValue (PctEval "0.00")
 
     setEvalLimit :: Event -> Fay ()
     setEvalLimit e = do
@@ -403,6 +412,10 @@ exists = ffi "(%1.length != 0)"
 
 selectedValue :: Element -> Fay String
 selectedValue = ffi "%1.options[%1.selectedIndex].value"
+
+firstOptionValue :: JQuery -> Fay String
+firstOptionValue selection = do
+  findSelector (fromString "option") selection >>= first >>= getVal >>= (return . unpack)
 
 addOnLoad :: Fay a -> Fay ()
 addOnLoad = ffi "window.addEventListener(\"load\", %1)"
