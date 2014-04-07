@@ -23,7 +23,7 @@ validate f v onValid onFail
 
 isUsername :: FieldValidator
 isUsername = FieldValidator {
-    validator = \xs -> ((length xs) == 6) && (all isAlphaNum xs)
+    validator = all isAlphaNum
   , message   = "NEPTUN-kódot kell megadni"
   }
 

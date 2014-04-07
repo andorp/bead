@@ -135,6 +135,9 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
         (Nothing, _, _) -> throwError . strMsg $ i18n $
           Msg_Registration_InvalidUsername "Invalid username"
         (Just username, Just email, Just fullname) -> do
+            isValid <- lift . withTop checkUsernameContext . checkUsername . usernameCata id $ username
+            unless isValid $ throwError . strMsg . i18n $
+              Msg_Registration_InvalidUsername "Invalid username"
             exist <- lift $ registrationStory (S.doesUserExist username)
             when (isLeft exist) . throwError . strMsg . i18n $
               Msg_Registration_HasNoUserAccess "No access allowed to the user's data."
@@ -200,8 +203,12 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     token    <- readParameter regTokenPrm
     language <- readParameter regLanguagePrm
     case (key, token, username, language) of
-      (Just k, Just t, Just u, Just l) -> return $ Just (k,t,u,l)
-      _                                -> return $ Nothing
+      (Just k, Just t, Just u, Just l) -> do
+        isValid <- withTop checkUsernameContext . checkUsername . usernameCata id $ u
+        return $ if isValid
+          then Just (k,t,u,l)
+          else Nothing
+      _ -> return $ Nothing
 
   renderForm = do
     values <- readRegParameters
