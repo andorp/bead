@@ -19,8 +19,9 @@ import           Snap.Snaplet.Fay
 import           Snap.Snaplet.Session
 
 import           Bead.Configuration (Config(..))
-import           Bead.Controller.LogoutDaemon
 import           Bead.Controller.ServiceContext
+import           Bead.Daemon.EmailDaemon as EmailDaemon
+import           Bead.Daemon.LogoutDaemon
 import           Bead.Domain.Entities
 import           Bead.View.Snap.Dictionary
 import           Bead.View.Snap.EmailTemplate
@@ -135,8 +136,8 @@ verySimpleMail to from subject plainBody = return Mail
             ]]
         }
 
-emailSenderSnaplet :: Config -> SnapletInit a SendEmailContext
-emailSenderSnaplet config = makeSnapContext
+emailSenderSnaplet :: Config -> EmailDaemon -> SnapletInit a SendEmailContext
+emailSenderSnaplet config daemon = makeSnapContext
   "Email sending"
   "A snaplet providing email sender functionality"
   sender
@@ -148,7 +149,7 @@ emailSenderSnaplet config = makeSnapContext
           subject = fromString sub
           plain   = fromString msg
       mail <- verySimpleMail to from subject plain
-      renderSendMail mail
+      EmailDaemon.sendEmail daemon mail
 
 -- Send email with a subject to the given address, using the right
 -- template to the given values
