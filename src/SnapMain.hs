@@ -129,7 +129,7 @@ startService config appInitTasks = do
   tempDir <- creating "temporary directory" createBeadTempDir
 
   creating "test comments agent" $ startTestCommentsAgent userActionLogger 30 5 {-s-} context
-  logoutDaemon <- creating "logout daemin" $
+  logoutDaemon <- creating "logout daemon" $
     startLogoutDaemon userActionLogger (sessionTimeout config) 30 {-s-} (userContainer context)
 
   serveSnaplet defaultConfig (appInit config appInitTasks context logoutDaemon tempDir)
