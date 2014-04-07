@@ -1,4 +1,5 @@
-{-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell   #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Application where
 
 import           Control.Lens.TH
@@ -10,6 +11,7 @@ import qualified Data.Text as DT
 import qualified Data.Text.Lazy as LT
 import           Network.Mail.Mime
 import           System.Random
+import           Text.Regex.Posix
 
 import           Snap hiding (Config(..))
 import           Snap.Snaplet.Auth
@@ -172,6 +174,27 @@ tempDirectorySnaplet = makeSnapContext
 getTempDirectory :: Handler b TempDirectoryContext FilePath
 getTempDirectory = snapContextCata id
 
+-- * Username check
+
+-- Checks the given username against some IO computation based checker
+type CheckUsernameContext = SnapContext (String -> IO Bool)
+
+regexpUsernameChecker :: Config -> SnapletInit a CheckUsernameContext
+regexpUsernameChecker cfg = makeSnaplet
+  "Regexp username checker"
+  "A snaplet providing checks against the regular expression defined in the configuration file"
+  Nothing $ liftIO $ do
+    let pattern = usernameRegExp cfg
+    ref <- newIORef (\username -> return $ check username pattern)
+    return $! SnapContext ref
+  where
+    check :: String -> String -> Bool
+    check usr ptn = usr =~ ptn
+
+-- Returns True, if the username pass the check otherwise False
+checkUsername :: String -> Handler b CheckUsernameContext Bool
+checkUsername usr = snapContextHandlerCata $ \f -> liftIO (f usr)
+
 -- * Password generation
 
 -- PasswordGeneratorContext is a reference to the password generator computation,
@@ -234,6 +257,7 @@ data App = App {
   , _fayContext     :: Snaplet Fay
   , _tempDirContext :: Snaplet TempDirectoryContext
   , _configContext  :: Snaplet ConfigServiceContext
+  , _checkUsernameContext :: Snaplet CheckUsernameContext
   }
 
 makeLenses ''App

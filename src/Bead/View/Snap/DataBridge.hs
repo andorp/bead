@@ -159,7 +159,7 @@ customUsernamePrm field = Parameter {
   , decode = decodeUsr
   , name = field
   , decodeError = \m -> printf "%s: %s" (message isUsername) m
-  , notFound    = "A felhasználó nem található!"
+  , notFound    = "A felhasználónév nem található!"
   } where
     decodeUsr xs =
       if (validator isUsername xs)

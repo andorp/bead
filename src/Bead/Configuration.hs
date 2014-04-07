@@ -49,6 +49,8 @@ data Config = Config {
   , emailFromAddress :: String
     -- The default language of the login page if there is no language set in the session
   , defaultLoginLanguage :: String
+    -- The default regular expression for the user registration
+  , usernameRegExp :: String
   } deriving (Eq, Show, Read)
 
 -- The defualt system parameters
@@ -58,10 +60,11 @@ defaultConfiguration = Config {
   , emailHostname     = "http://127.0.0.1:8000"
   , emailFromAddress  = "noreply@bead.org"
   , defaultLoginLanguage = "en"
+  , usernameRegExp = "a+"
   }
 
-configCata f (Config useraction timeout host from loginlang) =
-  f useraction timeout host from loginlang
+configCata f (Config useraction timeout host from loginlang regexp) =
+  f useraction timeout host from loginlang regexp
 
 readConfiguration :: FilePath -> IO Config
 readConfiguration path = do

@@ -80,11 +80,12 @@ appInit config user s logoutDaemon tempDir = makeSnaplet "bead" description data
 
   cs <- nestSnaplet "config" configContext $ configurationServiceContext config
 
+  un <- nestSnaplet "usernamechecker" checkUsernameContext $ regexpUsernameChecker config
+
   addRoutes (routes config)
   wrapSite (<|> pages)
 
-
-  return $ App sm as ss ds se rp fs ts cs
+  return $ App sm as ss ds se rp fs ts cs un
   where
     description = "The BEAD website"
 

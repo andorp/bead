@@ -42,7 +42,18 @@ main = do
   args <- getArgs
   config <- readConfiguration beadConfigFileName
   newAdminUser <- either (const $ return Nothing) interpretTasks (initTasks args)
+  printConfigInfo config
   startService config newAdminUser
+
+-- Prints out the actual server configuration
+printConfigInfo :: Config -> IO ()
+printConfigInfo cfg = do
+  putStrLn $ "Log file: " ++ userActionLogFile cfg
+  putStrLn $ concat ["Session timeout: ", show $ sessionTimeout cfg, " seconds"]
+  putStrLn $ "Hostname included in emails: " ++ emailHostname cfg
+  putStrLn $ "FROM Address included in emails: " ++ emailFromAddress cfg
+  putStrLn $ "Default login language: " ++ defaultLoginLanguage cfg
+  putStrLn $ "Username regular expression for the registration: " ++ usernameRegExp cfg
 
 interpretTasks :: [InitTask] -> IO AppInitTasks
 interpretTasks tasks = case elem CreateAdmin tasks of
