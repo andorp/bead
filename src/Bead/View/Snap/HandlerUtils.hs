@@ -55,9 +55,9 @@ import           Text.Blaze.Html5 (Html)
 
 import           Bead.Configuration
 import           Bead.Controller.Logging as L
-import           Bead.Controller.LogoutDaemon
 import           Bead.Controller.ServiceContext hiding (serviceContext, name)
 import qualified Bead.Controller.UserStories as S
+import           Bead.Daemon.LogoutDaemon
 import           Bead.Domain.Entities (TimeZone, dataTimeZone)
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.DataBridge

@@ -51,6 +51,7 @@ Executable Bead
   HS-Source-Dirs: src, snaplets/fay/src
   Build-Depends:
     aeson,
+    async,
     base,
     blaze-html,
     blaze-markup,

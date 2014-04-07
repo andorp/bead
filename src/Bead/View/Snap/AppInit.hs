@@ -3,6 +3,7 @@ module Bead.View.Snap.AppInit (
     appInit
   , beadConfigFileName
   , AppInitTasks
+  , Daemons(..)
   ) where
 
 import qualified Data.Map as Map
@@ -16,8 +17,9 @@ import           System.FilePath ((</>))
 import           System.Directory
 
 import           Bead.Configuration (Config(..))
-import           Bead.Controller.LogoutDaemon
 import           Bead.Controller.ServiceContext as S
+import           Bead.Daemon.EmailDaemon
+import           Bead.Daemon.LogoutDaemon
 import           Bead.Domain.Entities (UserRegInfo)
 
 import           Bead.View.Snap.Application as A
@@ -42,8 +44,15 @@ usersJson = "users.json"
 -- Nothing means there is no additional init task to be done.
 type AppInitTasks = Maybe UserRegInfo
 
-appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> LogoutDaemon -> FilePath -> SnapletInit App App
-appInit config user s logoutDaemon tempDir = makeSnaplet "bead" description dataDir $ do
+-- The collection of the daemons that are neccesary to create the
+-- application
+data Daemons = Daemons {
+    logoutDaemon :: LogoutDaemon
+  , emailDaemon  :: EmailDaemon
+  }
+
+appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> Daemons -> FilePath -> SnapletInit App App
+appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $ do
 
   copyDataContext
 
@@ -65,12 +74,12 @@ appInit config user s logoutDaemon tempDir = makeSnaplet "bead" description data
   as <- nestSnaplet "auth" auth $
           initSafeJsonFileAuthManager defAuthSettings sessionManager usersJson
 
-  ss <- nestSnaplet "context" A.serviceContext $ contextSnaplet s logoutDaemon
+  ss <- nestSnaplet "context" A.serviceContext $ contextSnaplet s (logoutDaemon daemons)
 
   ds <- nestSnaplet "dictionary" dictionaryContext $
           dictionarySnaplet dictionaries (Language $ defaultLoginLanguage config)
 
-  se <- nestSnaplet "sendemail" sendEmailContext (emailSenderSnaplet config)
+  se <- nestSnaplet "sendemail" sendEmailContext (emailSenderSnaplet config (emailDaemon daemons))
 
   rp <- nestSnaplet "randompassword" randomPasswordContext passwordGeneratorSnaplet
 
