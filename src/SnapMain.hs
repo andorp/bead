@@ -49,12 +49,14 @@ main = do
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
 printConfigInfo cfg = do
-  putStrLn $ "Log file: " ++ userActionLogFile cfg
-  putStrLn $ concat ["Session timeout: ", show $ sessionTimeout cfg, " seconds"]
-  putStrLn $ "Hostname included in emails: " ++ emailHostname cfg
-  putStrLn $ "FROM Address included in emails: " ++ emailFromAddress cfg
-  putStrLn $ "Default login language: " ++ defaultLoginLanguage cfg
-  putStrLn $ "Username regular expression for the registration: " ++ usernameRegExp cfg
+  configLn $ "Log file: " ++ userActionLogFile cfg
+  configLn $ concat ["Session timeout: ", show $ sessionTimeout cfg, " seconds"]
+  configLn $ "Hostname included in emails: " ++ emailHostname cfg
+  configLn $ "FROM Address included in emails: " ++ emailFromAddress cfg
+  configLn $ "Default login language: " ++ defaultLoginLanguage cfg
+  configLn $ "Username regular expression for the registration: " ++ usernameRegExp cfg
+  where
+    configLn s = putStrLn ("CONFIG: " ++ s)
 
 interpretTasks :: [InitTask] -> IO AppInitTasks
 interpretTasks tasks = case elem CreateAdmin tasks of
