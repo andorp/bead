@@ -63,8 +63,6 @@ saveChangesBtn = SubmitButton "save-changes-btn"
 assignGroupAdminBtn = SubmitButton "asg-group-admin-submit"
 changeProfileBtn = SubmitButton "change-profile"
 changePasswordBtn = SubmitButton "change-password"
-delUsersFromCourseBtn = SubmitButton "del-users-from-course-sbm-btn"
-delUsersFromGroupBtn = SubmitButton "del-users-from-group-sbm-btn"
 unsubscribeFromCourseSubmitBtn = SubmitButton "unsubscribe-from-course"
 
 instance SnapFieldName RegistrationComp where
@@ -418,7 +416,7 @@ fieldList = map fieldName $ join [
   , SFN assignmentStartDefaultDate, SFN assignmentStartDefaultHour, SFN assignmentStartDefaultMin
   , SFN assignmentEndDefaultDate, SFN assignmentEndDefaultHour, SFN assignmentEndDefaultMin
   , SFN studentNewPwdField, SFN studentNewPwdAgainField, SFN pctHelpMessage, SFN changeLanguageField
-  , SFN userLanguageField, SFN delUsersFromCourseBtn, SFN courseKeyField, SFN groupKeyField
+  , SFN userLanguageField, SFN courseKeyField, SFN groupKeyField
   , SFN delUserFromCourseField, SFN delUserFromGroupField, SFN unsubscribeFromCourseSubmitBtn
   , SFN fileUploadField, SFN fileUploadSubmit, SFN usersFileTableName
   , SFN assignmentTestScriptField, SFN assignmentUsersFileField
