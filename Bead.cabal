@@ -49,6 +49,7 @@ Executable CreateBeadLanguageFile
 Executable Bead
   Main-is: SnapMain.hs
   HS-Source-Dirs: src, snaplets/fay/src
+  GHC-Options: -threaded -with-rtsopts=-N2 -O2
   Build-Depends:
     aeson,
     async,
