@@ -10,6 +10,7 @@ module Bead.View.Snap.Content.SubmissionTable (
   , coloredSubmissionCell
   ) where
 
+import           Data.Char (isAlphaNum)
 import           Data.Function
 import           Data.List
 import           Data.Map (Map)
@@ -79,6 +80,7 @@ submissionTable tableId now stb table = submissionTableContextCata html stb wher
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
 -- group or course students, an informational text is shown.
+-- Supposing that the given tableid is unique name on the page.
 submissionTablePart :: String -> UTCTime -> SubmissionTableContext -> SubmissionTableInfo -> IHtml
 
 -- Empty table
@@ -95,11 +97,43 @@ submissionTablePart tableId now ctx s = do
   msg <- getI18N
   return $ do
     courseForm $ table tableId (className groupSubmissionTable) # informationalTable $ do
+      checkedUserScript
       headLine (stiCourse s)
       assignmentLine msg
       mapM_ (userLine msg s) (stiUserLines s)
   where
+    -- JavaScript
+    tableIdJSName = filter isAlphaNum tableId
+    noOfUsers = tableIdJSName ++ "NoOfUsers"
+    onCheck = tableIdJSName ++ "OnCheck"
+    onUncheck = tableIdJSName ++ "OnUncheck"
+    removeButton = tableIdJSName ++ "Button"
+    onClick = tableIdJSName ++ "OnClick"
+    checkedUserScript = H.script $ fromString $ unlines
+      [ concat ["var ", noOfUsers, " = 0;"]
+      , concat ["function ", onCheck, "(){"]
+      ,   noOfUsers ++ "++;"
+      ,   concat ["if(", noOfUsers, " > 0) {"]
+      ,     concat ["document.getElementById(\"",removeButton,"\").disabled = false;"]
+      ,   "}"
+      , "}"
+      , concat ["function ", onUncheck, "(){"]
+      ,   noOfUsers ++ "--;"
+      ,   concat ["if(", noOfUsers, " < 1) {"]
+      ,     concat ["document.getElementById(\"",removeButton,"\").disabled = true;"]
+      ,     noOfUsers ++ " = 0;"
+      ,   "}"
+      , "}"
+      , concat ["function ", onClick, "(checkbox){"]
+      ,   "if(checkbox.checked) {"
+      ,      onCheck ++ "();"
+      ,   "} else {"
+      ,      onUncheck ++ "();"
+      ,   "}"
+      , "}"
+      ]
 
+    -- HTML
     courseForm = submissionTableInfoCata course group s where
       course _n _c _us _as _uls _ns ck      = postForm (routeOf $ Pages.deleteUsersFromCourse ck ())
       group _n _c _us _cgas _uls _ns _ck gk = postForm (routeOf $ Pages.deleteUsersFromGroup gk ())
@@ -205,26 +239,26 @@ submissionTablePart tableId now ctx s = do
     deleteHeaderCell msg = submissionTableInfoCata deleteForCourseButton deleteForGroupButton s where
         deleteForCourseButton _n _c _us _as _uls _ans _ck =
           headerCell $ submitButton
-            (fieldName delUsersFromCourseBtn)
-            (msg $ Msg_Home_DeleteUsersFromCourse "Remove")
+            removeButton
+            (msg $ Msg_Home_DeleteUsersFromCourse "Remove") ! A.disabled ""
 
         deleteForGroupButton _n _c _us _as _uls _ans _ck _gk =
           headerCell $ submitButton
-            (fieldName delUsersFromGroupBtn)
-            (msg $ Msg_Home_DeleteUsersFromGroup "Remove")
+            removeButton
+            (msg $ Msg_Home_DeleteUsersFromGroup "Remove") ! A.disabled ""
 
     deleteUserCheckbox u = submissionTableInfoCata deleteCourseCheckbox deleteGroupCheckbox s where
         deleteCourseCheckbox _n _c _us _as _uls _ans _ck =
           dataCell noStyle $ checkBox
             (Param.name delUserFromCoursePrm)
             (encode delUserFromCoursePrm $ ud_username u)
-            False
+            False ! A.onclick (fromString (onClick ++ "(this)"))
 
         deleteGroupCheckbox _n _c _us _as _uls _ans _ck _gk =
           dataCell noStyle $ checkBox
             (Param.name delUserFromGroupPrm)
             (encode delUserFromGroupPrm $ ud_username u)
-            False
+            False ! A.onclick (fromString (onClick ++ "(this)"))
 
 -- Create a table cell for the evaulation value, where
 -- simpleCell is the combinator for the non RGB colored cells
