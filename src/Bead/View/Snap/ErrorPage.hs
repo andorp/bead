@@ -1,9 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TypeSynonymInstances #-}
+{-# LANGUAGE FlexibleInstances #-}
 module Bead.View.Snap.ErrorPage (
-    errorPage
+    ErrorPage(..)
+  , defErrorPage
   , msgErrorPage
-  , errorPageWithTitle
-  , errorPageWithTitleTrans
+  , translationErrorPage
   ) where
 
 import           Data.String
@@ -17,23 +19,33 @@ import           Bead.View.Snap.I18N (IHtml, getI18N)
 import           Bead.View.Snap.Pagelets (link, withTitleAndHead)
 import           Bead.View.Snap.Translation
 
--- | Produces an error page showing the reason of an error, and redirects to
---   login page after a while
-errorPage :: ContentHandlerError -> Handler App b ()
-errorPage = contentHandlerErrorMap (renderPublicPage . (page $ Msg_ErrorPage_Title "Error"))
+class ErrorPage e where
+  errorPage :: Translation String -> e -> Handler App b ()
+
+instance ErrorPage String where
+  errorPage title msg = renderPublicErrorPage title msg
+
+instance ErrorPage (Translation String) where
+  errorPage title msg = renderPublicPage . (pageTranslation title) $ Just msg
+
+instance ErrorPage TransMsg where
+  errorPage title msg = do
+    i18n <- i18nH
+    renderPublicPage . (page title) $ Just (translateMessage i18n msg)
+
+instance ErrorPage ContentHandlerError where
+  errorPage title msg = contentHandlerErrorMap (renderPublicPage . (page title)) msg
 
 msgErrorPage :: String -> Handler App b ()
-msgErrorPage = renderPublicPage . (page $ Msg_ErrorPage_Title "Hiba!") . Just
+msgErrorPage = defErrorPage
+
+defErrorPage :: (ErrorPage e) => e -> Handler App b ()
+defErrorPage = errorPage (Msg_ErrorPage_Title "Error!")
 
 -- Produces a handler that renders the error page, with the
 -- given title and message for the user
-errorPageWithTitleTrans :: Translation String -> Translation String -> Handler App b ()
-errorPageWithTitleTrans title = renderPublicPage . (pageTranslation title) . Just
-
--- Produces a handler that renders the error page, with the
--- given title and message for the user
-errorPageWithTitle :: Translation String -> String -> Handler App b ()
-errorPageWithTitle title = renderPublicPage . (page title) . Just
+translationErrorPage :: Translation String -> Translation String -> Handler App b ()
+translationErrorPage = errorPage -- renderPublicPage . (pageTranslation title) . Just
 
 pageTemplate :: (a -> H.Html) -> Translation String -> Maybe a -> IHtml
 pageTemplate content t e = withTitleAndHead t $ do
@@ -54,3 +66,5 @@ pageTranslation :: Translation String -> (Maybe (Translation String)) -> IHtml
 pageTranslation t e = do
   msg <- getI18N
   pageTemplate (fromString . msg) t e
+
+renderPublicErrorPage title msg = renderPublicPage . (page title) $ (Just msg)

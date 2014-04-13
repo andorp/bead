@@ -51,6 +51,9 @@ data Config = Config {
   , defaultLoginLanguage :: String
     -- The default regular expression for the user registration
   , usernameRegExp :: String
+    -- The example that satisfies the given regexp for the username. These are
+    -- rendered to the user as examples on the GUI.
+  , usernameRegExpExample :: String
   } deriving (Eq, Show, Read)
 
 -- The defualt system parameters
@@ -61,10 +64,11 @@ defaultConfiguration = Config {
   , emailFromAddress  = "noreply@bead.org"
   , defaultLoginLanguage = "en"
   , usernameRegExp = "a+"
+  , usernameRegExpExample = "xy"
   }
 
-configCata f (Config useraction timeout host from loginlang regexp) =
-  f useraction timeout host from loginlang regexp
+configCata f (Config useraction timeout host from loginlang regexp reexample) =
+  f useraction timeout host from loginlang regexp reexample
 
 readConfiguration :: FilePath -> IO Config
 readConfiguration path = do

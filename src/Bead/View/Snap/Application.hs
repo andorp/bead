@@ -11,7 +11,7 @@ import qualified Data.Text as DT
 import qualified Data.Text.Lazy as LT
 import           Network.Mail.Mime
 import           System.Random
-import           Text.Regex.Posix
+import           Text.Regex.TDFA
 
 import           Snap hiding (Config(..))
 import           Snap.Snaplet.Auth

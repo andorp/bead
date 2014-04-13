@@ -427,7 +427,7 @@ data Translation a
 type I18N = Translation String -> String
 
 -- | The Translation Message represents a message that
--- can rendered out the the UI, the message could
+-- can be rendered out the the UI, the message could
 -- be a normal message or a parametrized one
 data TransMsg
   = TransMsg (Translation String)

@@ -302,15 +302,15 @@ handlePage page = P.pageKindCata view userView viewModify modify page where
   post h = method GET invalidGETMethodCall <|> method POST h
   getPost g p = method GET g <|> method POST p
 
-  runGetOrError h = runGETHandler errorPage (changePage h)
+  runGetOrError h = runGETHandler defErrorPage (changePage h)
 
   runPostOrError h = do
     runStory $ S.changePage pageDesc
-    runPOSTHandler errorPage pageDesc h
+    runPOSTHandler defErrorPage pageDesc h
 
   runUserViewPostOrError h = do
     runStory $ S.changePage pageDesc
-    runUserViewPOSTHandler errorPage h
+    runUserViewPOSTHandler defErrorPage h
 
   view = viewHandlerCata (get . loggedInFilter . runGetOrError) . P.viewPageValue
 
