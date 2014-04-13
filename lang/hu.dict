@@ -133,7 +133,7 @@ DictionaryFile {
     , Msg_Registration_FullName { trans = "Teljes név:" }
     , Msg_Registration_SubmitButton { trans = "Regisztráció" }
     , Msg_Registration_GoBackToLogin { trans = "Vissza a bejelentkezéshez" }
-    , Msg_Registration_InvalidUsername { trans = "Hibás Neptun-kód!" }
+    , Msg_Registration_InvalidUsername { trans = "Hibás Neptun-kód! Adj meg valami hasonlót: %s" }
     , Msg_Registration_HasNoUserAccess { trans = "A felhasználó adatainak lekérdezése nem megengedett." }
     , Msg_Registration_UserAlreadyExists { trans = "A felhasználó már létezik!" }
     , Msg_Registration_RegistrationNotSaved { trans = "A regisztráció nem lett elmentve!" }

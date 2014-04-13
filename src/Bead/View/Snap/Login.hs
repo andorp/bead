@@ -25,7 +25,7 @@ import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import           Bead.View.Snap.Dictionary
-import           Bead.View.Snap.ErrorPage (errorPageWithTitleTrans)
+import           Bead.View.Snap.ErrorPage
 import           Bead.View.Snap.HandlerUtils
 import           Bead.View.Snap.RouteOf
 import           Bead.View.Snap.Session
@@ -76,7 +76,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
               liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
               A.logout
               withTop sessionManager $ commitSession
-              errorPageWithTitleTrans
+              translationErrorPage
                 (Msg_Login_PageTitle "Login")
                 (Msg_Login_InternalError
                    "Some internal error happened, please contact the administrators.")

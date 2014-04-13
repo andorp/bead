@@ -6,8 +6,10 @@ import           Data.Char (toUpper)
 import           Snap hiding (Config(..))
 import           System.Directory (getTemporaryDirectory, removeDirectoryRecursive)
 import           System.Environment (getArgs)
+import           System.Exit (exitFailure)
 import           System.IO (hFlush, hSetEcho, stdout, stdin)
 import           System.IO.Temp (createTempDirectory)
+import           Text.Regex.TDFA
 
 import           Bead.Configuration
 import qualified Bead.Controller.Logging as L
@@ -39,21 +41,34 @@ main = do
   hSetEcho stdin True
   args <- getArgs
   config <- readConfiguration beadConfigFileName
-  newAdminUser <- either (const $ return Nothing) interpretTasks (initTasks args)
   printConfigInfo config
+  checkRegexExample config
+  newAdminUser <- either (const $ return Nothing) interpretTasks (initTasks args)
   startService config newAdminUser
 
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
-printConfigInfo cfg = do
-  configLn $ "Log file: " ++ userActionLogFile cfg
-  configLn $ concat ["Session timeout: ", show $ sessionTimeout cfg, " seconds"]
-  configLn $ "Hostname included in emails: " ++ emailHostname cfg
-  configLn $ "FROM Address included in emails: " ++ emailFromAddress cfg
-  configLn $ "Default login language: " ++ defaultLoginLanguage cfg
-  configLn $ "Username regular expression for the registration: " ++ usernameRegExp cfg
+printConfigInfo = configCata $ \logfile timeout hostname fromEmail loginlang regexp example -> do
+  configLn $ "Log file: " ++ logfile
+  configLn $ concat ["Session timeout: ", show timeout, " seconds"]
+  configLn $ "Hostname included in emails: " ++ hostname
+  configLn $ "FROM Address included in emails: " ++ fromEmail
+  configLn $ "Default login language: " ++ loginlang
+  configLn $ "Username regular expression for the registration: " ++ regexp
+  configLn $ "Username example for the regular expression: " ++ example
   where
     configLn s = putStrLn ("CONFIG: " ++ s)
+
+-- Check the given username example against the given username regexp, if the
+-- example does not match with the regepx quit with an exit failure.
+checkRegexExample :: Config -> IO ()
+checkRegexExample cfg =
+  if (not (usernameRegExpExample cfg =~ usernameRegExp cfg))
+    then do configCheck "ERROR: Given username example does not match with the given pattern!"
+            exitFailure
+    else do configCheck "Config is OK."
+  where
+    configCheck s = putStrLn $ "CONFIG CHECK: " ++ s
 
 interpretTasks :: [InitTask] -> IO AppInitTasks
 interpretTasks tasks = case elem CreateAdmin tasks of

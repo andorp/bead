@@ -24,7 +24,7 @@ import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content hiding (name)
 import           Bead.View.Snap.DataBridge
-import           Bead.View.Snap.ErrorPage (errorPageWithTitle)
+import           Bead.View.Snap.ErrorPage
 import           Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
 import           Bead.View.Snap.HandlerUtils (registrationStory, renderPublicPage)
 
@@ -185,7 +185,7 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
   where
     renderErrorPage :: Handler App App (Either String ()) -> Handler App App ()
     renderErrorPage m = m >>=
-       (either (errorPageWithTitle resetPasswordTitle) return)
+       (either (errorPage resetPasswordTitle) return)
 
     loadUser i18n u =
       (lift $ registrationStory $ S.loadUser u) >>=

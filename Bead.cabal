@@ -76,7 +76,7 @@ Executable Bead
     pqueue >= 1.2.1 && < 2.0,
     mtl,
     random,
-    regex-posix,
+    regex-tdfa,
     snap,
     snap-core,
     snap-server,
