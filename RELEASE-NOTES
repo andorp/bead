@@ -1,3 +1,9 @@
+2014-04-17
+- Example username is in the config file
+- Email daemon
+- Regexp based username validation on the registration forms
+- Remove student button is inactive if there is no student selected for deletion
+
 2014-03-30
 - Open Submissions: Submissions are ordered by name, and separated into three tables
 - See More option on comments and submissions
