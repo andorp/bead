@@ -43,7 +43,7 @@ main = do
   config <- readConfiguration beadConfigFileName
   printConfigInfo config
   checkRegexExample config
-  newAdminUser <- either (const $ return Nothing) interpretTasks (initTasks args)
+  newAdminUser <- either (const $ return Nothing) (interpretTasks config) (initTasks args)
   startService config newAdminUser
 
 -- Prints out the actual server configuration
@@ -70,16 +70,16 @@ checkRegexExample cfg =
   where
     configCheck s = putStrLn $ "CONFIG CHECK: " ++ s
 
-interpretTasks :: [InitTask] -> IO AppInitTasks
-interpretTasks tasks = case elem CreateAdmin tasks of
+interpretTasks :: Config -> [InitTask] -> IO AppInitTasks
+interpretTasks cfg tasks = case elem CreateAdmin tasks of
   False -> return Nothing
-  True  -> fmap Just readAdminUser
+  True  -> fmap Just (readAdminUser cfg)
 
 -- Read user information from stdin, validates the username, the passwords and email fields
-readAdminUser :: IO UserRegInfo
-readAdminUser = do
+readAdminUser :: Config -> IO UserRegInfo
+readAdminUser cfg = do
   putStrLn "Creating admin user, all characters are converted to lower case."
-  putStrLn "Username must be in the neptun code format."
+  putStrLn "Username must be in the defined format, which is given in the config."
   usr <- readUsername
   email <- readEmail
   fullName <- readFullname
@@ -91,7 +91,7 @@ readAdminUser = do
     True  -> return (UserRegInfo (usr, pwd, email, fullName, UTC))
     False -> do
       putStrLn "Passwords do not match!"
-      readAdminUser
+      readAdminUser cfg
   where
     putStrFlush msg = putStr msg >> hFlush stdout
 
@@ -129,7 +129,10 @@ readAdminUser = do
         isUsername
         usr
         -- Valid username
-        (return usr)
+        (if (usr =~ usernameRegExp cfg)
+           then return usr
+           else do putStrLn "Username does not match the given regexp!"
+                   readUsername)
         -- Invalid username
         (\msg -> do putStrLn msg
                     readUsername)
