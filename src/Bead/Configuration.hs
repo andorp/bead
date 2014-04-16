@@ -63,8 +63,8 @@ defaultConfiguration = Config {
   , emailHostname     = "http://127.0.0.1:8000"
   , emailFromAddress  = "noreply@bead.org"
   , defaultLoginLanguage = "en"
-  , usernameRegExp = "a+"
-  , usernameRegExpExample = "xy"
+  , usernameRegExp = "^[A-Za-z0-9]{6}$"
+  , usernameRegExpExample = "QUER42"
   }
 
 configCata f (Config useraction timeout host from loginlang regexp reexample) =
