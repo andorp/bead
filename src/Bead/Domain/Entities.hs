@@ -355,6 +355,7 @@ data PermissionObject
   | P_File
   | P_TestIncoming
   | P_TestCase
+  | P_StudentPassword
   deriving (Eq, Ord, Show, Enum)
 
 -- Permission Objects are dynamically associated with values

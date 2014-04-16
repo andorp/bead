@@ -5,12 +5,13 @@ This module implements guards for persistence layer,
 that check if the user is created or have access to the given objects
 -}
 
-import Control.Applicative ((<$>))
+import           Control.Applicative ((<$>))
+import qualified Data.Set as Set
 
-import Bead.Domain.Entities
-import Bead.Domain.Relationships
-import Bead.Persistence.Persist
-import Bead.Persistence.Relations
+import           Bead.Domain.Entities
+import           Bead.Domain.Relationships
+import           Bead.Persistence.Persist
+import           Bead.Persistence.Relations
 
 -- * Guards against invalid data modification
 
@@ -101,10 +102,26 @@ adminGroup u = do
   gks <- map fst <$> administratedGroups u
   return (\gk -> elem gk gks)
 
--- Return a function that returns True if the user administrates
+-- Returns a function that returns True if the user administrates
 -- a course if administrated the group, otherwise False
 adminCourseOfGroup :: Username -> Persist (CourseKey -> Bool)
 adminCourseOfGroup u = do
   gks <- map fst <$> administratedGroups u
   cks <- mapM courseOfGroup gks
   return (\ck -> elem ck cks)
+
+-- Returns True if the given student is in the
+-- administrated groups or courses of the user
+isStudentOf :: Username -> Username -> Persist Bool
+isStudentOf student admin = do
+  scourses  <- userCourses student
+  sgroups   <- userGroups  student
+  sgcourses <- mapM courseOfGroup sgroups
+
+  acourses <- map fst <$> administratedCourses admin
+  agroups  <- map fst <$> administratedGroups  admin
+  return $ or [ hasIntersection (Set.fromList (scourses ++ sgcourses)) (Set.fromList acourses)
+              , hasIntersection (Set.fromList sgroups) (Set.fromList agroups)
+              ]
+  where
+    hasIntersection s1 s2 = not . Set.null $ Set.intersection s1 s2
