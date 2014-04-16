@@ -24,7 +24,6 @@ import qualified Control.Monad.State  as CMS
 import qualified Control.Monad.Error  as CME
 import qualified Control.Monad.Reader as CMR
 import           Control.Monad.Trans
-import           Control.Monad (join)
 import           Prelude hiding (log, userError)
 import qualified Data.ByteString.UTF8  as BsUTF8 (fromString)
 import           Data.Hashable
@@ -220,11 +219,13 @@ getFilePath usersfile = logAction INFO logMessage $ do
   where
     logMessage = usersFileCata (\u -> " asks the file path: " ++ show u) usersfile
 
--- Produces true if the given user is the student of the actual course or group
-courseOrGroupStudent :: Username -> UserStory Bool
-courseOrGroupStudent student = logAction INFO
-  (concat ["Student ", str student, " of the actual user"])
-  ((elem student . concatMap stiUsers) <$> submissionTables)
+-- Produces true if the given user is the student of the courses or groups which
+-- the actual user administrates.
+isStudentOfMine :: Username -> UserStory Bool
+isStudentOfMine student = logAction INFO (concat ["Student ", str student, " of the actual user"]) $ do
+  authorize P_Modify P_StudentPassword
+  u <- username
+  persistence $ Persist.isStudentOf student u
 
 administratedCourses :: UserStory [(CourseKey, Course)]
 administratedCourses = logAction INFO "selects adminstrated courses" $ do

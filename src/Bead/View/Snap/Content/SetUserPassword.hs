@@ -8,7 +8,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html5 as H
 
 import qualified Bead.Controller.Pages as Pages
-import           Bead.Controller.UserStories (courseOrGroupStudent)
+import           Bead.Controller.UserStories (isStudentOfMine)
 import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.ResetPassword as P
 import qualified Bead.View.Snap.DataBridge as B
@@ -23,15 +23,15 @@ setUsrPwd :: POSTContentHandler
 setUsrPwd = do
   user <- getParameter usernamePrm
   newPwd <- getParameter studentNewPwdPrm
-  isStudentOfMe <- userStory (courseOrGroupStudent user)
-  case isStudentOfMe of
-    False -> do
+  ok <- userStory (isStudentOfMine user)
+  if ok
+    then do
+      msg <- P.setUserPassword user newPwd
+      return $ StatusMessage msg
+    else do
       let username = usernameCata id user
       return . StatusMessage $ Msg_SetUserPassword_NonRegisteredUser
         "This user is not registered in neither of your courses nor your groups."
-    True -> do
-      msg <- P.setUserPassword user newPwd
-      return $ StatusMessage msg
 
 setUserPasswordContent :: IHtml
 setUserPasswordContent = do
