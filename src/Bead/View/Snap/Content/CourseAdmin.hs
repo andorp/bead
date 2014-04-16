@@ -95,7 +95,7 @@ groupAdministratorsTable i18n cgroups = H.p $ do
   fromString . i18n $ Msg_CourseAdmin_GroupAdmins_Info
     "The following table(s) contain(s) the course related groups and the username of the group admins."
   let cgroups' = sortBy (compare `on` (courseName . fst)) cgroups
-  forM_ cgroups $ \(course, groups) -> do
+  forM_ cgroups $ \(course, groups) -> when (not $ null groups) $ do
     let groups' = sortBy (compare `on` (groupName . fst)) groups
         cname   = courseName course
     H.p $ table (fieldName groupAdministratorsTableName) (fieldName groupAdministratorsTableName) # informationalTable $ do
