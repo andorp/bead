@@ -14,9 +14,9 @@ import           Text.Regex.TDFA
 import           Bead.Configuration
 import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
-import           Bead.Daemon.EmailDaemon
-import           Bead.Daemon.LogoutDaemon
-import           Bead.Daemon.TestAgentDaemon
+import           Bead.Daemon.Email
+import           Bead.Daemon.Logout
+import           Bead.Daemon.TestAgent
 import           Bead.Domain.Entities (UserRegInfo(..), TimeZone(..))
 import           Bead.Persistence.Persist (initPersistence, isPersistenceSetUp)
 import           Bead.View.Snap.AppInit

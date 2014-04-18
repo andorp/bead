@@ -18,8 +18,8 @@ import           System.Directory
 
 import           Bead.Configuration (Config(..))
 import           Bead.Controller.ServiceContext as S
-import           Bead.Daemon.EmailDaemon
-import           Bead.Daemon.LogoutDaemon
+import           Bead.Daemon.Email
+import           Bead.Daemon.Logout
 import           Bead.Domain.Entities (UserRegInfo)
 
 import           Bead.View.Snap.Application as A

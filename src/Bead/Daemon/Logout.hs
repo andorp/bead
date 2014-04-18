@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP #-}
-module Bead.Daemon.LogoutDaemon (
+module Bead.Daemon.Logout (
     startLogoutDaemon
   , LogoutDaemon(..)
 #ifdef TEST

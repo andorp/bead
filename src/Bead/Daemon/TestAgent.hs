@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bead.Daemon.TestAgentDaemon where
+module Bead.Daemon.TestAgent where
 
 import           Control.Exception
 import           Control.Concurrent
