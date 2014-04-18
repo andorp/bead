@@ -20,8 +20,8 @@ import           Snap.Snaplet.Session
 
 import           Bead.Configuration (Config(..))
 import           Bead.Controller.ServiceContext
-import           Bead.Daemon.EmailDaemon as EmailDaemon
-import           Bead.Daemon.LogoutDaemon
+import           Bead.Daemon.Email as EmailDaemon
+import           Bead.Daemon.Logout
 import           Bead.Domain.Entities
 import           Bead.View.Snap.Dictionary
 import           Bead.View.Snap.EmailTemplate

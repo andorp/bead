@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bead.Daemon.EmailDaemon (
+module Bead.Daemon.Email (
     EmailDaemon(..)
   , startEmailDaemon
   ) where
