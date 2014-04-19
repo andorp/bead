@@ -10,8 +10,6 @@ module Bead.View.Snap.Routing (
   ) where
 
 import           Control.Arrow
-import qualified Control.Exception as CE
-import qualified Control.Monad.Error as CME
 import           Data.Maybe
 import           Data.Map (Map)
 import qualified Data.Map as Map
@@ -24,7 +22,6 @@ import           Snap.Snaplet.Auth as A
 import           Snap.Snaplet.Fay
 import           Snap.Snaplet.Session
 import           Snap.Util.FileServe (serveDirectory)
-import           Text.Printf (printf)
 
 import           Bead.Configuration (Config(..))
 import           Bead.Controller.Logging as L
@@ -33,16 +30,17 @@ import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.UserStories as S
 import           Bead.Domain.Entities as E
 import           Bead.View.Snap.Application
-import           Bead.View.Snap.Content hiding (BlazeTemplate, template)
+import qualified Bead.View.Snap.Command.Fayax as Command
+import           Bead.View.Snap.Content hiding (BlazeTemplate, template, void)
 import           Bead.View.Snap.Content.All
-import           Bead.View.Snap.HandlerUtils as HU
+import           Bead.View.Snap.HandlerUtils as HU hiding (void)
 import           Bead.View.Snap.ErrorPage
 import           Bead.View.Snap.Login as L
+import           Bead.View.Snap.LoggedInFilter
 import           Bead.View.Snap.Registration
 import           Bead.View.Snap.ResetPassword
 import           Bead.View.Snap.RouteOf
 import           Bead.View.Snap.RequestParams
-import           Bead.View.Snap.Session
 
 #ifdef TEST
 import           Bead.Invariants (Invariants(..))
@@ -65,6 +63,7 @@ routes config = join
     , ("/reg_final", finalizeRegistration)
     , ("/change-language", changeLanguage)
     , ("/fay", with fayContext fayServe)
+    , ("/fay/ping", fayax $ Command.ping)
     , ("/upload", fileUpload)
     ]
     -- Add static handlers
@@ -93,91 +92,11 @@ index =
             (with auth $ login Nothing)
             (redirect (routeOf $ P.home ()))
 
--- TODO: I18N
-{- Logged In user combinator. It tries to authenticate the user with three methods.
-   The first method authenticate it using Snap auth, the second method authenticates
-   it using the session encoded user information. The third method authenticates it
-   using the service context. There is an extra criteria for the user, it's session
-   must be the same as the actual version, otherwise the authentication fails
--}
-userIsLoggedInFilter
-  :: Handler App b HandlerResult
-  -> Handler App b ()
-  -> (String -> Handler App b ())
-  -> Handler App b ()
-userIsLoggedInFilter inside outside onError = do
-  sessionVer <- withTop sessionManager $ getSessionVersion
-  case sessionVer of
-    -- Session timed out
-    Nothing -> onError "Lejárt a munkamenet!"
-    -- Active session
-    Just _ -> do
-      e <- CME.runErrorT loggedInFilter
-      case e of
-        Right () -> return ()
-        Left e' -> errorHappened . show $ e'
-
-  where
-    errorHappened e = do
-      logMessage ERROR e
-      outside
-
-    someExceptionHandler :: (String -> Handler App b ()) -> CE.SomeException -> Handler App b ()
-    someExceptionHandler onError e = do
-      logMessage ERROR $ "Exception occured, redirecting to error page. " ++ show e
-      onError $ show e
-
-    loggedInFilter = do
-      -- Authenticated user information
-      serverSideUser <- lift . withTop auth           $ currentUser
-      sessionVer     <- lift . withTop sessionManager $ getSessionVersion
-
-      -- Guards: invalid session version or invalid user
-      when (sessionVer /= (Just sessionVersion)) . CME.throwError . strMsg $ "Nem megfelelő a munkamenet verziója!"
-      when (isNothing serverSideUser)            . CME.throwError . strMsg $ "Ismeretlen felhasználó!"
-
-      -- Username and page from session
-      let unameFromAuth = usernameFromAuthUser . fromJust $ serverSideUser
-      usernameFromSession <- lift . withTop sessionManager $ usernameFromSession
-
-      -- Guard: invalid user in session
-      when (usernameFromSession /= (Just unameFromAuth)) . CME.throwError . strMsg $
-        printf "Hibás felhasználó a munkamenetben: %s, %s." (show unameFromAuth) (show usernameFromSession)
-
-      -- Guard: Is user logged in?
-      context <- lift . withTop serviceContext $ getServiceContext
-      tkn     <- lift sessionToken
-      let users = userContainer context
-          usrToken = userToken (unameFromAuth, tkn)
-      isLoggedIn <- lift (liftIO $ users `isUserLoggedIn` usrToken)
-      unless (isLoggedIn) . CME.throwError . strMsg  $ "A felhasználó a szerveren nincs bejelentkezve!"
-
-      -- Correct user is logged in, run the handler and save the data
-      result <- lift inside
-      case result of
-        HFailure -> lift $ HU.logout
-        HSuccess -> do
-          mUserData <- lift (liftIO $ users `userData` usrToken)
-
-          when (isNothing mUserData) . CME.throwError . contentHandlerError $
-            printf "Nem található adat a felhasználóhoz: %s" (show unameFromAuth)
-
 -- Redirects to the parent page of the given page
 redirectToParentPage :: P.PageDesc -> HandlerError App b ()
 redirectToParentPage = maybe (return ()) (redirect . routeOf) . P.parentPage
 
--- | Represents the result of a GET or POST handler
--- HandSuccess when no exception occured during the execution
--- HandFailure when some exception occured
-data HandlerResult
-  = HSuccess
-  | HFailure
-  deriving (Eq)
-
-hsuccess :: Handler App a b -> Handler App a HandlerResult
-hsuccess h = h >> (return HSuccess)
-
-hfailure :: Handler App a b -> Handler App a HandlerResult
+hfailure :: Handler App a b -> Handler App a (HandlerResult b)
 hfailure h = h >> (return HFailure)
 
 evalHandlerError
@@ -197,11 +116,11 @@ evalHandlerError onError onSuccess h = do
 runGETHandler
   :: (ContentHandlerError -> Handler App App ())
   -> HandlerError App App ()
-  -> Handler App App HandlerResult
+  -> Handler App App (HandlerResult ())
 runGETHandler onError handler
   = evalHandlerError
       (hfailure . onError)
-      (\_ -> return HSuccess)
+      (return . HSuccess)
       (do handler
           userStory S.clearStatusMessage
           lift . with sessionManager $ do
@@ -218,11 +137,11 @@ runPOSTHandler
   :: (ContentHandlerError -> Handler App App ())
   -> P.PageDesc
   -> HandlerError App App UserAction
-  -> Handler App App HandlerResult
+  -> Handler App App (HandlerResult ())
 runPOSTHandler onError p h
   = evalHandlerError
       (hfailure . onError)
-      (\_ -> return HSuccess)
+      (return . HSuccess)
       (do userAction <- h
           let userView = P.isUserViewPage p
           userStory $ do
@@ -238,11 +157,11 @@ runPOSTHandler onError p h
 runUserViewPOSTHandler
   :: (ContentHandlerError -> Handler App App ())
   -> HandlerError App App ()
-  -> Handler App App HandlerResult
+  -> Handler App App (HandlerResult ())
 runUserViewPOSTHandler onError userViewHandler
   = evalHandlerError
       (hfailure . onError)
-      (\_ -> return HSuccess)
+      (return . HSuccess)
       (do userViewHandler
           lift . with sessionManager $ do
             touchSession
@@ -312,16 +231,16 @@ handlePage page = P.pageKindCata view userView viewModify modify page where
     runStory $ S.changePage pageDesc
     runUserViewPOSTHandler defErrorPage h
 
-  view = viewHandlerCata (get . loggedInFilter . runGetOrError) . P.viewPageValue
+  view = viewHandlerCata (get . void . loggedInFilter . runGetOrError) . P.viewPageValue
 
-  userView = userViewHandlerCata (post . loggedInFilter . runUserViewPostOrError) . P.userViewPageValue
+  userView = userViewHandlerCata (post . void . loggedInFilter . runUserViewPostOrError) . P.userViewPageValue
 
-  viewModify = viewModifyHandlerCata
+  viewModify = void . viewModifyHandlerCata
     (\get post -> getPost (loggedInFilter $ runGetOrError  get)
                           (loggedInFilter $ runPostOrError post))
     . P.viewModifyPageValue
 
-  modify = modifyHandlerCata (post . loggedInFilter . runPostOrError) . P.modifyPageValue
+  modify = modifyHandlerCata (post . void . loggedInFilter . runPostOrError) . P.modifyPageValue
 
 
 allowedPageByTransition
@@ -403,6 +322,8 @@ routeToPageMap = Map.fromList [
           oneValue [l] = Just l
           oneValue _   = Nothing
 
+void :: Monad m => m a -> m ()
+void m = m >> return ()
 
 #ifdef TEST
 
