@@ -30,7 +30,7 @@ import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.UserStories as S
 import           Bead.Domain.Entities as E
 import           Bead.View.Snap.Application
---import qualified Bead.View.Snap.Command.Fayax as Command
+import qualified Bead.View.Snap.Command.Fayax as Command
 import           Bead.View.Snap.Content hiding (BlazeTemplate, template, void)
 import           Bead.View.Snap.Content.All
 import           Bead.View.Snap.HandlerUtils as HU hiding (void)
@@ -63,7 +63,7 @@ routes config = join
     , ("/reg_final", finalizeRegistration)
     , ("/change-language", changeLanguage)
     , ("/fay", with fayContext fayServe)
---    , ("/fay/ping", fayax $ Command.ping)
+    , Command.routeHandler Command.ping
     , ("/upload", fileUpload)
     ]
     -- Add static handlers

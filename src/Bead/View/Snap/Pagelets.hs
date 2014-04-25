@@ -54,6 +54,7 @@ dynamicDocument :: Html -> IHtml -> IHtml
 dynamicDocument header body = document
     (do css "jquery-ui.css"
         js "/jquery.js"
+        js "/helpers.js"
         js "/jquery-ui.js"
         js "/fay/DynamicContents.js"
         header)
@@ -174,6 +175,10 @@ setHookClass c h = h ! A.class_ (className c)
 required h = h ! A.required ""
 
 -- * Form
+
+-- Form that represents input for ajax requests generated on the client side
+fayaxForm :: String -> String -> Html -> Html
+fayaxForm id action = H.form ! A.action (fromString action) ! A.id (fromString id)
 
 postForm :: String -> Html -> Html
 postForm action = H.form ! A.method "post" ! A.action (fromString action) ! A.acceptCharset "UTF-8"
