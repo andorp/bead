@@ -11,6 +11,7 @@ import Fay.JQueryUI
 import Fay.Text
 
 import Bead.Domain.Shared.Evaluation
+import Bead.Shared.Command
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Fay.JSON.ClientSide
@@ -36,6 +37,7 @@ onload = do
   hookSamePasswords (rFormId changePwdForm) (cpf newPasswordField) (cpf newPasswordAgainField)
   hookSamePasswords (rFormId setStudentPwdForm) (cpf studentNewPwdField) (cpf studentNewPwdAgainField)
   hookLargeComments
+--  hookPingButton
 
 pctValue :: String -> String
 pctValue = toEvResultJSON . percentageResult . parseDouble
@@ -379,6 +381,24 @@ hookLargeComments = void $ do
                 setText     seeMoreText seeMore
                 removeClass lessbutton  seeMore
                 addClass    morebutton  seeMore
+
+{- PING EXAMPLE
+hookPingButton :: Fay ()
+hookPingButton = void $ do
+  select (fromString "#pingform") >>= submit (\e -> preventDefault e >> submitPing)
+  where
+    submitPing :: Fay ()
+    submitPing = void $ do
+      form <- select (fromString "#pingform")
+      json <- formJson form :: Fay Ping
+      jPost (fromString "/fay/ping") json (\(Pong message) -> putStrLn (unpack message))
+-}
+
+formJson :: JQuery -> Fay f
+formJson = ffi "Helpers.formJson(%1)"
+
+jPost :: Text -> Automatic f -> (Automatic g -> Fay ()) -> Fay ()
+jPost = ffi "jQuery.ajax(%1, { data: JSON.stringify(%2), type: 'POST', processData: false, contentType: 'text/json', success: %3 })"
 
 cssId :: String -> Text
 cssId i = fromString ('#':i)
