@@ -8,14 +8,11 @@ import Test.Framework.Providers.HUnit
 
 -- Bead imports
 
-import Bead.Domain.Types (Erroneous)
 import Bead.Domain.Entities
 import Bead.Domain.Shared.Evaluation
-import Bead.Domain.Evaluation
 import Bead.Domain.Relationships
 import Bead.Persistence.Persist
 import Bead.Persistence.Relations
-import Bead.Persistence.NoSQLDirFile
 import Control.Monad.Transaction.TIO
 
 -- Utils
@@ -23,7 +20,7 @@ import Control.Monad.Transaction.TIO
 import Data.Time.Clock
 import Data.Maybe
 import System.Directory
-import Control.Monad (join, liftM)
+import Control.Monad (join)
 
 tests = testGroup "Persistence tests" [
     test_initialize_persistence
@@ -32,6 +29,7 @@ tests = testGroup "Persistence tests" [
   , test_create_user
   , test_create_group_user
   , testUserRegSaveAndLoad
+  , testOpenSubmissions
   , clean_up
   ]
 
@@ -99,6 +97,75 @@ testUserRegSaveAndLoad = testCase "Save and Load User regisistration" $ do
   key <- liftE $ saveUserReg u
   u'  <- liftE $ loadUserReg key
   assertBool "Loaded user registration info differs from saved" (u == u')
+
+testOpenSubmissions = testCase "Users separated correctly in open submission tables" $ do
+  str <- getCurrentTime
+  end <- getCurrentTime
+  reinitpersistence
+  let myStudent = Username "mystudent"
+      myStudentUser = User {
+          u_role = Student
+        , u_username = myStudent
+        , u_email = Email "admin@gmail.com"
+        , u_name = "mystudent"
+        , u_timezone = UTC
+        , u_language = Language "hu"
+        }
+      otherStudent = Username "otherstudent"
+      otherStudentUser = User {
+          u_role = Student
+        , u_username = otherStudent
+        , u_email = Email "admin@gmail.com"
+        , u_name = "otherstudent"
+        , u_timezone = UTC
+        , u_language = Language "hu"
+        }
+      admin = Username "admin"
+      adminUser = User {
+          u_role = Admin
+        , u_username = admin
+        , u_email = Email "admin@gmail.com"
+        , u_name = "admin"
+        , u_timezone = UTC
+        , u_language = Language "hu"
+        }
+      password = "password"
+      cAssignment = Assignment "CourseAssignment" "Assignment" Urn str UTC end UTC
+      gAssignment1 = Assignment "GroupAssignment" "Assignment" Normal str UTC end UTC
+      gAssignment2 = Assignment "GroupAssignment" "Assignment" Normal str UTC end UTC
+      sbsm = Submission "submission" str
+  join $ liftE $ do
+    ck  <- saveCourse (Course "name" "desc" binaryEvalConfig TestScriptSimple)
+    gk1 <- saveGroup ck (Group "gname1" "gdesc1" binaryEvalConfig)
+    gk2 <- saveGroup ck (Group "gname2" "gdesc2" binaryEvalConfig)
+    saveUser adminUser
+    saveUser myStudentUser
+    saveUser otherStudentUser
+    subscribe myStudent ck gk1
+    subscribe otherStudent ck gk2
+    createCourseAdmin admin ck
+    createGroupAdmin admin gk1
+    cak <- saveCourseAssignment ck cAssignment
+    gak1 <- saveGroupAssignment gk1 gAssignment1
+    gak2 <- saveGroupAssignment gk2 gAssignment2
+    sk1 <- saveSubmission cak myStudent sbsm
+    sk2 <- saveSubmission gak1 myStudent sbsm
+    sk3 <- saveSubmission cak otherStudent sbsm
+    os <- openedSubmissionInfo admin
+    return $ do
+      let adminedCourse = map fst $ osAdminedCourse os
+          adminedGroup  = map fst $ osAdminedGroup os
+          relatedCourse = map fst $ osRelatedCourse os
+      assertBool
+        (join ["Course level assignment for administrated group were incorrent:", show adminedCourse])
+        ([sk1] == adminedCourse)
+      assertBool
+        (join ["Group level assignment for administrated group were incorrent:", show adminedGroup])
+        ([sk2] == adminedGroup)
+      assertBool
+        (join ["Course level assignment for non-administrated group were incorrent:", show relatedCourse])
+        ([sk3] == relatedCourse)
+
 
 test_create_group_user = testCase "Create Course and Group with a user" $ do
   let username = Username "ursula"
@@ -209,6 +276,9 @@ testHasLastSubmission ak u sk = do
   assertBool "Submission was not found" (isJust mKey)
   assertBool "Submission was different" (sk == fromJust mKey)
 
+reinitpersistence = do
+  removeDirectoryRecursive "data"
+  initPersistence
 
 clean_up = testCase "Cleaning up" $ do
   -- We use background knowledge, to clean up

@@ -1,6 +1,6 @@
 module Test.Quick.Persistence where
 
-import Control.Applicative ((<$>))
+import Control.Applicative ((<$>), (<*>))
 import Control.Monad
 import Control.Concurrent (forkIO)
 import qualified Data.Set as Set
@@ -232,7 +232,6 @@ courseAssignmentGen n gs = do
     run $ insertListRef list ak
   listInRef list
 
-
 -- Generate and store the given number of users, and returns the usernames found in the
 -- persistence layer
 users n = do
@@ -242,6 +241,37 @@ users n = do
     u' <- createOrLoadUser u
     run $ insertListRef list (u_username u)
   listInRef list
+
+-- Generate and store the given numner of admin users, and returns the usernames saved to
+-- the persistence layer, if no admin was generated an error would be thrown
+admins n = do
+  list <- createListRef
+  quick n $ do
+    u <- setAdmin <$> pick Gen.users
+    let username = u_username u
+    exist <- runPersistCmd $ doesUserExist username
+    unless exist $ do
+      createOrLoadUser u
+      run $ insertListRef list username
+  users <- listInRef list
+  assertNonEmpty users "No admins were generated."
+  return users
+  where
+    setAdmin u = u { u_role = Admin }
+
+-- Select an admin and a course and set the admin as a course admin
+setCourseAdmins as cs n =
+  quick n $ do
+    a <- pick $ elements as
+    c <- pick $ elements cs
+    runPersistCmd $ createCourseAdmin a c
+
+-- Select an admin and a course and set the admin as a course admin
+setGroupAdmins as gs n = do
+  quick n $ do
+    a <- pick $ elements as
+    g <- pick $ elements gs
+    runPersistCmd $ createGroupAdmin a g
 
 -- SubmissionInfoList is a list from username, assignment-key and the submission-key for them.
 -- Interpretation: The submission information about which user submitted which submission
@@ -936,6 +966,105 @@ incomingCommentsTest = do
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
 
+openSubmissionsTest = do
+  reinitPersistence
+  us <- users 50
+  as <- admins 10
+  cs <- courses 10
+  gs <- groups 40 cs
+  asg <- courseAndGroupAssignments 30 30 cs gs
+  setCourseAdmins as cs 100
+  setGroupAdmins as gs 100
+  subscribeUsers 400 us gs
+  submissions 100 us asg
+  quick 100 $ do
+    a <- pick $ elements as
+    os <- runPersistCmd $ openedSubmissionInfo a
+    let adminedCourses = map fst $ osAdminedCourse os
+        adminedGroups  = map fst $ osAdminedGroup os
+        relatedCourses = map fst $ osRelatedCourse os
+    pre (not (or [null adminedCourses, null adminedGroups, null relatedCourses]))
+    checkAdminedCourse a adminedCourses
+    checkAdminedGroup a adminedGroups
+    checkRelatedCourse a relatedCourses
+  return ()
+  where
+    -- Check if the user of the assignment attends a course that
+    -- the admin administrates. Check if the course of the submission
+    -- is administrated by the admin. Check if the course is related to the
+    -- admin via groups that the user administrates
+    checkAdminedCourse a sks = runPersistCmd $ do
+      adminedCourses <- (map fst) <$> administratedCourses a
+      relatedCourses <- do
+        gs <- map fst <$> administratedGroups a
+        mapM courseOfGroup gs
+      let courses = adminedCourses ++ relatedCourses
+      forM_ sks $ \sk -> do
+        u  <- usernameOfSubmission sk
+        isInCourse <- or <$> mapM (isUserInCourse u) courses
+        assertTrue isInCourse $ join
+          [ "ADMINED COURSE: User is not registered in administrated course: "
+          , show courses, " user: ", show u, " admin: ", show a
+          ]
+        ak <- assignmentOfSubmission sk
+        ks <- courseOrGroupOfAssignment ak
+        case ks of
+          Right gk -> fail $ join
+            [ "ADMINED COURSES: Group ", show gk, " Assignment ", show ak
+            , " Submission ", show sk
+            ]
+          Left ck -> do
+            assertTrue (elem ck courses) $ join
+              [ "ADMINED COURSES: The course key was not administrated by the user or associated for the group "
+              , " admin ", show a, " ", show ck
+              ]
+    -- Check if the user of the assignment attends a group that
+    -- the admin administrates. Check if the submission is administrated by the admin
+    -- checks if the submission is administrated by the admin.
+    checkAdminedGroup  a sks = runPersistCmd $ do
+      adminedGroups <- (map fst) <$> administratedGroups a
+      forM_ sks $ \sk -> do
+        u <- usernameOfSubmission sk
+        isInGroup <- or <$> mapM (isUserInGroup u) adminedGroups
+        assertTrue isInGroup $ join
+          [ "ADMINED GROUP: User is not registered in administrated groups:"
+          , show adminedGroups, " user: ", show u, " admin: ", show a
+          ]
+        ak <- assignmentOfSubmission sk
+        ks <- courseOrGroupOfAssignment ak
+        case ks of
+          Right gk -> do
+            assertTrue (elem gk adminedGroups) $ join
+              [ "ADMINED GROUP: The group key was not administrated by the user "
+              , show a, " ", show gk
+              ]
+          Left ck -> fail $ join
+            [ "ADMINED GROUP: Course ", show ck, " Assignment ", show ak
+            , " Submission ", show sk
+            ]
+    checkRelatedCourse a sks = runPersistCmd $ do
+      groups <- map fst <$> administratedGroups a
+      courses <- (++) <$> mapM courseOfGroup groups <*> (map fst <$> administratedCourses a)
+      forM_ sks $ \sk -> do
+        u <- usernameOfSubmission sk
+        isNotInGroup <- (not . or) <$> mapM (isUserInGroup u) groups
+        assertTrue isNotInGroup $ join
+          [ "RELATED COURSE: User is registered in administrated group: ", show groups
+          , " user: ", show u, " admin: ", show a
+          ]
+        ak <- assignmentOfSubmission sk
+        ks <- courseOrGroupOfAssignment ak
+        case ks of
+          Right gk -> fail $ join
+            [ "RELATED COURSE: Group ", show gk, " Assignment ", show ak
+            , " user: ", show u, " admin: ", show a
+            ]
+          Left ck -> do
+            assertTrue (elem ck courses) $ join
+              [ "RELATED COURSE: The course key was not administrated by the user "
+              , show a, " ", show ck, " student ", show u, " submission ", show sk
+              ]
+
 deleteIncomingCommentsTest = do
   reinitPersistence
   us <- users 400
@@ -1036,6 +1165,7 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Test Job cration" $ testJobCreationTest
   , testCase "Incoming comments" $ incomingCommentsTest
   , testCase "Delete incoming comments" $ deleteIncomingCommentsTest
+  , testCase "Open submissions list" $ openSubmissionsTest
   , cleanUpPersistence
   ]
 
