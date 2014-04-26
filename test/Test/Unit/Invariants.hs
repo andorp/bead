@@ -18,8 +18,8 @@ import           Test.Framework.Providers.HUnit
 import           Test.Framework.Providers.QuickCheck2
 
 import           Bead.Configuration (initTaskAssertions)
-import qualified Bead.Controller.LogoutDaemon as LD (unitTests)
 import qualified Bead.Controller.Pages as P (invariants)
+import qualified Bead.Daemon.LogoutDaemon as LD (unitTests)
 import qualified Bead.Domain.Entities as E (roleInvariants, assignmentTests, compareHunTests)
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQLDirFile as L (unitTests)

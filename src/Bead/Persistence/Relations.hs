@@ -31,14 +31,13 @@ related information is computed.
 
 import           Control.Applicative ((<$>))
 import           Control.Arrow
-import           Control.Monad (foldM, forM, when)
+import           Control.Monad (forM, when)
 import           Control.Monad.Transaction.TIO
 import           Data.Function (on)
 import           Data.List ((\\), nub, sortBy, intersect, find)
 import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
-import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Time (UTCTime, getCurrentTime)
 
@@ -178,6 +177,7 @@ openedSubmissionInfo u = do
   let filterSubmissions os s@(sk,sd) =
         let separate ak student
               | (isRelatedCourseAsg ak && isGroupUser student)  = os { osAdminedCourse = s:osAdminedCourse os }
+              | (isCourseAsg ak && isGroupUser student)  = os { osAdminedCourse = s:osAdminedCourse os }
               | (isGroupAsg ak && isGroupUser student)   = os { osAdminedGroup  = s:osAdminedGroup os  }
               | (isRelatedCourseAsg ak && isRelatedCourseUser student) = os { osRelatedCourse = s:osRelatedCourse os }
               | (isCourseAsg ak && isRelatedCourseUser student) = os { osRelatedCourse = s:osRelatedCourse os }
