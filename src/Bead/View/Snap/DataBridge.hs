@@ -13,7 +13,6 @@ import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Validators
-import Bead.View.Snap.Dictionary
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.RequestParams
 

@@ -1,14 +1,10 @@
 module Bead.View.UserActions where
 
-import Bead.Domain.Entities
-import Bead.Domain.Types
-import Bead.Domain.Relationships
-import Bead.Controller.ServiceContext (UserState(..))
-
 import qualified Bead.Controller.UserStories as Story
-import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.Logging as L
-import Bead.View.Snap.Translation
+import           Bead.Domain.Entities
+import           Bead.Domain.Relationships
+import           Bead.View.Snap.Translation
 
 -- | The user can preform the following actions on the user interface
 data UserAction

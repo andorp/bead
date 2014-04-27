@@ -2,28 +2,20 @@
 {-# LANGUAGE CPP #-}
 module Bead.View.Snap.Session where
 
--- Bead imports
-
-import Bead.Domain.Entities as E
-import Bead.Domain.Relationships as R
-import qualified Bead.Controller.Pages as P
-import Bead.View.Snap.Application
-import Bead.View.Snap.Dictionary (Language(..))
-#ifdef TEST
-import Bead.Invariants (Invariants(..), UnitTests(..))
-#endif
-
--- Haskell imports
-
-import Control.Applicative ((<$>))
-import Control.Monad (join)
-import Data.ByteString.Char8 hiding (index, length)
+import           Data.ByteString.Char8 hiding (index, length)
 import qualified Data.Text as T
 import qualified Data.List as L
 
-import Snap hiding (get)
-import Snap.Snaplet.Auth as A
-import Snap.Snaplet.Session
+import           Bead.Domain.Entities as E
+import           Bead.View.Snap.Application
+
+import           Snap hiding (get)
+import           Snap.Snaplet.Auth as A
+import           Snap.Snaplet.Session
+
+#ifdef TEST
+import           Bead.Invariants (UnitTests(..))
+#endif
 
 -- * Session Management
 

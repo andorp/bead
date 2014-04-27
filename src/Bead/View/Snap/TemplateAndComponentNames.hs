@@ -5,18 +5,16 @@ module Bead.View.Snap.TemplateAndComponentNames where
 -- This module contains information about templates and
 -- fields in the type safe manner.
 
--- Haskell imports
-import Data.String
-import Control.Monad (join)
-import Bead.View.Snap.Fay.HookIds
+import           Control.Monad (join)
+import qualified Data.Set as Set
+import           Data.String
+
+import           Bead.View.Snap.Fay.HookIds
 import qualified Bead.Controller.Pages as P
 
--- Test imports
 #ifdef TEST
-import Bead.Invariants (UnitTests(..))
+import           Bead.Invariants (UnitTests(..))
 #endif
-import Data.Set (Set)
-import qualified Data.Set as Set
 
 -- * Type safe declarations
 

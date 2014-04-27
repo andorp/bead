@@ -1,21 +1,13 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, FlexibleInstances #-}
 module Bead.View.Snap.I18N where
 
-import Control.Monad (join)
+import           Data.String
+import           Control.Monad.Trans.Reader
 
-import Text.Blaze.Internal (MarkupM)
+import           Text.Blaze.Internal (MarkupM)
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A
-import Text.Blaze.Internal (Attributable(..))
 
-import Data.String
-import Control.Monad.Reader (MonadReader)
-import Control.Monad.Trans (lift)
-import Control.Monad.Trans.Reader
-
-import Bead.View.Snap.Dictionary (I18N)
-import Bead.View.Snap.Translation
-
+import           Bead.View.Snap.Translation
 
 type IHtml = Reader I18N (MarkupM ())
 

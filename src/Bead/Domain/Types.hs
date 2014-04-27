@@ -1,11 +1,8 @@
 module Bead.Domain.Types where
 
-import Data.Char (isSpace)
-import Data.Time.Clock (UTCTime)
-
 import Control.Monad (join)
-import Control.Monad.Trans (lift)
-import Control.Monad.Trans.Error
+import Data.Char (isSpace)
+
 
 type Erroneous a = Either String a
 

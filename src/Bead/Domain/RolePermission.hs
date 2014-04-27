@@ -6,7 +6,6 @@ module Bead.Domain.RolePermission (
 #endif
   ) where
 
-import Control.Monad (join)
 import Bead.Domain.Entities hiding (roles, groupAdmin)
 #ifdef TEST
 import Bead.Invariants (Invariants(..))

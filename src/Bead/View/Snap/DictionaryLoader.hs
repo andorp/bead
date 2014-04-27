@@ -1,19 +1,15 @@
 module Bead.View.Snap.DictionaryLoader where
 
-import Control.Arrow ((&&&))
-import Control.Applicative ((<$>))
-import Control.Monad (filterM, mapM)
-
-import Data.Map (Map)
+import           Control.Applicative ((<$>))
+import           Control.Arrow ((&&&))
+import           Control.Monad (filterM)
 import qualified Data.Map as Map
-import Data.Maybe
+import           Data.Maybe
+import           System.Directory
+import           System.FilePath (takeExtension, joinPath)
 
-import System.IO
-import System.Directory
-import System.FilePath (takeExtension, joinPath, takeBaseName)
-
-import Bead.View.Snap.Dictionary
-import Bead.Domain.Types
+import           Bead.View.Snap.Dictionary
+import           Bead.Domain.Types
 
 -- Reads up all the dictionary files from a given directory, and
 -- creates the dictionaries map

@@ -5,7 +5,7 @@ module Bead.View.Snap.Markdown (
 {- A markdown to HTML conversion. -}
 
 import Data.String.Utils (replace)
-import Text.Pandoc.Options (def, writerHtml5)
+import Text.Pandoc.Options (def)
 import Text.Pandoc.Readers.Markdown (readMarkdown)
 import Text.Pandoc.Writers.HTML (writeHtml)
 

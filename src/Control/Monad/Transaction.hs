@@ -8,11 +8,10 @@ module Control.Monad.Transaction (
   , atomically
   ) where
 
-import Control.Applicative
-import Control.Monad.Trans
-import qualified Control.Monad.State as CMS
+import           Control.Applicative
 import qualified Control.Monad.Error as CME
-import Control.Exception
+import qualified Control.Monad.State as CMS
+import           Control.Monad.Trans
 
 -- * Rollback action
 

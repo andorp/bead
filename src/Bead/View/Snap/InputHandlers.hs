@@ -1,28 +1,26 @@
 module Bead.View.Snap.InputHandlers where
 
-import Control.Applicative ((<$>),(<*>))
-import Data.Time (UTCTime(..))
+import           Control.Applicative ((<$>),(<*>))
+import           Data.Time (UTCTime(..))
 
-import Bead.Domain.Types (Str(..))
-import Bead.Domain.Entities
-import Bead.Domain.Relationships
-import Bead.Domain.Evaluation
+import           Text.Blaze.Html5 (Html)
 
-import Bead.Controller.ServiceContext (UserState(..))
+import           Bead.Controller.ServiceContext (UserState(..))
 import qualified Bead.Controller.UserStories as Story (userState)
+import           Bead.Domain.Entities
+import           Bead.Domain.Evaluation
+import           Bead.Domain.Relationships
+import           Bead.Domain.Types (Str(..))
+import           Bead.View.Snap.Application (App(..))
+import           Bead.View.Snap.DataBridge
+import           Bead.View.Snap.Fay.Hooks
+import           Bead.View.Snap.Fay.HookIds
+import           Bead.View.Snap.HandlerUtils
+import           Bead.View.Snap.I18N (IHtml, getI18N)
+import           Bead.View.Snap.Pagelets
+import           Bead.View.Snap.TemplateAndComponentNames
+import           Bead.View.Snap.Translation
 
-import Bead.View.Snap.Application (App(..))
-import Bead.View.Snap.Pagelets
-import Bead.View.Snap.HandlerUtils
-import Bead.View.Snap.TemplateAndComponentNames
-import Bead.View.Snap.Fay.Hooks
-import Bead.View.Snap.Fay.HookIds
-import Bead.View.Snap.DataBridge
-
-import Bead.View.Snap.I18N (IHtml, getI18N, i18n)
-import Bead.View.Snap.Translation
-
-import Text.Blaze.Html5 (Html)
 
 -- * Input pagelet and handler
 
