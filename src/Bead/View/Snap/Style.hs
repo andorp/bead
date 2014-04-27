@@ -1,15 +1,14 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Style where
 
-import Control.Monad (join)
-import Data.List (intersperse)
-import Data.Monoid
-import Data.String (fromString)
+import           Control.Monad (join)
+import           Data.List (intersperse)
+import           Data.Monoid
+import           Data.String (fromString)
 
-import Text.Blaze.Html5 (Html, Attribute, (!))
-import Text.Blaze.Internal (Attributable)
+import           Text.Blaze.Html5 (Attribute, (!))
+import           Text.Blaze.Internal (Attributable)
 import qualified Text.Blaze.Html5.Attributes as A
-import Text.Printf
 
 -- Represents CSS style elements
 newtype StyleElement = StyleElement [String]

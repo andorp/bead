@@ -8,13 +8,10 @@ module Control.Monad.Transaction.TIO (
   , T.atomically
   ) where
 
-import Data.Typeable
-import Control.Monad.Transaction (Transaction)
+import           Control.Exception as E
+import           Control.Monad.Transaction (Transaction)
 import qualified Control.Monad.Transaction as T
-import Control.Exception
-import Control.Monad.Error
-import Control.Exception (IOException)
-import qualified Control.Exception as E
+import           Data.Typeable
 
 type TIO a = Transaction IOException IO a
 

@@ -4,7 +4,6 @@ module Bead.View.Snap.Content.Utils where
 import Data.List (find)
 import Data.Maybe (fromMaybe)
 
-import Bead.Domain.Relationships (AssignmentDesc)
 import Bead.View.Snap.Content
 import Bead.Controller.UserStories
 

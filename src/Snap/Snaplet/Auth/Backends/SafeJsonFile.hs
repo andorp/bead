@@ -11,8 +11,6 @@ This module only uses MVar to preserve the type safety
 
 import Control.Concurrent.MVar
 import Control.Monad.IO.Class
-import Data.Text
-import System.Directory
 
 import Snap.Snaplet
 import Snap.Snaplet.Auth

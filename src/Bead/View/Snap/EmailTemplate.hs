@@ -15,12 +15,9 @@ module Bead.View.Snap.EmailTemplate
   ) where
 
 import Data.Data
-import Data.Generics
 import Data.ByteString.Lazy.Char8 hiding (readFile)
 import Text.Hastache
 import Text.Hastache.Context
-
-import System.IO
 
 #ifdef TEST
 import Bead.Invariants (UnitTestsM(..))

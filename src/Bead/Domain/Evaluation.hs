@@ -8,7 +8,6 @@ module Bead.Domain.Evaluation (
   , module Bead.Domain.Shared.Evaluation
   ) where
 
-import Control.Monad.Reader
 import Data.Monoid
 
 import Bead.Domain.Shared.Evaluation

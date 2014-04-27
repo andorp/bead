@@ -1,6 +1,6 @@
 module Bead.Invariants where
 
-import Control.Monad (forM_, join, mapM_)
+import Control.Monad (forM_, join)
 
 -- * Invariants for testing
 

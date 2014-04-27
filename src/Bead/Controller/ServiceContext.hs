@@ -18,24 +18,15 @@ module Bead.Controller.ServiceContext (
   , ioUserContainer
   ) where
 
-import Bead.Domain.Types
-import Bead.Domain.Entities as Entities
-import Bead.Persistence.Persist
-import Bead.Controller.Pages as Pages
-import Bead.Controller.Logging
-
-import Data.Map (Map)
 import qualified Data.Map as Map
 
-import Data.IORef (IORef)
-import qualified Data.IORef as Ref
-import Control.Concurrent.MVar
-import Control.Concurrent.STM
-import Control.Concurrent.STM.TVar
-import Control.Monad (liftM)
-import Control.Monad.Transaction.TIO (TIO)
+import           Control.Concurrent.MVar
+import           Control.Concurrent.STM
 
-import Bead.View.Snap.Translation
+import           Bead.Controller.Pages as Pages
+import           Bead.Controller.Logging
+import           Bead.Domain.Entities as Entities
+import           Bead.View.Snap.Translation
 
 newtype UsrToken = UsrToken (Username, String)
   deriving (Show, Eq, Ord)

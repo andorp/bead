@@ -2,8 +2,7 @@
 {-# LANGUAGE DeriveFunctor #-}
 module Bead.Controller.Pages where
 
-import Control.Monad (join)
-import Control.Applicative ((<$>))
+import           Control.Monad (join)
 
 import qualified Bead.Domain.Entities      as E
 import           Bead.Domain.Relationships as R
