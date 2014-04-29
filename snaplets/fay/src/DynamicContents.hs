@@ -40,7 +40,7 @@ onload = do
 --  hookPingButton
 
 pctValue :: String -> String
-pctValue = toEvResultJSON . percentageResult . parseDouble
+pctValue = evResultJson . percentageResult . parseDouble
 
 connectStartEndDatePickers :: DateTimePickerHook -> DateTimePickerHook -> Fay ()
 connectStartEndDatePickers start end = void $ do
@@ -174,7 +174,7 @@ hookPercentageDiv hook f = void $ do
     putStrLn "Percentage div is loaded."
   where
     double "100" = "1.0"
-    double n = "0." ++ twoDigits n
+    double ds    = "0." ++ twoDigits ds
 
 numberField :: JQuery -> Int -> Int -> Fay ()
 numberField i min max = do
@@ -304,15 +304,15 @@ hookEvaluationTypeForm hook = do
   when existForm $ do
     selection <- select . cssId . evSelectionId $ hook
     change (changeFormContent form) selection
-    setDefaultEvalValue form selection
+    setDefaultEvalConfig form selection
     putStrLn $ "Evaluation form " ++ formId ++ " is loaded."
 
   where
-    setDefaultEvalValue :: JQuery -> JQuery -> Fay ()
-    setDefaultEvalValue form selection = do
+    setDefaultEvalConfig :: JQuery -> JQuery -> Fay ()
+    setDefaultEvalConfig form selection = do
       value <- decodeEvalType <$> firstOptionValue selection
       case value of
-        (BinEval _) -> setEvaluationValue (BinEval ())
+        (BinEval _) -> setEvaluationConfig binaryConfig
         (PctEval _) -> addPercentageField form
 
     changeFormContent :: JQuery -> Event -> Fay ()
@@ -321,7 +321,7 @@ hookEvaluationTypeForm hook = do
       v <- decodeEvalType <$> selectedValue t
       findSelector (fromString ".evtremoveable") form >>= remove
       case v of
-        (BinEval _) -> setEvaluationValue (BinEval ())
+        (BinEval _) -> setEvaluationConfig binaryConfig
         (PctEval _) -> addPercentageField form
 
     addPercentageField :: JQuery -> Fay ()
@@ -337,20 +337,21 @@ hookEvaluationTypeForm hook = do
       numberField pctInput 0 100
       pctSpinner setEvalLimit pctInput
       change setEvalLimit pctInput
-      setEvaluationValue (PctEval "0.00")
+      setEvaluationConfig (percentageConfig 0.0)
 
     setEvalLimit :: Event -> Fay ()
     setEvalLimit e = do
       t <- targetElement e
       v <- getVal t
-      let pct = "0." ++ (twoDigits (unpack v))
-      setEvaluationValue (PctEval pct)
+      let pct = case unpack v of
+                  "100" -> "1.0"
+                  ds    -> "0." ++ (twoDigits ds)
+      setEvaluationConfig (percentageConfig $ parseDouble pct)
 
-    setEvaluationValue :: EvaluationData () String -> Fay ()
-    setEvaluationValue c = void $ select (cssId . evHiddenValueId $ hook) >>= setVal (fromString . value $ c)
-      where
-        value (BinEval ()) = "BinEval ()"
-        value (PctEval d) = "PctEval " ++ d
+    setEvaluationConfig :: EvConfig -> Fay ()
+    setEvaluationConfig c =
+      void $ select (cssId . evHiddenValueId $ hook) >>=
+             setVal (fromString . evConfigJson $ c)
 
 hookLargeComments :: Fay ()
 hookLargeComments = void $ do
