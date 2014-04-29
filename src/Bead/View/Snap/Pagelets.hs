@@ -6,6 +6,8 @@ module Bead.View.Snap.Pagelets where
 
 import           Control.Monad (join)
 import           Data.Char (isAlphaNum)
+import           Data.Data
+import           Data.Maybe (fromMaybe)
 import           Data.String (IsString(..), fromString)
 import           Data.Time.Clock
 
@@ -19,6 +21,7 @@ import           Bead.Domain.Entities
 import           Bead.Domain.Relationships
 import           Bead.Domain.Types (Str(..))
 import           Bead.View.Snap.Fay.Hooks
+import           Bead.View.Snap.Fay.JSON.ServerSide
 import qualified Bead.View.Snap.I18N as I18N
 import           Bead.View.Snap.I18N (IHtml, translate, getI18N)
 import           Bead.View.Snap.RouteOf
@@ -518,6 +521,24 @@ instance SelectionText TimeZone where
 
 evalSelectionDiv :: EvaluationHook -> Html
 evalSelectionDiv h = ((H.div `withId` (evSelectionDivId h)) $ empty)
+
+-- * Radio buttons
+
+-- One radiobutton for the json encodeable value with the given parameter name
+radioButton :: (Show a, Data a) => String -> (a,String) -> Html
+radioButton name value = H.input ! A.type_ "radio" ! A.name (fromString name) ! A.value value'
+  where
+    value' = fromString $ fromMaybe "radioButton: error decoding value" (encodeToFay value)
+
+-- Radio buttons places horizontally for the given parameter name and values
+verticalRadioButtons :: (Show a, Data a) => String -> [(a, String)] -> Html
+verticalRadioButtons name values = mapM_ (radioButton name) values
+
+-- Radio buttons places vertically for the given parameter name and values
+horizontalRadioButtons :: (Show a, Data a) => String -> [(a, String)] -> Html
+horizontalRadioButtons name values = mapM_ button values
+  where
+    button v = do { radioButton name v; H.br }
 
 #ifdef TEST
 
