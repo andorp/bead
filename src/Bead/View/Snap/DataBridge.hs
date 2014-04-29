@@ -12,6 +12,7 @@ import Bead.Domain.Shared.Evaluation
 import Bead.View.Snap.TemplateAndComponentNames
 import Bead.View.Snap.Fay.Hooks
 import Bead.View.Snap.Fay.HookIds
+import Bead.View.Snap.Fay.JSON.ServerSide
 import Bead.View.Snap.Validators
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.RequestParams
@@ -138,10 +139,15 @@ evalConfigPrm hook = Parameter {
   }
   where
     readEvalConfig :: String -> Maybe (EvaluationData () PctConfig)
-    readEvalConfig = fmap convert . readMaybe
+    readEvalConfig = fmap convert . decodeFromFay
       where
-        convert :: EvaluationData () Double -> EvaluationData () PctConfig
-        convert = evaluationDataMap (BinEval . id) (PctEval . PctConfig)
+        convert :: EvConfig -> EvaluationData () PctConfig
+        convert = evaluationDataMap (BinEval . id) (PctEval . PctConfig . guardPercentage) . evConfig
+
+        guardPercentage :: Double -> Double
+        guardPercentage x
+           | 0 > x || x > 1 = error $ "Invalid percentage value:" ++ show x
+           | otherwise = x
 
 rolePrm :: Parameter Role
 rolePrm = Parameter {
