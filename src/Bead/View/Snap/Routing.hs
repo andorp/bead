@@ -132,25 +132,28 @@ userIsLoggedInFilter inside outside onError = do
       serverSideUser <- lift . withTop auth           $ currentUser
       sessionVer     <- lift . withTop sessionManager $ getSessionVersion
 
+      -- Get username form session
+      tkn <- lift sessionToken
+      usernameFromSession <- lift . withTop sessionManager $ usernameFromSession
+      let throwError msg = CME.throwError . strMsg $ concat [show usernameFromSession, " ", show tkn, ": ", msg]
+
       -- Guards: invalid session version or invalid user
-      when (sessionVer /= (Just sessionVersion)) . CME.throwError . strMsg $ "Nem megfelelő a munkamenet verziója!"
-      when (isNothing serverSideUser)            . CME.throwError . strMsg $ "Ismeretlen felhasználó!"
+      when (sessionVer /= (Just sessionVersion)) $ throwError "Nem megfelelő a munkamenet verziója!"
+      when (isNothing serverSideUser)            $ throwError "Ismeretlen felhasználó!"
 
       -- Username and page from session
       let unameFromAuth = usernameFromAuthUser . fromJust $ serverSideUser
-      usernameFromSession <- lift . withTop sessionManager $ usernameFromSession
 
       -- Guard: invalid user in session
-      when (usernameFromSession /= (Just unameFromAuth)) . CME.throwError . strMsg $
+      when (usernameFromSession /= (Just unameFromAuth)) . throwError $
         printf "Hibás felhasználó a munkamenetben: %s, %s." (show unameFromAuth) (show usernameFromSession)
 
       -- Guard: Is user logged in?
       context <- lift . withTop serviceContext $ getServiceContext
-      tkn     <- lift sessionToken
       let users = userContainer context
           usrToken = userToken (unameFromAuth, tkn)
       isLoggedIn <- lift (liftIO $ users `isUserLoggedIn` usrToken)
-      unless (isLoggedIn) . CME.throwError . strMsg  $ "A felhasználó a szerveren nincs bejelentkezve!"
+      unless (isLoggedIn) $ throwError "A felhasználó a szerveren nincs bejelentkezve!"
 
       -- Correct user is logged in, run the handler and save the data
       result <- lift inside
@@ -160,7 +163,7 @@ userIsLoggedInFilter inside outside onError = do
           mUserData <- lift (liftIO $ users `userData` usrToken)
 
           when (isNothing mUserData) . CME.throwError . contentHandlerError $
-            printf "Nem található adat a felhasználóhoz: %s" (show unameFromAuth)
+            printf "Nem található adat a felhasználóhoz: %s %s" (show unameFromAuth) (show tkn)
 
 -- Redirects to the parent page of the given page
 redirectToParentPage :: P.PageDesc -> HandlerError App b ()
