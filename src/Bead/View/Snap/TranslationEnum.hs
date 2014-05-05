@@ -129,6 +129,7 @@ translationList =
 
   , Msg_Evaluation_Title ()
   , Msg_Evaluation_Course ()
+  , Msg_Evaluation_Group ()
   , Msg_Evaluation_Student ()
   , Msg_Evaluation_SaveButton ()
   , Msg_Evaluation_Submited_Solution ()
@@ -136,6 +137,8 @@ translationList =
   , Msg_Evaluation_Rejected ()
   , Msg_Evaluation_New_Comment ()
   , Msg_Evaluation_Info ()
+  , Msg_Evaluation_Username ()
+  , Msg_Evaluation_SubmissionDate ()
 
   , Msg_SubmissionDetails_Course ()
   , Msg_SubmissionDetails_Admins ()

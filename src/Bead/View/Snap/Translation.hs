@@ -123,6 +123,7 @@ data Translation a
 
   | Msg_Evaluation_Title { trans :: a }
   | Msg_Evaluation_Course { trans :: a }
+  | Msg_Evaluation_Group { trans :: a }
   | Msg_Evaluation_Student { trans :: a }
   | Msg_Evaluation_SaveButton { trans :: a }
   | Msg_Evaluation_Submited_Solution { trans :: a }
@@ -130,6 +131,8 @@ data Translation a
   | Msg_Evaluation_Rejected { trans :: a }
   | Msg_Evaluation_New_Comment { trans :: a }
   | Msg_Evaluation_Info { trans :: a }
+  | Msg_Evaluation_Username { trans :: a }
+  | Msg_Evaluation_SubmissionDate { trans :: a }
 
   | Msg_SubmissionDetails_Course { trans :: a }
   | Msg_SubmissionDetails_Admins { trans :: a }
