@@ -21,7 +21,7 @@ main = addOnLoad onload
 
 onload :: Fay ()
 onload = do
-  hookPercentageDiv evaluationPctHook pctValue
+  hookPercentageDiv evaluationPctHook
   hookEvaluationTypeForm createCourseHook
   hookEvaluationTypeForm createGroupHook
   hookDatetimePickerDiv startDateTimeHook
@@ -37,8 +37,6 @@ onload = do
   hookSamePasswords (rFormId setStudentPwdForm) (cpf studentNewPwdField) (cpf studentNewPwdAgainField)
   hookLargeComments
 
-pctValue :: String -> String
-pctValue = evResultJson . percentageResult . parseDouble
 
 connectStartEndDatePickers :: DateTimePickerHook -> DateTimePickerHook -> Fay ()
 connectStartEndDatePickers start end = void $ do
@@ -154,25 +152,51 @@ hookDatetimePickerDiv hook = void $ do
 twoDigits [d] = ['0',d]
 twoDigits ds  = ds
 
-hookPercentageDiv :: PercentageHook -> (String -> String) -> Fay ()
-hookPercentageDiv hook f = void $ do
+hookPercentageDiv :: PercentageHook -> Fay ()
+hookPercentageDiv hook = void $ do
   div <- select . cssId . ptDivId $ hook
   existDiv <- exists div
   when existDiv $ do
     input <- select . cssId . ptHiddenInputId $ hook
+    checkboxMsg <- (select . cssId $ hookId evCommentOnlyText) >>= getVal
+    commentCheckbox <- select (fromString $ concat [ "<input type=\"checkbox\">", unpack checkboxMsg, "</input>" ])
+    appendTo div commentCheckbox
+    select (fromString "<br/>") >>= appendTo div
     pctInput <- select (fromString "<input type=\"text\" size=\"3\" required />")
     appendTo div pctInput
-    select (fromString "<span class=\"evtremoveable\">&#37;</span>") >>= appendTo div
+    pctSymbol <- select (fromString "<span class=\"evtremoveable\">&#37;</span>")
+    appendTo div pctSymbol
     let changeHiddenInput e = void $ do
           t <- targetElement e
           val <- getVal t
-          setVal (fromString . f . double . unpack $ val) input
+          setVal (fromString . result . double . unpack $ val) input
+    let commentCheckboxChanged e = void $ do
+          t <- target e
+          c <- checked t
+          if c
+            then do
+              hide Instantly pctInput
+              hide Instantly pctSymbol
+              setVal (fromString comment) input
+            else do
+              unhide pctInput
+              unhide pctSymbol
+              val <- getVal pctInput
+              setVal (fromString . result . double . unpack $ val) input
+    change commentCheckboxChanged commentCheckbox
     numberField pctInput 0 100
     pctSpinner changeHiddenInput pctInput
     putStrLn "Percentage div is loaded."
   where
     double "100" = "1.0"
     double ds    = "0." ++ twoDigits ds
+
+    -- Converts a string percentage into a JSON EvalOrComment percentage value representation
+    result :: String -> String
+    result = evalOrCommentJson . EvCmtResult . percentageResult . parseDouble
+
+    comment :: String
+    comment = evalOrCommentJson EvCmtComment
 
 numberField :: JQuery -> Int -> Int -> Fay ()
 numberField i min max = do
@@ -413,6 +437,12 @@ exists = ffi "(%1.length != 0)"
 
 selectedValue :: Element -> Fay String
 selectedValue = ffi "%1.options[%1.selectedIndex].value"
+
+-- Checks if the given jquery represents a checkbox, and
+-- returns if it is checked or not. If the jquery is not a checkbox throws
+-- an exception
+checked :: Element -> Fay Bool
+checked = ffi "%1.checked"
 
 firstOptionValue :: JQuery -> Fay String
 firstOptionValue selection = do

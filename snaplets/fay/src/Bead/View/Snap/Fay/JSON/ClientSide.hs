@@ -14,5 +14,5 @@ evConfigJson = ffi "JSON.stringify(%1)"
 resultJson :: Result -> String
 resultJson = ffi "JSON.stringify(%1)"
 
-evaluationDataJson :: EvaluationData b p -> String
-evaluationDataJson = ffi "JSON.stringify(%1)"
+evalOrCommentJson :: EvalOrComment -> String
+evalOrCommentJson = ffi "JSON.stringify(%1)"

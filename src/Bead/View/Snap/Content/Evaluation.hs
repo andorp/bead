@@ -6,6 +6,8 @@ module Bead.View.Snap.Content.Evaluation (
   , commentFromModifyEvaluation
   ) where
 
+import           Control.Arrow ((&&&))
+import           Data.Maybe (fromMaybe)
 import           Data.String (fromString)
 import           Data.Time (getCurrentTime)
 
@@ -17,7 +19,7 @@ import           Bead.View.Snap.Content.Comments
 import           Bead.View.Snap.Content.SeeMore
 
 import           Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A (id, style)
+import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html5 as H
 
 evaluation :: ViewModifyHandler
@@ -48,9 +50,6 @@ data PageData = PageData {
   , userTime :: UserTimeConverter
   }
 
-render (BinEval _) = renderDynamicPagelet
-render (PctEval _) = renderDynamicPagelet
-
 evaluationPage :: GETContentHandler
 evaluationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
@@ -62,7 +61,7 @@ evaluationPage = withUserState $ \s -> do
     , sbmEvaluationKey = Nothing
     , userTime = tc
     }
-  render (eConfig sd) $ withUserFrame s (evaluationContent pageData)
+  renderDynamicPagelet $ withUserFrame s (evaluationContent pageData)
 
 modifyEvaluationPage :: GETContentHandler
 modifyEvaluationPage = withUserState $ \s -> do
@@ -76,29 +75,65 @@ modifyEvaluationPage = withUserState $ \s -> do
   , sbmEvaluationKey = Just ek
   , userTime = tc
   }
-  render (eConfig sd) $ withUserFrame s (evaluationContent pageData)
+  renderDynamicPagelet $ withUserFrame s (evaluationContent pageData)
+
+-- Reads the evaluation result, from the parameters and determine if the content
+-- of the text area would be a comment of the textual evaluation of the given submission.
+-- The result of the computation is a UserActon which is a CreateComment or
+-- something that depends on the key end the evaluation itself.
+abstractEvaluationPostHandler
+  :: HandlerError App App key
+  -> (key -> C.Evaluation -> UserAction)
+  -> POSTContentHandler
+abstractEvaluationPostHandler getEvKeyParameter evCommand = do
+  sk <- getParameter submissionKeyPrm
+  ak <- getParameter assignmentKeyPrm
+  commentText <- getParameter evaluationValuePrm
+  commentOrResult <- getJSONParam (fieldName evaluationResultField) "Nem található értékelés!"
+  withEvalOrComment commentOrResult
+    (do (mrole,mname) <- (getRole &&& getName) <$> userState
+        let uname = fromMaybe "???" mname
+        case mrole of
+          Nothing -> return $ LogMessage "A felhasználó nincs bejelentkezve" -- Impossible
+          Just role -> do
+            now <- liftIO $ getCurrentTime
+            return $ SubmissionComment sk Comment {
+               comment = commentText
+             , commentAuthor = uname
+             , commentDate = now
+             , commentType = roleToCommentType role
+             })
+    (\result -> do
+        key <- getEvKeyParameter
+        let e = C.Evaluation {
+            evaluationResult = evResult result
+          , writtenEvaluation = commentText
+          }
+        return $ evCommand key e)
+  where
+    roleToCommentType = roleCata
+      CT_Student
+      CT_GroupAdmin
+      CT_CourseAdmin
+      CT_Admin
+
+    getRole = userStateCata
+      Nothing
+      Nothing
+      Nothing
+      (\_username _page _name role _token _timezone _status -> Just role)
+
+    getName = userStateCata
+      Nothing
+      Nothing
+      Nothing
+      (\_username _page name _role _token _timezone _status -> Just name)
 
 evaluationPostHandler :: POSTContentHandler
-evaluationPostHandler = do
-  sk <- getParameter submissionKeyPrm
-  ev <- getParameter evaluationValuePrm
-  er <- getJSONParam (fieldName evaluationResultField) "Nem található értékelés!"
-  let e = C.Evaluation {
-    evaluationResult = evResult er
-  , writtenEvaluation = ev
-  }
-  return $ NewEvaluation sk e
+evaluationPostHandler = abstractEvaluationPostHandler (getParameter submissionKeyPrm) NewEvaluation
 
 modifyEvaluationPost :: POSTContentHandler
-modifyEvaluationPost = do
-  ek <- getParameter evaluationKeyPrm
-  ev <- getParameter evaluationValuePrm
-  er <- getJSONParam (fieldName evaluationResultField) "Nem található értékelés!"
-  let e = C.Evaluation {
-    evaluationResult = evResult er
-  , writtenEvaluation = ev
-  }
-  return $ C.ModifyEvaluation ek e
+modifyEvaluationPost = abstractEvaluationPostHandler (getParameter evaluationKeyPrm) ModifyEvaluation
 
 commentOnSubmissionHandler :: POSTContentHandler
 commentOnSubmissionHandler = do
@@ -145,14 +180,13 @@ evaluationContent pd = do
       tc = userTime pd
   msg <- getI18N
   return $ do
-    postForm (routeOf . evPage $ maybeEvalKey) $ H.div ! formDiv $ do
-      H.div ! title $ H.h2 (fromString . msg $ Msg_Evaluation_Title "Evaluation")
-      H.p $ fromString . msg $ Msg_Evaluation_Info $ concat
-        [ "It is not mandatory to evaluate the submission, it is allowed to comment on it only.  "
-        , "The student may answer the comments by further comments.  The submission may be "
-        , "evaluated many times."
-        ]
-      H.div ! leftInfo $ do
+    H.div . H.p $ fromString . msg $ Msg_Evaluation_Info $ concat
+      [ "It is not mandatory to evaluate the submission, it is allowed to comment on it only.  "
+      , "The student may answer the comments by further comments.  The submission may be "
+      , "evaluated many times."
+      ]
+    H.div $ postForm (routeOf . evPage $ maybeEvalKey) $ do
+      H.div $ do
         H.table $ do
           H.tr $ do
             H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Course "Course, group: ")
@@ -160,20 +194,24 @@ evaluationContent pd = do
           H.tr $ do
             H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Student "Student: ")
             H.td $ (fromString . eStudent $ sd)
-        evaluationDiv . i18n msg . inputEvalResult $ eConfig sd
-        submitButton (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Evaluate")
-      H.div ! rightText $ do
-        textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv
-    H.div $ H.h2 $ (fromString . msg $ Msg_Evaluation_Submited_Solution "Submission")
-    H.div # submissionTextDiv $ do
-      seeMorePre msg maxLength maxLines (eSolution sd)
-    H.h2 (fromString . msg $ Msg_Comments_Title "Comments")
-    -- Renders the comment area where the user can place a comment
-    H.div $ H.h3 $ (fromString . msg $ Msg_Evaluation_New_Comment "New comment")
-    i18n msg $ commentPostForm (commentPage maybeEvalKey) (eAssignmentKey sd)
-    when (not . null $ eComments sd) $ do
-      H.hr
-      i18n msg $ commentsDiv tc . eComments $ sd
+      H.div $ H.h2 $ (fromString . msg $ Msg_Evaluation_Submited_Solution "Submission")
+      H.div # submissionTextDiv $ do
+        seeMorePre msg maxLength maxLines (eSolution sd)
+      H.div $ do
+        textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv ! A.rows "10"
+        hiddenInput (fieldName assignmentKeyField) (paramValue $ eAssignmentKey sd)
+        H.div ! alignToRight $ do
+          hiddenInput (fieldName evCommentOnlyText) (msg $ Msg_Evaluation_New_Comment "New Comment")
+          evaluationDiv . i18n msg . inputEvalResult $ eConfig sd
+          submitButton
+            (fieldName saveEvalBtn)
+            (fromString . msg $ Msg_Evaluation_SaveButton "Send")
+    H.div $ do
+      H.h2 (fromString . msg $ Msg_Comments_Title "Comments")
+      -- Renders the comment area where the user can place a comment
+      when (not . null $ eComments sd) $ do
+        H.hr
+        i18n msg $ commentsDiv tc . eComments $ sd
 
   where
     evaluationDiv = withEvaluationData
@@ -183,9 +221,6 @@ evaluationContent pd = do
 
     submissionKey = sbmSubmissionKey pd
     maybeEvalKey  = sbmEvaluationKey pd
-
-    defaultEvalCfg :: EvaluationResult
-    defaultEvalCfg = BinEval (Binary Passed)
 
     evPage (Just ek) = Pages.modifyEvaluation submissionKey ek ()
     evPage Nothing   = Pages.evaluation submissionKey ()
@@ -201,13 +236,13 @@ evaluationContent pd = do
 inputEvalResult :: EvaluationConfig -> IHtml
 inputEvalResult (BinEval cfg) = do
   msg <- getI18N
-  return $ valueSelection valueAndText (fieldName evaluationResultField) $
-             [ (Passed, msg $ Msg_Evaluation_Accepted "Accepted")
-             , (Failed, msg $ Msg_Evaluation_Rejected "Rejected")
-             ]
+  return $ horizontalRadioButtons (fieldName evaluationResultField) $
+    [ (EvCmtComment,  msg $ Msg_Evaluation_New_Comment "New Comment")
+    , (binary Passed, msg $ Msg_Evaluation_Accepted "Accepted")
+    , (binary Failed, msg $ Msg_Evaluation_Rejected "Rejected")
+    ]
   where
-    valueAndText :: (Result, String) -> (String, String)
-    valueAndText (v,n) = (errorOnNothing . encodeToFay . EvResult . mkEvalResult $ Binary v, n)
+    binary = EvCmtResult . EvResult . mkEvalResult . Binary
 
 -- When the page is dynamic the percentage spinner is hooked on the field
 inputEvalResult (PctEval cfg) =
@@ -219,9 +254,5 @@ errorOnNothing = maybe (error "Hiba a bemenet kódolásában!") id
 
 -- CSS Section
 
-formDiv = A.style "width: 100%; height: 200px"
-title   = A.style "width: 100%"
-leftInfo = A.style "float: left; width: 28%; height: 100%"
-rightText = A.style "float: right; width: 68%; height: 100%"
-fillDiv = A.style "width: 98%; height: 98%"
-
+fillDiv = A.style "width: 100%"
+alignToRight = A.style "text-align: right"
