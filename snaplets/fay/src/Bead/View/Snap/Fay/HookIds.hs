@@ -34,6 +34,8 @@ evaluationResultField = HookId "evaluation-result"
 
 pctHelpMessage = HookId "pct-help-message"
 
+evCommentOnlyText = HookId "ev-comment-only-text"
+
 data HookClass = HookClass { hookClass :: String }
 
 datePickerClass = HookClass "datepicker"

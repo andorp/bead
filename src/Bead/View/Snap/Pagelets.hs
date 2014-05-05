@@ -531,17 +531,19 @@ evalSelectionDiv h = ((H.div `withId` (evSelectionDivId h)) $ empty)
 
 -- One radiobutton for the json encodeable value with the given parameter name
 radioButton :: (Show a, Data a) => String -> (a,String) -> Html
-radioButton name value = H.input ! A.type_ "radio" ! A.name (fromString name) ! A.value value'
+radioButton name (value,text) = do
+  H.input ! A.type_ "radio" ! A.name (fromString name) ! A.value value'
+  fromString text
   where
     value' = fromString $ fromMaybe "radioButton: error decoding value" (encodeToFay value)
 
 -- Radio buttons places horizontally for the given parameter name and values
-verticalRadioButtons :: (Show a, Data a) => String -> [(a, String)] -> Html
-verticalRadioButtons name values = mapM_ (radioButton name) values
+horizontalRadioButtons :: (Show a, Data a) => String -> [(a, String)] -> Html
+horizontalRadioButtons name values = mapM_ (radioButton name) values
 
 -- Radio buttons places vertically for the given parameter name and values
-horizontalRadioButtons :: (Show a, Data a) => String -> [(a, String)] -> Html
-horizontalRadioButtons name values = mapM_ button values
+verticalRadioButtons :: (Show a, Data a) => String -> [(a, String)] -> Html
+verticalRadioButtons name values = mapM_ button values
   where
     button v = do { radioButton name v; H.br }
 

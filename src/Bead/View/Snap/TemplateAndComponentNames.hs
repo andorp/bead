@@ -430,7 +430,7 @@ fieldList = map fieldName $ join [
   , SFN userTimeZoneField, SFN assignmentForm, SFI changePwdForm, SFI setStudentPwdForm
 
   , SFI regForm, SFI loginForm, SFI regFinalForm, SFN courseAdministratorsTableName
-  , SFN groupAdministratorsTableName
+  , SFN groupAdministratorsTableName, SFN evCommentOnlyText
   ]
   ]
 

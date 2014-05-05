@@ -80,3 +80,20 @@ percentageConfig = EvConfig . PctEval
 
 binaryConfig :: EvConfig
 binaryConfig = EvConfig (BinEval ())
+
+-- Command that can send from the evaluation page to the
+-- server. It consists of a comment value, come from the
+-- text field, or the value of the evaluation
+data EvalOrComment
+  = EvCmtComment
+  | EvCmtResult EvResult
+  deriving (Eq, Show, Read, Data, Typeable)
+
+evalOrCommentCata
+  comment
+  result
+  e = case e of
+    EvCmtComment  -> comment
+    EvCmtResult r -> result r
+
+withEvalOrComment e comment result = evalOrCommentCata comment result e
