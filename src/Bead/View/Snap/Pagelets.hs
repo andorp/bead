@@ -537,11 +537,18 @@ radioButton name (value,text) = do
   where
     value' = fromString $ fromMaybe "radioButton: error decoding value" (encodeToFay value)
 
--- Radio buttons places horizontally for the given parameter name and values
+-- Radio buttons placed horizontally for the given parameter name and values
 horizontalRadioButtons :: (Show a, Data a) => String -> [(a, String)] -> Html
 horizontalRadioButtons name values = mapM_ (radioButton name) values
 
--- Radio buttons places vertically for the given parameter name and values
+-- Radio buttons placed horizontally for the given parameter name and values, checked the default nth
+horizontalRadioButtonsDef :: (Show a, Data a) => String -> Int -> [(a, String)] -> Html
+horizontalRadioButtonsDef name nth values = mapM_ (radioButton' name) (values `zip` [0..])
+  where
+    radioButton' n (v,i) =
+      (if i == nth then (! A.checked "") else id) $ radioButton n v
+
+-- Radio buttons placed vertically for the given parameter name and values
 verticalRadioButtons :: (Show a, Data a) => String -> [(a, String)] -> Html
 verticalRadioButtons name values = mapM_ button values
   where

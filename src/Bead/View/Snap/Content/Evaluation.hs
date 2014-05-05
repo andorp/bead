@@ -189,11 +189,15 @@ evaluationContent pd = do
       H.div $ do
         H.table $ do
           H.tr $ do
-            H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Course "Course, group: ")
-            H.td $ (fromString . courseGroupName $ sd)
+            infoCell (msg $ Msg_Evaluation_Course "Course: ") (eCourse sd)
+            infoCell (msg $ Msg_Evaluation_Group "Group: ") (fromMaybe "" $ eGroup sd)
           H.tr $ do
-            H.td $ H.b $ (fromString . msg $ Msg_Evaluation_Student "Student: ")
-            H.td $ (fromString . eStudent $ sd)
+            infoCell (msg $ Msg_Evaluation_Student "Student: ") (eStudent sd)
+            infoCell (msg $ Msg_Evaluation_Username "Username: ") (usernameCata id $ eUsername sd)
+          H.tr $ do
+            infoCell
+              (msg $ Msg_Evaluation_SubmissionDate "Date of submission: ")
+              (showDate . tc $ eSubmissionDate sd)
       H.div $ H.h2 $ (fromString . msg $ Msg_Evaluation_Submited_Solution "Submission")
       H.div # submissionTextDiv $ do
         seeMorePre msg maxLength maxLines (eSolution sd)
@@ -205,7 +209,7 @@ evaluationContent pd = do
           evaluationDiv . i18n msg . inputEvalResult $ eConfig sd
           submitButton
             (fieldName saveEvalBtn)
-            (fromString . msg $ Msg_Evaluation_SaveButton "Send")
+            (fromString . msg $ Msg_Evaluation_SaveButton "Submit")
     H.div $ do
       H.h2 (fromString . msg $ Msg_Comments_Title "Comments")
       -- Renders the comment area where the user can place a comment
@@ -214,6 +218,10 @@ evaluationContent pd = do
         i18n msg $ commentsDiv tc . eComments $ sd
 
   where
+    infoCell title value = do
+      H.td . H.b $ fromString title
+      H.td ! A.style "padding: 0px 10px 0px 0px" $ fromString value
+
     evaluationDiv = withEvaluationData
       (eConfig $ sbmDesc pd)
       (const H.div)
@@ -228,15 +236,13 @@ evaluationContent pd = do
     commentPage (Just ek) = Pages.commentFromModifyEvaluation submissionKey ek ()
     commentPage Nothing   = Pages.commentFromEvaluation submissionKey ()
 
-    courseGroupName sd = concat [ eCourse sd, maybe "" (" - " ++) $ eGroup sd ]
-
     maxLength = 100
     maxLines  = 5
 
 inputEvalResult :: EvaluationConfig -> IHtml
 inputEvalResult (BinEval cfg) = do
   msg <- getI18N
-  return $ horizontalRadioButtons (fieldName evaluationResultField) $
+  return $ horizontalRadioButtonsDef (fieldName evaluationResultField) 0 $
     [ (EvCmtComment,  msg $ Msg_Evaluation_New_Comment "New Comment")
     , (binary Passed, msg $ Msg_Evaluation_Accepted "Accepted")
     , (binary Failed, msg $ Msg_Evaluation_Rejected "Rejected")

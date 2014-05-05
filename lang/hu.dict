@@ -109,7 +109,8 @@ DictionaryFile {
     , Msg_Comments_AuthorTestScript_Private { trans = "Automata tesztelői komment (csak az oktató láthatja)" }
     , Msg_Comments_AuthorTestScript_Public { trans = "Automata tesztelői komment" }
     , Msg_Evaluation_Title { trans = "Értékelés" }
-    , Msg_Evaluation_Course { trans = "Tárgy, csoport: " }
+    , Msg_Evaluation_Course { trans = "Tárgy: " }
+    , Msg_Evaluation_Group { trans = "Csoport: " }
     , Msg_Evaluation_Student { trans = "Hallgató: " }
     , Msg_Evaluation_SaveButton { trans = "Beküld" }
     , Msg_Evaluation_Submited_Solution { trans = "Beadott megoldás" }
@@ -117,6 +118,8 @@ DictionaryFile {
     , Msg_Evaluation_Rejected { trans = "Elutasított" }
     , Msg_Evaluation_New_Comment { trans = "Új hozzászólás" }
     , Msg_Evaluation_Info { trans = "Nem kötelező egyből értékelni a hallgató munkáját, lehet csak hozzászólást is írni.  A hozzászólásokra a hallgató szintén hozzászólásokkal tud válaszolni.  A feladat többször is értékelhető." }
+    , Msg_Evaluation_Username { trans = "Neptun-kód" }
+    , Msg_Evaluation_SubmissionDate { trans = "Beadás dátuma:" }
     , Msg_SubmissionDetails_Course { trans = "Tárgy, csoport:" }
     , Msg_SubmissionDetails_Admins { trans = "Oktató:" }
     , Msg_SubmissionDetails_Assignment { trans = "Feladat:" }
