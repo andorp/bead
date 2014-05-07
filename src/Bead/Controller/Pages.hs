@@ -172,8 +172,6 @@ data ModifyPage a
   | AssignCourseAdmin a
   | AssignGroupAdmin a
   | ChangePassword a
-  | CommentFromEvaluation R.SubmissionKey a
-  | CommentFromModifyEvaluation R.SubmissionKey R.EvaluationKey a
   | DeleteUsersFromCourse R.CourseKey a
   | DeleteUsersFromGroup R.GroupKey a
   | UnsubscribeFromCourse R.GroupKey a
@@ -185,8 +183,6 @@ modifyPageCata
   assignCourseAdmin
   assignGroupAdmin
   changePassword
-  commentFromEvaluation
-  commentFromModifyEvaluation
   deleteUsersFromCourse
   deleteUsersFromGroup
   unsubscribeFromCourse
@@ -196,8 +192,6 @@ modifyPageCata
     AssignCourseAdmin a -> assignCourseAdmin a
     AssignGroupAdmin a -> assignGroupAdmin a
     ChangePassword a -> changePassword a
-    CommentFromEvaluation sk a -> commentFromEvaluation sk a
-    CommentFromModifyEvaluation sk ek a -> commentFromModifyEvaluation sk ek a
     DeleteUsersFromCourse ck a -> deleteUsersFromCourse ck a
     DeleteUsersFromGroup gk a -> deleteUsersFromGroup gk a
     UnsubscribeFromCourse gk a -> unsubscribeFromCourse gk a
@@ -209,8 +203,6 @@ modifyPageValue = modifyPageCata
   id -- assignCourseAdmin
   id -- assignGroupAdmin
   id -- changePassword
-  cid -- commentFromEvaluation
-  c2id -- commentFromModifyEvaluation
   cid -- deleteUsersFromCourse
   cid -- deleteUsersFromGroup
   cid -- unsubscribeFromCourse
@@ -295,8 +287,6 @@ createGroup       = Modify . CreateGroup
 assignCourseAdmin = Modify . AssignCourseAdmin
 assignGroupAdmin  = Modify . AssignGroupAdmin
 changePassword    = Modify . ChangePassword
-commentFromEvaluation sk = Modify . CommentFromEvaluation sk
-commentFromModifyEvaluation sk ek = Modify . CommentFromModifyEvaluation sk ek
 deleteUsersFromCourse ck          = Modify . DeleteUsersFromCourse ck
 deleteUsersFromGroup gk           = Modify . DeleteUsersFromGroup gk
 unsubscribeFromCourse gk          = Modify . UnsubscribeFromCourse gk
@@ -335,8 +325,6 @@ pageCata
   assignGroupAdmin
   changePassword
   setUserPassword
-  commentFromEvaluation
-  commentFromModifyEvaluation
   deleteUsersFromCourse
   deleteUsersFromGroup
   unsubscribeFromCourse
@@ -373,8 +361,6 @@ pageCata
     (Modify (AssignGroupAdmin a)) -> assignGroupAdmin a
     (Modify (ChangePassword a)) -> changePassword a
     (ViewModify (SetUserPassword a)) -> setUserPassword a
-    (Modify (CommentFromEvaluation sk a)) -> commentFromEvaluation sk a
-    (Modify (CommentFromModifyEvaluation sk ek a)) -> commentFromModifyEvaluation sk ek a
     (Modify (DeleteUsersFromCourse ck a)) -> deleteUsersFromCourse ck a
     (Modify (DeleteUsersFromGroup gk a)) -> deleteUsersFromGroup gk a
     (Modify (UnsubscribeFromCourse gk a)) -> unsubscribeFromCourse gk a
@@ -413,8 +399,6 @@ constantsP
   assignGroupAdmin_
   changePassword_
   setUserPassword_
-  commentFromEvaluation_
-  commentFromModifyEvaluation_
   deleteUsersFromCourse_
   deleteUsersFromGroup_
   unsubscribeFromCourse_
@@ -451,8 +435,6 @@ constantsP
       (c $ assignGroupAdmin assignGroupAdmin_)
       (c $ changePassword changePassword_)
       (c $ setUserPassword setUserPassword_)
-      (\sk _ -> commentFromEvaluation sk commentFromEvaluation_)
-      (\sk ek _ -> commentFromModifyEvaluation sk ek commentFromModifyEvaluation_)
       (\ck _ -> deleteUsersFromCourse ck deleteUsersFromCourse_)
       (\gk _ -> deleteUsersFromGroup gk deleteUsersFromGroup_)
       (\gk _ -> unsubscribeFromCourse gk unsubscribeFromCourse_)
@@ -493,8 +475,6 @@ liftsP
   assignGroupAdmin_
   changePassword_
   setUserPassword_
-  commentFromEvaluation_
-  commentFromModifyEvaluation_
   deleteUsersFromCourse_
   deleteUsersFromGroup_
   unsubscribeFromCourse_
@@ -531,8 +511,6 @@ liftsP
       (assignGroupAdmin . assignGroupAdmin_)
       (changePassword . changePassword_)
       (setUserPassword . setUserPassword_)
-      (\sk a -> commentFromEvaluation sk (commentFromEvaluation_ sk a))
-      (\sk ek a -> commentFromModifyEvaluation sk ek (commentFromModifyEvaluation_ sk ek a))
       (\ck a -> deleteUsersFromCourse ck (deleteUsersFromCourse_ ck a))
       (\gk a -> deleteUsersFromGroup gk (deleteUsersFromGroup_ gk a))
       (\gk a -> unsubscribeFromCourse gk (unsubscribeFromCourse_ gk a))
@@ -633,12 +611,6 @@ isChangePassword _ = False
 isSetUserPassword (ViewModify (SetUserPassword _)) = True
 isSetUserPassword _ = False
 
-isCommentFromEvaluation (Modify (CommentFromEvaluation _ _)) = True
-isCommentFromEvaluation _ = False
-
-isCommentFromModifyEvaluation (Modify (CommentFromModifyEvaluation _ _ _)) = True
-isCommentFromModifyEvaluation _ = False
-
 isDeleteUsersFromCourse (Modify (DeleteUsersFromCourse _ _)) = True
 isDeleteUsersFromCourse _ = False
 
@@ -716,9 +688,7 @@ adminPages = [
 -- Pages that can not be displayed only, modifies the
 -- persistented data somehow
 dataModificationPages = [
-    isCommentFromEvaluation
-  , isCommentFromModifyEvaluation
-  , isEvaluation
+    isEvaluation
   , isModifyEvaluation
   , isDeleteUsersFromCourse
   , isDeleteUsersFromGroup
@@ -802,8 +772,6 @@ parentPage = pageCata'
       administration -- assignCourseAdmin
       courseAdmin    -- assignGroupAdmin
       profile        -- changePassword
-      evaluation     -- commentFromEvaluation
-      modifyEvaluation -- commentFromModifyEvaluation
       (const home)     -- deleteUsersFromCourse
       (const home)     -- deleteUsersFromGroup
       (const home)     -- unsubscribeFromCourse

@@ -298,8 +298,6 @@ routeToPageMap = Map.fromList [
   , (modifyAssignmentPreviewPath , \ps -> P.modifyAssignmentPreview <$> assignmentKey ps <*> unit)
   , (changePasswordPath      , j $ P.changePassword ())
   , (setUserPasswordPath     , j $ P.setUserPassword ())
-  , (commentFromEvaluationPath , \ps -> P.commentFromEvaluation <$> submissionKey ps <*> unit)
-  , (commentFromModifyEvaluationPath , \ps -> P.commentFromModifyEvaluation <$> submissionKey ps <*> evaluationKey ps <*> unit)
   , (deleteUsersFromCoursePath , \ps -> P.deleteUsersFromCourse <$> courseKey ps <*> unit)
   , (deleteUsersFromGroupPath , \ps -> P.deleteUsersFromGroup <$> groupKey ps <*> unit)
   , (unsubscribeFromCoursePath , \ps -> P.unsubscribeFromCourse <$> groupKey ps <*> unit)

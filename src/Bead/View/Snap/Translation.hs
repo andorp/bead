@@ -406,8 +406,6 @@ data Translation a
   | Msg_LinkText_ModifyAssignmentPreview { trans :: a }
   | Msg_LinkText_ChangePassword { trans :: a }
   | Msg_LinkText_SetUserPassword { trans :: a }
-  | Msg_LinkText_CommentFromEvaluation { trans :: a }
-  | Msg_LinkText_CommentFromModifyEvaluation { trans :: a }
   | Msg_LinkText_DeleteUsersFromCourse { trans :: a }
   | Msg_LinkText_DeleteUsersFromGroup { trans :: a }
   | Msg_LinkText_UnsubscribeFromCourse { trans :: a }

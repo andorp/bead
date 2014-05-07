@@ -67,8 +67,6 @@ pageContent = Pages.constantsP
   assignGroupAdmin
   changePassword
   setUserPassword
-  commentFromEvaluation
-  commentFromModifyEvaluation
   deleteUsersFromCourse
   deleteUsersFromGroup
   unsubscribeFromCourse
