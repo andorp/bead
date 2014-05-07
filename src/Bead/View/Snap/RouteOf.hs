@@ -43,8 +43,6 @@ module Bead.View.Snap.RouteOf (
   , modifyAssignmentPreviewPath
   , changePasswordPath
   , setUserPasswordPath
-  , commentFromEvaluationPath
-  , commentFromModifyEvaluationPath
   , deleteUsersFromCoursePath
   , deleteUsersFromGroupPath
   , unsubscribeFromCoursePath
@@ -174,12 +172,6 @@ changePasswordPath = "/change-password"
 setUserPasswordPath :: RoutePath
 setUserPasswordPath = "/set-user-password"
 
-commentFromEvaluationPath :: RoutePath
-commentFromEvaluationPath = "/comment-from-evaluation"
-
-commentFromModifyEvaluationPath :: RoutePath
-commentFromModifyEvaluationPath = "/comment-from-modify-evaluation"
-
 deleteUsersFromCoursePath :: RoutePath
 deleteUsersFromCoursePath = "/delete-users-from-course"
 
@@ -227,8 +219,6 @@ pageRoutePath = pfmap id id id id . r where
     assignGroupAdminPath
     changePasswordPath
     setUserPasswordPath
-    commentFromEvaluationPath
-    commentFromModifyEvaluationPath
     deleteUsersFromCoursePath
     deleteUsersFromGroupPath
     unsubscribeFromCoursePath
@@ -270,8 +260,6 @@ pageRequestParams = liftsP
   (c []) -- assignGroupAdmin
   (c []) -- changePassword
   (c []) -- setUserPassword
-  (\sk _ -> [requestParam sk]) -- commentFromEvaluation
-  (\sk ek _ -> [requestParam sk, requestParam ek]) -- commentFromModifyEvaluation
   (\ck _ -> [requestParam ck]) -- deleteUsersFromCourse
   (\gk _ -> [requestParam gk]) -- deleteUsersFromGroup
   (\gk _ -> [requestParam gk]) -- unsubscribeFromCourse

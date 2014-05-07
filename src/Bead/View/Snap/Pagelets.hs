@@ -334,8 +334,6 @@ linkText = P.pageCata
   (c $ Msg_LinkText_AssignGroupAdmin "Assign Teacher")
   (c $ Msg_LinkText_ChangePassword "Change Password")
   (c $ Msg_LinkText_SetUserPassword "Set Student Password")
-  (c2 $ Msg_LinkText_CommentFromEvaluation "Comment")
-  (c3 $ Msg_LinkText_CommentFromModifyEvaluation "Comment")
   (c2 $ Msg_LinkText_DeleteUsersFromCourse "Remove Students")
   (c2 $ Msg_LinkText_DeleteUsersFromGroup "Remove Students")
   (c2 $ Msg_LinkText_UnsubscribeFromCourse "Unregister")

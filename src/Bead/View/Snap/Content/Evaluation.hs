@@ -2,8 +2,6 @@
 module Bead.View.Snap.Content.Evaluation (
     evaluation
   , modifyEvaluation
-  , commentFromEvaluation
-  , commentFromModifyEvaluation
   ) where
 
 import           Control.Arrow ((&&&))
@@ -27,16 +25,6 @@ evaluation = ViewModifyHandler evaluationPage evaluationPostHandler
 
 modifyEvaluation :: ViewModifyHandler
 modifyEvaluation = ViewModifyHandler modifyEvaluationPage modifyEvaluationPost
-
--- Comment on the given evaluation page, the admin does not want to evaluate
--- the submission, only places a comment
-commentFromEvaluation :: ModifyHandler
-commentFromEvaluation = ModifyHandler commentOnSubmissionHandler
-
--- Comment on the given evaluation page, the admin does not want to
--- modify the evaluation only places a comment
-commentFromModifyEvaluation :: ModifyHandler
-commentFromModifyEvaluation = ModifyHandler commentOnSubmissionHandler
 
 -- Page Data consitits of a description for a submission key, which contains
 -- the assignment key as well, the submission key, an evautation key, and
@@ -135,45 +123,6 @@ evaluationPostHandler = abstractEvaluationPostHandler (getParameter submissionKe
 modifyEvaluationPost :: POSTContentHandler
 modifyEvaluationPost = abstractEvaluationPostHandler (getParameter evaluationKeyPrm) ModifyEvaluation
 
-commentOnSubmissionHandler :: POSTContentHandler
-commentOnSubmissionHandler = do
-  mrole <- getRole <$> userState
-  mname <- getName <$> userState
-  let uname = case mname of
-                Just un -> un
-                Nothing -> "???"
-  case mrole of
-    Nothing -> return $ LogMessage "A felhasználó nincs bejelentkezve" -- Impossible
-    Just role -> do
-      sk <- getParameter submissionKeyPrm
-      ak <- getParameter assignmentKeyPrm
-      c  <- getParameter (stringParameter (fieldName commentValueField) "Hozzászólás")
-      now <- liftIO $ getCurrentTime
-      return $ SubmissionComment sk Comment {
-         comment = c
-       , commentAuthor = uname
-       , commentDate = now
-       , commentType = roleToCommentType role
-       }
-  where
-    roleToCommentType = roleCata
-      CT_Student
-      CT_GroupAdmin
-      CT_CourseAdmin
-      CT_Admin
-
-    getRole = userStateCata
-      Nothing
-      Nothing
-      Nothing
-      (\_username _page _name role _token _timezone _status -> Just role)
-
-    getName = userStateCata
-      Nothing
-      Nothing
-      Nothing
-      (\_username _page name _role _token _timezone _status -> Just name)
-
 evaluationContent :: PageData -> IHtml
 evaluationContent pd = do
   let sd = sbmDesc pd
@@ -232,9 +181,6 @@ evaluationContent pd = do
 
     evPage (Just ek) = Pages.modifyEvaluation submissionKey ek ()
     evPage Nothing   = Pages.evaluation submissionKey ()
-
-    commentPage (Just ek) = Pages.commentFromModifyEvaluation submissionKey ek ()
-    commentPage Nothing   = Pages.commentFromEvaluation submissionKey ()
 
     maxLength = 100
     maxLines  = 5

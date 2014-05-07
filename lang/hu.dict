@@ -372,8 +372,6 @@ DictionaryFile {
     , Msg_LinkText_ViewAssignment { trans = "Feladat megtekintése" }
     , Msg_LinkText_ChangePassword { trans = "Jelszócsere" }
     , Msg_LinkText_SetUserPassword { trans = "Hallgató jelszavának beállítása" }
-    , Msg_LinkText_CommentFromEvaluation { trans = "Hozzászólás" }
-    , Msg_LinkText_CommentFromModifyEvaluation { trans = "Hozzászólás" }
     , Msg_LinkText_DeleteUsersFromCourse { trans = "Hallgatók törlése" }
     , Msg_LinkText_DeleteUsersFromGroup { trans = "Hallgatók törlése" }
     , Msg_LinkText_UnsubscribeFromCourse { trans = "Leiratkozás" }

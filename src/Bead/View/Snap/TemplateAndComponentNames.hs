@@ -177,8 +177,6 @@ menuId = P.pageCata
   (c "link-assign-group-admin")
   (c "link-change-password")
   (c "link-set-user-password")
-  (c2 "link-comment-from-evaluation")
-  (c3 "link-comment-from-modify-evaluation")
   (c2 "link-delete-users-from-course")
   (c2 "link-delete-users-from-group")
   (c2 "link-unsubscribe-from-course")

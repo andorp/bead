@@ -411,8 +411,6 @@ translationList =
   , Msg_LinkText_ModifyAssignmentPreview ()
   , Msg_LinkText_ChangePassword ()
   , Msg_LinkText_SetUserPassword ()
-  , Msg_LinkText_CommentFromEvaluation ()
-  , Msg_LinkText_CommentFromModifyEvaluation ()
   , Msg_LinkText_DeleteUsersFromCourse ()
   , Msg_LinkText_DeleteUsersFromGroup ()
   , Msg_LinkText_UnsubscribeFromCourse ()
