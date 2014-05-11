@@ -12,6 +12,7 @@ This module represents the registration pages. The registration process has two 
 2) The user opens the recieved mail and sets her password.
 -}
 
+import           Control.Arrow ((&&&))
 import qualified Data.ByteString.Char8 as B
 import           Data.Maybe (fromJust, isNothing)
 import           Data.String (fromString)
@@ -261,7 +262,8 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                     table (fieldName registrationTable) (fieldName registrationTable) $ do
                       tableLine (i18n $ Msg_RegistrationFinalize_Password "Password:") $ passwordInput (DataBridge.name regPasswordPrm) 20 Nothing ! A.required ""
                       tableLine (i18n $ Msg_RegistrationFinalize_PwdAgain "Password (again):") $ passwordInput (DataBridge.name regPasswordAgainPrm) 20 Nothing ! A.required ""
-                      tableLine (i18n $ Msg_RegistrationFinalize_Timezone "Time zone:") $ defEnumSelection (DataBridge.name regTimeZonePrm) UTC ! A.required ""
+                      tableLine (i18n $ Msg_RegistrationFinalize_Timezone "Time zone:") $
+                        selectionWithDefault (DataBridge.name regTimeZonePrm) UTC timeZones ! A.required ""
                     hiddenParam regUserRegKeyPrm key
                     hiddenParam regTokenPrm      token
                     hiddenParam regUsernamePrm   username
@@ -270,6 +272,8 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                     submitButton (fieldName regSubmitBtn) (i18n $ Msg_RegistrationFinalize_SubmitButton "Register")
                   H.br
                   linkToRoute (i18n $ Msg_RegistrationFinalize_GoBackToLogin "Back to login")
+
+  timeZones = map (id &&& show) [toEnum 0 .. ]
 
   hiddenParam parameter value = hiddenInput (DataBridge.name parameter) (DataBridge.encode parameter value)
 

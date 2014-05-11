@@ -9,6 +9,7 @@ module Bead.View.Snap.Content.NewAssignment (
   , modifyAssignmentPreview
   ) where
 
+import           Control.Arrow ((&&&))
 import           Control.Monad.Error
 import qualified Data.ByteString.UTF8 as BsUTF8
 import qualified Data.Map as Map
@@ -199,8 +200,8 @@ readTCCreation = do
 
 readTCCreationParameters :: HandlerError App b TCCreationParameters
 readTCCreationParameters = do
-  mTestScript         <- getOptionalParameter (readablePrm (fieldName assignmentTestScriptField) "Test Script")
-  mZippedTestCaseName <- getOptionalParameter (readablePrm (fieldName assignmentUsersFileField) "Test Script File")
+  mTestScript         <- getOptionalParameter (jsonParameter (fieldName assignmentTestScriptField) "Test Script")
+  mZippedTestCaseName <- getOptionalParameter (jsonParameter (fieldName assignmentUsersFileField) "Test Script File")
   mPlainTestCase      <- getOptionalParameter (stringParameter (fieldName assignmentTestCaseField) "Test Script")
   return (mTestScript, mZippedTestCaseName, mPlainTestCase)
 
@@ -213,8 +214,8 @@ tcCreation (Just (Just tsk)) Nothing Nothing = Left "#1"
 
 readTCModificationParameters :: HandlerError App b TCModificationParameters
 readTCModificationParameters = do
-  mTestScript         <- getOptionalParameter (readablePrm (fieldName assignmentTestScriptField) "Test Script")
-  mZippedTestCaseName <- getOptionalParameter (readablePrm (fieldName assignmentUsersFileField) "Test Script File")
+  mTestScript         <- getOptionalParameter (jsonParameter (fieldName assignmentTestScriptField) "Test Script")
+  mZippedTestCaseName <- getOptionalParameter (jsonParameter (fieldName assignmentUsersFileField) "Test Script File")
   mPlainTestCase      <- getOptionalParameter (stringParameter (fieldName assignmentTestCaseField) "Test Script")
   return (mTestScript,mZippedTestCaseName,mPlainTestCase)
 
@@ -436,7 +437,12 @@ newAssignmentContent pd = do
           (const7 ts)
           pd
         where
-          ts = defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType Nothing $ pd) ! asgField
+          -- ts = defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType Nothing $ pd) ! asgField
+          ts = selectionWithDefault
+                 (fieldName assignmentTypeField)
+                 (maybe Normal id . amap assignmentType Nothing $ pd)
+                 (map (id &&& show) assignmentTypes)
+                 ! asgField
 
       editOrReadonly = pageDataCata
         (const5 id)
@@ -448,6 +454,9 @@ newAssignmentContent pd = do
         (const7 id)
 
       linkToPandocMarkdown = "http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html"
+
+      assignmentTypes :: [AssignmentType]
+      assignmentTypes = [toEnum 0 .. ]
 
       pagePreview :: PageData -> PageDesc
       pagePreview = pageDataCata
@@ -575,13 +584,13 @@ newAssignmentContent pd = do
               userFileSelection uf = do
                 H.b $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
                 H.br
-                valueSelectionWithDefault keyValue (fieldName assignmentUsersFileField) (==uf) fs ! asgField
+                selectionWithDefault (fieldName assignmentUsersFileField) uf (map keyValue fs) ! asgField
                 H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
                 H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
                 where
-                  keyValue uf = flip usersFileCata uf $ \u -> (show uf, u)
+                  keyValue = (id &&& (usersFileCata id))
 
               textAreaPreview f = textArea (Just f)
 
@@ -597,13 +606,13 @@ newAssignmentContent pd = do
               usersFileSelection = do
                 H.b $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
                 H.br
-                valueSelection keyValue (fieldName assignmentUsersFileField) fs ! asgField
+                selection (fieldName assignmentUsersFileField) (map keyValue fs) ! asgField
                 H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
                 H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
                 where
-                  keyValue uf = flip usersFileCata uf $ \u -> (show uf, u)
+                  keyValue = (id &&& (usersFileCata id))
 
           testCaseText Nothing = Nothing
           testCaseText (Just (_,tc',_)) = Just . BsUTF8.toString $ tcValue tc'
@@ -637,14 +646,15 @@ newAssignmentContent pd = do
               userFileSelectionPreview uf = do
                 H.b $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
                 H.pre $ testCaseFileName tc
-                valueSelectionWithDefault keyValue (fieldName assignmentUsersFileField) (uf==) ((Left ()):map Right fs) ! asgField
+--                valueSelectionWithDefault keyValue (fieldName assignmentUsersFileField) (uf==) ((Left ()):map Right fs) ! asgField
+                selectionWithDefault (fieldName assignmentUsersFileField) uf (map keyValue ((Left ()):map Right fs)) ! asgField
                 H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
                 H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
                 where
-                  keyValue l@(Left ()) = (show l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
-                  keyValue r@(Right uf) = flip usersFileCata uf $ \u -> (show r, u)
+                  keyValue l@(Left ()) = (l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
+                  keyValue r@(Right uf) = (r, usersFileCata id uf)
 
 
           overwriteTestCaseArea fs ts tc = maybe
@@ -660,14 +670,14 @@ newAssignmentContent pd = do
               usersFileSelection = do
                 H.b $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
                 H.pre $ testCaseFileName tc
-                valueSelection keyValue (fieldName assignmentUsersFileField) ((Left ()):map Right fs) ! asgField
+                selection (fieldName assignmentUsersFileField) (map keyValue ((Left ()):map Right fs)) ! asgField
                 H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
                 H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
                 where
-                  keyValue l@(Left ()) = (show l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
-                  keyValue r@(Right uf) = flip usersFileCata uf $ \u -> (show r, u)
+                  keyValue l@(Left ()) = (l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
+                  keyValue r@(Right uf) = (r, usersFileCata id uf)
 
       -- TODO
       testScriptSelection :: (Translation String -> String) -> PageData -> H.Html
@@ -689,7 +699,7 @@ newAssignmentContent pd = do
             H.br
             H.b . fromString . msg $ Msg_NewAssignment_TestScripts "Tester"
             H.br
-            valueSelection keyValue (fieldName assignmentTestScriptField) (Nothing:map Just ts) ! asgField
+            selection (fieldName assignmentTestScriptField) (map keyValue (Nothing:map Just ts)) ! asgField
 
           scriptSelectionPreview ts tcp = case tcp of
             (Just Nothing    , _, _) -> scriptSelection ts
@@ -702,11 +712,11 @@ newAssignmentContent pd = do
             H.br
             H.b . fromString . msg $ Msg_NewAssignment_TestScripts "Tester"
             H.br
-            valueSelectionWithDefault
-              keyValue
+            selectionWithDefault'
               (fieldName assignmentTestScriptField)
-              (\ts' -> (Just tsk)==(fmap fst ts'))
-              (Nothing:map Just ts) ! asgField
+              ((Just tsk)==)
+              (map keyValue (Nothing:map Just ts))
+              ! asgField
 
           modificationScriptSelection ts mts = maybe
             (return ())
@@ -717,13 +727,16 @@ newAssignmentContent pd = do
             H.br
             H.b . fromString . msg $ Msg_NewAssignment_TestScripts "Test scripts"
             H.br
-            valueSelectionWithDefault
-              keyValue (fieldName assignmentTestScriptField) (def mts) (Nothing:map Just ts) ! asgField
+            selectionWithDefault'
+              (fieldName assignmentTestScriptField)
+              (def mts)
+              (map keyValue (Nothing:map Just ts))
+              ! asgField
             where
               def Nothing Nothing = True
               def Nothing _       = False
-              def (Just (_,_,tsk)) (Just (tsk',_)) = tsk == tsk'
-              def _                _               = False
+              def (Just (_,_,tsk)) (Just tsk') = tsk == tsk'
+              def _                _           = False
 
           modificationScriptSelectionPreview ts mts tm =
             case (tcmpTestScriptKey tm, ts) of
@@ -735,18 +748,21 @@ newAssignmentContent pd = do
                 H.br
                 H.b . fromString . msg $ Msg_NewAssignment_TestScripts "Test scripts"
                 H.br
-                valueSelectionWithDefault
-                  keyValue (fieldName assignmentTestScriptField) (def tsk) (Nothing:map Just ts) ! asgField
+                selectionWithDefault'
+                  (fieldName assignmentTestScriptField)
+                  (def tsk)
+                  (map keyValue (Nothing:map Just ts))
+                  ! asgField
                 where
                   def Nothing Nothing = True
                   def Nothing _       = False
-                  def (Just tsk) (Just (tsk',_)) = tsk == tsk'
-                  def _                _         = False
+                  def (Just tsk) (Just tsk') = tsk == tsk'
+                  def _                _     = False
 
 
-          keyValue :: Maybe (TestScriptKey, TestScriptInfo) -> (String, String)
-          keyValue Nothing = (show nothing, msg $ Msg_NewAssignment_NoTesting "Assignment without testing")
-          keyValue (Just (testScriptKey, tsInfo)) = (show (Just testScriptKey), tsiName tsInfo)
+          keyValue :: Maybe (TestScriptKey, TestScriptInfo) -> (Maybe TestScriptKey, String)
+          keyValue Nothing = (Nothing, msg $ Msg_NewAssignment_NoTesting "Assignment without testing")
+          keyValue (Just (testScriptKey, tsInfo)) = ((Just testScriptKey), tsiName tsInfo)
 
           nothing = Nothing :: Maybe TestScriptKey
 

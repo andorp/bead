@@ -72,7 +72,7 @@ emailPasswordToUser user pwd = do
       address
       (msg $ Msg_ResetPassword_EmailSubject "BE-AD: Forgotten password")
       (msg $ Msg_ResetPassword_EmailBody forgottenPasswordEmailTemplate)
-      ForgottenPassword { fpUsername = show user, fpNewPassword = pwd }
+      ForgottenPassword { fpUsername = usernameCata id user, fpNewPassword = pwd }
   where
     loadUserFromPersistence i18n =
       (lift $ registrationStory $ S.loadUser user) >>=

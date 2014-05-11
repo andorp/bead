@@ -200,7 +200,7 @@ submissionTablePart tableId now ctx s = do
       H.tr $ do
         let username = ud_username u
         dataCell noStyle . fromString $ ud_fullname u
-        dataCell noStyle . fromString $ show username
+        dataCell noStyle . fromString $ usernameCata id username
         submissionCells username s
         deleteUserCheckbox u
       where

@@ -22,7 +22,6 @@ import Bead.View.Snap.Content.Submission
 import Bead.View.Snap.Content.SubmissionList
 import Bead.View.Snap.Content.SubmissionDetails
 import Bead.View.Snap.Content.GroupRegistration
-import Bead.View.Snap.Content.CreateCourse
 import Bead.View.Snap.Content.UserDetails
 import Bead.View.Snap.Content.UserSubmissions
 import Bead.View.Snap.Content.SetUserPassword

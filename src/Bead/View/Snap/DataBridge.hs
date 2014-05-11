@@ -1,7 +1,8 @@
 module Bead.View.Snap.DataBridge where
 
-import Control.Monad (join)
+import Control.Monad ((>=>), join)
 import Data.Char (toUpper)
+import Data.Maybe (fromMaybe)
 import Data.Time (UTCTime(..))
 import Text.Printf (printf)
 
@@ -76,6 +77,9 @@ customGroupKeyPrm field = Parameter {
 groupKeyPrm :: Parameter GroupKey
 groupKeyPrm = customGroupKeyPrm (fieldName groupKeyName)
 
+jsonGroupKeyPrm :: String -> Parameter GroupKey
+jsonGroupKeyPrm field = jsonParameter field "csoportazonosító"
+
 customCourseKeyPrm :: String -> Parameter CourseKey
 customCourseKeyPrm field = Parameter {
     encode = courseKeyMap id
@@ -84,6 +88,9 @@ customCourseKeyPrm field = Parameter {
   , decodeError = \m -> printf "Érvénytelen tárgyazonosító: %s!" m
   , notFound    = "A tárgyazonosító nem található!"
   }
+
+jsonCourseKeyPrm :: String -> Parameter CourseKey
+jsonCourseKeyPrm field = jsonParameter field "tárgyazonosító"
 
 -- Represents the CourseKey parameter
 courseKeyPrm :: Parameter CourseKey
@@ -129,6 +136,17 @@ evaluationKeyPrm = Parameter {
   , notFound    = "Az értékelésazonosító nem található!"
   }
 
+-- JSON encodeable parameter, used in POST request parameters only
+jsonParameter :: (Data a, Show a) => String -> String -> Parameter a
+jsonParameter field name = Parameter {
+    encode = \v -> fromMaybe (error $ concat [name, " jsonParameter: encodeToFay ",show v]) $ encodeToFay v
+  , decode = decodeFromFay
+  , name = field
+  , decodeError = \v -> printf "Hibás json érték: (%s, %s)!" name v
+  , notFound    = printf "%s nem található!" name
+  }
+
+
 evalConfigPrm :: EvaluationHook -> Parameter EvaluationConfig
 evalConfigPrm hook = Parameter {
     encode = show
@@ -139,7 +157,8 @@ evalConfigPrm hook = Parameter {
   }
   where
     readEvalConfig :: String -> Maybe (EvaluationData () PctConfig)
-    readEvalConfig = fmap convert . decodeFromFay
+    readEvalConfig [] = error "evalConfigPrm: Empty string"
+    readEvalConfig xs = fmap convert $ decodeFromFay xs
       where
         convert :: EvConfig -> EvaluationData () PctConfig
         convert = evaluationDataMap (BinEval . id) (PctEval . PctConfig . guardPercentage) . evConfig
@@ -150,13 +169,17 @@ evalConfigPrm hook = Parameter {
            | otherwise = x
 
 rolePrm :: Parameter Role
-rolePrm = Parameter {
-    encode = show
-  , decode = parseRole
-  , name   = fieldName userRoleField
-  , decodeError = \m -> printf "Érvénytelen szerepkör: %s!" m
-  , notFound    = "A szerepkör nem található!"
-  }
+rolePrm = jsonParameter (fieldName userRoleField) "Szerepkör"
+
+jsonUsernamePrm :: String -> Parameter Username
+jsonUsernamePrm field =
+  let prm = jsonParameter field "Felhasználónév"
+  in prm { decode = decode prm >=> decodeUsr }
+  where
+    decodeUsr = usernameCata $ \xs ->
+      if (validator isUsername xs)
+         then (Just $ Username $ map toUpper xs)
+         else Nothing
 
 customUsernamePrm :: String -> Parameter Username
 customUsernamePrm field = Parameter {
@@ -264,19 +287,19 @@ readablePrm field name = Parameter {
     encode = show
   , decode = readMaybe
   , name = field
-  , decodeError = \v -> printf "Hibás érték: (%s, %s)!" name v
+  , decodeError = \v -> printf "Hibás read érték: (%s, %s)!" name v
   , notFound    = printf "%s nem található!" name
   }
 
-assignmentTypePrm :: Parameter AssignmentType
-assignmentTypePrm = readablePrm (fieldName assignmentTypeField) "Feladat típusa"
+jsonAssignmentTypePrm :: Parameter AssignmentType
+jsonAssignmentTypePrm = jsonParameter (fieldName assignmentTypeField) "Feladat típusa"
 
 utcTimeParam :: TimeZone -> String -> String -> Parameter UTCTime
 utcTimeParam timezone field name = Parameter {
     encode = show
   , decode = readMaybe . addTimePostFix
   , name = field
-  , decodeError = \v -> printf "Hibás érték: (%s, %s)!" name v
+  , decodeError = \v -> printf "Hibás idő érték: (%s, %s)!" name v
   , notFound    = printf "%s nem található!" name
   } where
       addTimePostFix s = (s++(timeZoneCata " UTC" " CET" " CEST" timezone))
@@ -288,10 +311,10 @@ assignmentEndPrm :: TimeZone -> Parameter UTCTime
 assignmentEndPrm t = utcTimeParam t (fieldName assignmentEndField) "Beküldés vége"
 
 userTimeZonePrm :: Parameter TimeZone
-userTimeZonePrm = readablePrm (fieldName userTimeZoneField) "Időzóna"
+userTimeZonePrm = jsonParameter (fieldName userTimeZoneField) "Időzóna"
 
 regTimeZonePrm :: Parameter TimeZone
-regTimeZonePrm = readablePrm (fieldName regTimeZoneField) "Időzóna"
+regTimeZonePrm = jsonParameter (fieldName regTimeZoneField) "Időzóna"
 
 languagePrm :: String -> Parameter Language
 languagePrm field = Parameter {
@@ -306,7 +329,7 @@ changeLanguagePrm :: Parameter Language
 changeLanguagePrm = languagePrm (fieldName changeLanguageField)
 
 userLanguagePrm :: Parameter Language
-userLanguagePrm = languagePrm (fieldName userLanguageField)
+userLanguagePrm = jsonParameter (fieldName userLanguageField) "Language"
 
 delUserFromCoursePrm :: Parameter Username
 delUserFromCoursePrm = customUsernamePrm (fieldName delUserFromCourseField)
@@ -322,3 +345,5 @@ delUserFromGroupKeyPrm = customGroupKeyPrm groupKeyParamName
 
 unsubscribeUserGroupKeyPrm :: Parameter GroupKey
 unsubscribeUserGroupKeyPrm = customGroupKeyPrm groupKeyParamName
+
+-- TODO: Test create Just . id = encode . decode property

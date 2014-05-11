@@ -4,6 +4,7 @@ module Bead.View.Snap.Content.GroupRegistration (
   , unsubscribeFromCourse
   ) where
 
+import           Control.Arrow ((***))
 import           Data.List (intersperse)
 import           Data.String (fromString)
 
@@ -25,7 +26,7 @@ data GroupRegData = GroupRegData {
 
 postGroupReg :: POSTContentHandler
 postGroupReg = SubscribeToGroup
-  <$> getParameter (customGroupKeyPrm (fieldName groupRegistrationField))
+  <$> getParameter (jsonGroupKeyPrm (fieldName groupRegistrationField))
 
 groupRegistrationPage :: GETContentHandler
 groupRegistrationPage = withUserState $ \s -> do
@@ -95,8 +96,7 @@ groupsForTheUser gs = do
     nonEmpty gs (fromString . msg $ Msg_GroupRegistration_NoAvailableCourses
       "There are no available groups yet.") $
     postForm (routeOf groupRegistration) $ do
-      selection (fieldName groupRegistrationField) $ do
-        mapM_ (\(gk,gd) -> option (paramValue gk) (descriptive gd) False) gs
+      selection (fieldName groupRegistrationField) (map (id *** descriptive) gs)
       H.br
       submitButton (fieldName regGroupSubmitBtn) (msg $ Msg_GroupRegistration_Register "Register")
 

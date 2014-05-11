@@ -5,12 +5,14 @@ module Bead.View.Snap.Content.CourseAdmin (
   , assignGroupAdmin
   ) where
 
+import           Control.Arrow ((***), (&&&))
 import           Data.Function (on)
 import           Data.List (intersperse, sortBy)
 import           Data.String (fromString)
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories hiding (createGroup)
+import           Bead.Domain.Types (str)
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
@@ -59,7 +61,7 @@ courseAdminContent info = do
           (postForm (routeOf createGroup) `withId` (evFormId createGroupHook)) $ do
             H.b $ (fromString $ msg $ Msg_CourseAdmin_Course "Course")
             H.br
-            valueTextSelection (fieldName courseKeyInfo) (courses info)
+            selection (fieldName courseKeyInfo) courses'
             -- Help message for the percentage
             H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $
               (fromString $ msg $ Msg_CourseAdmin_PctHelpMessage "Minimum of percent to achieve by students")
@@ -73,12 +75,18 @@ courseAdminContent info = do
             H.table $ do
               (header (fromString . msg $ Msg_CourseAdmin_Group "Group") (fromString . msg $ Msg_CourseAdmin_Admin "Teacher"))
               (selections
-                 (valueTextSelection (fieldName selectedGroup) (groups info))
-                 (valueTextSelection (fieldName selectedGroupAdmin) (groupAdmins info)))
+                 (selection (fieldName selectedGroup) groups')
+                 (selection (fieldName selectedGroupAdmin) groupAdmins'))
             H.br
             submitButton (fieldName assignGroupAdminBtn) (msg $ Msg_CourseAdmin_AssignAdmin_Button "Assign")
     groupAdministratorsTable msg (assignedGroups info)
   where
+    courses' = map (id *** courseName) (courses info)
+    groups' = (groups info)
+    groupAdmins' = map (u_username &&& userLongname) (groupAdmins info)
+
+    userLongname u = concat [ str $ u_username u, " - ", u_name u]
+
     createGroup = Pages.createGroup ()
     assignGroupAdmin = Pages.assignGroupAdmin ()
     header h1 h2 = H.tr $ do
@@ -115,7 +123,7 @@ createGroup = ModifyHandler submitGroup
 
 submitGroup :: POSTContentHandler
 submitGroup = do
-  courseKey <- getValue
+  courseKey <- getParameter (jsonCourseKeyPrm (fieldName courseKeyInfo))
   group     <- getValue
   return $ UA.CreateGroup courseKey group
 
@@ -126,5 +134,5 @@ assignGroupAdmin = ModifyHandler submitGroupAdmin
 
 submitGroupAdmin :: POSTContentHandler
 submitGroupAdmin = UA.CreateGroupAdmin
-  <$> getParameter (customUsernamePrm (fieldName selectedGroupAdmin))
-  <*> getParameter (customGroupKeyPrm (fieldName selectedGroup))
+  <$> getParameter (jsonUsernamePrm (fieldName selectedGroupAdmin))
+  <*> getParameter (jsonGroupKeyPrm (fieldName selectedGroup))

@@ -4,6 +4,7 @@ module Bead.View.Snap.Content.Profile (
   , changePassword
   ) where
 
+import           Control.Arrow ((&&&))
 import           Data.String
 
 import           Text.Blaze.Html5 ((!))
@@ -48,9 +49,10 @@ profileContent user languages = do
         tableLine (msg $ Msg_Profile_User "Username: ") (usernameCata (H.small . H.b . fromString) $ u_username user)
         tableLine (msg $ Msg_Profile_Email "Email: ") (emailCata (H.small . H.b . fromString) $ u_email user)
         tableLine (msg $ Msg_Profile_FullName "Full name: ") $ textInput (B.name regFullNamePrm) 20 (Just . u_name $ user) ! A.required ""
-        tableLine (msg $ Msg_Profile_Timezone "Time zone: ") $ defEnumSelection (B.name userTimeZonePrm) (u_timezone user) ! A.required ""
+        tableLine (msg $ Msg_Profile_Timezone "Time zone: ") $ selectionWithDefault (B.name userTimeZonePrm) (u_timezone user) timeZones ! A.required ""
+
         tableLine (msg $ Msg_Profile_Language "Language: ") $
-          valueSelectionWithDefault langValue (B.name userLanguagePrm) (langDef (u_language user)) languages ! A.required ""
+          selectionWithDefault (B.name userLanguagePrm) (u_language user) languages' ! A.required ""
       submitButton (fieldName changeProfileBtn) (msg $ Msg_Profile_SaveButton "Save")
     H.br
     postForm (routeOf changePassword) `withId` (rFormId changePwdForm) $ do
@@ -60,11 +62,12 @@ profileContent user languages = do
         tableLine (msg $ Msg_Profile_NewPasswordAgain "New password (again): ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
       submitButton (fieldName changePasswordBtn) (msg $ Msg_Profile_ChangePwdButton "Update")
   where
+    timeZones = map (id &&& show) [toEnum 0 .. ]
+    languages' = map langValue languages
     profile = Pages.profile ()
     changePassword = Pages.changePassword ()
 
-    langValue (lang,info)  = (languageCata id lang, languageName info)
-    langDef l (lang,_info) = l == lang
+    langValue (lang,info)  = (lang, languageName info)
 
 changePassword = ModifyHandler $ do
   oldPwd <- getParameter oldPasswordPrm

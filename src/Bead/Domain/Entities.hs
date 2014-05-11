@@ -1,9 +1,11 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveDataTypeable #-}
 module Bead.Domain.Entities where
 
 import           Control.Applicative
 import           Control.Monad (join)
 import           Data.ByteString.Char8 (ByteString)
+import           Data.Data
 import           Data.List (findIndex)
 import           Data.Time (UTCTime(..), LocalTime, timeZoneName)
 import           Data.Time.Format (formatTime)
@@ -23,7 +25,7 @@ import           Bead.Invariants (Invariants(..), UnitTests(..))
 data AssignmentType
   = Normal
   | Urn
-  deriving (Show, Eq, Read, Enum)
+  deriving (Data, Enum, Eq, Read, Show, Typeable)
 
 assignmentTypeCata
   normal
@@ -260,7 +262,7 @@ data Role
   | GroupAdmin
   | CourseAdmin
   | Admin
-  deriving (Eq, Ord, Enum)
+  deriving (Data, Enum, Eq, Ord, Show, Typeable)
 
 roleCata
   student
@@ -296,11 +298,11 @@ parseRole "Course Admin" = Just CourseAdmin
 parseRole "Admin"        = Just Admin
 parseRole _              = Nothing
 
-instance Show Role where
-  show Student     = "Student"
-  show GroupAdmin  = "Group Admin"
-  show CourseAdmin = "Course Admin"
-  show Admin       = "Admin"
+printRole = roleCata
+  "Student"
+  "Group Admin"
+  "Course Admin"
+  "Admin"
 
 atLeastCourseAdmin Admin       = True
 atLeastCourseAdmin CourseAdmin = True
@@ -373,7 +375,7 @@ data Authorization = Authorization {
   }
 
 newtype Username = Username String
-  deriving (Eq, Read, Ord)
+  deriving (Data, Eq, Ord, Read, Show, Typeable)
 
 usernameCata :: (String -> a) -> Username -> a
 usernameCata f (Username u) = f u
@@ -428,7 +430,7 @@ data TimeZone
   = UTC
   | CET
   | CEST
-  deriving (Show, Read, Eq, Ord, Enum)
+  deriving (Data, Enum, Eq, Ord, Read, Show, Typeable)
 
 timeZoneCata utc cet cest t = case t of
   UTC -> utc
@@ -457,7 +459,7 @@ userRegInfoCata f (UserRegInfo (username, password, email, fullName, timeZone))
 
 -- The language what the dictionary represents.
 newtype Language = Language String
-  deriving (Eq, Show, Read, Ord)
+  deriving (Data, Eq, Ord, Read, Show, Typeable)
 
 languageCata f (Language l) = f l
 
@@ -519,7 +521,7 @@ userRegistrationFold f (UserRegistration u e n t d) = f u e n t d
 data TestScriptType
   = TestScriptSimple
   | TestScriptZipped
-  deriving (Eq, Ord, Enum, Show, Read)
+  deriving (Eq, Ord, Enum, Show, Read, Data, Typeable)
 
 -- Template function for the TestScriptType
 testScriptTypeCata
@@ -598,7 +600,7 @@ testCaseAppAna name desc value type_ info
 
 -- Name of the file that a user can upload
 newtype UsersFile = UsersFile String
-  deriving (Eq, Show, Read, Ord)
+  deriving (Data, Eq, Ord, Read, Show, Typeable)
 
 -- Template function for User's file
 usersFileCata f (UsersFile x) = f x
@@ -635,8 +637,8 @@ instance PermissionObj UserRegistration where
 
 -- * Show instances
 
-instance Show Username where
-  show (Username u) = u
+printUsername :: Username -> String
+printUsername = usernameCata id
 
 -- * Ordering
 
@@ -694,8 +696,8 @@ compareHunTests = UnitTests [
   ]
 
 roleInvariants = Invariants [
-    ( "Showing roles must generate string parseable by parseRole",
-      \r -> ((Just r) ==) . parseRole . show $ r
+    ( "printRole roles must generate string parseable by parseRole",
+      \r -> ((Just r) ==) . parseRole . printRole $ r
     )
   ]
 

@@ -41,8 +41,9 @@ encodeEvalType (BinEval _) = "BinEval"
 encodeEvalType (PctEval _) = "PctEval"
 
 decodeEvalType :: String -> EvaluationData () ()
-decodeEvalType "BinEval" = BinEval ()
-decodeEvalType "PctEval" = PctEval ()
+decodeEvalType "\"BinEval\"" = BinEval ()
+decodeEvalType "\"PctEval\"" = PctEval ()
+decodeEvalType s = error $ "decodeEvalType: '" ++ s ++ "'"
 
 data PctConfig = PctConfig { pLimit :: Double }
   deriving (Eq, Show, Read, Data, Typeable)

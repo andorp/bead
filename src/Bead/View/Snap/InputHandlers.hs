@@ -1,6 +1,8 @@
 module Bead.View.Snap.InputHandlers where
 
 import           Control.Applicative ((<$>),(<*>))
+import           Control.Arrow ((&&&))
+import           Data.Maybe (fromMaybe)
 import           Data.Time (UTCTime(..))
 
 import           Text.Blaze.Html5 (Html)
@@ -65,7 +67,7 @@ instance GetValueHandler Course where
     <$> getParameter (stringParameter (fieldName courseNameField) "Tárgy neve")
     <*> getParameter (stringParameter (fieldName courseDescField) "Tárgy leírása")
     <*> getParameter (evalConfigPrm createCourseHook)
-    <*> getParameter (readablePrm (fieldName testScriptTypeField) "Script típusa")
+    <*> getParameter (jsonParameter (fieldName testScriptTypeField) "Script típusa")
 
 emptyCourse :: Maybe Course
 emptyCourse = Nothing
@@ -80,14 +82,20 @@ instance InputPagelet Course where
         tableLine (msg $ Msg_Input_Course_Name "Title") $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
         tableLine (msg $ Msg_Input_Course_Description "Description") $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
         tableLine (msg $ Msg_Input_Course_Evaluation "Evaluation") $ evalConfig
-        tableLine (msg $ Msg_Input_Course_TestScript "Test type") $ testScriptTypeSelection c
+        tableLine (msg $ Msg_Input_Course_TestScript "Test type") $ (testScriptTypeSelection msg) c
       hiddenInputWithId (evHiddenValueId hook) ""
       evalSelectionDiv hook
     where
-      testScriptTypeSelection c =
-        defEnumSelection
+      testScriptTypeSelection msg c =
+        selectionWithDefault
           (fieldName testScriptTypeField)
-          (maybe TestScriptSimple id (fmap courseTestScriptType c))
+          (fromMaybe TestScriptSimple (fmap courseTestScriptType c))
+          (testScriptTypes msg)
+
+      testScriptTypes msg = [
+          (TestScriptSimple, msg $ Msg_Input_TestScriptSimple "Simple")
+        , (TestScriptZipped, msg $ Msg_Input_TestScriptZipped "Zipped")
+        ]
 
 emptyRole :: Maybe Role
 emptyRole = Nothing
@@ -95,10 +103,12 @@ emptyRole = Nothing
 instance InputPagelet Role where
   inputPagelet q = do
     msg <- getI18N
-    return $ selection (fieldName userRoleField) $ mapM_ (roleOptions msg q) roles
+    return . maybe
+      (selection (fieldName userRoleField))
+      (selectionWithDefault (fieldName userRoleField)) q $ (roles msg)
     where
-      roleOptions msg Nothing   r = option (show r) (msg $ roleLabel r) False
-      roleOptions msg (Just q') r = option (show r) (msg $ roleLabel r) (q' == r)
+      allRoles = [toEnum 0 ..]
+      roles msg = map (id &&& (msg . roleLabel)) allRoles
 
       roleLabel = roleCata
         (Msg_InputHandlers_Role_Student "Student")
@@ -135,7 +145,7 @@ instance GetValueHandler Assignment where
     assignmentAna
       (getParameter (stringParameter (fieldName assignmentNameField) "Név"))
       (getParameter (stringParameter (fieldName assignmentDescField) "Leírás"))
-      (getParameter assignmentTypePrm)
+      (getParameter jsonAssignmentTypePrm)
       (return startDate)
       (return timeZone)
       (return endDate)
@@ -146,16 +156,16 @@ instance GetValueHandler Assignment where
 emptyEvaluationConfig :: Maybe (EvaluationData Binary Percentage)
 emptyEvaluationConfig = Nothing
 
--- TODO
 evaluationConfig :: String -> Maybe EvaluationConfig -> IHtml
 evaluationConfig n v = do
   msg <- getI18N
-  return $ valueSelection (valueAndName msg) n evaluationTypes
+  return $ selection n $ map (valueAndName msg) evaluationTypes
   where
     valueAndName msg e = (encodeEvalType e, msg $ name e)
 
     name (BinEval ()) = Msg_InputHandlers_BinEval "Binary"
     name (PctEval ()) = Msg_InputHandlers_PctEval "Percentage"
+
 
 -- TODO
 dateInput :: String -> Maybe UTCTime -> Html

@@ -28,6 +28,8 @@ DictionaryFile {
     , Msg_Input_User_FullName { trans = "Teljes név" }
     , Msg_Input_User_TimeZone { trans = "Időzóna" }
     , Msg_Input_User_Language { trans = "Nyelv" }
+    , Msg_Input_TestScriptSimple { trans = "Szöveges" }
+    , Msg_Input_TestScriptZipped { trans = "Tömörített" }
     , Msg_CourseAdmin_CreateCourse { trans = "Csoport létrehozása" }
     , Msg_CourseAdmin_AssignAdmin { trans = "Oktató hozzárendelése a csoporthoz" }
     , Msg_CourseAdmin_AssignAdmin_Button { trans = "Hozzárendelés" }

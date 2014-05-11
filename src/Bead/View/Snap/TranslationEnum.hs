@@ -40,6 +40,8 @@ translationList =
   , Msg_Input_User_FullName ()
   , Msg_Input_User_TimeZone ()
   , Msg_Input_User_Language ()
+  , Msg_Input_TestScriptSimple ()
+  , Msg_Input_TestScriptZipped ()
 
   , Msg_CourseAdmin_CreateCourse ()
   , Msg_CourseAdmin_AssignAdmin ()
