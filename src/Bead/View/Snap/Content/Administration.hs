@@ -2,14 +2,17 @@
 module Bead.View.Snap.Content.Administration (
     administration
   , assignCourseAdmin
+  , createCourse
   ) where
 
+import           Control.Arrow ((***), (&&&))
 import           Data.Function (on)
 import           Data.List
 import           Data.String (fromString)
 
 import qualified Bead.Controller.Pages as Pages
-import           Bead.Controller.UserStories
+import           Bead.Controller.UserStories hiding (createCourse)
+import           Bead.Domain.Types (str)
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
@@ -80,8 +83,8 @@ administrationContent info = do
             Msg_Administration_HowToAddMoreAdmins
             "Further teachers can be added by modifying roles of users, then assign them to courses.")
           postForm (routeOf assignCourseAdmin) $ do
-            valueTextSelection (fieldName selectedCourse) (courses info)
-            valueTextSelection (fieldName selectedCourseAdmin) (courseAdmins info)
+            selection (fieldName selectedCourse) courses'
+            selection (fieldName selectedCourseAdmin) courseAdmins'
             H.br
             submitButton (fieldName assignBtn) (fromString . msg $ Msg_Administration_AssignCourseAdminButton "Assign")
       courseAdministratorsTable msg (assignedCourseAdmins info)
@@ -91,6 +94,10 @@ administrationContent info = do
         i18n msg $ inputPagelet emptyUsername
         submitButton (fieldName selectBtn) (fromString . msg $ Msg_Administration_SelectUser "Select")
   where
+    userLongname u = concat [ str $ u_username u, " - ", u_name u ]
+    courses' = map (id *** courseName) $ courses info
+    courseAdmins' = map (u_username &&& userLongname) $ courseAdmins info
+
     createCourse      = Pages.createCourse ()
     assignCourseAdmin = Pages.assignCourseAdmin ()
     userDetails       = Pages.userDetails ()
@@ -124,5 +131,10 @@ assignCourseAdmin = ModifyHandler submitCourse
 
 submitCourse :: POSTContentHandler
 submitCourse = UA.CreateCourseAdmin
-  <$> getParameter (customUsernamePrm  (fieldName selectedCourseAdmin))
-  <*> getParameter (customCourseKeyPrm (fieldName selectedCourse))
+  <$> getParameter (jsonUsernamePrm  (fieldName selectedCourseAdmin))
+  <*> getParameter (jsonCourseKeyPrm (fieldName selectedCourse))
+
+-- Create Course
+
+createCourse :: ModifyHandler
+createCourse = ModifyHandler $ UA.CreateCourse <$> getValue

@@ -3,6 +3,7 @@ module Bead.View.Snap.Content.UserDetails (
     userDetails
   ) where
 
+import           Control.Arrow ((&&&))
 import           Data.String (fromString)
 
 import qualified Text.Blaze.Html5 as H
@@ -47,18 +48,19 @@ userDetailForm u languages = do
       tableLine (msg $ Msg_Input_User_Role "Role")  $ required $ i18n msg $ inputPagelet (Just $ u_role u)
       tableLine (msg $ Msg_Input_User_Email "Email") $ required $ textInput (fieldName userEmailField) 20 (Just . str $ u_email u)
       tableLine (msg $ Msg_Input_User_FullName "Full name") $ required $ textInput (fieldName userFamilyNameField) 20 (Just $ u_name u)
-      tableLine (msg $ Msg_Input_User_TimeZone "Time zone") $ required $ defEnumSelection (B.name userTimeZonePrm) (u_timezone u)
-      tableLine (msg $ Msg_Input_User_Language "Language") $ required $ valueSelectionWithDefault langVal (B.name userLanguagePrm) (langDef (u_language u)) languages
+      tableLine (msg $ Msg_Input_User_TimeZone "Time zone") $ required $
+        selectionWithDefault (B.name userTimeZonePrm) (u_timezone u) userTimeZones
+      tableLine (msg $ Msg_Input_User_Language "Language") $ required $
+        selectionWithDefault' (B.name userLanguagePrm) ((u_language u)==) (map langVal languages)
       hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username $ u
     submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Update")
   where
+    userTimeZones :: [(TimeZone, String)]
+    userTimeZones = map (id &&& show) $ [toEnum 0 .. ]
+
     userDetails = Pages.userDetails ()
 
-    langDef l (lang,_info) = lang == l
-    langVal (lang,info) =
-      ( languageCata id lang
-      , languageName info
-      )
+    langVal (lang,info) = (lang, languageName info)
 
 userDoesNotExist :: Username -> IHtml
 userDoesNotExist username = do

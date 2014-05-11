@@ -4,7 +4,6 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Bead.View.Snap.Pagelets where
 
-import           Control.Monad (join)
 import           Data.Char (isAlphaNum)
 import           Data.Data
 import           Data.Maybe (fromMaybe)
@@ -17,8 +16,6 @@ import qualified Text.Blaze.Html5 as H
 
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext (UserState(..))
-import           Bead.Domain.Entities
-import           Bead.Domain.Relationships
 import           Bead.Domain.Types (Str(..))
 import           Bead.View.Snap.Fay.Hooks
 import           Bead.View.Snap.Fay.JSON.ServerSide
@@ -422,105 +419,29 @@ option :: String -> String -> Bool -> Html
 option value text False = H.option ! A.value (fromString value)                 $ fromString text
 option value text True  = H.option ! A.value (fromString value) ! A.selected "" $ fromString text
 
-selection :: String -> Html -> Html
-selection name =
+selection' :: String -> Html -> Html
+selection' name =
     H.select ! A.id (fromString name)
              ! A.name (fromString name)
              ! A.required ""
 
-class SelectionValue v where
-  selectionValue :: v -> String
-
--- TODO: Change to I18N
-class SelectionText t where
-  selectionText :: t -> String
-
-instance (SelectionValue v, SelectionText t) => SelectionValue (v,t) where
-  selectionValue (v,_) = selectionValue v
-
-instance (SelectionValue v, SelectionText t) => SelectionText (v,t) where
-  selectionText (_,t) = selectionText t
-
-instance (SelectionValue v, SelectionText t) => SelectionValue (v,x,t) where
-  selectionValue (v,_,_) = selectionValue v
-
-instance (SelectionValue v, SelectionText t) => SelectionText (v,x,t) where
-  selectionText (_,_,t) = selectionText t
-
-instance SelectionText String where
-  selectionText = id
-
-defValueTextSelection :: (Eq s, SelectionValue s, SelectionText s) => String -> s -> [s] -> Html
-defValueTextSelection name def = selection name . mapM_ option' where
-  option' x = option (selectionValue x) (selectionText x) (x == def)
-
-valueTextSelection :: (SelectionValue s, SelectionText s) => String -> [s] -> Html
-valueTextSelection name = selection name . mapM_ option'
+selection :: (Show a, Data a) => String -> [(a,String)] -> Html
+selection name = selection' name . mapM_ option'
   where
-    option' s = option (selectionValue s) (selectionText s) False
+    option' (v,t) = option value' t False where
+      value' = fromString $ fromMaybe "selection: error decoding value" (encodeToFay v)
 
--- Creates a selection from enum values, starting enumeration from the
--- given value
-enumSelection :: (Enum e, SelectionValue e, SelectionText e) => String -> e -> Html
-enumSelection name start = valueTextSelection name [start .. ]
-
--- Creates a selection with a given name attribute and a default value
--- as the actively selected one.
-defEnumSelection :: (Eq e, Enum e, SelectionValue e, SelectionText e) => String -> e -> Html
-defEnumSelection name def = defValueTextSelection name def [toEnum 0 .. ]
-
-valueSelection :: (o -> (String, String)) -> String -> [o] -> Html
-valueSelection f n = selection n . mapM_ option'
+selectionWithDefault :: (Eq a, Show a, Data a) => String -> a -> [(a,String)] -> Html
+selectionWithDefault name def = selection' name . mapM_ option'
   where
-    option' o = let (v,n) = f o in option v n False
+    option' (v,t) = option value' t (v == def) where
+      value' = fromString $ fromMaybe "selection: error decoding value" (encodeToFay v)
 
--- Creates a selection from a descriptive function, which converts a value to a selection value and text pair
--- from an HTML identifier name, a function that describes if the value is selected or not
--- and a list of values
-valueSelectionWithDefault :: (o -> (String, String)) -> String -> (o -> Bool) -> [o] -> Html
-valueSelectionWithDefault f n d = selection n . mapM_ option'
+selectionWithDefault' :: (Show a, Data a) => String -> (a -> Bool) -> [(a, String)] -> Html
+selectionWithDefault' name def = selection' name . mapM_ option'
   where
-    option' o =
-      let (v,n) = f o
-      in option v n (d o)
-
--- SelectionValue and SelectionText instances
-
-instance SelectionValue CourseKey where
-  selectionValue (CourseKey k) = k
-
-instance SelectionText Course where
-  selectionText = courseName
-
-instance SelectionValue User where
-  selectionValue = str . u_username
-
-instance SelectionText User where
-  selectionText u = join [str . u_username $ u, " - ", u_name u]
-
-instance SelectionText Group where
-  selectionText = groupName
-
-instance SelectionValue GroupKey where
-  selectionValue (GroupKey k) = k
-
-instance SelectionValue TestScriptType where
-  selectionValue = show
-
-instance SelectionText TestScriptType where
-  selectionText = show
-
-instance SelectionText AssignmentType where
-  selectionText = show
-
-instance SelectionValue AssignmentType where
-  selectionValue = show
-
-instance SelectionValue TimeZone where
-  selectionValue = show
-
-instance SelectionText TimeZone where
-  selectionText = show
+    option' (v,t) = option value' t (def v) where
+      value' = fromString $ fromMaybe "selection: error decoding value" (encodeToFay v)
 
 evalSelectionDiv :: EvaluationHook -> Html
 evalSelectionDiv h = ((H.div `withId` (evSelectionDivId h)) $ empty)

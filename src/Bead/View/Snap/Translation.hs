@@ -33,6 +33,8 @@ data Translation a
   | Msg_Input_User_FullName { trans :: a }
   | Msg_Input_User_TimeZone { trans :: a }
   | Msg_Input_User_Language { trans :: a }
+  | Msg_Input_TestScriptSimple { trans :: a }
+  | Msg_Input_TestScriptZipped { trans :: a }
 
   | Msg_CourseAdmin_CreateCourse { trans :: a }
   | Msg_CourseAdmin_AssignAdmin { trans :: a }

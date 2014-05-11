@@ -52,9 +52,7 @@ pageGen = oneof [
         ]
 
       parametricPages = oneof [
-          commentFromEvaluation <$> submissionKey <*> unit
-        , commentFromModifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
-        , evaluation <$> submissionKey <*> unit
+          evaluation <$> submissionKey <*> unit
         , courseOverview <$> courseKey <*> unit
         , modifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
         , submissionDetails <$> assignmentKey <*> submissionKey <*> unit

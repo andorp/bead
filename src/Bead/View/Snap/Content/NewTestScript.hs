@@ -51,7 +51,7 @@ postNewTestScript = do
     <*> (getParameter (stringParameter (fieldName testScriptDescField) "Test Script Description"))
     <*> (getParameter (stringParameter (fieldName testScriptNotesField) "Test Script Notes"))
     <*> (replaceCrlf <$> getParameter (stringParameter (fieldName testScriptScriptField) "Test Script"))
-  ck <- CourseKey <$> getParameter (stringParameter (fieldName testScriptCourseKeyField) "Course Key")
+  ck <- getParameter (jsonParameter (fieldName testScriptCourseKeyField) "Course Key")
   script <- userStory $ do
     Story.isAdministratedCourse ck
     (course,_groupkeys) <- Story.loadCourse ck
@@ -129,7 +129,7 @@ hasPageContent pd = do
     testScriptNotes = pageDataCata (const Nothing) (const2 (Just . tsNotes))
     testScriptScript = pageDataCata (const Nothing) (const2 (Just . tsScript))
     testScriptCourse msg = pageDataCata
-      (valueSelection (courseKeyMap id *** courseNameAndType) (fieldName testScriptCourseKeyField))
+      (selection (fieldName testScriptCourseKeyField) . map (id *** courseNameAndType))
       (\courseName _key _script -> fromString courseName)
       where
         courseNameAndType c = concat

@@ -370,7 +370,7 @@ updateString d f c = fileUpdate d f c
 -- * Save instances
 
 instance Save Role where
-  save d r = fileSave d "role" (show r)
+  save d r = fileSave d "role" (printRole r)
 
 instance Save Username where
   save d (Username s) = fileSave d "username" s
@@ -575,7 +575,7 @@ instance Update Language where
   update d = fileUpdate d "language" . show
 
 instance Update Role where
-  update d r = fileUpdate d "role" (show r)
+  update d r = fileUpdate d "role" (printRole r)
 
 instance Update Username where
   update d (Username s) = fileUpdate d "username" s

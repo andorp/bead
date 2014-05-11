@@ -1,17 +1,16 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 module Bead.Domain.Relationships where
 
--- Bead imports
+import Data.Data
+import Data.Function (on)
+import Data.List as List
+import Data.Map (Map)
+import Data.Time (UTCTime(..))
 
-import Bead.Domain.Types
 import Bead.Domain.Entities
 import Bead.Domain.Evaluation
+import Bead.Domain.Types
 
--- Haskell imports
-
-import Data.Function (on)
-import Data.Time (UTCTime(..))
-import Data.Map (Map)
-import Data.List as List
 
 -- * Relations
 
@@ -283,7 +282,7 @@ submissionKeyMap f (SubmissionKey s) = f s
 
 -- Key for a given Test Script in the persistence layer
 newtype TestScriptKey = TestScriptKey String
-  deriving (Eq, Ord, Show, Read)
+  deriving (Data, Eq, Ord, Show, Read, Typeable)
 
 -- Template function for the TestScriptKey value
 testScriptKeyCata f (TestScriptKey x) = f x
@@ -309,13 +308,13 @@ testJobKeyToSubmissionKey = testJobKeyCata SubmissionKey
 submissionKeyToTestJobKey = submissionKeyMap TestJobKey
 
 newtype CourseKey = CourseKey String
-  deriving (Eq, Ord, Show)
+  deriving (Data, Eq, Ord, Show, Typeable)
 
 courseKeyMap :: (String -> a) -> CourseKey -> a
 courseKeyMap f (CourseKey g) = f g
 
 newtype GroupKey = GroupKey String
-  deriving (Eq, Ord, Show)
+  deriving (Data, Eq, Ord, Show, Typeable)
 
 groupKeyMap :: (String -> a) -> GroupKey -> a
 groupKeyMap f (GroupKey g) = f g
