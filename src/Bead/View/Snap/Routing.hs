@@ -63,7 +63,7 @@ routes config = join
     , ("/reg_final", finalizeRegistration)
     , ("/change-language", changeLanguage)
     , ("/fay", with fayContext fayServe)
-    , Command.routeHandlerPair Command.ping
+    , Command.routeHandler Command.ping
     , ("/upload", fileUpload)
     ]
     -- Add static handlers

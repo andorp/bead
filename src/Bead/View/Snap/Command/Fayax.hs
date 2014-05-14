@@ -27,8 +27,8 @@ class (Data c, Read c, Show (Answer c)) => Command c where
 
 ping = FCPing ()
 
-routeHandlerPair :: FayaxCommand a -> (ByteString, Handler App App ())
-routeHandlerPair f = (fayaxCmdValue $ route f, fayaxCmdValue $ handler f)
+routeHandler :: FayaxCommand a -> (ByteString, Handler App App ())
+routeHandler f = (fayaxCmdValue $ route f, fayaxCmdValue $ handler f)
 
 -- Combines a given Fay ajax handler with the logged in filter,
 -- which checks if the user is logged in. The result of the combination
