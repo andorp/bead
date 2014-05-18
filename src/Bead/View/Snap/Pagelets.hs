@@ -16,6 +16,7 @@ import qualified Text.Blaze.Html5 as H
 
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext (UserState(..))
+import           Bead.Domain.Entities (statusMessage)
 import           Bead.Domain.Types (Str(..))
 import           Bead.View.Snap.Fay.Hooks
 import           Bead.View.Snap.Fay.JSON.ServerSide
@@ -166,6 +167,11 @@ checkBox n v c =
            ! A.type_ "checkbox"
            ! A.value (fromString v))
   |> if c then (! A.checked "") else id
+
+checkBox' :: (Show a, Data a) => String -> Bool -> a -> String -> Html
+checkBox' name checked value text = do
+  checkBox name (encodeToFay' "checkBox" value) checked
+  fromString text
 
 withId :: (Html -> Html) -> String -> (Html -> Html)
 withId f i = (f ! A.id (fromString i))
@@ -411,7 +417,9 @@ pageStatus = maybe noMessage message . status
     noMessage = return $ return ()
     message m = do
       msg <- getI18N
-      return $ H.div ! A.id "status" # backgroundColor "yellow" $ H.span $ (fromString $ msg m)
+      let message = fromString . statusMessage msg msg
+          color = statusMessage (const "yellow") (const "red")
+      return $ H.div ! A.id "status" # backgroundColor (color m) $ H.span $ (message m)
 
 -- * Picklist
 
@@ -425,23 +433,24 @@ selection' name =
              ! A.name (fromString name)
              ! A.required ""
 
+-- Encodes the value to Fay JSON representation or throw an error for the given name
+encodeToFay' :: (Data a, Show a, IsString s) => String -> a -> s
+encodeToFay' name value = fromString $ fromMaybe (name ++ ": error encoding value") (encodeToFay value)
+
 selection :: (Show a, Data a) => String -> [(a,String)] -> Html
 selection name = selection' name . mapM_ option'
   where
-    option' (v,t) = option value' t False where
-      value' = fromString $ fromMaybe "selection: error decoding value" (encodeToFay v)
+    option' (v,t) = option (encodeToFay' "selection" v) t False where
 
 selectionWithDefault :: (Eq a, Show a, Data a) => String -> a -> [(a,String)] -> Html
 selectionWithDefault name def = selection' name . mapM_ option'
   where
-    option' (v,t) = option value' t (v == def) where
-      value' = fromString $ fromMaybe "selection: error decoding value" (encodeToFay v)
+    option' (v,t) = option (encodeToFay' "selection" v) t (v == def) where
 
 selectionWithDefault' :: (Show a, Data a) => String -> (a -> Bool) -> [(a, String)] -> Html
 selectionWithDefault' name def = selection' name . mapM_ option'
   where
-    option' (v,t) = option value' t (def v) where
-      value' = fromString $ fromMaybe "selection: error decoding value" (encodeToFay v)
+    option' (v,t) = option (encodeToFay' "selection" v) t (def v) where
 
 evalSelectionDiv :: EvaluationHook -> Html
 evalSelectionDiv h = ((H.div `withId` (evSelectionDivId h)) $ empty)
@@ -451,10 +460,8 @@ evalSelectionDiv h = ((H.div `withId` (evSelectionDivId h)) $ empty)
 -- One radiobutton for the json encodeable value with the given parameter name
 radioButton :: (Show a, Data a) => String -> (a,String) -> Html
 radioButton name (value,text) = do
-  H.input ! A.type_ "radio" ! A.name (fromString name) ! A.value value'
+  H.input ! A.type_ "radio" ! A.name (fromString name) ! A.value (encodeToFay' "radioButton" value)
   fromString text
-  where
-    value' = fromString $ fromMaybe "radioButton: error decoding value" (encodeToFay value)
 
 -- Radio buttons placed horizontally for the given parameter name and values
 horizontalRadioButtons :: (Show a, Data a) => String -> [(a, String)] -> Html

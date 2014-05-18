@@ -13,6 +13,7 @@ import           Control.Arrow ((&&&))
 import           Control.Monad.Error
 import qualified Data.ByteString.UTF8 as BsUTF8
 import qualified Data.Map as Map
+import           Data.Maybe (fromMaybe)
 import           Data.String (fromString)
 import           Data.Time (UTCTime, getCurrentTime)
 import qualified Data.Time as Time
@@ -206,11 +207,11 @@ readTCCreationParameters = do
   return (mTestScript, mZippedTestCaseName, mPlainTestCase)
 
 tcCreation :: Maybe (Maybe TestScriptKey) -> Maybe UsersFile -> Maybe String -> Either String TCCreation
-tcCreation testScriptKey usersFile text
-  | join testScriptKey == Nothing        = Right NoCreation
+tcCreation Nothing        _ _ = Right NoCreation
+tcCreation (Just Nothing) _ _ = Right NoCreation
 tcCreation (Just (Just tsk)) (Just uf) _ = Right $ FileCreation tsk uf
 tcCreation (Just (Just tsk)) _ (Just t)  = Right $ TextCreation tsk t
-tcCreation (Just (Just tsk)) Nothing Nothing = Left "#1"
+tcCreation (Just (Just _tsk)) Nothing Nothing = Left "#1"
 
 readTCModificationParameters :: HandlerError App b TCModificationParameters
 readTCModificationParameters = do
@@ -229,7 +230,7 @@ readTCModification = do
 tcModification :: Maybe (Maybe TestScriptKey) -> Maybe (Either () UsersFile) -> Maybe String -> Maybe TCModification
 tcModification Nothing        _ _                    = Just NoModification
 tcModification (Just Nothing) _ _                    = Just TCDelete
-tcModification (Just (Just tsk)) (Just (Left ())) _  = Just NoModification
+tcModification (Just (Just _tsk)) (Just (Left ())) _  = Just NoModification
 tcModification (Just (Just tsk)) (Just (Right uf)) _ = Just $ FileOverwrite tsk uf
 tcModification (Just (Just tsk)) _ (Just t)          = Just $ TextOverwrite tsk t
 tcModification _ _ _                                 = Nothing
@@ -371,19 +372,25 @@ newAssignmentContent pd = do
       H.a ! A.href linkToPandocMarkdown ! A.target "_blank" $ (fromString . msg $ Msg_NewAssignment_Markdown "Markdown syntax")
       (fromString . msg $ Msg_NewAssignment_CanBeUsed " is recommended for study to learn more about formatting.")
       H.p $ do
-        H.i (fromString . msg $ Msg_NewAssignment_Title_Normal "Normal")
-        ": "
         fromString . msg $ Msg_NewAssignment_Info_Normal $ concat
-          [ "Solutions may be submitted from the time of opening until the time of closing.  The assignment will not "
-          , "be visible until it is opened.  The assignments open and close automatically."
+          [ "Solutions may be submitted from the time of opening until the time of closing. "
+          , "The assignment will not be visible until it is opened. "
+          , "The assignments open and close automatically."
           ]
       H.p $ do
-        H.i (fromString . msg $ Msg_NewAssignment_Title_Urn "Urn")
+        H.i (fromString . msg $ Msg_NewAssignment_Title_BallotBox "Ballot Box")
         ": "
-        fromString . msg $ Msg_NewAssignment_Info_Urn $ concat
-          [ "(Recommended for tests.)  Solutions may be submitted from the time of opening until the time of closing, "
-          , "but the submissions and the corresponding evaluations will be visible by the students until it is closed.  "
-          , "The assignment will not be visible until it is opened and they open and close automatically."
+        fromString . msg $ Msg_NewAssignment_Info_BallotBox $ concat
+          [ "(Recommended for tests.) Students will not be able to access submissions and "
+          , "their evaluations until the assignment is closed."
+          ]
+      H.p $ do
+        H.i (fromString . msg $ Msg_NewAssignment_Title_Password "Password-protected")
+        ": "
+        fromString . msg $ Msg_NewAssignment_Info_Password $ concat
+          [ "(Recommended for tests.) Submissions may be only submitted by providing the password. "
+          , "The teacher shall use the password during the test in order to authenticate the "
+          , "submission for the student."
           ]
       testCaseArea msg pd
     H.div ! leftCell $ do
@@ -425,7 +432,7 @@ newAssignmentContent pd = do
       asgField = A.form (fromString $ hookId assignmentForm)
 
       typeSelection msg pd = do
-        H.b (fromString . msg $ Msg_NewAssignment_Type "Type")
+        H.b (fromString . msg $ Msg_NewAssignment_Properties "Properties")
         H.br
         pageDataCata
           (const5 ts)
@@ -438,11 +445,24 @@ newAssignmentContent pd = do
           pd
         where
           -- ts = defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType Nothing $ pd) ! asgField
-          ts = selectionWithDefault
-                 (fieldName assignmentTypeField)
-                 (maybe Normal id . amap assignmentType Nothing $ pd)
-                 (map (id &&& show) assignmentTypes)
-                 ! asgField
+          ts = H.div $ do
+                 let aas = assignmentTypeToAspects . fromMaybe Normal . amap assignmentType Nothing $ pd
+                     isBallotBox = aasContains isBallotBoxAspect aas
+                     isPassword  = aasContains isPasswordAspect aas
+                     pwd = if isPassword
+                             then Just (aasGetPassword aas)
+                             else Nothing
+                 checkBox' (fieldName assignmentAspectField)
+                           isBallotBox
+                           AaBallotBox (msg $ Msg_NewAssignment_BallotBox "Ballot Box") ! asgField
+                 H.br
+                 checkBox' (fieldName assignmentAspectField)
+                           isPassword
+                           (AaPassword "")
+                           (msg $ Msg_NewAssignment_PasswordProtected "Password-protected") ! asgField
+                 H.br
+                 fromString . msg $ Msg_NewAssignment_Password "Password:"
+                 textInput (fieldName assignmentPwdField) 20 pwd ! asgField
 
       editOrReadonly = pageDataCata
         (const5 id)
@@ -454,9 +474,6 @@ newAssignmentContent pd = do
         (const7 id)
 
       linkToPandocMarkdown = "http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html"
-
-      assignmentTypes :: [AssignmentType]
-      assignmentTypes = [toEnum 0 .. ]
 
       pagePreview :: PageData -> PageDesc
       pagePreview = pageDataCata
@@ -646,7 +663,6 @@ newAssignmentContent pd = do
               userFileSelectionPreview uf = do
                 H.b $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
                 H.pre $ testCaseFileName tc
---                valueSelectionWithDefault keyValue (fieldName assignmentUsersFileField) (uf==) ((Left ()):map Right fs) ! asgField
                 selectionWithDefault (fieldName assignmentUsersFileField) uf (map keyValue ((Left ()):map Right fs)) ! asgField
                 H.p $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
@@ -738,7 +754,7 @@ newAssignmentContent pd = do
               def (Just (_,_,tsk)) (Just tsk') = tsk == tsk'
               def _                _           = False
 
-          modificationScriptSelectionPreview ts mts tm =
+          modificationScriptSelectionPreview ts _mts tm =
             case (tcmpTestScriptKey tm, ts) of
               (Just Nothing   , Just ts') -> mtsSelection' Nothing ts'
               (Just (Just tsk), Just ts') -> mtsSelection' (Just tsk) ts'

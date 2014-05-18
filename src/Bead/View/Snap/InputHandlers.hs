@@ -3,6 +3,7 @@ module Bead.View.Snap.InputHandlers where
 import           Control.Applicative ((<$>),(<*>))
 import           Control.Arrow ((&&&))
 import           Data.Maybe (fromMaybe)
+import qualified Data.Set as Set (fromList)
 import           Data.Time (UTCTime(..))
 
 import           Text.Blaze.Html5 (Html)
@@ -145,11 +146,21 @@ instance GetValueHandler Assignment where
     assignmentAna
       (getParameter (stringParameter (fieldName assignmentNameField) "Név"))
       (getParameter (stringParameter (fieldName assignmentDescField) "Leírás"))
-      (getParameter jsonAssignmentTypePrm)
+      getAssignmentType
       (return startDate)
       (return timeZone)
       (return endDate)
       (return timeZone)
+    where
+      getAssignmentType = do
+        aspects <- getJSONParameters (fieldName assignmentAspectField) "Aspect parameter"
+        withAssignmentType
+          (assignmentAspectsToType (Set.fromList aspects))
+          (return Normal)
+          (return Urn)
+          (const (NormalPwd <$> getParameter (stringParameter (fieldName assignmentPwdField) "Jelszó")))
+          (const (BallotBoxPwd <$> getParameter (stringParameter (fieldName assignmentPwdField) "Jelszó")))
+
 
 -- * Combined input fields
 

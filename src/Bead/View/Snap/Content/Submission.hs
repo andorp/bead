@@ -30,7 +30,7 @@ data PageData = PageData {
 
 submissionPage :: GETContentHandler
 submissionPage = withUserState $ \s -> do
-  let render p = renderPagelet $ withUserFrame s p
+  let render p = renderDynamicPagelet $ withUserFrame s p
   ak <- getParameter assignmentKeyPrm
   ut <- usersTimeZoneConverter
   now <- liftIO $ getCurrentTime
@@ -42,17 +42,36 @@ submissionPage = withUserState $ \s -> do
     (render invalidAssignment)
 
 submissionPostHandler :: POSTContentHandler
-submissionPostHandler =
-  NewSubmission
-    <$> getParameter assignmentKeyPrm
-    <*> (E.Submission
-           <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege")
-           <*> liftIO getCurrentTime)
+submissionPostHandler = do
+  ak <- getParameter assignmentKeyPrm
+  userAssignmentForSubmission
+    ak
+    -- Assignment is for the user
+    (\_desc asg -> do
+       let aspects = assignmentTypeToAspects $ assignmentType asg
+       if aasContains isPasswordAspect aspects
+         -- Password-protected assignment
+         then do pwd <- getParameter (stringParameter (fieldName submissionPwdField) "Feltöltési jelszó")
+                 if aasGetPassword aspects == pwd
+                   -- Passwords do match
+                   then NewSubmission ak
+                          <$> (E.Submission
+                                <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege")
+                                <*> liftIO getCurrentTime)
+                   -- Passwords do not match
+                   else return . ErrorMessage $ Msg_Submission_InvalidPassword "Invalid password, the solution could not be submitted!"
+         -- Non password protected assignment
+         else NewSubmission ak
+                <$> (E.Submission
+                       <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege")
+                       <*> liftIO getCurrentTime))
+    -- Assignment is not for the user
+    (return . ErrorMessage $ Msg_Submission_NonUsersAssignment "The assignment is not for the actual user!")
 
 submissionContent :: PageData -> IHtml
 submissionContent p = do
   msg <- getI18N
-  return $ postForm (routeOf submission) $ H.div ! formDiv $ do
+  return $ postForm (routeOf submission) `withId` (rFormId submissionForm) $ H.div ! formDiv $ do
     H.table $ do
       H.tr $ do
         H.td $ H.b $ (fromString . msg $ Msg_Submission_Course "Course: ")
@@ -78,6 +97,7 @@ submissionContent p = do
     H.div # assignmentTextDiv $
       markdownToHtml . assignmentDesc . asValue $ p
     H.h2 $ (fromString . msg $ Msg_Submission_Solution "Submission")
+    (assignmentPasswordDiv msg)
     H.div $ do
       textAreaInput (fieldName submissionTextField) Nothing ! A.rows "25" ! A.cols "80"
     submitButton (fieldName submitSolutionBtn) (msg $ Msg_Submission_Submit "Submit")
@@ -85,14 +105,27 @@ submissionContent p = do
   where
     submission = Pages.submission ()
 
+    assignmentPasswordDiv msg =
+      when (isPasswordProtectedAspects $ assignmentTypeToAspects (assignmentType $ asValue p)) $ do
+        H.div $ do
+          H.p $ fromString . msg $ Msg_Submission_Info_Password
+            "This assignment can only accept submissions by providing the password."
+          H.table $ do
+            H.tr $ do
+              H.td $ H.b $ fromString . msg $ Msg_Submission_Password "Password for the assignment:"
+              H.td $ passwordInput (fieldName submissionPwdField) 20 Nothing ! A.required ""
+            H.tr $ do
+              H.td $ H.b $ fromString . msg $ Msg_Submission_PasswordAgain "Password again:"
+              H.td $ passwordInput (fieldName submissionPwdAgainField) 20 Nothing ! A.required ""
+
 invalidAssignment :: IHtml
 invalidAssignment = do
   msg <- getI18N
   return . fromString . msg $ Msg_Submission_Invalid_Assignment "It is not allowed to access this assignment with this user."
 
 resolveStatus :: I18N -> Maybe String -> H.Html
-resolveStatus msg Nothing    = fromString . msg $ Msg_SubmissionList_NotEvaluatedYet "Not evaluated yet"
-resolveStatus msg (Just str) = fromString str
+resolveStatus msg Nothing     = fromString . msg $ Msg_SubmissionList_NotEvaluatedYet "Not evaluated yet"
+resolveStatus _msg (Just str) = fromString str
 
 -- CSS Section
 

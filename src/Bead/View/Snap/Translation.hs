@@ -75,15 +75,17 @@ data Translation a
   | Msg_NewAssignment_Description_Default { trans :: a }
   | Msg_NewAssignment_Markdown { trans :: a }
   | Msg_NewAssignment_CanBeUsed { trans :: a }
-  | Msg_NewAssignment_Type { trans :: a }
+  | Msg_NewAssignment_Properties { trans :: a }
   | Msg_NewAssignment_Course { trans :: a }
   | Msg_NewAssignment_Group { trans :: a }
   | Msg_NewAssignment_SaveButton { trans :: a }
   | Msg_NewAssignment_PreviewButton { trans :: a }
   | Msg_NewAssignment_Title_Normal { trans :: a }
-  | Msg_NewAssignment_Title_Urn { trans :: a }
+  | Msg_NewAssignment_Title_BallotBox { trans :: a }
+  | Msg_NewAssignment_Title_Password { trans :: a }
   | Msg_NewAssignment_Info_Normal { trans :: a }
-  | Msg_NewAssignment_Info_Urn { trans :: a }
+  | Msg_NewAssignment_Info_BallotBox { trans :: a }
+  | Msg_NewAssignment_Info_Password { trans :: a }
   | Msg_NewAssignment_TestCase { trans :: a }
   | Msg_NewAssignment_TestScripts { trans :: a }
   | Msg_NewAssignment_DoNotOverwrite { trans :: a }
@@ -91,6 +93,9 @@ data Translation a
   | Msg_NewAssignment_TestFile { trans :: a }
   | Msg_NewAssignment_TestFile_Info { trans :: a }
   | Msg_NewAssignment_AssignmentPreview { trans :: a }
+  | Msg_NewAssignment_BallotBox { trans :: a }
+  | Msg_NewAssignment_PasswordProtected { trans :: a }
+  | Msg_NewAssignment_Password { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }
@@ -117,6 +122,11 @@ data Translation a
   | Msg_Submission_TimeLeft { trans :: a }
   | Msg_Submission_Days { trans :: a }
   | Msg_Submission_DeadlineReached { trans :: a }
+  | Msg_Submission_InvalidPassword { trans :: a }
+  | Msg_Submission_NonUsersAssignment { trans :: a }
+  | Msg_Submission_Password { trans :: a }
+  | Msg_Submission_PasswordAgain { trans :: a }
+  | Msg_Submission_Info_Password { trans :: a }
 
   | Msg_Comments_Title { trans :: a }
   | Msg_Comments_SubmitButton { trans :: a }

@@ -7,6 +7,8 @@ import           Control.Monad (join)
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Data
 import           Data.List (findIndex)
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Data.Time (UTCTime(..), LocalTime, timeZoneName)
 import           Data.Time.Format (formatTime)
 import qualified Data.Time as Time
@@ -17,6 +19,7 @@ import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Translation
 
 #ifdef TEST
+import           Test.Themis.Test
 import           Bead.Invariants (Invariants(..), UnitTests(..))
 #endif
 
@@ -25,16 +28,135 @@ import           Bead.Invariants (Invariants(..), UnitTests(..))
 data AssignmentType
   = Normal
   | Urn
-  deriving (Data, Enum, Eq, Read, Show, Typeable)
+  | NormalPwd String
+  | BallotBoxPwd String
+  deriving (Data, Eq, Read, Show, Typeable)
 
 assignmentTypeCata
   normal
   urn
+  normalpwd
+  ballot
   a = case a of
     Normal -> normal
     Urn    -> urn
+    NormalPwd pwd -> normalpwd pwd
+    BallotBoxPwd pwd -> ballot pwd
 
-assignmentTypes = [Normal, Urn]
+withAssignmentType a normal urn normalpwd ballot =
+  assignmentTypeCata normal urn normalpwd ballot a
+
+-- Assignment asptect is a property of an assignment which
+-- controls its visibility of start and end date, its controlls
+-- over submission.
+data AssignmentAspect
+  = AaBallotBox -- Submission should not shown for the students only after the end of the dead line
+  | AaPassword String -- The assignment is password protected
+  deriving (Data, Eq, Show, Ord, Typeable)
+
+assignmentAspect
+  ballot
+  pwd
+  a = case a of
+    AaBallotBox -> ballot
+    AaPassword p -> pwd p
+
+-- An assignment can have several aspects, which is a set
+type AssignmentAspects = Set AssignmentAspect
+
+assignmentAspects :: (Set AssignmentAspect -> a) -> AssignmentAspects -> a
+assignmentAspects f x = f x
+
+-- Calculates the assignment aspect set from the type of the assignment
+assignmentTypeToAspects :: AssignmentType -> AssignmentAspects
+assignmentTypeToAspects = assignmentTypeCata
+  Set.empty -- Normal
+  (Set.singleton AaBallotBox) -- Urn
+  (\pwd -> Set.singleton (AaPassword pwd)) -- NormalPwd
+  (\pwd -> Set.fromList [AaBallotBox, AaPassword pwd]) -- BallotBoxPwd
+
+#ifdef TEST
+assignmentTypeToAspectsTests = do
+  test "assignmentTypeToAspects: Normal" $
+    Equals Set.empty (assignmentTypeToAspects Normal) "Normal type was not converted correctly"
+  test "assignmentTypeToAspects: Urn" $
+    Equals (Set.fromList [AaBallotBox]) (assignmentTypeToAspects Urn) "Urn type was not converted correctly"
+  test "assignmentTypeToAspects: NormalPwd" $
+    Equals (Set.fromList [AaPassword "pwd"]) (assignmentTypeToAspects (NormalPwd "pwd")) "NormalPwd type was not converted correctly"
+  test "assignmentTypeToAspects: BallotBoxPwd" $
+    Equals (Set.fromList [AaBallotBox, AaPassword "pwd"])
+           (assignmentTypeToAspects (BallotBoxPwd "pwd"))
+           "BallowBoxPwd was not converted correctly"
+#endif
+
+isPasswordAspect = assignmentAspect False (const True)
+isBallotBoxAspect = assignmentAspect True (const False)
+
+#ifdef TEST
+assignmentAspectPredTests = do
+  test "assignmentAspectPred: Password aspect predicate" $
+    Equals True (isPasswordAspect (AaPassword "pwd")) "Password aspect is not recognized"
+  test "assignmentAspectPred: Ballow box aspect predicate" $
+    Equals True (isBallotBoxAspect AaBallotBox) "Ballot box aspect is not recognized"
+#endif
+
+-- Returns True if the aspect set contains a password protected value
+isPasswordProtectedAspects :: AssignmentAspects -> Bool
+isPasswordProtectedAspects = not . Set.null . Set.filter isPasswordAspect
+
+#ifdef TEST
+isPasswordProtectedAspectsTests = do
+  test "isPasswordProtectedAspects: Empty aspect set"
+       (Equals False (isPasswordProtectedAspects Set.empty)
+               "Empty set should not contain password")
+  test "isPasswordProtectedAspects: Non password aspects"
+       (Equals False (isPasswordProtectedAspects (Set.fromList [AaBallotBox]))
+               "Ballot box set should not contain password")
+  test "isPasswordProtectedAspects: Password aspect"
+       (Equals True (isPasswordProtectedAspects (Set.fromList [AaPassword ""]))
+               "Password aspect should be found")
+  test "isPasswordProtectedAspects: Password aspect within more aspects"
+       (Equals True (isPasswordProtectedAspects (Set.fromList [AaPassword "", AaBallotBox]))
+               "Password aspect should be found")
+#endif
+
+-- Convert assignment aspects into assignment type, the aspect set should contain only one password
+assignmentAspectsToType :: AssignmentAspects -> AssignmentType
+assignmentAspectsToType = assignmentAspects $ \as ->
+  let f s | Set.null s = Normal
+          | and [contains password s, contains ballotBox s] = BallotBoxPwd (getPassword s)
+          | contains ballotBox s = Urn
+          | contains password s = NormalPwd (getPassword s)
+          | otherwise = error' $ show s
+      password  = isPasswordAspect
+      ballotBox = isBallotBoxAspect
+      contains = aasContains
+      getPassword = aasGetPassword
+      error' msg = error $ "assignmentAspectToType: invalid input" ++ msg
+  in f as
+
+#ifdef TEST
+assignmentAspectsToTypeTests = do
+  let aa = assignmentAspectsToType . assignmentTypeToAspects
+  test "assignmentAspectsToType: Normal" $ Equals Normal (aa Normal) "Normal was not converted correctly"
+  test "assignmentAspectsToType: Urn" $ Equals Urn (aa Urn) "Urn was not converted correctly"
+  test "assignmentAspectsToType: NormalPwd" $ Equals (NormalPwd "pwd") (aa (NormalPwd "pwd")) "NormalPwd was not converted correctly"
+  test "assignmentAspectsToType: BallotBoxPwd" $ Equals (BallotBoxPwd "pwd") (aa (BallotBoxPwd "pwd"))
+                                                        "BallotBoxPwd was not converted correctly"
+#endif
+
+-- Calculates True if the assignment aspects set contains at least one elements
+-- That satisfies the preduicate
+aasContains :: (AssignmentAspect -> Bool) -> AssignmentAspects -> Bool
+aasContains pred = assignmentAspects (not . Set.null . Set.filter pred)
+
+-- Returns the first password found in the assignment aspects set, if there
+-- is no such password throws an error
+aasGetPassword :: AssignmentAspects -> String
+aasGetPassword = assignmentAspects $ \as ->
+  case (Set.toList . Set.filter isPasswordAspect $ as) of
+    [] -> error $ "aasGetPassword: no password aspects was found"
+    (pwd:_) -> assignmentAspect (error "aasGetPassword: no password aspect was filtered in") id pwd
 
 -- | Assignment for the student
 data Assignment = Assignment {
@@ -676,6 +798,20 @@ instance CompareHun UserDesc where
       EQ -> compareHun u u'
       other -> other
 
+-- Status message is shown for the user on the UI
+data StatusMessage a
+  = SmNormal a -- Normal message
+  | SmError a  -- Some none several error happened, the user needs to be informed about.
+  deriving (Show, Eq)
+
+statusMessage
+  normal
+  err
+  sm
+  = case sm of
+    SmNormal x -> normal x
+    SmError x -> err x
+
 #ifdef TEST
 
 -- * Invariants
@@ -722,4 +858,10 @@ assignmentTests =
   where
     isFalse = not
     isTrue  = id
+
+entitiesTests = do
+  assignmentTypeToAspectsTests
+  isPasswordProtectedAspectsTests
+  assignmentAspectsToTypeTests
+  assignmentAspectPredTests
 #endif

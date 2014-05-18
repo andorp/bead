@@ -722,7 +722,11 @@ loadAssignment k = logAction INFO ("loads assignment " ++ show k) $ do
 
 -- Puts the given status message to the actual user state
 putStatusMessage :: Translation String -> UserStory ()
-putStatusMessage = changeUserState . setStatus
+putStatusMessage = changeUserState . setStatus . SmNormal
+
+-- Puts the given message as the error status message to the actual user state
+putErrorMessage :: Translation String -> UserStory ()
+putErrorMessage = changeUserState . setStatus . SmError
 
 -- Clears the status message of the user
 clearStatusMessage :: UserStory ()

@@ -16,11 +16,13 @@ import           Test.QuickCheck.Monadic
 import           Test.Framework (Test(..), testGroup)
 import           Test.Framework.Providers.HUnit
 import           Test.Framework.Providers.QuickCheck2
+import           Test.Themis.Test (runTest)
+import           Test.Themis.Provider.TestFramework (buildTestSet)
 
 import           Bead.Configuration (initTaskAssertions)
 import qualified Bead.Controller.Pages as P (invariants)
-import qualified Bead.Daemon.LogoutDaemon as LD (unitTests)
-import qualified Bead.Domain.Entities as E (roleInvariants, assignmentTests, compareHunTests)
+import qualified Bead.Daemon.Logout as LD (unitTests)
+import qualified Bead.Domain.Entities as E
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQLDirFile as L (unitTests)
 import           Bead.Invariants
@@ -88,4 +90,7 @@ tests = [
   , assertionTestGroup "Home page percentage results" sumPercentageResultTests
   , assertionTestGroup "Home page calc results" calculateSubmissionResultTests
   , assertionTestGroup "Command line and configuration" initTaskAssertions
-  ]
+  ] ++ themisTests
+
+themisTests = runTest buildTestSet $ do
+  E.entitiesTests

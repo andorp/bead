@@ -291,9 +291,6 @@ readablePrm field name = Parameter {
   , notFound    = printf "%s nem található!" name
   }
 
-jsonAssignmentTypePrm :: Parameter AssignmentType
-jsonAssignmentTypePrm = jsonParameter (fieldName assignmentTypeField) "Feladat típusa"
-
 utcTimeParam :: TimeZone -> String -> String -> Parameter UTCTime
 utcTimeParam timezone field name = Parameter {
     encode = show

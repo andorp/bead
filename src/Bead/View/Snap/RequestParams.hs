@@ -5,6 +5,7 @@ import Data.String (IsString(..))
 import Bead.Domain.Entities (Username(..))
 import Bead.Domain.Relationships
 import Bead.View.Snap.Dictionary (Language, languageCata)
+import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.TemplateAndComponentNames
 
 -- Request Parameter Name Constants

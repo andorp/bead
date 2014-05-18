@@ -10,6 +10,7 @@ module Bead.View.Snap.HandlerUtils (
   , getParameterOrError
   , getOptionalParameter -- Calculates the value of the given parameter if it is defined
   , getJSONParam
+  , getJSONParameters -- Calculates the json encoded parameter values into a list
   , getDictionaryInfos -- Calculates a list of language and dictionaryInfo
   , i18nE
   , i18nH
@@ -237,6 +238,22 @@ getJSONParam param msg = do
     Just y  -> case decodeFromFay . B.unpack $ y of
       Nothing -> throwError . strMsg $ "Decoding error"
       Just z  -> return z
+
+-- Decode multiple values for the given parameter names.
+-- This approach can be used for checkbox contained values.
+getJSONParameters :: (Data a, Show a) => String -> String -> HandlerError App b [a]
+getJSONParameters param msg = do
+  params <- getParams
+  case Map.lookup (fromString param) params of
+    Nothing -> throwError $ strMsg msg
+    Just [] -> throwError . strMsg $ concat [param, " contains zero values."]
+    Just vs -> mapM decodePrm vs
+  where
+    decodePrm v =
+      let v' = B.unpack v
+      in case decodeFromFay v' of
+           Nothing -> throwError . strMsg $ "Decoding error:" ++ v'
+           Just  x -> return x
 
 -- Computes a list that contains language and dictionary info pairs
 getDictionaryInfos :: HandlerError App b DictionaryInfos
