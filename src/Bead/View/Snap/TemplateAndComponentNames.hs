@@ -193,7 +193,8 @@ newtype AssignmentField = AssignmentField { aFieldName :: String }
 assignmentNameField  = AssignmentField  "asg-name"
 assignmentDescField  = AssignmentField  "asg-desc"
 assignmentTCsField   = AssignmentField   "asg-tcs"
-assignmentTypeField  = AssignmentField  "asg-type"
+assignmentAspectField = AssignmentField  "asg-asp"
+assignmentPwdField   = AssignmentField   "asg-pwd"
 assignmentKeyField   = AssignmentField   "asg-key"
 assignmentEvField    = AssignmentField    "asg-ev"
 assignmentTestCaseField = AssignmentField "asg-testcase"
@@ -230,13 +231,6 @@ groupRegistrationField = GroupRegistrationField "group-registration"
 
 instance SnapFieldName GroupRegistrationField where
   fieldName = fromString . grFieldName
-
-data SubmissionField
-  = SubmissionTextField { sfFieldName :: String }
-  | SubmissionKeyField { sfFieldName :: String }
-
-submissionTextField = SubmissionTextField "submission-text"
-submissionKeyField  = SubmissionKeyField  "submission-key"
 
 instance SnapFieldName SubmissionField where
   fieldName = fromString . sfFieldName
@@ -399,7 +393,7 @@ fieldList = map fieldName $ join [
   , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField
   , SFN userRoleField,  SFN loginSubmitBtn,  SFN assignmentDescField,    SFN assignmentTCsField
   , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField, SFN evaluationValueField
-  , SFN assignmentTypeField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaluationResultField
+  , SFN assignmentAspectField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaluationResultField
   , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField,     SFN evaluationKeyField
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
@@ -415,7 +409,8 @@ fieldList = map fieldName $ join [
   , SFN userLanguageField, SFN courseKeyField, SFN groupKeyField
   , SFN delUserFromCourseField, SFN delUserFromGroupField, SFN unsubscribeFromCourseSubmitBtn
   , SFN fileUploadField, SFN fileUploadSubmit, SFN usersFileTableName
-  , SFN assignmentTestScriptField, SFN assignmentUsersFileField
+  , SFN assignmentTestScriptField, SFN assignmentUsersFileField, SFN assignmentPwdField
+  , SFN submissionPwdAgainField
 
   , SFN testScriptNameField, SFN testScriptTypeField, SFN testScriptDescField
   , SFN testScriptNotesField, SFN testScriptScriptField, SFN testScriptSaveButton
@@ -428,7 +423,7 @@ fieldList = map fieldName $ join [
   , SFN userTimeZoneField, SFN assignmentForm, SFI changePwdForm, SFI setStudentPwdForm
 
   , SFI regForm, SFI loginForm, SFI regFinalForm, SFN courseAdministratorsTableName
-  , SFN groupAdministratorsTableName, SFN evCommentOnlyText
+  , SFN groupAdministratorsTableName, SFN evCommentOnlyText, SFI submissionForm
   ]
   ]
 

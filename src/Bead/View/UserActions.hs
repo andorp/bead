@@ -12,6 +12,7 @@ data UserAction
   = Logout
   | LogMessage String
   | StatusMessage (Translation String)
+  | ErrorMessage (Translation String)
 
   -- Profiling
   | ChangeUserDetails String TimeZone Language
@@ -61,6 +62,7 @@ userStoryFor Logout             = Story.logout
 userStoryFor (CreateUser u)     = Story.createUser u
 userStoryFor (LogMessage m)     = Story.logErrorMessage m
 userStoryFor (StatusMessage m)  = Story.putStatusMessage m
+userStoryFor (ErrorMessage m)   = Story.putErrorMessage m
 userStoryFor (CreateCourse c)   = Story.createCourse c >> return ()
 userStoryFor (CreateGroup ck g) = Story.createGroup ck g >> return ()
 userStoryFor (UpdateUser u)     = Story.updateUser u

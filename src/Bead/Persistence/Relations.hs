@@ -174,7 +174,7 @@ openedSubmissionInfo u = do
   let isCourseUser = flip Set.member courseUser
   nonEvalSubs  <- openedSubmissions -- Non Evaluated Submissions
   submissionDescs <- mapM (withKey submissionDesc) nonEvalSubs
-  let filterSubmissions os s@(sk,sd) =
+  let filterSubmissions os s@(_sk,sd) =
         let separate ak student
               | (isRelatedCourseAsg ak && isGroupUser student)  = os { osAdminedCourse = s:osAdminedCourse os }
               | (isCourseAsg ak && isGroupUser student)  = os { osAdminedCourse = s:osAdminedCourse os }
@@ -222,6 +222,12 @@ submissionListDesc u ak = do
     (case (assignmentEnd asg < now) of
        True  -> Right <$> (mapM submissionStatus =<< userSubmissions u ak)
        False -> Left  <$> (mapM submissionTime =<< userSubmissions u ak))
+    -- NormalPwd
+    (const (Right <$> (mapM submissionStatus =<< userSubmissions u ak)))
+    -- BallotBoxPwd
+    (const (case (assignmentEnd asg < now) of
+       True  -> Right <$> (mapM submissionStatus =<< userSubmissions u ak)
+       False -> Left  <$> (mapM submissionTime =<< userSubmissions u ak)))
     (assignmentType asg)
 
   return SubmissionListDesc {
@@ -283,7 +289,7 @@ isAdminedSubmission u sk = do
 
 -- TODO
 canUserCommentOn :: Username -> SubmissionKey -> Persist Bool
-canUserCommentOn u sk = return True
+canUserCommentOn _u _sk = return True
 
 -- Returns all the submissions of the users for the groups that the
 -- user administrates

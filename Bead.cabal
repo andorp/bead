@@ -88,6 +88,7 @@ Executable Bead
     syb,
     temporary,
     text,
+    themis,
     time,
     transformers,
     utf8-string,

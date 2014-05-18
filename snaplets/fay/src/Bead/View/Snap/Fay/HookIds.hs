@@ -70,6 +70,13 @@ regToken        = RegComp "reg_token"
 regLanguage     = RegComp "reg_language"
 regTimeZoneField = RegComp "reg_time_zone"
 
+newtype SubmissionField = SubmissionField { sfFieldName :: String }
+
+submissionTextField = SubmissionField "submission-text"
+submissionKeyField  = SubmissionField "submission-key"
+submissionPwdField  = SubmissionField "submission-pwd"
+submissionPwdAgainField = SubmissionField "submission-pwda"
+
 data FormId = FormId { rFormId :: String }
 
 loginForm = FormId "login-form"
@@ -77,4 +84,4 @@ regForm = FormId "reg-form"
 regFinalForm = FormId "reg-final-form"
 changePwdForm = FormId "change-password-form"
 setStudentPwdForm = FormId "set-student-ped-form"
-
+submissionForm = FormId "submission-form"

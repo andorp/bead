@@ -3,6 +3,8 @@ module Bead.Controller.ServiceContext (
     UsrToken
   , UserToken(..)
   , UserState(..)
+  , StatusMessage(..)
+  , statusMessage
   , userStateCata
   , userNotLoggedIn
   , userRole
@@ -48,7 +50,7 @@ data UserState
   , role :: Role     -- User's role
   , token :: String  -- Token for the active user session
   , timezone :: TimeZone -- Timezone of the user
-  , status :: Maybe (Translation String) -- The last status message
+  , status :: Maybe (StatusMessage (Translation String)) -- The last status message
   } deriving (Show)
 
 userStateCata
