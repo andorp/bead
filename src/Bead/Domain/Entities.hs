@@ -76,14 +76,14 @@ assignmentTypeToAspects = assignmentTypeCata
   (\pwd -> Set.fromList [AaBallotBox, AaPassword pwd]) -- BallotBoxPwd
 
 #ifdef TEST
-assignmentTypeToAspectsTests = do
-  test "assignmentTypeToAspects: Normal" $
+assignmentTypeToAspectsTests = group "assignmentTypeToAspects" $ do
+  test "Normal" $
     Equals Set.empty (assignmentTypeToAspects Normal) "Normal type was not converted correctly"
-  test "assignmentTypeToAspects: Urn" $
+  test "Urn" $
     Equals (Set.fromList [AaBallotBox]) (assignmentTypeToAspects Urn) "Urn type was not converted correctly"
-  test "assignmentTypeToAspects: NormalPwd" $
+  test "NormalPwd" $
     Equals (Set.fromList [AaPassword "pwd"]) (assignmentTypeToAspects (NormalPwd "pwd")) "NormalPwd type was not converted correctly"
-  test "assignmentTypeToAspects: BallotBoxPwd" $
+  test "BallotBoxPwd" $
     Equals (Set.fromList [AaBallotBox, AaPassword "pwd"])
            (assignmentTypeToAspects (BallotBoxPwd "pwd"))
            "BallowBoxPwd was not converted correctly"
@@ -93,10 +93,10 @@ isPasswordAspect = assignmentAspect False (const True)
 isBallotBoxAspect = assignmentAspect True (const False)
 
 #ifdef TEST
-assignmentAspectPredTests = do
-  test "assignmentAspectPred: Password aspect predicate" $
+assignmentAspectPredTests = group "assignmentAspectPred" $ do
+  test "Password aspect predicate" $
     Equals True (isPasswordAspect (AaPassword "pwd")) "Password aspect is not recognized"
-  test "assignmentAspectPred: Ballow box aspect predicate" $
+  test "Ballow box aspect predicate" $
     Equals True (isBallotBoxAspect AaBallotBox) "Ballot box aspect is not recognized"
 #endif
 
@@ -105,17 +105,17 @@ isPasswordProtectedAspects :: AssignmentAspects -> Bool
 isPasswordProtectedAspects = not . Set.null . Set.filter isPasswordAspect
 
 #ifdef TEST
-isPasswordProtectedAspectsTests = do
-  test "isPasswordProtectedAspects: Empty aspect set"
+isPasswordProtectedAspectsTests = group "isPasswordProtectedAspects" $ do
+  test "Empty aspect set"
        (Equals False (isPasswordProtectedAspects Set.empty)
                "Empty set should not contain password")
-  test "isPasswordProtectedAspects: Non password aspects"
+  test "Non password aspects"
        (Equals False (isPasswordProtectedAspects (Set.fromList [AaBallotBox]))
                "Ballot box set should not contain password")
-  test "isPasswordProtectedAspects: Password aspect"
+  test "Password aspect"
        (Equals True (isPasswordProtectedAspects (Set.fromList [AaPassword ""]))
                "Password aspect should be found")
-  test "isPasswordProtectedAspects: Password aspect within more aspects"
+  test "Password aspect within more aspects"
        (Equals True (isPasswordProtectedAspects (Set.fromList [AaPassword "", AaBallotBox]))
                "Password aspect should be found")
 #endif
@@ -136,13 +136,13 @@ assignmentAspectsToType = assignmentAspects $ \as ->
   in f as
 
 #ifdef TEST
-assignmentAspectsToTypeTests = do
+assignmentAspectsToTypeTests = group "assignmentAspectsToType" $ do
   let aa = assignmentAspectsToType . assignmentTypeToAspects
-  test "assignmentAspectsToType: Normal" $ Equals Normal (aa Normal) "Normal was not converted correctly"
-  test "assignmentAspectsToType: Urn" $ Equals Urn (aa Urn) "Urn was not converted correctly"
-  test "assignmentAspectsToType: NormalPwd" $ Equals (NormalPwd "pwd") (aa (NormalPwd "pwd")) "NormalPwd was not converted correctly"
-  test "assignmentAspectsToType: BallotBoxPwd" $ Equals (BallotBoxPwd "pwd") (aa (BallotBoxPwd "pwd"))
-                                                        "BallotBoxPwd was not converted correctly"
+  test "Normal" $ Equals Normal (aa Normal) "Normal was not converted correctly"
+  test "Urn" $ Equals Urn (aa Urn) "Urn was not converted correctly"
+  test "NormalPwd" $ Equals (NormalPwd "pwd") (aa (NormalPwd "pwd")) "NormalPwd was not converted correctly"
+  test "BallotBoxPwd" $ Equals (BallotBoxPwd "pwd") (aa (BallotBoxPwd "pwd"))
+                        "BallotBoxPwd was not converted correctly"
 #endif
 
 -- Calculates True if the assignment aspects set contains at least one elements
@@ -859,7 +859,7 @@ assignmentTests =
     isFalse = not
     isTrue  = id
 
-entitiesTests = do
+entitiesTests = group "Bead.Domain.Entities" $ do
   assignmentTypeToAspectsTests
   isPasswordProtectedAspectsTests
   assignmentAspectsToTypeTests
