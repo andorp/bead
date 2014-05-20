@@ -241,12 +241,13 @@ getJSONParam param msg = do
 
 -- Decode multiple values for the given parameter names.
 -- This approach can be used for checkbox contained values.
+-- If no parameter is found in the request, an empty list is returned.
 getJSONParameters :: (Data a, Show a) => String -> String -> HandlerError App b [a]
 getJSONParameters param msg = do
   params <- getParams
   case Map.lookup (fromString param) params of
-    Nothing -> throwError $ strMsg msg
-    Just [] -> throwError . strMsg $ concat [param, " contains zero values."]
+    Nothing -> return []
+    Just [] -> return []
     Just vs -> mapM decodePrm vs
   where
     decodePrm v =

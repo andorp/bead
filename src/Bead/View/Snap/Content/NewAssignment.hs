@@ -423,11 +423,21 @@ newAssignmentContent pd = do
         hiddenKeyField pd
         testScriptSelection msg pd
 
-        multiActionPostForm (hookId assignmentForm)
-          [ ((routeOf . pagePreview $ pd), (fromString . msg $ Msg_NewAssignment_PreviewButton "Preview"))
-          , ((routeOf . page $ pd),        (fromString . msg $ Msg_NewAssignment_SaveButton "Commit"))
-          ] empty
-
+        let previewAndCommitForm =
+              multiActionPostForm (hookId assignmentForm)
+                [ ((routeOf . pagePreview $ pd), (fromString . msg $ Msg_NewAssignment_PreviewButton "Preview"))
+                , ((routeOf . page $ pd),        (fromString . msg $ Msg_NewAssignment_SaveButton "Commit"))
+                ]
+                empty
+        pageDataCata
+          (const5 previewAndCommitForm)
+          (const5 previewAndCommitForm)
+          (const6 previewAndCommitForm)
+          (const5 $ return ())
+          (const7 previewAndCommitForm)
+          (const7 previewAndCommitForm)
+          (const7 previewAndCommitForm)
+          pd
     where
       asgField = A.form (fromString $ hookId assignmentForm)
 

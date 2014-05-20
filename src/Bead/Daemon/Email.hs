@@ -66,7 +66,7 @@ startEmailDaemon logger = do
                         ]
                       Right _ -> log logger INFO $ concat
                         [ "EMAIL DAEMON: An email is sent to the \"", toAddresses'
-                        , "\" with the subject: \"", subject', "\". Number of emails are in the system: "
+                        , "\" with the subject: \"", subject', "\". Number of emails are in the queue: "
                         , show n
                         ]
                     loop
