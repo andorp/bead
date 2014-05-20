@@ -159,10 +159,10 @@ evaluationContent pd = do
           submitButton
             (fieldName saveEvalBtn)
             (fromString . msg $ Msg_Evaluation_SaveButton "Submit")
-    H.div $ do
+    when (not . null $ eComments sd) $ H.div $ do
       H.h2 (fromString . msg $ Msg_Comments_Title "Comments")
       -- Renders the comment area where the user can place a comment
-      when (not . null $ eComments sd) $ do
+      do
         H.hr
         i18n msg $ commentsDiv tc . eComments $ sd
 

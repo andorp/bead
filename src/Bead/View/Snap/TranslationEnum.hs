@@ -206,6 +206,8 @@ translationList =
   , Msg_EvaluationTable_CourseAssignmentInfo ()
   , Msg_EvaluationTable_GroupAssignmentInfo ()
   , Msg_EvaluationTable_MiscCourseAssignmentInfo ()
+  , Msg_EvaluationTable_Username ()
+  , Msg_EvaluationTable_DateOfSubmission ()
 
   , Msg_UserSubmissions_NonAccessibleSubmissions ()
   , Msg_UserSubmissions_Course ()

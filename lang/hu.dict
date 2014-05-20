@@ -183,6 +183,8 @@ DictionaryFile {
     , Msg_EvaluationTable_CourseAssignmentInfo { trans = "Tárgyszintű feladatokra beküldött megoldások olyan hallgatóktól, akik valamilyen általunk regisztált csoportba járnak." }
     , Msg_EvaluationTable_GroupAssignmentInfo { trans = "Csoportszintű feladatokra beküldött megoldások olyan hallgatóktól, akik valamilyen általunk regisztált csoportba járnak." }
     , Msg_EvaluationTable_MiscCourseAssignmentInfo { trans = "Tárgyszintű feladatokra beküldött megoldások a tárgy többi hallgatójától (más oktatók is láthatják)." }
+    , Msg_EvaluationTable_Username { trans = "Neptun" }
+    , Msg_EvaluationTable_DateOfSubmission { trans = "Beadás dátuma" }
     , Msg_UserSubmissions_NonAccessibleSubmissions { trans = "Ezzel a felhasználóval ezt a megoldást nem lehet elérni!" }
     , Msg_UserSubmissions_Course { trans = "Tárgy:" }
     , Msg_UserSubmissions_Assignment { trans = "Feladat:" }
