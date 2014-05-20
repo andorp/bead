@@ -24,10 +24,11 @@ evaluationTable = ViewHandler evaluationTablePage
 evaluationTablePage :: GETContentHandler
 evaluationTablePage = withUserState $ \s -> do
   os <- userStory openSubmissions
-  renderPagelet . withUserFrame s $ evaluationTableContent os
+  tc <- usersTimeZoneConverter
+  renderPagelet . withUserFrame s $ evaluationTableContent tc os
 
-evaluationTableContent :: OpenedSubmissions -> IHtml
-evaluationTableContent = openedSubmissionsCata $ \admincourse admingroup related -> do
+evaluationTableContent :: UserTimeConverter -> OpenedSubmissions -> IHtml
+evaluationTableContent tc = openedSubmissionsCata $ \admincourse admingroup related -> do
   msg <- getI18N
   return $ do
     noUnevaluatedSubmission msg admincourse admingroup related
@@ -71,16 +72,20 @@ evaluationTableContent = openedSubmissionsCata $ \admincourse admingroup related
           H.tr # grayBackground $ do
             H.th (fromString . msg $ Msg_EvaluationTable_Course "Course")
             when isGroup $ H.th (fromString . msg $ Msg_EvaluationTable_Group "Group")
+            H.th (fromString . msg $ Msg_EvaluationTable_Username "Username")
             H.th (fromString . msg $ Msg_EvaluationTable_Student "Student")
             H.th (fromString . msg $ Msg_EvaluationTable_Assignment "Assignment")
+            H.th (fromString . msg $ Msg_EvaluationTable_DateOfSubmission "Date")
             H.th (fromString . msg $ Msg_EvaluationTable_Link "Link")
-          forM_ ks (submissionInfo msg isGroup)
+          forM_ ks (submissionInfo tc msg isGroup)
 
-submissionInfo msg isGroup (key, desc) = H.tr $ do
+submissionInfo tc msg isGroup (key, desc) = H.tr $ do
   H.td . fromString . eCourse $ desc
   when isGroup $ H.td . fromString . fromMaybe "" . eGroup $ desc
+  usernameCata (H.td . fromString) $ eUsername desc
   H.td . fromString . eStudent $ desc
   H.td . fromString . eAssignmentTitle $ desc
+  H.td . fromString . showDate . tc $ eSubmissionDate desc
   H.td $ link (routeOf (evaluation key)) (msg $ Msg_EvaluationTable_Solution "Submission")
   where
     evaluation k = Pages.evaluation k ()

@@ -203,6 +203,8 @@ data Translation a
   | Msg_EvaluationTable_CourseAssignmentInfo { trans :: a }
   | Msg_EvaluationTable_GroupAssignmentInfo { trans :: a }
   | Msg_EvaluationTable_MiscCourseAssignmentInfo { trans :: a }
+  | Msg_EvaluationTable_Username { trans :: a }
+  | Msg_EvaluationTable_DateOfSubmission { trans :: a }
 
   | Msg_UserSubmissions_NonAccessibleSubmissions { trans :: a }
   | Msg_UserSubmissions_Course { trans :: a }
