@@ -1,3 +1,9 @@
+2014-05-21
+- Login user log is more informative
+- Evaluation comment and textarea are merged
+- More information about the student on the evaluation page
+- Password protected assignments
+
 2014-04-17
 - Example username is in the config file
 - Email daemon
