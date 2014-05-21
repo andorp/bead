@@ -129,7 +129,7 @@ DictionaryFile {
     , Msg_Evaluation_Rejected { trans = "Elutasított" }
     , Msg_Evaluation_New_Comment { trans = "Új hozzászólás" }
     , Msg_Evaluation_Info { trans = "Nem kötelező egyből értékelni a hallgató munkáját, lehet csak hozzászólást is írni.  A hozzászólásokra a hallgató szintén hozzászólásokkal tud válaszolni.  A feladat többször is értékelhető." }
-    , Msg_Evaluation_Username { trans = "Neptun-kód" }
+    , Msg_Evaluation_Username { trans = "Neptun-kód:" }
     , Msg_Evaluation_SubmissionDate { trans = "Beadás dátuma:" }
     , Msg_SubmissionDetails_Course { trans = "Tárgy, csoport:" }
     , Msg_SubmissionDetails_Admins { trans = "Oktató:" }
