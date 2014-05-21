@@ -139,7 +139,7 @@ evaluationContent pd = do
         H.table $ do
           H.tr $ do
             infoCell (msg $ Msg_Evaluation_Course "Course: ") (eCourse sd)
-            infoCell (msg $ Msg_Evaluation_Group "Group: ") (fromMaybe "" $ eGroup sd)
+            maybe empty (infoCell (msg $ Msg_Evaluation_Group "Group: ")) $ eGroup sd
           H.tr $ do
             infoCell (msg $ Msg_Evaluation_Student "Student: ") (eStudent sd)
             infoCell (msg $ Msg_Evaluation_Username "Username: ") (usernameCata id $ eUsername sd)
@@ -184,6 +184,8 @@ evaluationContent pd = do
 
     maxLength = 100
     maxLines  = 5
+
+    empty = return ()
 
 inputEvalResult :: EvaluationConfig -> IHtml
 inputEvalResult (BinEval cfg) = do
