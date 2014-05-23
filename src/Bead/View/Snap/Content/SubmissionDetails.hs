@@ -37,7 +37,7 @@ submissionDetailsPage = withUserState $ \s -> do
   usersSubmission ak sk $ \submission -> do
     case submission of
       Nothing -> renderPagelet . withUserFrame s $ invalidSubmission
-      Just sm -> do
+      Just _sm -> do
         sd <- userStory $ submissionDetailsDesc sk
         tc <- usersTimeZoneConverter
         renderDynamicPagelet . withUserFrame s $

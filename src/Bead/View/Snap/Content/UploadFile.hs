@@ -79,7 +79,7 @@ postUploadFile =
     perPartUploadPolicy = const $ allowWithMaximumSize size128Kb
     uploadPolicy = setMaximumFormInputSize size128Kb defaultUploadPolicy
 
-    handlePart (partInfo, Left exception) = return . PolicyFailure . T.unpack $ policyViolationExceptionReason exception
+    handlePart (_partInfo, Left exception) = return . PolicyFailure . T.unpack $ policyViolationExceptionReason exception
     handlePart (partInfo, Right filePath) =
       case (partFileName partInfo) of
         Just fp | not (B.null fp) -> saveFile fp
@@ -90,7 +90,7 @@ postUploadFile =
           r <- runStory $ Story.saveUsersFile filePath (UsersFile $ unpack name)
           case r of
             Left e  -> return . StoryError $ Story.translateUserError i18n e
-            Right x -> return Success
+            Right _ -> return Success
 
 uploadFileContent :: PageData -> IHtml
 uploadFileContent pd = do

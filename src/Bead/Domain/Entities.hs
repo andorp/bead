@@ -488,14 +488,6 @@ class PermissionObj p where
 
 newtype ObjectPermissions = ObjectPermissions { permissions :: [(Permission, PermissionObject)] }
 
-data Authentication = Authentication
-  deriving (Eq, Show)
-
-data Authorization = Authorization {
-    authoritation :: User -> Permission -> Erroneous [PermissionObject]
-  , authorizated  :: User -> PermissionObject -> Erroneous [Permission]
-  }
-
 newtype Username = Username String
   deriving (Data, Eq, Ord, Read, Show, Typeable)
 
@@ -510,9 +502,6 @@ class AsUsername c where
 
 instance Str Username where
   str (Username u) = u
-
--- | Username 'factory'
-type FormatedUsername = String -> Erroneous Username
 
 type Password = String
 
@@ -536,10 +525,6 @@ instance Show Email where
 
 instance Str Email where
   str (Email e) = e
-
--- | Only accept normally formated email values
-email :: String -> Erroneous Email
-email = Right . Email
 
 -- TODO: throw exception if email string is unacceptable
 email' :: String -> Email
@@ -605,6 +590,7 @@ userAna role username email name timezone language = User
   <*> name
   <*> timezone
   <*> language
+
 newtype PersonalInfo = PersonalInfo (Role, String, TimeZone)
 
 personalInfoCata f (PersonalInfo (role, name, timezone))
@@ -739,13 +725,6 @@ fileInfoCata f (FileInfo size date) = f size date
 -- Applicative functor based FileInfo construction
 fileInfoAppAna size date = FileInfo <$> size <*> date
 
--- * Data storage
-
-newtype Stored key value = Stored (key, value)
-
-storedKey   (Stored (k,_)) = k
-storedValue (Stored (_,v)) = v
-
 -- * PermObjs instance
 
 instance PermissionObj Course where
@@ -757,10 +736,6 @@ instance PermissionObj Assignment where
 instance PermissionObj UserRegistration where
   permissionObject _ = P_UserReg
 
--- * Show instances
-
-printUsername :: Username -> String
-printUsername = usernameCata id
 
 -- * Ordering
 

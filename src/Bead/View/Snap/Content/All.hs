@@ -79,9 +79,9 @@ invariants :: Invariants Pages.PageDesc
 invariants = Invariants [
     ("Content handler must be defined ", Pages.pageKindCata view userView viewModify modify . pageContent)
   ] where
-      view !x = True
-      userView !x = True
-      viewModify !x = True
-      modify !x = True
+      view !_x = True
+      userView !_x = True
+      viewModify !_x = True
+      modify !_x = True
 
 #endif

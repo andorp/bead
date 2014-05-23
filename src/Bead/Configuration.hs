@@ -92,7 +92,7 @@ instance Show Usage where
   show _ = "Usage (...)"
 
 instance Eq Usage where
-  a == b = False
+  _ == _ = False
 
 usageFold :: ((String -> String) -> a) -> Usage -> a
 usageFold g (Usage f) = g f

@@ -64,7 +64,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
       case mpasswFromAuth of
         Nothing -> do logMessage ERROR "No password was given"
                       A.logout
-        Just passwFromAuth -> do
+        Just _passwFromAuth -> do
           i18n <- i18nH
           result <- liftIO $ S.runUserStory context i18n UserNotLoggedIn $ do
             S.login unameFromAuth token

@@ -84,7 +84,7 @@ submissionTable tableId now stb table = submissionTableContextCata html stb wher
 submissionTablePart :: String -> UTCTime -> SubmissionTableContext -> SubmissionTableInfo -> IHtml
 
 -- Empty table
-submissionTablePart tableId now ctx s
+submissionTablePart tableId _now _ctx s
   | and [null $ submissionTableInfoAssignments s, null $ stiUsers s] = do
     msg <- getI18N
     return $ do
@@ -100,7 +100,7 @@ submissionTablePart tableId now ctx s = do
       checkedUserScript
       headLine (stiCourse s)
       assignmentLine msg
-      mapM_ (userLine msg s) (stiUserLines s)
+      mapM_ (userLine s) (stiUserLines s)
   where
     -- JavaScript
     tableIdJSName = filter isAlphaNum tableId
@@ -196,7 +196,7 @@ submissionTablePart tableId now ctx s = do
             Nothing -> routeOf $ Pages.viewAssignment ak ()
             Just _  -> routeOf $ Pages.modifyAssignment ak ()
 
-    userLine msg s (u,p,submissionInfoMap) = do
+    userLine s (u,_p,submissionInfoMap) = do
       H.tr $ do
         let username = ud_username u
         dataCell noStyle . fromString $ ud_fullname u
@@ -281,6 +281,7 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated tested pas
     val (BinEval (Binary Passed)) = passed
     val (BinEval (Binary Failed)) = failed
     val (PctEval (Percentage (Scores [p]))) = percent p
+    val (PctEval (Percentage _)) = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
     coloredCell = color s
 

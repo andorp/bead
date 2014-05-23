@@ -75,7 +75,6 @@ abstractEvaluationPostHandler
   -> POSTContentHandler
 abstractEvaluationPostHandler getEvKeyParameter evCommand = do
   sk <- getParameter submissionKeyPrm
-  ak <- getParameter assignmentKeyPrm
   commentText <- getParameter evaluationValuePrm
   commentOrResult <- getJSONParam (fieldName evaluationResultField) "Nem található értékelés!"
   withEvalOrComment commentOrResult
@@ -188,7 +187,7 @@ evaluationContent pd = do
     empty = return ()
 
 inputEvalResult :: EvaluationConfig -> IHtml
-inputEvalResult (BinEval cfg) = do
+inputEvalResult (BinEval _cfg) = do
   msg <- getI18N
   return $ horizontalRadioButtonsDef (fieldName evaluationResultField) 0 $
     [ (EvCmtComment,  msg $ Msg_Evaluation_New_Comment "New Comment")
@@ -199,7 +198,7 @@ inputEvalResult (BinEval cfg) = do
     binary = EvCmtResult . EvResult . mkEvalResult . Binary
 
 -- When the page is dynamic the percentage spinner is hooked on the field
-inputEvalResult (PctEval cfg) =
+inputEvalResult (PctEval _cfg) =
   return $ hiddenInput
     (fieldName evaluationResultField)
     (fromString . errorOnNothing . encodeToFay . EvResult . mkEvalResult . Percentage $ Scores [0.0])

@@ -14,8 +14,6 @@ import Bead.Domain.Types
 
 -- * Relations
 
-type RolePermissions = [(Role,[(Permission, PermissionObject)])]
-
 data AssignmentDesc = AssignmentDesc {
     aActive   :: Bool
   , aTitle    :: String
@@ -29,6 +27,7 @@ assignmentDescPermissions = ObjectPermissions [
     (P_Open, P_Assignment), (P_Open, P_Course)
   , (P_Open, P_Course)
   ]
+
 
 data GroupDesc = GroupDesc {
     gName   :: String
@@ -258,9 +257,6 @@ newtype AssignmentKey = AssignmentKey String
 
 assignmentKeyMap :: (String -> a) -> AssignmentKey -> a
 assignmentKeyMap f (AssignmentKey x) = f x
-
-newtype UserKey = UserKey String
-  deriving (Eq, Ord, Show)
 
 newtype UserRegKey = UserRegKey String
   deriving (Eq, Ord, Show)

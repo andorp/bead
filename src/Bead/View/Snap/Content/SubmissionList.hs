@@ -76,7 +76,7 @@ submissionListContent p = do
     firstCol  t = H.td # textAlignRight $ H.b $ fromString t
     secondCol t = H.td # textAlignLeft $ fromString t
 
-    submissionLine msg (sk, time, status, t) = H.tr $ do
+    submissionLine msg (sk, time, status, _t) = H.tr $ do
       H.td # informationalCell $ linkWithText
         (routeOf $ submissionDetails (asKey p) sk)
         (fromString . showDate $ (uTime p) time)

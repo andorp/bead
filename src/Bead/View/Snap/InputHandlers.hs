@@ -45,7 +45,7 @@ instance InputPagelet Group where
   inputPagelet g = do
     msg <- getI18N
     let hook = createGroupHook
-    evalConfig <- evaluationConfig (evSelectionId hook) (fmap groupEvalConfig g)
+    evalConfig <- evaluationConfig (evSelectionId hook)
     return $ do
       table "create-group" "create-group-table" $ do
         tableLine (msg $ Msg_Input_Group_Name "Title") $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
@@ -77,7 +77,7 @@ instance InputPagelet Course where
   inputPagelet c = do
     msg <- getI18N
     let hook = createCourseHook
-    evalConfig <- evaluationConfig (evSelectionId hook) (fmap courseEvalConfig c)
+    evalConfig <- evaluationConfig (evSelectionId hook)
     return $ do
       table "create-course" "create-course-table" $ do
         tableLine (msg $ Msg_Input_Course_Name "Title") $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
@@ -167,8 +167,8 @@ instance GetValueHandler Assignment where
 emptyEvaluationConfig :: Maybe (EvaluationData Binary Percentage)
 emptyEvaluationConfig = Nothing
 
-evaluationConfig :: String -> Maybe EvaluationConfig -> IHtml
-evaluationConfig n v = do
+evaluationConfig :: String -> IHtml
+evaluationConfig n = do
   msg <- getI18N
   return $ selection n $ map (valueAndName msg) evaluationTypes
   where

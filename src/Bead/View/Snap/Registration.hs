@@ -56,7 +56,7 @@ createUser usersdb user password = do
     Nothing -> error "Nem jött létre felhasználó!"
     Just u' -> case passwordFromAuthUser u' of
       Nothing  -> error "Nem lett jelszó megadva!"
-      Just pwd -> Persist.runPersist $ Persist.saveUser user
+      Just _pwd -> Persist.runPersist $ Persist.saveUser user
   return ()
 
 createAdminUser :: FilePath -> UserRegInfo -> IO ()
@@ -284,10 +284,10 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     msg <- i18nH
     case (values, pwd, tz) of
       (Left err,_,_) -> registrationErrorPage err
-      (Right (key, token, username, language), Just password, Just timezone) -> do
+      (Right (key, _token, _username, language), Just _password, Just timezone) -> do
         result <- registrationStory (S.loadUserReg key)
         case result of
-          Left e -> errorPage (Msg_Registration_Title "Registration") $ msg $
+          Left _e -> errorPage (Msg_Registration_Title "Registration") $ msg $
             Msg_RegistrationCreateStudent_InternalError "Some internal error happened."
           Right userRegData -> do
             now <- liftIO getCurrentTime
@@ -296,14 +296,15 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
               True -> errorPage (Msg_Registration_Title "Registration") $ msg $
                 Msg_RegistrationCreateStudent_InvalidToken "The registration token has expired, start the registration over."
               False -> do
-                result <- withTop auth $ createNewUser userRegData password timezone (Language language)
+                withTop auth $ createNewUser userRegData timezone (Language language)
                 redirect "/"
+      (Right _, _, _) -> registrationErrorPage ("Password or timezone is not defined" :: String)
 
   log lvl msg = withTop serviceContext $ logMessage lvl msg
 
 
-createNewUser :: UserRegistration -> String -> TimeZone -> Language -> Handler App (AuthManager App) (Either RegError ())
-createNewUser reg password timezone language = runErrorT $ do
+createNewUser :: UserRegistration -> TimeZone -> Language -> Handler App (AuthManager App) (Either RegError ())
+createNewUser reg timezone language = runErrorT $ do
   -- Check if the user is exist already
   userExistence <- checkFailure =<< lift (registrationStory (S.doesUserExist username))
   when userExistence . throwError $ (RegErrorUserExist username)

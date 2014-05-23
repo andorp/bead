@@ -130,10 +130,6 @@ usersTimeZoneConverter = do
   tz <- dataTimeZone <$> userTimeZone
   return $ Time.utcToLocalTime tz
 
--- TODO: Show some error
-errorPageHandler :: T.Text -> Handler App b ()
-errorPageHandler msg = error "errorPageHandler: undefined" -- blaze errorPage
-
 i18nE :: (IsString s) => HandlerError App b (Translation String -> s)
 i18nE = do
   lang <- lift . withTop sessionManager $ languageFromSession
@@ -253,7 +249,7 @@ getJSONParameters param msg = do
     decodePrm v =
       let v' = B.unpack v
       in case decodeFromFay v' of
-           Nothing -> throwError . strMsg $ "Decoding error:" ++ v'
+           Nothing -> throwError . strMsg $ concat ["Decoding error:", v', " ", msg]
            Just  x -> return x
 
 -- Computes a list that contains language and dictionary info pairs
@@ -301,8 +297,8 @@ fileUpload = do
       where
         handlerPartInfo (partInfo, uploaded) =
           case uploaded of
-            Left exception -> liftIO $ putStrLn "Exception"
-            Right file -> liftIO . B.putStrLn . maybe (fromString "Nothing") id $ partFileName partInfo
+            Left exception -> liftIO . putStrLn $ "Exception: " ++ show exception
+            Right _file -> liftIO . B.putStrLn . maybe (fromString "Nothing") id $ partFileName partInfo
 
 -- | Runs a user story for authenticated user and saves the new user state
 --   into the service context

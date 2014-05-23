@@ -98,7 +98,7 @@ configuredDefaultDictionaryLanguage = snapContextCata snd
 --   if the dictionary is registered for the given language,
 --   otherwise returns Nothing
 getDictionary :: Language -> Handler b DictionaryContext (Maybe Dictionary)
-getDictionary l = snapContextCata (\(d,_l) -> fmap fst $ Map.lookup l d)
+getDictionary l = snapContextCata (fmap fst . Map.lookup l . fst)
 
 -- A dictionary infos is a list that contains the language of and information
 -- about the dictionaries contained by the DictionarySnaplet
@@ -108,7 +108,7 @@ dictionaryInfosCata list item d = list $ map item d
 
 -- Computes a list with the defined languages and dictionary info
 dcGetDictionaryInfos :: Handler b DictionaryContext DictionaryInfos
-dcGetDictionaryInfos = snapContextCata (\(d,l) -> Map.toList $ Map.map snd d)
+dcGetDictionaryInfos = snapContextCata (Map.toList . Map.map snd . fst)
 
 -- * Email sending snaplet
 
@@ -229,10 +229,7 @@ createPasswordGenerator = do
 
   let passwordGenerator = replicateM 12 $ do
         type_ <- fmap (`mod` 3) nextValue
-        case type_ of
-          0 -> fmap lowerCase nextValue
-          1 -> fmap upperCase nextValue
-          2 -> fmap digit     nextValue
+        fmap ([lowerCase, upperCase, digit] !! type_) nextValue
 
   return passwordGenerator
 
