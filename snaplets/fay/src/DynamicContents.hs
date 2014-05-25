@@ -162,7 +162,7 @@ hookPercentageDiv hook = void $ do
   when existDiv $ do
     input <- select . cssId . ptHiddenInputId $ hook
     checkboxMsg <- (select . cssId $ hookId evCommentOnlyText) >>= getVal
-    commentCheckbox <- select (fromString $ concat [ "<input type=\"checkbox\">", unpack checkboxMsg, "</input>" ])
+    commentCheckbox <- select (fromString $ concat [ "<input type=\"checkbox\" checked=\"\">", unpack checkboxMsg, "</input>" ])
     appendTo div commentCheckbox
     select (fromString "<br/>") >>= appendTo div
     pctInput <- select (fromString "<input type=\"text\" size=\"3\" required />")
@@ -178,17 +178,19 @@ hookPercentageDiv hook = void $ do
           c <- checked t
           if c
             then do
-              hide Instantly pctInput
-              hide Instantly pctSymbol
+              disableSpinner (Spinner pctInput)
               setVal (fromString comment) input
             else do
-              unhide pctInput
-              unhide pctSymbol
+              enableSpinner (Spinner pctInput)
               val <- getVal pctInput
               setVal (fromString . result . double . unpack $ val) input
     change commentCheckboxChanged commentCheckbox
     numberField pctInput 0 100
+    -- Comment checkbox is checked by default, the pctInput should be disabled
+    -- and the input field value should be a comment
     pctSpinner changeHiddenInput pctInput
+    disableSpinner (Spinner pctInput)
+    setVal (fromString comment) input
     putStrLn "Percentage div is loaded."
   where
     double "100" = "1.0"
