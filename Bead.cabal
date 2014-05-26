@@ -96,8 +96,8 @@ Executable Bead
     xmlhtml
 
 
---Executable Test
---  GHC-Options: -fhpc -hpcdir dist/build/Test/Mix/
+--Executable BeadUnitTest
+--  GHC-Options: -fhpc -hpcdir dist/build/BeadUnitTest/Mix/
 --  CPP-Options: -DTEST
 --  HS-Source-Dirs: src, snaplets/fay/src, test
 --  Main-is: TestMain.hs

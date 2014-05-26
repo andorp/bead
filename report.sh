@@ -1,8 +1,8 @@
 #! /bin/sh
 
-./dist/build/Test/Test
+./dist/build/BeadUnitTest/BeadUnitTest
 
-hpc markup Test --hpcdir=dist/build/Test/Mix --destdir=./dist/hpc
+hpc markup Test --hpcdir=dist/build/BeadUnitTest/Mix --destdir=./dist/hpc
 
-rm Test.tix
+rm BeadUnitTest.tix
 
