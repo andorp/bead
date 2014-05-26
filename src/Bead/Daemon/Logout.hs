@@ -19,6 +19,7 @@ their sessions without inactivating it by logging out from the service
 import           Prelude hiding (log)
 
 import           Control.Concurrent
+import           Control.Monad (forM, when)
 import           Data.IORef
 import           Data.Map (Map)
 import qualified Data.Map as Map
