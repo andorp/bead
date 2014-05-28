@@ -709,11 +709,6 @@ createCourseAssignment ck a tc = logAction INFO msg $ do
     statusMsg = const .
       putStatusMessage $ Msg_UserStory_NewCourseAssignment "The course assignment has been created."
 
-selectAssignments :: (AssignmentKey -> Assignment -> Bool) -> UserStory [(AssignmentKey, Assignment)]
-selectAssignments f = logAction INFO "selects some assignments" $ do
-  authorize P_Open P_Assignment
-  persistence $ Persist.filterAssignment f
-
 -- | The 'loadExercise' loads an exercise from the persistence layer
 loadAssignment :: AssignmentKey -> UserStory Assignment
 loadAssignment k = logAction INFO ("loads assignment " ++ show k) $ do

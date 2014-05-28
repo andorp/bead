@@ -279,8 +279,8 @@ setGroupAdmins as gs n = do
 type SubmissionInfoList = [((Username,AssignmentKey),SubmissionKey)]
 
 -- Throws away the assignment and the username from the submission information
-submissionKeys :: SubmissionInfoList -> [SubmissionKey]
-submissionKeys = (fmap snd)
+infoListToSubmissionKeys :: SubmissionInfoList -> [SubmissionKey]
+infoListToSubmissionKeys = (fmap snd)
 
 -- Generate and story the given number of submissions, for the randomly selected
 -- user and assignment. Returns all the created submission keys with the associated
@@ -341,7 +341,7 @@ massPersistenceTest = do
   cas <- courseAssignmentGen 400 cs
   let as = gas ++ cas
   us <- users 300
-  ss <- submissionKeys <$> submissions 500 us as
+  ss <- infoListToSubmissionKeys <$> submissions 500 us as
   evaluations 400 ss
   return ()
 
@@ -441,7 +441,7 @@ submissionDescTest = do
   gs <- groups 300 cs
   us <- users 300
   as <- courseAndGroupAssignments 150 150 cs gs
-  ss <- submissionKeys <$> submissions 500 us as
+  ss <- infoListToSubmissionKeys <$> submissions 500 us as
   quick 500 $ do
     sk <- pick $ elements ss
     desc <- runPersistCmd $ submissionDesc sk
@@ -483,7 +483,7 @@ submissionListDescTest = do
   gs <- groups 200 cs
   as <- courseAndGroupAssignments 200 200 cs gs
   us <- users 300
-  ss <- submissionKeys <$> submissions 400 us as
+  ss <- infoListToSubmissionKeys <$> submissions 400 us as
   quick 500 $ do
     u <- pick $ elements us
     a <- pick $ elements as
@@ -531,7 +531,7 @@ submissionDetailsDescTest = do
   us <- users 400
   createCourseAdmins 200 us cs
   createGroupAdmins 200 us gs
-  ss <- submissionKeys <$> submissions 400 us as
+  ss <- infoListToSubmissionKeys <$> submissions 400 us as
   quick 1000 $ do
     sk <- pick $ elements ss
     desc <- runPersistCmd $ submissionDetailsDesc sk
@@ -627,13 +627,14 @@ filterSubmissionsTest = do
   gs <- groups 300 cs
   as <- courseAndGroupAssignments 200 200 cs gs
   us <- users 400
-  saved  <- (Set.fromList . submissionKeys) <$> (submissions 500 us as)
-  loaded <- (Set.fromList . map fst) <$> (runPersistIOCmd $ filterSubmissions (\_ _ -> True))
+  saved  <- (Set.fromList . infoListToSubmissionKeys) <$> (submissions 500 us as)
+  loaded <- Set.fromList <$> (runPersistIOCmd submissionKeys)
   assertEquals saved loaded "Saved and loaded submission keys were different"
-  saved2  <- (Set.fromList . submissionKeys) <$> (submissions 100 us as)
-  loaded2 <- (Set.fromList . map fst) <$> (runPersistIOCmd $ filterSubmissions (\_ _ -> True))
+  saved2  <- (Set.fromList . infoListToSubmissionKeys) <$> (submissions 100 us as)
+  loaded2 <- Set.fromList <$> (runPersistIOCmd submissionKeys)
   assertTrue (Set.isSubsetOf loaded loaded2) "Not all submission keys were in the loaded set"
   assertTrue (Set.isSubsetOf saved2 loaded2) "New submission keys were not in the loaded set"
+
 
 -- Users must be able to change password and reamain loginable
 -- TODO: Investigate
@@ -651,21 +652,6 @@ updatePwdTest = do
 --    runPersistCmd $ updatePwd username
 --    loginable <- runPersistCmd $ canUserLogin username p
 --    assertTrue loginable "User is not loginable #2"
-    return ()
-
--- Users can not login in using invalid password
-userCanLoginTest = do
-  let wrongPwd = "wrongpwd"
-  quick 1000 $ do
-    u <- pick Gen.users
-    let username = u_username u
-    exist <- runPersistCmd $ doesUserExist username
-    pre (not exist)
-    runPersistCmd $ saveUser u
---    loginable <- runPersistCmd $ canUserLogin username pwd
---    assertTrue loginable "User is not loginable"
---    loginable <- runPersistCmd $ canUserLogin username 
---    assertFalse loginable "User could login with invalid password"
     return ()
 
 -- Modified assignments must be untouched after loading them
@@ -687,7 +673,7 @@ modifyEvaluationTest = do
   gs <- groups 300 cs
   as <- courseAndGroupAssignments 200 200 cs gs
   us <- users 200
-  ss <- submissionKeys <$> (submissions 400 us as)
+  ss <- infoListToSubmissionKeys <$> (submissions 400 us as)
   es <- evaluations 600 ss
   quick 1000 $ do
     ek <- pick $ elements es
@@ -1154,7 +1140,6 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Users must be able to change password and reamain loginable" $ updatePwdTest
   , testCase "Modified assignments must be untouched after loading them" $ modifyAssignmentsTest
   , testCase "Modified evaluations must be untouched after loading them" $ modifyEvaluationTest
-  , testCase "Users can not login in using invalid password" $ userCanLoginTest
   , testCase "Delete user form course" $ deleteUsersFromCourseTest
   , testCase "Delete user from courses not belong to" $ deleteUsersFromCourseNegativeTest
   , testCase "User unsubscribes from a course" $ unsubscribeFromSubscribedGroupsTest

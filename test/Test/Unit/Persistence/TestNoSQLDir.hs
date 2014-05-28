@@ -66,10 +66,10 @@ test_create_exercise = testCase "Save an exercise" $ do
 test_create_load_exercise = testCase "Create and load exercise" $ do
   str <- getCurrentTime
   end <- getCurrentTime
-  k <- liftE $ saveAssignment (Assignment "Title" "This is an exercise" Normal str UTC end UTC)
-  ks <- liftE $ filterAssignment (\_ _ -> True)
-  assertBool "Readed list of exercises was empty" (length ks > 0)
-  assertBool "Written key was not in the list" (elem k (map fst ks))
+  let a = Assignment "Title" "This is an exercise" Normal str UTC end UTC
+  k <- liftE $ saveAssignment a
+  a' <- liftE $ loadAssignment k
+  assertBool "The saved assignment differs from the read one." (a' == a)
 
 test_create_user = testCase "Create user" $ do
   let uname = Username "ursula"
