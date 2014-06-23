@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE RankNTypes #-}
 module Bead.Persistence.NoSQLDir (
     Persist
@@ -113,6 +114,9 @@ module Bead.Persistence.NoSQLDir (
   , createPersistInit
   , createPersistInterpreter
   , parseConfig
+#ifdef TEST
+  , tests
+#endif
   ) where
 
 import Bead.Domain.Types
@@ -134,6 +138,10 @@ import Data.Function (on)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.List (sortBy)
+
+#ifdef TEST
+import Test.Themis.Test (Test)
+#endif
 
 type Persist a = TIO a
 
@@ -1137,3 +1145,8 @@ nDeleteTestComment = submissionKeyMap $ \sk -> do
 
 encodePwd :: String -> String
 encodePwd = ordEncode
+
+#ifdef TEST
+tests :: Test ()
+tests = return ()
+#endif

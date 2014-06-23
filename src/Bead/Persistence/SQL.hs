@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Bead.Persistence.SQL (
     module Bead.Persistence.SQL.Assignment
   , module Bead.Persistence.SQL.Comment
@@ -13,6 +14,7 @@ module Bead.Persistence.SQL (
   , module Bead.Persistence.SQL.TestJob
   , module Bead.Persistence.SQL.TestScript
   , module Bead.Persistence.SQL.User
+  , tests
   ) where
 
 import Bead.Persistence.SQL.Assignment
@@ -29,3 +31,20 @@ import Bead.Persistence.SQL.TestComment
 import Bead.Persistence.SQL.TestJob
 import Bead.Persistence.SQL.TestScript
 import Bead.Persistence.SQL.User
+
+import Test.Themis.Test (Test)
+
+#ifdef TEST
+tests :: Test ()
+tests = do
+  courseAdminTests
+  groupTests
+  testScriptTests
+  assignmentTests
+  testCaseTests
+  submissionTests
+  evaluationTests
+  commentTests
+  userRegistrationTests
+
+#endif

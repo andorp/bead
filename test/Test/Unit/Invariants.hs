@@ -25,6 +25,7 @@ import qualified Bead.Daemon.Logout as LD (unitTests)
 import qualified Bead.Domain.Entities as E
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQLDirFile as L (unitTests)
+import qualified Bead.Persistence.Persist as P (persistTests)
 import           Bead.Invariants
 import qualified Bead.View.Snap.Content.All as VA (invariants)
 import           Bead.View.Snap.Content.Home
@@ -94,3 +95,4 @@ tests = [
 
 themisTests = runTest buildTestSet $ do
   E.entitiesTests
+  P.persistTests

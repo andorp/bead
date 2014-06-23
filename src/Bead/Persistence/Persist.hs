@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Bead.Persistence.Persist (
     Persist
   , Config(..)
@@ -117,6 +118,9 @@ module Bead.Persistence.Persist (
   , saveComment
   , loadComment
   , submissionOfComment
+#ifdef TEST
+  , persistTests
+#endif
   ) where
 
 import           Data.Time (UTCTime)
@@ -128,6 +132,10 @@ import           Bead.Domain.Relationships
 import qualified Bead.Persistence.Initialization as Init
 import qualified Bead.Persistence.NoSQLDir as PersistImpl
 --import qualified Bead.Persistence.SQL as PersistImpl
+
+#ifdef TEST
+import           Test.Themis.Test (Test)
+#endif
 
 type Persist a = PersistImpl.Persist a
 type Config = PersistImpl.Config
@@ -525,3 +533,10 @@ defaultConfig = PersistImpl.defaultConfig
 -- | Run the given persist command with the interpreter
 runPersist :: Interpreter -> Persist a -> IO (Erroneous a)
 runPersist = PersistImpl.runInterpreter
+
+#ifdef TEST
+
+persistTests :: Test ()
+persistTests = PersistImpl.tests
+
+#endif
