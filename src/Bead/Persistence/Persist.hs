@@ -130,8 +130,11 @@ import           Bead.Domain.Entities
 import           Bead.Domain.Relationships
 
 import qualified Bead.Persistence.Initialization as Init
+#ifdef SQLITE
+import qualified Bead.Persistence.SQL as PersistImpl
+#else
 import qualified Bead.Persistence.NoSQLDir as PersistImpl
---import qualified Bead.Persistence.SQL as PersistImpl
+#endif
 
 #ifdef TEST
 import           Test.Themis.Test (Test)

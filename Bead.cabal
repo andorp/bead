@@ -1,14 +1,15 @@
-Name: Bead
-Version: 0.1
-License: BSD3
-Description: E-learning snap based server for special teaching purposes
-             Administrators can submit exercises and students can submit
-             solutions for the given exercises.
-Author: Andor Penzes <andor.penzes@gmail.com>
-Maintainer: andor.penzes@gmail.com
-Stability: Experimental
-Build-Type: Simple
-Cabal-Version: >= 1.2
+Name:                Bead
+Version:             0.1.0.0
+License:             BSD3
+synopsis:            Online assignment management system
+Description:         E-learning snap based server for special teaching purposes
+                     Administrators can submit exercises and students can submit
+                     solutions for the given exercises.
+Author:              Andor Penzes <andor.penzes@gmail.com>
+Maintainer:          andor.penzes@gmail.com
+Stability:           Experimental
+Build-Type:          Simple
+Cabal-Version:       >= 1.2
 
 Data-Files:
   snaplets/fay/devel.cfg,
@@ -69,16 +70,21 @@ Executable Bead
     fay-text,
     filepath,
     hastache,
+    json >= 0.7,
     lens,
     mime-mail,
     MissingH,
     MonadCatchIO-transformers,
+    monad-logger >= 0.3,
     old-locale,
     pandoc,
+    persistent-sqlite >= 1.3,
+    persistent-template >= 1.3,
     pqueue >= 1.2.1 && < 2.0,
     mtl,
     random,
     regex-tdfa,
+    resourcet >= 1.1,
     snap,
     snap-core,
     snap-server,
