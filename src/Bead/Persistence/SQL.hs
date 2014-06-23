@@ -14,7 +14,9 @@ module Bead.Persistence.SQL (
   , module Bead.Persistence.SQL.TestJob
   , module Bead.Persistence.SQL.TestScript
   , module Bead.Persistence.SQL.User
+#ifdef TEST
   , tests
+#endif
   ) where
 
 import Bead.Persistence.SQL.Assignment
