@@ -1,7 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Registration (
     createAdminUser
-  , createUser
   , registrationRequest
   , finalizeRegistration
   ) where
@@ -41,8 +40,8 @@ import           Bead.View.Snap.Session
 import qualified Bead.Persistence.Persist as Persist
 import           Bead.View.Snap.Content
 
-createUser :: FilePath -> User -> String -> IO ()
-createUser usersdb user password = do
+createUser :: Persist.Interpreter -> FilePath -> User -> String -> IO ()
+createUser persist usersdb user password = do
   let name = usernameCata id $ u_username user
   mgr <- mkJsonAuthMgr usersdb
   pwd <- encryptPassword . ClearText . fromString $ password
@@ -56,11 +55,11 @@ createUser usersdb user password = do
     Nothing -> error "Nem jött létre felhasználó!"
     Just u' -> case passwordFromAuthUser u' of
       Nothing  -> error "Nem lett jelszó megadva!"
-      Just _pwd -> Persist.runPersist $ Persist.saveUser user
+      Just _pwd -> Persist.runPersist persist $ Persist.saveUser user
   return ()
 
-createAdminUser :: FilePath -> UserRegInfo -> IO ()
-createAdminUser usersdb = userRegInfoCata $
+createAdminUser :: Persist.Interpreter -> FilePath -> UserRegInfo -> IO ()
+createAdminUser persist usersdb = userRegInfoCata $
   \name password email fullName timeZone ->
     let usr = User {
         u_role = Admin
@@ -70,7 +69,7 @@ createAdminUser usersdb = userRegInfoCata $
       , u_timezone = timeZone
       , u_language = Language "hu" -- TODO: I18N
       }
-    in createUser usersdb usr password
+    in createUser persist usersdb usr password
 
 -- * User registration handler
 

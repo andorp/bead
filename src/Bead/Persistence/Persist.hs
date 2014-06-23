@@ -1,5 +1,10 @@
 module Bead.Persistence.Persist (
     Persist
+  , Config(..)
+  , defaultConfig
+  , Interpreter
+  , createPersistInit
+  , createPersistInterpreter
   , runPersist
 
   , saveUser
@@ -59,7 +64,6 @@ module Bead.Persistence.Persist (
   -- Test Cases
   , saveTestCase
   , loadTestCase
-  , assignmentOfTestCase
   , testScriptOfTestCase
   , modifyTestCase
   , removeTestCaseAssignment
@@ -70,6 +74,7 @@ module Bead.Persistence.Persist (
   , saveTestJob -- Saves the test job for the test daemon
 
   -- Test Comments
+  , insertTestComment
   , testComments
   , deleteTestComment -- Deletes the test daemon's comment from the test-incomming
 
@@ -112,10 +117,6 @@ module Bead.Persistence.Persist (
   , saveComment
   , loadComment
   , submissionOfComment
-
-  -- Persistence initialization
-  , isPersistenceSetUp
-  , initPersistence
   ) where
 
 import           Data.Time (UTCTime)
@@ -124,9 +125,12 @@ import           Bead.Domain.Types (Erroneous)
 import           Bead.Domain.Entities
 import           Bead.Domain.Relationships
 
+import qualified Bead.Persistence.Initialization as Init
 import qualified Bead.Persistence.NoSQLDir as PersistImpl
+--import qualified Bead.Persistence.SQL as PersistImpl
 
 type Persist a = PersistImpl.Persist a
+type Config = PersistImpl.Config
 
 -- Save the current user
 saveUser :: User -> Persist ()
@@ -321,10 +325,6 @@ saveTestCase = PersistImpl.saveTestCase
 loadTestCase :: TestCaseKey -> Persist TestCase
 loadTestCase = PersistImpl.loadTestCase
 
--- Returns the assignment of the given test case
-assignmentOfTestCase :: TestCaseKey -> Persist AssignmentKey
-assignmentOfTestCase = PersistImpl.assignmentOfTestCase
-
 -- Returns the test script of the given test case
 testScriptOfTestCase :: TestCaseKey -> Persist TestScriptKey
 testScriptOfTestCase = PersistImpl.testScriptOfTestCase
@@ -334,7 +334,6 @@ modifyTestCase :: TestCaseKey -> TestCase -> Persist ()
 modifyTestCase = PersistImpl.modifyTestCase
 
 -- Deletes the link from the test case connected to an assignment
--- TODO: This could introduce a bug
 removeTestCaseAssignment :: TestCaseKey -> AssignmentKey -> Persist ()
 removeTestCaseAssignment = PersistImpl.removeTestCaseAssignment
 
@@ -350,6 +349,11 @@ saveTestJob :: SubmissionKey -> Persist () -- Saves the test job for the test da
 saveTestJob = PersistImpl.saveTestJob
 
 -- * Test Comments
+
+-- | Inserts a test comment for the incoming test comment directory,
+-- this function is mainly for testing of this functionality
+insertTestComment :: SubmissionKey -> String -> Persist ()
+insertTestComment = PersistImpl.insertTestComment
 
 -- | List the comments that the test daemon left in the test-incomming, comment for the
 -- groups admin, and comments for the student
@@ -438,7 +442,7 @@ usernameOfSubmission = PersistImpl.usernameOfSubmission
 
 -- Lists all the submissions stored in the database
 submissionKeys :: Persist [SubmissionKey]
-submissionKeys = fmap (map fst) $ PersistImpl.filterSubmissions (\_ _ -> True)
+submissionKeys = PersistImpl.submissionKeys
 
 -- Returns the evaluation for the submission if the evalution exist, otherwise Nothing
 evaluationOfSubmission :: SubmissionKey -> Persist (Maybe EvaluationKey)
@@ -499,14 +503,25 @@ submissionOfComment = PersistImpl.submissionOfComment
 
 -- * Persistence initialization
 
--- Checks if the persistent layes is setted up correctly
-isPersistenceSetUp :: IO Bool
-isPersistenceSetUp = PersistImpl.isPersistenceSetUp
+-- | Creates a persist initialization structure.
+createPersistInit :: Config -> IO (Init.PersistInit)
+createPersistInit = PersistImpl.createPersistInit
 
--- Inits the persistent layer
-initPersistence :: IO ()
-initPersistence = PersistImpl.initPersistence
+type Interpreter = PersistImpl.Interpreter
 
--- Run a persistent command which can fail
-runPersist :: Persist a -> IO (Erroneous a)
-runPersist = PersistImpl.runPersist
+-- | Creates an interpreter for the persistent compuation
+createPersistInterpreter :: Config -> IO Interpreter
+createPersistInterpreter = PersistImpl.createPersistInterpreter
+
+-- | Parses the configuration string
+parseConfig :: String -> Config
+parseConfig = PersistImpl.parseConfig
+
+-- | Deafult configuration for the Persistence layer
+-- This is only a placeholder.
+defaultConfig :: Config
+defaultConfig = PersistImpl.defaultConfig
+
+-- | Run the given persist command with the interpreter
+runPersist :: Interpreter -> Persist a -> IO (Erroneous a)
+runPersist = PersistImpl.runInterpreter

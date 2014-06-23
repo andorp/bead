@@ -2,23 +2,26 @@ module Test.UserStories.TestStories (
     tests
   ) where
 
-import Prelude hiding (log)
-import Bead.Domain.Entities as E
-import Bead.Controller.Logging
-import Bead.Controller.UserStories as U
-import Bead.Controller.ServiceContext
+import           Control.Monad (when)
+import           Prelude hiding (log)
+
+import           Data.Time.Clock
+import           System.Directory (removeDirectoryRecursive)
+
+import           Bead.Controller.Logging
 import qualified Bead.Controller.Pages as P
-import Bead.Persistence.Persist
-import Bead.Domain.Shared.Evaluation
-import Bead.Domain.Relationships (TCCreation(..))
-import Bead.View.Snap.Translation (trans)
+import           Bead.Controller.ServiceContext
+import           Bead.Controller.UserStories as U
+import           Bead.Domain.Entities as E
+import           Bead.Domain.Relationships (TCCreation(..))
+import           Bead.Domain.Shared.Evaluation
+import qualified Bead.Persistence.Initialization as PersistInit
+import           Bead.Persistence.Persist
+import           Bead.View.Snap.Translation (trans)
 
-import Test.HUnit hiding (Test(..))
-import Test.Framework (testGroup)
-import Test.Framework.Providers.HUnit
-
-import Data.Time.Clock
-import System.Directory (removeDirectoryRecursive)
+import           Test.HUnit hiding (Test(..))
+import           Test.Framework (testGroup)
+import           Test.Framework.Providers.HUnit
 
 errorLogger = Logger {
     log = \e msg -> case e of
@@ -29,7 +32,8 @@ errorLogger = Logger {
 context :: IO ServiceContext
 context = do
   container <- ioUserContainer
-  serviceContext container errorLogger
+  interp <- createPersistInterpreter defaultConfig
+  serviceContext container errorLogger interp
 
 adminUserState = UserState {
     user = Username "admin"
@@ -106,10 +110,11 @@ tests = testGroup "User Stories" [
   ]
 
 initPersist = testCase "Initalizing persistence layer" $ do
-  setUp <- isPersistenceSetUp
-  assertBool "Persistence was set up" (not setUp)
-  initPersistence
-  setUp <- isPersistenceSetUp
+  init <- createPersistInit defaultConfig
+  setUp <- PersistInit.isSetUp init
+  when setUp $ PersistInit.tearDown init
+  PersistInit.initPersist init
+  setUp <- PersistInit.isSetUp init
   assertBool "Setting up persistence was failed" setUp
 
 saveAndLoadUserReg = testCase "Save and load user reg data" $ do
@@ -121,7 +126,8 @@ saveAndLoadUserReg = testCase "Save and load user reg data" $ do
   assertBool "Saved and load user registration differs" (u' == u)
 
 cleanUpPersist = testCase "Cleaning up persistence" $ do
-  removeDirectoryRecursive "data"
+  init <- createPersistInit defaultConfig
+  PersistInit.tearDown init
 
 register = testCase "User registration" $ do
   c <- context

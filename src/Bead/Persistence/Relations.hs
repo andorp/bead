@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Bead.Persistence.Relations (
     userAssignmentKeys
   , userAssignmentKeyList
@@ -32,6 +33,7 @@ related information is computed.
 import           Control.Applicative ((<$>))
 import           Control.Arrow
 import           Control.Monad (forM, when)
+import           Control.Monad.IO.Class
 import           Control.Monad.Transaction.TIO
 import           Data.Function (on)
 import           Data.List ((\\), nub, sortBy, intersect, find)
@@ -45,6 +47,17 @@ import           Bead.Domain.Entities
 import           Bead.Domain.Relationships
 import           Bead.Persistence.Persist
 import           Bead.View.Snap.Translation
+
+#ifdef TEST
+import           Bead.Domain.Shared.Evaluation
+import           Bead.Persistence.Initialization
+
+import qualified Test.Themis.Keyword.Encaps as Keyword (step, key)
+import           Test.Themis.Keyword.Encaps hiding (step, key)
+import           Test.Themis.Keyword
+import           Test.Themis.Provider.Interactive
+import           Test.Themis.Test
+#endif
 
 -- * Combined Persistence Tasks
 
@@ -68,6 +81,40 @@ userAssignmentKeys u = do
       asg <- concat <$> (mapM (groupAssignments)  (nub gs))
       asc <- concat <$> (mapM (courseAssignments) (nub cs))
       return . Just $ nub (asg ++ asc)
+
+#ifdef TEST
+
+userAssignmentKeysTest = do
+  let course  = Course "name" "desc" (BinEval ()) TestScriptSimple
+      group  = Group "name" "desc" (BinEval ())
+      asg     = Assignment "name" "desc" Urn time CET time CET
+      time    = read "2014-06-09 12:55:27.959203 UTC"
+      user1name = Username "user1"
+      user1  = User Student user1name (Email "email") "name" CEST (Language "hu")
+
+  ioTest "User assignment keys with group and course assignments" $ do
+    init <- createPersistInit defaultConfig
+    interp <- createPersistInterpreter defaultConfig
+    initPersist init
+    result <- runPersist interp . runKeyword encapsContext $ do
+      dbStep $ saveUser user1
+      c <- dbStep $ saveCourse course
+      g <- dbStep $ saveGroup c group
+      a1 <- dbStep $ saveCourseAssignment c asg
+      a2 <- dbStep $ saveCourseAssignment c asg
+      a3 <- dbStep $ saveGroupAssignment g asg
+      a4 <- dbStep $ saveGroupAssignment g asg
+      keys <- dbStep $ userAssignmentKeys user1name
+      assertEquals Nothing keys "The unsubscribed user has some assignment keys"
+      dbStep $ subscribe user1name c g
+      keys <- dbStep $ userAssignmentKeys user1name
+      assertEquals (Just [a1,a2,a3,a4]) keys "The assignment of the users was different than the sum of the course and group assignment"
+      return ()
+    tearDown init
+    return result
+  return ()
+
+#endif
 
 -- Produces the assignment key list for the user, it the user
 -- is not registered in any course the result is the empty list
@@ -211,7 +258,7 @@ submissionListDesc :: Username -> AssignmentKey -> Persist SubmissionListDesc
 submissionListDesc u ak = do
   (name, adminNames) <- courseNameAndAdmins ak
   asg <- loadAssignment ak
-  now <- hasNoRollback getCurrentTime
+  now <- liftIO getCurrentTime
 
   -- User submissions should not shown for urn typed assignments, only after the end
   -- period
@@ -487,3 +534,9 @@ isThereASubmissionForCourse :: Username -> CourseKey -> Persist Bool
 isThereASubmissionForCourse u ck = do
   aks <- courseAssignments ck
   (not . null . catMaybes) <$> mapM (flip (lastSubmission) u) aks
+
+#ifdef TEST
+
+dbStep = Keyword.step . Keyword.key
+
+#endif

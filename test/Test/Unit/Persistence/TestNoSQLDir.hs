@@ -11,16 +11,19 @@ import Test.Framework.Providers.HUnit
 import Bead.Domain.Entities
 import Bead.Domain.Shared.Evaluation
 import Bead.Domain.Relationships
+import Bead.Persistence.Initialization
 import Bead.Persistence.Persist
 import Bead.Persistence.Relations
 import Control.Monad.Transaction.TIO
 
 -- Utils
 
+import Control.Monad (when)
 import Data.Time.Clock
 import Data.Maybe
 import System.Directory
 import Control.Monad (join)
+import Control.Monad.IO.Class
 
 tests = testGroup "Persistence tests" [
     test_initialize_persistence
@@ -34,17 +37,19 @@ tests = testGroup "Persistence tests" [
   ]
 
 test_initialize_persistence = testCase "Initialize NoSQLDir persistence layer" $ do
-  setUp <- isPersistenceSetUp
+  init <- createPersistInit defaultConfig
+  setUp <- isSetUp init
   assertBool "Persistence was set up" (not setUp)
-  initPersistence
-  setUp <- isPersistenceSetUp
+  initPersist init
+  setUp <- isSetUp init
   assertBool "Settin up persistence was failed" setUp
 
 test_create_exercise = testCase "Save an exercise" $ do
+  interp <- createPersistInterpreter defaultConfig
   str <- getCurrentTime
   end <- getCurrentTime
   let assignment = Assignment "Title" "This is an exercise" Normal str UTC end UTC
-  ek <- liftE $ saveAssignment assignment
+  ek <- liftE interp $ saveAssignment assignment
   let uname = Username "student"
       user = User {
         u_role     = Student
@@ -55,23 +60,25 @@ test_create_exercise = testCase "Save an exercise" $ do
       , u_language = Language "hu"
       }
       password = "password"
-  liftE $ saveUser user
+  liftE interp $ saveUser user
   let s = Submission {
         solution = "Solution"
       , solutionPostDate = end
       }
-  sk <- liftE $ saveSubmission ek uname s
+  sk <- liftE interp $ saveSubmission ek uname s
   return ()
 
 test_create_load_exercise = testCase "Create and load exercise" $ do
+  interp <- createPersistInterpreter defaultConfig
   str <- getCurrentTime
   end <- getCurrentTime
   let a = Assignment "Title" "This is an exercise" Normal str UTC end UTC
-  k <- liftE $ saveAssignment a
-  a' <- liftE $ loadAssignment k
+  k <- liftE interp $ saveAssignment a
+  a' <- liftE interp $ loadAssignment k
   assertBool "The saved assignment differs from the read one." (a' == a)
 
 test_create_user = testCase "Create user" $ do
+  interp <- createPersistInterpreter defaultConfig
   let uname = Username "ursula"
   let user = User {
         u_role     = Student
@@ -81,24 +88,26 @@ test_create_user = testCase "Create user" $ do
       , u_timezone = UTC
       , u_language = Language "hu"
       }
-  liftE $ saveUser user
-  us <- liftE $ filterUsers (const True)
+  liftE interp $ saveUser user
+  us <- liftE interp $ filterUsers (const True)
   assertBool "The filter did not find the user" (length us > 0)
-  user1 <- liftE $ loadUser uname
+  user1 <- liftE interp $ loadUser uname
   assertBool "Loading the registered user has failed" (user1 == user)
   let user2 = user { u_role = CourseAdmin }
-  liftE $ updateUser user2
-  user3 <- liftE $ loadUser uname
+  liftE interp $ updateUser user2
+  user3 <- liftE interp $ loadUser uname
   assertBool "Updating and loading user has failed" (user3 == user2)
 
 testUserRegSaveAndLoad = testCase "Save and Load User regisistration" $ do
+  interp <- createPersistInterpreter defaultConfig
   now <- getCurrentTime
   let u = UserRegistration "username" "e@e.com" "Family name" "token" now
-  key <- liftE $ saveUserReg u
-  u'  <- liftE $ loadUserReg key
+  key <- liftE interp $ saveUserReg u
+  u'  <- liftE interp $ loadUserReg key
   assertBool "Loaded user registration info differs from saved" (u == u')
 
 testOpenSubmissions = testCase "Users separated correctly in open submission tables" $ do
+  interp <- createPersistInterpreter defaultConfig
   str <- getCurrentTime
   end <- getCurrentTime
   reinitpersistence
@@ -134,7 +143,7 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
       gAssignment1 = Assignment "GroupAssignment" "Assignment" Normal str UTC end UTC
       gAssignment2 = Assignment "GroupAssignment" "Assignment" Normal str UTC end UTC
       sbsm = Submission "submission" str
-  join $ liftE $ do
+  join $ liftE interp $ do
     ck  <- saveCourse (Course "name" "desc" binaryEvalConfig TestScriptSimple)
     gk1 <- saveGroup ck (Group "gname1" "gdesc1" binaryEvalConfig)
     gk2 <- saveGroup ck (Group "gname2" "gdesc2" binaryEvalConfig)
@@ -168,6 +177,7 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
 
 
 test_create_group_user = testCase "Create Course and Group with a user" $ do
+  interp <- createPersistInterpreter defaultConfig
   let username = Username "ursula"
       admin = Username "admin"
       adminUser = User {
@@ -179,75 +189,75 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
         , u_language = Language "hu"
         }
       password = "password"
-  ck <- liftE $ saveCourse (Course "name" "desc" binaryEvalConfig TestScriptSimple)
-  gk <- liftE $ saveGroup ck (Group "gname" "gdesc" binaryEvalConfig)
-  gks <- liftE $ groupKeysOfCourse ck
+  ck <- liftE interp $ saveCourse (Course "name" "desc" binaryEvalConfig TestScriptSimple)
+  gk <- liftE interp $ saveGroup ck (Group "gname" "gdesc" binaryEvalConfig)
+  gks <- liftE interp $ groupKeysOfCourse ck
   assertBool "Registered group was not found in the group list" (elem gk gks)
-  liftE $ subscribe username ck gk
-  rCks <- liftE $ userCourses username
+  liftE interp $ subscribe username ck gk
+  rCks <- liftE interp $ userCourses username
   assertBool "Course does not found in user's courses" (rCks == [ck])
-  rGks <- liftE $ userGroups username
+  rGks <- liftE interp $ userGroups username
   assertBool "Group does not found in user's groups" (rGks == [gk])
-  isInGroup <- liftE $ isUserInGroup username gk
+  isInGroup <- liftE interp $ isUserInGroup username gk
   assertBool "Registered user is not found" isInGroup
-  isInCourse <- liftE $ isUserInCourse username ck
+  isInCourse <- liftE interp $ isUserInCourse username ck
   assertBool "Registered user is not found" isInCourse
-  liftE $ saveUser adminUser
-  liftE $ createCourseAdmin admin ck
-  cs <- liftE $ administratedCourses admin
+  liftE interp $ saveUser adminUser
+  liftE interp $ createCourseAdmin admin ck
+  cs <- liftE interp $ administratedCourses admin
   assertBool "Course is not found in administrated courses" (elem ck (map fst cs))
-  liftE $ createGroupAdmin admin gk
-  gs <- liftE $ administratedGroups admin
+  liftE interp $ createGroupAdmin admin gk
+  gs <- liftE interp $ administratedGroups admin
   assertBool "Group is not found in administrated groups" (elem gk (map fst gs))
   str <- getCurrentTime
   end <- getCurrentTime
   let gAssignment = Assignment "GroupAssignment" "Assignment" Normal str UTC end UTC
       cAssignment = Assignment "CourseAssignment" "Assignment" Urn str UTC end UTC
-  cak <- liftE $ saveCourseAssignment ck cAssignment
-  cask <- liftE $ courseAssignments ck
+  cak <- liftE interp $ saveCourseAssignment ck cAssignment
+  cask <- liftE interp $ courseAssignments ck
   assertBool "Course does not have the assignment" (elem cak cask)
-  gak <- liftE $ saveGroupAssignment gk gAssignment
-  gask <- liftE $ groupAssignments gk
+  gak <- liftE interp $ saveGroupAssignment gk gAssignment
+  gask <- liftE interp $ groupAssignments gk
   assertBool "Group does not have the assignment" (elem gak gask)
-  us <- liftE $ groupAdmins gk
+  us <- liftE interp $ groupAdmins gk
   assertBool "Admin is not in the group" ([admin] == us)
-  gs <- liftE $ filterGroups (\_ _ -> True)
+  gs <- liftE interp $ filterGroups (\_ _ -> True)
   assertBool "Group list was different" ([gk] == map fst gs)
 
   testHasNoLastSubmission gak username
 
   -- Submission
   let sbsm = Submission "submission" str
-  sk <- liftE $ saveSubmission gak username sbsm
-  sk_user <- liftE $ usernameOfSubmission sk
+  sk <- liftE interp $ saveSubmission gak username sbsm
+  sk_user <- liftE interp $ usernameOfSubmission sk
   assertBool
     (join ["Username of the submission differs from the registered: (", show username, " ", show sk_user, ")"])
     (username == sk_user)
-  sk_ak <- liftE $ assignmentOfSubmission sk
+  sk_ak <- liftE interp $ assignmentOfSubmission sk
   assertBool "Assignment differs from registered" (gak == sk_ak)
-  osk <- liftE $ openedSubmissions
+  osk <- liftE interp $ openedSubmissions
   assertBool "Submission is not in the opened submissions" (elem sk osk)
 
   testHasLastSubmission gak username sk
 
   -- Test Submissions
-  submissions <- liftE $ submissionsForAssignment gak
+  submissions <- liftE interp $ submissionsForAssignment gak
   assertBool "Submissions for assignment was different" (submissions == [sk])
 
-  uss <- liftE $ userSubmissions username gak
+  uss <- liftE interp $ userSubmissions username gak
   assertBool "Submission is not in the users' submission" (elem sk uss)
 
   let ev = Evaluation (BinEval (Binary Passed)) "Good"
-  evKey <- liftE $ saveEvaluation sk ev
-  ev1 <- liftE $ loadEvaluation evKey
+  evKey <- liftE interp $ saveEvaluation sk ev
+  ev1 <- liftE interp $ loadEvaluation evKey
   assertBool "Evaluation was not loaded correctly" (ev == ev1)
-  ev_sk <- liftE $ submissionOfEvaluation evKey
+  ev_sk <- liftE interp $ submissionOfEvaluation evKey
   assertBool "Submission key was different for the evaluation" (sk == ev_sk)
-  liftE $ removeFromOpened gak username sk
+  liftE interp $ removeFromOpened gak username sk
 
   testComment sk
 
-  sld <- liftE $ submissionListDesc username gak
+  sld <- liftE interp $ submissionListDesc username gak
   assertBool (concat ["Group name was different: '", slGroup sld, "' 'name - gname'"]) (slGroup sld == "name - gname")
   assertBool "Admins was different" (slTeacher sld == ["admin"])
 --  assertBool "There was different number od submissions" (length (slSubmissions sld) == 1)
@@ -257,39 +267,43 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
 
 testComment :: SubmissionKey -> IO ()
 testComment sk = do
+  interp <- createPersistInterpreter defaultConfig
   now <- getCurrentTime
   let comment = Comment "comment" "author" now CT_Student
-  key <- liftE $ saveComment sk comment
-  c2  <- liftE $ loadComment key
+  key <- liftE interp $ saveComment sk comment
+  c2  <- liftE interp $ loadComment key
   assertBool "Loaded comment was different" (comment == c2)
-  sk2 <- liftE $ submissionOfComment key
+  sk2 <- liftE interp $ submissionOfComment key
   assertBool "Submission key was different" (sk == sk2)
 
 testHasNoLastSubmission :: AssignmentKey -> Username -> IO ()
 testHasNoLastSubmission ak u = do
-  mKey <- liftE $ lastSubmission ak u
+  interp <- createPersistInterpreter defaultConfig
+  mKey <- liftE interp $ lastSubmission ak u
   assertBool "Found submission" (isNothing mKey)
 
 testHasLastSubmission :: AssignmentKey -> Username -> SubmissionKey -> IO ()
 testHasLastSubmission ak u sk = do
-  mKey <- liftE $ lastSubmission ak u
+  interp <- createPersistInterpreter defaultConfig
+  mKey <- liftE interp $ lastSubmission ak u
   assertBool "Submission was not found" (isJust mKey)
   assertBool "Submission was different" (sk == fromJust mKey)
 
 reinitpersistence = do
-  removeDirectoryRecursive "data"
-  initPersistence
+  init <- createPersistInit defaultConfig
+  setUp <- isSetUp init
+  when setUp $ do
+    tearDown init
+    initPersist init
 
 clean_up = testCase "Cleaning up" $ do
-  -- We use background knowledge, to clean up
-  removeDirectoryRecursive "data"
-  return ()
+  init <- createPersistInit defaultConfig
+  tearDown init
 
 -- * Tools
 
-liftE :: TIO a -> IO a
-liftE m = do
-  x <- runPersist m
+liftE interp m = do
+  x <- runPersist interp m
   case x of
     Left e -> error e
     Right y -> return y

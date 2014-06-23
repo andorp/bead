@@ -2,7 +2,9 @@ module Test.Quick.Persistence where
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad
+import Control.Monad.IO.Class
 import Control.Concurrent (forkIO)
+import qualified Data.ByteString.Char8 as BS
 import qualified Data.Set as Set
 
 import Data.List ((\\), intersperse)
@@ -16,6 +18,7 @@ import System.IO.Temp (createTempDirectory)
 import System.FilePath ((</>))
 
 import Control.Monad.Transaction.TIO
+import Bead.Persistence.Initialization
 import Bead.Persistence.Persist
 import Bead.Persistence.Relations
 import Bead.Persistence.NoSQLDir (referredPath)
@@ -37,7 +40,7 @@ import Test.Framework.Providers.QuickCheck2
 
 -- Load and save property. The save and a load of
 -- the given data should be the same.
-saveAndLoadIdenpotent :: (Eq v, Show v) => String -> (v -> TIO k) -> (k -> TIO v) -> Gen v -> PropertyM IO k
+saveAndLoadIdenpotent :: (Eq v, Show v) => String -> (v -> Persist k) -> (k -> Persist v) -> Gen v -> PropertyM IO k
 saveAndLoadIdenpotent name save load gen = do
   v <- pick gen
   key <- runPersistCmd $ save v
@@ -47,7 +50,7 @@ saveAndLoadIdenpotent name save load gen = do
 
 -- Modification property. The saved, modificated and a load
 -- of the given data should be the same
-modification :: (Eq v, Show v) => String -> (v -> TIO k) -> (k -> v -> TIO ()) -> (k -> TIO v) -> Gen v -> PropertyM IO k
+modification :: (Eq v, Show v) => String -> (v -> Persist k) -> (k -> v -> Persist ()) -> (k -> Persist v) -> Gen v -> PropertyM IO k
 modification name save modify load gen = do
   k <- saveAndLoadIdenpotent name save load gen
   v <- pick gen
@@ -361,8 +364,9 @@ check cleanup m = do
 -- properties are hold.
 
 reinitPersistence = do
-  whenM (doesDirectoryExist "data") (removeDirectoryRecursive "data")
-  initPersistence
+  init <- createPersistInit defaultConfig
+  tearDown init
+  initPersist init
 
 courseAndGroupAssignments cn gn cs gs = do
   cas <- courseAssignmentGen cn cs
@@ -394,7 +398,11 @@ userAssignmentKeyTests = do
       (not . Set.null $ Set.intersection (Set.fromList uas) (Set.fromList as))
       (join [
           "User assignment for a given course and group was not found. User:", show u
-        , "Group and course assignments: ", show uas, " User assignments:", show as
+        , " Group and course assignments: ", show uas, " User assignments:", show as
+        , " Group: ", show gk
+        , " Course: ", show ck
+        , " Group assignments: ", show gas
+        , " Course assignment: ", show cas
         ])
 
 -- Every assignment has a group or a course
@@ -682,7 +690,12 @@ modifyEvaluationTest = do
     e <- pick $ Gen.evaluations cfg
     runPersistCmd $ modifyEvaluation ek e
     e1 <- runPersistCmd $ loadEvaluation ek
-    assertEquals e e1 "Modified and loaded evaluations were different"
+    assertEquals e e1 $ concat
+      [ "Modified and loaded evaluations were different "
+      , "Evaluation key:", show ek
+      , "Generated: ", show e
+      , "Loaded: ", show e1
+      ]
 
 -- Subscribe users to groups
 subscribeUsers n us gs =
@@ -766,7 +779,11 @@ unsubscribeFromSubscribedGroupsTest = do
       unregsga <- unsubscribedFromGroup  g
       return $ case g `elem` ugsb of
         True -> do
-          assertEquals (length ugsa) (length ugsb - 1) "User is not unsubscribed from group"
+          assertEquals (length ugsa) (length ugsb - 1) $ concat
+            [ "User is not unsubscribed from group "
+            , " Before unsubscription: ", show ugsb
+            , " After unsubscription: ", show ugsa
+            ]
           assertSetEquals (ugsb) (g:ugsa) "User is not unsubscribed from group #2"
           assertFalse (u `elem` unregsgb) "User was in the group unsubscribed list"
           assertTrue  (u `elem` unregsga) "User is not in the group unsubscribed list"
@@ -806,11 +823,8 @@ saveLoadAndModifyTestCasesTest = do
     join $ runPersistCmd $ do
       modifyTestCase tc ntc
       ntc' <- loadTestCase tc
-      ak <- assignmentOfTestCase tc
-      asg <- loadAssignment ak
       return $ do
         assertEquals ntc ntc' "Modification of the test case has failed"
-        assertTrue (not . null $ assignmentName asg) "Invalid assignment"
 
 -- Creates a temporary directory for the bead in the system's temp dir
 createBeadTempDir :: IO FilePath
@@ -844,9 +858,9 @@ userFileHandlingTest = do
     testOverwriteFile u f fn ufs = runPersistCmd $ do
       path  <- getFile u fn
       copyFile u f fn
-      content <- hasNoRollback $ readFile f
+      content <- liftIO $ readFile f
       path' <- getFile u fn
-      content' <- hasNoRollback $ readFile path'
+      content' <- liftIO $ readFile path'
       return $ do
         assertEquals path path' "The overwritted file path's has changed"
         assertEquals content content' "The file content was not overwritted"
@@ -868,9 +882,9 @@ userOverwriteFileTest = do
     join $ runPersistCmd $ do
       path <- getFile u fn
       copyFile u f fn
-      content <- hasNoRollback $ readFile f
+      content <- liftIO $ readFile f
       path' <- getFile u fn
-      content' <- hasNoRollback $ readFile path'
+      content' <- liftIO $ readFile path'
       ufs' <- map fst <$> listFiles u
       return $ do
         assertSetEquals ufs ufs' "The user's file set was changed"
@@ -903,7 +917,7 @@ testJobCreationTest = do
   where
     testIfHasNoTestJob sk = do
       let tk = submissionKeyToTestJobKey sk
-      exist <- hasNoRollback $ doesDirectoryExist $ referredPath tk
+      exist <- liftIO $ doesDirectoryExist $ referredPath tk
       return $ do
         assertFalse exist "Test Job directory is exist"
 
@@ -911,16 +925,16 @@ testJobCreationTest = do
       -- Domain knowledge is used
       tsk <- testScriptOfTestCase tck
       let tk = submissionKeyToTestJobKey sk
-      submission  <- hasNoRollback $ readFile $ referredPath sk  </> "solution"
-      script      <- hasNoRollback $ readFile $ referredPath tsk </> "script"
-      tests       <- hasNoRollback $ readFile $ referredPath tck </> "value"
-      submission' <- hasNoRollback $ readFile $ referredPath tk </> "submission"
-      script'     <- hasNoRollback $ readFile $ referredPath tk </> "script"
-      tests'      <- hasNoRollback $ readFile $ referredPath tk </> "tests"
+      submission <- liftIO $ readFile $ referredPath tk </> "submission"
+      script     <- liftIO $ readFile $ referredPath tk </> "script"
+      tests      <- liftIO $ BS.readFile $ referredPath tk </> "tests"
+      submission2 <- loadSubmission sk
+      script2     <- loadTestScript tsk
+      case2       <- loadTestCase   tck
       return $ do
-        assertEquals submission submission' "Submissions are differenr"
-        assertEquals script script' "Scripts are different"
-        assertEquals tests tests' "Tests are different"
+        assertEquals submission (solution submission2) "Submissions are different"
+        assertEquals script (tsScript script2) "Scripts are different"
+        assertEquals tests (tcValue case2) "Tests are different"
 
 incomingCommentsTest = do
   reinitPersistence
@@ -947,7 +961,7 @@ incomingCommentsTest = do
       run $ insertListRef commented sk
       comment <- pick $ Gen.manyWords
       join $ runPersistCmd $ do
-        fileSave testIncomingDataDir (submissionKeyMap id sk) comment
+        insertTestComment sk comment
         cks <- map fst <$> testComments
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
@@ -1075,21 +1089,24 @@ deleteIncomingCommentsTest = do
     checkIfCanBeCommented sk = do
       comment <- pick $ Gen.manyWords
       join $ runPersistCmd $ do
-        fileSave testIncomingDataDir (submissionKeyMap id sk) comment
+        insertTestComment sk comment
         cks <- map fst <$> testComments
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
 
-runPersistCmd :: TIO a -> PropertyM IO a
+
+runPersistCmd :: Persist a -> PropertyM IO a
 runPersistCmd m = do
-  x <- run $ runPersist m
+  interp <- run $ createPersistInterpreter defaultConfig
+  x <- run $ runPersist interp m
   case x of
     Left msg -> fail msg >> return undefined
     Right x  -> return x
 
-runPersistIOCmd :: TIO a -> IO a
+runPersistIOCmd :: Persist a -> IO a
 runPersistIOCmd m = do
-  x <- runPersist m
+  interp <- createPersistInterpreter defaultConfig
+  x <- runPersist interp m
   case x of
     Left msg -> fail msg >> return undefined
     Right x  -> return x
@@ -1157,10 +1174,12 @@ complexTests = testGroup "Persistence Layer Complex tests" [
 monadicProperty gen prop = monadicIO (forAllM gen prop)
 
 initPersistenceLayer = testCase "Initialization" $ do
-  initPersistence
+  init <- createPersistInit defaultConfig
+  initPersist init
 
 cleanUpPersistence = testCase "Clean up" $ do
-  removeDirectoryRecursive "data"
+  init <- createPersistInit defaultConfig
+  tearDown init
 
 -- Fails if the two given list does not represent the same set
 assertSetEquals :: (Monad m, Show a, Eq a, Ord a) => [a] -> [a] -> String -> m ()

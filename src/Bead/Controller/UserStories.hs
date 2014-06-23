@@ -246,7 +246,7 @@ create
   :: (PermissionObj o)
   => (o -> v -> String)      -- ^ Descriptor for the logger
   -> o                       -- ^ The object to save
-  -> (o -> TIO v)            -- ^ Saver function of the persistence
+  -> (o -> Persist v)        -- ^ Saver function of the persistence
   -> UserStory v
 create descriptor object saver = do
   authorize P_Create (permissionObject object)
@@ -856,6 +856,7 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
       unless (isActivePeriod a now) . errorPage . userError $
         Msg_UserStoryError_SubmissionDeadlineIsReached "The submission deadline is reached."
 
+    -- TODO: Change the ABI to remove the unevaluated automatically
     removeUserOpenedSubmissions u ak = do
       sks <- Persist.usersOpenedSubmissions ak u
       mapM_ (Persist.removeFromOpened ak u) sks
@@ -1160,8 +1161,8 @@ asksUserContainer = CMR.asks (userContainer . fst)
 asksLogger :: UserStory Logger
 asksLogger = CMR.asks (logger . fst)
 
-asksPersistMutex :: UserStory (MVar ())
-asksPersistMutex = CMR.asks (persist . fst)
+asksPersistInterpreter :: UserStory Persist.Interpreter
+asksPersistInterpreter = CMR.asks (persistInterpreter . fst)
 
 asksI18N :: UserStory I18N
 asksI18N = CMR.asks snd
@@ -1185,10 +1186,8 @@ withUserAndPersist f = do
 -- ticket itself
 persistence :: Persist a -> UserStory a
 persistence m = do
-  mp <- asksPersistMutex
-  x <- liftIO . try . modifyMVar mp $ \p -> do
-         ea <- Persist.runPersist m
-         return (p,ea)
+  interp <- asksPersistInterpreter
+  x <- liftIO . try $ Persist.runPersist interp m
   case x of
     (Left e) -> do
       -- Exception happened somewhere

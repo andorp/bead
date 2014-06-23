@@ -18,21 +18,24 @@ import           Bead.Daemon.Email
 import           Bead.Daemon.Logout
 import           Bead.Daemon.TestAgent
 import           Bead.Domain.Entities (UserRegInfo(..), TimeZone(..))
-import           Bead.Persistence.Persist (initPersistence, isPersistenceSetUp)
+import           Bead.Persistence.Initialization
+import qualified Bead.Persistence.Persist as Persist (Config, defaultConfig, createPersistInit, createPersistInterpreter)
 import           Bead.View.Snap.AppInit
 import           Bead.View.Snap.Logger
 import           Bead.View.Snap.Validators hiding (toLower)
 
 
 -- Creates a service context that includes the given logger
-createContext :: L.Logger -> IO ServiceContext
-createContext logger = do
+createContext :: L.Logger -> Persist.Config -> IO ServiceContext
+createContext logger cfg = do
   userContainer <- ioUserContainer
-  isPersistSetUp <- isPersistenceSetUp
+  init <- Persist.createPersistInit cfg
+  isPersistSetUp <- isSetUp init
   case isPersistSetUp of
     True -> return ()
-    False -> initPersistence
-  S.serviceContext userContainer logger
+    False -> initPersist init
+  interpreter <- Persist.createPersistInterpreter cfg
+  S.serviceContext userContainer logger interpreter
 
 -- Reads the command line arguments, interprets the init tasks and start
 -- the service with the given config
@@ -142,7 +145,7 @@ startService config appInitTasks = do
   userActionLogs <- creating "logger" $ createSnapLogger . userActionLogFile $ config
   let userActionLogger = snapLogger userActionLogs
 
-  context <- creating "service context" $ createContext userActionLogger
+  context <- creating "service context" $ createContext userActionLogger Persist.defaultConfig
 
   tempDir <- creating "temporary directory" createBeadTempDir
 

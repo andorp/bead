@@ -19,7 +19,7 @@ import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Translation
 
 #ifdef TEST
-import           Test.Themis.Test
+import           Test.Themis.Test hiding (testCaseCata)
 import           Bead.Invariants (Invariants(..), UnitTests(..))
 #endif
 
@@ -170,8 +170,12 @@ data Assignment = Assignment {
   -- TODO: Number of maximum tries
   } deriving (Eq, Show)
 
+-- | Template function for the assignment
 assignmentCata f (Assignment name desc type_ start starttz end endtz) =
   f name desc type_ start starttz end endtz
+
+-- | Template function for the assignment with flipped arguments
+withAssignment a f = assignmentCata f a
 
 assignmentAna name desc type_ start starttz end endtz =
   Assignment <$> name <*> desc <*> type_ <*> start <*> starttz <*> end <*> endtz
@@ -189,6 +193,12 @@ data Submission = Submission {
   , solutionPostDate :: UTCTime
   } deriving (Eq, Show)
 
+-- | Template function for submission
+submissionCata f (Submission sub subPostDate) = f sub subPostDate
+
+-- | Template function for submission with flipped arguments
+withSubmission s f = submissionCata f s
+
 -- Comment type basically indicates that who left the comment,
 -- constructors are self explanatories
 data CommentType
@@ -199,7 +209,7 @@ data CommentType
   | CT_Evaluation
   | CT_TestAgent
   | CT_Message   -- Highlighted message to the student
-  deriving (Show, Read, Eq)
+  deriving (Data, Eq, Read, Show, Typeable)
 
 commentTypeCata
   student
@@ -303,6 +313,12 @@ data Evaluation = Evaluation {
   , writtenEvaluation :: String
   } deriving (Eq, Show)
 
+-- | Template function for the evaluation
+evaluationCata f (Evaluation result written) = f result written
+
+-- | Template function with flipped parameter for the evaluation
+withEvaluation e f = evaluationCata f e
+
 resultString :: EvaluationResult -> TransMsg
 resultString (BinEval (Binary Passed)) = TransMsg $ Msg_Domain_EvalPassed "Passed"
 resultString (BinEval (Binary Failed)) = TransMsg $ Msg_Domain_EvalFailed "Failed"
@@ -365,7 +381,7 @@ data Group = Group {
   , groupEvalConfig :: EvaluationConfig
   } deriving (Eq, Show)
 
-groupCata group config (Group name desc cfg)
+groupCata config group (Group name desc cfg)
   = group name desc (config cfg)
 
 -- | Workflows can happen to exams
@@ -583,6 +599,8 @@ data User = User {
 userCata f (User role username email name timezone language) =
   f role username email name timezone language
 
+withUser = flip userCata
+
 userAna role username email name timezone language = User
   <$> role
   <*> username
@@ -618,11 +636,9 @@ data UserRegistration = UserRegistration {
   , reg_timeout  :: UTCTime
   } deriving (Eq, Show, Read)
 
-userRegistrationFold
-  :: (String -> String -> String -> String -> UTCTime -> a)
-  -> UserRegistration
-  -> a
-userRegistrationFold f (UserRegistration u e n t d) = f u e n t d
+-- | Template function for the UserRegistration
+userRegistration f (UserRegistration username email name token timeout) =
+  f username email name token timeout
 
 -- Test Script Type represents a choice: The test cases for the
 -- test script will be uploaded as plain text or a zip file
@@ -661,6 +677,9 @@ testScriptCata
     type_)
   = f name description notes script (tc type_)
 
+-- Template function for the TestScript with flipped parameters
+withTestScript t tc f = testScriptCata tc f t
+
 -- Applicative functor based TestScript value creation
 testScriptAppAna name desc notes script type_
   = TestScript <$> name <*> desc <*> notes <*> script <*> type_
@@ -669,7 +688,7 @@ testScriptAppAna name desc notes script type_
 data TestCaseType
   = TestCaseSimple
   | TestCaseZipped
-  deriving (Eq, Ord, Enum, Show, Read)
+  deriving (Data, Eq, Enum, Ord, Read, Show, Typeable)
 
 -- Template function for the test case type
 testCaseTypeCata
@@ -701,6 +720,9 @@ testCaseCata
             type_
             info)
   = f name description value (tc type_) info
+
+-- | Template method for the test case with flipped arguments
+withTestCase t tc f = testCaseCata tc f t
 
 -- Applicative functor based TestCase value creation
 testCaseAppAna name desc value type_ info

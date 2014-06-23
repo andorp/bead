@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE RankNTypes #-}
 module Bead.Controller.ServiceContext (
     UsrToken
   , UserToken(..)
@@ -16,7 +17,6 @@ module Bead.Controller.ServiceContext (
   , UserContainer(..)
   , ServiceContext(..)
   , serviceContext
-  , scRunPersist
   , ioUserContainer
   ) where
 
@@ -29,6 +29,7 @@ import           Bead.Controller.Pages as Pages
 import           Bead.Controller.Logging
 import           Bead.Domain.Entities as Entities
 import           Bead.View.Snap.Translation
+import qualified Bead.Persistence.Persist as Persist
 
 newtype UsrToken = UsrToken (Username, String)
   deriving (Show, Eq, Ord)
@@ -116,23 +117,14 @@ data UserContainer a = UserContainer {
   }
 
 data ServiceContext = ServiceContext {
-    persist       :: MVar ()
-  , userContainer :: UserContainer UserState
+    userContainer :: UserContainer UserState
   , logger        :: Logger
+  , persistInterpreter :: Persist.Interpreter
   }
 
-serviceContext :: UserContainer UserState -> Logger -> IO ServiceContext
-serviceContext u l = do
-  mp <- newMVar ()
-  return $ ServiceContext mp u l
-
--- Runs the IO computation, after having the access to the persistent
--- layer
-scRunPersist :: ServiceContext -> IO a -> IO a
-scRunPersist sc m =
-  modifyMVar (persist sc) $ \p -> do
-    x <- m
-    return (p,x)
+serviceContext :: UserContainer UserState -> Logger -> Persist.Interpreter -> IO ServiceContext
+serviceContext u l i = do
+  return $ ServiceContext u l i
 
 ioUserContainer :: IO (UserContainer a)
 ioUserContainer = do

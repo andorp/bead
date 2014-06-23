@@ -66,7 +66,8 @@ appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $
 
   case user of
     Nothing        -> return ()
-    Just userRegInfo -> liftIO $ S.scRunPersist s $ createAdminUser usersJson userRegInfo
+    Just userRegInfo ->
+      liftIO $ createAdminUser (persistInterpreter s) usersJson userRegInfo
 
   sm <- nestSnaplet "session" sessionManager $
           initCookieSessionManager "cookie" "session" (Just (sessionTimeout config))

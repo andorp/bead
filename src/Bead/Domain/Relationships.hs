@@ -276,6 +276,8 @@ newtype SubmissionKey = SubmissionKey String
 submissionKeyMap :: (String -> a) -> SubmissionKey -> a
 submissionKeyMap f (SubmissionKey s) = f s
 
+withSubmissionKey s f = submissionKeyMap f s
+
 -- Key for a given Test Script in the persistence layer
 newtype TestScriptKey = TestScriptKey String
   deriving (Data, Eq, Ord, Show, Read, Typeable)

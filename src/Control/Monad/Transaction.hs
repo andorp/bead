@@ -10,6 +10,7 @@ module Control.Monad.Transaction (
 
 import           Control.Applicative
 import qualified Control.Monad.Error as CME
+import           Control.Monad.IO.Class
 import qualified Control.Monad.State as CMS
 import           Control.Monad.Trans
 
@@ -26,7 +27,7 @@ type TransCMES e m a = CME.ErrorT e (CMS.StateT (Rollback m) m) a
 
 newtype Transaction e m a = Transaction {
     unTrans :: TransCMES e m a
-  } deriving (Functor, Applicative, Monad,
+  } deriving (Functor, Applicative, Monad, MonadIO,
               CMS.MonadState (Rollback m),
               CME.MonadError e)
 

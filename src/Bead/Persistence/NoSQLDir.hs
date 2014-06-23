@@ -1,6 +1,11 @@
+{-# LANGUAGE RankNTypes #-}
 module Bead.Persistence.NoSQLDir (
     Persist
+  , Config
+  , defaultConfig
+  , Interpreter
   , runPersist
+  , runInterpreter
   , ForeignKey(..)
   , saveUser
   , personalInfo
@@ -53,7 +58,6 @@ module Bead.Persistence.NoSQLDir (
 
   , saveTestCase
   , loadTestCase
-  , assignmentOfTestCase
   , testScriptOfTestCase
   , modifyTestCase
   , removeTestCaseAssignment
@@ -62,6 +66,7 @@ module Bead.Persistence.NoSQLDir (
 
   , saveTestJob
 
+  , insertTestComment
   , testComments
   , deleteTestComment
 
@@ -86,6 +91,7 @@ module Bead.Persistence.NoSQLDir (
   , assignmentOfSubmission
   , usernameOfSubmission
   , filterSubmissions
+  , submissionKeys
   , evaluationOfSubmission
   , commentsOfSubmission
 
@@ -104,19 +110,24 @@ module Bead.Persistence.NoSQLDir (
 
   , isPersistenceSetUp
   , initPersistence
+  , createPersistInit
+  , createPersistInterpreter
+  , parseConfig
   ) where
 
 import Bead.Domain.Types
 import Bead.Domain.Entities
 import Bead.Domain.Relationships
+import Bead.Persistence.Initialization
 import Bead.Persistence.NoSQLDirFile
 import Control.Monad.Transaction.TIO
 
 import Control.Applicative ((<$>))
+import Control.Concurrent.MVar
 import Control.Exception (IOException)
 import Control.Monad (join, liftM, filterM, when, unless, forM)
 import System.FilePath ((</>), joinPath, takeBaseName, takeFileName, splitFileName, splitExtension)
-import System.Directory (doesDirectoryExist, createDirectory, doesFileExist)
+import System.Directory hiding (copyFile)
 import System.Posix.Types (COff(..))
 import System.Posix.Files (getFileStatus, fileExist, fileSize, modificationTime)
 import Data.Function (on)
@@ -130,8 +141,42 @@ reason :: Either IOException a -> (Erroneous a)
 reason (Left e)  = Left . show $ e
 reason (Right x) = Right x
 
-runPersist :: TIO a -> IO (Erroneous a)
-runPersist = liftM reason . atomically
+--runPersist' :: TIO a -> IO (Erroneous a)
+--runPersist' = liftM reason . atomically
+
+-- No configuration is necessary
+data Config = Config
+
+-- | Creates a persist initialization structure.
+createPersistInit :: Config -> IO PersistInit
+createPersistInit _ = return PersistInit {
+    isSetUp = nIsPersistenceSetUp
+  , initPersist = nInitPersistence
+  , tearDown = nTearDown
+  }
+
+-- | Creates an interpreter for the persistent compuation
+createPersistInterpreter :: Config -> IO Interpreter
+createPersistInterpreter _ = do
+  mutex <- newMVar ()
+  let run cmd = modifyMVar mutex $ \m -> do
+                  x <- runPersist' cmd
+                  return (m,x)
+  return (Interpreter run)
+  where
+    runPersist' :: TIO a -> IO (Erroneous a)
+    runPersist' = liftM reason . atomically
+
+parseConfig :: String -> Config
+parseConfig _ = Config
+
+defaultConfig = Config
+
+newtype Interpreter = Interpreter { unInt :: forall a . Persist a -> IO (Erroneous a) }
+
+runInterpreter (Interpreter run) = run
+
+runPersist = runInterpreter
 
 saveUser      = nSaveUser
 personalInfo  = nPersonalInfo
@@ -184,7 +229,6 @@ modifyTestScript = nModifyTestScript
 
 saveTestCase = nSaveTestCase
 loadTestCase = nLoadTestCase
-assignmentOfTestCase = nAssignmentOfTestCase
 testScriptOfTestCase = nTestScriptOfTestCase
 modifyTestCase = nModifyTestCase
 removeTestCaseAssignment = nRemoveTestCaseAssignment
@@ -193,10 +237,12 @@ modifyTestScriptOfTestCase = nModifyTestScriptOfTestCase
 
 saveTestJob = nSaveTestJob
 
+insertTestComment = nInsertTestComment
 testComments = nTestComments
 deleteTestComment = nDeleteTestComment
 
 filterAssignment     = nFilterAssignment
+submissionKeys       = nSubmissionKeys
 assignmentKeys       = nAssignmentKeys
 saveAssignment       = nSaveAssignment
 loadAssignment       = nLoadAssignment
@@ -247,6 +293,11 @@ nInitPersistence = mapM_ createDirWhenDoesNotExist persistenceDirs
     createDirWhenDoesNotExist d = do
       existDir <- doesDirectoryExist d
       unless existDir . createDirectory $ d
+
+nTearDown :: IO ()
+nTearDown = do
+  exists <- doesDirectoryExist dataDir
+  when exists $ removeDirectoryRecursive dataDir
 
 nSaveUserReg :: UserRegistration -> TIO UserRegKey
 nSaveUserReg u = do
@@ -775,6 +826,9 @@ nEvaluationOfSubmission =
 nFilterSubmissions :: (SubmissionKey -> Submission -> Bool) -> TIO [(SubmissionKey, Submission)]
 nFilterSubmissions f = filterDirectory submissionDataDir isSubmissionDir tLoadSubmission (filter (uncurry f))
 
+nSubmissionKeys :: TIO [SubmissionKey]
+nSubmissionKeys = map fst <$> nFilterSubmissions (\_ _ -> True)
+
 tLoadSubmission :: FilePath -> TIO (SubmissionKey, Submission)
 tLoadSubmission dirName = do
   s <- load dirName
@@ -1001,14 +1055,9 @@ nLoadTestCase tk = do
   unless isTC . throwEx $ userError "Not a test case directory"
   snd <$> tLoadPersistenceObject TestCaseKey p
 
-nAssignmentOfTestCase :: TestCaseKey -> TIO AssignmentKey
-nAssignmentOfTestCase =
-  objectIn' "No assignment was found for " "assignment" AssignmentKey isAssignmentDir
-
 nTestScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
 nTestScriptOfTestCase =
   objectIn' "No Test Script was found for " "test-script" TestScriptKey isTestScriptDir
-
 
 nModifyTestCase :: TestCaseKey -> TestCase -> TIO ()
 nModifyTestCase tk tc = do
@@ -1048,6 +1097,10 @@ nSaveTestJob sk = do
       copy submissionFile (tjPath </> "submission")
       copy testscriptFile (tjPath </> "script")
       copy testcaseFile   (tjPath </> "tests")
+
+nInsertTestComment :: SubmissionKey -> String -> TIO ()
+nInsertTestComment sk msg = do
+  fileSave testIncomingDataDir (submissionKeyMap id sk) msg
 
 -- Test Comments are stored in the persistence layer, in the test-incomming directory
 -- each one in a file, named after an existing submission in the system
