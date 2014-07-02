@@ -20,7 +20,9 @@ module Bead.View.Snap.Content (
   , renderPagelet
   , renderDynamicPagelet
   , userTimeZone
-  , usersTimeZoneConverter
+  , userTimeZoneToLocalTimeConverter
+  , userTimeZoneToUTCTimeConverter
+  , foundTimeZones
   , withUserState
   , withUserStateAndFrame
   , GETContentHandler

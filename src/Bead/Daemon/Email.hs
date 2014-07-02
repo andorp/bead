@@ -27,6 +27,7 @@ data EmailDaemon = EmailDaemon {
     sendEmail :: Mail -> IO () -- ^ Enqueue the email to the sending queue
   }
 
+
 -- Starts the email daemon in a different thread and returns the enqueue function
 -- for the thread.
 startEmailDaemon :: Logger -> IO EmailDaemon

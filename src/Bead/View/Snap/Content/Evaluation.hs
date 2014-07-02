@@ -42,7 +42,7 @@ evaluationPage :: GETContentHandler
 evaluationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
   sd <- userStory (submissionDescription sk)
-  tc <- usersTimeZoneConverter
+  tc <- userTimeZoneToLocalTimeConverter
   let pageData = PageData {
       sbmDesc = sd
     , sbmSubmissionKey = sk
@@ -56,7 +56,7 @@ modifyEvaluationPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
   ek <- getParameter evaluationKeyPrm
   sd <- userStory (submissionDescription sk)
-  tc <- usersTimeZoneConverter
+  tc <- userTimeZoneToLocalTimeConverter
   let pageData = PageData {
     sbmDesc = sd
   , sbmSubmissionKey = sk

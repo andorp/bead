@@ -15,6 +15,7 @@ import           Bead.Controller.UserStories as U
 import           Bead.Domain.Entities as E
 import           Bead.Domain.Relationships (TCCreation(..))
 import           Bead.Domain.Shared.Evaluation
+import           Bead.Domain.TimeZone (utcZoneInfo)
 import qualified Bead.Persistence.Initialization as PersistInit
 import           Bead.Persistence.Persist
 import           Bead.View.Snap.Translation (trans)
@@ -41,7 +42,7 @@ adminUserState = UserState {
   , name = "Admin"
   , role = E.Admin
   , token = "token"
-  , timezone = UTC
+  , timezone = utcZoneInfo
   , status = Nothing
   }
 
@@ -50,7 +51,7 @@ student = User {
   , u_username = (Username "student")
   , u_email = Email "student@university.com"
   , u_name = "Stu Dent"
-  , u_timezone = UTC
+  , u_timezone = utcZoneInfo
   , u_language = Language "hu"
   }
 
@@ -59,7 +60,7 @@ student2 = User {
   , u_username = (Username "student2")
   , u_email = Email "student@university.com"
   , u_name = "Stu Dent"
-  , u_timezone = UTC
+  , u_timezone = utcZoneInfo
   , u_language = Language "hu"
   }
 
@@ -69,7 +70,7 @@ adminUser = User {
   , u_username = (Username "admin")
   , u_email = Email "admin@university.com"
   , u_name = "Admin"
-  , u_timezone = UTC
+  , u_timezone = utcZoneInfo
   , u_language = Language "hu"
   }
 
@@ -78,7 +79,7 @@ groupAdminUser = User {
   , u_username = Username "groupadmin"
   , u_email = Email "groupadmin@university.com"
   , u_name = "Group Admin"
-  , u_timezone = UTC
+  , u_timezone = utcZoneInfo
   , u_language = Language "hu"
   }
 
@@ -165,8 +166,8 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
   c <- context
   str <- getCurrentTime
   end <- getCurrentTime
-  let ca = E.Assignment "cname" "cexercise" Normal str UTC end UTC
-      ga = E.Assignment "gname" "gexercise" Normal str UTC end UTC
+  let ca = E.Assignment "cname" "cexercise" Normal str end
+      ga = E.Assignment "gname" "gexercise" Normal str end
       c1  = E.Course "FP" "FP-DESC" binaryEvalConfig TestScriptSimple
       c2  = E.Course "MA" "MA-DESC" binaryEvalConfig TestScriptZipped
       g1  = E.Group  "G1" "G1-DESC" binaryEvalConfig

@@ -378,22 +378,20 @@ instance Save Username where
 instance Save Email where
   save d (Email e) = fileSave d "email" e
 
-instance Save TimeZone where
-  save d = fileSave d "timezone" . show
-
 instance Save Language where
   save d = fileSave d "language" . show
 
+instance Save TimeZoneName where
+  save d = fileSave d "timezonename" . show
+
 instance Save Assignment where
-  save d = assignmentCata $ \name desc type_ start starttz end endtz -> do
+  save d = assignmentCata $ \name desc type_ start end -> do
     createStructureDirs d assignmentDirStructure
     saveName d name
     fileSave d "description" desc
     fileSave d "type"        (show type_)
     fileSave d "start"       (show start)
-    fileSave d "starttz"     (show starttz)
     fileSave d "end"         (show end)
-    fileSave d "endtz"       (show endtz)
 
 instance Save Submission where
   save d s = do
@@ -475,8 +473,8 @@ instance Load Username where
 instance Load Email where
   load d = fileLoad d "email" (same . email')
 
-instance Load TimeZone where
-  load d = fileLoad d "timezone" readMaybe
+instance Load TimeZoneName where
+  load d = fileLoad d "timezonename" readMaybe
 
 instance Load Assignment where
   load d = assignmentAna
@@ -484,9 +482,7 @@ instance Load Assignment where
       (fileLoad d "description" same)
       (fileLoad d "type"  readMaybe)
       (fileLoad d "start" readMaybe)
-      (fileLoad d "starttz" readMaybe)
       (fileLoad d "end"   readMaybe)
-      (fileLoad d "endtz" readMaybe)
 
 instance Load Submission where
   load d = do
@@ -568,9 +564,6 @@ instance Load TestCase where
 
 -- * Update instances
 
-instance Update TimeZone where
-  update d = fileUpdate d "timezone" . show
-
 instance Update Language where
   update d = fileUpdate d "language" . show
 
@@ -582,6 +575,9 @@ instance Update Username where
 
 instance Update Email where
   update d (Email e) = fileUpdate d "email" e
+
+instance Update TimeZoneName where
+  update d = fileUpdate d "timezonename" . show
 
 instance Update User where
   update d = userCata $ \username role email name timezone language -> do
@@ -598,14 +594,12 @@ instance Update Evaluation where
     fileUpdate d "result"      (show . evaluationResult $ e)
 
 instance Update Assignment where
-  update d = assignmentCata $ \name desc type_ start starttz end endtz -> do
+  update d = assignmentCata $ \name desc type_ start end -> do
     updateName d name
     fileUpdate d "description" desc
     fileUpdate d "type"        (show type_)
     fileUpdate d "start"       (show start)
-    fileUpdate d "starttz"     (show starttz)
     fileUpdate d "end"         (show end)
-    fileUpdate d "endtz"       (show endtz)
 
 instance Update TestScript where
   update d = testScriptCata show $ \name desc notes script type_ -> do
@@ -661,9 +655,7 @@ assignmentDirStructure = DirStructure {
       , "description" -- The description that appears on the ui
       , "type"    -- The type of the assignment
       , "start"   -- The start date of from when the assignment is active
-      , "starttz" -- The timezone of the given start date
       , "end"     -- The end data of from when the assignment is inactive
-      , "endtz"   -- The timezone of the given end date
       , created   -- The time when the assignment is created
       ]
   , directories =

@@ -158,11 +158,11 @@ submissionTests = do
       time    = read "2014-06-09 12:55:27.959203 UTC"
       sbm     = Domain.Submission "submission" time
       sbm2    = Domain.Submission "submission2" time
-      asg     = Domain.Assignment "name" "desc" Domain.Urn time Domain.CET time Domain.CET
+      asg     = Domain.Assignment "name" "desc" Domain.Urn time time
       user1name = Domain.Username "user1"
-      user1  = Domain.User Domain.Student user1name (Domain.Email "email") "name" Domain.CEST (Domain.Language "hu")
+      user1  = Domain.User Domain.Student user1name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
       user2name = Domain.Username "user2"
-      user2  = Domain.User Domain.Student user2name (Domain.Email "email") "name" Domain.CEST (Domain.Language "hu")
+      user2  = Domain.User Domain.Student user2name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
 
   shrink "Submission end-to-end story."
     (do ioTest "Submission end-to-end test case" $ runSql $ do

@@ -104,8 +104,8 @@ usernames userIds = catMaybes <$> (mapM toUsername userIds)
 courseAdminTests = do
   let course = Domain.Course "name" "desc" (Domain.BinEval ()) Domain.TestScriptSimple
       user1name = Domain.Username "user1"
-      user1  = Domain.User Domain.Student user1name                 (Domain.Email "email") "name" Domain.CEST (Domain.Language "hu")
-      user2  = Domain.User Domain.Student (Domain.Username "user2") (Domain.Email "email") "name" Domain.CEST (Domain.Language "hu")
+      user1  = Domain.User Domain.Student user1name                 (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
+      user2  = Domain.User Domain.Student (Domain.Username "user2") (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
 
   ioTest "Create Course Admin for the course" $ runSql $ do
     dbStep initDB

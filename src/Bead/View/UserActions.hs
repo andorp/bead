@@ -15,7 +15,7 @@ data UserAction
   | ErrorMessage (Translation String)
 
   -- Profiling
-  | ChangeUserDetails String TimeZone Language
+  | ChangeUserDetails String TimeZoneName Language
 
   -- Group
   | CreateGroup CourseKey Group

@@ -50,7 +50,7 @@ data UserState
   , name :: String   -- User's full name
   , role :: Role     -- User's role
   , token :: String  -- Token for the active user session
-  , timezone :: TimeZone -- Timezone of the user
+  , timezone :: TimeZoneName -- Timezone of the user
   , status :: Maybe (StatusMessage (Translation String)) -- The last status message
   } deriving (Show)
 

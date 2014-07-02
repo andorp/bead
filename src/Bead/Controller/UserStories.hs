@@ -150,13 +150,13 @@ createUser newUser = do
   liftIO $ log logger INFO $ "User is created: " ++ show (u_username newUser)
 
 -- Updates the timezone of the current user
-setTimeZone :: TimeZone -> UserStory ()
+setTimeZone :: TimeZoneName -> UserStory ()
 setTimeZone tz = do
   changeUserState $ \userState -> userState { timezone = tz }
   putStatusMessage $ Msg_UserStory_SetTimeZone "The time zone has been set."
 
 -- Updates the current user's full name, timezone and language in the persistence layer
-changeUserDetails :: String -> TimeZone -> Language -> UserStory ()
+changeUserDetails :: String -> TimeZoneName -> Language -> UserStory ()
 changeUserDetails name timezone language = logAction INFO ("changes fullname, timezone and language") $ do
   user <- currentUser
   persistence $ Persist.updateUser user { u_name = name , u_timezone = timezone , u_language = language }

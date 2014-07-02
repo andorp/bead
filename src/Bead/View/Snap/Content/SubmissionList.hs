@@ -38,7 +38,7 @@ submissionListPage = withUserState $ \s -> do
           True  -> renderPagelet . withUserFrame s $ assignmentNotStartedYet
           False -> do
             sl <- userStory (submissionListDesc ak)
-            tc <- usersTimeZoneConverter
+            tc <- userTimeZoneToLocalTimeConverter
             renderPagelet . withUserFrame s .
               submissionListContent $
                 PageData { asKey = ak

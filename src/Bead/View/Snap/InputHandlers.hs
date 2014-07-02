@@ -8,8 +8,6 @@ import           Data.Time (UTCTime(..))
 
 import           Text.Blaze.Html5 (Html)
 
-import           Bead.Controller.ServiceContext (UserState(..))
-import qualified Bead.Controller.UserStories as Story (userState)
 import           Bead.Domain.Entities
 import           Bead.Domain.Evaluation
 import           Bead.Domain.Relationships
@@ -139,18 +137,16 @@ instance GetValueHandler AssignmentKey where
 -- than the end date
 instance GetValueHandler Assignment where
   getValue = do
-    timeZone <- timezone <$> userStory Story.userState
-    startDate <- getParameter (assignmentStartPrm timeZone)
-    endDate   <- getParameter (assignmentEndPrm timeZone)
+    converter <- userTimeZoneToUTCTimeConverter
+    startDate <- converter <$> getParameter assignmentStartPrm
+    endDate   <- converter <$> getParameter assignmentEndPrm
     when (endDate < startDate) . throwError $ strMsg "A feladat kezdetének dátuma később van mint a feladat vége"
     assignmentAna
       (getParameter (stringParameter (fieldName assignmentNameField) "Név"))
       (getParameter (stringParameter (fieldName assignmentDescField) "Leírás"))
       getAssignmentType
       (return startDate)
-      (return timeZone)
       (return endDate)
-      (return timeZone)
     where
       getAssignmentType = do
         aspects <- getJSONParameters (fieldName assignmentAspectField) "Aspect parameter"

@@ -98,8 +98,8 @@ groupTests = do
       group  = Domain.Group "name" "desc" (Domain.BinEval ())
       user1name = Domain.Username "user1"
       user2name = Domain.Username "user2"
-      user1  = Domain.User Domain.Student user1name (Domain.Email "email") "name" Domain.CEST (Domain.Language "hu")
-      user2  = Domain.User Domain.Student user2name (Domain.Email "email") "name" Domain.CEST (Domain.Language "hu")
+      user1  = Domain.User Domain.Student user1name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
+      user2  = Domain.User Domain.Student user2name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
 
   ioTest "Create and load group" $ runSql $ do
     dbStep $ initDB

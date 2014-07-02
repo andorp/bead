@@ -60,7 +60,7 @@ courseTestScripts      = stcCourseTestScriptInfos . submissionTableCtx
 
 homePage :: GETContentHandler
 homePage = withUserState $ \s -> do
-  converter <- usersTimeZoneConverter
+  converter <- userTimeZoneToLocalTimeConverter
   now <- liftIO getCurrentTime
   (renderPagelet . withUserFrame s . homeContent now) =<< do
     (userStory $ do

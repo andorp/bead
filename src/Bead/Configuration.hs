@@ -54,6 +54,9 @@ data Config = Config {
     -- The example that satisfies the given regexp for the username. These are
     -- rendered to the user as examples on the GUI.
   , usernameRegExpExample :: String
+    -- The directory where all the timezone informations can be found
+    -- Eg: /usr/share/zoneinfo/
+  , timeZoneInfoDirectory :: FilePath
   } deriving (Eq, Show, Read)
 
 -- The defualt system parameters
@@ -65,10 +68,11 @@ defaultConfiguration = Config {
   , defaultLoginLanguage = "en"
   , usernameRegExp = "^[A-Za-z0-9]{6}$"
   , usernameRegExpExample = "QUER42"
+  , timeZoneInfoDirectory = "/usr/share/zoneinfo"
   }
 
-configCata f (Config useraction timeout host from loginlang regexp reexample) =
-  f useraction timeout host from loginlang regexp reexample
+configCata f (Config useraction timeout host from loginlang regexp reexample tz) =
+  f useraction timeout host from loginlang regexp reexample tz
 
 readConfiguration :: FilePath -> IO Config
 readConfiguration path = do

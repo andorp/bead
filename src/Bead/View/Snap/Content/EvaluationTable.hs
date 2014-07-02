@@ -24,7 +24,7 @@ evaluationTable = ViewHandler evaluationTablePage
 evaluationTablePage :: GETContentHandler
 evaluationTablePage = withUserState $ \s -> do
   os <- userStory openSubmissions
-  tc <- usersTimeZoneConverter
+  tc <- userTimeZoneToLocalTimeConverter
   renderPagelet . withUserFrame s $ evaluationTableContent tc os
 
 evaluationTableContent :: UserTimeConverter -> OpenedSubmissions -> IHtml

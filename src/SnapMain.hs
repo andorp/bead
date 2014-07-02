@@ -17,7 +17,8 @@ import           Bead.Controller.ServiceContext as S
 import           Bead.Daemon.Email
 import           Bead.Daemon.Logout
 import           Bead.Daemon.TestAgent
-import           Bead.Domain.Entities (UserRegInfo(..), TimeZone(..))
+import           Bead.Domain.Entities (UserRegInfo(..))
+import           Bead.Domain.TimeZone (utcZoneInfo)
 import           Bead.Persistence.Initialization
 import qualified Bead.Persistence.Persist as Persist (Config, defaultConfig, createPersistInit, createPersistInterpreter)
 import           Bead.View.Snap.AppInit
@@ -51,7 +52,7 @@ main = do
 
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
-printConfigInfo = configCata $ \logfile timeout hostname fromEmail loginlang regexp example -> do
+printConfigInfo = configCata $ \logfile timeout hostname fromEmail loginlang regexp example zoneInfoDir -> do
   configLn $ "Log file: " ++ logfile
   configLn $ concat ["Session timeout: ", show timeout, " seconds"]
   configLn $ "Hostname included in emails: " ++ hostname
@@ -59,6 +60,7 @@ printConfigInfo = configCata $ \logfile timeout hostname fromEmail loginlang reg
   configLn $ "Default login language: " ++ loginlang
   configLn $ "Username regular expression for the registration: " ++ regexp
   configLn $ "Username example for the regular expression: " ++ example
+  configLn $ "TimeZone informational dir" ++ zoneInfoDir
   where
     configLn s = putStrLn ("CONFIG: " ++ s)
 
@@ -91,7 +93,7 @@ readAdminUser cfg = do
   hSetEcho stdin True
   case pwd == pwdAgain of
     -- All the validators are passed, the registration can be done
-    True  -> return (UserRegInfo (usr, pwd, email, fullName, UTC))
+    True  -> return (UserRegInfo (usr, pwd, email, fullName, utcZoneInfo))
     False -> do
       putStrLn "Passwords do not match!"
       readAdminUser cfg

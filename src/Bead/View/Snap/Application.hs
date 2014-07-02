@@ -23,6 +23,7 @@ import           Bead.Controller.ServiceContext
 import           Bead.Daemon.Email as EmailDaemon
 import           Bead.Daemon.Logout
 import           Bead.Domain.Entities
+import           Bead.Domain.TimeZone
 import           Bead.View.Snap.Dictionary
 import           Bead.View.Snap.EmailTemplate
 
@@ -124,7 +125,8 @@ type EmailSender = Email -> Subject -> Message -> IO ()
 type SendEmailContext = SnapContext EmailSender
 
 verySimpleMail :: Address -> Address -> DT.Text -> LT.Text -> IO Mail
-verySimpleMail to from subject plainBody = return Mail
+verySimpleMail to from subject plainBody = do
+  return Mail
         { mailFrom = from
         , mailTo   = [to]
         , mailCc   = []
@@ -243,6 +245,16 @@ createPasswordGenerator = do
     digit :: Int -> Char
     digit n = ['0'..'9'] !! (mod n 10)
 
+type TimeZoneContext = SnapContext TimeZoneConverter
+
+createTimeZoneContext :: TimeZoneConverter -> SnapletInit a TimeZoneContext
+createTimeZoneContext = makeSnapContext
+  "Timezone converter"
+  "A snaplet holding a reference to the time zone converter functionality"
+
+getTimeZoneConverter :: Handler b TimeZoneContext TimeZoneConverter
+getTimeZoneConverter = snapContextCata id
+
 -- * Application
 
 data App = App {
@@ -256,6 +268,7 @@ data App = App {
   , _tempDirContext :: Snaplet TempDirectoryContext
   , _configContext  :: Snaplet ConfigServiceContext
   , _checkUsernameContext :: Snaplet CheckUsernameContext
+  , _timeZoneContext :: Snaplet TimeZoneContext
   }
 
 makeLenses ''App

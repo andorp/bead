@@ -15,7 +15,7 @@ import           Control.Arrow ((&&&))
 import qualified Data.ByteString.Char8 as B
 import           Data.Maybe (fromJust, isNothing)
 import           Data.String (fromString)
-import           Data.Time hiding (TimeZone)
+import           Data.Time hiding (TimeZone, timeZoneName)
 import qualified Data.Text as T
 import           Data.Text.Encoding (decodeUtf8)
 
@@ -30,15 +30,16 @@ import qualified Text.Blaze.Html5 as H
 import           Bead.Controller.Logging
 import qualified Bead.Controller.UserStories as S
 import           Bead.Configuration (Config(..))
+import           Bead.Domain.TimeZone (utcZoneInfo)
+import qualified Bead.Persistence.Persist as Persist
 import           Bead.View.Snap.Application
+import           Bead.View.Snap.Content
 import           Bead.View.Snap.DataBridge as DataBridge
 import           Bead.View.Snap.EmailTemplate
 import           Bead.View.Snap.ErrorPage
 import           Bead.View.Snap.HandlerUtils
 import           Bead.View.Snap.RouteOf (requestRoute)
 import           Bead.View.Snap.Session
-import qualified Bead.Persistence.Persist as Persist
-import           Bead.View.Snap.Content
 
 createUser :: Persist.Interpreter -> FilePath -> User -> String -> IO ()
 createUser persist usersdb user password = do
@@ -255,14 +256,16 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
               (False, True) -> errorPage
                 (Msg_Registration_Title "Registration")
                 (i18n $ Msg_RegistrationFinalize_UserAlreadyExist "This user already exists.")
-              (False, False) -> renderPublicPage . dynamicTitleAndHead registrationTitle $ do
+              (False, False) -> do
+                timeZones <- map (\t -> (t, timeZoneName id t)) <$> foundTimeZones
+                renderPublicPage . dynamicTitleAndHead registrationTitle $ do
                 return $ do
                   postForm "reg_final" ! (A.id . formId $ regFinalForm) $ do
                     table (fieldName registrationTable) (fieldName registrationTable) $ do
                       tableLine (i18n $ Msg_RegistrationFinalize_Password "Password:") $ passwordInput (DataBridge.name regPasswordPrm) 20 Nothing ! A.required ""
                       tableLine (i18n $ Msg_RegistrationFinalize_PwdAgain "Password (again):") $ passwordInput (DataBridge.name regPasswordAgainPrm) 20 Nothing ! A.required ""
                       tableLine (i18n $ Msg_RegistrationFinalize_Timezone "Time zone:") $
-                        selectionWithDefault (DataBridge.name regTimeZonePrm) UTC timeZones ! A.required ""
+                        selectionWithDefault (DataBridge.name regTimeZonePrm) utcZoneInfo timeZones ! A.required ""
                     hiddenParam regUserRegKeyPrm key
                     hiddenParam regTokenPrm      token
                     hiddenParam regUsernamePrm   username
@@ -271,8 +274,6 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                     submitButton (fieldName regSubmitBtn) (i18n $ Msg_RegistrationFinalize_SubmitButton "Register")
                   H.br
                   linkToRoute (i18n $ Msg_RegistrationFinalize_GoBackToLogin "Back to login")
-
-  timeZones = map (id &&& show) [toEnum 0 .. ]
 
   hiddenParam parameter value = hiddenInput (DataBridge.name parameter) (DataBridge.encode parameter value)
 
@@ -302,7 +303,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
   log lvl msg = withTop serviceContext $ logMessage lvl msg
 
 
-createNewUser :: UserRegistration -> TimeZone -> Language -> Handler App (AuthManager App) (Either RegError ())
+createNewUser :: UserRegistration -> TimeZoneName -> Language -> Handler App (AuthManager App) (Either RegError ())
 createNewUser reg timezone language = runErrorT $ do
   -- Check if the user is exist already
   userExistence <- checkFailure =<< lift (registrationStory (S.doesUserExist username))

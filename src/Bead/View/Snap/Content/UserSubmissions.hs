@@ -28,7 +28,7 @@ userSubmissionPage = withUserState $ \s -> do
   case mDesc of
     Nothing -> renderPagelet $ withUserFrame s unauthorized
     Just  d -> do
-      tc <- usersTimeZoneConverter
+      tc <- userTimeZoneToLocalTimeConverter
       renderPagelet $ withUserFrame s (userSubmissionHtml tc d)
 
 unauthorized :: IHtml

@@ -9,6 +9,7 @@ import Test.Framework.Providers.HUnit
 -- Bead imports
 
 import Bead.Domain.Entities
+import Bead.Domain.TimeZone (utcZoneInfo)
 import Bead.Domain.Shared.Evaluation
 import Bead.Domain.Relationships
 import Bead.Persistence.Initialization
@@ -48,7 +49,7 @@ test_create_exercise = testCase "Save an exercise" $ do
   interp <- createPersistInterpreter defaultConfig
   str <- getCurrentTime
   end <- getCurrentTime
-  let assignment = Assignment "Title" "This is an exercise" Normal str UTC end UTC
+  let assignment = Assignment "Title" "This is an exercise" Normal str  end 
   ek <- liftE interp $ saveAssignment assignment
   let uname = Username "student"
       user = User {
@@ -56,7 +57,7 @@ test_create_exercise = testCase "Save an exercise" $ do
       , u_username = uname
       , u_email    = Email "student@gmail.com"
       , u_name     = "Student"
-      , u_timezone = UTC
+      , u_timezone = utcZoneInfo
       , u_language = Language "hu"
       }
       password = "password"
@@ -72,7 +73,7 @@ test_create_load_exercise = testCase "Create and load exercise" $ do
   interp <- createPersistInterpreter defaultConfig
   str <- getCurrentTime
   end <- getCurrentTime
-  let a = Assignment "Title" "This is an exercise" Normal str UTC end UTC
+  let a = Assignment "Title" "This is an exercise" Normal str  end 
   k <- liftE interp $ saveAssignment a
   a' <- liftE interp $ loadAssignment k
   assertBool "The saved assignment differs from the read one." (a' == a)
@@ -85,7 +86,7 @@ test_create_user = testCase "Create user" $ do
       , u_username = uname
       , u_email    = Email "ursula@gmail.com"
       , u_name     = "Ursula"
-      , u_timezone = UTC
+      , u_timezone = utcZoneInfo
       , u_language = Language "hu"
       }
   liftE interp $ saveUser user
@@ -117,7 +118,7 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
         , u_username = myStudent
         , u_email = Email "admin@gmail.com"
         , u_name = "mystudent"
-        , u_timezone = UTC
+        , u_timezone = utcZoneInfo
         , u_language = Language "hu"
         }
       otherStudent = Username "otherstudent"
@@ -126,7 +127,7 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
         , u_username = otherStudent
         , u_email = Email "admin@gmail.com"
         , u_name = "otherstudent"
-        , u_timezone = UTC
+        , u_timezone = utcZoneInfo
         , u_language = Language "hu"
         }
       admin = Username "admin"
@@ -135,13 +136,13 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
         , u_username = admin
         , u_email = Email "admin@gmail.com"
         , u_name = "admin"
-        , u_timezone = UTC
+        , u_timezone = utcZoneInfo
         , u_language = Language "hu"
         }
       password = "password"
-      cAssignment = Assignment "CourseAssignment" "Assignment" Urn str UTC end UTC
-      gAssignment1 = Assignment "GroupAssignment" "Assignment" Normal str UTC end UTC
-      gAssignment2 = Assignment "GroupAssignment" "Assignment" Normal str UTC end UTC
+      cAssignment = Assignment "CourseAssignment" "Assignment" Urn str  end 
+      gAssignment1 = Assignment "GroupAssignment" "Assignment" Normal str  end 
+      gAssignment2 = Assignment "GroupAssignment" "Assignment" Normal str  end 
       sbsm = Submission "submission" str
   join $ liftE interp $ do
     ck  <- saveCourse (Course "name" "desc" binaryEvalConfig TestScriptSimple)
@@ -185,7 +186,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
         , u_username = admin
         , u_email = Email "admin@gmail.com"
         , u_name = "admin"
-        , u_timezone = UTC
+        , u_timezone = utcZoneInfo
         , u_language = Language "hu"
         }
       password = "password"
@@ -211,8 +212,8 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool "Group is not found in administrated groups" (elem gk (map fst gs))
   str <- getCurrentTime
   end <- getCurrentTime
-  let gAssignment = Assignment "GroupAssignment" "Assignment" Normal str UTC end UTC
-      cAssignment = Assignment "CourseAssignment" "Assignment" Urn str UTC end UTC
+  let gAssignment = Assignment "GroupAssignment" "Assignment" Normal str end
+      cAssignment = Assignment "CourseAssignment" "Assignment" Urn str end
   cak <- liftE interp $ saveCourseAssignment ck cAssignment
   cask <- liftE interp $ courseAssignments ck
   assertBool "Course does not have the assignment" (elem cak cask)

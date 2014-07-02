@@ -74,9 +74,9 @@ evaluationTests = do
       time    = read "2014-06-09 12:55:27.959203 UTC"
       sbm     = Domain.Submission "submission" time
       sbm2    = Domain.Submission "submission2" time
-      asg     = Domain.Assignment "name" "desc" Domain.Urn time Domain.CET time Domain.CET
+      asg     = Domain.Assignment "name" "desc" Domain.Urn time time
       user1name = Domain.Username "user1"
-      user1 = Domain.User Domain.Student user1name (Domain.Email "email") "name" Domain.CEST (Domain.Language "hu")
+      user1 = Domain.User Domain.Student user1name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
       ev    = Domain.Evaluation (Domain.BinEval (Domain.Binary Domain.Passed)) "written"
       ev2   = Domain.Evaluation (Domain.PctEval (Domain.Percentage (Domain.Scores [0.01]))) "escrito"
   shrink "Evaluation end-to-end story"

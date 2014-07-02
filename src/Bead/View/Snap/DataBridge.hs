@@ -3,7 +3,7 @@ module Bead.View.Snap.DataBridge where
 import Control.Monad ((>=>), join)
 import Data.Char (toUpper)
 import Data.Maybe (fromMaybe)
-import Data.Time (UTCTime(..))
+import Data.Time (UTCTime(..), LocalTime(..))
 import Text.Printf (printf)
 
 import Bead.Domain.Types (readMaybe)
@@ -291,26 +291,25 @@ readablePrm field name = Parameter {
   , notFound    = printf "%s nem található!" name
   }
 
-utcTimeParam :: TimeZone -> String -> String -> Parameter UTCTime
-utcTimeParam timezone field name = Parameter {
+localTimeParam :: String -> String -> Parameter LocalTime
+localTimeParam field name = Parameter {
     encode = show
-  , decode = readMaybe . addTimePostFix
+  , decode = readMaybe
   , name = field
   , decodeError = \v -> printf "Hibás idő érték: (%s, %s)!" name v
   , notFound    = printf "%s nem található!" name
-  } where
-      addTimePostFix s = (s++(timeZoneCata " UTC" " CET" " CEST" timezone))
+  }
 
-assignmentStartPrm :: TimeZone -> Parameter UTCTime
-assignmentStartPrm t = utcTimeParam t (fieldName assignmentStartField) "Beküldés kezdete"
+assignmentStartPrm :: Parameter LocalTime
+assignmentStartPrm = localTimeParam (fieldName assignmentStartField) "Beküldés kezdete"
 
-assignmentEndPrm :: TimeZone -> Parameter UTCTime
-assignmentEndPrm t = utcTimeParam t (fieldName assignmentEndField) "Beküldés vége"
+assignmentEndPrm :: Parameter LocalTime
+assignmentEndPrm = localTimeParam (fieldName assignmentEndField) "Beküldés vége"
 
-userTimeZonePrm :: Parameter TimeZone
+userTimeZonePrm :: Parameter TimeZoneName
 userTimeZonePrm = jsonParameter (fieldName userTimeZoneField) "Időzóna"
 
-regTimeZonePrm :: Parameter TimeZone
+regTimeZonePrm :: Parameter TimeZoneName
 regTimeZonePrm = jsonParameter (fieldName regTimeZoneField) "Időzóna"
 
 languagePrm :: String -> Parameter Language

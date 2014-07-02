@@ -23,7 +23,9 @@ module Bead.View.Snap.HandlerUtils (
   , sessionToken
   , userState
   , userTimeZone
-  , usersTimeZoneConverter
+  , userTimeZoneToLocalTimeConverter
+  , userTimeZoneToUTCTimeConverter
+  , foundTimeZones
   , fileUpload
   , logout
   , HandlerError(..)
@@ -59,7 +61,8 @@ import           Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext hiding (serviceContext, name)
 import qualified Bead.Controller.UserStories as S
 import           Bead.Daemon.Logout
-import           Bead.Domain.Entities (TimeZone, dataTimeZone)
+import           Bead.Domain.Entities (TimeZoneName, timeZoneName)
+import           Bead.Domain.TimeZone
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.DataBridge
 import           Bead.View.Snap.Dictionary
@@ -117,18 +120,31 @@ userState = do
         Just ud -> return ud
 
 -- Produces a handler that returns the user's actual time zone
-userTimeZone :: (Error e) => ErrorT e (Handler App b) TimeZone
+userTimeZone :: (Error e) => ErrorT e (Handler App b) TimeZoneName
 userTimeZone = timezone <$> userState
 
--- Represents a functions that converts a given utctime into
+-- Represents a functions that converts a given UTC time into
 -- the user's timezone
 type UserTimeConverter = UTCTime -> LocalTime
 
--- Produces the given UTCTime into ZonedTime in the user's timezone
-usersTimeZoneConverter :: (Error e) => ErrorT e (Handler App b) UserTimeConverter
-usersTimeZoneConverter = do
-  tz <- dataTimeZone <$> userTimeZone
-  return $ Time.utcToLocalTime tz
+withUserTimeZoneContext :: (Error e) => (TimeZoneConverter -> TimeZoneName -> a) -> ErrorT e (Handler App b) a
+withUserTimeZoneContext f = do
+  zi  <- userTimeZone
+  tzc <- lift $ withTop timeZoneContext getTimeZoneConverter
+  return (f tzc zi)
+
+-- Produces the a UserTimeZoneConverter function for the user's time zone
+userTimeZoneToLocalTimeConverter :: (Error e) => ErrorT e (Handler App b) UserTimeConverter
+userTimeZoneToLocalTimeConverter = withUserTimeZoneContext zoneInfoToLocalTimeSafe
+
+-- Produces a function that convert a given local time into a UTC time using
+-- the user's actual time zone
+userTimeZoneToUTCTimeConverter :: (Error e) => ErrorT e (Handler App b) (LocalTime -> UTCTime)
+userTimeZoneToUTCTimeConverter = withUserTimeZoneContext zoneInfoToUTCTimeSafe
+
+-- Produces a list of the found time zones
+foundTimeZones :: Handler App b [TimeZoneName]
+foundTimeZones = zoneInfos <$> (withTop timeZoneContext getTimeZoneConverter)
 
 i18nE :: (IsString s) => HandlerError App b (Translation String -> s)
 i18nE = do

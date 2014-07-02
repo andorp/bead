@@ -104,7 +104,7 @@ testCaseTests = do
       case1   = Domain.TestCase "name" "desc" "blah" Domain.TestCaseSimple "info"
       case2   = Domain.TestCase "name2" "desc2" "blah2" Domain.TestCaseZipped "info"
       time    = read "2014-06-09 12:55:27.959203 UTC"
-      asg     = Domain.Assignment "name" "desc" Domain.Urn time Domain.CET time Domain.CET
+      asg     = Domain.Assignment "name" "desc" Domain.Urn time time
 
   shrink "Test Case end-to-end story."
     (do ioTest "Test Case end-to-end case" $ runSql $ do

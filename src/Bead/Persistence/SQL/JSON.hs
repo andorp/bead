@@ -13,10 +13,10 @@ encodeRole = encodeJSON
 decodeRole :: JSONText -> Domain.Role
 decodeRole = decodeJSON
 
-encodeTimeZone :: Domain.TimeZone -> JSONText
+encodeTimeZone :: Domain.TimeZoneName -> JSONText
 encodeTimeZone = encodeJSON
 
-decodeTimeZone :: JSONText -> Domain.TimeZone
+decodeTimeZone :: JSONText -> Domain.TimeZoneName
 decodeTimeZone = decodeJSON
 
 encodeEvalConfig :: Domain.EvaluationConfig -> JSONText

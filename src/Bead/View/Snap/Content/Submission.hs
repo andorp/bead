@@ -32,7 +32,7 @@ submissionPage :: GETContentHandler
 submissionPage = withUserState $ \s -> do
   let render p = renderDynamicPagelet $ withUserFrame s p
   ak <- getParameter assignmentKeyPrm
-  ut <- usersTimeZoneConverter
+  ut <- userTimeZoneToLocalTimeConverter
   now <- liftIO $ getCurrentTime
   -- TODO: Refactor use guards
   userAssignmentForSubmission

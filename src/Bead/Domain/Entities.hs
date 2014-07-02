@@ -164,21 +164,19 @@ data Assignment = Assignment {
   , assignmentDesc :: String
   , assignmentType :: AssignmentType
   , assignmentStart :: UTCTime
-  , assignmentStartTimeZone :: TimeZone
   , assignmentEnd   :: UTCTime
-  , assignmentEndTimeZone :: TimeZone
   -- TODO: Number of maximum tries
   } deriving (Eq, Show)
 
 -- | Template function for the assignment
-assignmentCata f (Assignment name desc type_ start starttz end endtz) =
-  f name desc type_ start starttz end endtz
+assignmentCata f (Assignment name desc type_ start end) =
+  f name desc type_ start end
 
 -- | Template function for the assignment with flipped arguments
 withAssignment a f = assignmentCata f a
 
-assignmentAna name desc type_ start starttz end endtz =
-  Assignment <$> name <*> desc <*> type_ <*> start <*> starttz <*> end <*> endtz
+assignmentAna name desc type_ start end =
+  Assignment <$> name <*> desc <*> type_ <*> start <*> end
 
 -- | Produces True if the given time is between the start-end time of the assignment
 isActivePeriod :: Assignment -> UTCTime -> Bool
@@ -549,36 +547,23 @@ email' = Email
 emailCata :: (String -> a) -> Email -> a
 emailCata f (Email e) = f e
 
-data TimeZone
-  = UTC
-  | CET
-  | CEST
-  deriving (Data, Enum, Eq, Ord, Read, Show, Typeable)
+-- | Represents a name of a time zone based on the
+-- location for the given time zone.
+-- E.g: ZoneInfo "Europe/Budapest"
+newtype TimeZoneName = TimeZoneName { unTzn :: String }
+  deriving (Data, Eq, Ord, Read, Show, Typeable)
 
-timeZoneCata utc cet cest t = case t of
-  UTC -> utc
-  CET -> cet
-  CEST -> cest
-
--- Produces a TimeZone value defined in the
--- Data.Time module
-dataTimeZone = timeZoneCata
-  Time.utc
-  (hoursToNamedTimeZone 1 "CET")
-  (hoursToNamedTimeZone 2 "CEST")
-  where
-    hoursToNamedTimeZone hours name =
-      (\t -> t { timeZoneName = name }) $ Time.hoursToTimeZone hours
+timeZoneName f (TimeZoneName z) = f z
 
 showDate :: LocalTime -> String
 showDate = formatTime defaultTimeLocale "%F, %T"
 
 -- UserRegInfo is a User Registration Info that consists of
 -- a Username, a Password, an Email Address, a Full Name, and a time zone
-newtype UserRegInfo = UserRegInfo (String, String, String, String, TimeZone)
+newtype UserRegInfo = UserRegInfo (String, String, String, String, TimeZoneName)
 
-userRegInfoCata f (UserRegInfo (username, password, email, fullName, timeZone))
-  = f username password email fullName timeZone
+userRegInfoCata f (UserRegInfo (username, password, email, fullName, timeZoneName))
+  = f username password email fullName timeZoneName
 
 -- The language what the dictionary represents.
 newtype Language = Language String
@@ -592,7 +577,7 @@ data User = User {
   , u_username :: Username
   , u_email    :: Email
   , u_name     :: String
-  , u_timezone :: TimeZone
+  , u_timezone :: TimeZoneName
   , u_language :: Language
   } deriving (Eq, Ord, Show)
 
@@ -609,7 +594,7 @@ userAna role username email name timezone language = User
   <*> timezone
   <*> language
 
-newtype PersonalInfo = PersonalInfo (Role, String, TimeZone)
+newtype PersonalInfo = PersonalInfo (Role, String, TimeZoneName)
 
 personalInfoCata f (PersonalInfo (role, name, timezone))
   = f role name timezone
@@ -840,9 +825,7 @@ assignmentTests =
         , assignmentDesc = "desc"
         , assignmentType = Normal
         , assignmentStart = read "2010-10-10 12:00:00 UTC"
-        , assignmentStartTimeZone = UTC
         , assignmentEnd   = read "2010-11-10 12:00:00 UTC"
-        , assignmentEndTimeZone = UTC
         }
       before  = read "2010-09-10 12:00:00 UTC"
       between = read "2010-10-20 12:00:00 UTC"

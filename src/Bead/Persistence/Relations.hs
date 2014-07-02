@@ -87,10 +87,10 @@ userAssignmentKeys u = do
 userAssignmentKeysTest = do
   let course  = Course "name" "desc" (BinEval ()) TestScriptSimple
       group  = Group "name" "desc" (BinEval ())
-      asg     = Assignment "name" "desc" Urn time CET time CET
+      asg     = Assignment "name" "desc" Urn time time
       time    = read "2014-06-09 12:55:27.959203 UTC"
       user1name = Username "user1"
-      user1  = User Student user1name (Email "email") "name" CEST (Language "hu")
+      user1  = User Student user1name (Email "email") "name" (TimeZoneName "Europe/Budapest") (Language "hu")
 
   ioTest "User assignment keys with group and course assignments" $ do
     init <- createPersistInit defaultConfig

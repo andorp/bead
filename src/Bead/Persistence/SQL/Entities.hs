@@ -37,9 +37,7 @@ Assignment
   description Text
   type        JSONText
   start       UTCTime
-  startTZone  JSONText
   end         UTCTime
-  endTZone    JSONText
   created     UTCTime
   deriving Show
 

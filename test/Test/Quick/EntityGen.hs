@@ -1,6 +1,7 @@
 module Test.Quick.EntityGen where
 
 import Bead.Domain.Entities
+import Bead.Domain.TimeZone (utcZoneInfo, cetZoneInfo)
 import Bead.Domain.Relationships
 import Bead.Domain.Shared.Evaluation
 import Bead.View.UserActions
@@ -58,7 +59,7 @@ users = userAna
   usernames
   emails
   familyNames
-  (return UTC)
+  (return utcZoneInfo)
   languages
 
 userAndEPwds = do
@@ -107,16 +108,14 @@ groups = Group
   <*> groupDescs
   <*> evalConfigs
 
-timeZones = elements [UTC, CET, CEST]
+timeZones = elements [utcZoneInfo, cetZoneInfo]
 
 assignments start end = assignmentAna
   assignmentNames
   assignmentDescs
   assignmentTypeGen
   (return start)
-  timeZones
   (return end)
-  timeZones
 
 assignmentNames = manyWords
 

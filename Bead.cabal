@@ -41,6 +41,11 @@ Data-Files:
 
 Flag Tests
   Description:  Enable testing
+  Default:      False
+
+Flag SQLite
+  Description:  Enable SQLite persistent layer
+  Default:      False
 
 Executable CreateBeadLanguageFile
   Main-is: UtilsMain.hs
@@ -53,6 +58,8 @@ Executable Bead
   Main-is: SnapMain.hs
   HS-Source-Dirs: src, snaplets/fay/src
   GHC-Options: -threaded -with-rtsopts=-N2 -O2
+  if flag(SQLite)
+    CPP-Options: -DSQLITE
   Build-Depends:
     aeson,
     async,
@@ -96,20 +103,29 @@ Executable Bead
     text,
     themis >= 0.3.0.0,
     time,
+    timezone-olson >= 0.1.4,
+    timezone-series >= 0.1.2,
     transformers,
     utf8-string,
     unix,
     xmlhtml
 
 
---Executable BeadUnitTest
---  GHC-Options: -fhpc -hpcdir dist/build/BeadUnitTest/Mix/
---  CPP-Options: -DTEST
---  HS-Source-Dirs: src, snaplets/fay/src, test
---  Main-is: TestMain.hs
---  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
---                 transformers, HUnit, test-framework, test-framework-hunit,
---                 test-framework-quickcheck2, QuickCheck, unix, deepseq
+Executable BeadUnitTest
+  if flag(Tests)
+    Buildable: True
+  else
+    Buildable: False
+  GHC-Options: -fhpc -hpcdir dist/build/BeadUnitTest/Mix/
+  if flag(SQLite)
+    CPP-Options: -DTEST -DSQLITE
+  else
+    CPP-Options: -DTEST
+  HS-Source-Dirs: src, snaplets/fay/src, test
+  Main-is: TestMain.hs
+  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
+                 transformers, HUnit, test-framework, test-framework-hunit,
+                 test-framework-quickcheck2, QuickCheck, unix, deepseq
 
 --Executable BeadEnd2EndTests
 --  if flag(Tests)

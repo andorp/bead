@@ -27,7 +27,8 @@ profilePage :: GETContentHandler
 profilePage = withUserState $ \s -> do
   user <- userStory currentUser
   languages <- getDictionaryInfos
-  renderDynamicPagelet $ withUserFrame s (profileContent user languages)
+  ts <- lift foundTimeZones
+  renderDynamicPagelet $ withUserFrame s (profileContent ts user languages)
 
 changeUserDetails :: POSTContentHandler
 changeUserDetails = do
@@ -40,8 +41,8 @@ changeUserDetails = do
   where
     setLanguage = lift . withTop sessionManager . setLanguageInSession
 
-profileContent :: User -> DictionaryInfos -> IHtml
-profileContent user languages = do
+profileContent :: [TimeZoneName] -> User -> DictionaryInfos -> IHtml
+profileContent ts user languages = do
   msg <- getI18N
   return $ do
     postForm (routeOf profile) $ do
@@ -62,7 +63,7 @@ profileContent user languages = do
         tableLine (msg $ Msg_Profile_NewPasswordAgain "New password (again): ") $ passwordInput (B.name newPasswordAgainPrm) 20 Nothing ! A.required ""
       submitButton (fieldName changePasswordBtn) (msg $ Msg_Profile_ChangePwdButton "Update")
   where
-    timeZones = map (id &&& show) [toEnum 0 .. ]
+    timeZones = map (id &&& timeZoneName id) ts
     languages' = map langValue languages
     profile = Pages.profile ()
     changePassword = Pages.changePassword ()

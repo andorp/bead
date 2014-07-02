@@ -22,6 +22,7 @@ import           Bead.Daemon.Email
 import           Bead.Daemon.Logout
 import           Bead.Domain.Entities (UserRegInfo)
 
+import           Bead.Domain.TimeZone
 import           Bead.View.Snap.Application as A
 import           Bead.View.Snap.DataDir
 import           Bead.View.Snap.Dictionary (Language(..))
@@ -62,10 +63,11 @@ appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $
     True -> liftIO $ loadDictionaries dictionaryDir
     False -> return Map.empty
 
+  -- TODO: Use a start logger
   liftIO $ putStrLn $ "Found dictionaries: " ++ (show $ Map.keys dictionaries)
 
   case user of
-    Nothing        -> return ()
+    Nothing -> return ()
     Just userRegInfo ->
       liftIO $ createAdminUser (persistInterpreter s) usersJson userRegInfo
 
@@ -92,10 +94,13 @@ appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $
 
   un <- nestSnaplet "usernamechecker" checkUsernameContext $ regexpUsernameChecker config
 
+  timeZoneConverter <- liftIO $ createTimeZoneConverter (timeZoneInfoDirectory config)
+  tz <- nestSnaplet "timezoneconveter" timeZoneContext $ createTimeZoneContext timeZoneConverter
+
   addRoutes (routes config)
   wrapSite (<|> pages)
 
-  return $ App sm as ss ds se rp fs ts cs un
+  return $ App sm as ss ds se rp fs ts cs un tz
   where
     description = "The BEAD website"
 

@@ -34,19 +34,15 @@ toDomainAssignmentValue ent = Domain.Assignment
   (Text.unpack $ assignmentDescription ent)
   (decodeAssignmentType $ assignmentType ent)
   (assignmentStart ent)
-  (decodeTimeZone $ assignmentStartTZone ent)
   (assignmentEnd ent)
-  (decodeTimeZone $ assignmentEndTZone ent)
 
 fromDomainAssignmentValue createdTime = Domain.assignmentCata
-  $ \name desc type_ start starttz end endtz -> Assignment
+  $ \name desc type_ start end -> Assignment
       (Text.pack name)
       (Text.pack desc)
       (encodeAssignmentType type_)
       start
-      (encodeTimeZone starttz)
       end
-      (encodeTimeZone endtz)
       createdTime
 
 -- Lists all the assignments in the database
@@ -76,14 +72,12 @@ loadAssignment key = do
 modifyAssignment :: Domain.AssignmentKey -> Domain.Assignment -> Persist ()
 modifyAssignment key assignment = do
   update (toEntityKey key) $ Domain.withAssignment assignment
-    $ \name desc type_ start starttz end endtz ->
+    $ \name desc type_ start end ->
         [ AssignmentName        =. Text.pack name
         , AssignmentDescription =. Text.pack desc
         , AssignmentType        =. encodeAssignmentType type_
         , AssignmentStart       =. start
-        , AssignmentStartTZone  =. encodeTimeZone starttz
         , AssignmentEnd         =. end
-        , AssignmentEndTZone    =. encodeTimeZone endtz
         ]
 
 -- Lists all the assignment that are created for the given course
@@ -164,8 +158,8 @@ assignmentTests = do
       script  = Domain.TestScript "name" "desc" "notes" "script" Domain.TestScriptSimple
       case1   = Domain.TestCase "name" "desc" "blah" Domain.TestCaseSimple "info"
       time    = read "2014-06-09 12:55:27.959203 UTC"
-      asg     = Domain.Assignment "name" "desc" Domain.Urn time Domain.CET time Domain.CET
-      asg2    = Domain.Assignment "name2" "desc2" Domain.Normal time Domain.CET time Domain.CET
+      asg     = Domain.Assignment "name" "desc" Domain.Urn time time
+      asg2    = Domain.Assignment "name2" "desc2" Domain.Normal time time
 
   shrink "Assignment end-to-end story"
     (do ioTest "Assignment end-to-end test" $ runSql $ do

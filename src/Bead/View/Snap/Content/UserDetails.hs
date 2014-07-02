@@ -25,7 +25,8 @@ userDetailPage = withUserState $ \s -> do
     True -> do
       user      <- userStory $ loadUser username
       languages <- getDictionaryInfos
-      renderPagelet $ withUserFrame s (userDetailForm user languages)
+      ts <- lift foundTimeZones
+      renderPagelet $ withUserFrame s (userDetailForm ts user languages)
 
     False -> renderPagelet $ withUserFrame s (userDoesNotExist username)
 
@@ -40,8 +41,8 @@ userDataChange = do
     <*> getParameter userLanguagePrm
   return $ UpdateUser user
 
-userDetailForm :: User -> DictionaryInfos -> IHtml
-userDetailForm u languages = do
+userDetailForm :: [TimeZoneName] -> User -> DictionaryInfos -> IHtml
+userDetailForm ts u languages = do
   msg <- getI18N
   return $ postForm (routeOf userDetails) $ do
     table "user-detail-table" "user-detail-table" $ do
@@ -55,8 +56,7 @@ userDetailForm u languages = do
       hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username $ u
     submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Update")
   where
-    userTimeZones :: [(TimeZone, String)]
-    userTimeZones = map (id &&& show) $ [toEnum 0 .. ]
+    userTimeZones = map (id &&& timeZoneName id) ts
 
     userDetails = Pages.userDetails ()
 

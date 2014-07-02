@@ -44,21 +44,21 @@ modifyAssignmentPreview    = UserViewHandler modifyAssignmentPreviewPage
 
 data PageData
   = PD_Course {
-      pdTimeZone    :: Time.TimeZone
+      pdTimeZone    :: UserTimeConverter
     , pdTime        :: UTCTime
     , pdCourse      :: (CourseKey, Course)
     , pdTestScripts :: Maybe [(TestScriptKey, TestScriptInfo)]
     , pdUsersFile   :: [UsersFile]
     }
   | PD_Group {
-      pdTimeZone    :: Time.TimeZone
+      pdTimeZone    :: UserTimeConverter
     , pdTime        :: UTCTime
     , pdGroup       :: (GroupKey, Group)
     , pdTestScripts :: Maybe [(TestScriptKey, TestScriptInfo)]
     , pdUsersFile   :: [UsersFile]
     }
   | PD_Assignment {
-      pdTimeZone      :: Time.TimeZone
+      pdTimeZone      :: UserTimeConverter
     , pdAssignmentKey :: AssignmentKey
     , pdAssignment    :: Assignment
     , pdTestScripts   :: Maybe [(TestScriptKey, TestScriptInfo)]
@@ -66,14 +66,14 @@ data PageData
     , pdTestCase      :: Maybe (TestCaseKey, TestCase, TestScriptKey)
     }
   | PD_ViewAssignment {
-      pdTimeZone      :: Time.TimeZone
+      pdTimeZone      :: UserTimeConverter
     , pdAssignmentKey :: AssignmentKey
     , pdAssignment    :: Assignment
     , pdTestScript    :: Maybe TestScriptInfo
     , pdTestCaseInfo  :: Maybe (TestCaseKey, TestCase, TestScriptKey)
     }
   | PD_Course_Preview {
-      pdTimeZone    :: Time.TimeZone
+      pdTimeZone    :: UserTimeConverter
     , pdTime        :: UTCTime
     , pdCourse      :: (CourseKey, Course)
     , pdTestScripts :: Maybe [(TestScriptKey, TestScriptInfo)]
@@ -82,7 +82,7 @@ data PageData
     , pdTCCreationPreview :: TCCreationParameters
     }
   | PD_Group_Preview {
-      pdTimeZone    :: Time.TimeZone
+      pdTimeZone    :: UserTimeConverter
     , pdTime        :: UTCTime
     , pdGroup       :: (GroupKey, Group)
     , pdTestScripts :: Maybe [(TestScriptKey, TestScriptInfo)]
@@ -91,7 +91,7 @@ data PageData
     , pdTCCreationPreview :: TCCreationParameters
     }
   | PD_Assignment_Preview {
-      pdTimeZone      :: Time.TimeZone
+      pdTimeZone      :: UserTimeConverter
     , pdAssignmentKey :: AssignmentKey
     , pdAssignment    :: Assignment
     , pdTestScripts   :: Maybe [(TestScriptKey, TestScriptInfo)]
@@ -99,8 +99,6 @@ data PageData
     , pdTestCase      :: Maybe (TestCaseKey, TestCase, TestScriptKey)
     , pdTCModificationPreview :: TCModificationParameters
     }
-  -- TODO: Calculate the time differences and shows the values in
-  -- the actual time zone
 
 type TCModificationParameters = (Maybe (Maybe TestScriptKey), Maybe (Either () UsersFile), Maybe String)
 
@@ -164,8 +162,9 @@ newCourseAssignmentPage = withUserState $ \s -> do
     ufs  <- map fst <$> S.listUsersFiles
     return ((ck, course), nonEmptyList tss', ufs)
   now <- liftIO $ getCurrentTime
-  tz <- dataTimeZone <$> userTimeZone
-  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Course tz now c tss ufs))
+  tz <- userTimeZoneToLocalTimeConverter
+  tn <- userTimeZone
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent tn (PD_Course tz now c tss ufs))
 
 postCourseAssignment :: POSTContentHandler
 postCourseAssignment = do
@@ -186,8 +185,9 @@ newCourseAssignmentPreviewPage = withUserState $ \s -> do
     ufs  <- map fst <$> S.listUsersFiles
     return ((ck, course), nonEmptyList tss', ufs)
   now <- liftIO $ getCurrentTime
-  tz <- dataTimeZone <$> userTimeZone
-  renderDynamicPagelet . withUserFrame s . newAssignmentContent $
+  tz <- userTimeZoneToLocalTimeConverter
+  tn <- userTimeZone
+  renderDynamicPagelet . withUserFrame s . newAssignmentContent tn $
     PD_Course_Preview tz now c tss ufs assignment tc
 
 -- Tries to create a TCCreation descriptive value. If the test script, usersfile and testcase
@@ -247,8 +247,9 @@ newGroupAssignmentPage = withUserState $ \s -> do
     tss' <- S.testScriptInfosOfGroup gk
     ufs  <- map fst <$> S.listUsersFiles
     return ((gk, group), nonEmptyList tss', ufs)
-  tz <- dataTimeZone <$> userTimeZone
-  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Group tz now g tss ufs))
+  tz <- userTimeZoneToLocalTimeConverter
+  tn <- userTimeZone
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent tn (PD_Group tz now g tss ufs))
 
 postGroupAssignment :: POSTContentHandler
 postGroupAssignment = do
@@ -268,9 +269,10 @@ newGroupAssignmentPreviewPage = withUserState $ \s -> do
     tss' <- S.testScriptInfosOfGroup gk
     ufs  <- map fst <$> S.listUsersFiles
     return ((gk, group), nonEmptyList tss', ufs)
-  tz <- dataTimeZone <$> userTimeZone
+  tz <- userTimeZoneToLocalTimeConverter
   now <- liftIO $ getCurrentTime
-  renderDynamicPagelet $ withUserFrame s . newAssignmentContent $
+  tn <- userTimeZone
+  renderDynamicPagelet $ withUserFrame s . newAssignmentContent tn $
     PD_Group_Preview tz now g tss ufs assignment tc
 
 -- * Modify Assignment
@@ -285,8 +287,9 @@ modifyAssignmentPage = withUserState $ \s -> do
     ufs  <- map fst <$> S.listUsersFiles
     tc   <- S.testCaseOfAssignment ak
     return (as, nonEmptyList tss', ufs, tc)
-  tz <- dataTimeZone <$> userTimeZone
-  renderDynamicPagelet $ withUserFrame s (newAssignmentContent (PD_Assignment tz ak as tss ufs tc))
+  tz <- userTimeZoneToLocalTimeConverter
+  tn <- userTimeZone
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent tn (PD_Assignment tz ak as tss ufs tc))
 
 postModifyAssignment :: POSTContentHandler
 postModifyAssignment = do
@@ -303,8 +306,9 @@ modifyAssignmentPreviewPage = withUserState $ \s -> do
     ufs  <- map fst <$> S.listUsersFiles
     tc   <- S.testCaseOfAssignment ak
     return (nonEmptyList tss', ufs, tc)
-  tz <- dataTimeZone <$> userTimeZone
-  renderDynamicPagelet . withUserFrame s . newAssignmentContent $
+  tz <- userTimeZoneToLocalTimeConverter
+  tn <- userTimeZone
+  renderDynamicPagelet . withUserFrame s . newAssignmentContent tn $
     PD_Assignment_Preview tz ak as tss ufs tc tm
 
 viewAssignmentPage :: GETContentHandler
@@ -316,10 +320,11 @@ viewAssignmentPage = withUserState $ \s -> do
     tss' <- S.testScriptInfosOfAssignment ak
     ts   <- S.testCaseOfAssignment ak
     return (as, tss', ts)
-  tz <- dataTimeZone <$> userTimeZone
+  tz <- userTimeZoneToLocalTimeConverter
+  tn <- userTimeZone
   let ti = do (_tck, _tc, tsk) <- tc
               Map.lookup tsk $ Map.fromList tss
-  renderPagelet $ withUserFrame s (newAssignmentContent (PD_ViewAssignment tz ak as ti tc))
+  renderPagelet $ withUserFrame s (newAssignmentContent tn (PD_ViewAssignment tz ak as ti tc))
 
 -- * Helpers
 
@@ -329,8 +334,8 @@ nonEmptyList xs = Just xs
 
 -- * Page rendering
 
-newAssignmentContent :: PageData -> IHtml
-newAssignmentContent pd = do
+newAssignmentContent :: TimeZoneName -> PageData -> IHtml
+newAssignmentContent tz pd = do
   msg <- getI18N
   return $ H.div ! formDiv $ do
     H.div ! rightCell $ do
@@ -397,12 +402,12 @@ newAssignmentContent pd = do
       H.span ! boldText $ fromString . msg $ Msg_NewAssignment_SubmissionDeadline "Visibility"
       H.div ! A.id (fieldName startDateDivId) $ do
          (fromString . msg $ Msg_NewAssignment_StartDate "Opens")
-         (fromString $ concat [" (", Time.timeZoneName timezone, ")"])
+         (fromString $ concat [" (", timeZoneString, ")"])
          H.br
          startTimePart pd
       H.div ! A.id (fieldName endDateDivId) $ do
          (fromString . msg $ Msg_NewAssignment_EndDate "Closes")
-         (fromString $ concat [" (", Time.timeZoneName timezone, ")"])
+         (fromString $ concat [" (", timeZoneString, ")"])
          H.br
          endTimePart pd
       typeSelection msg pd
@@ -439,6 +444,8 @@ newAssignmentContent pd = do
           (const7 previewAndCommitForm)
           pd
     where
+      timeZoneString = timeZoneName id tz
+
       asgField = A.form (fromString $ hookId assignmentForm)
 
       typeSelection msg pd = do
@@ -793,7 +800,7 @@ newAssignmentContent pd = do
           nothing = Nothing :: Maybe TestScriptKey
 
 
-      timezone = pageDataCata
+      timeZoneConverter = pageDataCata
         (\tz _t _c _ts _fs -> tz)
         (\tz _t _g _ts _fs -> tz)
         (\tz _k _a _ts _fs _tc -> tz)
@@ -804,7 +811,7 @@ newAssignmentContent pd = do
         pd
 
       date t =
-        let localTime = Time.utcToLocalTime timezone t
+        let localTime = timeZoneConverter t
             timeOfDay = Time.localTimeOfDay localTime
         in ( show $ Time.localDay         localTime
            , printf "%02d" $ Time.todHour timeOfDay

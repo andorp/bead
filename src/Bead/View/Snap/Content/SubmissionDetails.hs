@@ -39,7 +39,7 @@ submissionDetailsPage = withUserState $ \s -> do
       Nothing -> renderPagelet . withUserFrame s $ invalidSubmission
       Just _sm -> do
         sd <- userStory $ submissionDetailsDesc sk
-        tc <- usersTimeZoneConverter
+        tc <- userTimeZoneToLocalTimeConverter
         renderDynamicPagelet . withUserFrame s $
           submissionDetailsContent PageData {
               smKey = sk
