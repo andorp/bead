@@ -10,6 +10,7 @@ import qualified Data.Text as Text
 import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
+import qualified Bead.Domain.Entity.Assignment as Domain
 import qualified Bead.Domain.Relationships as Domain
 import qualified Bead.Domain.Shared.Evaluation as Domain
 import           Bead.Persistence.SQL.Class
@@ -158,7 +159,8 @@ submissionTests = do
       time    = read "2014-06-09 12:55:27.959203 UTC"
       sbm     = Domain.Submission "submission" time
       sbm2    = Domain.Submission "submission2" time
-      asg     = Domain.Assignment "name" "desc" Domain.Urn time time
+      ballot  = Domain.aspectsFromList [Domain.BallotBox]
+      asg     = Domain.Assignment "name" "desc" ballot time time
       user1name = Domain.Username "user1"
       user1  = Domain.User Domain.Student user1name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
       user2name = Domain.Username "user2"

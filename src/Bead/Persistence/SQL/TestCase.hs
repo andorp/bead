@@ -9,6 +9,7 @@ import qualified Data.Text as Text
 import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
+import qualified Bead.Domain.Entity.Assignment as Domain
 import qualified Bead.Domain.Relationships as Domain
 import qualified Bead.Domain.Shared.Evaluation as Domain
 import           Bead.Persistence.SQL.Class
@@ -104,7 +105,7 @@ testCaseTests = do
       case1   = Domain.TestCase "name" "desc" "blah" Domain.TestCaseSimple "info"
       case2   = Domain.TestCase "name2" "desc2" "blah2" Domain.TestCaseZipped "info"
       time    = read "2014-06-09 12:55:27.959203 UTC"
-      asg     = Domain.Assignment "name" "desc" Domain.Urn time time
+      asg     = Domain.Assignment "name" "desc" Domain.emptyAspects time time
 
   shrink "Test Case end-to-end story."
     (do ioTest "Test Case end-to-end case" $ runSql $ do

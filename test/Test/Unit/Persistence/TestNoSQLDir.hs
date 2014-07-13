@@ -9,6 +9,7 @@ import Test.Framework.Providers.HUnit
 -- Bead imports
 
 import Bead.Domain.Entities
+import Bead.Domain.Entity.Assignment
 import Bead.Domain.TimeZone (utcZoneInfo)
 import Bead.Domain.Shared.Evaluation
 import Bead.Domain.Relationships
@@ -37,6 +38,11 @@ tests = testGroup "Persistence tests" [
   , clean_up
   ]
 
+-- Normal assignment is represented as empty aspects set
+normal = emptyAspects
+
+ballot = aspectsFromList [BallotBox]
+
 test_initialize_persistence = testCase "Initialize NoSQLDir persistence layer" $ do
   init <- createPersistInit defaultConfig
   setUp <- isSetUp init
@@ -49,7 +55,7 @@ test_create_exercise = testCase "Save an exercise" $ do
   interp <- createPersistInterpreter defaultConfig
   str <- getCurrentTime
   end <- getCurrentTime
-  let assignment = Assignment "Title" "This is an exercise" Normal str  end 
+  let assignment = Assignment "Title" "This is an exercise" normal str  end
   ek <- liftE interp $ saveAssignment assignment
   let uname = Username "student"
       user = User {
@@ -73,7 +79,7 @@ test_create_load_exercise = testCase "Create and load exercise" $ do
   interp <- createPersistInterpreter defaultConfig
   str <- getCurrentTime
   end <- getCurrentTime
-  let a = Assignment "Title" "This is an exercise" Normal str  end 
+  let a = Assignment "Title" "This is an exercise" normal str end
   k <- liftE interp $ saveAssignment a
   a' <- liftE interp $ loadAssignment k
   assertBool "The saved assignment differs from the read one." (a' == a)
@@ -140,9 +146,9 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
         , u_language = Language "hu"
         }
       password = "password"
-      cAssignment = Assignment "CourseAssignment" "Assignment" Urn str  end 
-      gAssignment1 = Assignment "GroupAssignment" "Assignment" Normal str  end 
-      gAssignment2 = Assignment "GroupAssignment" "Assignment" Normal str  end 
+      cAssignment = Assignment "CourseAssignment" "Assignment" ballot str end
+      gAssignment1 = Assignment "GroupAssignment" "Assignment" normal str end
+      gAssignment2 = Assignment "GroupAssignment" "Assignment" normal str end
       sbsm = Submission "submission" str
   join $ liftE interp $ do
     ck  <- saveCourse (Course "name" "desc" binaryEvalConfig TestScriptSimple)
@@ -212,8 +218,8 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool "Group is not found in administrated groups" (elem gk (map fst gs))
   str <- getCurrentTime
   end <- getCurrentTime
-  let gAssignment = Assignment "GroupAssignment" "Assignment" Normal str end
-      cAssignment = Assignment "CourseAssignment" "Assignment" Urn str end
+  let gAssignment = Assignment "GroupAssignment" "Assignment" normal str end
+      cAssignment = Assignment "CourseAssignment" "Assignment" ballot str end
   cak <- liftE interp $ saveCourseAssignment ck cAssignment
   cask <- liftE interp $ courseAssignments ck
   assertBool "Course does not have the assignment" (elem cak cask)
@@ -262,7 +268,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool (concat ["Group name was different: '", slGroup sld, "' 'name - gname'"]) (slGroup sld == "name - gname")
   assertBool "Admins was different" (slTeacher sld == ["admin"])
 --  assertBool "There was different number od submissions" (length (slSubmissions sld) == 1)
-  assertBool "Assignment text was different" ((assignmentDesc $ slAssignment sld) == "Assignment")
+  assertBool "Assignment text was different" ((desc $ slAssignment sld) == "Assignment")
 
   return ()
 

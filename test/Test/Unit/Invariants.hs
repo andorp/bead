@@ -23,6 +23,7 @@ import           Bead.Configuration (initTaskAssertions)
 import qualified Bead.Controller.Pages as P (invariants)
 import qualified Bead.Daemon.Logout as LD (unitTests)
 import qualified Bead.Domain.Entities as E
+import qualified Bead.Domain.Entity.Assignment as A
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQLDirFile as L (unitTests)
 import qualified Bead.Persistence.Persist as P (persistTests)
@@ -82,7 +83,7 @@ tests = [
   , invariantsGroup "Pages need to have link text" VP.invariants
   , unitTestGroup   "Page Session Keys" VS.unitTests
   , invariantsGroup "Role invariants" E.roleInvariants
-  , unitTestGroup   "Assignment active period" E.assignmentTests
+  , unitTestGroup   "Assignment active period" A.assignmentTests
   , unitTestGroup   "Hungarian letter comparism" E.compareHunTests
   , unitTestGroup   "Template and components" TC.unitTests
   , ioUnitTestGroup "Email template tests" E.unitTests
@@ -94,5 +95,5 @@ tests = [
   ] ++ themisTests
 
 themisTests = runTest buildTestSet $ do
-  E.entitiesTests
+  A.asgTests
   P.persistTests

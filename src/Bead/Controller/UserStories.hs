@@ -3,6 +3,8 @@
 module Bead.Controller.UserStories where
 
 import           Bead.Domain.Entities as E
+import           Bead.Domain.Entity.Assignment (Assignment)
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Domain.Types
@@ -594,7 +596,7 @@ testCaseModificationForAssignment u ak = tcModificationCata noModification fileO
 
   textOverwrite tsk t = do
       a <- Persist.loadAssignment ak
-      let name = assignmentName a
+      let name = Assignment.name a
           testCase = TestCase {
               tcName        = name
             , tcDescription = name
@@ -638,7 +640,7 @@ testCaseCreationForAssignment u ak = tcCreationCata noCreation fileCreation text
   -- Set plain text as test case value
   textCreation tsk plain = do
       a <- Persist.loadAssignment ak
-      let name = assignmentName a
+      let name = Assignment.name a
           testCase = TestCase {
               tcName        = name
             , tcDescription = name
@@ -653,10 +655,10 @@ createGroupAssignment :: GroupKey -> Assignment -> TCCreation -> UserStory Assig
 createGroupAssignment gk a tc = logAction INFO msg $ do
   authorize P_Open   P_Group
   authorize P_Create P_Assignment
-  when (null $ assignmentName a) $
+  when (null $ Assignment.name a) $
     errorPage . userError $ Msg_UserStoryError_EmptyAssignmentTitle
       "Assignment title is empty."
-  when (null $ assignmentDesc a) $
+  when (null $ Assignment.desc a) $
     errorPage . userError $ Msg_UserStoryError_EmptyAssignmentDescription
       "Assignment description is empty."
 
@@ -683,10 +685,10 @@ createCourseAssignment :: CourseKey -> Assignment -> TCCreation -> UserStory Ass
 createCourseAssignment ck a tc = logAction INFO msg $ do
   authorize P_Open P_Course
   authorize P_Create P_Assignment
-  when (null $ assignmentName a) $
+  when (null $ Assignment.name a) $
     errorPage . userError $ Msg_UserStoryError_EmptyAssignmentTitle
       "Assignment title is empty."
-  when (null $ assignmentDesc a) $
+  when (null $ Assignment.desc a) $
     errorPage . userError $ Msg_UserStoryError_EmptyAssignmentDescription
       "Assignment description is empty."
 
@@ -853,7 +855,7 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
     checkActiveAssignment = do
       a <- Bead.Controller.UserStories.loadAssignment ak
       now <- liftIO getCurrentTime
-      unless (isActivePeriod a now) . errorPage . userError $
+      unless (Assignment.isActive a now) . errorPage . userError $
         Msg_UserStoryError_SubmissionDeadlineIsReached "The submission deadline is reached."
 
     -- TODO: Change the ABI to remove the unevaluated automatically
@@ -921,16 +923,16 @@ userAssignments = logAction INFO "lists assignments" $ do
     createDesc :: Username -> UTCTime -> AssignmentKey -> Persist (Maybe (AssignmentKey, AssignmentDesc, SubmissionInfo))
     createDesc u now ak = do
       a <- Persist.loadAssignment ak
-      case (now < assignmentStart a) of
+      case (now < Assignment.start a) of
         True -> return Nothing
         False -> do
           (name, adminNames) <- Persist.courseNameAndAdmins ak
           let desc = AssignmentDesc {
-            aActive = isActivePeriod a now
-          , aTitle  = assignmentName a
+            aActive = Assignment.isActive a now
+          , aTitle  = Assignment.name a
           , aTeachers = adminNames
           , aGroup  = name
-          , aEndDate = assignmentEnd a
+          , aEndDate = Assignment.end a
           }
           si <- Persist.userLastSubmissionInfo u ak
           return $ Just (ak, desc, si)

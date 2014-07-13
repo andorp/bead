@@ -13,6 +13,7 @@ import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext
 import           Bead.Controller.UserStories as U
 import           Bead.Domain.Entities as E
+import           Bead.Domain.Entity.Assignment hiding (name)
 import           Bead.Domain.Relationships (TCCreation(..))
 import           Bead.Domain.Shared.Evaluation
 import           Bead.Domain.TimeZone (utcZoneInfo)
@@ -166,8 +167,8 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
   c <- context
   str <- getCurrentTime
   end <- getCurrentTime
-  let ca = E.Assignment "cname" "cexercise" Normal str end
-      ga = E.Assignment "gname" "gexercise" Normal str end
+  let ca = Assignment "cname" "cexercise" emptyAspects str end
+      ga = Assignment "gname" "gexercise" emptyAspects str end
       c1  = E.Course "FP" "FP-DESC" binaryEvalConfig TestScriptSimple
       c2  = E.Course "MA" "MA-DESC" binaryEvalConfig TestScriptZipped
       g1  = E.Group  "G1" "G1-DESC" binaryEvalConfig

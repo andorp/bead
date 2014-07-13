@@ -127,6 +127,7 @@ import           Data.Time (UTCTime)
 
 import           Bead.Domain.Types (Erroneous)
 import           Bead.Domain.Entities
+import           Bead.Domain.Entity.Assignment
 import           Bead.Domain.Relationships
 
 import qualified Bead.Persistence.Initialization as Init

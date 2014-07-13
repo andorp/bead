@@ -44,6 +44,8 @@ import qualified Data.Set as Set
 import           Data.Time (UTCTime, getCurrentTime)
 
 import           Bead.Domain.Entities
+import           Bead.Domain.Entity.Assignment (Assignment(..), assignmentCata)
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Relationships
 import           Bead.Persistence.Persist
 import           Bead.View.Snap.Translation
@@ -87,7 +89,7 @@ userAssignmentKeys u = do
 userAssignmentKeysTest = do
   let course  = Course "name" "desc" (BinEval ()) TestScriptSimple
       group  = Group "name" "desc" (BinEval ())
-      asg     = Assignment "name" "desc" Urn time time
+      asg     = Assignment "name" "desc" Assignment.emptyAspects time time
       time    = read "2014-06-09 12:55:27.959203 UTC"
       user1name = Username "user1"
       user1  = User Student user1name (Email "email") "name" (TimeZoneName "Europe/Budapest") (Language "hu")
@@ -180,8 +182,8 @@ submissionDesc sk = do
         , eAssignmentKey   = ak
         , eAssignmentDate  = created
         , eSubmissionDate  = solutionPostDate submission
-        , eAssignmentTitle = assignmentName asg
-        , eAssignmentDesc  = assignmentDesc asg
+        , eAssignmentTitle = Assignment.name asg
+        , eAssignmentDesc  = Assignment.desc asg
         , eComments = cs
         }
     Right gk -> do
@@ -200,8 +202,8 @@ submissionDesc sk = do
         , eAssignmentKey   = ak
         , eAssignmentDate  = created
         , eSubmissionDate  = solutionPostDate submission
-        , eAssignmentTitle = assignmentName asg
-        , eAssignmentDesc  = assignmentDesc asg
+        , eAssignmentTitle = Assignment.name asg
+        , eAssignmentDesc  = Assignment.desc asg
         , eComments = cs
         }
 
@@ -262,20 +264,14 @@ submissionListDesc u ak = do
 
   -- User submissions should not shown for urn typed assignments, only after the end
   -- period
-  submissions <- assignmentTypeCata
-    -- Normal assignment
-    (Right <$> (mapM submissionStatus =<< userSubmissions u ak))
-    -- Urn assignment
-    (case (assignmentEnd asg < now) of
-       True  -> Right <$> (mapM submissionStatus =<< userSubmissions u ak)
-       False -> Left  <$> (mapM submissionTime =<< userSubmissions u ak))
-    -- NormalPwd
-    (const (Right <$> (mapM submissionStatus =<< userSubmissions u ak)))
-    -- BallotBoxPwd
-    (const (case (assignmentEnd asg < now) of
-       True  -> Right <$> (mapM submissionStatus =<< userSubmissions u ak)
-       False -> Left  <$> (mapM submissionTime =<< userSubmissions u ak)))
-    (assignmentType asg)
+  submissions <- do
+    us <- userSubmissions u ak
+    let aspects = Assignment.aspects asg
+    if Assignment.isBallotBox aspects
+      then if Assignment.end asg < now
+             then Right <$> (mapM submissionStatus us)
+             else Left  <$> (mapM submissionTime   us)
+      else Right <$> (mapM submissionStatus us)
 
   return SubmissionListDesc {
     slGroup = name
@@ -466,7 +462,7 @@ userLastSubmissionInfo u ak =
 userSubmissionDesc :: Username -> AssignmentKey -> Persist UserSubmissionDesc
 userSubmissionDesc u ak = do
   -- Calculate the normal fields
-  asgName       <- assignmentName <$> loadAssignment ak
+  asgName       <- Assignment.name <$> loadAssignment ak
   courseOrGroup <- courseOrGroupOfAssignment ak
   crName <- case courseOrGroup of
               Left  ck -> courseName <$> loadCourse ck

@@ -10,6 +10,8 @@ import           Data.Time
 
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Domain.Entities as E
+import           Bead.Domain.Entity.Assignment (Assignment)
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Utils
 import           Bead.View.Snap.Markdown (markdownToHtml)
@@ -48,11 +50,11 @@ submissionPostHandler = do
     ak
     -- Assignment is for the user
     (\_desc asg -> do
-       let aspects = assignmentTypeToAspects $ assignmentType asg
-       if aasContains isPasswordAspect aspects
+       let aspects = Assignment.aspects asg
+       if Assignment.isPasswordProtected aspects
          -- Password-protected assignment
          then do pwd <- getParameter (stringParameter (fieldName submissionPwdField) "Feltöltési jelszó")
-                 if aasGetPassword aspects == pwd
+                 if Assignment.getPassword aspects == pwd
                    -- Passwords do match
                    then NewSubmission ak
                           <$> (E.Submission
@@ -81,10 +83,10 @@ submissionContent p = do
         H.td $ (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
       H.tr $ do
         H.td $ H.b $ (fromString . msg $ Msg_Submission_Assignment "Assignment: ")
-        H.td $ (fromString . assignmentName . asValue $ p)
+        H.td $ (fromString . Assignment.name . asValue $ p)
       H.tr $ do
         H.td $ H.b $ (fromString . msg $ Msg_Submission_Deadline "Deadline: ")
-        H.td $ (fromString . showDate . (asTimeConv p) . assignmentEnd $ asValue p)
+        H.td $ (fromString . showDate . (asTimeConv p) . Assignment.end $ asValue p)
       H.tr $ do
         H.td $ H.b $ fromString . msg $ Msg_Submission_TimeLeft "Time left: "
         H.td $ startEndCountdownDiv
@@ -92,10 +94,10 @@ submissionContent p = do
           (msg $ Msg_Submission_Days "day(s)")
           (msg $ Msg_Submission_DeadlineReached "Deadline is reached")
           (asNow p)
-          (assignmentEnd $ asValue p)
+          (Assignment.end $ asValue p)
     H.h2 $ (fromString . msg $ Msg_Submission_Description "Description")
     H.div # assignmentTextDiv $
-      markdownToHtml . assignmentDesc . asValue $ p
+      markdownToHtml . Assignment.desc . asValue $ p
     H.h2 $ (fromString . msg $ Msg_Submission_Solution "Submission")
     (assignmentPasswordDiv msg)
     H.div $ do
@@ -106,7 +108,7 @@ submissionContent p = do
     submission = Pages.submission ()
 
     assignmentPasswordDiv msg =
-      when (isPasswordProtectedAspects $ assignmentTypeToAspects (assignmentType $ asValue p)) $ do
+      when (Assignment.isPasswordProtected . Assignment.aspects $ asValue p) $ do
         H.div $ do
           H.p $ fromString . msg $ Msg_Submission_Info_Password
             "This assignment can only accept submissions by providing the password."

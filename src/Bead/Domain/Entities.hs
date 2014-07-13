@@ -7,183 +7,18 @@ import           Control.Monad (join)
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Data
 import           Data.List (findIndex)
-import           Data.Set (Set)
-import qualified Data.Set as Set
-import           Data.Time (UTCTime(..), LocalTime, timeZoneName)
+import           Data.Time (UTCTime(..), LocalTime)
 import           Data.Time.Format (formatTime)
-import qualified Data.Time as Time
 import           System.Locale (defaultTimeLocale)
 
 import           Bead.Domain.Types
+import           Bead.Domain.Entity.Assignment
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Translation
 
 #ifdef TEST
-import           Test.Themis.Test hiding (testCaseCata)
 import           Bead.Invariants (Invariants(..), UnitTests(..))
 #endif
-
--- * Course, exams, exercises, solutions
-
-data AssignmentType
-  = Normal
-  | Urn
-  | NormalPwd String
-  | BallotBoxPwd String
-  deriving (Data, Eq, Read, Show, Typeable)
-
-assignmentTypeCata
-  normal
-  urn
-  normalpwd
-  ballot
-  a = case a of
-    Normal -> normal
-    Urn    -> urn
-    NormalPwd pwd -> normalpwd pwd
-    BallotBoxPwd pwd -> ballot pwd
-
-withAssignmentType a normal urn normalpwd ballot =
-  assignmentTypeCata normal urn normalpwd ballot a
-
--- Assignment asptect is a property of an assignment which
--- controls its visibility of start and end date, its controlls
--- over submission.
-data AssignmentAspect
-  = AaBallotBox -- Submission should not shown for the students only after the end of the dead line
-  | AaPassword String -- The assignment is password protected
-  deriving (Data, Eq, Show, Ord, Typeable)
-
-assignmentAspect
-  ballot
-  pwd
-  a = case a of
-    AaBallotBox -> ballot
-    AaPassword p -> pwd p
-
--- An assignment can have several aspects, which is a set
-type AssignmentAspects = Set AssignmentAspect
-
-assignmentAspects :: (Set AssignmentAspect -> a) -> AssignmentAspects -> a
-assignmentAspects f x = f x
-
--- Calculates the assignment aspect set from the type of the assignment
-assignmentTypeToAspects :: AssignmentType -> AssignmentAspects
-assignmentTypeToAspects = assignmentTypeCata
-  Set.empty -- Normal
-  (Set.singleton AaBallotBox) -- Urn
-  (\pwd -> Set.singleton (AaPassword pwd)) -- NormalPwd
-  (\pwd -> Set.fromList [AaBallotBox, AaPassword pwd]) -- BallotBoxPwd
-
-#ifdef TEST
-assignmentTypeToAspectsTests = group "assignmentTypeToAspects" $ do
-  test "Normal" $
-    Equals Set.empty (assignmentTypeToAspects Normal) "Normal type was not converted correctly"
-  test "Urn" $
-    Equals (Set.fromList [AaBallotBox]) (assignmentTypeToAspects Urn) "Urn type was not converted correctly"
-  test "NormalPwd" $
-    Equals (Set.fromList [AaPassword "pwd"]) (assignmentTypeToAspects (NormalPwd "pwd")) "NormalPwd type was not converted correctly"
-  test "BallotBoxPwd" $
-    Equals (Set.fromList [AaBallotBox, AaPassword "pwd"])
-           (assignmentTypeToAspects (BallotBoxPwd "pwd"))
-           "BallowBoxPwd was not converted correctly"
-#endif
-
-isPasswordAspect = assignmentAspect False (const True)
-isBallotBoxAspect = assignmentAspect True (const False)
-
-#ifdef TEST
-assignmentAspectPredTests = group "assignmentAspectPred" $ do
-  test "Password aspect predicate" $
-    Equals True (isPasswordAspect (AaPassword "pwd")) "Password aspect is not recognized"
-  test "Ballow box aspect predicate" $
-    Equals True (isBallotBoxAspect AaBallotBox) "Ballot box aspect is not recognized"
-#endif
-
--- Returns True if the aspect set contains a password protected value
-isPasswordProtectedAspects :: AssignmentAspects -> Bool
-isPasswordProtectedAspects = not . Set.null . Set.filter isPasswordAspect
-
-#ifdef TEST
-isPasswordProtectedAspectsTests = group "isPasswordProtectedAspects" $ do
-  test "Empty aspect set"
-       (Equals False (isPasswordProtectedAspects Set.empty)
-               "Empty set should not contain password")
-  test "Non password aspects"
-       (Equals False (isPasswordProtectedAspects (Set.fromList [AaBallotBox]))
-               "Ballot box set should not contain password")
-  test "Password aspect"
-       (Equals True (isPasswordProtectedAspects (Set.fromList [AaPassword ""]))
-               "Password aspect should be found")
-  test "Password aspect within more aspects"
-       (Equals True (isPasswordProtectedAspects (Set.fromList [AaPassword "", AaBallotBox]))
-               "Password aspect should be found")
-#endif
-
--- Convert assignment aspects into assignment type, the aspect set should contain only one password
-assignmentAspectsToType :: AssignmentAspects -> AssignmentType
-assignmentAspectsToType = assignmentAspects $ \as ->
-  let f s | Set.null s = Normal
-          | and [contains password s, contains ballotBox s] = BallotBoxPwd (getPassword s)
-          | contains ballotBox s = Urn
-          | contains password s = NormalPwd (getPassword s)
-          | otherwise = error' $ show s
-      password  = isPasswordAspect
-      ballotBox = isBallotBoxAspect
-      contains = aasContains
-      getPassword = aasGetPassword
-      error' msg = error $ "assignmentAspectToType: invalid input" ++ msg
-  in f as
-
-#ifdef TEST
-assignmentAspectsToTypeTests = group "assignmentAspectsToType" $ do
-  let aa = assignmentAspectsToType . assignmentTypeToAspects
-  test "Normal" $ Equals Normal (aa Normal) "Normal was not converted correctly"
-  test "Urn" $ Equals Urn (aa Urn) "Urn was not converted correctly"
-  test "NormalPwd" $ Equals (NormalPwd "pwd") (aa (NormalPwd "pwd")) "NormalPwd was not converted correctly"
-  test "BallotBoxPwd" $ Equals (BallotBoxPwd "pwd") (aa (BallotBoxPwd "pwd"))
-                        "BallotBoxPwd was not converted correctly"
-#endif
-
--- Calculates True if the assignment aspects set contains at least one elements
--- That satisfies the preduicate
-aasContains :: (AssignmentAspect -> Bool) -> AssignmentAspects -> Bool
-aasContains pred = assignmentAspects (not . Set.null . Set.filter pred)
-
--- Returns the first password found in the assignment aspects set, if there
--- is no such password throws an error
-aasGetPassword :: AssignmentAspects -> String
-aasGetPassword = assignmentAspects $ \as ->
-  case (Set.toList . Set.filter isPasswordAspect $ as) of
-    [] -> error $ "aasGetPassword: no password aspects was found"
-    (pwd:_) -> assignmentAspect (error "aasGetPassword: no password aspect was filtered in") id pwd
-
--- | Assignment for the student
-data Assignment = Assignment {
-    assignmentName :: String
-  , assignmentDesc :: String
-  , assignmentType :: AssignmentType
-  , assignmentStart :: UTCTime
-  , assignmentEnd   :: UTCTime
-  -- TODO: Number of maximum tries
-  } deriving (Eq, Show)
-
--- | Template function for the assignment
-assignmentCata f (Assignment name desc type_ start end) =
-  f name desc type_ start end
-
--- | Template function for the assignment with flipped arguments
-withAssignment a f = assignmentCata f a
-
-assignmentAna name desc type_ start end =
-  Assignment <$> name <*> desc <*> type_ <*> start <*> end
-
--- | Produces True if the given time is between the start-end time of the assignment
-isActivePeriod :: Assignment -> UTCTime -> Bool
-isActivePeriod a t = and [start <= t, t <= end]
-  where
-    start = assignmentStart a
-    end   = assignmentEnd   a
 
 -- | Solution for one exercise
 data Submission = Submission {
@@ -819,29 +654,4 @@ roleInvariants = Invariants [
     )
   ]
 
-assignmentTests =
-  let a = Assignment {
-          assignmentName = "name"
-        , assignmentDesc = "desc"
-        , assignmentType = Normal
-        , assignmentStart = read "2010-10-10 12:00:00 UTC"
-        , assignmentEnd   = read "2010-11-10 12:00:00 UTC"
-        }
-      before  = read "2010-09-10 12:00:00 UTC"
-      between = read "2010-10-20 12:00:00 UTC"
-      after   = read "2010-12-10 12:00:00 UTC"
-  in UnitTests [
-    ("Time before active period", isFalse $ isActivePeriod a before)
-  , ("Time in active period"    , isTrue  $ isActivePeriod a between)
-  , ("Time after active period" , isFalse $ isActivePeriod a after)
-  ]
-  where
-    isFalse = not
-    isTrue  = id
-
-entitiesTests = group "Bead.Domain.Entities" $ do
-  assignmentTypeToAspectsTests
-  isPasswordProtectedAspectsTests
-  assignmentAspectsToTypeTests
-  assignmentAspectPredTests
 #endif

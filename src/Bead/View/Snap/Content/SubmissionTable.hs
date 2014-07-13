@@ -21,8 +21,10 @@ import           Data.Time
 import           Numeric
 
 import qualified Bead.Domain.Entities as E
-import           Bead.Domain.Relationships
+import           Bead.Domain.Entity.Assignment (Assignment)
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
+import           Bead.Domain.Relationships
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (UserStory)
 import qualified Bead.Controller.UserStories as S
@@ -172,11 +174,10 @@ submissionTablePart tableId now ctx s = do
               (\x -> openedHeaderCell openGroupAssignmentStyle closedGroupAssignmentStyle x $
                        modifyAssignmentLink (msg $ Msg_Home_GroupAssignmentIDPreffix "G") x)
 
-    assignmentName ak = maybe "" E.assignmentName . Map.lookup ak $ stiAssignmentInfos s
+    assignmentName ak = maybe "" Assignment.name . Map.lookup ak $ stiAssignmentInfos s
 
-    isActiveAssignment ak = maybe False isActive . Map.lookup ak $ stiAssignmentInfos s
-      where
-        isActive a = and [E.assignmentStart a < now, now < E.assignmentEnd a]
+    isActiveAssignment ak =
+      maybe False (flip Assignment.isActive now) . Map.lookup ak $ stiAssignmentInfos s
 
     modifyAssignmentLink pfx (i,ak) =
       linkWithTitle

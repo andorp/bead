@@ -1,6 +1,7 @@
 module Test.Quick.EntityGen where
 
 import Bead.Domain.Entities
+import Bead.Domain.Entity.Assignment
 import Bead.Domain.TimeZone (utcZoneInfo, cetZoneInfo)
 import Bead.Domain.Relationships
 import Bead.Domain.Shared.Evaluation
@@ -123,7 +124,12 @@ assignmentDescs = manyWords
 
 assignmentTCss = manyWords
 
-assignmentTypeGen = elements [Normal, Urn]
+assignmentTypeGen = oneof [
+    (return emptyAspects)
+  , (return $ aspectsFromList [BallotBox])
+  , (do pwd <- word; return $ aspectsFromList [Password pwd])
+  , (do pwd <- word; return $ aspectsFromList [Password pwd, BallotBox])
+  ]
 
 passwords = word
 

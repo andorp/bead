@@ -9,6 +9,8 @@ import           Data.Time (UTCTime(..))
 import           Text.Blaze.Html5 (Html)
 
 import           Bead.Domain.Entities
+import           Bead.Domain.Entity.Assignment (Assignment)
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
 import           Bead.Domain.Relationships
 import           Bead.Domain.Types (Str(..))
@@ -141,22 +143,17 @@ instance GetValueHandler Assignment where
     startDate <- converter <$> getParameter assignmentStartPrm
     endDate   <- converter <$> getParameter assignmentEndPrm
     when (endDate < startDate) . throwError $ strMsg "A feladat kezdetének dátuma később van mint a feladat vége"
-    assignmentAna
+    pwd <- getParameter (stringParameter (fieldName assignmentPwdField) "Jelszó")
+    asp <- Assignment.aspectsFromList <$> getJSONParameters (fieldName assignmentAspectField) "Aspect parameter"
+    let aspects = if Assignment.isPasswordProtected asp
+                    then Assignment.setPassword pwd asp
+                    else asp
+    Assignment.assignmentAna
       (getParameter (stringParameter (fieldName assignmentNameField) "Név"))
       (getParameter (stringParameter (fieldName assignmentDescField) "Leírás"))
-      getAssignmentType
+      (return aspects)
       (return startDate)
       (return endDate)
-    where
-      getAssignmentType = do
-        aspects <- getJSONParameters (fieldName assignmentAspectField) "Aspect parameter"
-        withAssignmentType
-          (assignmentAspectsToType (Set.fromList aspects))
-          (return Normal)
-          (return Urn)
-          (const (NormalPwd <$> getParameter (stringParameter (fieldName assignmentPwdField) "Jelszó")))
-          (const (BallotBoxPwd <$> getParameter (stringParameter (fieldName assignmentPwdField) "Jelszó")))
-
 
 -- * Combined input fields
 

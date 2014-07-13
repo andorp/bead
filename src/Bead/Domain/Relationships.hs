@@ -8,6 +8,7 @@ import Data.Map (Map)
 import Data.Time (UTCTime(..))
 
 import Bead.Domain.Entities
+import Bead.Domain.Entity.Assignment
 import Bead.Domain.Evaluation
 import Bead.Domain.Types
 

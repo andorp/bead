@@ -27,6 +27,7 @@ import Bead.Persistence.NoSQLDirFile
 import qualified Test.Quick.EntityGen as Gen
 
 import Bead.Domain.Entities
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import Bead.Domain.Relationships
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
@@ -497,7 +498,7 @@ submissionListDescTest = do
     a <- pick $ elements as
     desc <- runPersistCmd $ submissionListDesc u a
     assertNonEmpty (slGroup desc) "Group was empty"
-    assertNonEmpty (assignmentDesc $ slAssignment desc) "Assignment was empty"
+    assertNonEmpty (Assignment.desc $ slAssignment desc) "Assignment was empty"
     assertEmpty (slTeacher desc) "There was teachers to the group"
 
 -- Allways the last evaluation is valid for the submission.
@@ -545,7 +546,7 @@ submissionDetailsDescTest = do
     desc <- runPersistCmd $ submissionDetailsDesc sk
     assertNonEmpty (sdGroup desc) "Group name was empty"
     forM (sdTeacher desc) $ \t -> assertNonEmpty t "Admin name was empty"
-    assertNonEmpty (assignmentDesc $ sdAssignment desc) "Description was empty"
+    assertNonEmpty (Assignment.desc $ sdAssignment desc) "Description was empty"
     when (isJust (sdStatus desc)) $ assertNonEmpty (fromJust $ sdStatus desc) "Status was empty"
     assertNonEmpty (sdSubmission desc) "Submission text was empty"
     forM (sdComments desc) $ \c -> assertNonEmpty (comment c) "Comment was empty"

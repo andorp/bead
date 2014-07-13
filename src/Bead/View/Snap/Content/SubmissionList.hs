@@ -12,6 +12,7 @@ import qualified Text.Blaze.Html5.Attributes as A (class_)
 
 import           Bead.Controller.UserStories (submissionListDesc)
 import qualified Bead.Controller.Pages as Pages
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Shared.Evaluation
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Utils
@@ -34,7 +35,7 @@ submissionListPage = withUserState $ \s -> do
       Nothing -> renderPagelet . withUserFrame s $ invalidAssignment
       Just asg -> do
         now <- liftIO getCurrentTime
-        case (assignmentStart asg > now) of
+        case (Assignment.start asg > now) of
           True  -> renderPagelet . withUserFrame s $ assignmentNotStartedYet
           False -> do
             sl <- userStory (submissionListDesc ak)
@@ -60,13 +61,13 @@ submissionListContent p = do
         secondCol (join . slTeacher . smList $ p)
       H.tr $ do
         firstCol  (msg $ Msg_SubmissionList_Assignment "Assignment:")
-        secondCol (assignmentName . slAssignment . smList $ p)
+        secondCol (Assignment.name . slAssignment . smList $ p)
       H.tr $ do
         firstCol  (msg $ Msg_SubmissionList_Deadline "Deadline:")
-        secondCol (showDate . (uTime p) . assignmentEnd . slAssignment $ smList p)
+        secondCol (showDate . (uTime p) . Assignment.end . slAssignment $ smList p)
     H.h2 . fromString . msg $ Msg_SubmissionList_Description "Description"
     H.div # assignmentTextDiv $
-      (markdownToHtml . assignmentDesc . slAssignment . smList $ p)
+      (markdownToHtml . Assignment.desc . slAssignment . smList $ p)
     let submissions = slSubmissions . smList $ p
     H.h2 . fromString . msg $ Msg_SubmissionList_SubmittedSolutions "Submissions"
     either (userSubmissionTimes msg) (userSubmissionInfo msg) submissions

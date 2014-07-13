@@ -9,6 +9,7 @@ import           Data.String (fromString)
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (submissionDetailsDesc)
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Comments
 import           Bead.View.Snap.Content.Utils
@@ -89,13 +90,13 @@ submissionDetailsContent p = do
         H.td $ fromString (join . intersperse ", " . sdTeacher $ sm)
       H.tr $ do
         H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Assignment "Assignment:")
-        H.td $ fromString (assignmentName . sdAssignment $ sm)
+        H.td $ fromString (Assignment.name . sdAssignment $ sm)
       H.tr $ do
         H.td # textAlignRight $ H.b $ (fromString . msg $ Msg_SubmissionDetails_Deadline "Deadline:")
-        H.td $ fromString (showDate . tc . assignmentEnd $ sdAssignment sm)
+        H.td $ fromString (showDate . tc . Assignment.end $ sdAssignment sm)
     H.h2 . fromString . msg $ Msg_SubmissionDetails_Description "Assignment text"
     H.div # assignmentTextDiv $
-      markdownToHtml . assignmentDesc . sdAssignment $ sm
+      markdownToHtml . Assignment.desc . sdAssignment $ sm
     H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "Submission text"
     H.div # submissionTextDiv $ seeMorePre msg maxLength maxLines . sdSubmission $ sm
     H.h2 . fromString . msg $ Msg_SubmissionDetails_Evaluation "Evaluation"

@@ -26,6 +26,8 @@ import           Text.Printf (printf)
 import           Bead.Controller.Pages (PageDesc)
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as S
+import           Bead.Domain.Entity.Assignment (Assignment)
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Markdown
 import           Bead.View.Snap.RequestParams
@@ -340,12 +342,12 @@ newAssignmentContent tz pd = do
   return $ H.div ! formDiv $ do
     H.div ! rightCell $ do
       H.span ! boldText $ fromString . msg $ Msg_NewAssignment_Title "Title"
-      editOrReadonly pd $ textInput (fieldName assignmentNameField) 10 (amap assignmentName
+      editOrReadonly pd $ textInput (fieldName assignmentNameField) 10 (amap Assignment.name
         (Just . fromString . msg $ Msg_NewAssignment_Title_Default "Unnamed Assignment") pd)
         ! fillLine ! A.required "" ! asgField
       H.br
       H.span ! boldText $ fromString . msg $ Msg_NewAssignment_Description "Description"
-      editOrReadonly pd $ textAreaInput (fieldName assignmentDescField) (amap assignmentDesc (Just . fromString . msg $
+      editOrReadonly pd $ textAreaInput (fieldName assignmentDescField) (amap Assignment.desc (Just . fromString . msg $
         Msg_NewAssignment_Description_Default $ unlines
           [ concat
              [ "This text shall be in markdown format.  Here are some quick "
@@ -402,12 +404,10 @@ newAssignmentContent tz pd = do
       H.span ! boldText $ fromString . msg $ Msg_NewAssignment_SubmissionDeadline "Visibility"
       H.div ! A.id (fieldName startDateDivId) $ do
          (fromString . msg $ Msg_NewAssignment_StartDate "Opens")
-         (fromString $ concat [" (", timeZoneString, ")"])
          H.br
          startTimePart pd
       H.div ! A.id (fieldName endDateDivId) $ do
          (fromString . msg $ Msg_NewAssignment_EndDate "Closes")
-         (fromString $ concat [" (", timeZoneString, ")"])
          H.br
          endTimePart pd
       typeSelection msg pd
@@ -452,34 +452,34 @@ newAssignmentContent tz pd = do
         H.b (fromString . msg $ Msg_NewAssignment_Properties "Properties")
         H.br
         pageDataCata
-          (const5 ts)
-          (const5 ts)
-          (const6 ts)
-          (\_tz _k a _ts _tc -> fromString . show $ assignmentType a)
-          (const7 ts)
-          (const7 ts)
-          (const7 ts)
+          (const5 $ ts editable)
+          (const5 $ ts editable)
+          (const6 $ ts editable)
+          (const5 $ ts readOnly)
+          (const7 $ ts editable)
+          (const7 $ ts editable)
+          (const7 $ ts editable)
           pd
         where
-          -- ts = defEnumSelection (fieldName assignmentTypeField) (maybe Normal id . amap assignmentType Nothing $ pd) ! asgField
-          ts = H.div $ do
-                 let aas = assignmentTypeToAspects . fromMaybe Normal . amap assignmentType Nothing $ pd
-                     isBallotBox = aasContains isBallotBoxAspect aas
-                     isPassword  = aasContains isPasswordAspect aas
-                     pwd = if isPassword
-                             then Just (aasGetPassword aas)
+          editable = True
+          readOnly = False
+          ts ed = H.div $ do
+                 let aas = fromMaybe Assignment.emptyAspects . amap Assignment.aspects Nothing $ pd
+                     pwd = if Assignment.isPasswordProtected aas
+                             then Just (Assignment.getPassword aas)
                              else Nothing
-                 checkBox' (fieldName assignmentAspectField)
-                           isBallotBox
-                           AaBallotBox (msg $ Msg_NewAssignment_BallotBox "Ballot Box") ! asgField
+                     editable x = if ed then x else (x ! A.readonly "")
+                 editable $ checkBox' (fieldName assignmentAspectField)
+                           (Assignment.isBallotBox aas)
+                           Assignment.BallotBox (msg $ Msg_NewAssignment_BallotBox "Ballot Box") ! asgField
                  H.br
-                 checkBox' (fieldName assignmentAspectField)
-                           isPassword
-                           (AaPassword "")
+                 editable $ checkBox' (fieldName assignmentAspectField)
+                           (Assignment.isPasswordProtected aas)
+                           (Assignment.Password "")
                            (msg $ Msg_NewAssignment_PasswordProtected "Password-protected") ! asgField
                  H.br
                  fromString . msg $ Msg_NewAssignment_Password "Password:"
-                 textInput (fieldName assignmentPwdField) 20 pwd ! asgField
+                 editable $ textInput (fieldName assignmentPwdField) 20 pwd ! asgField
 
       editOrReadonly = pageDataCata
         (const5 id)
@@ -540,7 +540,7 @@ newAssignmentContent tz pd = do
         where
          assignmentPreview a = H.div $ do
            H.h3 $ fromString . msg $ Msg_NewAssignment_AssignmentPreview "Assignment Preview"
-           H.div # assignmentTextDiv $ markdownToHtml $ assignmentDesc a
+           H.div # assignmentTextDiv $ markdownToHtml $ Assignment.desc a
 
       startTimePart = pageDataCata
         (const5 hiddenStartTime)
@@ -821,21 +821,21 @@ newAssignmentContent tz pd = do
       (startDefDate, startDefHour, startDefMin) = date $ pageDataCata
         (\_tz t _c _ts _fs -> t)
         (\_tz t _g _ts _fs -> t)
-        (\_tz _k a _ts _fs _tc -> assignmentStart a)
-        (\_tz _k a _ts _tc -> assignmentStart a)
-        (\_tz _t _c _ts _fs a _tc  -> assignmentStart a)
-        (\_tz _t _g _ts _fs a _tc  -> assignmentStart a)
-        (\_tz _k a _ts _fs _tc _tm -> assignmentStart a)
+        (\_tz _k a _ts _fs _tc -> Assignment.start a)
+        (\_tz _k a _ts _tc -> Assignment.start a)
+        (\_tz _t _c _ts _fs a _tc  -> Assignment.start a)
+        (\_tz _t _g _ts _fs a _tc  -> Assignment.start a)
+        (\_tz _k a _ts _fs _tc _tm -> Assignment.start a)
         pd
 
       (endDefDate, endDefHour, endDefMin) = date $ pageDataCata
         (\_tz t _c _ts _fs -> t)
         (\_tz t _g _ts _fs -> t)
-        (\_tz _k a _ts _fs _tc -> assignmentEnd a)
-        (\_tz _k a _ts _tc -> assignmentEnd a)
-        (\_tz _t _c _ts _fs a _tc  -> assignmentEnd a)
-        (\_tz _t _g _ts _fs a _tc  -> assignmentEnd a)
-        (\_tz _k a _ts _fs _tc _tm -> assignmentEnd a)
+        (\_tz _k a _ts _fs _tc -> Assignment.end a)
+        (\_tz _k a _ts _tc -> Assignment.end a)
+        (\_tz _t _c _ts _fs a _tc  -> Assignment.end a)
+        (\_tz _t _g _ts _fs a _tc  -> Assignment.end a)
+        (\_tz _k a _ts _fs _tc _tm -> Assignment.end a)
         pd
 
       testScriptType' Nothing   = Nothing

@@ -11,6 +11,7 @@ import           Data.Time hiding (TimeZone)
 import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
+import qualified Bead.Domain.Entity.Assignment as Domain
 import qualified Bead.Domain.Relationships as Domain
 import qualified Bead.Domain.Shared.Evaluation as Domain
 import           Bead.Persistence.SQL.Class
@@ -158,8 +159,10 @@ assignmentTests = do
       script  = Domain.TestScript "name" "desc" "notes" "script" Domain.TestScriptSimple
       case1   = Domain.TestCase "name" "desc" "blah" Domain.TestCaseSimple "info"
       time    = read "2014-06-09 12:55:27.959203 UTC"
-      asg     = Domain.Assignment "name" "desc" Domain.Urn time time
-      asg2    = Domain.Assignment "name2" "desc2" Domain.Normal time time
+      ballot  = Domain.aspectsFromList [Domain.BallotBox]
+      normal  = Domain.aspectsFromList []
+      asg     = Domain.Assignment "name" "desc" ballot time time
+      asg2    = Domain.Assignment "name2" "desc2" normal time time
 
   shrink "Assignment end-to-end story"
     (do ioTest "Assignment end-to-end test" $ runSql $ do
