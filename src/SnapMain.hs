@@ -4,7 +4,7 @@ module Main where
 import           Data.Char (toUpper)
 
 import           Snap hiding (Config(..))
-import           System.Directory (getTemporaryDirectory, removeDirectoryRecursive)
+import           System.Directory
 import           System.Environment (getArgs)
 import           System.Exit (exitFailure)
 import           System.IO (hFlush, hSetEcho, stdout, stdin)
@@ -46,13 +46,14 @@ main = do
   args <- getArgs
   config <- readConfiguration beadConfigFileName
   printConfigInfo config
-  checkRegexExample config
+  checkConfig config
   newAdminUser <- either (const $ return Nothing) (interpretTasks config) (initTasks args)
   startService config newAdminUser
 
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
-printConfigInfo = configCata $ \logfile timeout hostname fromEmail loginlang regexp example zoneInfoDir -> do
+printConfigInfo = configCata $
+  \logfile timeout hostname fromEmail loginlang regexp example zoneInfoDir up -> do
   configLn $ "Log file: " ++ logfile
   configLn $ concat ["Session timeout: ", show timeout, " seconds"]
   configLn $ "Hostname included in emails: " ++ hostname
@@ -60,19 +61,36 @@ printConfigInfo = configCata $ \logfile timeout hostname fromEmail loginlang reg
   configLn $ "Default login language: " ++ loginlang
   configLn $ "Username regular expression for the registration: " ++ regexp
   configLn $ "Username example for the regular expression: " ++ example
-  configLn $ "TimeZone informational dir" ++ zoneInfoDir
+  configLn $ "TimeZone informational dir: " ++ zoneInfoDir
+  configLn $ concat ["Maximum size of a file to upload: ", show up, "K"]
   where
     configLn s = putStrLn ("CONFIG: " ++ s)
 
--- Check the given username example against the given username regexp, if the
--- example does not match with the regepx quit with an exit failure.
-checkRegexExample :: Config -> IO ()
-checkRegexExample cfg =
-  if (not (usernameRegExpExample cfg =~ usernameRegExp cfg))
-    then do configCheck "ERROR: Given username example does not match with the given pattern!"
-            exitFailure
-    else do configCheck "Config is OK."
+-- Check if the configuration is valid
+checkConfig :: Config -> IO ()
+checkConfig cfg = do
+  check (maxUploadSizeInKb cfg > 0)
+    "The maximum upload size must be non-negative!"
+
+  -- Check the given username example against the given username regexp, if the
+  -- example does not match with the regepx quit with an exit failure.
+  check (usernameRegExpExample cfg =~ usernameRegExp cfg)
+    "Given username example does not match with the given pattern!"
+
+  check' (doesDirectoryExist (timeZoneInfoDirectory cfg))
+    "The given time-zone info directory"
+
+  configCheck "Config is OK."
   where
+    check pred msg = when (not pred) $ do
+      configCheck $ "ERROR: " ++ msg
+      configCheck $ "There can be more errors. The check fails at the first."
+      exitFailure
+
+    check' pred msg = do
+      p <- pred
+      check p msg
+
     configCheck s = putStrLn $ "CONFIG CHECK: " ++ s
 
 interpretTasks :: Config -> [InitTask] -> IO AppInitTasks

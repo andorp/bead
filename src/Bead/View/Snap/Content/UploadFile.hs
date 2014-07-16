@@ -13,21 +13,23 @@ import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html5 as H
 
+import           Bead.Configuration (maxUploadSizeInKb)
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content
 
-newtype PageData = PageData [(UsersFile, FileInfo)]
+data PageData = PageData [(UsersFile, FileInfo)] Int
 
-pageDataCata f (PageData x) = f x
+pageDataCata f (PageData x s) = f x s
 
 uploadFile = ViewModifyHandler getUploadFile postUploadFile
 
 getUploadFile :: GETContentHandler
 getUploadFile = withUserState $ \s -> do
   fs <- userStory Story.listUsersFiles
-  renderPagelet . withUserFrame s $ uploadFileContent (PageData fs)
+  size <- fmap maxUploadSizeInKb $ lift $ withTop configContext getConfiguration
+  renderPagelet . withUserFrame s $ uploadFileContent (PageData fs size)
 
 data Success
   = PolicyFailure String
@@ -99,7 +101,8 @@ uploadFileContent pd = do
     H.h2 . fromString . i18n $ Msg_UploadFile_FileSelection "File Selection"
     do
       postForm (routeOf uploadFile) ! A.enctype "multipart/form-data" $ do
-        fromString . i18n $ Msg_UploadFile_Info "Please choose a file to upload.  Note that the maximum file size is 128 KB."
+        fromString . i18n $ Msg_UploadFile_Info "Please choose a file to upload.  Note that the maximum file size in kilobytes: "
+        fromString (pageDataCata (const show) pd)
         H.br
         H.br
         fileInput (fieldName fileUploadField)
@@ -119,8 +122,8 @@ uploadFileContent pd = do
       headerCell . fromString . i18n $ Msg_UploadFile_FileName "File Name"
       headerCell . fromString . i18n $ Msg_UploadFile_FileSize "File Size (bytes)"
       headerCell . fromString . i18n $ Msg_UploadFile_FileDate "File Date"
-    numFiles       = pageDataCata length pd
-    usersFileLines = pageDataCata (mapM_ usersFileLine)
+    numFiles       = pageDataCata (\fs _ -> length fs) pd
+    usersFileLines = pageDataCata (\fs _ -> (mapM_ usersFileLine fs))
       where
         usersFileLine (usersfile, fileInfo) = H.tr $ do
           usersFileCata (dataCell . fromString) usersfile

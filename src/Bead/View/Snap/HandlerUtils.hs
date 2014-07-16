@@ -297,16 +297,20 @@ registrationStory s = withTop serviceContext getServiceContext >>=
   where
     forgetUserState = either Left (Right . fst)
 
--- TODO: Set maximum size, set temporary directory
+-- TODO: set temporary directory
 -- Handels file uploads and throw an error, to render the error page later
 fileUpload :: Handler App b ()
 fileUpload = do
   tmpDir <- withTop tempDirContext $ getTempDirectory
-  handleFileUploads tmpDir uploadPolicy perpartUploadPolicy handlers
+  config <- withTop configContext $ getConfiguration
+  let size = fromIntegral $ maxUploadSizeInKb config
+  handleFileUploads
+    tmpDir
+    (uploadPolicy size)
+    (perpartUploadPolicy size) handlers
   where
-    s128K = 128 * 1024 -- 128Kb
-    uploadPolicy = defaultUploadPolicy -- { maximumFormInputSize = s128K }
-    perpartUploadPolicy = const $ allowWithMaximumSize s128K
+    uploadPolicy size = setMaximumFormInputSize (size * 1024) defaultUploadPolicy
+    perpartUploadPolicy size = const $ allowWithMaximumSize (size * 1024)
     handlers ps = do
       liftIO $ print ps
       mapM_ handlerPartInfo ps

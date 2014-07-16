@@ -57,6 +57,8 @@ data Config = Config {
     -- The directory where all the timezone informations can be found
     -- Eg: /usr/share/zoneinfo/
   , timeZoneInfoDirectory :: FilePath
+    -- The maximum upload size of a file given in Kbs
+  , maxUploadSizeInKb :: Int
   } deriving (Eq, Show, Read)
 
 -- The defualt system parameters
@@ -69,10 +71,11 @@ defaultConfiguration = Config {
   , usernameRegExp = "^[A-Za-z0-9]{6}$"
   , usernameRegExpExample = "QUER42"
   , timeZoneInfoDirectory = "/usr/share/zoneinfo"
+  , maxUploadSizeInKb = 128
   }
 
-configCata f (Config useraction timeout host from loginlang regexp reexample tz) =
-  f useraction timeout host from loginlang regexp reexample tz
+configCata f (Config useraction timeout host from loginlang regexp reexample tz up) =
+  f useraction timeout host from loginlang regexp reexample tz up
 
 readConfiguration :: FilePath -> IO Config
 readConfiguration path = do
@@ -80,12 +83,14 @@ readConfiguration path = do
   case exist of
     False -> do
       putStrLn "Configuration file does not exist"
+      putStrLn "!!! DEFAULT CONFIGURATION IS USED !!!"
       return defaultConfiguration
     True  -> do
       content <- readFile path
       case readMaybe content of
         Nothing -> do
           putStrLn "Configuration is not parseable"
+          putStrLn "!!! DEFAULT CONFIGURATION IS USED !!!"
           return defaultConfiguration
         Just c -> return c
 
