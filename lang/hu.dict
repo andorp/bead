@@ -298,7 +298,7 @@ DictionaryFile {
     , Msg_NewTestScript_ScriptTypeHelp { trans = "A tesztesetek fajtái" }
     , Msg_UploadFile_FileSelection { trans = "Állomány kiválasztása" }
     , Msg_UploadFile_Directory { trans = "Feltöltött állományok" }
-    , Msg_UploadFile_Info { trans = "Válasszuk ki a feltöltendő állományt!  Az állományok mérete kilobyte-ban egyenként: " }
+    , Msg_UploadFile_Info { trans = "Válasszuk ki a feltöltendő állományt!  Az állományok mérete kilobyte-ban maximálisan, egyenként: " }
     , Msg_UploadFile_UploadButton { trans = "Feltöltés" }
     , Msg_UploadFile_FileName { trans = "Név" }
     , Msg_UploadFile_FileSize { trans = "Méret (byte)" }
