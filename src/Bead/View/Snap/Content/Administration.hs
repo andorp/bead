@@ -62,7 +62,7 @@ administrationContent info = do
   return $ do
     H.div $ do
       H.h3 $ (fromString . msg $ Msg_Administration_NewCourse "New course")
-      (postForm (routeOf createCourse) `withId` (evFormId createCourseHook)) $ do
+      (postForm (routeOf createCourse) {-`withId` (evFormId createCourseHook)-}) $ do
         i18n msg $ inputPagelet emptyCourse
         -- Help message for the percentage
         H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $

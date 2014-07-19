@@ -27,9 +27,11 @@ import qualified Bead.Domain.Entity.Assignment as A
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQLDirFile as L (unitTests)
 import qualified Bead.Persistence.Persist as P (persistTests)
+import qualified Bead.Persistence.Relations as PR (persistRelationsTests)
 import           Bead.Invariants
 import qualified Bead.View.Snap.Content.All as VA (invariants)
 import           Bead.View.Snap.Content.Home
+import qualified Bead.View.Snap.DataBridge as DB (dataBridgeTests)
 import qualified Bead.View.Snap.EmailTemplate as E (unitTests)
 import qualified Bead.View.Snap.Pagelets as VP (invariants)
 import qualified Bead.View.Snap.RouteOf as R (routeOfInvariants)
@@ -97,3 +99,5 @@ tests = [
 themisTests = runTest buildTestSet $ do
   A.asgTests
   P.persistTests
+  PR.persistRelationsTests
+  DB.dataBridgeTests

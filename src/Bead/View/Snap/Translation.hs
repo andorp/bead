@@ -96,6 +96,8 @@ data Translation a
   | Msg_NewAssignment_BallotBox { trans :: a }
   | Msg_NewAssignment_PasswordProtected { trans :: a }
   | Msg_NewAssignment_Password { trans :: a }
+  | Msg_NewAssignment_BinaryEvaluation { trans :: a }
+  | Msg_NewAssignment_PercentageEvaluation { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }

@@ -1,9 +1,10 @@
+{-# LANGUAGE CPP #-}
 module Bead.View.Snap.DataBridge where
 
 import Control.Monad ((>=>), join)
 import Data.Char (toUpper)
 import Data.Maybe (fromMaybe)
-import Data.Time (UTCTime(..), LocalTime(..))
+import Data.Time (LocalTime(..))
 import Text.Printf (printf)
 
 import Bead.Domain.Types (readMaybe)
@@ -17,6 +18,15 @@ import Bead.View.Snap.Fay.JSON.ServerSide
 import Bead.View.Snap.Validators
 import Bead.View.Snap.RouteOf
 import Bead.View.Snap.RequestParams
+
+#ifdef TEST
+import Control.Applicative ((<$>))
+
+import Test.QuickCheck.Arbitrary
+import Test.QuickCheck.Gen
+import Test.Themis.Test
+import Test.Themis.Test.Asserts
+#endif
 
 {-
 Parameters are the data bridge between the Server side and the Client side.
@@ -146,27 +156,57 @@ jsonParameter field name = Parameter {
   , notFound    = printf "%s nem található!" name
   }
 
-
-evalConfigPrm :: EvaluationHook -> Parameter EvaluationConfig
+evalConfigPrm :: EvaluationHook -> Parameter EvConfig
 evalConfigPrm hook = Parameter {
-    encode = show
+    encode = fromMaybe "evalConfigPrm: encodeToFay has failed" . encodeToFay
   , decode = readEvalConfig
   , name   = evHiddenValueId hook
   , decodeError = \m -> printf "Hibás értékelési fajta: %s!" m
   , notFound    = "Nem található az értékelés fajtája!"
   }
   where
-    readEvalConfig :: String -> Maybe (EvaluationData () PctConfig)
+    readEvalConfig :: String -> Maybe EvConfig
     readEvalConfig [] = error "evalConfigPrm: Empty string"
     readEvalConfig xs = fmap convert $ decodeFromFay xs
       where
-        convert :: EvConfig -> EvaluationData () PctConfig
-        convert = evaluationDataMap (BinEval . id) (PctEval . PctConfig . guardPercentage) . evConfig
+        convert :: EvConfig -> EvConfig
+        convert = evaluationDataMap (const binaryConfig) (percentageConfig . guardPercentage) . evConfig
 
         guardPercentage :: Double -> Double
         guardPercentage x
            | 0 > x || x > 1 = error $ "Invalid percentage value:" ++ show x
            | otherwise = x
+
+#ifdef TEST
+
+evalConfigPrmTest = group "evalConfigPrm" $ do
+  let evConfigGen = oneof
+        [ return binaryConfig
+        , (percentageConfig . toPercentage) <$> arbitrary
+        ]
+      param = evalConfigPrm undefined
+
+  assertProperty
+    "Encode decode"
+    (encodeDecodeProp param)
+    evConfigGen
+    "Percentage value is miscalculated"
+
+  eqPartitions (decode param)
+    [ ("Binary", encode param binaryConfig, Just binaryConfig, "Parsing failed")
+    , ("Percenteage", encode param (percentageConfig 0.96)
+      , Just (percentageConfig 0.96), "Parsing failed")
+    ]
+
+  where
+    -- The percentage calculation is interested only in 3 decimal digits
+    toPercentage :: Double -> Double
+    toPercentage = (/ scale) . fromIntegral . floor . (scale *) . getDecimal
+      where
+        scale = 10 ^ 3
+        getDecimal x = x - (fromIntegral $ floor x)
+
+#endif
 
 rolePrm :: Parameter Role
 rolePrm = jsonParameter (fieldName userRoleField) "Szerepkör"
@@ -342,4 +382,15 @@ delUserFromGroupKeyPrm = customGroupKeyPrm groupKeyParamName
 unsubscribeUserGroupKeyPrm :: Parameter GroupKey
 unsubscribeUserGroupKeyPrm = customGroupKeyPrm groupKeyParamName
 
--- TODO: Test create Just . id = encode . decode property
+#ifdef TEST
+
+-- Test create Just . id = encode . decode property
+encodeDecodeProp :: (Eq a) => Parameter a -> (a -> Bool)
+encodeDecodeProp p x =
+  (Just x) == (decode p $ encode p x)
+
+dataBridgeTests = do
+  evalConfigPrmTest
+
+#endif
+

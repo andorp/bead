@@ -10,6 +10,7 @@ import Data.Time (UTCTime(..))
 import Bead.Domain.Entities
 import Bead.Domain.Entity.Assignment
 import Bead.Domain.Evaluation
+import Bead.Domain.Shared.Evaluation
 import Bead.Domain.Types
 
 
@@ -48,7 +49,7 @@ data SubmissionDesc = SubmissionDesc {
   , eStudent  :: String
   , eUsername :: Username
   , eSolution :: String
-  , eConfig   :: EvaluationConfig
+  , eConfig   :: EvConfig
   , eAssignmentKey   :: AssignmentKey
   , eAssignmentDate  :: UTCTime
   , eSubmissionDate  :: UTCTime
@@ -144,7 +145,7 @@ data SubmissionInfo
   = Submission_Not_Found   -- There is no submission
   | Submission_Unevaluated -- There is at least one submission which is not evaluated yet
   | Submission_Tested      -- There is at least one submission which is tested by the automation testing framework
-  | Submission_Result EvaluationKey EvaluationResult -- There is at least submission with the evaluation
+  | Submission_Result EvaluationKey EvResult -- There is at least submission with the evaluation
   deriving (Show)
 
 submissionInfoCata
@@ -175,7 +176,6 @@ data TestScriptInfo = TestScriptInfo {
 data SubmissionTableInfo
   = CourseSubmissionTableInfo {
       stiCourse :: String
-    , stiEvalConfig :: EvaluationConfig
     , stiUsers       :: [Username]      -- Alphabetically ordered list of usernames
     , stiAssignments :: [AssignmentKey] -- Cronologically ordered list of assignments
     , stiUserLines   :: [(UserDesc, Maybe Result, Map AssignmentKey SubmissionInfo)]
@@ -184,7 +184,6 @@ data SubmissionTableInfo
     }
   | GroupSubmissionTableInfo {
       stiCourse :: String
-    , stiEvalConfig :: EvaluationConfig
     , stiUsers      :: [Username] -- Alphabetically ordered list of usernames
     , stiCGAssignments :: [CGInfo AssignmentKey] -- Cronologically ordered list of course and group assignments
     , stiUserLines :: [(UserDesc, Maybe Result, Map AssignmentKey SubmissionInfo)]
@@ -198,10 +197,10 @@ submissionTableInfoCata
   course
   group
   ti = case ti of
-    CourseSubmissionTableInfo crs eval users asgs lines ainfos key ->
-                       course crs eval users asgs lines ainfos key
-    GroupSubmissionTableInfo  crs eval users asgs lines ainfos ckey gkey ->
-                       group  crs eval users asgs lines ainfos ckey gkey
+    CourseSubmissionTableInfo crs users asgs lines ainfos key ->
+                       course crs users asgs lines ainfos key
+    GroupSubmissionTableInfo  crs users asgs lines ainfos ckey gkey ->
+                       group  crs users asgs lines ainfos ckey gkey
 
 submissionTableInfoPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment)

@@ -12,6 +12,7 @@ data EvaluationHook = EvaluationHook {
   , evHelpMessageId  :: String
   }
 
+{-
 createCourseHook = EvaluationHook {
     evFormId        = hookId createCourseForm
   , evSelectionId   = hookId evaluationTypeSelection
@@ -22,6 +23,15 @@ createCourseHook = EvaluationHook {
 
 createGroupHook = EvaluationHook {
     evFormId      = hookId createGroupForm
+  , evSelectionId = hookId evaluationTypeSelection
+  , evHiddenValueId = hookId evaluationTypeValue
+  , evSelectionDivId = hookId evalTypeSelectionDiv
+  , evHelpMessageId  = hookId pctHelpMessage
+  }
+-}
+
+assignmentEvTypeHook = EvaluationHook {
+    evFormId      = hookId assignmentForm
   , evSelectionId = hookId evaluationTypeSelection
   , evHiddenValueId = hookId evaluationTypeValue
   , evSelectionDivId = hookId evalTypeSelectionDiv

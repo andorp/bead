@@ -104,7 +104,7 @@ type CourseName = String
 
 type UsersFullname = String
 
-type EvaluationResult = EvaluationData Binary Percentage
+--type EvaluationResult = EvaluationData Binary Percentage
 
 evaluationResultCata
   binary
@@ -113,14 +113,17 @@ evaluationResultCata
     BinEval b -> binary b
     PctEval p -> percentage p
 
-type EvaluationConfig = EvaluationData () PctConfig
+--type EvaluationConfig = EvaluationData () PctConfig
 
+{-
 binaryEvalConfig :: EvaluationConfig
 binaryEvalConfig = BinEval ()
 
 percentageEvalConfig :: PctConfig -> EvaluationConfig
 percentageEvalConfig p = PctEval p
+-}
 
+{-
 class IsEvaluationResult e where
   mkEvalResult :: e -> EvaluationResult
 
@@ -129,6 +132,7 @@ instance IsEvaluationResult Binary where
 
 instance IsEvaluationResult Percentage where
   mkEvalResult = PctEval
+-}
 
 allBinaryEval :: [EvaluationData b p] -> Maybe [b]
 allBinaryEval = sequence . map binaryEval
@@ -136,13 +140,15 @@ allBinaryEval = sequence . map binaryEval
 allPercentEval :: [EvaluationData b p] -> Maybe [p]
 allPercentEval = sequence . map percentEval
 
+{-
 evaluateResults :: EvaluationConfig -> [EvaluationResult] -> Maybe Result
 evaluateResults (BinEval cfg) = fmap (flip calculateEvaluation cfg) . allBinaryEval
 evaluateResults (PctEval cfg) = fmap (flip calculateEvaluation cfg) . allPercentEval
+-}
 
 -- | Evaluation of a submission
 data Evaluation = Evaluation {
-    evaluationResult  :: EvaluationResult
+    evaluationResult  :: EvResult
   , writtenEvaluation :: String
   } deriving (Eq, Show)
 
@@ -152,10 +158,10 @@ evaluationCata f (Evaluation result written) = f result written
 -- | Template function with flipped parameter for the evaluation
 withEvaluation e f = evaluationCata f e
 
-resultString :: EvaluationResult -> TransMsg
-resultString (BinEval (Binary Passed)) = TransMsg $ Msg_Domain_EvalPassed "Passed"
-resultString (BinEval (Binary Failed)) = TransMsg $ Msg_Domain_EvalFailed "Failed"
-resultString (PctEval p) =
+resultString :: EvResult -> TransMsg
+resultString (EvResult (BinEval (Binary Passed))) = TransMsg $ Msg_Domain_EvalPassed "Passed"
+resultString (EvResult (BinEval (Binary Failed))) = TransMsg $ Msg_Domain_EvalFailed "Failed"
+resultString (EvResult (PctEval p)) =
   case point p of
     Nothing -> TransMsg $ Msg_Domain_EvalNoResultError "No evaluation result, some internal error happened!"
     Just q  -> TransPrmMsg (Msg_Domain_EvalPercentage "%s%%") (show . round $ 100.0 * q)
@@ -193,29 +199,27 @@ cgInfoCata
     CourseInfo x -> course x
     GroupInfo  x -> group  x
 
--- | A course represent a university course
+-- | A course represent a course at the university
 data Course = Course {
     courseName :: String
   , courseDesc :: String
-  , courseEvalConfig :: EvaluationConfig
   , courseTestScriptType :: TestScriptType
   } deriving (Eq, Show)
 
-courseCata config script course (Course name desc cfg scriptType)
-  = course name desc (config cfg) (script scriptType)
+courseCata script course (Course name desc scriptType)
+  = course name desc (script scriptType)
 
-courseAppAna name desc eval test =
-  Course <$> name <*> desc <*> eval <*> test
+courseAppAna name desc test =
+  Course <$> name <*> desc <*> test
 
 -- | Groups are registered under the courses
 data Group = Group {
     groupName  :: String
   , groupDesc  :: String
-  , groupEvalConfig :: EvaluationConfig
   } deriving (Eq, Show)
 
-groupCata config group (Group name desc cfg)
-  = group name desc (config cfg)
+groupCata group (Group name desc)
+  = group name desc
 
 -- | Workflows can happen to exams
 data Workflow

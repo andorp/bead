@@ -44,21 +44,20 @@ emptyGroup = Nothing
 instance InputPagelet Group where
   inputPagelet g = do
     msg <- getI18N
-    let hook = createGroupHook
-    evalConfig <- evaluationConfig (evSelectionId hook)
+--    let hook = createGroupHook
+--    evalConfig <- evaluationConfig (evSelectionId hook)
     return $ do
       table "create-group" "create-group-table" $ do
         tableLine (msg $ Msg_Input_Group_Name "Title") $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
         tableLine (msg $ Msg_Input_Group_Description "Description") $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
-        tableLine (msg $ Msg_Input_Group_Evaluation "Evaluation") $ evalConfig
-      hiddenInputWithId (evHiddenValueId hook) ""
-      evalSelectionDiv hook
+--        tableLine (msg $ Msg_Input_Group_Evaluation "Evaluation") $ evalConfig
+--      hiddenInputWithId (evHiddenValueId hook) ""
+--      evalSelectionDiv hook
 
 instance GetValueHandler Group where
   getValue = Group
       <$> getParameter (stringParameter (fieldName groupNameField) "Csoport neve")
       <*> getParameter (stringParameter (fieldName groupDescField) "Csoport leírása")
-      <*> getParameter (evalConfigPrm createGroupHook)
 
 instance GetValueHandler CourseKey where
   getValue = getParameter courseKeyPrm
@@ -67,7 +66,6 @@ instance GetValueHandler Course where
   getValue = Course
     <$> getParameter (stringParameter (fieldName courseNameField) "Tárgy neve")
     <*> getParameter (stringParameter (fieldName courseDescField) "Tárgy leírása")
-    <*> getParameter (evalConfigPrm createCourseHook)
     <*> getParameter (jsonParameter (fieldName testScriptTypeField) "Script típusa")
 
 emptyCourse :: Maybe Course
@@ -76,16 +74,16 @@ emptyCourse = Nothing
 instance InputPagelet Course where
   inputPagelet c = do
     msg <- getI18N
-    let hook = createCourseHook
-    evalConfig <- evaluationConfig (evSelectionId hook)
+--    let hook = createCourseHook
+--    evalConfig <- evaluationConfig (evSelectionId hook)
     return $ do
       table "create-course" "create-course-table" $ do
         tableLine (msg $ Msg_Input_Course_Name "Title") $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
         tableLine (msg $ Msg_Input_Course_Description "Description") $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
-        tableLine (msg $ Msg_Input_Course_Evaluation "Evaluation") $ evalConfig
+--        tableLine (msg $ Msg_Input_Course_Evaluation "Evaluation") $ evalConfig
         tableLine (msg $ Msg_Input_Course_TestScript "Test type") $ (testScriptTypeSelection msg) c
-      hiddenInputWithId (evHiddenValueId hook) ""
-      evalSelectionDiv hook
+--      hiddenInputWithId (evHiddenValueId hook) ""
+--      evalSelectionDiv hook
     where
       testScriptTypeSelection msg c =
         selectionWithDefault
@@ -154,6 +152,7 @@ instance GetValueHandler Assignment where
       (return aspects)
       (return startDate)
       (return endDate)
+      (getParameter (evalConfigPrm assignmentEvTypeHook))
 
 -- * Combined input fields
 

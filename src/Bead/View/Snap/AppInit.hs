@@ -54,7 +54,6 @@ data Daemons = Daemons {
 
 appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> Daemons -> FilePath -> SnapletInit App App
 appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $ do
-
   copyDataContext
 
   let dictionaryDir = "lang"
@@ -95,9 +94,11 @@ appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $
   un <- nestSnaplet "usernamechecker" checkUsernameContext $ regexpUsernameChecker config
 
   timeZoneConverter <- liftIO $ createTimeZoneConverter (timeZoneInfoDirectory config)
+
   tz <- nestSnaplet "timezoneconveter" timeZoneContext $ createTimeZoneContext timeZoneConverter
 
   addRoutes (routes config)
+
   wrapSite (<|> pages)
 
   return $ App sm as ss ds se rp fs ts cs un tz

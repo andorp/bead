@@ -101,7 +101,7 @@ Executable Bead
     syb,
     temporary,
     text,
-    themis >= 0.3.0.0,
+    themis >= 0.4.0.0,
     time,
     timezone-olson >= 0.1.4,
     timezone-series >= 0.1.2,

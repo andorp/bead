@@ -87,7 +87,7 @@ submissionListContent p = do
       (msg $ Msg_SubmissionList_NotFound "Not Found")
       (msg $ Msg_SubmissionList_NotEvaluatedYet "Not evaluated yet")
       (msg $ Msg_SubmissionList_Tested "Tested")
-      (\_key result -> evaluationResultMsg result)
+      (const (evaluationResultMsg . evResult))
       where
         evaluationResultMsg = evaluationResultCata
           (binaryCata (resultCata

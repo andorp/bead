@@ -386,13 +386,14 @@ instance Save TimeZoneName where
   save d = fileSave d "timezonename" . show
 
 instance Save Assignment where
-  save d = assignmentCata $ \name desc type_ start end -> do
+  save d = assignmentCata $ \name desc type_ start end evtype -> do
     createStructureDirs d assignmentDirStructure
     saveName d name
     fileSave d "description" desc
     fileSave d "type"        (show type_)
     fileSave d "start"       (show start)
     fileSave d "end"         (show end)
+    fileSave d "evtype"      (show evtype)
 
 instance Save Submission where
   save d s = do
@@ -415,18 +416,16 @@ instance Save Comment where
     fileSave d "type" (show type_)
 
 instance Save Course where
-  save d = courseCata show show $ \name desc cfg type_ -> do
+  save d = courseCata show $ \name desc type_ -> do
     createStructureDirs d courseDirStructure
     saveDesc d desc
     saveName d name
-    fileSave d "evalcfg" cfg
     fileSave d "scripttype" type_
 
 instance Save Group where
   save d g = do createStructureDirs d groupDirStructure
                 saveDesc d (groupDesc g)
                 saveName d (groupName g)
-                fileSave d "evalcfg" (show . groupEvalConfig $ g)
 
 instance Save User where
   save d = userCata $ \role username email name timezone language -> do
@@ -484,6 +483,7 @@ instance Load Assignment where
       (fileLoad d "type"  readMaybe)
       (fileLoad d "start" readMaybe)
       (fileLoad d "end"   readMaybe)
+      (fileLoad d "evtype" readMaybe)
 
 instance Load Submission where
   load d = do
@@ -514,17 +514,14 @@ instance Load Course where
   load d = courseAppAna
     (loadName d)
     (loadDesc d)
-    (fileLoad d "evalcfg" readMaybe)
     (fileLoad d "scripttype" readMaybe)
 
 instance Load Group where
   load d = do desc <- loadDesc d
               name <- loadName d
-              eval <- fileLoad d "evalcfg" readMaybe
               return $ Group {
                   groupDesc = desc
                 , groupName = name
-                , groupEvalConfig = eval
                 }
 
 instance Load User where
@@ -595,12 +592,13 @@ instance Update Evaluation where
     fileUpdate d "result"      (show . evaluationResult $ e)
 
 instance Update Assignment where
-  update d = assignmentCata $ \name desc type_ start end -> do
+  update d = assignmentCata $ \name desc type_ start end evtype -> do
     updateName d name
     fileUpdate d "description" desc
     fileUpdate d "type"        (show type_)
     fileUpdate d "start"       (show start)
     fileUpdate d "end"         (show end)
+    fileUpdate d "evtype"      (show evtype)
 
 instance Update TestScript where
   update d = testScriptCata show $ \name desc notes script type_ -> do
@@ -658,6 +656,7 @@ assignmentDirStructure = DirStructure {
       , "start"   -- The start date of from when the assignment is active
       , "end"     -- The end data of from when the assignment is inactive
       , created   -- The time when the assignment is created
+      , "evtype"  -- Evaluation type
       ]
   , directories =
       [ "group"      -- The group of the assignment OR
@@ -677,7 +676,6 @@ courseDirStructure = DirStructure {
     files =
       [ "description" -- Short description for the course
       , "name"        -- Name that usually appears on the UI
-      , "evalcfg"     -- Evaluation config
       , "scripttype"  -- Uniform type of the associated test scripts
       ]
   , directories =
@@ -694,7 +692,6 @@ groupDirStructure = DirStructure {
     files =
       [ "description" -- Short description for the group
       , "name"        -- Name that usually appears on the UI
-      , "evalcfg"     -- Evaulation config
       ]
   , directories =
       [ "users"        -- Soft links to the users that are actively registered for the group

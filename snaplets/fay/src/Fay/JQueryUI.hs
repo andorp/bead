@@ -34,6 +34,10 @@ spinnerSpinStop handler = spinner (spinStop handler)
 spinnerSpinChange :: (Event -> Fay ()) -> Spinner -> Fay ()
 spinnerSpinChange handler = spinner (spinChange handler)
 
+-- Set the spinner value
+setSpinnerValue :: Int -> JQuery -> Fay ()
+setSpinnerValue = ffi "%2.spinner('value', %1)"
+
 enableSpinner :: Spinner -> Fay ()
 enableSpinner = spinner enableSpinner'
 

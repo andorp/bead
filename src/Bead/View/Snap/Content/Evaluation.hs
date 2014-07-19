@@ -93,7 +93,7 @@ abstractEvaluationPostHandler getEvKeyParameter evCommand = do
     (\result -> do
         key <- getEvKeyParameter
         let e = C.Evaluation {
-            evaluationResult = evResult result
+            evaluationResult = result
           , writtenEvaluation = commentText
           }
         return $ evCommand key e)
@@ -171,7 +171,7 @@ evaluationContent pd = do
       H.td ! A.style "padding: 0px 10px 0px 0px" $ fromString value
 
     evaluationDiv = withEvaluationData
-      (eConfig $ sbmDesc pd)
+      (evConfig . eConfig $ sbmDesc pd)
       (const H.div)
       (const $ H.div ! A.id (fieldName evaluationPercentageDiv))
 
@@ -186,8 +186,8 @@ evaluationContent pd = do
 
     empty = return ()
 
-inputEvalResult :: EvaluationConfig -> IHtml
-inputEvalResult (BinEval _cfg) = do
+inputEvalResult :: EvConfig -> IHtml
+inputEvalResult (EvConfig (BinEval _cfg)) = do
   msg <- getI18N
   return $ horizontalRadioButtonsDef (fieldName evaluationResultField) 0 $
     [ (EvCmtComment,  msg $ Msg_Evaluation_New_Comment "New Comment")
@@ -195,13 +195,13 @@ inputEvalResult (BinEval _cfg) = do
     , (binary Failed, msg $ Msg_Evaluation_Rejected "Rejected")
     ]
   where
-    binary = EvCmtResult . EvResult . mkEvalResult . Binary
+    binary = EvCmtResult . binaryResult
 
 -- When the page is dynamic the percentage spinner is hooked on the field
-inputEvalResult (PctEval _cfg) =
+inputEvalResult (EvConfig (PctEval _cfg)) =
   return $ hiddenInput
     (fieldName evaluationResultField)
-    (fromString . errorOnNothing . encodeToFay . EvResult . mkEvalResult . Percentage $ Scores [0.0])
+    (fromString . errorOnNothing . encodeToFay $ percentageResult 0.0)
 
 errorOnNothing = maybe (error "Hiba a bemenet kódolásában!") id
 

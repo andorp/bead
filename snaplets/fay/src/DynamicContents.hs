@@ -23,8 +23,7 @@ main = addOnLoad onload
 onload :: Fay ()
 onload = do
   hookPercentageDiv evaluationPctHook
-  hookEvaluationTypeForm createCourseHook
-  hookEvaluationTypeForm createGroupHook
+  hookEvaluationTypeForm assignmentEvTypeHook
   hookDatetimePickerDiv startDateTimeHook
   hookDatetimePickerDiv endDateTimeHook
   connectStartEndDatePickers startDateTimeHook endDateTimeHook
@@ -330,29 +329,44 @@ hookEvaluationTypeForm hook = do
   existForm <- exists form
   when existForm $ do
     selection <- select . cssId . evSelectionId $ hook
-    change (changeFormContent form) selection
-    setDefaultEvalConfig form selection
+    pctInput <- addPercentageField 0 form
+    change (changeFormContent form pctInput) selection
+    setDefaultEvalConfig form selection pctInput
     putStrLn $ "Evaluation form " ++ formId ++ " is loaded."
 
   where
-    setDefaultEvalConfig :: JQuery -> JQuery -> Fay ()
-    setDefaultEvalConfig form selection = do
-      value <- decodeEvalType <$> firstOptionValue selection
-      case value of
-        (BinEval _) -> setEvaluationConfig binaryConfig
-        (PctEval _) -> addPercentageField form
+    setDefaultEvalConfig :: JQuery -> JQuery -> JQuery -> Fay ()
+    setDefaultEvalConfig form selection pctInput = do
+      val <- (select . cssId $ evHiddenValueId hook) >>= getVal
+      dt <- convertJsonToData val
+      case dt of
+        (EvConfig (BinEval _)) -> do
+           disableSpinner (Spinner pctInput)
+           setEvaluationConfig binaryConfig
+           setSelectionValue selection "\"BinEval\""
+        (EvConfig (PctEval p)) -> do
+           enableSpinner (Spinner pctInput)
+           setSpinnerValue (doubleToPercentage p) pctInput
+           setEvaluationConfig (percentageConfig p)
+           setSelectionValue selection "\"PctEval\""
 
-    changeFormContent :: JQuery -> Event -> Fay ()
-    changeFormContent form e = void $ do
+    changeFormContent :: JQuery -> JQuery -> Event -> Fay ()
+    changeFormContent form pctInput e = void $ do
       t <- target e
       v <- decodeEvalType <$> selectedValue t
-      findSelector (fromString ".evtremoveable") form >>= remove
       case v of
-        (BinEval _) -> setEvaluationConfig binaryConfig
-        (PctEval _) -> addPercentageField form
+        (BinEval _) -> do
+          disableSpinner (Spinner pctInput)
+          setEvaluationConfig binaryConfig
+        (PctEval _) -> do
+          enableSpinner (Spinner pctInput)
+          p <- getVal pctInput
+          let pct = calcPercentage p
+          setEvaluationConfig (percentageConfig pct)
+          --addPercentageField 0.0 form
 
-    addPercentageField :: JQuery -> Fay ()
-    addPercentageField form = void $ do
+    addPercentageField :: Double -> JQuery -> Fay JQuery
+    addPercentageField pct form = do
       div <- findSelector (cssId . evSelectionDivId $ hook) form
       msgSpan <- select . cssId $ evHelpMessageId hook
       msgValue <- getText msgSpan
@@ -363,22 +377,29 @@ hookEvaluationTypeForm hook = do
       select (fromString "<span class=\"evtremoveable\">&#37;</span>") >>= appendTo div
       numberField pctInput 0 100
       pctSpinner setEvalLimit pctInput
+      setSpinnerValue (doubleToPercentage pct) pctInput
       change setEvalLimit pctInput
-      setEvaluationConfig (percentageConfig 0.0)
+      disableSpinner (Spinner pctInput)
+      return pctInput
 
     setEvalLimit :: Event -> Fay ()
     setEvalLimit e = do
       t <- targetElement e
       v <- getVal t
-      let pct = case unpack v of
-                  "100" -> "1.0"
-                  ds    -> "0." ++ (twoDigits ds)
-      setEvaluationConfig (percentageConfig $ parseDouble pct)
+      let pct = calcPercentage v
+      setEvaluationConfig (percentageConfig pct)
+
+    calcPercentage :: Text -> Double
+    calcPercentage v = parseDouble $ case unpack v of
+      "100" -> "1.0"
+      ds    -> "0." ++ (twoDigits ds)
 
     setEvaluationConfig :: EvConfig -> Fay ()
     setEvaluationConfig c =
       void $ select (cssId . evHiddenValueId $ hook) >>=
              setVal (fromString . evConfigJson $ c)
+
+    doubleToPercentage = floor . (100 *)
 
 hookLargeComments :: Fay ()
 hookLargeComments = void $ do
@@ -422,6 +443,10 @@ hookPingButton = void $ do
       jPost (fromString "/fay/ping") json (\(Pong message) -> putStrLn (unpack message))
 -}
 
+-- Converts a JSON value into fay data
+convertJsonToData :: Text -> Fay (Automatic f)
+convertJsonToData = ffi "JSON.parse(%1)"
+
 formJson :: JQuery -> Fay f
 formJson = ffi "Helpers.formJson(%1)"
 
@@ -460,6 +485,10 @@ exists = ffi "(%1.length != 0)"
 
 selectedValue :: Element -> Fay String
 selectedValue = ffi "%1.options[%1.selectedIndex].value"
+
+-- Set the selection value to the given string
+setSelectionValue :: JQuery -> String -> Fay ()
+setSelectionValue = ffi "%1.val(%2)"
 
 -- Checks if the given jquery represents a checkbox, and
 -- returns if it is checked or not. If the jquery is not a checkbox throws

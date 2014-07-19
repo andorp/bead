@@ -11,13 +11,16 @@ module Bead.View.Snap.Content.NewAssignment (
 
 import           Control.Arrow ((&&&))
 import           Control.Monad.Error
+import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.UTF8 as BsUTF8
+import qualified Data.ByteString.Lazy.Char8 as BsLazy
 import qualified Data.Map as Map
 import           Data.Maybe (fromMaybe)
 import           Data.String (fromString)
 import           Data.Time (UTCTime, getCurrentTime)
 import qualified Data.Time as Time
 
+import           Fay.Convert
 import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5.Attributes as A
 import qualified Text.Blaze.Html5 as H
@@ -28,6 +31,9 @@ import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as S
 import           Bead.Domain.Entity.Assignment (Assignment)
 import qualified Bead.Domain.Entity.Assignment as Assignment
+import           Bead.Domain.Shared.Evaluation (binaryConfig, evConfigCata)
+import           Bead.View.Snap.Fay.HookIds
+import           Bead.View.Snap.Fay.Hooks
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Markdown
 import           Bead.View.Snap.RequestParams
@@ -338,6 +344,8 @@ nonEmptyList xs = Just xs
 
 newAssignmentContent :: TimeZoneName -> PageData -> IHtml
 newAssignmentContent tz pd = do
+  let hook = assignmentEvTypeHook
+  evalConfig <- evaluationConfig (evSelectionId hook)
   msg <- getI18N
   return $ H.div ! formDiv $ do
     H.div ! rightCell $ do
@@ -428,22 +436,28 @@ newAssignmentContent tz pd = do
         hiddenKeyField pd
         testScriptSelection msg pd
 
-        let previewAndCommitForm =
+        let previewAndCommitForm cfg =
               multiActionPostForm (hookId assignmentForm)
                 [ ((routeOf . pagePreview $ pd), (fromString . msg $ Msg_NewAssignment_PreviewButton "Preview"))
                 , ((routeOf . page $ pd),        (fromString . msg $ Msg_NewAssignment_SaveButton "Commit"))
-                ]
-                empty
+                ] $ do evalSelectionDiv hook
+                       hiddenInputWithId (evHiddenValueId hook) (toFayJSON cfg)
+                       evalConfig
+
         pageDataCata
-          (const5 previewAndCommitForm)
-          (const5 previewAndCommitForm)
-          (const6 previewAndCommitForm)
-          (const5 $ return ())
-          (const7 previewAndCommitForm)
-          (const7 previewAndCommitForm)
-          (const7 previewAndCommitForm)
+          (const5 (previewAndCommitForm binaryConfig))
+          (const5 (previewAndCommitForm binaryConfig))
+          (\_timezone _key asg _tsType _files _testcase -> previewAndCommitForm (Assignment.evType asg))
+          (\_timezone _key asg _tsInfo _testcase -> showEvaluationType msg $ Assignment.evType asg)
+          (\_timezone _time _courses _tsType _files assignment _tccreatio -> previewAndCommitForm (Assignment.evType assignment))
+          (\_timezone _time _groups _tsType _files assignment _tccreation -> previewAndCommitForm (Assignment.evType assignment))
+          (\_timezone _key asg _tsType _files _testcase _tcmod -> previewAndCommitForm (Assignment.evType asg))
           pd
     where
+      -- Converts a given value to a string that represents a JSON acceptable string
+      -- for the Fay client side
+      toFayJSON = BsLazy.unpack . Aeson.encode . showToFay
+
       timeZoneString = timeZoneName id tz
 
       asgField = A.form (fromString $ hookId assignmentForm)
@@ -480,6 +494,14 @@ newAssignmentContent tz pd = do
                  H.br
                  fromString . msg $ Msg_NewAssignment_Password "Password:"
                  editable $ textInput (fieldName assignmentPwdField) 20 pwd ! asgField
+
+      showEvaluationType msg = H.div . evConfigCata
+        (fromString . msg $ Msg_NewAssignment_BinaryEvaluation "Binary Evaluation")
+        (\p -> do fromString . msg $ Msg_NewAssignment_PercentageEvaluation "Pass Limit: "
+                  fromString ((show $ pct p) ++ " %"))
+          where
+            pct :: Double -> Int
+            pct = floor . (100 *)
 
       editOrReadonly = pageDataCata
         (const5 id)

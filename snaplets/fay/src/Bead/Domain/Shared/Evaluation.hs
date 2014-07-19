@@ -72,9 +72,19 @@ percentValue :: EvResult -> Maybe Double
 percentValue (EvResult (PctEval (Percentage (Scores [p])))) = Just p
 percentValue _ = Nothing
 
+binaryResult :: Result -> EvResult
+binaryResult r = EvResult (BinEval (Binary r))
+
 data EvConfig = EvConfig {
     evConfig :: EvaluationData () Double
   } deriving (Eq, Show, Read, Data, Typeable)
+
+evConfigCata
+  binary
+  percentage
+  e = case e of
+    (EvConfig (BinEval ())) -> binary
+    (EvConfig (PctEval p))  -> percentage p
 
 percentageConfig :: Double -> EvConfig
 percentageConfig = EvConfig . PctEval

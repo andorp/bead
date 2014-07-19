@@ -22,6 +22,9 @@ module Bead.Persistence.Relations (
   , isThereASubmissionForCourse -- Checks if the user submitted any solutions for the course
   , testScriptInfo -- Calculates the test script information for the given test key
   , openedSubmissionInfo -- Calculates the opened submissions for the user from the administrated groups and courses
+#ifdef TEST
+  , persistRelationsTests
+#endif
   ) where
 
 {-
@@ -47,6 +50,7 @@ import           Bead.Domain.Entities
 import           Bead.Domain.Entity.Assignment (Assignment(..), assignmentCata)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Relationships
+import           Bead.Domain.Shared.Evaluation
 import           Bead.Persistence.Persist
 import           Bead.View.Snap.Translation
 
@@ -59,6 +63,7 @@ import           Test.Themis.Keyword.Encaps hiding (step, key)
 import           Test.Themis.Keyword
 import           Test.Themis.Provider.Interactive
 import           Test.Themis.Test
+import           Test.Themis.Test.Asserts hiding (assertEquals)
 #endif
 
 -- * Combined Persistence Tasks
@@ -87,9 +92,9 @@ userAssignmentKeys u = do
 #ifdef TEST
 
 userAssignmentKeysTest = do
-  let course  = Course "name" "desc" (BinEval ()) TestScriptSimple
-      group  = Group "name" "desc" (BinEval ())
-      asg     = Assignment "name" "desc" Assignment.emptyAspects time time
+  let course  = Course "name" "desc" TestScriptSimple
+      group  = Group "name" "desc"
+      asg     = Assignment "name" "desc" Assignment.emptyAspects time time binaryConfig
       time    = read "2014-06-09 12:55:27.959203 UTC"
       user1name = Username "user1"
       user1  = User Student user1name (Email "email") "name" (TimeZoneName "Europe/Budapest") (Language "hu")
@@ -178,7 +183,7 @@ submissionDesc sk = do
         , eStudent  = u
         , eUsername = un
         , eSolution = solution submission
-        , eConfig = courseEvalConfig course
+        , eConfig = Assignment.evType asg
         , eAssignmentKey   = ak
         , eAssignmentDate  = created
         , eSubmissionDate  = solutionPostDate submission
@@ -188,8 +193,7 @@ submissionDesc sk = do
         }
     Right gk -> do
       group <- loadGroup gk
-      let cfg   = groupEvalConfig group
-          gname = groupName       group
+      let gname = groupName group
       ck   <- courseOfGroup gk
       cname <- courseName <$> loadCourse ck
       return SubmissionDesc {
@@ -198,7 +202,7 @@ submissionDesc sk = do
         , eStudent  = u
         , eUsername = un
         , eSolution = solution submission
-        , eConfig = groupEvalConfig group
+        , eConfig = Assignment.evType asg
         , eAssignmentKey   = ak
         , eAssignmentDate  = created
         , eSubmissionDate  = solutionPostDate submission
@@ -349,16 +353,15 @@ groupSubmissionTableInfo gk = do
   cassignments <- courseAssignments ck
   usernames   <- subscribedToGroup gk
   name <- fullGroupName gk
-  evalCfg <- groupEvalConfig <$> loadGroup gk
-  mkGroupSubmissionTableInfo name evalCfg usernames cassignments gassignments ck gk
+  mkGroupSubmissionTableInfo name usernames cassignments gassignments ck gk
 
 -- Returns the course submission table information for the given course key
 courseSubmissionTableInfo :: CourseKey -> Persist SubmissionTableInfo
 courseSubmissionTableInfo ck = do
   assignments <- courseAssignments ck
   usernames   <- subscribedToCourse ck
-  (name,evalCfg) <- (courseName &&& courseEvalConfig) <$> loadCourse ck
-  mkCourseSubmissionTableInfo name evalCfg usernames assignments ck
+  name        <- courseName <$> loadCourse ck
+  mkCourseSubmissionTableInfo name usernames assignments ck
 
 -- Sort the given keys into an ordered list based on the time function
 sortKeysByTime :: (key -> Persist UTCTime) -> [key] -> Persist [key]
@@ -380,6 +383,26 @@ submissionInfoAsgKey u ak = addKey <$> (userLastSubmissionInfo u ak)
   where
     addKey s = (ak,s)
 
+-- TODO: Need to be add semantics there
+calculateResult :: [SubmissionInfo] -> Maybe Result
+calculateResult _ = Nothing
+
+#ifdef TEST
+
+calculateResultTests = do
+  eqPartitions calculateResult
+    [ ( "Empty list", [], Nothing, "")
+
+    , ( "One binary submission", [Submission_Result undefined (binaryResult Passed)]
+      , Just Passed, "")
+
+    , ( "One percentage submission", [Submission_Result undefined (percentageResult 0.1)]
+      , Just Passed, "")
+    ]
+
+#endif
+
+{-
 calculateResult evalCfg = evaluateResults evalCfg . map sbmResult . filter hasResult
   where
     hasResult (Submission_Result _ _) = True
@@ -387,12 +410,12 @@ calculateResult evalCfg = evaluateResults evalCfg . map sbmResult . filter hasRe
 
     sbmResult (Submission_Result _ r) = r
     sbmResult _ = error "sbmResult: impossible"
-
+-}
 
 mkCourseSubmissionTableInfo
-  :: String -> EvaluationConfig -> [Username] -> [AssignmentKey] -> CourseKey
+  :: String -> [Username] -> [AssignmentKey] -> CourseKey
   -> Persist SubmissionTableInfo
-mkCourseSubmissionTableInfo courseName evalCfg us as key = do
+mkCourseSubmissionTableInfo courseName us as key = do
   assignments <- sortKeysByTime assignmentCreatedTime as
   assignmentInfos <- loadAssignmentInfos as
   ulines <- forM us $ \u -> do
@@ -400,11 +423,10 @@ mkCourseSubmissionTableInfo courseName evalCfg us as key = do
     asi <- mapM (submissionInfoAsgKey u) as
     let result = case asi of
                    [] -> Nothing
-                   _  -> calculateResult evalCfg $ map snd asi
+                   _  -> calculateResult $ map snd asi
     return (ud, result, Map.fromList asi)
   return CourseSubmissionTableInfo {
       stiCourse = courseName
-    , stiEvalConfig = evalCfg
     , stiUsers = us
     , stiAssignments = assignments
     , stiUserLines = ulines
@@ -413,11 +435,11 @@ mkCourseSubmissionTableInfo courseName evalCfg us as key = do
     }
 
 mkGroupSubmissionTableInfo
-  :: String -> EvaluationConfig
+  :: String
   -> [Username] -> [AssignmentKey] -> [AssignmentKey]
   -> CourseKey -> GroupKey
   -> Persist SubmissionTableInfo
-mkGroupSubmissionTableInfo courseName evalCfg us cas gas ckey gkey = do
+mkGroupSubmissionTableInfo courseName us cas gas ckey gkey = do
   cgAssignments   <- sortKeysByTime createdTime ((map CourseInfo cas) ++ (map GroupInfo gas))
   assignmentInfos <- loadAssignmentInfos (cas ++ gas)
   ulines <- forM us $ \u -> do
@@ -426,11 +448,10 @@ mkGroupSubmissionTableInfo courseName evalCfg us cas gas ckey gkey = do
     gasi <- mapM (submissionInfoAsgKey u) gas
     let result = case gasi of
                    [] -> Nothing
-                   _  -> calculateResult evalCfg $ map snd gasi
+                   _  -> calculateResult $ map snd gasi
     return (ud, result, Map.fromList (casi ++ gasi))
   return GroupSubmissionTableInfo {
       stiCourse = courseName
-    , stiEvalConfig = evalCfg
     , stiUsers = us
     , stiCGAssignments = cgAssignments
     , stiUserLines = ulines
@@ -534,5 +555,9 @@ isThereASubmissionForCourse u ck = do
 #ifdef TEST
 
 dbStep = Keyword.step . Keyword.key
+
+persistRelationsTests = do
+  userAssignmentKeysTest
+  calculateResultTests
 
 #endif

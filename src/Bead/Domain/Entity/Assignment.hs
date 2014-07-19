@@ -36,6 +36,8 @@ import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Time (UTCTime(..))
 
+import           Bead.Domain.Shared.Evaluation
+
 #ifdef TEST
 import           Test.Themis.Test hiding (testCaseCata)
 import           Bead.Invariants (UnitTests(..))
@@ -169,22 +171,30 @@ assignmentAspectsSetPasswordTests = group "setPassword" $ do
 -- | Assignment for the student
 data Assignment = Assignment {
     name :: String
+    -- ^ Name of the assignment
   , desc :: String
+    -- ^ The text of the assignment itself
   , aspects :: Aspects
+    -- ^ Aspects that modify the visibility of the assignment, or properties that
+    -- modify the submission process
   , start :: UTCTime
+    -- ^ The date since the submission can be sent for the assignment
   , end   :: UTCTime
+    -- ^ The date until the submission is available for the assignment
+  , evType :: EvConfig
+    -- ^ The evaluatuin type for the assignment
   -- TODO: Number of maximum tries
   } deriving (Eq, Show)
 
 -- | Template function for the assignment
-assignmentCata f (Assignment name desc aspect start end) =
-  f name desc aspect start end
+assignmentCata f (Assignment name desc aspect start end evtype) =
+  f name desc aspect start end evtype
 
 -- | Template function for the assignment with flipped arguments
 withAssignment a f = assignmentCata f a
 
-assignmentAna name desc aspect start end =
-  Assignment <$> name <*> desc <*> aspect <*> start <*> end
+assignmentAna name desc aspect start end evtype =
+  Assignment <$> name <*> desc <*> aspect <*> start <*> end <*> evtype
 
 -- | Produces True if the given time is between the start-end time of the assignment
 isActive :: Assignment -> UTCTime -> Bool
@@ -199,6 +209,7 @@ assignmentTests =
         , aspects = emptyAspects
         , start = read "2010-10-10 12:00:00 UTC"
         , end   = read "2010-11-10 12:00:00 UTC"
+        , evType = percentageConfig 0.1
         }
       before  = read "2010-09-10 12:00:00 UTC"
       between = read "2010-10-20 12:00:00 UTC"
@@ -212,7 +223,7 @@ assignmentTests =
     isFalse = not
     isTrue  = id
 
-asgTests = group "Bead.Domain.Entities" $ do
+asgTests = group "Bead.Domain.Entity.Assignment" $ do
   isPasswordProtectedTests
   isBallotBoxTests
   assignmentAspectPredTests

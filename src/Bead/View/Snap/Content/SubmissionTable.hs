@@ -21,7 +21,6 @@ import           Data.Time
 import           Numeric
 
 import qualified Bead.Domain.Entities as E
-import           Bead.Domain.Entity.Assignment (Assignment)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
 import           Bead.Domain.Relationships
@@ -137,8 +136,8 @@ submissionTablePart tableId now ctx s = do
 
     -- HTML
     courseForm = submissionTableInfoCata course group s where
-      course _n _c _us _as _uls _ns ck      = postForm (routeOf $ Pages.deleteUsersFromCourse ck ())
-      group _n _c _us _cgas _uls _ns _ck gk = postForm (routeOf $ Pages.deleteUsersFromGroup gk ())
+      course _n _us _as _uls _ns ck      = postForm (routeOf $ Pages.deleteUsersFromCourse ck ())
+      group _n _us _cgas _uls _ns _ck gk = postForm (routeOf $ Pages.deleteUsersFromGroup gk ())
 
     headerCell = H.th # (informationalCell <> grayBackground)
 
@@ -155,12 +154,12 @@ submissionTablePart tableId now ctx s = do
 
         assignmentLinks = submissionTableInfoCata course group s
 
-        course _name _cfg _users as _ulines _anames _key =
+        course _name _users as _ulines _anames _key =
           mapM_ (\x -> openedHeaderCell openCourseAssignmentStyle closedCourseAssignmentStyle x
                          $ modifyAssignmentLink "" x)
               $ zip [1..] as
 
-        group  _name _cfg _users cgas _ulines _anames ckey _gkey = do
+        group  _name _users cgas _ulines _anames ckey _gkey = do
           let as = reverse . snd $ foldl numbering ((1,1),[]) cgas
           mapM_ header as
           where
@@ -206,19 +205,19 @@ submissionTablePart tableId now ctx s = do
         deleteUserCheckbox u
       where
         submissionInfos = submissionTableInfoCata course group where
-          course _n _c _users as _ulines _anames _key =
+          course _n _users as _ulines _anames _key =
             catMaybes $ map (\ak -> Map.lookup ak submissionInfoMap) as
 
-          group _n _c _users as _ulines _anames _ckey _gkey =
+          group _n _users as _ulines _anames _ckey _gkey =
             catMaybes $ map lookup as
             where
               lookup = cgInfoCata (const Nothing) (flip Map.lookup submissionInfoMap)
 
 
         submissionCells username = submissionTableInfoCata course group where
-          course _n _c _users as _ulines _anames _key = mapM_ (submissionInfoCell username) as
+          course _n _users as _ulines _anames _key = mapM_ (submissionInfoCell username) as
 
-          group _n _c _users as _ulines _anames _ck _gk =
+          group _n _users as _ulines _anames _ck _gk =
             mapM_ (cgInfoCata (submissionInfoCell username) (submissionInfoCell username)) as
 
         submissionInfoCell u ak = case Map.lookup ak submissionInfoMap of
@@ -238,24 +237,24 @@ submissionTablePart tableId now ctx s = do
         si    -- of percent
 
     deleteHeaderCell msg = submissionTableInfoCata deleteForCourseButton deleteForGroupButton s where
-        deleteForCourseButton _n _c _us _as _uls _ans _ck =
+        deleteForCourseButton _n _us _as _uls _ans _ck =
           headerCell $ submitButton
             removeButton
             (msg $ Msg_Home_DeleteUsersFromCourse "Remove") ! A.disabled ""
 
-        deleteForGroupButton _n _c _us _as _uls _ans _ck _gk =
+        deleteForGroupButton _n _us _as _uls _ans _ck _gk =
           headerCell $ submitButton
             removeButton
             (msg $ Msg_Home_DeleteUsersFromGroup "Remove") ! A.disabled ""
 
     deleteUserCheckbox u = submissionTableInfoCata deleteCourseCheckbox deleteGroupCheckbox s where
-        deleteCourseCheckbox _n _c _us _as _uls _ans _ck =
+        deleteCourseCheckbox _n _us _as _uls _ans _ck =
           dataCell noStyle $ checkBox
             (Param.name delUserFromCoursePrm)
             (encode delUserFromCoursePrm $ ud_username u)
             False ! A.onclick (fromString (onClick ++ "(this)"))
 
-        deleteGroupCheckbox _n _c _us _as _uls _ans _ck _gk =
+        deleteGroupCheckbox _n _us _as _uls _ans _ck _gk =
           dataCell noStyle $ checkBox
             (Param.name delUserFromGroupPrm)
             (encode delUserFromGroupPrm $ ud_username u)
@@ -279,10 +278,10 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated tested pas
            tested
            (\_key result -> val result) -- evaluated
 
-    val (BinEval (Binary Passed)) = passed
-    val (BinEval (Binary Failed)) = failed
-    val (PctEval (Percentage (Scores [p]))) = percent p
-    val (PctEval (Percentage _)) = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
+    val (EvResult (BinEval (Binary Passed))) = passed
+    val (EvResult (BinEval (Binary Failed))) = failed
+    val (EvResult (PctEval (Percentage (Scores [p])))) = percent p
+    val (EvResult (PctEval (Percentage _))) = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
     coloredCell = color s
 
@@ -293,9 +292,9 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated tested pas
         (simpleCell testedStyle)      -- Tested
         (const resultCell)        -- Result
 
-    resultCell (BinEval (Binary Passed)) = simpleCell binaryPassedStyle
-    resultCell (BinEval (Binary Failed)) = simpleCell binaryFailedStyle
-    resultCell p@(PctEval {}) = withRGBClass (EvResult p) rgbCell
+    resultCell (EvResult (BinEval (Binary Passed))) = simpleCell binaryPassedStyle
+    resultCell (EvResult (BinEval (Binary Failed))) = simpleCell binaryFailedStyle
+    resultCell p@(EvResult (PctEval {})) = withRGBClass p rgbCell
 
     percent x = join [show . round $ (100 * x), "%"]
 
@@ -303,8 +302,8 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated tested pas
 
 courseTestScriptTable :: CourseTestScriptInfos -> SubmissionTableInfo -> IHtml
 courseTestScriptTable cti = submissionTableInfoCata course group where
-  course _n _c _us _as _uls _ans ck = testScriptTable cti ck
-  group _n _c _us _as _uls _ans _ck _gk = (return (return ()))
+  course _n _us _as _uls _ans ck = testScriptTable cti ck
+  group _n _us _as _uls _ans _ck _gk = (return (return ()))
 
 -- Renders a course test script modification table if the information is found in the
 -- for the course, otherwise an error message. If the course is found, and there is no
@@ -340,7 +339,7 @@ assignmentCreationMenu
   -> IHtml
 assignmentCreationMenu courses groups = submissionTableInfoCata courseMenu groupMenu
   where
-    groupMenu _n _c _us _as _uls _ans ck gk = maybe
+    groupMenu _n _us _as _uls _ans ck gk = maybe
       (return (return ()))
       (const $ do
         msg <- getI18N
@@ -350,7 +349,7 @@ assignmentCreationMenu courses groups = submissionTableInfoCata courseMenu group
             Just _  -> [Pages.newGroupAssignment gk (), Pages.newCourseAssignment ck ()] )
       (Map.lookup gk groups)
 
-    courseMenu _n _c _us _as _uls _ans ck = maybe
+    courseMenu _n _us _as _uls _ans ck = maybe
       (return (return ()))
       (const $ do
         msg <- getI18N
@@ -397,11 +396,11 @@ colorStyle (RGB (r,g,b)) = join ["background-color:#", hex r, hex g, hex b]
 -- * Tools
 
 sortUserLines = submissionTableInfoCata course group where
-  course name cfg users assignments userlines names key =
-      CourseSubmissionTableInfo name cfg users assignments (sort userlines) names key
+  course name users assignments userlines names key =
+      CourseSubmissionTableInfo name users assignments (sort userlines) names key
 
-  group name cfg users assignments userlines names ckey gkey =
-      GroupSubmissionTableInfo name cfg users assignments (sort userlines) names ckey gkey
+  group name users assignments userlines names ckey gkey =
+      GroupSubmissionTableInfo name users assignments (sort userlines) names ckey gkey
 
   sort = sortBy (compareHun `on` fst3)
 
@@ -409,8 +408,8 @@ sortUserLines = submissionTableInfoCata course group where
   fst3 (x,_,_) = x
 
 submissionTableInfoAssignments = submissionTableInfoCata course group where
-  course _n _c _us as _uls _ans _ck = as
-  group _n _c _us cgas _uls _ans _ck _gk = map (cgInfoCata id id) cgas
+  course _n _us as _uls _ans _ck = as
+  group _n _us cgas _uls _ans _ck _gk = map (cgInfoCata id id) cgas
 
 headLine   = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
 dataCell r = H.td # (informationalCell <> r)

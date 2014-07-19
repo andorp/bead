@@ -81,7 +81,7 @@ submissionTable userTime s = do
       (msg $ Msg_UserSubmissions_NotFound "Not found")
       (msg $ Msg_UserSubmissions_NonEvaluated "Not evaluated")
       (msg $ Msg_UserSubmissions_Tested "Tested")
-      (const (evaluationDataMap bin pct))
+      (const (evaluationDataMap bin pct . evResult))
       where
         bin (Binary b) = msg $ resultCata (Msg_UserSubmissions_Accepted "Accepted")
                                           (Msg_UserSubmissions_Rejected "Rejected")

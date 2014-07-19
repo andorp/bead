@@ -58,7 +58,7 @@ courseAdminContent info = do
   return $ H.div # textAlign "left" $ do
     H.h3 $ (fromString $ msg $ Msg_CourseAdmin_CreateGroup "New group for the course")
     H.p $ nonEmpty (courses info) (fromString $ msg $ Msg_CourseAdmin_NoCourses "There are no courses.") $
-          (postForm (routeOf createGroup) `withId` (evFormId createGroupHook)) $ do
+          (postForm (routeOf createGroup) {-`withId` (evFormId createGroupHook)-}) $ do
             H.b $ (fromString $ msg $ Msg_CourseAdmin_Course "Course")
             H.br
             selection (fieldName courseKeyInfo) courses'
