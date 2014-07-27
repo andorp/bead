@@ -99,13 +99,13 @@ modifyTestScriptOfTestCase caseKey scriptKey = void $ do
 #ifdef TEST
 
 testCaseTests = do
-  let course  = Domain.Course "name" "desc" (Domain.BinEval ()) Domain.TestScriptSimple
+  let course  = Domain.Course "name" "desc" Domain.TestScriptSimple
       script  = Domain.TestScript "name" "desc" "notes" "script" Domain.TestScriptSimple
       script2 = Domain.TestScript "name2" "desc2" "notes2" "script2" Domain.TestScriptZipped
       case1   = Domain.TestCase "name" "desc" "blah" Domain.TestCaseSimple "info"
       case2   = Domain.TestCase "name2" "desc2" "blah2" Domain.TestCaseZipped "info"
       time    = read "2014-06-09 12:55:27.959203 UTC"
-      asg     = Domain.Assignment "name" "desc" Domain.emptyAspects time time
+      asg     = Domain.Assignment "name" "desc" Domain.emptyAspects time time Domain.binaryConfig
 
   shrink "Test Case end-to-end story."
     (do ioTest "Test Case end-to-end case" $ runSql $ do

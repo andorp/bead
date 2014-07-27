@@ -4,6 +4,7 @@ import           Text.JSON.Generic
 
 import qualified Bead.Domain.Entities as Domain
 import qualified Bead.Domain.Entity.Assignment as Domain
+import qualified Bead.Domain.Shared.Evaluation as Domain
 import           Bead.Persistence.SQL.Entities (JSONText)
 
 -- * JSON encoding, decoding
@@ -20,10 +21,10 @@ encodeTimeZone = encodeJSON
 decodeTimeZone :: JSONText -> Domain.TimeZoneName
 decodeTimeZone = decodeJSON
 
-encodeEvalConfig :: Domain.EvaluationConfig -> JSONText
+encodeEvalConfig :: Domain.EvConfig -> JSONText
 encodeEvalConfig = encodeJSON
 
-decodeEvalConfig :: JSONText -> Domain.EvaluationConfig
+decodeEvalConfig :: JSONText -> Domain.EvConfig
 decodeEvalConfig = decodeJSON
 
 encodeTestScriptType :: Domain.TestScriptType -> JSONText
@@ -44,10 +45,10 @@ encodeAssignmentType = encodeJSON
 decodeAssignmentType :: JSONText -> Domain.Aspects
 decodeAssignmentType = decodeJSON
 
-encodeEvaluationResult :: Domain.EvaluationResult -> JSONText
+encodeEvaluationResult :: Domain.EvResult -> JSONText
 encodeEvaluationResult = encodeJSON
 
-decodeEvaluationResult :: JSONText -> Domain.EvaluationResult
+decodeEvaluationResult :: JSONText -> Domain.EvResult
 decodeEvaluationResult = decodeJSON
 
 encodeCommentType :: Domain.CommentType -> JSONText

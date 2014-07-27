@@ -94,8 +94,8 @@ unsubscribe username courseDomKey groupDomKey = withUser username (return ()) $ 
 #ifdef TEST
 
 groupTests = do
-  let course = Domain.Course "name" "desc" (Domain.BinEval ()) Domain.TestScriptSimple
-      group  = Domain.Group "name" "desc" (Domain.BinEval ())
+  let course = Domain.Course "name" "desc" Domain.TestScriptSimple
+      group  = Domain.Group "name" "desc"
       user1name = Domain.Username "user1"
       user2name = Domain.Username "user2"
       user1  = Domain.User Domain.Student user1name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")

@@ -106,14 +106,12 @@ instance DomainValue Domain.Course where
   toDomainValue ent = Domain.Course
     (Text.unpack $ courseName ent)
     (Text.unpack $ courseDescription ent)
-    (decodeEvalConfig $ courseEvalConfig ent)
     (decodeTestScriptType $ courseTestScriptType ent)
 
-  fromDomainValue = Domain.courseCata encodeEvalConfig encodeTestScriptType
-    $ \name description config testScriptType ->
+  fromDomainValue = Domain.courseCata encodeTestScriptType
+    $ \name description testScriptType ->
          Course (Text.pack name)
                 (Text.pack description)
-                config
                 testScriptType
 
 instance DomainKey Domain.GroupKey where
@@ -127,13 +125,11 @@ instance DomainValue Domain.Group where
   toDomainValue ent = Domain.Group
     (Text.unpack $ groupName ent)
     (Text.unpack $ groupDescription ent)
-    (decodeEvalConfig $ groupEvalConfig ent)
 
-  fromDomainValue = Domain.groupCata encodeEvalConfig
-        $ \name description config ->
+  fromDomainValue = Domain.groupCata
+        $ \name description ->
             Group (Text.pack name)
                   (Text.pack description)
-                  config
 
 instance DomainKey Domain.TestScriptKey where
   type EntityForKey Domain.TestScriptKey = TestScriptGeneric

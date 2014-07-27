@@ -102,7 +102,7 @@ usernames userIds = catMaybes <$> (mapM toUsername userIds)
 #ifdef TEST
 
 courseAdminTests = do
-  let course = Domain.Course "name" "desc" (Domain.BinEval ()) Domain.TestScriptSimple
+  let course = Domain.Course "name" "desc" Domain.TestScriptSimple
       user1name = Domain.Username "user1"
       user1  = Domain.User Domain.Student user1name                 (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
       user2  = Domain.User Domain.Student (Domain.Username "user2") (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")

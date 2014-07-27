@@ -61,7 +61,7 @@ modifyTestScript key script = do
 #ifdef TEST
 
 testScriptTests = do
-  let course  = Domain.Course "name" "desc" (Domain.BinEval ()) Domain.TestScriptSimple
+  let course  = Domain.Course "name" "desc" Domain.TestScriptSimple
       script  = Domain.TestScript "name" "desc" "notes" "script" Domain.TestScriptSimple
       script2 = Domain.TestScript "name2" "desc2" "notes" "script2" Domain.TestScriptZipped
 

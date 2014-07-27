@@ -39,6 +39,7 @@ Assignment
   start       UTCTime
   end         UTCTime
   created     UTCTime
+  evalConfig  JSONText
   deriving Show
 
 Comment
@@ -51,7 +52,6 @@ Comment
 Course
   name        Text
   description Text
-  evalConfig  JSONText
   testScriptType JSONText
   deriving Show
 
@@ -63,7 +63,6 @@ Evaluation
 Group
   name        Text
   description Text
-  evalConfig  JSONText
   deriving Show
 
 Submission

@@ -36,15 +36,17 @@ toDomainAssignmentValue ent = Domain.Assignment
   (decodeAssignmentType $ assignmentType ent)
   (assignmentStart ent)
   (assignmentEnd ent)
+  (decodeEvalConfig $ assignmentEvalConfig ent)
 
 fromDomainAssignmentValue createdTime = Domain.assignmentCata
-  $ \name desc type_ start end -> Assignment
+  $ \name desc type_ start end cfg -> Assignment
       (Text.pack name)
       (Text.pack desc)
       (encodeAssignmentType type_)
       start
       end
       createdTime
+      (encodeEvalConfig cfg)
 
 -- Lists all the assignments in the database
 assignmentKeys :: Persist [Domain.AssignmentKey]
@@ -73,12 +75,13 @@ loadAssignment key = do
 modifyAssignment :: Domain.AssignmentKey -> Domain.Assignment -> Persist ()
 modifyAssignment key assignment = do
   update (toEntityKey key) $ Domain.withAssignment assignment
-    $ \name desc type_ start end ->
+    $ \name desc type_ start end cfg ->
         [ AssignmentName        =. Text.pack name
         , AssignmentDescription =. Text.pack desc
         , AssignmentType        =. encodeAssignmentType type_
         , AssignmentStart       =. start
         , AssignmentEnd         =. end
+        , AssignmentEvalConfig  =. encodeEvalConfig cfg
         ]
 
 -- Lists all the assignment that are created for the given course
@@ -154,15 +157,15 @@ testCaseOfAssignment key = do
 #ifdef TEST
 
 assignmentTests = do
-  let course  = Domain.Course "name" "desc" (Domain.BinEval ()) Domain.TestScriptSimple
-      group  = Domain.Group "name" "desc" (Domain.BinEval ())
+  let course  = Domain.Course "name" "desc" Domain.TestScriptSimple
+      group  = Domain.Group "name" "desc"
       script  = Domain.TestScript "name" "desc" "notes" "script" Domain.TestScriptSimple
       case1   = Domain.TestCase "name" "desc" "blah" Domain.TestCaseSimple "info"
       time    = read "2014-06-09 12:55:27.959203 UTC"
       ballot  = Domain.aspectsFromList [Domain.BallotBox]
       normal  = Domain.aspectsFromList []
-      asg     = Domain.Assignment "name" "desc" ballot time time
-      asg2    = Domain.Assignment "name2" "desc2" normal time time
+      asg     = Domain.Assignment "name" "desc" ballot time time Domain.binaryConfig
+      asg2    = Domain.Assignment "name2" "desc2" normal time time (Domain.percentageConfig 0.1)
 
   shrink "Assignment end-to-end story"
     (do ioTest "Assignment end-to-end test" $ runSql $ do
