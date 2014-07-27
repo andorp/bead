@@ -150,7 +150,6 @@ courseTest = testCase "Create Course" $ do
   let r = E.Course {
       courseName = "Functional programming"
     , courseDesc = "Everything about FP"
-    , courseEvalConfig = binaryEvalConfig
     , courseTestScriptType = TestScriptSimple
     }
   (k,state) <- runStory c adminUserState $ createCourse r
@@ -167,12 +166,12 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
   c <- context
   str <- getCurrentTime
   end <- getCurrentTime
-  let ca = Assignment "cname" "cexercise" emptyAspects str end
-      ga = Assignment "gname" "gexercise" emptyAspects str end
-      c1  = E.Course "FP" "FP-DESC" binaryEvalConfig TestScriptSimple
-      c2  = E.Course "MA" "MA-DESC" binaryEvalConfig TestScriptZipped
-      g1  = E.Group  "G1" "G1-DESC" binaryEvalConfig
-      g2  = E.Group  "G2" "G2-DESC" $ percentageEvalConfig (PctConfig 0.4)
+  let ca = Assignment "cname" "cexercise" emptyAspects str end binaryConfig
+      ga = Assignment "gname" "gexercise" emptyAspects str end (percentageConfig 0.3)
+      c1  = E.Course "FP" "FP-DESC" TestScriptSimple
+      c2  = E.Course "MA" "MA-DESC" TestScriptZipped
+      g1  = E.Group  "G1" "G1-DESC"
+      g2  = E.Group  "G2" "G2-DESC"
       adminUsername = E.Username "admin"
       groupAdminUsr = E.Username "groupadmin"
   runStory c adminUserState $ createUser adminUser

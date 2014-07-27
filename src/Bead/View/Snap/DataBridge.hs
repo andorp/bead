@@ -177,6 +177,7 @@ evalConfigPrm hook = Parameter {
            | 0 > x || x > 1 = error $ "Invalid percentage value:" ++ show x
            | otherwise = x
 
+
 #ifdef TEST
 
 evalConfigPrmTest = group "evalConfigPrm" $ do
@@ -188,7 +189,7 @@ evalConfigPrmTest = group "evalConfigPrm" $ do
 
   assertProperty
     "Encode decode"
-    (encodeDecodeProp param)
+    (encodeDecodeCompare pctEpsilon param)
     evConfigGen
     "Percentage value is miscalculated"
 
@@ -197,7 +198,6 @@ evalConfigPrmTest = group "evalConfigPrm" $ do
     , ("Percenteage", encode param (percentageConfig 0.96)
       , Just (percentageConfig 0.96), "Parsing failed")
     ]
-
   where
     -- The percentage calculation is interested only in 3 decimal digits
     toPercentage :: Double -> Double
@@ -205,6 +205,14 @@ evalConfigPrmTest = group "evalConfigPrm" $ do
       where
         scale = 10 ^ 3
         getDecimal x = x - (fromIntegral $ floor x)
+
+    pctEpsilon :: EvConfig -> EvConfig -> Bool
+    pctEpsilon c1 c2 =
+      withEvConfig c1
+        (withEvConfig c2 True (const False))
+        (\p1 -> withEvConfig c2 False (\p2 -> abs (p1 - p2) < epsilon))
+      where
+        epsilon = 0.0001
 
 #endif
 
@@ -386,8 +394,12 @@ unsubscribeUserGroupKeyPrm = customGroupKeyPrm groupKeyParamName
 
 -- Test create Just . id = encode . decode property
 encodeDecodeProp :: (Eq a) => Parameter a -> (a -> Bool)
-encodeDecodeProp p x =
-  (Just x) == (decode p $ encode p x)
+encodeDecodeProp = encodeDecodeCompare (==)
+
+-- Compare the original value with the encoded and decoded value
+-- with the given comparator.
+encodeDecodeCompare :: (a -> a -> Bool) -> Parameter a -> (a -> Bool)
+encodeDecodeCompare comp p x = maybe False (comp x) (decode p $ encode p x)
 
 dataBridgeTests = do
   evalConfigPrmTest

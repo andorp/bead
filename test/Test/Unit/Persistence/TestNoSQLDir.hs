@@ -55,7 +55,7 @@ test_create_exercise = testCase "Save an exercise" $ do
   interp <- createPersistInterpreter defaultConfig
   str <- getCurrentTime
   end <- getCurrentTime
-  let assignment = Assignment "Title" "This is an exercise" normal str  end
+  let assignment = Assignment "Title" "This is an exercise" normal str end binaryConfig
   ek <- liftE interp $ saveAssignment assignment
   let uname = Username "student"
       user = User {
@@ -79,7 +79,7 @@ test_create_load_exercise = testCase "Create and load exercise" $ do
   interp <- createPersistInterpreter defaultConfig
   str <- getCurrentTime
   end <- getCurrentTime
-  let a = Assignment "Title" "This is an exercise" normal str end
+  let a = Assignment "Title" "This is an exercise" normal str end binaryConfig
   k <- liftE interp $ saveAssignment a
   a' <- liftE interp $ loadAssignment k
   assertBool "The saved assignment differs from the read one." (a' == a)
@@ -146,14 +146,14 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
         , u_language = Language "hu"
         }
       password = "password"
-      cAssignment = Assignment "CourseAssignment" "Assignment" ballot str end
-      gAssignment1 = Assignment "GroupAssignment" "Assignment" normal str end
-      gAssignment2 = Assignment "GroupAssignment" "Assignment" normal str end
+      cAssignment = Assignment "CourseAssignment" "Assignment" ballot str end binaryConfig
+      gAssignment1 = Assignment "GroupAssignment" "Assignment" normal str end binaryConfig
+      gAssignment2 = Assignment "GroupAssignment" "Assignment" normal str end binaryConfig
       sbsm = Submission "submission" str
   join $ liftE interp $ do
-    ck  <- saveCourse (Course "name" "desc" binaryEvalConfig TestScriptSimple)
-    gk1 <- saveGroup ck (Group "gname1" "gdesc1" binaryEvalConfig)
-    gk2 <- saveGroup ck (Group "gname2" "gdesc2" binaryEvalConfig)
+    ck  <- saveCourse (Course "name" "desc" TestScriptSimple)
+    gk1 <- saveGroup ck (Group "gname1" "gdesc1")
+    gk2 <- saveGroup ck (Group "gname2" "gdesc2")
     saveUser adminUser
     saveUser myStudentUser
     saveUser otherStudentUser
@@ -196,8 +196,8 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
         , u_language = Language "hu"
         }
       password = "password"
-  ck <- liftE interp $ saveCourse (Course "name" "desc" binaryEvalConfig TestScriptSimple)
-  gk <- liftE interp $ saveGroup ck (Group "gname" "gdesc" binaryEvalConfig)
+  ck <- liftE interp $ saveCourse (Course "name" "desc" TestScriptSimple)
+  gk <- liftE interp $ saveGroup ck (Group "gname" "gdesc")
   gks <- liftE interp $ groupKeysOfCourse ck
   assertBool "Registered group was not found in the group list" (elem gk gks)
   liftE interp $ subscribe username ck gk
@@ -218,8 +218,8 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool "Group is not found in administrated groups" (elem gk (map fst gs))
   str <- getCurrentTime
   end <- getCurrentTime
-  let gAssignment = Assignment "GroupAssignment" "Assignment" normal str end
-      cAssignment = Assignment "CourseAssignment" "Assignment" ballot str end
+  let gAssignment = Assignment "GroupAssignment" "Assignment" normal str end binaryConfig
+      cAssignment = Assignment "CourseAssignment" "Assignment" ballot str end (percentageConfig 0.1)
   cak <- liftE interp $ saveCourseAssignment ck cAssignment
   cask <- liftE interp $ courseAssignments ck
   assertBool "Course does not have the assignment" (elem cak cask)
@@ -254,7 +254,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   uss <- liftE interp $ userSubmissions username gak
   assertBool "Submission is not in the users' submission" (elem sk uss)
 
-  let ev = Evaluation (BinEval (Binary Passed)) "Good"
+  let ev = Evaluation (binaryResult Passed) "Good"
   evKey <- liftE interp $ saveEvaluation sk ev
   ev1 <- liftE interp $ loadEvaluation evKey
   assertBool "Evaluation was not loaded correctly" (ev == ev1)

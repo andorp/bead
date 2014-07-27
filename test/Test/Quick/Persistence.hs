@@ -145,12 +145,7 @@ saveAndLoadComment = do
 
 evaluationConfigForSubmission sk = do
   ak <- runPersistCmd $ assignmentOfSubmission sk
-  s <- runPersistCmd $ loadSubmission sk
-  key <- runPersistCmd $ courseOrGroupOfAssignment ak
-  either
-    (runPersistCmd . fmap courseEvalConfig . loadCourse)
-    (runPersistCmd . fmap groupEvalConfig  . loadGroup )
-    key
+  Assignment.evType <$> (runPersistCmd $ loadAssignment ak)
 
 evaluationGroupSaveAndLoad = do
   (ak, u, sk) <- saveAndLoadSubmission
@@ -576,7 +571,6 @@ submissionTablesTest = do
     ts  <- runPersistCmd $ submissionTables     u
     forM ts $ \t -> do
       assertNonEmpty (stiCourse t) "Course name was empty"
-      assertNonEmpty (show . stiEvalConfig $ t) "Evaluation config was empty"
 --      assertTrue (length (stAssignments t) >= 0) "Invalid assignment list" TODO
       forM (stiUsers t) $ usernameCata (\u -> assertNonEmpty u "Username was empty")
       assertTrue (length (stiUserLines t) >= 0) "Invalid user line number"

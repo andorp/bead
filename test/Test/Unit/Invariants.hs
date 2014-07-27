@@ -92,7 +92,7 @@ tests = [
   , assertionTestGroup "Email address" V.assertEmailAddress
   , assertionTestGroup "Home page binary results" sumBinaryResultTests
   , assertionTestGroup "Home page percentage results" sumPercentageResultTests
-  , assertionTestGroup "Home page calc results" calculateSubmissionResultTests
+--  , assertionTestGroup "Home page calc results" calculateSubmissionResultTests: TODO define results
   , assertionTestGroup "Command line and configuration" initTaskAssertions
   ] ++ themisTests
 

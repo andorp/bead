@@ -93,7 +93,6 @@ courses =
   courseAppAna
     courseNames
     courseDescs
-    evalConfigs
     (elements [TestScriptSimple, TestScriptZipped])
 
 groupCodes = word
@@ -107,7 +106,6 @@ groupUsers' = liftM (map Username) (listOf1 word)
 groups = Group
   <$> groupNames
   <*> groupDescs
-  <*> evalConfigs
 
 timeZones = elements [utcZoneInfo, cetZoneInfo]
 
@@ -117,6 +115,7 @@ assignments start end = assignmentAna
   assignmentTypeGen
   (return start)
   (return end)
+  evaluationConfigs
 
 assignmentNames = manyWords
 
@@ -129,6 +128,11 @@ assignmentTypeGen = oneof [
   , (return $ aspectsFromList [BallotBox])
   , (do pwd <- word; return $ aspectsFromList [Password pwd])
   , (do pwd <- word; return $ aspectsFromList [Password pwd, BallotBox])
+  ]
+
+evaluationConfigs = oneof [
+    (return binaryConfig)
+  , percentageConfig <$> percentage
   ]
 
 passwords = word
@@ -151,7 +155,7 @@ commentTexts = manyWords
 
 commentAuthors = manyWords
 
-evaluations :: EvaluationConfig -> Gen Evaluation
+evaluations :: EvConfig -> Gen Evaluation
 evaluations cfg = Evaluation
   <$> evaluationResults cfg
   <*> writtenEvaluations
@@ -159,9 +163,9 @@ evaluations cfg = Evaluation
 writtenEvaluations = manyWords
 
 evaluationResults =
-  evaluationDataMap
-    (const (BinEval <$> elements [Binary Passed, Binary Failed]))
-    (const (PctEval . Percentage . Scores . (:[]) <$> percentage))
+  evConfigCata
+    (binaryResult <$> elements [Passed, Failed])
+    (const (percentageResult <$> percentage))
 
 testScripts = testScriptAppAna
   word      -- words

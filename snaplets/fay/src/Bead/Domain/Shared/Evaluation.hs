@@ -86,6 +86,8 @@ evConfigCata
     (EvConfig (BinEval ())) -> binary
     (EvConfig (PctEval p))  -> percentage p
 
+withEvConfig e b p = evConfigCata b p e
+
 percentageConfig :: Double -> EvConfig
 percentageConfig = EvConfig . PctEval
 
