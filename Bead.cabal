@@ -22,6 +22,10 @@ Data-Files:
   snaplets/fay/src/Bead/View/Snap/Fay/Hooks.hs,
   snaplets/fay/src/Bead/View/Snap/Fay/JSON/ClientSide.hs,
 
+  static/fonts/glyphicons-halflings-regular.woff
+  static/fonts/glyphicons-halflings-regular.ttf
+  static/bootstrap.min.css,
+  static/bootstrap.min.js,
   static/header.css,
   static/helpers.js,
   static/inside.css,
