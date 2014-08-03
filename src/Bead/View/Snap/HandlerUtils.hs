@@ -17,6 +17,7 @@ module Bead.View.Snap.HandlerUtils (
   , blazeI18n
   , renderPagelet
   , renderDynamicPagelet
+  , renderBootstrapPage
   , renderPublicPage
   , setInSessionE
   , setReqParamInSession
@@ -67,7 +68,7 @@ import           Bead.View.Snap.Application
 import           Bead.View.Snap.DataBridge
 import           Bead.View.Snap.Dictionary
 import           Bead.View.Snap.I18N (IHtml, translate)
-import           Bead.View.Snap.Pagelets (runPagelet, runDynamicPagelet)
+import           Bead.View.Snap.Pagelets (runPagelet, runDynamicPagelet, runBootstrapPage)
 import           Bead.View.Snap.RouteOf (ReqParam(..))
 import           Bead.View.Snap.Session
 import           Bead.View.Snap.Translation
@@ -171,6 +172,14 @@ renderPagelet :: (Int -> IHtml) -> HandlerError App b ()
 renderPagelet p = do
   secs <- fmap sessionTimeout . lift . withTop configContext $ getConfiguration
   i18nE >>= blaze . (runPagelet (p secs))
+
+-- Renders a Page from the given IHtml function which
+-- needs the session timeout seconds
+renderBootstrapPage :: (Int -> IHtml) -> HandlerError App b ()
+renderBootstrapPage p = do
+  secs <- fmap sessionTimeout . lift . withTop configContext $ getConfiguration
+  i18nE >>= blaze . (runBootstrapPage (p secs))
+
 
 -- Renders a Page from the given IHtml function which
 -- needs the session timeout seconds
