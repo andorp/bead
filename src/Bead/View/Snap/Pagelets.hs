@@ -7,12 +7,15 @@ module Bead.View.Snap.Pagelets where
 import           Data.Char (isAlphaNum)
 import           Data.Data
 import           Data.Maybe (fromMaybe)
+import           Data.Monoid
 import           Data.String (IsString(..), fromString)
 import           Data.Time.Clock
 
 import           Text.Blaze.Html5 (Html, (!))
-import qualified Text.Blaze.Html5.Attributes as A
+import           Text.Blaze.Html5 hiding (link, option)
 import qualified Text.Blaze.Html5 as H
+import qualified Text.Blaze.Html5.Attributes as A
+import           Text.Blaze.Html5.Attributes hiding (id)
 
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext (UserState(..))
@@ -51,6 +54,22 @@ document headers body' = do
         css "header.css"
       H.body $ body
 
+bootStrapDocument :: IHtml -> IHtml
+bootStrapDocument body' = do
+  body <- body'
+  return $ do
+    H.head $ do
+        H.meta ! A.charset "utf-8"
+        H.title "BE-AD beadandókezelő"
+        H.link ! A.rel "shortcut icon" ! A.href "icon.ico"
+        H.meta ! A.name "viewport" ! A.content "width=device-width, initial-scale=1.0"
+        H.meta ! A.name "description" ! A.content ""
+        H.meta ! A.name "author" ! A.content ""
+        js "/jquery.js"
+        H.link ! A.href "http://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css" ! A.rel "stylesheet"
+        H.script ! A.type_ "text/javascript" ! A.src "http://netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js" $ mempty
+    H.body $ body
+
 dynamicDocument :: Html -> IHtml -> IHtml
 dynamicDocument header body = document
     (do css "jquery-ui.css"
@@ -63,6 +82,9 @@ dynamicDocument header body = document
 
 runPagelet :: IHtml -> I18N -> Html
 runPagelet p i = translate i $ document (css "inside.css") p
+
+runBootstrapPage :: IHtml -> I18N -> Html
+runBootstrapPage p i = translate i $ bootStrapDocument p
 
 runDynamicPagelet :: IHtml -> I18N -> Html
 runDynamicPagelet p i = translate i $ dynamicDocument (css "inside.css") p
@@ -95,6 +117,18 @@ withUserFrame s content secs = withUserFrame' content
         H.div ! A.id "header" $ header
         status
         H.div ! A.id "content" $ content
+
+bootStrapUserFrame :: UserState -> IHtml -> Int -> IHtml
+bootStrapUserFrame s content secs = withUserFrame' content
+  where
+    withUserFrame' content = do
+      header <- bootStrapHeader s secs
+      content <- content
+      status <- bootStrapStatus s
+      return $ do
+        header
+        status
+        H.div ! class_ "container" $ content
 
 -- * Basic building blocks
 
@@ -160,6 +194,13 @@ fileInput name =
 
 submitButton :: String -> String -> Html
 submitButton i t = H.input ! A.id (fromString i) ! A.type_ "submit" ! A.value (fromString t)
+
+submitButtonDanger :: String -> String -> Html
+submitButtonDanger i t =
+  H.input ! A.id (fromString i)
+          ! A.type_ "submit"
+          ! A.class_ "btn btn-danger"
+          ! A.value (fromString t)
 
 checkBox :: String -> String -> Bool -> Html
 checkBox n v c =
@@ -236,7 +277,7 @@ minSecCountdown divId overstr secs =
 -- now time in seconds.
 countdownDiv :: String -> String -> String -> Bool -> Int -> Html
 countdownDiv divId daystr overstr showDays seconds = do
-  H.div ! A.id (fromString divId) $ fromString $
+  H.a ! A.id (fromString divId) $ fromString $
     if showDays
          then concat ["-", daystr, " --:--:--"]
          else "--:--"
@@ -355,6 +396,11 @@ linkToPage g = do
   msg <- getI18N
   return $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString $ msg $ linkText g
 
+linkButtonToPageBS :: P.Page a b c d -> IHtml
+linkButtonToPageBS g = do
+  msg <- getI18N
+  return $ H.a ! A.href (routeOf g) ! A.class_ "btn btn-default" $ fromString $ msg $ linkText g
+
 linkToPageBlank :: P.Page a b c d -> IHtml
 linkToPageBlank g = do
   msg <- getI18N
@@ -368,6 +414,9 @@ link r t = H.a ! A.href (fromString r) $ (fromString t)
 
 linkWithText :: String -> String -> Html
 linkWithText r t = H.a ! A.href (fromString r) $ (fromString t)
+
+linkWithHtml :: String -> Html -> Html
+linkWithHtml r t = H.a ! A.href (fromString r) $ t
 
 -- Produces a HTML-link with the given route text and title
 linkWithTitle :: String -> String -> String -> Html
@@ -420,6 +469,43 @@ pageStatus = maybe noMessage message . status
       let message = fromString . statusMessage msg msg
           color = statusMessage (const "yellow") (const "red")
       return $ H.div ! A.id "status" # backgroundColor (color m) $ H.span $ (message m)
+
+bootStrapHeader :: UserState -> Int -> IHtml
+bootStrapHeader s secs = do
+  msg <- getI18N
+  return $ do
+        H.div ! class_ "navbar navbar-default navbar-fixed-top" $ do
+            H.style ".body{padding-top:70px}"
+            H.div ! class_ "container" $ do
+                H.div ! class_ "navbar-header" $ do
+                    a ! class_ "navbar-brand" $ "BE-AD"
+                    button ! type_ "button" ! class_ "navbar-toggle" ! dataAttribute "toggle" "collapse" ! dataAttribute "target" ".navbar-collapse" $ do
+                        H.span ! class_ "sr-only" $ "Toggle navigation"
+                        H.span ! class_ "icon-bar" $ mempty
+                        H.span ! class_ "icon-bar" $ mempty
+                        H.span ! class_ "icon-bar" $ mempty
+                H.div ! class_ "collapse navbar-collapse navbar-ex1-collapse" $ do
+                    ul ! class_ "nav navbar-nav navbar-right" $ do
+                        li $ minSecCountdown "hdctd" "--:--" secs
+                        li $ H.a $ fromString . str . user $ s
+                        li $ (I18N.i18n msg $ linkToPage home)
+                        li $ (I18N.i18n msg $ linkToPage profile)
+                        li $ (I18N.i18n msg $ linkToPage logout)
+  where
+    logout = P.logout ()
+    profile = P.profile ()
+    home = P.home ()
+
+bootStrapStatus :: UserState -> IHtml
+bootStrapStatus = maybe noMessage message . status
+  where
+    noMessage = return $ return ()
+    message m = do
+      msg <- getI18N
+      let message = fromString . statusMessage msg msg
+          color = statusMessage (const "yellow") (const "red")
+      return $ H.div ! A.id "status" # backgroundColor (color m) $ H.span $ (message m)
+
 
 -- * Picklist
 

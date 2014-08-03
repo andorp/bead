@@ -19,6 +19,7 @@ module Bead.View.Snap.Content (
   , i18nH
   , renderPagelet
   , renderDynamicPagelet
+  , renderBootstrapPage
   , userTimeZone
   , userTimeZoneToLocalTimeConverter
   , userTimeZoneToUTCTimeConverter

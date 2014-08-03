@@ -10,7 +10,7 @@ module Bead.View.Snap.Content.All (
 
 import qualified Bead.Controller.Pages as Pages hiding (invariants)
 import Bead.View.Snap.Content
-import Bead.View.Snap.Content.Home
+import Bead.View.Snap.Content.Home.Model
 import Bead.View.Snap.Content.Profile
 import Bead.View.Snap.Content.CourseAdmin
 import Bead.View.Snap.Content.CourseOverview
