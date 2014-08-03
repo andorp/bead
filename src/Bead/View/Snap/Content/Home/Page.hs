@@ -1,5 +1,6 @@
-{-# LANGUAGE OverloadedStrings, CPP #-}
-module Bead.View.Snap.Content.Home.Model (
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
+module Bead.View.Snap.Content.Home.Page (
     home
   , deleteUsersFromCourse
   , deleteUsersFromGroup
