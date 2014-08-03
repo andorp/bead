@@ -11,7 +11,6 @@ import           Data.Monoid
 import           Data.String (IsString(..), fromString)
 import           Data.Time.Clock
 
-import           Text.Blaze.Html5 (Html, (!))
 import           Text.Blaze.Html5 hiding (link, option)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
@@ -66,8 +65,8 @@ bootStrapDocument body' = do
         H.meta ! A.name "description" ! A.content ""
         H.meta ! A.name "author" ! A.content ""
         js "/jquery.js"
-        H.link ! A.href "http://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css" ! A.rel "stylesheet"
-        H.script ! A.type_ "text/javascript" ! A.src "http://netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js" $ mempty
+        H.link ! A.href "/bootstrap.min.css" ! A.rel "stylesheet"
+        H.script ! A.type_ "text/javascript" ! A.src "/bootstrap.min.js" $ mempty
     H.body $ body
 
 dynamicDocument :: Html -> IHtml -> IHtml
@@ -478,7 +477,7 @@ bootStrapHeader s secs = do
             H.style ".body{padding-top:70px}"
             H.div ! class_ "container" $ do
                 H.div ! class_ "navbar-header" $ do
-                    a ! class_ "navbar-brand" $ "BE-AD"
+                    a ! class_ "navbar-brand" ! href (routeOf home) $ "BE-AD"
                     button ! type_ "button" ! class_ "navbar-toggle" ! dataAttribute "toggle" "collapse" ! dataAttribute "target" ".navbar-collapse" $ do
                         H.span ! class_ "sr-only" $ "Toggle navigation"
                         H.span ! class_ "icon-bar" $ mempty
@@ -488,7 +487,6 @@ bootStrapHeader s secs = do
                     ul ! class_ "nav navbar-nav navbar-right" $ do
                         li $ minSecCountdown "hdctd" "--:--" secs
                         li $ H.a $ fromString . str . user $ s
-                        li $ (I18N.i18n msg $ linkToPage home)
                         li $ (I18N.i18n msg $ linkToPage profile)
                         li $ (I18N.i18n msg $ linkToPage logout)
   where
