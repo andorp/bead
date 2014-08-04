@@ -10,6 +10,7 @@ import Test.Framework.Providers.HUnit
 
 import Bead.Domain.Entities
 import Bead.Domain.Entity.Assignment
+import Bead.Domain.Entity.Comment
 import Bead.Domain.TimeZone (utcZoneInfo)
 import Bead.Domain.Shared.Evaluation
 import Bead.Domain.Relationships

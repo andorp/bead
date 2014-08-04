@@ -28,6 +28,7 @@ import qualified Test.Quick.EntityGen as Gen
 
 import Bead.Domain.Entities
 import qualified Bead.Domain.Entity.Assignment as Assignment
+import Bead.Domain.Entity.Comment
 import Bead.Domain.Relationships
 import Test.QuickCheck
 import Test.QuickCheck.Monadic

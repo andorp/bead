@@ -5,6 +5,7 @@ module Bead.Controller.UserStories where
 import           Bead.Domain.Entities as E
 import           Bead.Domain.Entity.Assignment (Assignment)
 import qualified Bead.Domain.Entity.Assignment as Assignment
+import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Domain.Types

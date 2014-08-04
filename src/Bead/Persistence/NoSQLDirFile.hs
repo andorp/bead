@@ -5,6 +5,7 @@ import Bead.Domain.Types hiding (FileName(..), fileName)
 import qualified Bead.Domain.Types as T (FileName(..), fileName)
 import Bead.Domain.Entities
 import Bead.Domain.Entity.Assignment
+import Bead.Domain.Entity.Comment
 import Bead.Domain.Relationships
 import Control.Monad.Transaction.TIO
 

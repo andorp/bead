@@ -4,6 +4,7 @@ import qualified Bead.Controller.UserStories as Story
 import qualified Bead.Controller.Logging as L
 import           Bead.Domain.Entities
 import           Bead.Domain.Entity.Assignment (Assignment)
+import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Relationships
 import           Bead.View.Snap.Translation
 

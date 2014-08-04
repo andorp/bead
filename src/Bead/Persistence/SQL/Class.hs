@@ -5,6 +5,7 @@ import qualified Data.Text as Text
 import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
+import qualified Bead.Domain.Entity.Comment as Domain
 import qualified Bead.Domain.Relationships as Domain
 import           Bead.Persistence.SQL.Entities
 import           Bead.Persistence.SQL.JSON

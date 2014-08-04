@@ -49,6 +49,7 @@ import           Data.Time (UTCTime, getCurrentTime)
 import           Bead.Domain.Entities
 import           Bead.Domain.Entity.Assignment (Assignment(..), assignmentCata)
 import qualified Bead.Domain.Entity.Assignment as Assignment
+import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Relationships
 import           Bead.Domain.Shared.Evaluation
 import           Bead.Persistence.Persist

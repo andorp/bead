@@ -122,6 +122,7 @@ module Bead.Persistence.NoSQLDir (
 import Bead.Domain.Types
 import Bead.Domain.Entities
 import Bead.Domain.Entity.Assignment
+import Bead.Domain.Entity.Comment
 import Bead.Domain.Relationships
 import Bead.Persistence.Initialization
 import Bead.Persistence.NoSQLDirFile

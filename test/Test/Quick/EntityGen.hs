@@ -2,6 +2,7 @@ module Test.Quick.EntityGen where
 
 import Bead.Domain.Entities
 import Bead.Domain.Entity.Assignment
+import Bead.Domain.Entity.Comment
 import Bead.Domain.TimeZone (utcZoneInfo, cetZoneInfo)
 import Bead.Domain.Relationships
 import Bead.Domain.Shared.Evaluation
