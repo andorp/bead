@@ -104,8 +104,6 @@ type CourseName = String
 
 type UsersFullname = String
 
---type EvaluationResult = EvaluationData Binary Percentage
-
 evaluationResultCata
   binary
   percentage
@@ -113,38 +111,11 @@ evaluationResultCata
     BinEval b -> binary b
     PctEval p -> percentage p
 
---type EvaluationConfig = EvaluationData () PctConfig
-
-{-
-binaryEvalConfig :: EvaluationConfig
-binaryEvalConfig = BinEval ()
-
-percentageEvalConfig :: PctConfig -> EvaluationConfig
-percentageEvalConfig p = PctEval p
--}
-
-{-
-class IsEvaluationResult e where
-  mkEvalResult :: e -> EvaluationResult
-
-instance IsEvaluationResult Binary where
-  mkEvalResult = BinEval
-
-instance IsEvaluationResult Percentage where
-  mkEvalResult = PctEval
--}
-
 allBinaryEval :: [EvaluationData b p] -> Maybe [b]
 allBinaryEval = sequence . map binaryEval
 
 allPercentEval :: [EvaluationData b p] -> Maybe [p]
 allPercentEval = sequence . map percentEval
-
-{-
-evaluateResults :: EvaluationConfig -> [EvaluationResult] -> Maybe Result
-evaluateResults (BinEval cfg) = fmap (flip calculateEvaluation cfg) . allBinaryEval
-evaluateResults (PctEval cfg) = fmap (flip calculateEvaluation cfg) . allPercentEval
--}
 
 -- | Evaluation of a submission
 data Evaluation = Evaluation {
