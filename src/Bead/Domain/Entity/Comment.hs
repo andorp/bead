@@ -13,9 +13,6 @@ data CommentType
   | CT_GroupAdmin
   | CT_CourseAdmin
   | CT_Admin
-  | CT_Evaluation
-  | CT_TestAgent
-  | CT_Message   -- Highlighted message to the student
   deriving (Data, Eq, Read, Show, Typeable)
 
 commentTypeCata
@@ -23,17 +20,11 @@ commentTypeCata
   groupAdmin
   courseAdmin
   admin
-  evaluation
-  testAgent
-  message
   c = case c of
     CT_Student     -> student
     CT_GroupAdmin  -> groupAdmin
     CT_CourseAdmin -> courseAdmin
     CT_Admin       -> admin
-    CT_Evaluation  -> evaluation
-    CT_TestAgent   -> testAgent
-    CT_Message     -> message
 
 -- | Comment on the text of exercise, on the evaluation
 data Comment = Comment {
@@ -57,20 +48,3 @@ isStudentComment = commentCata $ \_comment _owner _date -> student where
     True  -- Group Admin
     True  -- Course Admin
     False -- Admin
-    True  -- Evaluation
-    False -- Test Agent
-    True  -- Message
-
--- Returns True if the comment is a Message comment from the test agent
--- otherwise False
-isMessageComment :: Comment -> Bool
-isMessageComment = commentCata $ \_comment _owner _date -> message where
-  message = commentTypeCata
-    False -- student
-    False -- groupAdmin
-    False -- courseAdmin
-    False -- admin
-    False -- evaluation
-    False -- testAgent
-    True  -- message
-

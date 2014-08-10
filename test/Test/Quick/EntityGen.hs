@@ -142,7 +142,7 @@ submissions date = Submission
   <$> solutionTexts
   <*> (return date)
 
-commentTypes = elements [CT_Student, CT_GroupAdmin, CT_CourseAdmin, CT_Admin, CT_TestAgent]
+commentTypes = elements [CT_Student, CT_GroupAdmin, CT_CourseAdmin, CT_Admin]
 
 comments date = Comment
   <$> commentTexts
@@ -181,3 +181,9 @@ testCases = testCaseAppAna
   (BS.pack <$> manyWords) -- value
   enumGenerator -- type
   manyWords -- info
+
+testFeedbackInfo = oneof
+  [ TestResult <$> arbitrary
+  , MessageForStudent <$> manyWords
+  , MessageForAdmin <$> manyWords
+  ]

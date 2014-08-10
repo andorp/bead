@@ -9,24 +9,20 @@ import Test.Framework.Providers.HUnit
 -- Bead imports
 
 import Bead.Domain.Entities
-import Bead.Domain.Entity.Assignment
-import Bead.Domain.Entity.Comment
 import Bead.Domain.TimeZone (utcZoneInfo)
 import Bead.Domain.Shared.Evaluation
 import Bead.Domain.Relationships
 import Bead.Persistence.Initialization
 import Bead.Persistence.Persist
 import Bead.Persistence.Relations
-import Control.Monad.Transaction.TIO
 
 -- Utils
 
-import Control.Monad (when)
-import Data.Time.Clock
+import Control.Monad (join, when)
 import Data.Maybe
+import Data.Time.Clock
 import System.Directory
-import Control.Monad (join)
-import Control.Monad.IO.Class
+import System.FilePath
 
 tests = testGroup "Persistence tests" [
     test_initialize_persistence
@@ -36,6 +32,7 @@ tests = testGroup "Persistence tests" [
   , test_create_group_user
   , testUserRegSaveAndLoad
   , testOpenSubmissions
+  , test_feedbacks
   , clean_up
   ]
 
@@ -51,6 +48,29 @@ test_initialize_persistence = testCase "Initialize NoSQLDir persistence layer" $
   initPersist init
   setUp <- isSetUp init
   assertBool "Settin up persistence was failed" setUp
+
+test_feedbacks = testCase "Create and delete test feedbacks" $ do
+  -- Given
+  interp <- createPersistInterpreter defaultConfig
+  let skey = "s2013"
+      skey' = SubmissionKey skey
+      sdir = testIncomingDataDir </> skey
+      publicMsg = "Public Message"
+      privateMsg = "Private Message"
+      result = "True"
+  createDirectory sdir
+  writeFile (sdir </> "private") privateMsg
+  writeFile (sdir </> "public")  publicMsg
+  writeFile (sdir </> "result")  result
+  -- When
+  rs <- liftE interp $ testFeedbacks
+  -- Then
+  assertEqual "Wrong values"
+    [ (skey', MessageForAdmin privateMsg)
+    , (skey', MessageForStudent publicMsg)
+    , (skey', TestResult True)
+    ]
+    (map (\(sk,f) -> (sk, info f)) rs)
 
 test_create_exercise = testCase "Save an exercise" $ do
   interp <- createPersistInterpreter defaultConfig

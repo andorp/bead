@@ -121,6 +121,11 @@ DictionaryFile {
     , Msg_Comments_SubmitButton { trans = "Beküld" }
     , Msg_Comments_AuthorTestScript_Private { trans = "Automata tesztelői komment (csak az oktató láthatja)" }
     , Msg_Comments_AuthorTestScript_Public { trans = "Automata tesztelői komment" }
+    , Msg_Comments_TestPassed { trans = "A megoldás átment a teszteken" }
+    , Msg_Comments_TestFailed { trans = "A megoldás megbukott a teszteken" }
+    , Msg_Comments_BinaryResultPassed { trans = "Elfogadott megoldás." }
+    , Msg_Comments_BinaryResultFailed { trans = "Elutasított megoldás." }
+    , Msg_Comments_PercentageResult { trans = "Az eredmény: %s százalék." }
     , Msg_Evaluation_Title { trans = "Értékelés" }
     , Msg_Evaluation_Course { trans = "Tárgy: " }
     , Msg_Evaluation_Group { trans = "Csoport: " }

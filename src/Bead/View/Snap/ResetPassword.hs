@@ -19,7 +19,7 @@ import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5  as H
 import qualified Text.Blaze.Html5.Attributes as A
 
-import           Bead.Domain.Entities
+import           Bead.Domain.Entities hiding (name)
 import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content hiding (name)

@@ -74,10 +74,10 @@ module Bead.Persistence.Persist (
   -- Test Jobs
   , saveTestJob -- Saves the test job for the test daemon
 
-  -- Test Comments
-  , insertTestComment
-  , testComments
-  , deleteTestComment -- Deletes the test daemon's comment from the test-incomming
+  -- Test Feedback
+  , insertTestFeedback
+  , testFeedbacks
+  , deleteTestFeedbacks -- Deletes the test daemon's feedbacks from the test-incomming
 
   -- Assignment Persistence
   , assignmentKeys
@@ -102,11 +102,17 @@ module Bead.Persistence.Persist (
   , submissionKeys
   , evaluationOfSubmission
   , commentsOfSubmission
+  , feedbacksOfSubmission
   , lastSubmission
 
   , removeFromOpened
   , openedSubmissions
   , usersOpenedSubmissions
+
+  -- Feedback
+  , saveFeedback
+  , loadFeedback
+  , submissionOfFeedback
 
   -- Evaluation
   , saveEvaluation
@@ -118,6 +124,8 @@ module Bead.Persistence.Persist (
   , saveComment
   , loadComment
   , submissionOfComment
+
+  , testIncomingDataDir
 #ifdef TEST
   , persistTests
 #endif
@@ -129,6 +137,7 @@ import           Bead.Domain.Types (Erroneous)
 import           Bead.Domain.Entities
 import           Bead.Domain.Entity.Assignment
 import           Bead.Domain.Entity.Comment
+import           Bead.Domain.Entity.Feedback
 import           Bead.Domain.Relationships
 
 import qualified Bead.Persistence.Initialization as Init
@@ -365,17 +374,18 @@ saveTestJob = PersistImpl.saveTestJob
 
 -- | Inserts a test comment for the incoming test comment directory,
 -- this function is mainly for testing of this functionality
-insertTestComment :: SubmissionKey -> String -> Persist ()
-insertTestComment = PersistImpl.insertTestComment
+insertTestFeedback :: SubmissionKey -> FeedbackInfo -> Persist ()
+insertTestFeedback = PersistImpl.insertTestFeedback
 
--- | List the comments that the test daemon left in the test-incomming, comment for the
--- groups admin, and comments for the student
-testComments :: Persist [(SubmissionKey, Comment)]
-testComments = PersistImpl.testComments
+-- | List the feedbacks that the test daemon left in the test-incomming,
+-- comments for the groups admin, and comments for the student, and
+-- the final test result.
+testFeedbacks :: Persist [(SubmissionKey, Feedback)]
+testFeedbacks = PersistImpl.testFeedbacks
 
 -- Deletes the test daemon's comment from the test-incomming
-deleteTestComment :: SubmissionKey -> Persist ()
-deleteTestComment = PersistImpl.deleteTestComment
+deleteTestFeedbacks :: SubmissionKey -> Persist ()
+deleteTestFeedbacks = PersistImpl.deleteTestFeedbacks
 
 -- * Assignment Persistence
 
@@ -465,6 +475,10 @@ evaluationOfSubmission = PersistImpl.evaluationOfSubmission
 commentsOfSubmission :: SubmissionKey -> Persist [CommentKey]
 commentsOfSubmission = PersistImpl.commentsOfSubmission
 
+-- Return all the feedbacks for the given submission
+feedbacksOfSubmission :: SubmissionKey -> Persist [FeedbackKey]
+feedbacksOfSubmission = PersistImpl.feedbacksOfSubmission
+
 -- Returns the last submission of an assignment submitted by the given user if the
 -- user is submitted something otherwise Nothing
 lastSubmission :: AssignmentKey -> Username -> Persist (Maybe SubmissionKey)
@@ -481,6 +495,20 @@ openedSubmissions = PersistImpl.openedSubmissions
 -- Calculates all the opened submisison for a given user and a given assignment
 usersOpenedSubmissions :: AssignmentKey -> Username -> Persist [SubmissionKey]
 usersOpenedSubmissions = PersistImpl.usersOpenedSubmissions
+
+-- * Feedback
+
+-- Saves the feedback
+saveFeedback :: SubmissionKey -> Feedback -> Persist FeedbackKey
+saveFeedback = PersistImpl.saveFeedback
+
+-- Loads the feedback
+loadFeedback :: FeedbackKey -> Persist Feedback
+loadFeedback = PersistImpl.loadFeedback
+
+-- Returns the submission of the feedback
+submissionOfFeedback :: FeedbackKey -> Persist SubmissionKey
+submissionOfFeedback = PersistImpl.submissionOfFeedback
 
 -- * Evaluation
 
@@ -513,6 +541,9 @@ loadComment = PersistImpl.loadComment
 -- Returns the submission of the comment
 submissionOfComment :: CommentKey -> Persist SubmissionKey
 submissionOfComment = PersistImpl.submissionOfComment
+
+testIncomingDataDir :: FilePath
+testIncomingDataDir = PersistImpl.testIncomingDataDir
 
 -- * Persistence initialization
 

@@ -24,6 +24,7 @@ import qualified Bead.Controller.Pages as P (invariants)
 import qualified Bead.Daemon.Logout as LD (unitTests)
 import qualified Bead.Domain.Entities as E
 import qualified Bead.Domain.Entity.Assignment as A
+import qualified Bead.Domain.Entity.Feedback as F
 import qualified Bead.Domain.RolePermission as RP (invariants)
 import qualified Bead.Persistence.NoSQLDirFile as L (unitTests)
 import qualified Bead.Persistence.Persist as P (persistTests)
@@ -101,3 +102,4 @@ themisTests = runTest buildTestSet $ do
   P.persistTests
   PR.persistRelationsTests
   DB.dataBridgeTests
+  F.feedbackTests

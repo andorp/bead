@@ -58,3 +58,8 @@ encodeCommentType = encodeJSON
 decodeCommentType :: JSONText -> Domain.CommentType
 decodeCommentType = decodeJSON
 
+encodeFeedbackInfo :: Domain.FeedbackInfo -> JSONText
+encodeFeedbackInfo = encodeJSON
+
+decodeFeedbackInfo :: JSONText -> Domain.FeedbackInfo
+decodeFeedbackInfo = decodeJSON

@@ -57,6 +57,7 @@ data SubmissionDesc = SubmissionDesc {
   , eAssignmentTitle :: String
   , eAssignmentDesc  :: String
   , eComments :: [Comment]
+  , eFeedbacks :: [Feedback]
   }
 
 submissionDescPermissions = ObjectPermissions [
@@ -133,6 +134,7 @@ data SubmissionDetailsDesc = SubmissionDetailsDesc {
   , sdStatus :: Maybe String
   , sdSubmission :: String
   , sdComments :: [Comment]
+  , sdFeedbacks :: [Feedback]
   }
 
 submissionDetailsDescPermissions = ObjectPermissions [
@@ -141,12 +143,18 @@ submissionDetailsDescPermissions = ObjectPermissions [
   , (P_Open, P_Comment)
   ]
 
--- Information about a submission for a given assignment
+-- | Information about a submission for a given assignment
 data SubmissionInfo
-  = Submission_Not_Found   -- There is no submission
-  | Submission_Unevaluated -- There is at least one submission which is not evaluated yet
-  | Submission_Tested      -- There is at least one submission which is tested by the automation testing framework
-  | Submission_Result EvaluationKey EvResult -- There is at least submission with the evaluation
+  = Submission_Not_Found
+    -- ^ There is no submission.
+  | Submission_Unevaluated
+    -- ^ There is at least one submission which is not evaluated yet.
+  | Submission_Tested Bool
+    -- ^ There is at least one submission which is tested by the automation testing framework.
+    -- The parameter is True if the submission has passed the tests, and False if has failed
+    -- the tests.
+  | Submission_Result EvaluationKey EvResult
+    -- ^ There is at least submission with the evaluation.
   deriving (Show)
 
 submissionInfoCata
@@ -157,14 +165,14 @@ submissionInfoCata
   s = case s of
     Submission_Not_Found   -> notFound
     Submission_Unevaluated -> unevaluated
-    Submission_Tested      -> tested
+    Submission_Tested r    -> tested r
     Submission_Result k r  -> result k r
 
 siEvaluationKey :: SubmissionInfo -> Maybe EvaluationKey
 siEvaluationKey = submissionInfoCata
   Nothing -- notFound
   Nothing -- unevaluated
-  Nothing -- tested
+  (const Nothing) -- tested
   (\key _result -> Just key) -- result
 
 -- Information to display on the UI
@@ -323,6 +331,11 @@ newtype EvaluationKey = EvaluationKey String
 
 evaluationKeyMap :: (String -> a) -> EvaluationKey -> a
 evaluationKeyMap f (EvaluationKey e) = f e
+
+newtype FeedbackKey = FeedbackKey String
+  deriving (Eq, Ord, Show)
+
+feedbackKey f (FeedbackKey x) = f x
 
 -- * Str instances
 

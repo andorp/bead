@@ -10,7 +10,6 @@ import           Data.Time
 
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Domain.Entities as E
-import           Bead.Domain.Entity.Assignment (Assignment)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Utils

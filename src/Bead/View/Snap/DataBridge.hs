@@ -8,7 +8,7 @@ import Data.Time (LocalTime(..))
 import Text.Printf (printf)
 
 import Bead.Domain.Types (readMaybe)
-import Bead.Domain.Entities
+import Bead.Domain.Entities hiding (name)
 import Bead.Domain.Relationships
 import Bead.Domain.Shared.Evaluation
 import Bead.View.Snap.TemplateAndComponentNames

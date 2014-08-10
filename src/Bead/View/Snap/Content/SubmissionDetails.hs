@@ -108,7 +108,7 @@ submissionDetailsContent p = do
         textAreaInput (fieldName commentValueField) Nothing ! fillDiv
       H.br
       submitButton (fieldName commentBtn) (msg $ Msg_SubmissionDetails_SubmitComment "Submit")
-    let studentComments = filter isStudentComment $ sdComments sm
+    let studentComments = forStudentCFs $ submissionDetailsDescToCFs sm
     when (not $ null studentComments) $ do
       H.hr
       i18n msg $ commentsDiv tc studentComments

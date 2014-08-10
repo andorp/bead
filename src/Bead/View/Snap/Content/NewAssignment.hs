@@ -151,13 +151,6 @@ pageDataCata
   PD_Assignment_Preview timezone key asg tsType files testcase tcmod ->
      assignmentPreview  timezone key asg tsType files testcase tcmod
 
-const2 = const  . const
-const3 = const2 . const
-const4 = const3 . const
-const5 = const4 . const
-const6 = const5 . const
-const7 = const6 . const
-
 -- * Course Assignment
 
 newCourseAssignmentPage :: GETContentHandler

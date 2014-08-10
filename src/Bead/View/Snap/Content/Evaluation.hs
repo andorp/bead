@@ -163,7 +163,7 @@ evaluationContent pd = do
       -- Renders the comment area where the user can place a comment
       do
         H.hr
-        i18n msg $ commentsDiv tc . eComments $ sd
+        i18n msg $ commentsDiv tc $ submissionDescToCFs sd
 
   where
     infoCell title value = do

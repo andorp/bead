@@ -137,6 +137,11 @@ translationList =
   , Msg_Comments_SubmitButton ()
   , Msg_Comments_AuthorTestScript_Private ()
   , Msg_Comments_AuthorTestScript_Public ()
+  , Msg_Comments_TestPassed ()
+  , Msg_Comments_TestFailed ()
+  , Msg_Comments_BinaryResultPassed ()
+  , Msg_Comments_BinaryResultFailed ()
+  , Msg_Comments_PercentageResult ()
 
   , Msg_Evaluation_Title ()
   , Msg_Evaluation_Course ()

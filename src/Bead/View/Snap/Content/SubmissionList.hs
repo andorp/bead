@@ -86,7 +86,7 @@ submissionListContent p = do
     resolveStatus msg = fromString . submissionInfoCata
       (msg $ Msg_SubmissionList_NotFound "Not Found")
       (msg $ Msg_SubmissionList_NotEvaluatedYet "Not evaluated yet")
-      (msg $ Msg_SubmissionList_Tested "Tested")
+      (const . msg $ Msg_SubmissionList_Tested "Tested")
       (const (evaluationResultMsg . evResult))
       where
         evaluationResultMsg = evaluationResultCata

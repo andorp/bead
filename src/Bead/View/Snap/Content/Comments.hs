@@ -1,10 +1,15 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Content.Comments (
-    commentsDiv
+    CommentOrFeedback
+  , submissionDescToCFs
+  , submissionDetailsDescToCFs
+  , commentsToCFs
+  , commentsDiv
   , commentPostForm
+  , feedbacksToCFs
+  , forStudentCFs
   ) where
 
-import           Data.Function (on)
 import           Data.List (sortBy)
 import           Data.String
 
@@ -15,38 +20,129 @@ import qualified Text.Blaze.Html5.Attributes as A
 import           Bead.Controller.Pages as Pages
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.SeeMore
+import           Bead.Domain.Shared.Evaluation
 
-commentsDiv :: UserTimeConverter -> [Comment] -> IHtml
+type CommentOrFeedback = Either Comment Feedback
+
+commentOrFeedback
+  comment
+  feedback
+  cf = case cf of
+    Left  c -> comment  c
+    Right f -> feedback f
+
+commentOrFeedbackTime = commentOrFeedback commentDate postDate
+
+commentsToCFs :: [Comment] -> [CommentOrFeedback]
+commentsToCFs = map Left
+
+feedbacksToCFs :: [Feedback] -> [CommentOrFeedback]
+feedbacksToCFs = map Right
+
+-- Converts a given submission description into a list of comments and feedbacks
+submissionDescToCFs :: SubmissionDesc -> [CommentOrFeedback]
+submissionDescToCFs s = (commentsToCFs $ eComments s) ++ (feedbacksToCFs $ eFeedbacks s)
+
+-- Converts a given submission detailed description into a list of comments and feedbacks
+submissionDetailsDescToCFs :: SubmissionDetailsDesc -> [CommentOrFeedback]
+submissionDetailsDescToCFs s = (commentsToCFs $ sdComments s) ++ (feedbacksToCFs $ sdFeedbacks s)
+
+-- Sort the items by increasing by the creation time
+sortIncreasingTime :: [CommentOrFeedback] -> [CommentOrFeedback]
+sortIncreasingTime = sortBy compareTimes where
+  compareTimes a b = compare (time a) (time b)
+  time = commentOrFeedbackTime
+
+-- Sort the items by descreasing by the creation time
+sortDecreasingTime = reverse . sortIncreasingTime
+
+-- Filters out the comments and feedback not visible for the students
+forStudentCFs :: [CommentOrFeedback] -> [CommentOrFeedback]
+forStudentCFs = filter forStudent where
+  forStudent =
+    commentOrFeedback
+      isStudentComment
+      (feedback
+         (feedbackInfo
+           (const True) -- result
+           (const True) -- student
+           (const False) -- admin
+           (const3 True)) -- evaluated
+         p_1_2)
+
+commentsDiv :: UserTimeConverter -> [CommentOrFeedback] -> IHtml
 commentsDiv t cs = do
   msg <- getI18N
   return $ H.div ! A.id "comments" $ do
-    mapM_ (commentPar msg t) $ sortBy ((flip compare) `on` commentDate) cs
+    mapM_ (commentPar msg t) $ sortDecreasingTime cs
 
-commentPar :: I18N -> UserTimeConverter -> Comment -> Html
+commentPar :: I18N -> UserTimeConverter -> CommentOrFeedback -> Html
 commentPar i18n t c = H.div # (commentDiv c) $ do
   H.p # textAlign "left" $
-    fromString $ (showDate . t . commentDate $ c) ++ ", " ++ (commentAuthor $ c)
-  seeMorePre i18n maxLength maxLines (comment c)
+    fromString $ (showDate . t . commentOrFeedbackTime $ c) ++ ", " ++ (commentAuthor $ c)
+  seeMorePre i18n maxLength maxLines (commentText c)
   where
-    commentAuthor = commentCata $ \_comment author _date ->
-      commentTypeCata
-        author -- student
-        author -- groupAdmin
-        author -- courseAdmin
-        author -- admin
-        author -- evaluation
-        (i18n $ Msg_Comments_AuthorTestScript_Private "Test Script (seen by only admins)") -- test agent
-        (i18n $ Msg_Comments_AuthorTestScript_Public "Test Script") -- message
+    commentText =
+      commentOrFeedback
+        (commentCata $ \comment _author _date _type -> comment)
+        (feedback
+           (feedbackInfo
+             (bool testsPassed testsFailed) -- result
+             id   -- comment
+             id   -- comment
+             evaluationText) -- evaluation
+           p_1_2)
+      where
+        testsPassed = i18n $ Msg_Comments_TestPassed "The submission has passed the tests."
+        testsFailed = i18n $ Msg_Comments_TestFailed "The submission has failed the tests."
 
-    commentDiv = commentCata $ \_comment _author _date ->
-      commentTypeCata
-        commentTextDiv -- student
-        commentTextDiv -- groupAdmin
-        commentTextDiv -- courseAdmin
-        commentTextDiv -- admin
-        commentTextDiv -- evaluation
-        commentTextDiv -- testAgent
-        messageCommentTextDiv -- message
+        bool true false x = if x then true else false
+
+        evaluationText result comment _author =
+          withEvResult result
+            (\b -> join [comment, "\n", translateMessage i18n (binaryResult b)])
+            (\p -> join [comment, "\n", translateMessage i18n (pctResult p)])
+
+        binaryResult (Binary b) =
+          TransMsg $ resultCata (Msg_Comments_BinaryResultPassed "The submission is accepted.")
+                                (Msg_Comments_BinaryResultFailed "The submission is rejected.")
+                                b
+
+        pctResult p = TransPrmMsg
+          (Msg_Comments_PercentageResult "The percentage of the evaluation: %s")
+          (show p)
+
+    commentAuthor =
+      commentOrFeedback
+        (commentCata $ \_comment author _date ->
+           commentTypeCata
+             author -- student
+             author -- groupAdmin
+             author -- courseAdmin
+             author) -- admin
+        (feedback
+          (feedbackInfo
+            (const result) -- result
+            (const testScript) -- student
+            (const adminTestScript) -- admin
+            (\_result _comment author -> author)) -- evaluation
+          p_1_2)
+      where
+        adminTestScript = i18n $ Msg_Comments_AuthorTestScript_Private "Test Script (seen by only admins)"
+        testScript = i18n $ Msg_Comments_AuthorTestScript_Public "Test Script"
+        result = testScript
+
+
+    commentDiv =
+      commentOrFeedback
+        (commentCata (const4 commentTextDiv))
+        (feedback
+          (feedbackInfo
+            (const commentTextDiv) -- result
+            (const commentTextDiv) -- student
+            (const messageCommentTextDiv) -- admin
+            (const3 messageCommentTextDiv)) -- evaluation
+          p_1_2)
 
     maxLength = 100
     maxLines = 5

@@ -275,7 +275,7 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated tested pas
     sc = submissionInfoCata
            notFound
            unevaluated
-           tested
+           (const tested)
            (\_key result -> val result) -- evaluated
 
     val (EvResult (BinEval (Binary Passed))) = passed
@@ -289,7 +289,7 @@ coloredSubmissionCell simpleCell rgbCell content notFound unevaluated tested pas
       submissionInfoCata
         (simpleCell noStyle)        -- Not Found
         (simpleCell unevaluatedStyle) -- Unevulated
-        (simpleCell testedStyle)      -- Tested
+        (const $ simpleCell testedStyle)      -- Tested
         (const resultCell)        -- Result
 
     resultCell (EvResult (BinEval (Binary Passed))) = simpleCell binaryPassedStyle

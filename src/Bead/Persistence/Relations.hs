@@ -62,7 +62,6 @@ import           Bead.Persistence.Initialization
 import qualified Test.Themis.Keyword.Encaps as Keyword (step, key)
 import           Test.Themis.Keyword.Encaps hiding (step, key)
 import           Test.Themis.Keyword
-import           Test.Themis.Provider.Interactive
 import           Test.Themis.Test
 import           Test.Themis.Test.Asserts hiding (assertEquals)
 #endif
@@ -174,7 +173,8 @@ submissionDesc sk = do
   asg <- loadAssignment ak
   created <- assignmentCreatedTime ak
   cgk <- courseOrGroupOfAssignment ak
-  cs  <- mapM (loadComment) =<< (commentsOfSubmission sk)
+  cs  <- mapM loadComment =<< (commentsOfSubmission sk)
+  fs  <- mapM loadFeedback =<< (feedbacksOfSubmission sk)
   case cgk of
     Left ck  -> do
       course <- loadCourse ck
@@ -191,6 +191,7 @@ submissionDesc sk = do
         , eAssignmentTitle = Assignment.name asg
         , eAssignmentDesc  = Assignment.desc asg
         , eComments = cs
+        , eFeedbacks = fs
         }
     Right gk -> do
       group <- loadGroup gk
@@ -210,6 +211,7 @@ submissionDesc sk = do
         , eAssignmentTitle = Assignment.name asg
         , eAssignmentDesc  = Assignment.desc asg
         , eComments = cs
+        , eFeedbacks = fs
         }
 
 -- Calculates the opened submissions for the user from the administrated groups and courses
@@ -307,7 +309,8 @@ submissionDetailsDesc sk = do
   (name, adminNames) <- courseNameAndAdmins ak
   asg <- loadAssignment ak
   sol <- solution       <$> loadSubmission sk
-  cs  <- mapM (loadComment) =<< (commentsOfSubmission sk)
+  cs  <- mapM loadComment =<< (commentsOfSubmission sk)
+  fs  <- mapM loadFeedback =<< (feedbacksOfSubmission sk)
   s   <- submissionEvalStr sk
   return SubmissionDetailsDesc {
     sdGroup   = name
@@ -316,6 +319,7 @@ submissionDetailsDesc sk = do
   , sdStatus     = s
   , sdSubmission = sol
   , sdComments   = cs
+  , sdFeedbacks  = fs
   }
 
 -- | Checks if the assignment of the submission is adminstrated by the user
@@ -403,16 +407,6 @@ calculateResultTests = do
 
 #endif
 
-{-
-calculateResult evalCfg = evaluateResults evalCfg . map sbmResult . filter hasResult
-  where
-    hasResult (Submission_Result _ _) = True
-    hasResult _                       = False
-
-    sbmResult (Submission_Result _ r) = r
-    sbmResult _ = error "sbmResult: impossible"
--}
-
 mkCourseSubmissionTableInfo
   :: String -> [Username] -> [AssignmentKey] -> CourseKey
   -> Persist SubmissionTableInfo
@@ -470,10 +464,13 @@ submissionInfo sk = do
   mEk <- evaluationOfSubmission sk
   case mEk of
     Nothing -> do
-      cs <- mapM (loadComment) =<< (commentsOfSubmission sk)
-      return $ case find isMessageComment cs of
-        Nothing -> Submission_Unevaluated
-        Just _t -> Submission_Tested
+      fs <- mapM loadFeedback =<< (feedbacksOfSubmission sk)
+      -- Supposing that only one test result feedback will arrive
+      -- to a submission.
+      return . maybe
+        Submission_Unevaluated
+        Submission_Tested
+          $ feedbackTestResult =<< find isTestedFeedback fs
     Just ek -> (Submission_Result ek . evaluationResult) <$> loadEvaluation ek
 
 -- Produces information of the last submission for the given user and assignment

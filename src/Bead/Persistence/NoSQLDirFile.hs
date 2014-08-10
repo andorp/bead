@@ -1,32 +1,32 @@
 {-# LANGUAGE CPP #-}
 module Bead.Persistence.NoSQLDirFile where
 
-import Bead.Domain.Types hiding (FileName(..), fileName)
-import qualified Bead.Domain.Types as T (FileName(..), fileName)
-import Bead.Domain.Entities
-import Bead.Domain.Entity.Assignment
-import Bead.Domain.Entity.Comment
-import Bead.Domain.Relationships
-import Control.Monad.Transaction.TIO
-
-import Control.DeepSeq (deepseq)
-import Control.Monad (liftM, filterM, unless)
-
-import Data.Char (ord)
-import Data.Time (UTCTime)
-import Data.List (nub)
-import System.FilePath (joinPath)
-import System.IO
-import System.IO.Temp (createTempDirectory)
-import System.Directory
-import System.Posix.Files (createSymbolicLink, removeLink, readSymbolicLink, fileExist)
-import Control.Exception as E
-import Control.Monad (join, when)
-import Data.ByteString.Char8 (ByteString)
+import           Control.DeepSeq (deepseq)
+import           Control.Exception as E
+import           Control.Monad (filterM, join, liftM, unless, when)
+import           Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as BS
+import           Data.Char (ord)
+import           Data.Time (UTCTime)
+import           Data.List (nub)
+import           System.Directory
+import           System.FilePath (joinPath)
+import           System.IO
+import           System.IO.Temp (createTempDirectory)
+import           System.IO.Unsafe
+import           System.Posix.Files (createSymbolicLink, removeLink, readSymbolicLink, fileExist)
+
+import           Text.JSON.Generic
+
+import           Bead.Domain.Entities
+import           Bead.Domain.Relationships
+import           Bead.Domain.Types hiding (FileName(..), fileName)
+import qualified Bead.Domain.Types as T (FileName(..), fileName)
+import           Control.Monad.Transaction.TIO
+
 
 #ifdef TEST
-import Bead.Invariants (UnitTests(..), InvariantsM2(..))
+import           Bead.Invariants (UnitTests(..), InvariantsM2(..))
 #endif
 
 type DirPath = FilePath
@@ -47,6 +47,7 @@ testScriptDir = "test-script"
 testCaseDir = "test-case"
 testOutgoingDir = "test-outgoing"
 testIncomingDir = "test-incoming"
+feedbackDir = "feedback"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
@@ -62,6 +63,7 @@ testScriptDataDir = joinPath [dataDir, testScriptDir]
 testCaseDataDir = joinPath [dataDir, testCaseDir]
 testOutgoingDataDir = joinPath [dataDir, testOutgoingDir]
 testIncomingDataDir = joinPath [dataDir, testIncomingDir]
+feedbackDataDir = joinPath [dataDir, feedbackDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -80,6 +82,7 @@ persistenceDirs = [
   , testCaseDataDir
   , testOutgoingDataDir
   , testIncomingDataDir
+  , feedbackDataDir
   ]
 
 class DirName d where
@@ -139,6 +142,10 @@ instance DirName TestCaseKey where
 
 instance DirName TestJobKey where
   dirName (TestJobKey k) = joinPath [testCaseDataDir, k]
+
+instance DirName FeedbackKey where
+  dirName (FeedbackKey k) = joinPath [feedbackDataDir, k]
+
 
 -- * Load and save aux functions
 
@@ -460,6 +467,12 @@ instance Save TestCase where
     fileSave d "type" type_
     fileSave d "info" info
 
+instance Save Feedback where
+  save d = feedback encodeJSON $ \info date -> do
+    createStructureDirs d feedbackDirStructure
+    fileSave d "info" info
+    fileSave d "date" $ show date
+
 -- * Load instances
 
 instance Load Role where
@@ -560,6 +573,11 @@ instance Load TestCase where
     (fileLoadBS d "value")
     (fileLoad d "type" readMaybe)
     (fileLoad d "info" same)
+
+instance Load Feedback where
+  load d = mkFeedback
+    (fileLoad d "info" maybeDecodeJSON)
+    (fileLoad d "date" readMaybe)
 
 -- * Update instances
 
@@ -669,7 +687,13 @@ assignmentDirStructure = DirStructure {
 
 submissionDirStructure = DirStructure {
     files = ["solution", "date"]
-  , directories = ["assignment", "user", "evaluation", "comment"]
+  , directories = [
+        "assignment"
+      , "user"
+      , "evaluation"
+      , "comment"
+      , "feedback"
+      ]
   }
 
 -- Course directory structure
@@ -753,6 +777,11 @@ testJobDirStructure = DirStructure {
   , directories = []
   }
 
+feedbackDirStructure = DirStructure {
+    files = [ "info", "date" ]
+  , directories = [ "submission" ]
+  }
+
 -- * Encoding
 
 ordEncode :: String -> String
@@ -770,6 +799,15 @@ loadDesc d = loadString d "description"
 
 savePwd d = saveString d "password"
 loadPwd d = loadString d "password"
+
+maybeDecodeJSON :: (Data a) => String -> Maybe a
+maybeDecodeJSON s = unsafePerformIO $
+  evaluate (Just $ decodeJSON s)
+  `catch`
+  nothing
+    where
+      nothing :: SomeException -> IO (Maybe a)
+      nothing _ = return Nothing
 
 #ifdef TEST
 
@@ -795,6 +833,7 @@ dirStructures = [
   , testScriptDirStructure
   , testCaseDirStructure
   , testJobDirStructure
+  , feedbackDirStructure
   ]
 
 unitTests = UnitTests [

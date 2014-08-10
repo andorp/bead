@@ -2,10 +2,8 @@
 {-# LANGUAGE OverloadedStrings          #-}
 module Bead.Controller.UserStories where
 
-import           Bead.Domain.Entities as E
-import           Bead.Domain.Entity.Assignment (Assignment)
+import           Bead.Domain.Entities as E hiding (name)
 import qualified Bead.Domain.Entity.Assignment as Assignment
-import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Domain.Types
@@ -22,7 +20,6 @@ import           Control.Applicative
 import           Control.Exception
 import           Control.Monad hiding (guard)
 import           Control.Monad.Error (Error(..))
-import           Control.Concurrent.MVar
 import qualified Control.Monad.State  as CMS
 import qualified Control.Monad.Error  as CME
 import qualified Control.Monad.Reader as CMR
@@ -35,8 +32,6 @@ import           Data.Maybe (catMaybes)
 import           Data.Time (UTCTime(..), getCurrentTime)
 import           Numeric (showHex)
 import           Text.Printf (printf)
-
-import Control.Monad.Transaction.TIO
 
 -- User error can be a message that need to be displayed, or
 -- a parametrized message with a string parameter that needs
@@ -780,7 +775,7 @@ authorize p o = do
       ]
 
     testAgentPermObjects = [
-        (P_Open, P_TestIncoming), (P_Open, P_Submission), (P_Create, P_Comment)
+        (P_Open, P_TestIncoming), (P_Open, P_Submission), (P_Create, P_Feedback)
       ]
 
 -- | No operational User Story
@@ -997,7 +992,6 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
   authorize P_Create P_Evaluation
   now <- liftIO $ getCurrentTime
   userData <- currentUser
-  i18n <- asksI18N
   join . withUserAndPersist $ \u -> do
     admined <- Persist.isAdminedSubmission u sk
     if admined
@@ -1006,7 +1000,7 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
                 Nothing -> do
                   Persist.saveEvaluation sk e
                   Persist.removeOpenedSubmission sk
-                  Persist.saveComment sk (evaluationComment i18n now userData e)
+                  Persist.saveFeedback sk (evaluationToFeedback now userData e)
                   return (return ())
                 Just _ -> return $ do
                             logMessage INFO "Other admin just evaluated this submission"
@@ -1021,13 +1015,12 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
   authorize P_Modify P_Evaluation
   now <- liftIO $ getCurrentTime
   userData <- currentUser
-  i18n <- asksI18N
   join . withUserAndPersist $ \u -> do
     sk <- Persist.submissionOfEvaluation ek
     admined <- Persist.isAdminedSubmission u sk
     if admined
       then do Persist.modifyEvaluation ek e
-              Persist.saveComment sk (evaluationComment i18n now userData e)
+              Persist.saveFeedback sk (evaluationToFeedback now userData e)
               return (return ())
       else return $ do
               logMessage INFO . violation $ printf "The user tries to modify an evaluation (%s) that not belongs to him." (show ek)
@@ -1048,18 +1041,19 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
               logMessage INFO . violation $ printf "The user tries to comment on a submission (%s) that not belongs to him" (show sk)
               errorPage . userError $ Msg_UserStoryError_NonCommentableSubmission "The submission is not commentable"
 
--- Test agent user story, that reads out all the comments that the test daemon left
--- and saves the comments
-testAgentComments :: UserStory ()
-testAgentComments = do
+-- Test agent user story, that reads out all the feedbacks that the test daemon left
+-- and saves them
+testAgentFeedbacks :: UserStory ()
+testAgentFeedbacks = do
   authorize P_Open P_TestIncoming
   authorize P_Open P_Submission
-  authorize P_Create P_Comment
+  authorize P_Create P_Feedback
   persistence $ do
-    comments <- Persist.testComments
-    forM_ comments $ \(sk,c) -> do
-      Persist.saveComment sk c
-      Persist.deleteTestComment sk
+    feedbacks <- Persist.testFeedbacks
+    forM_ feedbacks (uncurry Persist.saveFeedback)
+    mapM_ Persist.deleteTestFeedbacks (nub $ map submission feedbacks)
+  where
+    submission = fst
 
 userSubmissions :: Username -> AssignmentKey -> UserStory (Maybe UserSubmissionDesc)
 userSubmissions s ak = logAction INFO msg $ do

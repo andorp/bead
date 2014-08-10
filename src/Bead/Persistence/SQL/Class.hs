@@ -241,3 +241,17 @@ instance DomainValue Domain.Comment where
       (commentDate ent)
       (decodeCommentType $ commentType ent)
 
+instance DomainKey Domain.FeedbackKey where
+  type EntityForKey Domain.FeedbackKey = FeedbackGeneric
+  fromDomainKey = domainKeyToEntityKey $ \(Domain.FeedbackKey k) -> k
+  toDomainKey   = entityToDomainKey Domain.FeedbackKey "entityToFeedbackKey"
+
+instance DomainValue Domain.Feedback where
+  type EntityValue Domain.Feedback = FeedbackGeneric
+
+  fromDomainValue = Domain.feedback encodeFeedbackInfo Feedback
+
+  toDomainValue ent =
+    Domain.Feedback
+      (decodeFeedbackInfo $ feedbackInfo ent)
+      (feedbackDate ent)

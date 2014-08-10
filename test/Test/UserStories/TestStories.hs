@@ -12,8 +12,7 @@ import           Bead.Controller.Logging
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext
 import           Bead.Controller.UserStories as U
-import           Bead.Domain.Entities as E
-import           Bead.Domain.Entity.Assignment hiding (name)
+import           Bead.Domain.Entities as E hiding (name)
 import           Bead.Domain.Relationships (TCCreation(..))
 import           Bead.Domain.Shared.Evaluation
 import           Bead.Domain.TimeZone (utcZoneInfo)

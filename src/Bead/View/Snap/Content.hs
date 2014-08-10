@@ -53,6 +53,7 @@ module Bead.View.Snap.Content (
 
   , module Bead.Domain.Entities
   , module Bead.Domain.Entity.Comment
+  , module Bead.Domain.Func
   , module Bead.Domain.Relationships
   , module Bead.View.UserActions
   , module Bead.View.Snap.I18N
@@ -76,8 +77,9 @@ import Snap.Blaze (blaze)
 
 import Bead.Controller.Pages
 import Bead.Controller.ServiceContext (UserState(..), userStateCata)
-import Bead.Domain.Entities
+import Bead.Domain.Entities hiding (name)
 import Bead.Domain.Entity.Comment
+import Bead.Domain.Func
 import Bead.Domain.Relationships
 import Bead.View.UserActions
 import Bead.View.Snap.Application

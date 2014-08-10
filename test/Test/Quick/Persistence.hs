@@ -932,7 +932,7 @@ testJobCreationTest = do
         assertEquals script (tsScript script2) "Scripts are different"
         assertEquals tests (tcValue case2) "Tests are different"
 
-incomingCommentsTest = do
+incomingFeedbacksTest = do
   reinitPersistence
   us <- users 400
   cs <- courses 50
@@ -944,21 +944,21 @@ incomingCommentsTest = do
     ((_u,_ak),sk) <- pick $ elements ss
     cks <- run $ listInRef commented
     case sk `elem` cks of
-      True  -> checkIfThereIsAComment sk
+      True  -> checkIfThereIsAFeedback sk
       False -> checkIfCanBeCommented sk commented
   where
-    checkIfThereIsAComment sk =
+    checkIfThereIsAFeedback sk =
       join $ runPersistCmd $ do
-        cks <- map fst <$> testComments
+        cks <- map fst <$> testFeedbacks
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
 
     checkIfCanBeCommented sk commented = do
       run $ insertListRef commented sk
-      comment <- pick $ Gen.manyWords
+      feedback <- pick $ Gen.testFeedbackInfo
       join $ runPersistCmd $ do
-        insertTestComment sk comment
-        cks <- map fst <$> testComments
+        insertTestFeedback sk feedback
+        cks <- map fst <$> testFeedbacks
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
 
@@ -1061,7 +1061,7 @@ openSubmissionsTest = do
               , show a, " ", show ck, " student ", show u, " submission ", show sk
               ]
 
-deleteIncomingCommentsTest = do
+deleteIncomingFeedbackTest = do
   reinitPersistence
   us <- users 400
   cs <- courses 50
@@ -1070,26 +1070,25 @@ deleteIncomingCommentsTest = do
   ss <- submissions 1500 us as
   quick 1000 $ do
     ((_u,_ak),sk) <- pick $ elements ss
-    sks <- runPersistCmd $ (map fst <$> testComments)
+    sks <- runPersistCmd $ (map fst <$> testFeedbacks)
     case sk `elem` sks of
       True  -> checkIfCanBeDeleted   sk
       False -> checkIfCanBeCommented sk
   where
     checkIfCanBeDeleted sk = do
       join $ runPersistCmd $ do
-        deleteTestComment sk
-        cks <- map fst <$> testComments
+        deleteTestFeedbacks sk
+        cks <- map fst <$> testFeedbacks
         return $ do
           assertFalse (sk `elem` cks) ("Comment was not deleted: " ++ show sk)
 
     checkIfCanBeCommented sk = do
-      comment <- pick $ Gen.manyWords
+      feedback <- pick $ Gen.testFeedbackInfo
       join $ runPersistCmd $ do
-        insertTestComment sk comment
-        cks <- map fst <$> testComments
+        insertTestFeedback sk feedback
+        cks <- map fst <$> testFeedbacks
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
-
 
 runPersistCmd :: Persist a -> PropertyM IO a
 runPersistCmd m = do
@@ -1161,8 +1160,8 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Copy, list, and get user's data file path" $ userFileHandlingTest
   , testCase "Overwrite user's data file" $ userOverwriteFileTest
   , testCase "Test Job cration" $ testJobCreationTest
-  , testCase "Incoming comments" $ incomingCommentsTest
-  , testCase "Delete incoming comments" $ deleteIncomingCommentsTest
+  , testCase "Incoming feedbacks" $ incomingFeedbacksTest
+  , testCase "Delete incoming feedbacks" $ deleteIncomingFeedbackTest
   , testCase "Open submissions list" $ openSubmissionsTest
   , cleanUpPersistence
   ]

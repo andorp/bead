@@ -67,9 +67,9 @@ module Bead.Persistence.NoSQLDir (
 
   , saveTestJob
 
-  , insertTestComment
-  , testComments
-  , deleteTestComment
+  , insertTestFeedback
+  , testFeedbacks
+  , deleteTestFeedbacks
 
   , filterAssignment
   , assignmentKeys
@@ -95,6 +95,7 @@ module Bead.Persistence.NoSQLDir (
   , submissionKeys
   , evaluationOfSubmission
   , commentsOfSubmission
+  , feedbacksOfSubmission
 
   , removeFromOpened
   , openedSubmissions
@@ -105,9 +106,15 @@ module Bead.Persistence.NoSQLDir (
   , modifyEvaluation
   , submissionOfEvaluation
 
+  , saveFeedback
+  , loadFeedback
+  , submissionOfFeedback
+
   , saveComment
   , loadComment
   , submissionOfComment
+
+  , testIncomingDataDir
 
   , isPersistenceSetUp
   , initPersistence
@@ -121,8 +128,6 @@ module Bead.Persistence.NoSQLDir (
 
 import Bead.Domain.Types
 import Bead.Domain.Entities
-import Bead.Domain.Entity.Assignment
-import Bead.Domain.Entity.Comment
 import Bead.Domain.Relationships
 import Bead.Persistence.Initialization
 import Bead.Persistence.NoSQLDirFile
@@ -132,7 +137,8 @@ import Control.Applicative ((<$>))
 import Control.Concurrent.MVar
 import Control.Exception (IOException)
 import Control.Monad (join, liftM, filterM, when, unless, forM)
-import System.FilePath ((</>), joinPath, takeBaseName, takeFileName, splitFileName, splitExtension)
+import Data.Maybe (catMaybes)
+import System.FilePath
 import System.Directory hiding (copyFile)
 import System.Posix.Types (COff(..))
 import System.Posix.Files (getFileStatus, fileExist, fileSize, modificationTime)
@@ -151,17 +157,14 @@ reason :: Either IOException a -> (Erroneous a)
 reason (Left e)  = Left . show $ e
 reason (Right x) = Right x
 
---runPersist' :: TIO a -> IO (Erroneous a)
---runPersist' = liftM reason . atomically
-
 -- No configuration is necessary
 data Config = Config
 
 -- | Creates a persist initialization structure.
 createPersistInit :: Config -> IO PersistInit
 createPersistInit _ = return PersistInit {
-    isSetUp = nIsPersistenceSetUp
-  , initPersist = nInitPersistence
+    isSetUp = isPersistenceSetUp
+  , initPersist = initPersistence
   , tearDown = nTearDown
   }
 
@@ -188,117 +191,13 @@ runInterpreter (Interpreter run) = run
 
 runPersist = runInterpreter
 
-saveUser      = nSaveUser
-personalInfo  = nPersonalInfo
-filterUsers   = nFilterUsers
-loadUser      = nLoadUser
-updateUser    = nUpdateUser
-doesUserExist = nDoesUserExist
-userDescription = nUserDescription
-userSubmissions = nUserSubmissions
-administratedCourses = nAdministratedCourses
-administratedGroups = nAdministratedGroups
-
-copyFile  = nCopyFile
-listFiles = nListFiles
-getFile   = nGetFile
-
-saveUserReg = nSaveUserReg
-loadUserReg = nLoadUserReg
-
-saveCourse    = nSaveCourse
-courseKeys    = nCourseKeys
-filterCourses = nFilterCourses
-loadCourse    = nLoadCourse
-groupKeysOfCourse = nGroupKeysOfCourse
-isUserInCourse = nIsUserInCourse
-userCourses = nUserCourses
-createCourseAdmin = nCreateCourseAdmin
-courseAdmins = nCourseAdmins
-subscribedToCourse = nSubscribedToCourse
-unsubscribedFromCourse = nUnsubscribedFromCourse
-testScriptsOfCourse = nTestScriptsOfCourse
-
-saveGroup     = nSaveGroup
-loadGroup     = nLoadGroup
-courseOfGroup = nCourseOfGroup
-filterGroups  = nFilterGroups
-isUserInGroup = nIsUserInGroup
-userGroups    = nUserGroups
-subscribe     = nSubscribe
-unsubscribe   = nUnsubscribe
-groupAdmins   = nGroupAdmins
-createGroupAdmin    = nCreateGroupAdmin
-subscribedToGroup   = nSubscribedToGroup
-unsubscribedFromGroup = nUnsubscribedFromGroup
-
-saveTestScript = nSaveTestScript
-loadTestScript = nLoadTestScript
-courseOfTestScript = nCourseOfTestScript
-modifyTestScript = nModifyTestScript
-
-saveTestCase = nSaveTestCase
-loadTestCase = nLoadTestCase
-testScriptOfTestCase = nTestScriptOfTestCase
-modifyTestCase = nModifyTestCase
-removeTestCaseAssignment = nRemoveTestCaseAssignment
-copyTestCaseFile = nCopyTestCaseFile
-modifyTestScriptOfTestCase = nModifyTestScriptOfTestCase
-
-saveTestJob = nSaveTestJob
-
-insertTestComment = nInsertTestComment
-testComments = nTestComments
-deleteTestComment = nDeleteTestComment
-
-filterAssignment     = nFilterAssignment
-submissionKeys       = nSubmissionKeys
-assignmentKeys       = nAssignmentKeys
-saveAssignment       = nSaveAssignment
-loadAssignment       = nLoadAssignment
-modifyAssignment     = nModifyAssignment
-saveCourseAssignment = nSaveCourseAssignment
-saveGroupAssignment  = nSaveGroupAssignment
-courseAssignments    = nCourseAssignments
-groupAssignments     = nGroupAssignments
-courseOfAssignment   = nCourseOfAssignment
-groupOfAssignment    = nGroupOfAssignment
-submissionsForAssignment = nSubmissionsForAssignment
-assignmentCreatedTime    = nAssignmentCreatedTime
-lastSubmission           = nLastSubmission
-testCaseOfAssignment = nTestCaseOfAssignment
-
-saveSubmission = nSaveSubmission
-loadSubmission = nLoadSubmission
-assignmentOfSubmission = nAssignmentOfSubmission
-usernameOfSubmission   = nUsernameOfSubmission
-filterSubmissions      = nFilterSubmissions
-evaluationOfSubmission = nEvaluationOfSubmission
-commentsOfSubmission   = nCommentsOfSubmission
-
-removeFromOpened  = nRemoveFromOpened
-openedSubmissions = nOpenedSubmission
-usersOpenedSubmissions = nUsersOpenedSubmissions
-
-saveEvaluation = nSaveEvaluation
-loadEvaluation = nLoadEvaluation
-modifyEvaluation = nModifyEvaluation
-submissionOfEvaluation = nSubmissionOfEvaluation
-
-saveComment = nSaveComment
-loadComment = nLoadComment
-submissionOfComment = nSubmissionOfComment
-
-isPersistenceSetUp = nIsPersistenceSetUp
-initPersistence    = nInitPersistence
-
 -- Returns True if all the necessary persistence directories exist on the disk
 -- otherwise false
-nIsPersistenceSetUp :: IO Bool
-nIsPersistenceSetUp = and <$> mapM doesDirectoryExist persistenceDirs
+isPersistenceSetUp :: IO Bool
+isPersistenceSetUp = and <$> mapM doesDirectoryExist persistenceDirs
 
-nInitPersistence :: IO ()
-nInitPersistence = mapM_ createDirWhenDoesNotExist persistenceDirs
+initPersistence :: IO ()
+initPersistence = mapM_ createDirWhenDoesNotExist persistenceDirs
   where
     createDirWhenDoesNotExist d = do
       existDir <- doesDirectoryExist d
@@ -309,22 +208,22 @@ nTearDown = do
   exists <- doesDirectoryExist dataDir
   when exists $ removeDirectoryRecursive dataDir
 
-nSaveUserReg :: UserRegistration -> TIO UserRegKey
-nSaveUserReg u = do
+saveUserReg :: UserRegistration -> TIO UserRegKey
+saveUserReg u = do
   dirName <- createTmpDir userRegDataDir "ur"
   let userRegKey = UserRegKey . takeBaseName $ dirName
   save dirName u
   return userRegKey
 
-nLoadUserReg :: UserRegKey -> TIO UserRegistration
-nLoadUserReg u = do
+loadUserReg :: UserRegKey -> TIO UserRegistration
+loadUserReg u = do
   let p = userRegDirPath u
   isU <- isUserRegDir p
   unless isU . throwEx . userError . join $ [str u, " user registration does not exist."]
   liftM snd $ tLoadUserReg p
 
-nSaveUser :: User -> TIO ()
-nSaveUser usr = do
+saveUser :: User -> TIO ()
+saveUser usr = do
   userExist <- isThereAUser (u_username usr)
   case userExist of
     True -> throwEx $ userError $ "The user already exists: " ++ show (u_username usr)
@@ -343,8 +242,8 @@ checkIfUserDir username = do
   correct <- hasNoRollback $ isCorrectStructure dirname userDirStructure
   unless correct . throwEx . userError $ "User directory is not correct: " ++ show username
 
-nCopyFile :: Username -> FilePath -> UsersFile -> TIO ()
-nCopyFile username tmpPath userfile = do
+copyFile :: Username -> FilePath -> UsersFile -> TIO ()
+copyFile username tmpPath userfile = do
   checkIfUserDir username
   let dirname = dirName username
       datadir = dirname </> "datadir"
@@ -353,8 +252,8 @@ nCopyFile username tmpPath userfile = do
 -- Calculates the file modification time in UTC time from the File status
 fileModificationInUTCTime = posixSecondsToUTCTime . realToFrac . modificationTime
 
-nListFiles :: Username -> TIO [(UsersFile, FileInfo)]
-nListFiles username = do
+listFiles :: Username -> TIO [(UsersFile, FileInfo)]
+listFiles username = do
   checkIfUserDir username
   let dirname = dirName username
       datadir = dirname </> "datadir"
@@ -368,8 +267,8 @@ nListFiles username = do
   where
     fileOffsetToInt (COff x) = fromIntegral x
 
-nGetFile :: Username -> UsersFile -> TIO FilePath
-nGetFile username userfile = do
+getFile :: Username -> UsersFile -> TIO FilePath
+getFile username userfile = do
   checkIfUserDir username
   let dirname = dirName username
       dataDir = dirname </> "datadir"
@@ -390,37 +289,37 @@ isThereAUser uname = hasNoRollback $ do
     False -> return False
     True  -> isCorrectStructure dirname userDirStructure
 
-nDoesUserExist :: Username -> TIO Bool
-nDoesUserExist = hasNoRollback . doesDirectoryExist . dirName
+doesUserExist :: Username -> TIO Bool
+doesUserExist = hasNoRollback . doesDirectoryExist . dirName
 
-nPersonalInfo :: Username -> TIO PersonalInfo -- (Role, String)
-nPersonalInfo uname = do
-  user <- nLoadUser uname
+personalInfo :: Username -> TIO PersonalInfo -- (Role, String)
+personalInfo uname = do
+  user <- loadUser uname
   return $ flip userCata user $ \role _ _ name timezone _lang ->
     PersonalInfo (role, name, timezone)
 
 isUserDir :: FilePath -> TIO Bool
 isUserDir = isCorrectDirStructure userDirStructure
 
-nFilterUsers :: (User -> Bool) -> TIO [User]
-nFilterUsers f = filterDirectory userDataDir isUserDir load (filter f)
+filterUsers :: (User -> Bool) -> TIO [User]
+filterUsers f = filterDirectory userDataDir isUserDir load (filter f)
 
-nLoadUser :: Username -> TIO User
-nLoadUser = load . dirName
+loadUser :: Username -> TIO User
+loadUser = load . dirName
 
-nUserDescription :: Username -> TIO UserDesc
-nUserDescription = liftM mkUserDescription . nLoadUser
+userDescription :: Username -> TIO UserDesc
+userDescription = liftM mkUserDescription . loadUser
 
-nUpdateUser :: User -> TIO ()
-nUpdateUser user = update (dirName . u_username $ user) user
+updateUser :: User -> TIO ()
+updateUser user = update (dirName . u_username $ user) user
 
-nAdministratedCourses :: Username -> TIO [(CourseKey, Course)]
-nAdministratedCourses u = do
+administratedCourses :: Username -> TIO [(CourseKey, Course)]
+administratedCourses u = do
   let dirname = joinPath [dirName u, "courseadmin"]
   (selectValidDirsFrom dirname isCourseDir) >>= (mapM tLoadCourse)
 
-nAdministratedGroups :: Username -> TIO [(GroupKey, Group)]
-nAdministratedGroups u = do
+administratedGroups :: Username -> TIO [(GroupKey, Group)]
+administratedGroups u = do
   let dirname = joinPath [dirName u, "groupadmin"]
   (selectValidDirsFrom dirname isGroupDir) >>= (mapM tLoadGroup)
 
@@ -433,8 +332,8 @@ groupDirPath (GroupKey g) = joinPath [groupDataDir, g]
 userRegDirPath :: UserRegKey -> FilePath
 userRegDirPath = userRegKeyFold $ \u -> joinPath [userRegDataDir, u]
 
-nLoadCourse :: CourseKey -> TIO Course
-nLoadCourse c = do
+loadCourse :: CourseKey -> TIO Course
+loadCourse c = do
   let p = courseDirPath c
   isC <- isCourseDir p
   -- GUARD: Course dir does not exist
@@ -448,33 +347,33 @@ tLoadCourse = tLoadPersistenceObject CourseKey
 tLoadUserReg :: FilePath -> TIO (UserRegKey, UserRegistration)
 tLoadUserReg = tLoadPersistenceObject UserRegKey
 
-nGroupKeysOfCourse :: CourseKey -> TIO [GroupKey]
-nGroupKeysOfCourse c = do
+groupKeysOfCourse :: CourseKey -> TIO [GroupKey]
+groupKeysOfCourse c = do
   let p = courseDirPath c
       g = joinPath [p, "groups"]
   subdirs <- getSubDirectories g
   return . map (GroupKey . takeBaseName) $ subdirs
 
-nCreateCourseAdmin :: Username -> CourseKey -> TIO ()
-nCreateCourseAdmin u ck = do
-  usr <- nLoadUser u
+createCourseAdmin :: Username -> CourseKey -> TIO ()
+createCourseAdmin u ck = do
+  usr <- loadUser u
   case atLeastCourseAdmin . u_role $ usr of
     False -> throwEx . userError . join $ [str u, " is not course admin"]
     True  -> do
       link u ck "admins"
       link ck u "courseadmin"
 
-nSubscribedToCourse :: CourseKey -> TIO [Username]
-nSubscribedToCourse = objectsIn "users" Username isUserDir
+subscribedToCourse :: CourseKey -> TIO [Username]
+subscribedToCourse = objectsIn "users" Username isUserDir
 
-nSubscribedToGroup :: GroupKey -> TIO [Username]
-nSubscribedToGroup = objectsIn "users" Username isUserDir
+subscribedToGroup :: GroupKey -> TIO [Username]
+subscribedToGroup = objectsIn "users" Username isUserDir
 
-nUnsubscribedFromCourse :: CourseKey -> TIO [Username]
-nUnsubscribedFromCourse = objectsIn "unsubscribed" Username isUserDir
+unsubscribedFromCourse :: CourseKey -> TIO [Username]
+unsubscribedFromCourse = objectsIn "unsubscribed" Username isUserDir
 
-nUnsubscribedFromGroup :: GroupKey -> TIO [Username]
-nUnsubscribedFromGroup = objectsIn "unsubscribed" Username isUserDir
+unsubscribedFromGroup :: GroupKey -> TIO [Username]
+unsubscribedFromGroup = objectsIn "unsubscribed" Username isUserDir
 
 isCorrectDirStructure :: DirStructure -> FilePath -> TIO Bool
 isCorrectDirStructure d p = hasNoRollback $ isCorrectStructure p d
@@ -482,8 +381,8 @@ isCorrectDirStructure d p = hasNoRollback $ isCorrectStructure p d
 isGroupDir :: FilePath -> TIO Bool
 isGroupDir = isCorrectDirStructure groupDirStructure
 
-nLoadGroup :: GroupKey -> TIO Group
-nLoadGroup g = do
+loadGroup :: GroupKey -> TIO Group
+loadGroup g = do
   let p = groupDirPath g
   isG <- isGroupDir p
   -- GUARD: Group id does not exist
@@ -498,30 +397,30 @@ admins k = do
   let dirname = joinPath [dirName k, "admins"]
   mapM (liftM u_username . load) =<< (selectValidDirsFrom dirname isUserDir)
 
-nGroupAdmins :: GroupKey -> TIO [Username]
-nGroupAdmins = admins
+groupAdmins :: GroupKey -> TIO [Username]
+groupAdmins = admins
 
-nCourseAdmins :: CourseKey -> TIO [Username]
-nCourseAdmins = admins
+courseAdmins :: CourseKey -> TIO [Username]
+courseAdmins = admins
 
-nTestScriptsOfCourse :: CourseKey -> TIO [TestScriptKey]
-nTestScriptsOfCourse = objectsIn "test-script" TestScriptKey isTestScriptDir
+testScriptsOfCourse :: CourseKey -> TIO [TestScriptKey]
+testScriptsOfCourse = objectsIn "test-script" TestScriptKey isTestScriptDir
 
-nIsUserInGroup :: Username -> GroupKey -> TIO Bool
-nIsUserInGroup u gk = isLinkedIn u gk "users"
+isUserInGroup :: Username -> GroupKey -> TIO Bool
+isUserInGroup u gk = isLinkedIn u gk "users"
 
-nIsUserInCourse :: Username -> CourseKey -> TIO Bool
-nIsUserInCourse u ck = isLinkedIn u ck "users"
+isUserInCourse :: Username -> CourseKey -> TIO Bool
+isUserInCourse u ck = isLinkedIn u ck "users"
 
-nSubscribe :: Username -> CourseKey -> GroupKey -> TIO ()
-nSubscribe username ck gk = do
+subscribe :: Username -> CourseKey -> GroupKey -> TIO ()
+subscribe username ck gk = do
   link username gk "users"
   link username ck "users"
   link gk username "group"
   link ck username "course"
 
-nUnsubscribe :: Username -> CourseKey -> GroupKey -> TIO ()
-nUnsubscribe username ck gk = do
+unsubscribe :: Username -> CourseKey -> GroupKey -> TIO ()
+unsubscribe username ck gk = do
   unlink username gk "users"
   unlink username ck "users"
   unlink gk username "group"
@@ -529,13 +428,13 @@ nUnsubscribe username ck gk = do
   link username gk "unsubscribed"
   link username ck "unsubscribed"
 
-nCreateGroupAdmin :: Username -> GroupKey -> TIO ()
-nCreateGroupAdmin u gk = do
+createGroupAdmin :: Username -> GroupKey -> TIO ()
+createGroupAdmin u gk = do
   link u gk "admins"
   link gk u "groupadmin"
 
-nCourseOfGroup :: GroupKey -> TIO CourseKey
-nCourseOfGroup = objectIn' "No course was found for " "course" CourseKey isCourseDir
+courseOfGroup :: GroupKey -> TIO CourseKey
+courseOfGroup = objectIn' "No course was found for " "course" CourseKey isCourseDir
 
 tLoadPersistenceObject :: (Load o)
   => (String -> k) -- ^ Key constructor
@@ -549,20 +448,20 @@ tLoadPersistenceObject f d = do
 tLoadGroup :: FilePath -> TIO (GroupKey, Group)
 tLoadGroup = tLoadPersistenceObject GroupKey
 
-nSaveCourse :: Course -> TIO CourseKey
-nSaveCourse c = do
+saveCourse :: Course -> TIO CourseKey
+saveCourse c = do
   dirName <- createTmpDir courseDataDir "cr"
   let courseKey = CourseKey . takeBaseName $ dirName
   save dirName c
   return courseKey
 
-nUserCourses :: Username -> TIO [CourseKey]
-nUserCourses u = do
+userCourses :: Username -> TIO [CourseKey]
+userCourses u = do
   let dirname = joinPath [dirName u, "course"]
   map (CourseKey . takeBaseName) <$> (selectValidDirsFrom dirname isCourseDir)
 
-nUserGroups :: Username -> TIO [GroupKey]
-nUserGroups u = do
+userGroups :: Username -> TIO [GroupKey]
+userGroups u = do
   let dirname = joinPath [dirName u, "group"]
   map (GroupKey . takeBaseName) <$> (selectValidDirsFrom dirname isGroupDir)
 
@@ -620,13 +519,17 @@ instance ForeignKey TestJobKey where
   referredPath (TestJobKey s) = joinPath [testOutgoingDataDir, s]
   baseName     (TestJobKey s) = s
 
+instance ForeignKey FeedbackKey where
+  referredPath (FeedbackKey s) = joinPath [feedbackDataDir, s]
+  baseName     (FeedbackKey s) = s
+
 {- * One primitve value is stored in the file with the same name as the row.
    * One combined value is stored in the given directory into many files. The name
      of the directory is the primary key for the record.
    * The foreign keys are the symlinks for the other row of the given combined object.
 -}
-nSaveGroup :: CourseKey -> Group -> TIO GroupKey
-nSaveGroup ck group = do
+saveGroup :: CourseKey -> Group -> TIO GroupKey
+saveGroup ck group = do
   dirName <- createTmpDir groupDataDir "gr"
   let groupKey = GroupKey . takeBaseName $ dirName
   save dirName group
@@ -634,29 +537,29 @@ nSaveGroup ck group = do
   link ck groupKey "course"
   return groupKey
 
-nFilterGroups :: (GroupKey -> Group -> Bool) -> TIO [(GroupKey, Group)]
-nFilterGroups f = filterDirectory groupDataDir isGroupDir tLoadGroup (filter (uncurry f))
+filterGroups :: (GroupKey -> Group -> Bool) -> TIO [(GroupKey, Group)]
+filterGroups f = filterDirectory groupDataDir isGroupDir tLoadGroup (filter (uncurry f))
 
 currentTime :: TIO UTCTime
 currentTime = hasNoRollback getCurrentTime
 
-nSaveAssignment :: Assignment -> TIO AssignmentKey
-nSaveAssignment a = do
+saveAssignment :: Assignment -> TIO AssignmentKey
+saveAssignment a = do
   dirName <- createTmpDir assignmentDataDir "a"
   let assignmentKey = takeBaseName dirName
   save dirName a
   saveCreatedTime dirName =<< currentTime
   return . AssignmentKey $ assignmentKey
 
-nModifyAssignment :: AssignmentKey -> Assignment -> TIO ()
-nModifyAssignment ak a = do
+modifyAssignment :: AssignmentKey -> Assignment -> TIO ()
+modifyAssignment ak a = do
   let p = assignmentDirPath ak
   isA <- isAssignmentDir p
   unless isA . throwEx . userError $ "Assignment does not exist"
   update p a
 
-nAssignmentCreatedTime :: AssignmentKey -> TIO UTCTime
-nAssignmentCreatedTime ak = do
+assignmentCreatedTime :: AssignmentKey -> TIO UTCTime
+assignmentCreatedTime ak = do
   let p = assignmentDirPath ak
   isDir <- isAssignmentDir p
   case isDir of
@@ -666,18 +569,18 @@ nAssignmentCreatedTime ak = do
 selectValidDirsFrom :: FilePath -> (FilePath -> TIO Bool) -> TIO [FilePath]
 selectValidDirsFrom dir isValidDir = getSubDirectories dir >>= filterM isValidDir
 
-nAssignmentKeys :: TIO [AssignmentKey]
-nAssignmentKeys =
+assignmentKeys :: TIO [AssignmentKey]
+assignmentKeys =
   (selectValidDirsFrom assignmentDataDir isAssignmentDir) >>=
   calcExerciseKeys
     where
       calcExerciseKeys = return . map (AssignmentKey . takeBaseName)
 
-nFilterAssignment :: (AssignmentKey -> Assignment -> Bool) -> TIO [(AssignmentKey, Assignment)]
-nFilterAssignment f = filterDirectory assignmentDataDir isAssignmentDir tLoadAssignment (filter (uncurry f))
+filterAssignment :: (AssignmentKey -> Assignment -> Bool) -> TIO [(AssignmentKey, Assignment)]
+filterAssignment f = filterDirectory assignmentDataDir isAssignmentDir tLoadAssignment (filter (uncurry f))
 
-nLoadAssignment :: AssignmentKey -> TIO Assignment
-nLoadAssignment a = do
+loadAssignment :: AssignmentKey -> TIO Assignment
+loadAssignment a = do
   let p = assignmentDirPath a
   isEx <- isAssignmentDir p
   case isEx of
@@ -717,30 +620,30 @@ objectIn' msg subdir keyConstructor isValidDir sourceKey = do
     Nothing -> throwEx . userError $ msg ++ show sourceKey
     Just  x -> return x
 
-nCourseOfAssignment :: AssignmentKey -> TIO (Maybe CourseKey)
-nCourseOfAssignment = objectIn "course" CourseKey isCourseDir
+courseOfAssignment :: AssignmentKey -> TIO (Maybe CourseKey)
+courseOfAssignment = objectIn "course" CourseKey isCourseDir
 
-nGroupOfAssignment :: AssignmentKey -> TIO (Maybe GroupKey)
-nGroupOfAssignment = objectIn  "group" GroupKey isGroupDir
+groupOfAssignment :: AssignmentKey -> TIO (Maybe GroupKey)
+groupOfAssignment = objectIn  "group" GroupKey isGroupDir
 
-nTestCaseOfAssignment :: AssignmentKey -> TIO (Maybe TestCaseKey)
-nTestCaseOfAssignment = objectIn "test-case" TestCaseKey isTestCaseDir
+testCaseOfAssignment :: AssignmentKey -> TIO (Maybe TestCaseKey)
+testCaseOfAssignment = objectIn "test-case" TestCaseKey isTestCaseDir
 
-nSubmissionsForAssignment :: AssignmentKey -> TIO [SubmissionKey]
-nSubmissionsForAssignment = objectsIn "submission" SubmissionKey isSubmissionDir
+submissionsForAssignment :: AssignmentKey -> TIO [SubmissionKey]
+submissionsForAssignment = objectsIn "submission" SubmissionKey isSubmissionDir
 
 saveAndLinkAssignment :: (ForeignKey k) => FilePath -> k -> Assignment -> TIO AssignmentKey
 saveAndLinkAssignment subdir k a = do
-  ak <- nSaveAssignment a
+  ak <- saveAssignment a
   link ak k "assignments"
   link k ak subdir
   return ak
 
-nSaveCourseAssignment :: CourseKey -> Assignment -> TIO AssignmentKey
-nSaveCourseAssignment = saveAndLinkAssignment "course"
+saveCourseAssignment :: CourseKey -> Assignment -> TIO AssignmentKey
+saveCourseAssignment = saveAndLinkAssignment "course"
 
-nSaveGroupAssignment :: GroupKey  -> Assignment -> TIO AssignmentKey
-nSaveGroupAssignment = saveAndLinkAssignment "group"
+saveGroupAssignment :: GroupKey  -> Assignment -> TIO AssignmentKey
+saveGroupAssignment = saveAndLinkAssignment "group"
 
 isAssignmentDir :: FilePath -> TIO Bool
 isAssignmentDir = isCorrectDirStructure assignmentDirStructure
@@ -750,14 +653,14 @@ assignmentsFor dirPath k = do
   fp <- (selectValidDirsFrom (joinPath [dirPath k, "assignments"]) isAssignmentDir)
   return ((AssignmentKey . takeBaseName) <$> fp)
 
-nCourseAssignments :: CourseKey -> TIO [AssignmentKey]
-nCourseAssignments = assignmentsFor courseDirPath
+courseAssignments :: CourseKey -> TIO [AssignmentKey]
+courseAssignments = assignmentsFor courseDirPath
 
-nGroupAssignments :: GroupKey -> TIO [AssignmentKey]
-nGroupAssignments = assignmentsFor groupDirPath
+groupAssignments :: GroupKey -> TIO [AssignmentKey]
+groupAssignments = assignmentsFor groupDirPath
 
-nCourseKeys :: TIO [CourseKey]
-nCourseKeys =
+courseKeys :: TIO [CourseKey]
+courseKeys =
   (selectValidDirsFrom courseDataDir isCourseDir) >>=
   calcCourseKeys
     where
@@ -769,8 +672,8 @@ isCourseDir = isCorrectDirStructure courseDirStructure
 isUserRegDir :: FilePath -> TIO Bool
 isUserRegDir = isCorrectDirStructure userRegDirStructure
 
-nFilterCourses :: (CourseKey -> Course -> Bool) -> TIO [(CourseKey, Course)]
-nFilterCourses f = filterDirectory courseDataDir isCourseDir tLoadCourse (filter (uncurry f))
+filterCourses :: (CourseKey -> Course -> Bool) -> TIO [(CourseKey, Course)]
+filterCourses f = filterDirectory courseDataDir isCourseDir tLoadCourse (filter (uncurry f))
 
 -- * Submission
 
@@ -778,8 +681,8 @@ isSubmissionDir :: FilePath -> TIO Bool
 isSubmissionDir = isCorrectDirStructure submissionDirStructure
 
 
-nSaveSubmission :: AssignmentKey -> Username -> Submission -> TIO SubmissionKey
-nSaveSubmission ak u s = do
+saveSubmission :: AssignmentKey -> Username -> Submission -> TIO SubmissionKey
+saveSubmission ak u s = do
   dirName <- createTmpDir submissionDataDir "s"
   let submissionKey = SubmissionKey . takeBaseName $ dirName
   save dirName s
@@ -801,8 +704,8 @@ nSaveSubmission ak u s = do
 userAsgSubmissionDir :: Username -> AssignmentKey -> FilePath
 userAsgSubmissionDir u ak = joinPath [referredPath u, "submissions", baseName ak]
 
-nLastSubmission :: AssignmentKey -> Username -> TIO (Maybe SubmissionKey)
-nLastSubmission ak u = do
+lastSubmission :: AssignmentKey -> Username -> TIO (Maybe SubmissionKey)
+lastSubmission ak u = do
   let dirName = userAsgSubmissionDir u ak
   e <- hasNoRollback $ doesDirectoryExist dirName
   case e of
@@ -818,26 +721,26 @@ nLastSubmission ak u = do
       return (s, SubmissionKey . takeBaseName $ p)
 
 -- TODO: Validate the directory
-nLoadSubmission :: SubmissionKey -> TIO Submission
-nLoadSubmission = load . dirName
+loadSubmission :: SubmissionKey -> TIO Submission
+loadSubmission = load . dirName
 
-nAssignmentOfSubmission :: SubmissionKey -> TIO AssignmentKey
-nAssignmentOfSubmission sk =
+assignmentOfSubmission :: SubmissionKey -> TIO AssignmentKey
+assignmentOfSubmission sk =
   objectIn' "No assignment was found for the " "assignment" AssignmentKey isAssignmentDir sk
 
-nUsernameOfSubmission :: SubmissionKey -> TIO Username
-nUsernameOfSubmission sk =
+usernameOfSubmission :: SubmissionKey -> TIO Username
+usernameOfSubmission sk =
   objectIn' "No assignment was found for the " "user" Username isUserDir sk
 
-nEvaluationOfSubmission :: SubmissionKey -> TIO (Maybe EvaluationKey)
-nEvaluationOfSubmission =
+evaluationOfSubmission :: SubmissionKey -> TIO (Maybe EvaluationKey)
+evaluationOfSubmission =
   objectIn "evaluation" EvaluationKey isEvaluationDir
 
-nFilterSubmissions :: (SubmissionKey -> Submission -> Bool) -> TIO [(SubmissionKey, Submission)]
-nFilterSubmissions f = filterDirectory submissionDataDir isSubmissionDir tLoadSubmission (filter (uncurry f))
+filterSubmissions :: (SubmissionKey -> Submission -> Bool) -> TIO [(SubmissionKey, Submission)]
+filterSubmissions f = filterDirectory submissionDataDir isSubmissionDir tLoadSubmission (filter (uncurry f))
 
-nSubmissionKeys :: TIO [SubmissionKey]
-nSubmissionKeys = map fst <$> nFilterSubmissions (\_ _ -> True)
+submissionKeys :: TIO [SubmissionKey]
+submissionKeys = map fst <$> filterSubmissions (\_ _ -> True)
 
 tLoadSubmission :: FilePath -> TIO (SubmissionKey, Submission)
 tLoadSubmission dirName = do
@@ -859,8 +762,8 @@ nPlaceToOpened ak u sk = do
     (joinPath ["..", "..", "..", "..", "..", (referredPath sk)])
     (joinPath [lookupPath, baseName sk])
 
-nRemoveFromOpened :: AssignmentKey -> Username -> SubmissionKey -> TIO ()
-nRemoveFromOpened ak u sk = do
+removeFromOpened :: AssignmentKey -> Username -> SubmissionKey -> TIO ()
+removeFromOpened ak u sk = do
 
   let openedAllSubmissionKeyPath = joinPath [openSubmissionAllDataDir, baseName sk]
   exist <- hasNoRollback $ fileExist openedAllSubmissionKeyPath
@@ -870,8 +773,8 @@ nRemoveFromOpened ak u sk = do
   exist <- hasNoRollback $ fileExist openedSubmissionDataDir
   when exist $ removeSymLink openedSubmissionDataDir
 
-nUsersOpenedSubmissions :: AssignmentKey -> Username -> TIO [SubmissionKey]
-nUsersOpenedSubmissions ak u = do
+usersOpenedSubmissions :: AssignmentKey -> Username -> TIO [SubmissionKey]
+usersOpenedSubmissions ak u = do
   let path = openedSubmissionDataDirPath ak u
   exists <- doesDirExist path
   if exists
@@ -890,8 +793,8 @@ safeFilterDirectory dir isValid loader f = do
     False -> return []
     True  -> filterDirectory dir isValid loader f
 
-nOpenedSubmission :: TIO [SubmissionKey]
-nOpenedSubmission = filterDirectory openSubmissionAllDataDir isSubmissionDir tLoadSubmission (map fst)
+openedSubmissions :: TIO [SubmissionKey]
+openedSubmissions = filterDirectory openSubmissionAllDataDir isSubmissionDir tLoadSubmission (map fst)
 
 userDirPath :: Username -> FilePath
 userDirPath (Username u) = joinPath [userDataDir, u]
@@ -899,16 +802,16 @@ userDirPath (Username u) = joinPath [userDataDir, u]
 submissionDirPath :: SubmissionKey -> FilePath
 submissionDirPath (SubmissionKey sk) = joinPath [submissionDataDir, sk]
 
-nUserSubmissions :: Username -> AssignmentKey -> TIO [SubmissionKey]
-nUserSubmissions u ak =
+userSubmissions :: Username -> AssignmentKey -> TIO [SubmissionKey]
+userSubmissions u ak =
   safeFilterDirectory
     (joinPath [userDirPath u, "submissions", baseName ak])
     isSubmissionDir
     (return . takeBaseName)
     (map SubmissionKey)
 
-nCommentsOfSubmission :: SubmissionKey -> TIO [CommentKey]
-nCommentsOfSubmission sk =
+commentsOfSubmission :: SubmissionKey -> TIO [CommentKey]
+commentsOfSubmission sk =
   filterDirectory
     (joinPath [submissionDirPath sk, "comment"])
     isCommentDir
@@ -924,8 +827,8 @@ instance ForeignKey EvaluationKey where
 isEvaluationDir :: FilePath -> TIO Bool
 isEvaluationDir = isCorrectDirStructure evaluationDirStructure
 
-nSaveEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
-nSaveEvaluation sk e = do
+saveEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
+saveEvaluation sk e = do
   dirName <- createTmpDir evaluationDataDir "ev"
   let evKey = EvaluationKey . takeBaseName $ dirName
   save dirName e
@@ -936,22 +839,22 @@ nSaveEvaluation sk e = do
 evaluationDirPath :: EvaluationKey -> FilePath
 evaluationDirPath (EvaluationKey e) = joinPath [evaluationDataDir, e]
 
-nLoadEvaluation :: EvaluationKey -> TIO Evaluation
-nLoadEvaluation e = do
+loadEvaluation :: EvaluationKey -> TIO Evaluation
+loadEvaluation e = do
   let p = evaluationDirPath e
   isE <- isEvaluationDir p
   unless isE . throwEx . userError . join $ ["Evaluation does not exist."]
   liftM snd . tLoadPersistenceObject EvaluationKey $ p
 
-nModifyEvaluation :: EvaluationKey -> Evaluation -> TIO ()
-nModifyEvaluation ek e = do
+modifyEvaluation :: EvaluationKey -> Evaluation -> TIO ()
+modifyEvaluation ek e = do
   let p = evaluationDirPath ek
   isE <- isEvaluationDir p
   unless isE . throwEx . userError . join $ ["Evaluation does not exist."]
   update p e
 
-nSubmissionOfEvaluation :: EvaluationKey -> TIO SubmissionKey
-nSubmissionOfEvaluation =
+submissionOfEvaluation :: EvaluationKey -> TIO SubmissionKey
+submissionOfEvaluation =
   objectIn' "No submission was found for " "submission" SubmissionKey isSubmissionDir
 
 -- * Comment
@@ -966,8 +869,8 @@ commentDirPath (CommentKey c) = joinPath [commentDataDir, c]
 isCommentDir :: FilePath -> TIO Bool
 isCommentDir = isCorrectDirStructure commentDirStructure
 
-nSaveComment :: SubmissionKey -> Comment -> TIO CommentKey
-nSaveComment sk c = do
+saveComment :: SubmissionKey -> Comment -> TIO CommentKey
+saveComment sk c = do
   dirName <- createTmpDir commentDataDir "cm"
   let key = CommentKey . takeBaseName $ dirName
   save dirName c
@@ -975,15 +878,15 @@ nSaveComment sk c = do
   link sk key "submission"
   return key
 
-nLoadComment :: CommentKey -> TIO Comment
-nLoadComment ck = do
+loadComment :: CommentKey -> TIO Comment
+loadComment ck = do
   let p = commentDirPath ck
   isC <- isCommentDir p
   unless isC . throwEx $ userError "Comment does not exist."
   liftM snd . tLoadPersistenceObject CommentKey $ p
 
-nSubmissionOfComment :: CommentKey -> TIO SubmissionKey
-nSubmissionOfComment =
+submissionOfComment :: CommentKey -> TIO SubmissionKey
+submissionOfComment =
   objectIn' "No submission was found for " "submission" SubmissionKey isSubmissionDir
 
 -- * Test Script
@@ -998,8 +901,8 @@ instance ForeignKey TestScriptKey where
   referredPath = testScriptDirPath
   baseName     (TestScriptKey k) = k
 
-nSaveTestScript :: CourseKey -> TestScript -> TIO TestScriptKey
-nSaveTestScript ck ts = do
+saveTestScript :: CourseKey -> TestScript -> TIO TestScriptKey
+saveTestScript ck ts = do
   dirName <- createTmpDir testScriptDataDir "ts"
   let key = TestScriptKey $ takeBaseName dirName
   save dirName ts
@@ -1007,19 +910,19 @@ nSaveTestScript ck ts = do
   link ck key "course"
   return key
 
-nLoadTestScript :: TestScriptKey -> TIO TestScript
-nLoadTestScript tk = do
+loadTestScript :: TestScriptKey -> TIO TestScript
+loadTestScript tk = do
   let p = testScriptDirPath tk
   isTS <- isTestScriptDir p
   unless isTS . throwEx $ userError "Not a test script directory"
   snd <$> tLoadPersistenceObject TestScriptKey p
 
-nCourseOfTestScript :: TestScriptKey -> TIO CourseKey
-nCourseOfTestScript =
+courseOfTestScript :: TestScriptKey -> TIO CourseKey
+courseOfTestScript =
   objectIn' "No course was found for " "course" CourseKey isCourseDir
 
-nModifyTestScript :: TestScriptKey -> TestScript -> TIO ()
-nModifyTestScript tk ts = do
+modifyTestScript :: TestScriptKey -> TestScript -> TIO ()
+modifyTestScript tk ts = do
   let p = testScriptDirPath tk
   isTS <- isTestScriptDir p
   unless isTS . throwEx $ userError "Test Script does not exist"
@@ -1037,8 +940,8 @@ instance ForeignKey TestCaseKey where
   referredPath = testCaseDirPath
   baseName (TestCaseKey k) = k
 
-nSaveTestCase :: TestScriptKey -> AssignmentKey -> TestCase -> TIO TestCaseKey
-nSaveTestCase tk ak tc = do
+saveTestCase :: TestScriptKey -> AssignmentKey -> TestCase -> TIO TestCaseKey
+saveTestCase tk ak tc = do
   dirName <- createTmpDir testCaseDataDir "tc"
   let key = TestCaseKey $ takeBaseName dirName
   save dirName tc
@@ -1047,55 +950,55 @@ nSaveTestCase tk ak tc = do
   link tk key "test-script"
   return key
 
-nRemoveTestCaseAssignment :: TestCaseKey -> AssignmentKey -> TIO ()
-nRemoveTestCaseAssignment tk ak = do
+removeTestCaseAssignment :: TestCaseKey -> AssignmentKey -> TIO ()
+removeTestCaseAssignment tk ak = do
   unlink tk ak "test-case"
   unlink ak tk "assignment"
 
-nModifyTestScriptOfTestCase :: TestCaseKey -> TestScriptKey -> TIO ()
-nModifyTestScriptOfTestCase tck tsk = do
-  tskOld <- nTestScriptOfTestCase tck
+modifyTestScriptOfTestCase :: TestCaseKey -> TestScriptKey -> TIO ()
+modifyTestScriptOfTestCase tck tsk = do
+  tskOld <- testScriptOfTestCase tck
   unlink tskOld tck "test-script"
   link   tsk    tck "test-script"
 
-nLoadTestCase :: TestCaseKey -> TIO TestCase
-nLoadTestCase tk = do
+loadTestCase :: TestCaseKey -> TIO TestCase
+loadTestCase tk = do
   let p = testCaseDirPath tk
   isTC <- isTestCaseDir p
   unless isTC . throwEx $ userError "Not a test case directory"
   snd <$> tLoadPersistenceObject TestCaseKey p
 
-nTestScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
-nTestScriptOfTestCase =
+testScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
+testScriptOfTestCase =
   objectIn' "No Test Script was found for " "test-script" TestScriptKey isTestScriptDir
 
-nModifyTestCase :: TestCaseKey -> TestCase -> TIO ()
-nModifyTestCase tk tc = do
+modifyTestCase :: TestCaseKey -> TestCase -> TIO ()
+modifyTestCase tk tc = do
   let p = testCaseDirPath tk
   isTC <- isTestCaseDir p
   unless isTC . throwEx $ userError "Test Case does not exist"
   update p tc
 
-nCopyTestCaseFile :: TestCaseKey -> Username -> UsersFile -> TIO ()
-nCopyTestCaseFile tk u uf = do
+copyTestCaseFile :: TestCaseKey -> Username -> UsersFile -> TIO ()
+copyTestCaseFile tk u uf = do
   let p = testCaseDirPath tk
   isTC <- isTestCaseDir p
   unless isTC . throwEx $ userError "Test Case does not exist"
-  ufp <- nGetFile u uf
+  ufp <- getFile u uf
   overwriteFile ufp (p </> "value")
 
 -- Collects the test script, test case and the submission and copies them to the
 -- the directory named after the submission key placed in the test-outgoing directory
-nSaveTestJob :: SubmissionKey -> TIO ()
-nSaveTestJob sk = do
-  ak <- nAssignmentOfSubmission sk
-  mtk <- nTestCaseOfAssignment ak
+saveTestJob :: SubmissionKey -> TIO ()
+saveTestJob sk = do
+  ak <- assignmentOfSubmission sk
+  mtk <- testCaseOfAssignment ak
   maybe (return ()) copyParts mtk
   where
     -- If there is a test case, we copy the information to the desired
     copyParts :: TestCaseKey -> TIO ()
     copyParts tk = do
-      tsk <- nTestScriptOfTestCase tk
+      tsk <- testScriptOfTestCase tk
       let submissionFile = referredPath sk  </> "solution"
           testcaseFile   = referredPath tk  </> "value"
           testscriptFile = referredPath tsk </> "script"
@@ -1108,40 +1011,84 @@ nSaveTestJob sk = do
       copy testscriptFile (tjPath </> "script")
       copy testcaseFile   (tjPath </> "tests")
 
-nInsertTestComment :: SubmissionKey -> String -> TIO ()
-nInsertTestComment sk msg = do
-  fileSave testIncomingDataDir (submissionKeyMap id sk) msg
-
--- Test Comments are stored in the persistence layer, in the test-incomming directory
--- each one in a file, named after an existing submission in the system
-nTestComments :: TIO [(SubmissionKey, Comment)]
-nTestComments = getFilesInFolder testIncomingDataDir >>= createComments
+insertTestFeedback :: SubmissionKey -> FeedbackInfo -> TIO ()
+insertTestFeedback sk info = do
+  let sDir = submissionKeyMap (testIncomingDataDir </>) sk
+  hasNoRollback $ createDirectoryIfMissing True sDir
+  let student comment = fileSave sDir "public" comment
+      admin   comment = fileSave sDir "private" comment
+      result  bool    = fileSave sDir "result" (show bool)
+  feedbackInfo result student admin evaluated info
   where
-    testCommentType fname =
-      case splitExtension fname of
-        (_name, ".message") -> CT_Message
-        _                   -> CT_TestAgent
+    evaluated _ _ = error "insertTestComment: Evaluation should not be inserted by test."
 
-    submissionKey fname =
-      let (name,_ext) = splitExtension fname
-      in SubmissionKey name
+-- Test Feedbacks are stored in the persistence layer, in the test-incomming directory
+-- each one in a file, named after an existing submission in the system
+testFeedbacks :: TIO [(SubmissionKey, Feedback)]
+testFeedbacks = getSubDirectories testIncomingDataDir >>= createFeedbacks
+  where
+    createFeedbacks = fmap join . mapM createFeedback
 
-    createComments = mapM createComment
-    createComment fp = do
-      let (dir,fname) = splitFileName fp
-      comment <- commentAna (fileLoad dir fname Just)
-                            (return "Testing")
-                            (fileModificationInUTCTime <$> (hasNoRollback $ getFileStatus fp))
-                            (return $ testCommentType fname)
-      return (submissionKey fname, comment)
+    createFeedback path = do
+      let sk = SubmissionKey . last $ splitDirectories path
+          addKey x = (sk, x)
+
+      files <- getFilesInFolder path
+      fmap (map addKey . catMaybes) $
+        forM files $ \file -> do
+          fileDate <- fileModificationInUTCTime <$> (hasNoRollback $ getFileStatus file)
+
+          let (dir,fname) = splitFileName file
+              feedback f = Feedback f fileDate
+
+          case fname of
+            "private" -> Just . feedback . MessageForAdmin <$> fileLoad dir fname Just
+            "public"  -> Just . feedback . MessageForStudent <$> fileLoad dir fname Just
+            "result"  -> Just . feedback . TestResult <$> fileLoad dir fname readMaybe
+            _         -> return Nothing
 
 -- Deletes the comments (test-agent and message as well)
 -- contained file from the test-incomming directory, named after
 -- an existing submission
-nDeleteTestComment :: SubmissionKey -> TIO ()
-nDeleteTestComment = submissionKeyMap $ \sk -> do
-  fileDelete testIncomingDataDir sk
-  fileDelete testIncomingDataDir $ concat [sk, ".message"]
+deleteTestFeedbacks :: SubmissionKey -> TIO ()
+deleteTestFeedbacks =
+  submissionKeyMap (hasNoRollback . removeDirectoryRecursive . (testIncomingDataDir </>))
+
+-- Return all the feedbacks for the given submission
+feedbacksOfSubmission :: SubmissionKey -> Persist [FeedbackKey]
+feedbacksOfSubmission = objectsIn "feedback" FeedbackKey isFeedbackDir
+
+-- * Feedback
+
+feedbackDirPath :: FeedbackKey -> FilePath
+feedbackDirPath = feedbackKey $ \k -> joinPath [feedbackDataDir, k]
+
+isFeedbackDir :: FilePath -> TIO Bool
+isFeedbackDir = isCorrectDirStructure feedbackDirStructure
+
+
+-- Saves the feedback
+saveFeedback :: SubmissionKey -> Feedback -> Persist FeedbackKey
+saveFeedback sk f = do
+  dirName <- createTmpDir feedbackDataDir "f"
+  let key = FeedbackKey $ takeBaseName dirName
+  save dirName f
+  link key sk "feedback"
+  link sk key "submission"
+  return key
+
+-- Loads the feedback
+loadFeedback :: FeedbackKey -> Persist Feedback
+loadFeedback fk = do
+  let p = feedbackDirPath fk
+  isF <- isFeedbackDir p
+  unless isF . throwEx $ userError "Not a feedback directory"
+  snd <$> tLoadPersistenceObject FeedbackKey p
+
+-- Returns the submission of the feedback
+submissionOfFeedback :: FeedbackKey -> Persist SubmissionKey
+submissionOfFeedback =
+  objectIn' "No Submission was found for " "submission" SubmissionKey isSubmissionDir
 
 -- * Tools
 

@@ -7,6 +7,7 @@ import           Control.Monad.IO.Class
 
 import           Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as BS
+import           Data.Maybe
 import           Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import           System.Directory
 import qualified System.Directory as Dir
@@ -18,6 +19,7 @@ import           System.Posix.Files (getFileStatus, fileSize, modificationTime)
 import           Bead.Domain.Entities
 import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Relationships
+import           Bead.Domain.Types
 
 datadir = "data"
 
@@ -154,41 +156,55 @@ saveTestJob sk submission testScript testCase = liftIO $ do
   fileSave (tjPath </> "script") (tsScript testScript)
   fileSaveBS (tjPath </> "tests") (tcValue testCase)
 
--- Inserts a test comment for the incoming test comment directory,
--- this function is mainly for testing of this functionality
-insertTestComment :: (MonadIO io) => SubmissionKey -> String -> io ()
-insertTestComment sk msg = fileSave (submissionKeyMap (testIncomingDataDir </>) sk) msg
-
--- Test Comments are stored in the persistence layer, in the test-incomming directory
--- each one in a file, named after an existing submission in the system
-testComments :: (MonadIO io) => io [(SubmissionKey, Comment)]
-testComments = liftIO $ getFilesInFolder testIncomingDataDir >>= createComments
+-- Insert the feedback info for the file system part of the database. This method is
+-- used by the tests only, and serves as a model for interfacing with the outside world.
+insertTestFeedback :: (MonadIO io) => SubmissionKey -> FeedbackInfo -> io ()
+insertTestFeedback sk info = liftIO $ do
+  let sDir = submissionKeyMap (testIncomingDataDir </>) sk
+  createDirectoryIfMissing True sDir
+  let student comment = fileSave (sDir </> "public") comment
+      admin   comment = fileSave (sDir </> "private") comment
+      result  bool    = fileSave (sDir </> "result") (show bool)
+  feedbackInfo result student admin evaluated info
   where
-    testCommentType fname =
-      case splitExtension fname of
-        (_name, ".message") -> CT_Message
-        _                   -> CT_TestAgent
+    evaluated _ _ = error "insertTestComment: Evaluation should not be inserted by test."
 
-    submissionKey fname =
-      let (name,_ext) = splitExtension fname
-      in SubmissionKey name
+-- Test Feedbacks are stored in the persistence layer, in the test-incomming directory
+-- each one in a file, named after an existing submission in the system
+testFeedbacks :: (MonadIO io) => io [(SubmissionKey, Feedback)]
+testFeedbacks = liftIO (getSubDirectories testIncomingDataDir >>= createFeedbacks)
+  where
+    createFeedbacks = fmap join . mapM createFeedback
 
-    createComments = mapM createComment
-    createComment fp = do
-      let (dir,fname) = splitFileName fp
-      comment <- commentAna (fileLoad (dir </> fname))
-                            (return "Testing")
-                            (fileModificationInUTCTime <$> (getFileStatus fp))
-                            (return $ testCommentType fname)
-      return (submissionKey fname, comment)
+    createFeedback path = do
+      let sk = SubmissionKey . last $ splitDirectories path
+          addKey x = (sk, x)
+
+      files <- getFilesInFolder path
+      fmap (map addKey . catMaybes) $
+        forM files $ \file -> do
+          fileDate <- fileModificationInUTCTime <$> getFileStatus file
+
+          let (_dir,fname) = splitFileName file
+              feedback f = Feedback f fileDate
+
+          case fname of
+            "private" -> Just . feedback . MessageForAdmin <$> fileLoad file
+            "public"  -> Just . feedback . MessageForStudent <$> fileLoad file
+            "result"  -> Just . feedback . TestResult . readMaybeErr file <$> fileLoad file
+            _         -> return Nothing
+
+      where
+        readMaybeErr :: (Read a) => FilePath -> String -> a
+        readMaybeErr fp = fromMaybe (error $ "Non-parseable data in file: " ++ fp) . readMaybe
 
 -- Deletes the comments (test-agent and message as well)
 -- contained file from the test-incomming directory, named after
 -- an existing submission
-deleteTestComment :: (MonadIO io) => SubmissionKey -> io ()
-deleteTestComment s = liftIO $ withSubmissionKey s $ \sk -> do
-  removeFileIfExists $ testIncomingDataDir </> sk
-  removeFileIfExists $ testIncomingDataDir </> concat [sk, ".message"]
+deleteTestFeedbacks :: (MonadIO io) => SubmissionKey -> io ()
+deleteTestFeedbacks = liftIO .
+  submissionKeyMap (removeDirectoryRecursive . (testIncomingDataDir </>))
+
 
 -- Removes the file if exists, otherwise do nothing
 removeFileIfExists :: FilePath -> IO ()

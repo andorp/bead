@@ -65,6 +65,16 @@ data EvResult = EvResult {
     evResult :: EvaluationData Binary Percentage
   } deriving (Eq, Show, Read, Data, Typeable)
 
+evResultCata
+  binary
+  percentage
+  e = case e of
+    (EvResult (BinEval b)) -> binary b
+    (EvResult (PctEval p)) -> percentage p
+
+withEvResult result binary percentage
+  = evResultCata binary percentage result
+
 percentageResult :: Double -> EvResult
 percentageResult d = EvResult (PctEval (Percentage (Scores { unScores = [ d ]})))
 

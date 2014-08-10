@@ -1,6 +1,105 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
-module Bead.Domain.Entities where
+module Bead.Domain.Entities (
+    Submission(..)
+  , submissionCata
+  , withSubmission
+  , CourseName
+  , UsersFullname
+  , evaluationResultCata
+  , allBinaryEval
+  , allPercentEval
+  , Evaluation(..)
+  , evaluationCata
+  , withEvaluation
+  , resultString
+  , evaluationToFeedback
+  , CourseCode(..)
+  , CGInfo(..)
+  , cgInfoCata
+  , Course(..)
+  , courseCata
+  , courseAppAna
+  , Group(..)
+  , groupCata
+  , Workflow(..)
+  , Role(..)
+  , roleCata
+  , roles
+  , groupAdmin
+  , OutsideRole(..)
+  , parseRole
+  , printRole
+  , atLeastCourseAdmin
+  , InRole(..)
+  , Permission(..)
+  , canOpen
+  , canCreate
+  , canModify
+  , canDelete
+  , PermissionObject(..)
+  , PermissionObj(..)
+  , ObjectPermissions(..)
+  , Username(..)
+  , usernameCata
+  , withUsername
+  , AsUsername(..)
+  , Password
+  , AsPassword(..)
+  , passwordCata
+  , Email(..)
+  , emailFold
+  , parseEmail
+  , email'
+  , emailCata
+  , TimeZoneName(..)
+  , timeZoneName
+  , showDate
+  , UserRegInfo(..)
+  , userRegInfoCata
+  , Language(..)
+  , languageCata
+  , User(..)
+  , userCata
+  , withUser
+  , userAna
+  , PersonalInfo(..)
+  , personalInfoCata
+  , withPersonalInfo
+  , UserDesc(..)
+  , mkUserDescription
+  , UserRegistration(..)
+  , userRegistration
+  , TestScriptType(..)
+  , testScriptTypeCata
+  , TestScript(..)
+  , testScriptCata
+  , withTestScript
+  , testScriptAppAna
+  , TestCaseType(..)
+  , testCaseTypeCata
+  , TestCase(..)
+  , testCaseCata
+  , withTestCase
+  , testCaseAppAna
+  , UsersFile(..)
+  , usersFileCata
+  , FileInfo(..)
+  , fileInfoCata
+  , fileInfoAppAna
+  , CompareHun(..)
+  , StatusMessage(..)
+  , statusMessage
+
+  , module Bead.Domain.Entity.Assignment
+  , module Bead.Domain.Entity.Comment
+  , module Bead.Domain.Entity.Feedback
+
+#ifdef TEST
+  , compareHunTests
+  , roleInvariants
+#endif
+  ) where
 
 import           Control.Applicative
 import           Control.Monad (join)
@@ -71,17 +170,9 @@ resultString (EvResult (PctEval p)) =
     Nothing -> TransMsg $ Msg_Domain_EvalNoResultError "No evaluation result, some internal error happened!"
     Just q  -> TransPrmMsg (Msg_Domain_EvalPercentage "%s%%") (show . round $ 100.0 * q)
 
-evaluationComment :: I18N -> UTCTime -> User -> Evaluation -> Comment
-evaluationComment i t u e = Comment {
-    comment = c
-  , commentAuthor = u_name u
-  , commentDate = t
-  , commentType = CT_Evaluation
-  } where
-     c = join [
-           writtenEvaluation e, "\r\n"
-         , translateMessage i . resultString . evaluationResult $ e
-         ]
+evaluationToFeedback :: UTCTime -> User -> Evaluation -> Feedback
+evaluationToFeedback t u e = Feedback info t where
+  info = Evaluated (evaluationResult e) (writtenEvaluation e) (u_name u)
 
 newtype CourseCode = CourseCode String
   deriving (Eq, Ord, Show)
@@ -224,6 +315,7 @@ data PermissionObject
   | P_Submission
   | P_Evaluation
   | P_Comment
+  | P_Feedback
   | P_Statistics
   | P_Password
   | P_GroupAdmin

@@ -6,8 +6,6 @@ import           Data.Maybe
 import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
-import qualified Bead.Domain.Entity.Assignment as Domain
-import qualified Bead.Domain.Entity.Comment as Domain
 import qualified Bead.Domain.Relationships as Domain
 import qualified Bead.Domain.Shared.Evaluation as Domain
 import           Bead.Persistence.SQL.Class

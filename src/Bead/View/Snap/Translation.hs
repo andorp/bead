@@ -134,6 +134,11 @@ data Translation a
   | Msg_Comments_SubmitButton { trans :: a }
   | Msg_Comments_AuthorTestScript_Public { trans :: a }
   | Msg_Comments_AuthorTestScript_Private { trans :: a }
+  | Msg_Comments_TestPassed { trans :: a }
+  | Msg_Comments_TestFailed { trans :: a }
+  | Msg_Comments_BinaryResultPassed { trans :: a }
+  | Msg_Comments_BinaryResultFailed { trans :: a }
+  | Msg_Comments_PercentageResult { trans :: a }
 
   | Msg_Evaluation_Title { trans :: a }
   | Msg_Evaluation_Course { trans :: a }

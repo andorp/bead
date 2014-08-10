@@ -60,6 +60,11 @@ Evaluation
   written Text
   deriving Show
 
+Feedback
+  info JSONText
+  date UTCTime
+  deriving Show
+
 Group
   name        Text
   description Text
@@ -105,6 +110,15 @@ UserRegistration
   deriving Show
 
 -- Connections between objects
+
+-- Submission -> [Feedback]
+-- Feedback -> Submission
+FeedbacksOfSubmission
+  submission SubmissionId
+  feedback   FeedbackId
+  UniqueSubmissionFeedbackPair submission feedback
+  UniqueSubmisisonFeedback feedback
+  deriving Show
 
 -- Assignment -> [Submission]
 SubmissionsOfAssignment
@@ -195,6 +209,7 @@ UnsubscribedUsersFromGroup
   deriving Show
 
 -- Submission -> [Comment]
+-- Comment -> Submission
 CommentsOfSubmission
   submission SubmissionId
   comment    CommentId

@@ -10,7 +10,6 @@ import qualified Data.Text as Text
 import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
-import qualified Bead.Domain.Entity.Assignment as Domain
 import qualified Bead.Domain.Relationships as Domain
 import qualified Bead.Domain.Shared.Evaluation as Domain
 import           Bead.Persistence.SQL.Class
@@ -100,6 +99,12 @@ commentsOfSubmission :: Domain.SubmissionKey -> Persist [Domain.CommentKey]
 commentsOfSubmission key =
   map (toDomainKey . commentsOfSubmissionComment . entityVal) <$>
     selectList [CommentsOfSubmissionSubmission ==. toEntityKey key] []
+
+-- Returns all the feedbacks for the given submission
+feedbacksOfSubmission :: Domain.SubmissionKey -> Persist [Domain.FeedbackKey]
+feedbacksOfSubmission key =
+  map (toDomainKey . feedbacksOfSubmissionFeedback . entityVal) <$>
+    selectList [FeedbacksOfSubmissionSubmission ==. toEntityKey key] []
 
 -- Returns the last submission of an assignment submitted by the given user if the
 -- user is submitted something otherwise Nothing
