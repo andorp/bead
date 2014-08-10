@@ -198,7 +198,7 @@ availableAssignments timeconverter (Just as) = do
       (resultCell fromString {-coloredSubmissionCell (const H.td) (H.td) fromString -}
         (msg $ Msg_Home_SubmissionCell_NoSubmission "No submission")
         (msg $ Msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
-        (msg $ Msg_Home_SubmissionCell_Tested "Tested")
+        (const . msg $ Msg_Home_SubmissionCell_Tested "Tested")
         (msg $ Msg_Home_SubmissionCell_Accepted "Accepted")
         (msg $ Msg_Home_SubmissionCell_Rejected "Rejected")
         s)

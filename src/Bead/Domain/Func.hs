@@ -15,3 +15,5 @@ const7 c = \_ _ _ _ _ _ _ -> c
 p_1_2 x _ = x
 p_2_2 _ x = x
 
+bool true false x =
+  if x then true else false
