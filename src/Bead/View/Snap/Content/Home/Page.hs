@@ -113,7 +113,7 @@ calculateSubmissionResult msg si e =
     evaluated = submissionInfoCata
                   False -- not found
                   False -- unevaulated
-                  False -- tested
+                  (const False) -- tested
                   (\_ _ -> True) -- result
 
 -- Produces the result of a user's submission list for a binary evaluation.
@@ -164,7 +164,7 @@ calcEvaluationResult selectResult calculateResult
 
     -- Filters only the evaluation results
     filterEvaluation :: [SubmissionInfo] -> [EvResult]
-    filterEvaluation = catMaybes . map (submissionInfoCata Nothing Nothing Nothing result)
+    filterEvaluation = catMaybes . map (submissionInfoCata Nothing Nothing (const Nothing) result)
 
     -- Checks if no error is found.
     -- Produces (Left "error") when at least one element has an error,
