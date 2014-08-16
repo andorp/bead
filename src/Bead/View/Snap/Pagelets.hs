@@ -65,8 +65,16 @@ bootStrapDocument body' = do
         H.meta ! A.name "description" ! A.content ""
         H.meta ! A.name "author" ! A.content ""
         js "/jquery.js"
-        H.link ! A.href "/bootstrap.min.css" ! A.rel "stylesheet"
-        H.script ! A.type_ "text/javascript" ! A.src "/bootstrap.min.js" $ mempty
+        css "/jquery-ui.css"
+        js "/jquery-ui.js"
+        js "/moment.js"
+        css "/bootstrap.min.css"
+        js "/bootstrap.min.js"
+        css "/bootstrap-combobox.css"
+        js "/bootstrap-combobox.js"
+        css "/bootstrap-datetimepicker.min.css"
+        js "/bootstrap-datetimepicker.min.js"
+        js "/fay/DynamicContents.js"
     H.body $ body
 
 dynamicDocument :: Html -> IHtml -> IHtml
@@ -533,6 +541,12 @@ selectionWithDefault name def = selection' name . mapM_ option'
 
 selectionWithDefault' :: (Show a, Data a) => String -> (a -> Bool) -> [(a, String)] -> Html
 selectionWithDefault' name def = selection' name . mapM_ option'
+  where
+    option' (v,t) = option (encodeToFay' "selection" v) t (def v) where
+
+selectionWithDefAndAttr :: (Show a, Data a) =>
+  String -> [Attribute] -> (a -> Bool) -> [(a, String)] -> Html
+selectionWithDefAndAttr name attrs def = foldl (!) (selection' name) attrs . mapM_ option'
   where
     option' (v,t) = option (encodeToFay' "selection" v) t (def v) where
 

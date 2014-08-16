@@ -17,7 +17,7 @@ import Bead.View.Snap.Content.CourseOverview.Page
 import Bead.View.Snap.Content.Administration
 import Bead.View.Snap.Content.EvaluationTable
 import Bead.View.Snap.Content.Evaluation
-import Bead.View.Snap.Content.NewAssignment
+import Bead.View.Snap.Content.Assignment.Page
 import Bead.View.Snap.Content.Submission
 import Bead.View.Snap.Content.SubmissionList
 import Bead.View.Snap.Content.SubmissionDetails
