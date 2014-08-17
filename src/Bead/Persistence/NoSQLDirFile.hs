@@ -108,7 +108,7 @@ class Update s where
 -- * DirName and KeyString instances
 
 instance DirName Username where
-  dirName u = joinPath [dataDir, userDir, str u]
+  dirName = usernameCata $ \u -> joinPath [dataDir, userDir, u]
 
 instance DirName User where
   dirName = dirName . u_username

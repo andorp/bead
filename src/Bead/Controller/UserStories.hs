@@ -161,7 +161,7 @@ changeUserDetails name timezone language = logAction INFO ("changes fullname, ti
   putStatusMessage $ Msg_UserStory_ChangedUserDetails "The user details have been updated."
 
 updateUser :: User -> UserStory ()
-updateUser u = logAction INFO ("updates user " ++ (str . u_username $ u)) $ do
+updateUser u = logAction INFO ("updates user " ++ (usernameCata id $ u_username u)) $ do
   authorize P_Modify P_User
   persistence $ Persist.updateUser u
 
@@ -220,7 +220,7 @@ getFilePath usersfile = logAction INFO logMessage $ do
 -- Produces true if the given user is the student of the courses or groups which
 -- the actual user administrates.
 isStudentOfMine :: Username -> UserStory Bool
-isStudentOfMine student = logAction INFO (concat ["Student ", str student, " of the actual user"]) $ do
+isStudentOfMine student = logAction INFO (concat ["Student ", usernameCata id student, " of the actual user"]) $ do
   authorize P_Modify P_StudentPassword
   u <- username
   persistence $ Persist.isStudentOf student u
@@ -340,7 +340,7 @@ deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ 
               return . putStatusMessage $
                 Msg_UserStory_UsersAreDeletedFromCourse "The students have been removed from the course."
       else return $ do
-             logMessage INFO . violation $ printf "The user tries to delete users from a course (%s) which not belongs to him" (str ck)
+             logMessage INFO . violation $ printf "The user tries to delete users from a course (%s) which not belongs to him" (courseKeyMap id ck)
              errorPage . userError $ Msg_UserStoryError_NoCourseAdminOfCourse "The user is not course admin for the course."
 
 -- Saves the given test script associated with the given course, if the
@@ -454,7 +454,7 @@ deleteUsersFromGroup gk sts = logAction INFO ("delets users form group: " ++ sho
               return . putStatusMessage $
                 Msg_UserStory_UsersAreDeletedFromGroup "The students have been removed from the group."
       else return $ do
-             logMessage INFO . violation $ printf "The user tries to delete users from group (%s) which is not administrated by him" (str gk)
+             logMessage INFO . violation $ printf "The user tries to delete users from group (%s) which is not administrated by him" (groupKeyMap id gk)
              errorPage . userError $ Msg_UserStoryError_NoGroupAdminOfGroup "You are not a group admin for the group."
 
 createGroupAdmin :: Username -> GroupKey -> UserStory ()
@@ -669,10 +669,10 @@ createGroupAssignment gk a tc = logAction INFO msg $ do
                 logMessage INFO $ descriptor ak
                 return ak
       else return $ do
-             logMessage INFO . violation $ printf "User tries to access to group: %s" (str gk)
+             logMessage INFO . violation $ printf "User tries to access to group: %s" (groupKeyMap id gk)
              errorPage $ userError nonAdministratedGroup
   where
-    descriptor key = printf "Exercise is created with id: %s" (str key)
+    descriptor key = printf "Exercise is created with id: %s" (assignmentKeyMap id key)
     msg = "creates assignment for group " ++ show gk
     statusMsg = const .
       putStatusMessage $ Msg_UserStory_NewGroupAssignment "The group assignment has been created."
@@ -699,10 +699,10 @@ createCourseAssignment ck a tc = logAction INFO msg $ do
                 logMessage INFO $ descriptor ak
                 return ak
       else return $ do
-             logMessage INFO . violation $ printf "User tries to access to course: %s" (str ck)
+             logMessage INFO . violation $ printf "User tries to access to course: %s" (courseKeyMap id ck)
              errorPage $ userError nonAdministratedCourse
   where
-    descriptor key = printf "Exercise is created with id: %s" (str key)
+    descriptor key = printf "Exercise is created with id: %s" (assignmentKeyMap id key)
     msg = "creates assignment for course " ++ show ck
     statusMsg = const .
       putStatusMessage $ Msg_UserStory_NewCourseAssignment "The course assignment has been created."
@@ -802,7 +802,7 @@ logMessage level msg = do
     userNotLoggedIn    = logMsg "[USER NOT LOGGED IN]"
     registration       = logMsg "[REGISTRATION]"
     testAgent          = logMsg "[TEST AGENT]"
-    loggedIn u _ _ _ t _ _ = logMsg (join [str u, " ", t])
+    loggedIn u _ _ _ t _ _ = logMsg (join [usernameCata id u, " ", t])
 
 
 -- | Change user state, if the user state is logged in
@@ -844,7 +844,7 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
               return (return ())
       else return $ do
              logMessage INFO . violation $
-               printf "The user tries to submit a solution for an assignment which not belongs to him: (%s)" (str ak)
+               printf "The user tries to submit a solution for an assignment which not belongs to him: (%s)" (assignmentKeyMap id ak)
              errorPage $ userError nonRelatedAssignment
   where
     checkActiveAssignment :: UserStory ()
@@ -969,7 +969,7 @@ courseSubmissionTable ck = logAction INFO ("gets submission table for course " +
       then do sti <- Persist.courseSubmissionTableInfo ck
               return (return sti)
       else return $ do
-             logMessage INFO . violation $ printf "The user tries to open a course overview (%s) that is not administrated by him." (str ck)
+             logMessage INFO . violation $ printf "The user tries to open a course overview (%s) that is not administrated by him." (courseKeyMap id ck)
              errorPage $ userError nonAdministratedCourse
 
 submissionTables :: UserStory [SubmissionTableInfo]
@@ -1081,7 +1081,7 @@ modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ 
               testCaseModificationForAssignment u ak tc
               return (return ())
       else return $ do
-             logMessage INFO . violation $ printf "User tries to modify the assignment: (%s)" (str ak)
+             logMessage INFO . violation $ printf "User tries to modify the assignment: (%s)" (assignmentKeyMap id ak)
              errorPage $ userError nonAdministratedAssignment
 
 -- * Guards
@@ -1216,7 +1216,7 @@ persistence m = do
         userNotLoggedIn    = "Not logged in user!"
         registration       = "Registration"
         testAgent          = "Test Agent"
-        loggedIn u _ _ _ t _ _ = concat [str u, " ", t]
+        loggedIn u _ _ _ t _ _ = concat [usernameCata id u, " ", t]
 
 -- * User Error Messages
 

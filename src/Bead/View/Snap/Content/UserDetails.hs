@@ -10,7 +10,6 @@ import qualified Text.Blaze.Html5 as H
 
 import           Bead.Controller.UserStories (loadUser, doesUserExist)
 import qualified Bead.Controller.Pages as Pages
-import           Bead.Domain.Types (Str(..))
 import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.DataBridge as B
 import           Bead.View.Snap.Dictionary
@@ -47,13 +46,13 @@ userDetailForm ts u languages = do
   return $ postForm (routeOf userDetails) $ do
     table "user-detail-table" "user-detail-table" $ do
       tableLine (msg $ Msg_Input_User_Role "Role")  $ required $ i18n msg $ inputPagelet (Just $ u_role u)
-      tableLine (msg $ Msg_Input_User_Email "Email") $ required $ textInput (fieldName userEmailField) 20 (Just . str $ u_email u)
+      tableLine (msg $ Msg_Input_User_Email "Email") $ required $ textInput (fieldName userEmailField) 20 (Just . emailCata id $ u_email u)
       tableLine (msg $ Msg_Input_User_FullName "Full name") $ required $ textInput (fieldName userFamilyNameField) 20 (Just $ u_name u)
       tableLine (msg $ Msg_Input_User_TimeZone "Time zone") $ required $
         selectionWithDefault (B.name userTimeZonePrm) (u_timezone u) userTimeZones
       tableLine (msg $ Msg_Input_User_Language "Language") $ required $
         selectionWithDefault' (B.name userLanguagePrm) ((u_language u)==) (map langVal languages)
-      hiddenTableLine . hiddenInput (fieldName usernameField) . str . u_username $ u
+      hiddenTableLine . hiddenInput (fieldName usernameField) . usernameCata id $ u_username u
     submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Update")
   where
     userTimeZones = map (id &&& timeZoneName id) ts
@@ -67,5 +66,5 @@ userDoesNotExist username = do
   msg <- getI18N
   return $ H.p $ do
     (fromString $ msg $ Msg_UserDetails_NonExistingUser "No such user:")
-    fromString . str $ username
+    usernameCata fromString username
 

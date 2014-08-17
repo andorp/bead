@@ -12,9 +12,7 @@ import           Data.String (fromString)
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories hiding (createCourse)
-import           Bead.Domain.Types (str)
 import           Bead.View.Snap.Content
-import           Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
 
 import           Text.Blaze.Html5 ((!))
@@ -94,7 +92,7 @@ administrationContent info = do
         i18n msg $ inputPagelet emptyUsername
         submitButton (fieldName selectBtn) (fromString . msg $ Msg_Administration_SelectUser "Select")
   where
-    userLongname u = concat [ str $ u_username u, " - ", u_name u ]
+    userLongname u = concat [ usernameCata id $ u_username u, " - ", u_name u ]
     courses' = map (id *** courseName) $ courses info
     courseAdmins' = map (u_username &&& userLongname) $ courseAdmins info
 

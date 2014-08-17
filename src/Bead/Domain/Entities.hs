@@ -177,9 +177,6 @@ evaluationToFeedback t u e = Feedback info t where
 newtype CourseCode = CourseCode String
   deriving (Eq, Ord, Show)
 
-instance Str CourseCode where
-  str (CourseCode s) = s
-
 -- Course or Group info. Some information is attached to
 -- course or group
 data CGInfo a
@@ -350,9 +347,6 @@ withUsername (Username u) f = f u
 class AsUsername c where
   asUsername :: c -> Username
 
-instance Str Username where
-  str (Username u) = u
-
 type Password = String
 
 class AsPassword p where
@@ -372,9 +366,6 @@ parseEmail = Just . Email
 
 instance Show Email where
   show (Email e) = e
-
-instance Str Email where
-  str (Email e) = e
 
 -- TODO: throw exception if email string is unacceptable
 email' :: String -> Email

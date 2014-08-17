@@ -219,7 +219,7 @@ loadUserReg :: UserRegKey -> TIO UserRegistration
 loadUserReg u = do
   let p = userRegDirPath u
   isU <- isUserRegDir p
-  unless isU . throwEx . userError . join $ [str u, " user registration does not exist."]
+  unless isU . throwEx . userError . join $ [userRegKeyFold id u, " user registration does not exist."]
   liftM snd $ tLoadUserReg p
 
 saveUser :: User -> TIO ()
@@ -337,7 +337,7 @@ loadCourse c = do
   let p = courseDirPath c
   isC <- isCourseDir p
   -- GUARD: Course dir does not exist
-  unless isC . throwEx . userError . join $ [str c, " course does not exist."]
+  unless isC . throwEx . userError . join $ [courseKeyMap id c, " course does not exist."]
   -- Course found
   liftM snd $ tLoadCourse p
 
@@ -358,7 +358,7 @@ createCourseAdmin :: Username -> CourseKey -> TIO ()
 createCourseAdmin u ck = do
   usr <- loadUser u
   case atLeastCourseAdmin . u_role $ usr of
-    False -> throwEx . userError . join $ [str u, " is not course admin"]
+    False -> throwEx . userError . join $ [usernameCata id u, " is not course admin"]
     True  -> do
       link u ck "admins"
       link ck u "courseadmin"
@@ -386,7 +386,7 @@ loadGroup g = do
   let p = groupDirPath g
   isG <- isGroupDir p
   -- GUARD: Group id does not exist
-  unless isG . throwEx . userError . join $ [str g, " group does not exist."]
+  unless isG . throwEx . userError . join $ [groupKeyMap id g, " group does not exist."]
   liftM snd $ tLoadGroup p
   where
     groupDirPath :: GroupKey -> FilePath
@@ -563,7 +563,7 @@ assignmentCreatedTime ak = do
   let p = assignmentDirPath ak
   isDir <- isAssignmentDir p
   case isDir of
-    False -> throwEx $ userError $ join [str ak, " assignment does not exist."]
+    False -> throwEx $ userError $ join [assignmentKeyMap id ak, " assignment does not exist."]
     True  -> getCreatedTime p
 
 selectValidDirsFrom :: FilePath -> (FilePath -> TIO Bool) -> TIO [FilePath]
@@ -584,7 +584,7 @@ loadAssignment a = do
   let p = assignmentDirPath a
   isEx <- isAssignmentDir p
   case isEx of
-    False -> throwEx $ userError $ join [str a, " assignment does not exist."]
+    False -> throwEx $ userError $ join [assignmentKeyMap id a, " assignment does not exist."]
     True  -> liftM snd $ tLoadAssignment p
 
 assignmentDirPath :: AssignmentKey -> FilePath

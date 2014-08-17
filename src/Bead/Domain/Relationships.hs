@@ -273,9 +273,6 @@ newtype UserRegKey = UserRegKey String
 userRegKeyFold :: (String -> a) -> UserRegKey -> a
 userRegKeyFold f (UserRegKey x) = f x
 
-instance Str UserRegKey where
-  str = userRegKeyFold id
-
 newtype CommentKey = CommentKey String
   deriving (Eq, Ord, Show)
 
@@ -336,14 +333,3 @@ newtype FeedbackKey = FeedbackKey String
   deriving (Eq, Ord, Show)
 
 feedbackKey f (FeedbackKey x) = f x
-
--- * Str instances
-
-instance Str AssignmentKey where
-  str (AssignmentKey s) = s
-
-instance Str CourseKey where
-  str (CourseKey c) = c
-
-instance Str GroupKey where
-  str (GroupKey g) = g
