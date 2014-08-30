@@ -30,6 +30,7 @@ import Bead.Domain.Entities
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import Bead.Domain.Entity.Comment
 import Bead.Domain.Relationships
+import Bead.Domain.Shared.Evaluation
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
 import Test.Framework (testGroup)
@@ -152,7 +153,7 @@ evaluationGroupSaveAndLoad = do
   (ak, u, sk) <- saveAndLoadSubmission
   cfg <- evaluationConfigForSubmission sk
   saveAndLoadIdenpotent
-    "Evaluation" (saveEvaluation sk) (loadEvaluation) (Gen.evaluations cfg)
+    "Evaluation" (saveSubmissionEvaluation sk) (loadEvaluation) (Gen.evaluations cfg)
 
 success n = stdArgs { maxSuccess = n, chatty = False }
 
@@ -232,6 +233,24 @@ courseAssignmentGen n gs = do
     run $ insertListRef list ak
   listInRef list
 
+groupAssessmentGen n gs = do
+  list <- createListRef
+  quick n $ do
+    gk <- pick $ elements gs
+    ak <- saveAndLoadIdenpotent "Group assessment"
+      (saveGroupAssessment gk) (loadAssessment) Gen.assessments
+    run $ insertListRef list ak
+  listInRef list
+
+courseAssessmentGen n cs = do
+  list <- createListRef
+  quick n $ do
+    ck <- pick $ elements cs
+    ak <- saveAndLoadIdenpotent "Course assessment"
+      (saveCourseAssessment ck) (loadAssessment) Gen.assessments
+    run $ insertListRef list ak
+  listInRef list
+
 -- Generate and store the given number of users, and returns the usernames found in the
 -- persistence layer
 users n = do
@@ -304,7 +323,7 @@ evaluations n ss = do
     sk <- pick $ elements ss
     cfg <- evaluationConfigForSubmission sk
     ek <- saveAndLoadIdenpotent "Evaluation"
-      (saveEvaluation sk) (loadEvaluation) (Gen.evaluations cfg)
+      (saveSubmissionEvaluation sk) (loadEvaluation) (Gen.evaluations cfg)
     run $ insertListRef list ek
   listInRef list
 
@@ -317,6 +336,16 @@ testScripts n cs = do
     tsk <- saveAndLoadIdenpotent "TestScript"
       (saveTestScript ck) (loadTestScript) (Gen.testScripts)
     run $ insertListRef list tsk
+  listInRef list
+
+scores n us as = do
+  list <- createListRef
+  quick n $ do
+    u <- pick $ elements us
+    a <- pick $ elements as
+    sk <- saveAndLoadIdenpotent "Score"
+      (saveScore u a) (loadScore) (Gen.scores)
+    run $ insertListRef list sk
   listInRef list
 
 -- Generates and stores the given number of the test cases for the randomly selected
@@ -368,6 +397,11 @@ reinitPersistence = do
 courseAndGroupAssignments cn gn cs gs = do
   cas <- courseAssignmentGen cn cs
   gas <- groupAssignmentGen gn gs
+  return (cas ++ gas)
+
+courseAndGroupAssessments cn gn cs gs = do
+  cas <- courseAssessmentGen cn cs
+  gas <- groupAssessmentGen gn gs
   return (cas ++ gas)
 
 -- User can register course and groups and these groups and courses can have assignments.
@@ -681,7 +715,11 @@ modifyEvaluationTest = do
   es <- evaluations 600 ss
   quick 1000 $ do
     ek <- pick $ elements es
-    sk <- runPersistCmd $ submissionOfEvaluation ek
+    msk <- runPersistCmd $ submissionOfEvaluation ek
+    assertTrue
+      (isJust msk)
+      "There is no submission for the submission related evaluation"
+    let sk = fromJust msk
     cfg <- evaluationConfigForSubmission sk
     e <- pick $ Gen.evaluations cfg
     runPersistCmd $ modifyEvaluation ek e
@@ -804,7 +842,6 @@ saveLoadAndModifyTestScriptsTest = do
       return $ do
         assertEquals nts nts' "Modifing the test script failed"
         assertTrue (elem ts ctss) "Test Script is not in it's course"
-
 
 saveLoadAndModifyTestCasesTest = do
   reinitPersistence
@@ -961,6 +998,112 @@ incomingFeedbacksTest = do
         cks <- map fst <$> testFeedbacks
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
+
+unevaluatedScoresTests = do
+  reinitPersistence
+  us <- users 50
+  cs <- courses 100
+  gs <- groups 200 cs
+  as <- courseAndGroupAssessments 300 300 cs gs
+  scs <- scores 500 us as
+  quick 1000 $ do
+    s <- pick $ elements scs
+    -- All the saved scores should have an assessment
+    -- All the saved scores should have appear in the score list of the assessment
+    a <- runPersistCmd $ assessmentOfScore s
+    sa <- runPersistCmd $ scoresOfAssessment a
+    assertTrue (elem s sa) "The score was not in the score list of assessment."
+
+    -- All the saved scores should have a username
+    -- All the saved scores should have appear in the score list of the user
+    u <- runPersistCmd $ usernameOfScore s
+    su <- runPersistCmd $ scoresOfUser u
+    assertTrue (elem s su) "The score was not in the score list of user."
+
+    -- All the saved scores should not have an evaluation
+    e <- runPersistCmd $ evaluationOfScore s
+    assertEquals Nothing e "Unevaluated score has an evaluation"
+
+scoreEvaluationTests = do
+  reinitPersistence
+  us <- users 50
+  cs <- courses 100
+  gs <- groups 200 cs
+  as <- courseAndGroupAssessments 300 300 cs gs
+  scs <- scores 500 us as
+  quick 1000 $ do
+    s <- pick $ elements scs
+    es <- runPersistCmd $ evaluationOfScore s
+    -- All the score evaluation should not have a submission key
+    case es of
+      -- All the evaluated scores should have the evaluation key
+      Nothing -> do
+        -- TODO: Copy the evaluation of the score
+        cfg <- runPersistCmd $ evalConfigOfScore s
+        e   <- pick $ Gen.evaluations cfg
+        ek  <- runPersistCmd $ saveScoreEvaluation s e
+        ek' <- runPersistCmd $ evaluationOfScore s
+        assertEquals (Just ek) ek' "The freshly evaluated score does not have the score key."
+        s'  <- runPersistCmd $ scoreOfEvaluation ek
+        assertEquals (Just s) s' "The score evaluation does not have the score."
+        sbm <- runPersistCmd $ submissionOfEvaluation ek
+        assertEquals Nothing sbm "The score evaluation has a submission key."
+
+      -- All the evaluation of the score should have the score key
+      Just ek -> do
+        s'  <- runPersistCmd $ scoreOfEvaluation ek
+        assertEquals (Just s) s' "The score evaluation does not have the score."
+        sbm <- runPersistCmd $ submissionOfEvaluation ek
+        assertEquals Nothing sbm "The score evaluation has a submission key."
+  where
+    evalConfigOfScore s = do
+      ak <- assessmentOfScore s
+      a <- loadAssessment ak
+      return $! evaluationCfg a
+
+assessmentTests = do
+  let groupOrCourseOf a = runPersistCmd $ do
+        c <- courseOfAssessment a
+        g <- groupOfAssessment a
+        return (c,g)
+
+  reinitPersistence
+  cs <- courses 100
+  gs <- groups 200 cs
+  as <- courseAndGroupAssessments 300 300 cs gs
+  quick 1000 $ do
+    a <- pick $ elements as
+
+    -- All the assessemnt should have at least either a course or group
+    (c,g) <- groupOrCourseOf a
+
+    case (c,g) of
+      (Nothing, Nothing) -> fail "There was no course or group of the assessment."
+      (Just _, Just _)   -> fail "There were course and group of assessment."
+
+      -- The course of assessment should be appear in its course assessment list
+      (Just c, Nothing)  -> do
+        as' <- runPersistCmd $ assessmentsOfCourse c
+        assertTrue (elem a as') "The course assessment was not registered in its course."
+
+      -- The group of the assessment should be appear in its group assessment list
+      (Nothing, Just g)  -> do
+        as' <- runPersistCmd $ assessmentsOfGroup g
+        assertTrue (elem a as') "The group assessment was not registered in its group."
+
+    -- All the non scores assessment should be have empty score list
+    s <- runPersistCmd $ scoresOfAssessment a
+    assertEquals s [] "There were some scores for the assessemnt"
+
+    -- The modification of an assessment should be stored property
+    asm <- pick $ Gen.assessments
+    runPersistCmd $ modifyAssessment a asm
+    asm' <- runPersistCmd $ loadAssessment a
+    assertEquals asm asm' "The modification of the assessment has failed."
+
+    -- The modification of an assessment should not change its group or course
+    (c',g') <- groupOrCourseOf a
+    assertEquals (c,g) (c',g') "The course or group of the assessment has changed after modification."
 
 openSubmissionsTest = do
   reinitPersistence
@@ -1163,6 +1306,9 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Incoming feedbacks" $ incomingFeedbacksTest
   , testCase "Delete incoming feedbacks" $ deleteIncomingFeedbackTest
   , testCase "Open submissions list" $ openSubmissionsTest
+  , testCase "Assessments" $ assessmentTests
+  , testCase "Unevaluated scores" $ unevaluatedScoresTests
+  , testCase "Evaluated scores" $ scoreEvaluationTests
   , cleanUpPersistence
   ]
 

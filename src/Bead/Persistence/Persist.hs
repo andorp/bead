@@ -18,6 +18,7 @@ module Bead.Persistence.Persist (
   , userSubmissions
   , administratedCourses
   , administratedGroups
+  , scoresOfUser
 
   -- Users file upload
   , copyFile  -- Copies the given file with the given filename to the users data directory
@@ -28,7 +29,7 @@ module Bead.Persistence.Persist (
   , saveUserReg
   , loadUserReg
 
-  -- Course Persistence
+  -- Course
   , saveCourse
   , courseKeys
   , filterCourses
@@ -41,8 +42,9 @@ module Bead.Persistence.Persist (
   , subscribedToCourse
   , unsubscribedFromCourse
   , testScriptsOfCourse
+  , assessmentsOfCourse
 
-  -- Group Persistence
+  -- Group
   , saveGroup
   , loadGroup
   , courseOfGroup
@@ -55,6 +57,7 @@ module Bead.Persistence.Persist (
   , createGroupAdmin
   , subscribedToGroup
   , unsubscribedFromGroup
+  , assessmentsOfGroup
 
   -- Test Scripts
   , saveTestScript
@@ -115,15 +118,33 @@ module Bead.Persistence.Persist (
   , submissionOfFeedback
 
   -- Evaluation
-  , saveEvaluation
+  , saveSubmissionEvaluation
+  , saveScoreEvaluation
   , loadEvaluation
   , modifyEvaluation
   , submissionOfEvaluation
+  , scoreOfEvaluation
 
   -- Comment
   , saveComment
   , loadComment
   , submissionOfComment
+
+  -- Assessment
+  , saveCourseAssessment
+  , saveGroupAssessment
+  , loadAssessment
+  , modifyAssessment
+  , courseOfAssessment
+  , groupOfAssessment
+  , scoresOfAssessment
+
+  -- Score
+  , saveScore
+  , loadScore
+  , assessmentOfScore
+  , usernameOfScore
+  , evaluationOfScore
 
   , testIncomingDataDir
 #ifdef TEST
@@ -194,6 +215,10 @@ administratedCourses = PersistImpl.administratedCourses
 -- Lists all the groups that are administrated by the user
 administratedGroups :: Username -> Persist [(GroupKey, Group)]
 administratedGroups = PersistImpl.administratedGroups
+
+-- Lists all the scores submitted for the user
+scoresOfUser :: Username -> Persist [ScoreKey]
+scoresOfUser = PersistImpl.scoresOfUser
 
 -- * Users file upload
 
@@ -268,6 +293,10 @@ unsubscribedFromCourse = PersistImpl.unsubscribedFromCourse
 testScriptsOfCourse :: CourseKey -> Persist [TestScriptKey]
 testScriptsOfCourse = PersistImpl.testScriptsOfCourse
 
+-- Lists all the assessment defined for the given course
+assessmentsOfCourse :: CourseKey -> Persist [AssessmentKey]
+assessmentsOfCourse = PersistImpl.assessmentsOfCourse
+
 -- * Group Persistence
 
 -- Save the group under the given course
@@ -318,6 +347,10 @@ subscribedToGroup = PersistImpl.subscribedToGroup
 -- Lists all the users that are unsubscribed from the given group at least once
 unsubscribedFromGroup :: GroupKey -> Persist [Username]
 unsubscribedFromGroup = PersistImpl.unsubscribedFromGroup
+
+-- Lists all the assessment defined for the given course
+assessmentsOfGroup :: GroupKey -> Persist [AssessmentKey]
+assessmentsOfGroup = PersistImpl.assessmentsOfGroup
 
 -- * Test Scripts
 
@@ -387,7 +420,7 @@ testFeedbacks = PersistImpl.testFeedbacks
 deleteTestFeedbacks :: SubmissionKey -> Persist ()
 deleteTestFeedbacks = PersistImpl.deleteTestFeedbacks
 
--- * Assignment Persistence
+-- * Assignment
 
 -- Lists all the assignments in the database
 assignmentKeys :: Persist [AssignmentKey]
@@ -513,8 +546,12 @@ submissionOfFeedback = PersistImpl.submissionOfFeedback
 -- * Evaluation
 
 -- Save the evaluation for the given submission
-saveEvaluation :: SubmissionKey -> Evaluation -> Persist EvaluationKey
-saveEvaluation = PersistImpl.saveEvaluation
+saveSubmissionEvaluation :: SubmissionKey -> Evaluation -> Persist EvaluationKey
+saveSubmissionEvaluation = PersistImpl.saveSubmissionEvaluation
+
+-- Save the evaluation for the given score entry
+saveScoreEvaluation :: ScoreKey -> Evaluation -> Persist EvaluationKey
+saveScoreEvaluation = PersistImpl.saveScoreEvaluation
 
 -- Load the evaluatuon from the database
 loadEvaluation :: EvaluationKey -> Persist Evaluation
@@ -525,8 +562,12 @@ modifyEvaluation :: EvaluationKey -> Evaluation -> Persist ()
 modifyEvaluation = PersistImpl.modifyEvaluation
 
 -- Returns the submission of the given evaluation
-submissionOfEvaluation :: EvaluationKey -> Persist SubmissionKey
+submissionOfEvaluation :: EvaluationKey -> Persist (Maybe SubmissionKey)
 submissionOfEvaluation = PersistImpl.submissionOfEvaluation
+
+-- Returns the score entry of the given evaluation
+scoreOfEvaluation :: EvaluationKey -> Persist (Maybe ScoreKey)
+scoreOfEvaluation = PersistImpl.scoreOfEvaluation
 
 -- * Comment
 
@@ -541,6 +582,48 @@ loadComment = PersistImpl.loadComment
 -- Returns the submission of the comment
 submissionOfComment :: CommentKey -> Persist SubmissionKey
 submissionOfComment = PersistImpl.submissionOfComment
+
+-- * Assessment
+
+saveCourseAssessment :: CourseKey -> Assessment -> Persist AssessmentKey
+saveCourseAssessment = PersistImpl.saveCourseAssessment
+
+saveGroupAssessment :: GroupKey -> Assessment -> Persist AssessmentKey
+saveGroupAssessment = PersistImpl.saveGroupAssessment
+
+loadAssessment :: AssessmentKey -> Persist Assessment
+loadAssessment = PersistImpl.loadAssessment
+
+modifyAssessment :: AssessmentKey -> Assessment -> Persist ()
+modifyAssessment = PersistImpl.modifyAssessment
+
+courseOfAssessment :: AssessmentKey -> Persist (Maybe CourseKey)
+courseOfAssessment = PersistImpl.courseOfAssessment
+
+groupOfAssessment :: AssessmentKey -> Persist (Maybe GroupKey)
+groupOfAssessment = PersistImpl.groupOfAssessment
+
+scoresOfAssessment :: AssessmentKey -> Persist [ScoreKey]
+scoresOfAssessment = PersistImpl.scoresOfAssessment
+
+-- * Score
+
+saveScore :: Username -> AssessmentKey -> Score -> Persist ScoreKey
+saveScore = PersistImpl.saveScore
+
+loadScore :: ScoreKey -> Persist Score
+loadScore = PersistImpl.loadScore
+
+assessmentOfScore :: ScoreKey -> Persist AssessmentKey
+assessmentOfScore = PersistImpl.assessmentOfScore
+
+usernameOfScore :: ScoreKey -> Persist Username
+usernameOfScore = PersistImpl.usernameOfScore
+
+evaluationOfScore :: ScoreKey -> Persist (Maybe EvaluationKey)
+evaluationOfScore = PersistImpl.evaluationOfScore
+
+-- * Incomming dir for the test results
 
 testIncomingDataDir :: FilePath
 testIncomingDataDir = PersistImpl.testIncomingDataDir

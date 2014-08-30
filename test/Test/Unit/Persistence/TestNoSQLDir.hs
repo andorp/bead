@@ -276,11 +276,11 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool "Submission is not in the users' submission" (elem sk uss)
 
   let ev = Evaluation (binaryResult Passed) "Good"
-  evKey <- liftE interp $ saveEvaluation sk ev
+  evKey <- liftE interp $ saveSubmissionEvaluation sk ev
   ev1 <- liftE interp $ loadEvaluation evKey
   assertBool "Evaluation was not loaded correctly" (ev == ev1)
   ev_sk <- liftE interp $ submissionOfEvaluation evKey
-  assertBool "Submission key was different for the evaluation" (sk == ev_sk)
+  assertBool "Submission key was different for the evaluation" (Just sk == ev_sk)
   liftE interp $ removeFromOpened gak username sk
 
   testComment sk

@@ -255,3 +255,30 @@ instance DomainValue Domain.Feedback where
     Domain.Feedback
       (decodeFeedbackInfo $ feedbackInfo ent)
       (feedbackDate ent)
+
+instance DomainKey Domain.AssessmentKey where
+  type EntityForKey Domain.AssessmentKey = AssessmentGeneric
+  fromDomainKey = domainKeyToEntityKey $ \(Domain.AssessmentKey k) -> k
+  toDomainKey   = entityToDomainKey Domain.AssessmentKey "entityToAssessmentKey"
+
+instance DomainValue Domain.Assessment where
+  type EntityValue Domain.Assessment = AssessmentGeneric
+
+  fromDomainValue = Domain.assessment $
+    \desc cfg -> Assessment
+      (Text.pack desc)
+      (encodeEvalConfig cfg)
+
+  toDomainValue ent = Domain.Assessment
+    (Text.unpack $ assessmentDescription ent)
+    (decodeEvalConfig $ assessmentEvalConfig ent)
+
+instance DomainKey Domain.ScoreKey where
+  type EntityForKey Domain.ScoreKey = ScoreGeneric
+  fromDomainKey = domainKeyToEntityKey $ \(Domain.ScoreKey k) -> k
+  toDomainKey   = entityToDomainKey Domain.ScoreKey "entityToScoreKey"
+
+instance DomainValue Domain.Score where
+  type EntityValue Domain.Score = ScoreGeneric
+  fromDomainValue s = Score "score"
+  toDomainValue ent = Domain.Score

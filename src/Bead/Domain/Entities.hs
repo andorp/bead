@@ -87,10 +87,13 @@ module Bead.Domain.Entities (
   , FileInfo(..)
   , fileInfoCata
   , fileInfoAppAna
+  , Score(..)
+  , score
   , CompareHun(..)
   , StatusMessage(..)
   , statusMessage
 
+  , module Bead.Domain.Entity.Assessment
   , module Bead.Domain.Entity.Assignment
   , module Bead.Domain.Entity.Comment
   , module Bead.Domain.Entity.Feedback
@@ -111,6 +114,7 @@ import           Data.Time.Format (formatTime)
 import           System.Locale (defaultTimeLocale)
 
 import           Bead.Domain.Types
+import           Bead.Domain.Entity.Assessment
 import           Bead.Domain.Entity.Assignment
 import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Entity.Feedback
@@ -558,6 +562,9 @@ fileInfoCata f (FileInfo size date) = f size date
 
 -- Applicative functor based FileInfo construction
 fileInfoAppAna size date = FileInfo <$> size <*> date
+
+data Score = Score
+  deriving (Data, Eq, Ord, Read, Show, Typeable)
 
 -- * PermObjs instance
 

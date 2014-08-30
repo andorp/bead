@@ -1,13 +1,5 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE EmptyDataDecls #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE GADTs #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE QuasiQuotes #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Bead.Persistence.SQL.Evaluation where
 
 import           Data.Maybe
@@ -16,7 +8,6 @@ import qualified Data.Text as Text
 import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
-import qualified Bead.Domain.Entity.Assignment as Domain
 import qualified Bead.Domain.Relationships as Domain
 import qualified Bead.Domain.Shared.Evaluation as Domain
 import           Bead.Persistence.SQL.Class
@@ -36,10 +27,17 @@ import           Test.Themis.Keyword.Encaps
 -- * Evaluation
 
 -- Save the evaluation for the given submission
-saveEvaluation :: Domain.SubmissionKey -> Domain.Evaluation -> Persist Domain.EvaluationKey
-saveEvaluation submissionKey ev = do
+saveSubmissionEvaluation :: Domain.SubmissionKey -> Domain.Evaluation -> Persist Domain.EvaluationKey
+saveSubmissionEvaluation submissionKey ev = do
   key <- insert (fromDomainValue ev)
   insert (SubmissionOfEvaluation (toEntityKey submissionKey) key)
+  return $! toDomainKey key
+
+-- Save the evaluation for the given submission
+saveScoreEvaluation :: Domain.ScoreKey -> Domain.Evaluation -> Persist Domain.EvaluationKey
+saveScoreEvaluation scoreKey ev = do
+  key <- insert (fromDomainValue ev)
+  insert (ScoreOfEvaluation (toEntityKey scoreKey) key)
   return $! toDomainKey key
 
 -- Load the evaluatuon from the database
@@ -60,13 +58,20 @@ modifyEvaluation key ev =
     ]
 
 -- Returns the submission of the given evaluation
-submissionOfEvaluation :: Domain.EvaluationKey -> Persist Domain.SubmissionKey
+submissionOfEvaluation :: Domain.EvaluationKey -> Persist (Maybe Domain.SubmissionKey)
 submissionOfEvaluation key = do
   es <- selectList [ SubmissionOfEvaluationEvaluation ==. toEntityKey key] []
   return $!
-    maybe (persistError "submissionOfEvaluation" $ "no evaluation is found " ++ show key)
-          (toDomainKey . submissionOfEvaluationSubmission . entityVal)
-          (listToMaybe es)
+    fmap (toDomainKey . submissionOfEvaluationSubmission . entityVal)
+         (listToMaybe es)
+
+-- Returns the score entry of the given evaluation
+scoreOfEvaluation :: Domain.EvaluationKey -> Persist (Maybe Domain.ScoreKey)
+scoreOfEvaluation key = do
+  scores <- selectList [ScoreOfEvaluationEvaluation ==. toEntityKey key] []
+  return $!
+    fmap (toDomainKey . scoreOfEvaluationScore . entityVal)
+         (listToMaybe scores)
 
 #ifdef TEST
 
@@ -90,11 +95,11 @@ evaluationTests = do
           s  <- dbStep $ saveSubmission ca user1name sbm
           se1 <- dbStep $ evaluationOfSubmission s
           assertEquals Nothing se1 "Found some evaluation for a non evaluated submission."
-          e  <- dbStep $ saveEvaluation s ev
+          e  <- dbStep $ saveSubmissionEvaluation s ev
           ev' <- dbStep $ loadEvaluation e
           assertEquals ev ev' "Saved and load evaluation are differents."
           s2 <- dbStep $ submissionOfEvaluation e
-          assertEquals s s2 "Submission of the evaluation is not calculated correctly."
+          assertEquals (Just s) s2 "Submission of the evaluation is not calculated correctly."
           se2 <- dbStep $ evaluationOfSubmission s
           assertEquals (Just e) se2 "Found some evaluation for a non evaluated submission."
           dbStep $ modifyEvaluation e ev2

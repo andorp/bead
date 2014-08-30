@@ -333,3 +333,18 @@ newtype FeedbackKey = FeedbackKey String
   deriving (Eq, Ord, Show)
 
 feedbackKey f (FeedbackKey x) = f x
+
+newtype ScoreKey = ScoreKey String
+  deriving (Eq, Ord, Show)
+
+scoreKey f (ScoreKey x) = f x
+
+newtype AssessmentKey = AssessmentKey String
+  deriving (Eq, Ord, Show)
+
+assessmentKey f (AssessmentKey x) = f x
+
+-- | The scoreboard summarizes the information for a course or group related
+-- assesments and the evaluation for the assesment.
+newtype ScoreBoard = ScoreBoard (Map (AssessmentKey, Username) EvaluationKey)
+  deriving (Eq, Show)

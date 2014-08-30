@@ -998,7 +998,7 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
       then do mek <- Persist.evaluationOfSubmission sk
               case mek of
                 Nothing -> do
-                  Persist.saveEvaluation sk e
+                  Persist.saveSubmissionEvaluation sk e
                   Persist.removeOpenedSubmission sk
                   Persist.saveFeedback sk (evaluationToFeedback now userData e)
                   return (return ())
@@ -1017,14 +1017,19 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
   userData <- currentUser
   join . withUserAndPersist $ \u -> do
     sk <- Persist.submissionOfEvaluation ek
-    admined <- Persist.isAdminedSubmission u sk
-    if admined
-      then do Persist.modifyEvaluation ek e
-              Persist.saveFeedback sk (evaluationToFeedback now userData e)
-              return (return ())
-      else return $ do
-              logMessage INFO . violation $ printf "The user tries to modify an evaluation (%s) that not belongs to him." (show ek)
-              errorPage $ userError nonAdministratedSubmission
+    case sk of
+      Just sk -> do
+        admined <- Persist.isAdminedSubmission u sk
+        if admined
+          then do Persist.modifyEvaluation ek e
+                  Persist.saveFeedback sk (evaluationToFeedback now userData e)
+                  return (return ())
+          else return $ do
+                  logMessage INFO . violation $
+                    printf "The user tries to modify an evaluation (%s) that not belongs to him."
+                           (show ek)
+                  errorPage $ userError nonAdministratedSubmission
+      Nothing -> return (return ())
 
 createComment :: SubmissionKey -> Comment -> UserStory ()
 createComment sk c = logAction INFO ("comments on " ++ show sk) $ do

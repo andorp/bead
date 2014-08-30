@@ -18,6 +18,7 @@ module Bead.Persistence.NoSQLDir (
   , userSubmissions
   , administratedCourses
   , administratedGroups
+  , scoresOfUser
 
   , copyFile
   , listFiles
@@ -101,10 +102,12 @@ module Bead.Persistence.NoSQLDir (
   , openedSubmissions
   , usersOpenedSubmissions
 
-  , saveEvaluation
+  , saveSubmissionEvaluation
+  , saveScoreEvaluation
   , loadEvaluation
   , modifyEvaluation
   , submissionOfEvaluation
+  , scoreOfEvaluation
 
   , saveFeedback
   , loadFeedback
@@ -113,6 +116,22 @@ module Bead.Persistence.NoSQLDir (
   , saveComment
   , loadComment
   , submissionOfComment
+
+  , saveCourseAssessment
+  , saveGroupAssessment
+  , loadAssessment
+  , modifyAssessment
+  , courseOfAssessment
+  , groupOfAssessment
+  , scoresOfAssessment
+  , assessmentsOfGroup
+  , assessmentsOfCourse
+
+  , saveScore
+  , loadScore
+  , assessmentOfScore
+  , usernameOfScore
+  , evaluationOfScore
 
   , testIncomingDataDir
 
@@ -377,6 +396,9 @@ unsubscribedFromGroup = objectsIn "unsubscribed" Username isUserDir
 
 isCorrectDirStructure :: DirStructure -> FilePath -> TIO Bool
 isCorrectDirStructure d p = hasNoRollback $ isCorrectStructure p d
+
+scoresOfUser :: Username -> TIO [ScoreKey]
+scoresOfUser = error "undefined: scoresOfUser"
 
 isGroupDir :: FilePath -> TIO Bool
 isGroupDir = isCorrectDirStructure groupDirStructure
@@ -827,14 +849,17 @@ instance ForeignKey EvaluationKey where
 isEvaluationDir :: FilePath -> TIO Bool
 isEvaluationDir = isCorrectDirStructure evaluationDirStructure
 
-saveEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
-saveEvaluation sk e = do
+saveSubmissionEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
+saveSubmissionEvaluation sk e = do
   dirName <- createTmpDir evaluationDataDir "ev"
   let evKey = EvaluationKey . takeBaseName $ dirName
   save dirName e
   link evKey sk "evaluation"
   link sk evKey "submission"
   return evKey
+
+saveScoreEvaluation :: ScoreKey -> Evaluation -> TIO EvaluationKey
+saveScoreEvaluation = error "undefined: saveScoreEvaluation"
 
 evaluationDirPath :: EvaluationKey -> FilePath
 evaluationDirPath (EvaluationKey e) = joinPath [evaluationDataDir, e]
@@ -853,9 +878,12 @@ modifyEvaluation ek e = do
   unless isE . throwEx . userError . join $ ["Evaluation does not exist."]
   update p e
 
-submissionOfEvaluation :: EvaluationKey -> TIO SubmissionKey
+submissionOfEvaluation :: EvaluationKey -> TIO (Maybe SubmissionKey)
 submissionOfEvaluation =
-  objectIn' "No submission was found for " "submission" SubmissionKey isSubmissionDir
+  objectIn "submission" SubmissionKey isSubmissionDir
+
+scoreOfEvaluation :: EvaluationKey -> TIO (Maybe ScoreKey)
+scoreOfEvaluation = error "undefined: scoreOfEvaluation"
 
 -- * Comment
 
@@ -1089,6 +1117,52 @@ loadFeedback fk = do
 submissionOfFeedback :: FeedbackKey -> Persist SubmissionKey
 submissionOfFeedback =
   objectIn' "No Submission was found for " "submission" SubmissionKey isSubmissionDir
+
+-- * Assessment
+
+saveCourseAssessment :: CourseKey -> Assessment -> Persist AssessmentKey
+saveCourseAssessment = error "undefined: saveCourseAssessment"
+
+saveGroupAssessment :: GroupKey -> Assessment -> Persist AssessmentKey
+saveGroupAssessment = error "undefined: saveGroupAssessment"
+
+loadAssessment :: AssessmentKey -> Persist Assessment
+loadAssessment = error "undefined: loadAssessment"
+
+modifyAssessment :: AssessmentKey -> Assessment -> Persist ()
+modifyAssessment = error "undefined: modifyAssessment"
+
+courseOfAssessment :: AssessmentKey -> Persist (Maybe CourseKey)
+courseOfAssessment = error "undefined: courseOfAssessment"
+
+groupOfAssessment :: AssessmentKey -> Persist (Maybe GroupKey)
+groupOfAssessment = error "undefined: groupOfAssessment"
+
+scoresOfAssessment :: AssessmentKey -> Persist [ScoreKey]
+scoresOfAssessment = error "undefined: scoresOfAssessment"
+
+assessmentsOfGroup :: GroupKey -> Persist [AssessmentKey]
+assessmentsOfGroup = error "undefined: assessmentsOfGroup"
+
+assessmentsOfCourse :: CourseKey -> Persist [AssessmentKey]
+assessmentsOfCourse = error "undefined: assessmentsOfCourse"
+
+-- * Score
+
+saveScore :: Username -> AssessmentKey -> Score -> Persist ScoreKey
+saveScore = error "undefined: saveScore"
+
+loadScore :: ScoreKey -> Persist Score
+loadScore = error "undefined: loadScore"
+
+assessmentOfScore :: ScoreKey -> Persist AssessmentKey
+assessmentOfScore = error "undefined: assessmentOfScore"
+
+usernameOfScore :: ScoreKey -> Persist Username
+usernameOfScore = error "undefined: usernameOfScore"
+
+evaluationOfScore :: ScoreKey -> Persist (Maybe EvaluationKey)
+evaluationOfScore = error "undefined: evaluationOfScore"
 
 -- * Tools
 
