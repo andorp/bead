@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 module Bead.Persistence.NoSQLDirFile where
 
+import           Control.Applicative ((<$>), (<*>))
 import           Control.DeepSeq (deepseq)
 import           Control.Exception as E
 import           Control.Monad (filterM, join, liftM, unless, when)
@@ -48,6 +49,8 @@ testCaseDir = "test-case"
 testOutgoingDir = "test-outgoing"
 testIncomingDir = "test-incoming"
 feedbackDir = "feedback"
+assessmentDir = "assessment"
+scoreDir = "score"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
@@ -64,6 +67,8 @@ testCaseDataDir = joinPath [dataDir, testCaseDir]
 testOutgoingDataDir = joinPath [dataDir, testOutgoingDir]
 testIncomingDataDir = joinPath [dataDir, testIncomingDir]
 feedbackDataDir = joinPath [dataDir, feedbackDir]
+assessmentDataDir = joinPath [dataDir, assessmentDir]
+scoreDataDir = joinPath [dataDir, scoreDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -83,6 +88,8 @@ persistenceDirs = [
   , testOutgoingDataDir
   , testIncomingDataDir
   , feedbackDataDir
+  , assessmentDataDir
+  , scoreDataDir
   ]
 
 class DirName d where
@@ -146,6 +153,11 @@ instance DirName TestJobKey where
 instance DirName FeedbackKey where
   dirName (FeedbackKey k) = joinPath [feedbackDataDir, k]
 
+instance DirName AssessmentKey where
+  dirName (AssessmentKey k) = joinPath [assessmentDataDir, k]
+
+instance DirName ScoreKey where
+  dirName (ScoreKey k) = joinPath [scoreDataDir, k]
 
 -- * Load and save aux functions
 
@@ -473,6 +485,17 @@ instance Save Feedback where
     fileSave d "info" info
     fileSave d "date" $ show date
 
+instance Save Assessment where
+  save d = assessment $ \desc evalcfg -> do
+    createStructureDirs d assessmentDirStructure
+    fileSave d "desc" desc
+    fileSave d "cfg" $ encodeJSON evalcfg
+
+instance Save Score where
+  save d s = do
+    createStructureDirs d scoreDirStructure
+    fileSave d "score" (show s)
+
 -- * Load instances
 
 instance Load Role where
@@ -579,6 +602,14 @@ instance Load Feedback where
     (fileLoad d "info" maybeDecodeJSON)
     (fileLoad d "date" readMaybe)
 
+instance Load Assessment where
+  load d = Assessment
+    <$> fileLoad d "desc" same
+    <*> fileLoad d "cfg"  maybeDecodeJSON
+
+instance Load Score where
+  load d = return Score
+
 -- * Update instances
 
 instance Update Language where
@@ -635,6 +666,11 @@ instance Update TestCase where
     fileUpdate d "type" type_
     fileUpdate d "info" info
 
+instance Update Assessment where
+  update d = assessment $ \desc cfg -> do
+    fileUpdate d "desc" desc
+    fileUpdate d "cfg" $ encodeJSON cfg
+
 -- * Dir Structures
 
 data DirStructure = DirStructure {
@@ -654,8 +690,6 @@ isCorrectStructure dirname ds = do
 createStructureDirs :: DirPath -> DirStructure -> TIO ()
 createStructureDirs p = mapM_ (\x -> createDir (joinPath [p,x])) . directories
 
-created = "created"
-
 saveCreatedTime :: DirPath -> UTCTime -> TIO ()
 saveCreatedTime d = fileSave d "created" . show
 
@@ -663,8 +697,22 @@ getCreatedTime :: DirPath -> TIO UTCTime
 getCreatedTime d = fileLoad d "created" readMaybe
 
 userDirStructure = DirStructure {
-    files       = ["email", "name", "role", "username", "language"]
-  , directories = ["course", "group" ,"courseadmin" ,"groupadmin", "submissions", "datadir"]
+    files = [
+        "email"
+      , "name"
+      , "role"
+      , "username"
+      , "language"
+      ]
+  , directories = [
+        "course"
+      , "group"
+      , "courseadmin"
+      , "groupadmin"
+      , "submissions"
+      , "datadir"
+      , "score"
+      ]
   }
 
 assignmentDirStructure = DirStructure {
@@ -674,7 +722,7 @@ assignmentDirStructure = DirStructure {
       , "type"    -- The type of the assignment
       , "start"   -- The start date of from when the assignment is active
       , "end"     -- The end data of from when the assignment is inactive
-      , created   -- The time when the assignment is created
+      , "created" -- The time when the assignment is created
       , "evtype"  -- Evaluation type
       ]
   , directories =
@@ -706,6 +754,7 @@ courseDirStructure = DirStructure {
   , directories =
       [ "groups"       -- Soft links to the groups associated with the course
       , "assignments"  -- Soft links to the assignments associated with the course
+      , "assessments"  -- Soft links to the assessments associated with the course
       , "users"        -- Soft links to the users that are actively registered for the course
       , "admins"       -- Soft links to the users that administrates the course
       , "unsubscribed" -- Soft links to the users that are subscribed and unsubscribed to the course at least once
@@ -723,6 +772,7 @@ groupDirStructure = DirStructure {
       , "course"       -- Soft links to the course that the group is associated with
       , "admins"       -- Soft links to the users that administrated the group
       , "assignments"  -- Soft links to the assignments that are associated with the group
+      , "assessments"  -- Soft links to the assessments that are associated with the group
       , "unsubscribed" -- Soft links to the users that are subscribed and unsubscribed to the group at least once
       ]
   }
@@ -755,7 +805,7 @@ testCaseDirStructure = DirStructure {
 
 evaluationDirStructure = DirStructure {
     files       = ["result", "evaluation"]
-  , directories = ["submission"]
+  , directories = ["submission", "score"]
   }
 
 commentDirStructure = DirStructure {
@@ -780,6 +830,29 @@ testJobDirStructure = DirStructure {
 feedbackDirStructure = DirStructure {
     files = [ "info", "date" ]
   , directories = [ "submission" ]
+  }
+
+assessmentDirStructure = DirStructure {
+    files = [
+        "desc" -- Description of the assessment
+      , "cfg"  -- Evaluation config for the assessement
+      ]
+  , directories = [
+        "course" -- Course of the assessment, or
+      , "group"  -- Group of the assessment
+      , "score"  -- Scores for the assessment, that connects evaluations with users and assessments
+      ]
+  }
+
+scoreDirStructure = DirStructure {
+    files = [
+        "score" -- Score value, a placeholder value
+      ]
+  , directories = [
+        "assessment" -- The assessment for a score
+      , "user"       -- The user who has got the score
+      , "evaluation" -- The evaluation for the user's assessment
+      ]
   }
 
 -- * Encoding
@@ -834,6 +907,8 @@ dirStructures = [
   , testCaseDirStructure
   , testJobDirStructure
   , feedbackDirStructure
+  , assessmentDirStructure
+  , scoreDirStructure
   ]
 
 unitTests = UnitTests [

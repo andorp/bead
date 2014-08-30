@@ -398,7 +398,7 @@ isCorrectDirStructure :: DirStructure -> FilePath -> TIO Bool
 isCorrectDirStructure d p = hasNoRollback $ isCorrectStructure p d
 
 scoresOfUser :: Username -> TIO [ScoreKey]
-scoresOfUser = error "undefined: scoresOfUser"
+scoresOfUser = objectsIn "score" ScoreKey isScoreDir
 
 isGroupDir :: FilePath -> TIO Bool
 isGroupDir = isCorrectDirStructure groupDirStructure
@@ -456,7 +456,7 @@ createGroupAdmin u gk = do
   link gk u "groupadmin"
 
 courseOfGroup :: GroupKey -> TIO CourseKey
-courseOfGroup = objectIn' "No course was found for " "course" CourseKey isCourseDir
+courseOfGroup = objectOrError "No course was found for " "course" CourseKey isCourseDir
 
 tLoadPersistenceObject :: (Load o)
   => (String -> k) -- ^ Key constructor
@@ -636,7 +636,9 @@ objectIn s k v sk = objectsIn s k v sk >>= just
     just [k] = return $ Just k
     just _   = throwEx . userError $ "Impossible: found more than one object found for: " ++ show sk
 
-objectIn' msg subdir keyConstructor isValidDir sourceKey = do
+-- Browses the objects in the given directory all the subdirectories,
+-- checks if entry with the 'isValidDir'
+objectOrError msg subdir keyConstructor isValidDir sourceKey = do
   m <- objectIn subdir keyConstructor isValidDir sourceKey
   case m of
     Nothing -> throwEx . userError $ msg ++ show sourceKey
@@ -748,11 +750,11 @@ loadSubmission = load . dirName
 
 assignmentOfSubmission :: SubmissionKey -> TIO AssignmentKey
 assignmentOfSubmission sk =
-  objectIn' "No assignment was found for the " "assignment" AssignmentKey isAssignmentDir sk
+  objectOrError "No assignment was found for the " "assignment" AssignmentKey isAssignmentDir sk
 
 usernameOfSubmission :: SubmissionKey -> TIO Username
 usernameOfSubmission sk =
-  objectIn' "No assignment was found for the " "user" Username isUserDir sk
+  objectOrError "No assignment was found for the " "user" Username isUserDir sk
 
 evaluationOfSubmission :: SubmissionKey -> TIO (Maybe EvaluationKey)
 evaluationOfSubmission =
@@ -849,17 +851,26 @@ instance ForeignKey EvaluationKey where
 isEvaluationDir :: FilePath -> TIO Bool
 isEvaluationDir = isCorrectDirStructure evaluationDirStructure
 
-saveSubmissionEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
-saveSubmissionEvaluation sk e = do
+saveEvaluation :: Evaluation -> Persist EvaluationKey
+saveEvaluation e = do
   dirName <- createTmpDir evaluationDataDir "ev"
   let evKey = EvaluationKey . takeBaseName $ dirName
   save dirName e
-  link evKey sk "evaluation"
-  link sk evKey "submission"
   return evKey
 
+saveSubmissionEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
+saveSubmissionEvaluation sk e = do
+  key <- saveEvaluation e
+  link key sk "evaluation"
+  link sk key "submission"
+  return key
+
 saveScoreEvaluation :: ScoreKey -> Evaluation -> TIO EvaluationKey
-saveScoreEvaluation = error "undefined: saveScoreEvaluation"
+saveScoreEvaluation sk e = do
+  key <- saveEvaluation e
+  link key sk "evaluation"
+  link sk key "score"
+  return key
 
 evaluationDirPath :: EvaluationKey -> FilePath
 evaluationDirPath (EvaluationKey e) = joinPath [evaluationDataDir, e]
@@ -883,7 +894,8 @@ submissionOfEvaluation =
   objectIn "submission" SubmissionKey isSubmissionDir
 
 scoreOfEvaluation :: EvaluationKey -> TIO (Maybe ScoreKey)
-scoreOfEvaluation = error "undefined: scoreOfEvaluation"
+scoreOfEvaluation =
+  objectIn "score" ScoreKey isScoreDir
 
 -- * Comment
 
@@ -915,7 +927,7 @@ loadComment ck = do
 
 submissionOfComment :: CommentKey -> TIO SubmissionKey
 submissionOfComment =
-  objectIn' "No submission was found for " "submission" SubmissionKey isSubmissionDir
+  objectOrError "No submission was found for " "submission" SubmissionKey isSubmissionDir
 
 -- * Test Script
 
@@ -947,7 +959,7 @@ loadTestScript tk = do
 
 courseOfTestScript :: TestScriptKey -> TIO CourseKey
 courseOfTestScript =
-  objectIn' "No course was found for " "course" CourseKey isCourseDir
+  objectOrError "No course was found for " "course" CourseKey isCourseDir
 
 modifyTestScript :: TestScriptKey -> TestScript -> TIO ()
 modifyTestScript tk ts = do
@@ -998,7 +1010,7 @@ loadTestCase tk = do
 
 testScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
 testScriptOfTestCase =
-  objectIn' "No Test Script was found for " "test-script" TestScriptKey isTestScriptDir
+  objectOrError "No Test Script was found for " "test-script" TestScriptKey isTestScriptDir
 
 modifyTestCase :: TestCaseKey -> TestCase -> TIO ()
 modifyTestCase tk tc = do
@@ -1094,7 +1106,6 @@ feedbackDirPath = feedbackKey $ \k -> joinPath [feedbackDataDir, k]
 isFeedbackDir :: FilePath -> TIO Bool
 isFeedbackDir = isCorrectDirStructure feedbackDirStructure
 
-
 -- Saves the feedback
 saveFeedback :: SubmissionKey -> Feedback -> Persist FeedbackKey
 saveFeedback sk f = do
@@ -1116,53 +1127,108 @@ loadFeedback fk = do
 -- Returns the submission of the feedback
 submissionOfFeedback :: FeedbackKey -> Persist SubmissionKey
 submissionOfFeedback =
-  objectIn' "No Submission was found for " "submission" SubmissionKey isSubmissionDir
+  objectOrError "No Submission was found for " "submission" SubmissionKey isSubmissionDir
 
 -- * Assessment
 
+instance ForeignKey AssessmentKey where
+  referredPath (AssessmentKey c) = joinPath [assessmentDataDir, c]
+  baseName     (AssessmentKey c) = c
+
+isAssessmentDir :: FilePath -> TIO Bool
+isAssessmentDir = isCorrectDirStructure assessmentDirStructure
+
+assessmentDirPath :: AssessmentKey -> FilePath
+assessmentDirPath (AssessmentKey e) = joinPath [assessmentDataDir, e]
+
+saveAssessment :: Assessment -> Persist AssessmentKey
+saveAssessment as = do
+  dirName <- createTmpDir assessmentDataDir "at"
+  let key = AssessmentKey $ takeBaseName dirName
+  save dirName as
+  return key
+
 saveCourseAssessment :: CourseKey -> Assessment -> Persist AssessmentKey
-saveCourseAssessment = error "undefined: saveCourseAssessment"
+saveCourseAssessment ck as = do
+  key <- saveAssessment as
+  link key ck "assessments"
+  link ck key "course"
+  return key
 
 saveGroupAssessment :: GroupKey -> Assessment -> Persist AssessmentKey
-saveGroupAssessment = error "undefined: saveGroupAssessment"
+saveGroupAssessment gk as = do
+  key <- saveAssessment as
+  link key gk "assessments"
+  link gk key "group"
+  return key
 
 loadAssessment :: AssessmentKey -> Persist Assessment
-loadAssessment = error "undefined: loadAssessment"
+loadAssessment ak = do
+  let p = assessmentDirPath ak
+  isDir <- isAssessmentDir p
+  unless isDir . throwEx $ userError "Not an assessment directory"
+  snd <$> tLoadPersistenceObject AssessmentKey p
 
 modifyAssessment :: AssessmentKey -> Assessment -> Persist ()
-modifyAssessment = error "undefined: modifyAssessment"
+modifyAssessment ak a = do
+  let p = assessmentDirPath ak
+  isDir <- isAssessmentDir p
+  unless isDir . throwEx $ userError "Not an assessment directory"
+  update p a
 
 courseOfAssessment :: AssessmentKey -> Persist (Maybe CourseKey)
-courseOfAssessment = error "undefined: courseOfAssessment"
+courseOfAssessment = objectIn "course" CourseKey isCourseDir
 
 groupOfAssessment :: AssessmentKey -> Persist (Maybe GroupKey)
-groupOfAssessment = error "undefined: groupOfAssessment"
+groupOfAssessment = objectIn "group" GroupKey isGroupDir
 
 scoresOfAssessment :: AssessmentKey -> Persist [ScoreKey]
-scoresOfAssessment = error "undefined: scoresOfAssessment"
+scoresOfAssessment = objectsIn "score" ScoreKey isScoreDir
 
 assessmentsOfGroup :: GroupKey -> Persist [AssessmentKey]
-assessmentsOfGroup = error "undefined: assessmentsOfGroup"
+assessmentsOfGroup = objectsIn "assessments" AssessmentKey isAssessmentDir
 
 assessmentsOfCourse :: CourseKey -> Persist [AssessmentKey]
-assessmentsOfCourse = error "undefined: assessmentsOfCourse"
+assessmentsOfCourse = objectsIn "assessments" AssessmentKey isAssessmentDir
 
 -- * Score
 
+instance ForeignKey ScoreKey where
+  referredPath (ScoreKey c) = joinPath [scoreDataDir, c]
+  baseName     (ScoreKey c) = c
+
+isScoreDir :: FilePath -> TIO Bool
+isScoreDir = isCorrectDirStructure scoreDirStructure
+
+scoreDirPath :: ScoreKey -> FilePath
+scoreDirPath (ScoreKey e) = joinPath [scoreDataDir, e]
+
 saveScore :: Username -> AssessmentKey -> Score -> Persist ScoreKey
-saveScore = error "undefined: saveScore"
+saveScore u ak s = do
+  dirName <- createTmpDir scoreDataDir "sc"
+  let key = ScoreKey $ takeBaseName dirName
+  save dirName s
+  link key u  "score"
+  link u key "user"
+  link ak key "assessment"
+  link key ak "score"
+  return key
 
 loadScore :: ScoreKey -> Persist Score
-loadScore = error "undefined: loadScore"
+loadScore sk = do
+  let p = scoreDirPath sk
+  isDir <- isScoreDir p
+  unless isDir . throwEx $ userError "Not a score directory"
+  snd <$> tLoadPersistenceObject ScoreKey p
 
 assessmentOfScore :: ScoreKey -> Persist AssessmentKey
-assessmentOfScore = error "undefined: assessmentOfScore"
+assessmentOfScore = objectOrError "No assessment was found for " "assessment" AssessmentKey isAssessmentDir
 
 usernameOfScore :: ScoreKey -> Persist Username
-usernameOfScore = error "undefined: usernameOfScore"
+usernameOfScore = objectOrError "No user was found for " "user" Username isUserDir
 
 evaluationOfScore :: ScoreKey -> Persist (Maybe EvaluationKey)
-evaluationOfScore = error "undefined: evaluationOfScore"
+evaluationOfScore = objectIn "evaluation" EvaluationKey isEvaluationDir
 
 -- * Tools
 

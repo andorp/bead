@@ -1012,13 +1012,13 @@ unevaluatedScoresTests = do
     -- All the saved scores should have appear in the score list of the assessment
     a <- runPersistCmd $ assessmentOfScore s
     sa <- runPersistCmd $ scoresOfAssessment a
-    assertTrue (elem s sa) "The score was not in the score list of assessment."
+    assertTrue (elem s sa) ("The score was not in the score list of assessment: " ++ show s)
 
     -- All the saved scores should have a username
     -- All the saved scores should have appear in the score list of the user
     u <- runPersistCmd $ usernameOfScore s
     su <- runPersistCmd $ scoresOfUser u
-    assertTrue (elem s su) "The score was not in the score list of user."
+    assertTrue (elem s su) ("The score was not in the score list of user: " ++ show s)
 
     -- All the saved scores should not have an evaluation
     e <- runPersistCmd $ evaluationOfScore s
@@ -1310,7 +1310,7 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Unevaluated scores" $ unevaluatedScoresTests
   , testCase "Evaluated scores" $ scoreEvaluationTests
   , cleanUpPersistence
-  ]
+    ]
 
 monadicProperty gen prop = monadicIO (forAllM gen prop)
 
