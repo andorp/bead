@@ -53,7 +53,7 @@ createPersistInterpreter cfg = do
       run command = do
         result <- trySomeEx $ runCmd database command
         return $ case result of
-          Left ex -> Left "Exception"
+          Left ex -> Left $ show ex
           Right x -> Right x
   return (Interpreter (runCmd (sqliteDatabase cfg)))
   where

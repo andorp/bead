@@ -37,7 +37,6 @@ import           Control.Applicative ((<$>))
 import           Control.Arrow
 import           Control.Monad (forM, when)
 import           Control.Monad.IO.Class
-import           Control.Monad.Transaction.TIO
 import           Data.Function (on)
 import           Data.List ((\\), nub, sortBy, intersect, find)
 import           Data.Map (Map)
@@ -47,21 +46,17 @@ import qualified Data.Set as Set
 import           Data.Time (UTCTime, getCurrentTime)
 
 import           Bead.Domain.Entities
-import           Bead.Domain.Entity.Assignment (Assignment(..), assignmentCata)
 import qualified Bead.Domain.Entity.Assignment as Assignment
-import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Relationships
 import           Bead.Domain.Shared.Evaluation
 import           Bead.Persistence.Persist
 import           Bead.View.Snap.Translation
 
 #ifdef TEST
-import           Bead.Domain.Shared.Evaluation
 import           Bead.Persistence.Initialization
 
 import qualified Test.Themis.Keyword.Encaps as Keyword (step, key)
 import           Test.Themis.Keyword.Encaps hiding (step, key)
-import           Test.Themis.Keyword
 import           Test.Themis.Test
 import           Test.Themis.Test.Asserts hiding (assertEquals)
 #endif

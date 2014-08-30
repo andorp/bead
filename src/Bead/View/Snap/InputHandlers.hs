@@ -3,13 +3,11 @@ module Bead.View.Snap.InputHandlers where
 import           Control.Applicative ((<$>),(<*>))
 import           Control.Arrow ((&&&))
 import           Data.Maybe (fromMaybe)
-import qualified Data.Set as Set (fromList)
 import           Data.Time (UTCTime(..))
 
 import           Text.Blaze.Html5 (Html)
 
 import           Bead.Domain.Entities
-import           Bead.Domain.Entity.Assignment (Assignment)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
 import           Bead.Domain.Relationships

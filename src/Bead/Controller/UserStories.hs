@@ -6,7 +6,6 @@ import           Bead.Domain.Entities as E hiding (name)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
-import           Bead.Domain.Types
 import           Bead.Controller.ServiceContext
 import           Bead.Controller.Logging  as L
 import           Bead.Controller.Pages    as P

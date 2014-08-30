@@ -61,7 +61,7 @@ import           Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext hiding (serviceContext, name)
 import qualified Bead.Controller.UserStories as S
 import           Bead.Daemon.Logout
-import           Bead.Domain.Entities (TimeZoneName, timeZoneName)
+import           Bead.Domain.Entities (TimeZoneName)
 import           Bead.Domain.TimeZone
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.DataBridge

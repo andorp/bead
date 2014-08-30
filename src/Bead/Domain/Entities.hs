@@ -105,7 +105,6 @@ module Bead.Domain.Entities (
   ) where
 
 import           Control.Applicative
-import           Control.Monad (join)
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Data
 import           Data.List (findIndex)
@@ -113,7 +112,6 @@ import           Data.Time (UTCTime(..), LocalTime)
 import           Data.Time.Format (formatTime)
 import           System.Locale (defaultTimeLocale)
 
-import           Bead.Domain.Types
 import           Bead.Domain.Entity.Assessment
 import           Bead.Domain.Entity.Assignment
 import           Bead.Domain.Entity.Comment

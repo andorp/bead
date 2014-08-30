@@ -17,7 +17,6 @@ import           Bead.Persistence.SQL.Class
 import           Bead.Persistence.SQL.Entities
 
 #ifdef TEST
-import qualified Bead.Domain.Shared.Evaluation as Domain
 import           Bead.Persistence.SQL.Assessment
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Evaluation

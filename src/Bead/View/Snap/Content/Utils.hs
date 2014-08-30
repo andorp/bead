@@ -5,7 +5,6 @@ import Data.List (find)
 import Data.Maybe (fromMaybe)
 
 import Bead.Controller.UserStories
-import Bead.Domain.Entity.Assignment (Assignment)
 import Bead.View.Snap.Content
 
 usersObject

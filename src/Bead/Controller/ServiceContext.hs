@@ -22,7 +22,6 @@ module Bead.Controller.ServiceContext (
 
 import qualified Data.Map as Map
 
-import           Control.Concurrent.MVar
 import           Control.Concurrent.STM
 
 import           Bead.Controller.Pages as Pages

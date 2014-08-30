@@ -1,7 +1,6 @@
 module Bead.Persistence.SQL.TestFeedback where
 
 import qualified Bead.Domain.Entities as Domain
-import qualified Bead.Domain.Entity.Comment as Domain
 import qualified Bead.Domain.Relationships as Domain
 import           Bead.Persistence.SQL.Entities (Persist)
 import qualified Bead.Persistence.SQL.FileSystem as FS

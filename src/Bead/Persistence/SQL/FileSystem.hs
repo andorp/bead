@@ -17,7 +17,6 @@ import           System.Posix.Types (COff(..))
 import           System.Posix.Files (getFileStatus, fileSize, modificationTime)
 
 import           Bead.Domain.Entities
-import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Relationships
 import           Bead.Domain.Types
 

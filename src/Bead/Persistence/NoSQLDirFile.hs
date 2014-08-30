@@ -190,6 +190,8 @@ fileLoad :: DirPath -> FilePath -> (String -> Maybe a) -> TIO a
 fileLoad d f reader = step
     (do let fname = joinPath [d,f]
         exist <- doesFileExist fname
+        unless exist $ throwIO . userError . join $
+          [ "File does not exist: ", fname ]
         h <- openFile fname ReadMode
         hSetEncoding h utf8
         s <- hGetContents h
@@ -204,6 +206,8 @@ fileLoadBS :: DirPath -> FilePath -> TIO ByteString
 fileLoadBS d f = step
     (do let fname = joinPath [d,f]
         exist <- doesFileExist fname
+        unless exist $ throwIO . userError . join $
+          [ "File does not exist: ", fname ]
         h <- openFile fname ReadMode
         hSetEncoding h utf8
         s <- BS.hGetContents h
@@ -608,7 +612,7 @@ instance Load Assessment where
     <*> fileLoad d "cfg"  maybeDecodeJSON
 
 instance Load Score where
-  load d = return Score
+  load _d = return Score
 
 -- * Update instances
 
@@ -678,12 +682,17 @@ data DirStructure = DirStructure {
   , files       :: [FilePath]
   }
 
+-- Returns True if the directory exist and it has the correct sub-directory
+-- structure otherwise False.
 isCorrectStructure :: DirPath -> DirStructure -> IO Bool
 isCorrectStructure dirname ds = do
-  d  <- doesDirectoryExist dirname
-  as <- mapM (doesDirectoryExist . joinPath . f) . directories $ ds
-  bs <- mapM (doesFileExist      . joinPath . f) . files       $ ds
-  return . and $ as ++ bs
+  exist <- doesDirectoryExist dirname
+  if exist
+    then do
+      as <- mapM (doesDirectoryExist . joinPath . f) . directories $ ds
+      bs <- mapM (doesFileExist      . joinPath . f) . files       $ ds
+      return . and $ as ++ bs
+    else return False
   where
     f x = [dirname, x]
 
