@@ -663,7 +663,7 @@ newAssignmentContent tz pd = do
                   keyValue = (id &&& (usersFileCata id))
 
           testCaseText Nothing = Nothing
-          testCaseText (Just (_,tc',_)) = Just . BsUTF8.toString $ tcValue tc'
+          testCaseText (Just (_,tc,_)) = withTestCaseValue (tcValue tc) Just (const Nothing)
 
           testCaseFileName Nothing = return ()
           testCaseFileName (Just (_,tc',_)) = fromString $ tcInfo tc'

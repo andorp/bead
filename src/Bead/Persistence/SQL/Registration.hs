@@ -9,6 +9,8 @@ import           Bead.Persistence.SQL.Class
 import           Bead.Persistence.SQL.Entities
 
 #ifdef TEST
+import           Bead.Persistence.SQL.TestData
+
 import           Test.Themis.Test (ioTest)
 import           Test.Themis.Keyword.Encaps
 #endif
@@ -34,8 +36,6 @@ loadUserReg key = do
 #ifdef TEST
 
 userRegistrationTests = do
-  let time = read "2014-06-09 12:55:27.959203 UTC"
-      reg = Domain.UserRegistration "username" "email" "name" "token" time
   ioTest "Save and load user registration" $ runSql $ do
     dbStep initDB
     k <- dbStep $ saveUserReg reg

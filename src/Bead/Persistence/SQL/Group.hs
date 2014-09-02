@@ -19,6 +19,8 @@ import qualified Data.Set as Set
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.User
 
+import           Bead.Persistence.SQL.TestData
+
 import           Test.Themis.Test (ioTest)
 import           Test.Themis.Keyword.Encaps
 #endif
@@ -93,13 +95,6 @@ unsubscribe username courseDomKey groupDomKey = withUser username (return ()) $ 
 #ifdef TEST
 
 groupTests = do
-  let course = Domain.Course "name" "desc" Domain.TestScriptSimple
-      group  = Domain.Group "name" "desc"
-      user1name = Domain.Username "user1"
-      user2name = Domain.Username "user2"
-      user1  = Domain.User Domain.Student user1name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
-      user2  = Domain.User Domain.Student user2name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
-
   ioTest "Create and load group" $ runSql $ do
     dbStep $ initDB
     c <- dbStep $ saveCourse course

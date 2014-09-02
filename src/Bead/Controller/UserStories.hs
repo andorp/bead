@@ -577,11 +577,11 @@ testCaseModificationForAssignment u ak = tcModificationCata noModification fileO
           testCase = TestCase {
               tcName        = usersFileName
             , tcDescription = usersFileName
-            , tcValue       = ""
-            , tcType        = TestCaseZipped
+            , tcValue       = ZippedTestCase ""
             , tcInfo        = usersFileName
             }
       mtk <- Persist.testCaseOfAssignment ak
+      -- TODO: Join the test case creation and test case file copy
       tk <- case mtk of
         Just tk -> Persist.modifyTestCase tk testCase >> return tk
         Nothing -> Persist.saveTestCase tsk ak testCase
@@ -595,8 +595,7 @@ testCaseModificationForAssignment u ak = tcModificationCata noModification fileO
           testCase = TestCase {
               tcName        = name
             , tcDescription = name
-            , tcValue       = BsUTF8.fromString t
-            , tcType        = TestCaseSimple
+            , tcValue       = SimpleTestCase t
             , tcInfo        = ""
             }
       mtk <- Persist.testCaseOfAssignment ak
@@ -624,8 +623,7 @@ testCaseCreationForAssignment u ak = tcCreationCata noCreation fileCreation text
           testCase = TestCase {
               tcName        = usersFileName
             , tcDescription = usersFileName
-            , tcValue       = ""
-            , tcType        = TestCaseZipped
+            , tcValue       = ZippedTestCase ""
             , tcInfo        = usersFileName
             }
       tk <- Persist.saveTestCase tsk ak testCase
@@ -639,8 +637,7 @@ testCaseCreationForAssignment u ak = tcCreationCata noCreation fileCreation text
           testCase = TestCase {
               tcName        = name
             , tcDescription = name
-            , tcValue       = BsUTF8.fromString plain
-            , tcType        = TestCaseSimple
+            , tcValue       = SimpleTestCase plain
             , tcInfo        = ""
             }
       Persist.saveTestCase tsk ak testCase

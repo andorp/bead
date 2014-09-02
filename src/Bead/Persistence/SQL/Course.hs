@@ -14,6 +14,9 @@ import           Bead.Persistence.SQL.Entities
 
 #ifdef TEST
 import           Bead.Persistence.SQL.User
+
+import           Bead.Persistence.SQL.TestData
+
 import           Test.Themis.Test (ioTest)
 import           Test.Themis.Keyword.Encaps
 #endif
@@ -101,11 +104,6 @@ usernames userIds = catMaybes <$> (mapM toUsername userIds)
 #ifdef TEST
 
 courseAdminTests = do
-  let course = Domain.Course "name" "desc" Domain.TestScriptSimple
-      user1name = Domain.Username "user1"
-      user1  = Domain.User Domain.Student user1name                 (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
-      user2  = Domain.User Domain.Student (Domain.Username "user2") (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
-
   ioTest "Create Course Admin for the course" $ runSql $ do
     dbStep initDB
     dbStep $ saveUser user1

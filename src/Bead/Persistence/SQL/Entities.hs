@@ -80,15 +80,16 @@ Score
   deriving Show
 
 Submission
-  submission Text
-  postDate   UTCTime
+  simple   Text       Maybe
+  zipped   ByteString Maybe
+  postDate UTCTime
   deriving Show
 
 TestCase
   name         Text
   description  Text
-  value        ByteString
-  testCaseType JSONText
+  simpleValue  Text       Maybe
+  zippedValue  ByteString Maybe
   info         Text
   deriving Show
 

@@ -20,6 +20,8 @@ import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Submission
 import           Bead.Persistence.SQL.User
 
+import           Bead.Persistence.SQL.TestData
+
 import           Test.Themis.Test (ioTest, shrink)
 import           Test.Themis.Keyword.Encaps
 #endif
@@ -76,16 +78,6 @@ scoreOfEvaluation key = do
 #ifdef TEST
 
 evaluationTests = do
-  let course  = Domain.Course "name" "desc" Domain.TestScriptSimple
-      time    = read "2014-06-09 12:55:27.959203 UTC"
-      sbm     = Domain.Submission "submission" time
-      sbm2    = Domain.Submission "submission2" time
-      ballot  = Domain.aspectsFromList [Domain.BallotBox]
-      asg     = Domain.Assignment "name" "desc" ballot time time Domain.binaryConfig
-      user1name = Domain.Username "user1"
-      user1 = Domain.User Domain.Student user1name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
-      ev    = Domain.Evaluation (Domain.binaryResult Domain.Passed) "written"
-      ev2   = Domain.Evaluation (Domain.percentageResult 0.01) "escrito"
   shrink "Evaluation end-to-end story"
     (do ioTest "Evaluation end-to-end story" $ runSql $ do
           dbStep $ initDB

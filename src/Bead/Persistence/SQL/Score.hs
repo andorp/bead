@@ -22,6 +22,8 @@ import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Evaluation
 import           Bead.Persistence.SQL.User
 
+import           Bead.Persistence.SQL.TestData
+
 import           Test.Themis.Test (ioTest, shrink)
 import           Test.Themis.Keyword.Encaps
 #endif
@@ -86,20 +88,13 @@ scoresOfUser user = do
 
 #ifdef TEST
 scoreTests = do
-  let course  = Domain.Course "name" "desc" Domain.TestScriptSimple
-      scr     = Domain.Score
-      user1name = Domain.Username "user1"
-      user1 = Domain.User Domain.Student user1name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
-      ev    = Domain.Evaluation (Domain.binaryResult Domain.Passed) "written"
-      asg   = Domain.Assessment "this is an assessment" (Domain.binaryConfig)
-
   shrink "Score end-to-end story"
     (do ioTest "Score end-to-end test" $ runSql $ do
           -- Given
           dbStep initDB
           dbStep $ saveUser user1
           c  <- dbStep $ saveCourse course
-          ca <- dbStep $ saveCourseAssessment c asg
+          ca <- dbStep $ saveCourseAssessment c ast
 
           scs <- dbStep $ scoresOfUser user1name
           assertEquals [] scs "There were scores registered for unscored user."

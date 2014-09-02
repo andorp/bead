@@ -20,6 +20,8 @@ import qualified Data.Set as Set
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Group
 
+import           Bead.Persistence.SQL.TestData
+
 import           Test.Themis.Test (ioTest, shrink)
 import           Test.Themis.Keyword.Encaps
 #endif
@@ -88,38 +90,33 @@ assessmentsOfGroup key = do
 #ifdef TEST
 
 assessmentTests = do
-  let course  = Domain.Course "name" "desc" Domain.TestScriptSimple
-      group  = Domain.Group "name" "desc"
-      asg     = Domain.Assessment "this is an assessment" Domain.binaryConfig
-      asg2    = Domain.Assessment "this is an assessment 2" (Domain.percentageConfig 0.1)
-
   shrink "Assessment end-to-end story"
     (do ioTest "Assessment end-to-end test" $ runSql $ do
           dbStep initDB
           c  <- dbStep $ saveCourse course
           g  <- dbStep $ saveGroup c group
-          ca <- dbStep $ saveCourseAssessment c asg
-          ga <- dbStep $ saveGroupAssessment g asg
+          ca <- dbStep $ saveCourseAssessment c ast
+          ga <- dbStep $ saveGroupAssessment g ast
 
-          casg' <- dbStep $ loadAssessment ca
-          assertEquals asg casg' "The saved and loaded course assessnment were different."
+          cast' <- dbStep $ loadAssessment ca
+          assertEquals ast cast' "The saved and loaded course assessnment were different."
           cca <- dbStep $ courseOfAssessment ca
           assertEquals (Just c) cca "The course assessment has no appropiate course"
           cga <- dbStep $ groupOfAssessment ca
           assertEquals Nothing cga "The course assessment had a group"
-          dbStep $ modifyAssessment ca asg2
-          casg2 <- dbStep $ loadAssessment ca
-          assertEquals asg2 casg2 "The course assessment modification has failed"
+          dbStep $ modifyAssessment ca ast2
+          cast2 <- dbStep $ loadAssessment ca
+          assertEquals ast2 cast2 "The course assessment modification has failed"
 
-          gasg' <- dbStep $ loadAssessment ga
-          assertEquals asg gasg' "The saved and loaded group assessnment were different."
+          gast' <- dbStep $ loadAssessment ga
+          assertEquals ast gast' "The saved and loaded group assessnment were different."
           cga <- dbStep $ courseOfAssessment ga
           assertEquals Nothing cga "The group assessment had course"
           gga <- dbStep $ groupOfAssessment ga
           assertEquals (Just g) gga "The group assessment had no group"
-          dbStep $ modifyAssessment ga asg2
-          gasg2 <- dbStep $ loadAssessment ga
-          assertEquals asg2 gasg2 "The course assessment modification has failed"
+          dbStep $ modifyAssessment ga ast2
+          gast2 <- dbStep $ loadAssessment ga
+          assertEquals ast2 gast2 "The course assessment modification has failed"
     ) (return ())
 
   ioTest "List course assessments" $ runSql $ do
@@ -127,12 +124,12 @@ assessmentTests = do
     c  <- dbStep $ saveCourse course
     as <- dbStep $ assessmentsOfCourse c
     assertEquals [] as "The course had some assessment after the creation"
-    a1 <- dbStep $ saveCourseAssessment c asg
+    a1 <- dbStep $ saveCourseAssessment c ast
     as <- dbStep $ assessmentsOfCourse c
     assertEquals
       (Set.fromList [a1])
       (Set.fromList as) "The course had different assessment set"
-    a2 <- dbStep $ saveCourseAssessment c asg
+    a2 <- dbStep $ saveCourseAssessment c ast
     as <- dbStep $ assessmentsOfCourse c
     assertEquals
       (Set.fromList [a1,a2])
@@ -144,12 +141,12 @@ assessmentTests = do
     g  <- dbStep $ saveGroup c group
     as <- dbStep $ assessmentsOfGroup g
     assertEquals [] as "The group had some assessment after the creation"
-    a1 <- dbStep $ saveGroupAssessment g asg
+    a1 <- dbStep $ saveGroupAssessment g ast
     as <- dbStep $ assessmentsOfGroup g
     assertEquals
       (Set.fromList [a1])
       (Set.fromList as) "The group had different assessment set"
-    a2 <- dbStep $ saveGroupAssessment g asg
+    a2 <- dbStep $ saveGroupAssessment g ast
     as <- dbStep $ assessmentsOfGroup g
     assertEquals
       (Set.fromList [a1,a2])

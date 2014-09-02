@@ -420,10 +420,20 @@ instance Save Assignment where
     fileSave d "evtype"      (show evtype)
 
 instance Save Submission where
-  save d s = do
+  save d = submissionCata $ \value date -> do
     createStructureDirs d submissionDirStructure
-    fileSave d "solution" (solution s)
-    fileSave d "date"     (show . solutionPostDate $ s)
+    fileSave d "date"     (show $ date)
+    saveSubmissionValue value
+    where
+      saveSubmissionValue = submissionValue simple zipped
+
+      simple value = do
+        fileSave d "type" "simple"
+        fileSave d "solution" value
+
+      zipped value = do
+        fileSave d "type" "zipped"
+        fileSaveBS d "solution" value
 
 instance Save Evaluation where
   save d e = do
@@ -475,13 +485,22 @@ instance Save TestScript where
     fileSave d "type" type_
 
 instance Save TestCase where
-  save d = testCaseCata show $ \name desc value type_ info -> do
+  save d = testCaseCata tcValue $ \name desc saveValue info -> do
     createStructureDirs d testCaseDirStructure
     saveName d name
     saveDesc d desc
-    fileSaveBS d "value" value
-    fileSave d "type" type_
     fileSave d "info" info
+    saveValue
+    where
+      tcValue = testCaseValue simple zipped
+
+      simple value = do
+        fileSave d "type" "simple"
+        fileSave d "value" value
+
+      zipped value = do
+        fileSave   d "type" "zipped"
+        fileSaveBS d "value" value
 
 instance Save Feedback where
   save d = feedback encodeJSON $ \info date -> do
@@ -528,12 +547,14 @@ instance Load Assignment where
 
 instance Load Submission where
   load d = do
-    s <- fileLoad d "solution" same
     p <- fileLoad d "date" readMaybe
-    return $ Submission {
-        solution = s
-      , solutionPostDate = p
-      }
+    i <- fileLoad d "type" same
+    s <- case i of
+      "simple" -> SimpleSubmission <$> fileLoad d "solution" same
+      "zipped" -> ZippedSubmission <$> fileLoadBS d "solution"
+      _ -> do
+        error "loadSubmission: unrecognized submission type"
+    return $ Submission s p
 
 instance Load Evaluation where
   load d = do
@@ -594,12 +615,15 @@ instance Load TestScript where
     (fileLoad d "type" readMaybe)
 
 instance Load TestCase where
-  load d = testCaseAppAna
-    (loadName d)
-    (loadDesc d)
-    (fileLoadBS d "value")
-    (fileLoad d "type" readMaybe)
-    (fileLoad d "info" same)
+  load d =
+    TestCase <$> loadName d
+             <*> loadDesc d
+             <*> (do type_ <- fileLoad d "type" same
+                     case type_ of
+                       "simple" -> SimpleTestCase <$> fileLoad   d "value" same
+                       "zipped" -> ZippedTestCase <$> fileLoadBS d "value"
+                       _ -> error "")
+             <*> fileLoad d "info" same
 
 instance Load Feedback where
   load d = mkFeedback
@@ -663,12 +687,21 @@ instance Update TestScript where
     fileUpdate d "type" type_
 
 instance Update TestCase where
-  update d = testCaseCata show $ \name desc value type_ info -> do
+  update d = testCaseCata tcValue $ \name desc updateValue info -> do
     updateName d name
     fileUpdate d "description" desc
-    fileUpdateBS d "value" value
-    fileUpdate d "type" type_
     fileUpdate d "info" info
+    updateValue
+    where
+      tcValue = testCaseValue simple zipped
+
+      simple value = do
+        fileUpdate d "type" "simple"
+        fileUpdate d "value" value
+
+      zipped value = do
+        fileUpdate d "type" "zipped"
+        fileUpdateBS d "value" value
 
 instance Update Assessment where
   update d = assessment $ \desc cfg -> do
@@ -743,7 +776,11 @@ assignmentDirStructure = DirStructure {
   }
 
 submissionDirStructure = DirStructure {
-    files = ["solution", "date"]
+    files = [
+        "solution"
+      , "type"
+      , "date"
+      ]
   , directories = [
         "assignment"
       , "user"

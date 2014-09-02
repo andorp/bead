@@ -958,16 +958,26 @@ testJobCreationTest = do
       -- Domain knowledge is used
       tsk <- testScriptOfTestCase tck
       let tk = submissionKeyToTestJobKey sk
-      submission <- liftIO $ readFile $ referredPath tk </> "submission"
       script     <- liftIO $ readFile $ referredPath tk </> "script"
-      tests      <- liftIO $ BS.readFile $ referredPath tk </> "tests"
       submission2 <- loadSubmission sk
+      assertSubmissions <- withSubmissionValue (solution submission2)
+        (\sol -> do testSolution <- liftIO $ readFile $ referredPath tk </> "submission"
+                    return $ assertEquals sol testSolution "Solutions are different")
+        (\sol -> do testSolution <- liftIO $ BS.readFile $ referredPath tk </> "submission"
+                    return $ assertEquals sol testSolution "Solutions are different")
       script2     <- loadTestScript tsk
       case2       <- loadTestCase   tck
+      assertTests <- withTestCaseValue
+        (tcValue case2)
+        (\testValue -> do tests <- liftIO $ readFile $ referredPath tk </> "tests"
+                          return $ assertEquals tests testValue "Tests are different")
+        (\testValue -> do tests <- liftIO $ BS.readFile $ referredPath tk </> "tests"
+                          return $ assertEquals tests testValue "Tests are different")
       return $ do
-        assertEquals submission (solution submission2) "Submissions are different"
+--        assertEquals submission (solution submission2) "Submissions are different"
         assertEquals script (tsScript script2) "Scripts are different"
-        assertEquals tests (tcValue case2) "Tests are different"
+        assertTests
+        assertSubmissions
 
 incomingFeedbacksTest = do
   reinitPersistence
@@ -1262,7 +1272,7 @@ tests = testGroup "Persistence Layer QuickCheck properties" [
   , testProperty "Group Save and Load" $ monadicIO groupSaveAndLoad
   , testProperty "Course Assignment Save and Load" $ monadicIO courseAssignmentSaveAndLoad
   , testProperty "Group Assignment Save and Load" $ monadicIO groupAssignmentSaveAndLoad
---  , testProperty "User Save and Load" $ monadicIO (pick Gen.users >>= userSaveAndLoad)
+  , testProperty "User Save and Load" $ monadicIO (pick Gen.users >>= userSaveAndLoad)
   , testProperty "Multiple groups for course" $ monadicIO multipleGroupsForCourse
   , testProperty "Submission Save and Load" $ monadicIO saveAndLoadSubmission
   , testProperty "Assignment and user of submission" $ monadicIO assignmentAndUserOfSubmission
@@ -1310,7 +1320,7 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Unevaluated scores" $ unevaluatedScoresTests
   , testCase "Evaluated scores" $ scoreEvaluationTests
   , cleanUpPersistence
-    ]
+  ]
 
 monadicProperty gen prop = monadicIO (forAllM gen prop)
 

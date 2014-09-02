@@ -10,6 +10,7 @@ import Test.QuickCheck.Gen
 import Test.QuickCheck.Arbitrary
 import Control.Monad (join, liftM)
 import Control.Applicative ((<$>),(<*>))
+import Data.String (fromString)
 
 import qualified Data.ByteString.Char8 as BS (pack)
 
@@ -121,8 +122,13 @@ evaluationConfigs = oneof [
 
 passwords = word
 
+solutionValues = oneof [
+    SimpleSubmission <$> solutionTexts
+  , ZippedSubmission . fromString <$> solutionTexts
+  ]
+
 submissions date = Submission
-  <$> solutionTexts
+  <$> solutionValues
   <*> (return date)
 
 commentTypes = elements [CT_Student, CT_GroupAdmin, CT_CourseAdmin, CT_Admin]
@@ -158,12 +164,10 @@ testScripts = testScriptAppAna
   manyWords -- script
   enumGenerator -- type
 
-testCases = testCaseAppAna
-  word      -- name
-  manyWords -- desc
-  (BS.pack <$> manyWords) -- value
-  enumGenerator -- type
-  manyWords -- info
+testCases = oneof [
+    TestCase <$> word <*> manyWords <*> (SimpleTestCase <$> manyWords) <*> manyWords
+  , TestCase <$> word <*> manyWords <*> (ZippedTestCase . BS.pack <$> manyWords) <*> manyWords
+  ]
 
 testFeedbackInfo = oneof
   [ TestResult <$> arbitrary

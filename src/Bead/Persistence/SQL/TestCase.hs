@@ -21,6 +21,8 @@ import           Bead.Persistence.SQL.Assignment
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.TestScript
 
+import           Bead.Persistence.SQL.TestData
+
 import           Test.Themis.Test (ioTest, shrink)
 import           Test.Themis.Keyword.Encaps
 #endif
@@ -67,26 +69,33 @@ testScriptOfTestCase key = do
 -- Updates the test case for the given test case key
 modifyTestCase :: Domain.TestCaseKey -> Domain.TestCase -> Persist ()
 modifyTestCase key testCase = do
-  update (toEntityKey key) $ Domain.withTestCase testCase encodeTestCaseType
-    $ \name desc value type_ info ->
-        [ TestCaseName         =. Text.pack name
-        , TestCaseDescription  =. Text.pack desc
-        , TestCaseValue        =. value
-        , TestCaseTestCaseType =. type_
-        , TestCaseInfo         =. Text.pack info
-        ]
+  update (toEntityKey key) $ Domain.withTestCase testCase id -- encodeTestCaseType
+    $ \name desc value info ->
+        let (simple, zipped) = Domain.withTestCaseValue value
+              (\s -> (Just $ Text.pack s, Nothing))
+              (\z -> (Nothing, Just z))
+        in [ TestCaseName         =. Text.pack name
+           , TestCaseDescription  =. Text.pack desc
+           , TestCaseSimpleValue  =. simple
+           , TestCaseZippedValue  =. zipped
+           , TestCaseInfo         =. Text.pack info
+           ]
 
 -- Deletes the link from the test case connected to an assignment
 removeTestCaseAssignment :: Domain.TestCaseKey -> Domain.AssignmentKey -> Persist ()
 removeTestCaseAssignment tk ak =
   deleteBy (UniqueTestCaseToAssignment (toEntityKey ak) (toEntityKey tk))
 
+-- Copy the Zipped test case file into the test case
 copyTestCaseFile :: Domain.TestCaseKey -> Domain.Username -> Domain.UsersFile -> Persist ()
 copyTestCaseFile tcKey username userfile =
   withUser username (persistError "copyTestCaseFile" $ "User is not found:" ++ show username)
   (\_userEnt -> void $ do
       content <- FS.getFile username userfile >>= FS.fileLoad
-      update (toEntityKey tcKey) [TestCaseValue =. BS.pack content])
+      update (toEntityKey tcKey)
+        [ TestCaseZippedValue =. (Just $ BS.pack content)
+        , TestCaseSimpleValue =. Nothing
+        ])
 
 modifyTestScriptOfTestCase :: Domain.TestCaseKey -> Domain.TestScriptKey -> Persist ()
 modifyTestScriptOfTestCase caseKey scriptKey = void $ do
@@ -98,14 +107,6 @@ modifyTestScriptOfTestCase caseKey scriptKey = void $ do
 #ifdef TEST
 
 testCaseTests = do
-  let course  = Domain.Course "name" "desc" Domain.TestScriptSimple
-      script  = Domain.TestScript "name" "desc" "notes" "script" Domain.TestScriptSimple
-      script2 = Domain.TestScript "name2" "desc2" "notes2" "script2" Domain.TestScriptZipped
-      case1   = Domain.TestCase "name" "desc" "blah" Domain.TestCaseSimple "info"
-      case2   = Domain.TestCase "name2" "desc2" "blah2" Domain.TestCaseZipped "info"
-      time    = read "2014-06-09 12:55:27.959203 UTC"
-      asg     = Domain.Assignment "name" "desc" Domain.emptyAspects time time Domain.binaryConfig
-
   shrink "Test Case end-to-end story."
     (do ioTest "Test Case end-to-end case" $ runSql $ do
           dbStep initDB

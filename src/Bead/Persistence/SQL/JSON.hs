@@ -32,12 +32,6 @@ encodeTestScriptType = encodeJSON
 decodeTestScriptType :: JSONText -> Domain.TestScriptType
 decodeTestScriptType = decodeJSON
 
-encodeTestCaseType :: Domain.TestCaseType -> JSONText
-encodeTestCaseType = encodeJSON
-
-decodeTestCaseType :: JSONText -> Domain.TestCaseType
-decodeTestCaseType = decodeJSON
-
 encodeAssignmentType :: Domain.Aspects -> JSONText
 encodeAssignmentType = encodeJSON
 

@@ -23,6 +23,8 @@ import qualified Data.Set as Set
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Group
 
+import           Bead.Persistence.SQL.TestData
+
 import           Test.Themis.Test (ioTest, shrink)
 import           Test.Themis.Keyword.Encaps
 #endif
@@ -156,16 +158,6 @@ testCaseOfAssignment key = do
 #ifdef TEST
 
 assignmentTests = do
-  let course  = Domain.Course "name" "desc" Domain.TestScriptSimple
-      group  = Domain.Group "name" "desc"
-      script  = Domain.TestScript "name" "desc" "notes" "script" Domain.TestScriptSimple
-      case1   = Domain.TestCase "name" "desc" "blah" Domain.TestCaseSimple "info"
-      time    = read "2014-06-09 12:55:27.959203 UTC"
-      ballot  = Domain.aspectsFromList [Domain.BallotBox]
-      normal  = Domain.aspectsFromList []
-      asg     = Domain.Assignment "name" "desc" ballot time time Domain.binaryConfig
-      asg2    = Domain.Assignment "name2" "desc2" normal time time (Domain.percentageConfig 0.1)
-
   shrink "Assignment end-to-end story"
     (do ioTest "Assignment end-to-end test" $ runSql $ do
           dbStep initDB
