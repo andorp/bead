@@ -18,6 +18,7 @@ module Bead.Persistence.NoSQLDir (
   , userSubmissions
   , administratedCourses
   , administratedGroups
+  , scoresOfUser
 
   , copyFile
   , listFiles
@@ -101,10 +102,12 @@ module Bead.Persistence.NoSQLDir (
   , openedSubmissions
   , usersOpenedSubmissions
 
-  , saveEvaluation
+  , saveSubmissionEvaluation
+  , saveScoreEvaluation
   , loadEvaluation
   , modifyEvaluation
   , submissionOfEvaluation
+  , scoreOfEvaluation
 
   , saveFeedback
   , loadFeedback
@@ -113,6 +116,22 @@ module Bead.Persistence.NoSQLDir (
   , saveComment
   , loadComment
   , submissionOfComment
+
+  , saveCourseAssessment
+  , saveGroupAssessment
+  , loadAssessment
+  , modifyAssessment
+  , courseOfAssessment
+  , groupOfAssessment
+  , scoresOfAssessment
+  , assessmentsOfGroup
+  , assessmentsOfCourse
+
+  , saveScore
+  , loadScore
+  , assessmentOfScore
+  , usernameOfScore
+  , evaluationOfScore
 
   , testIncomingDataDir
 
@@ -177,7 +196,7 @@ createPersistInterpreter _ = do
                   return (m,x)
   return (Interpreter run)
   where
-    runPersist' :: TIO a -> IO (Erroneous a)
+    runPersist' :: Persist a -> IO (Erroneous a)
     runPersist' = liftM reason . atomically
 
 parseConfig :: String -> Config
@@ -208,21 +227,21 @@ nTearDown = do
   exists <- doesDirectoryExist dataDir
   when exists $ removeDirectoryRecursive dataDir
 
-saveUserReg :: UserRegistration -> TIO UserRegKey
+saveUserReg :: UserRegistration -> Persist UserRegKey
 saveUserReg u = do
   dirName <- createTmpDir userRegDataDir "ur"
   let userRegKey = UserRegKey . takeBaseName $ dirName
   save dirName u
   return userRegKey
 
-loadUserReg :: UserRegKey -> TIO UserRegistration
+loadUserReg :: UserRegKey -> Persist UserRegistration
 loadUserReg u = do
   let p = userRegDirPath u
   isU <- isUserRegDir p
-  unless isU . throwEx . userError . join $ [str u, " user registration does not exist."]
+  unless isU . throwEx . userError . join $ [userRegKeyFold id u, " user registration does not exist."]
   liftM snd $ tLoadUserReg p
 
-saveUser :: User -> TIO ()
+saveUser :: User -> Persist ()
 saveUser usr = do
   userExist <- isThereAUser (u_username usr)
   case userExist of
@@ -234,7 +253,7 @@ saveUser usr = do
 
 -- Checks if the given username exist in the persistence layer
 -- and it has a correct structure
-checkIfUserDir :: Username -> TIO ()
+checkIfUserDir :: Username -> Persist ()
 checkIfUserDir username = do
   let dirname = dirName username
   exist <- hasNoRollback $ doesDirectoryExist dirname
@@ -242,7 +261,7 @@ checkIfUserDir username = do
   correct <- hasNoRollback $ isCorrectStructure dirname userDirStructure
   unless correct . throwEx . userError $ "User directory is not correct: " ++ show username
 
-copyFile :: Username -> FilePath -> UsersFile -> TIO ()
+copyFile :: Username -> FilePath -> UsersFile -> Persist ()
 copyFile username tmpPath userfile = do
   checkIfUserDir username
   let dirname = dirName username
@@ -252,7 +271,7 @@ copyFile username tmpPath userfile = do
 -- Calculates the file modification time in UTC time from the File status
 fileModificationInUTCTime = posixSecondsToUTCTime . realToFrac . modificationTime
 
-listFiles :: Username -> TIO [(UsersFile, FileInfo)]
+listFiles :: Username -> Persist [(UsersFile, FileInfo)]
 listFiles username = do
   checkIfUserDir username
   let dirname = dirName username
@@ -267,7 +286,7 @@ listFiles username = do
   where
     fileOffsetToInt (COff x) = fromIntegral x
 
-getFile :: Username -> UsersFile -> TIO FilePath
+getFile :: Username -> UsersFile -> Persist FilePath
 getFile username userfile = do
   checkIfUserDir username
   let dirname = dirName username
@@ -281,7 +300,7 @@ getFile username userfile = do
       ]
     return fname
 
-isThereAUser :: Username -> TIO Bool
+isThereAUser :: Username -> Persist Bool
 isThereAUser uname = hasNoRollback $ do
   let dirname = dirName uname
   exist <- doesDirectoryExist dirname
@@ -289,36 +308,36 @@ isThereAUser uname = hasNoRollback $ do
     False -> return False
     True  -> isCorrectStructure dirname userDirStructure
 
-doesUserExist :: Username -> TIO Bool
+doesUserExist :: Username -> Persist Bool
 doesUserExist = hasNoRollback . doesDirectoryExist . dirName
 
-personalInfo :: Username -> TIO PersonalInfo -- (Role, String)
+personalInfo :: Username -> Persist PersonalInfo
 personalInfo uname = do
   user <- loadUser uname
   return $ flip userCata user $ \role _ _ name timezone _lang ->
     PersonalInfo (role, name, timezone)
 
-isUserDir :: FilePath -> TIO Bool
+isUserDir :: FilePath -> Persist Bool
 isUserDir = isCorrectDirStructure userDirStructure
 
-filterUsers :: (User -> Bool) -> TIO [User]
+filterUsers :: (User -> Bool) -> Persist [User]
 filterUsers f = filterDirectory userDataDir isUserDir load (filter f)
 
-loadUser :: Username -> TIO User
+loadUser :: Username -> Persist User
 loadUser = load . dirName
 
-userDescription :: Username -> TIO UserDesc
+userDescription :: Username -> Persist UserDesc
 userDescription = liftM mkUserDescription . loadUser
 
-updateUser :: User -> TIO ()
+updateUser :: User -> Persist ()
 updateUser user = update (dirName . u_username $ user) user
 
-administratedCourses :: Username -> TIO [(CourseKey, Course)]
+administratedCourses :: Username -> Persist [(CourseKey, Course)]
 administratedCourses u = do
   let dirname = joinPath [dirName u, "courseadmin"]
   (selectValidDirsFrom dirname isCourseDir) >>= (mapM tLoadCourse)
 
-administratedGroups :: Username -> TIO [(GroupKey, Group)]
+administratedGroups :: Username -> Persist [(GroupKey, Group)]
 administratedGroups u = do
   let dirname = joinPath [dirName u, "groupadmin"]
   (selectValidDirsFrom dirname isGroupDir) >>= (mapM tLoadGroup)
@@ -332,94 +351,97 @@ groupDirPath (GroupKey g) = joinPath [groupDataDir, g]
 userRegDirPath :: UserRegKey -> FilePath
 userRegDirPath = userRegKeyFold $ \u -> joinPath [userRegDataDir, u]
 
-loadCourse :: CourseKey -> TIO Course
+loadCourse :: CourseKey -> Persist Course
 loadCourse c = do
   let p = courseDirPath c
   isC <- isCourseDir p
   -- GUARD: Course dir does not exist
-  unless isC . throwEx . userError . join $ [str c, " course does not exist."]
+  unless isC . throwEx . userError . join $ [courseKeyMap id c, " course does not exist."]
   -- Course found
   liftM snd $ tLoadCourse p
 
-tLoadCourse :: FilePath -> TIO (CourseKey, Course)
+tLoadCourse :: FilePath -> Persist (CourseKey, Course)
 tLoadCourse = tLoadPersistenceObject CourseKey
 
-tLoadUserReg :: FilePath -> TIO (UserRegKey, UserRegistration)
+tLoadUserReg :: FilePath -> Persist (UserRegKey, UserRegistration)
 tLoadUserReg = tLoadPersistenceObject UserRegKey
 
-groupKeysOfCourse :: CourseKey -> TIO [GroupKey]
+groupKeysOfCourse :: CourseKey -> Persist [GroupKey]
 groupKeysOfCourse c = do
   let p = courseDirPath c
       g = joinPath [p, "groups"]
   subdirs <- getSubDirectories g
   return . map (GroupKey . takeBaseName) $ subdirs
 
-createCourseAdmin :: Username -> CourseKey -> TIO ()
+createCourseAdmin :: Username -> CourseKey -> Persist ()
 createCourseAdmin u ck = do
   usr <- loadUser u
   case atLeastCourseAdmin . u_role $ usr of
-    False -> throwEx . userError . join $ [str u, " is not course admin"]
+    False -> throwEx . userError . join $ [usernameCata id u, " is not course admin"]
     True  -> do
       link u ck "admins"
       link ck u "courseadmin"
 
-subscribedToCourse :: CourseKey -> TIO [Username]
+subscribedToCourse :: CourseKey -> Persist [Username]
 subscribedToCourse = objectsIn "users" Username isUserDir
 
-subscribedToGroup :: GroupKey -> TIO [Username]
+subscribedToGroup :: GroupKey -> Persist [Username]
 subscribedToGroup = objectsIn "users" Username isUserDir
 
-unsubscribedFromCourse :: CourseKey -> TIO [Username]
+unsubscribedFromCourse :: CourseKey -> Persist [Username]
 unsubscribedFromCourse = objectsIn "unsubscribed" Username isUserDir
 
-unsubscribedFromGroup :: GroupKey -> TIO [Username]
+unsubscribedFromGroup :: GroupKey -> Persist [Username]
 unsubscribedFromGroup = objectsIn "unsubscribed" Username isUserDir
 
-isCorrectDirStructure :: DirStructure -> FilePath -> TIO Bool
+isCorrectDirStructure :: DirStructure -> FilePath -> Persist Bool
 isCorrectDirStructure d p = hasNoRollback $ isCorrectStructure p d
 
-isGroupDir :: FilePath -> TIO Bool
+scoresOfUser :: Username -> Persist [ScoreKey]
+scoresOfUser = objectsIn "score" ScoreKey isScoreDir
+
+isGroupDir :: FilePath -> Persist Bool
 isGroupDir = isCorrectDirStructure groupDirStructure
 
-loadGroup :: GroupKey -> TIO Group
+loadGroup :: GroupKey -> Persist Group
 loadGroup g = do
   let p = groupDirPath g
   isG <- isGroupDir p
   -- GUARD: Group id does not exist
-  unless isG . throwEx . userError . join $ [str g, " group does not exist."]
+  unless isG . throwEx . userError . join $ [groupKeyMap id g, " group does not exist."]
   liftM snd $ tLoadGroup p
   where
     groupDirPath :: GroupKey -> FilePath
     groupDirPath (GroupKey g) = joinPath [groupDataDir, g]
 
-admins :: (DirName k) => k -> TIO [Username]
+admins :: (DirName k) => k -> Persist [Username]
 admins k = do
   let dirname = joinPath [dirName k, "admins"]
   mapM (liftM u_username . load) =<< (selectValidDirsFrom dirname isUserDir)
 
-groupAdmins :: GroupKey -> TIO [Username]
+groupAdmins :: GroupKey -> Persist [Username]
 groupAdmins = admins
 
-courseAdmins :: CourseKey -> TIO [Username]
+courseAdmins :: CourseKey -> Persist [Username]
 courseAdmins = admins
 
-testScriptsOfCourse :: CourseKey -> TIO [TestScriptKey]
+testScriptsOfCourse :: CourseKey -> Persist [TestScriptKey]
 testScriptsOfCourse = objectsIn "test-script" TestScriptKey isTestScriptDir
 
-isUserInGroup :: Username -> GroupKey -> TIO Bool
+isUserInGroup :: Username -> GroupKey -> Persist Bool
 isUserInGroup u gk = isLinkedIn u gk "users"
 
-isUserInCourse :: Username -> CourseKey -> TIO Bool
+isUserInCourse :: Username -> CourseKey -> Persist Bool
 isUserInCourse u ck = isLinkedIn u ck "users"
 
-subscribe :: Username -> CourseKey -> GroupKey -> TIO ()
+subscribe :: Username -> CourseKey -> GroupKey -> Persist ()
 subscribe username ck gk = do
   link username gk "users"
   link username ck "users"
   link gk username "group"
   link ck username "course"
 
-unsubscribe :: Username -> CourseKey -> GroupKey -> TIO ()
+unsubscribe :: Username -> CourseKey -> GroupKey -> Persist ()
 unsubscribe username ck gk = do
   unlink username gk "users"
   unlink username ck "users"
@@ -428,39 +450,39 @@ unsubscribe username ck gk = do
   link username gk "unsubscribed"
   link username ck "unsubscribed"
 
-createGroupAdmin :: Username -> GroupKey -> TIO ()
+createGroupAdmin :: Username -> GroupKey -> Persist ()
 createGroupAdmin u gk = do
   link u gk "admins"
   link gk u "groupadmin"
 
-courseOfGroup :: GroupKey -> TIO CourseKey
-courseOfGroup = objectIn' "No course was found for " "course" CourseKey isCourseDir
+courseOfGroup :: GroupKey -> Persist CourseKey
+courseOfGroup = objectOrError "No course was found for " "course" CourseKey isCourseDir
 
 tLoadPersistenceObject :: (Load o)
   => (String -> k) -- ^ Key constructor
   -> FilePath      -- ^ Base path
-  -> TIO (k,o)     -- ^ Key and the loaded object
+  -> Persist (k,o) -- ^ Key and the loaded object
 tLoadPersistenceObject f d = do
   let key = takeBaseName d
   object <- load d
   return (f key, object)
 
-tLoadGroup :: FilePath -> TIO (GroupKey, Group)
+tLoadGroup :: FilePath -> Persist (GroupKey, Group)
 tLoadGroup = tLoadPersistenceObject GroupKey
 
-saveCourse :: Course -> TIO CourseKey
+saveCourse :: Course -> Persist CourseKey
 saveCourse c = do
   dirName <- createTmpDir courseDataDir "cr"
   let courseKey = CourseKey . takeBaseName $ dirName
   save dirName c
   return courseKey
 
-userCourses :: Username -> TIO [CourseKey]
+userCourses :: Username -> Persist [CourseKey]
 userCourses u = do
   let dirname = joinPath [dirName u, "course"]
   map (CourseKey . takeBaseName) <$> (selectValidDirsFrom dirname isCourseDir)
 
-userGroups :: Username -> TIO [GroupKey]
+userGroups :: Username -> Persist [GroupKey]
 userGroups u = do
   let dirname = joinPath [dirName u, "group"]
   map (GroupKey . takeBaseName) <$> (selectValidDirsFrom dirname isGroupDir)
@@ -469,28 +491,28 @@ class ForeignKey k where
   referredPath :: k -> DirPath
   baseName     :: k -> String
 
-foreignKey :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO ()
+foreignKey :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> Persist ()
 foreignKey object linkto subdir =
   createLink
     (joinPath ["..", "..", "..", "..", (referredPath object)])
     (joinPath [(referredPath linkto), subdir, baseName object])
 
-removeForeignKey :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO ()
+removeForeignKey :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> Persist ()
 removeForeignKey object linkto subdir =
   deleteLink
     (joinPath ["..", "..", "..", "..", (referredPath object)])
     (joinPath [(referredPath linkto), subdir, baseName object])
 
-isLinkedIn :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO Bool
+isLinkedIn :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> Persist Bool
 isLinkedIn object linkto subdir =
   hasNoRollback . doesDirectoryExist . joinPath $ [referredPath linkto, subdir, baseName object]
 
-link :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO ()
+link :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> Persist ()
 link object linkto subdir = do
   exist <- isLinkedIn object linkto subdir
   unless exist $ foreignKey object linkto subdir
 
-unlink :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> TIO ()
+unlink :: (ForeignKey k1, ForeignKey k2) => k1 -> k2 -> FilePath -> Persist ()
 unlink object linkto subdir = do
   exist <- isLinkedIn object linkto subdir
   when exist $ removeForeignKey object linkto subdir
@@ -528,7 +550,7 @@ instance ForeignKey FeedbackKey where
      of the directory is the primary key for the record.
    * The foreign keys are the symlinks for the other row of the given combined object.
 -}
-saveGroup :: CourseKey -> Group -> TIO GroupKey
+saveGroup :: CourseKey -> Group -> Persist GroupKey
 saveGroup ck group = do
   dirName <- createTmpDir groupDataDir "gr"
   let groupKey = GroupKey . takeBaseName $ dirName
@@ -537,13 +559,13 @@ saveGroup ck group = do
   link ck groupKey "course"
   return groupKey
 
-filterGroups :: (GroupKey -> Group -> Bool) -> TIO [(GroupKey, Group)]
+filterGroups :: (GroupKey -> Group -> Bool) -> Persist [(GroupKey, Group)]
 filterGroups f = filterDirectory groupDataDir isGroupDir tLoadGroup (filter (uncurry f))
 
-currentTime :: TIO UTCTime
+currentTime :: Persist UTCTime
 currentTime = hasNoRollback getCurrentTime
 
-saveAssignment :: Assignment -> TIO AssignmentKey
+saveAssignment :: Assignment -> Persist AssignmentKey
 saveAssignment a = do
   dirName <- createTmpDir assignmentDataDir "a"
   let assignmentKey = takeBaseName dirName
@@ -551,46 +573,46 @@ saveAssignment a = do
   saveCreatedTime dirName =<< currentTime
   return . AssignmentKey $ assignmentKey
 
-modifyAssignment :: AssignmentKey -> Assignment -> TIO ()
+modifyAssignment :: AssignmentKey -> Assignment -> Persist ()
 modifyAssignment ak a = do
   let p = assignmentDirPath ak
   isA <- isAssignmentDir p
   unless isA . throwEx . userError $ "Assignment does not exist"
   update p a
 
-assignmentCreatedTime :: AssignmentKey -> TIO UTCTime
+assignmentCreatedTime :: AssignmentKey -> Persist UTCTime
 assignmentCreatedTime ak = do
   let p = assignmentDirPath ak
   isDir <- isAssignmentDir p
   case isDir of
-    False -> throwEx $ userError $ join [str ak, " assignment does not exist."]
+    False -> throwEx $ userError $ join [assignmentKeyMap id ak, " assignment does not exist."]
     True  -> getCreatedTime p
 
-selectValidDirsFrom :: FilePath -> (FilePath -> TIO Bool) -> TIO [FilePath]
+selectValidDirsFrom :: FilePath -> (FilePath -> Persist Bool) -> Persist [FilePath]
 selectValidDirsFrom dir isValidDir = getSubDirectories dir >>= filterM isValidDir
 
-assignmentKeys :: TIO [AssignmentKey]
+assignmentKeys :: Persist [AssignmentKey]
 assignmentKeys =
   (selectValidDirsFrom assignmentDataDir isAssignmentDir) >>=
   calcExerciseKeys
     where
       calcExerciseKeys = return . map (AssignmentKey . takeBaseName)
 
-filterAssignment :: (AssignmentKey -> Assignment -> Bool) -> TIO [(AssignmentKey, Assignment)]
+filterAssignment :: (AssignmentKey -> Assignment -> Bool) -> Persist [(AssignmentKey, Assignment)]
 filterAssignment f = filterDirectory assignmentDataDir isAssignmentDir tLoadAssignment (filter (uncurry f))
 
-loadAssignment :: AssignmentKey -> TIO Assignment
+loadAssignment :: AssignmentKey -> Persist Assignment
 loadAssignment a = do
   let p = assignmentDirPath a
   isEx <- isAssignmentDir p
   case isEx of
-    False -> throwEx $ userError $ join [str a, " assignment does not exist."]
+    False -> throwEx $ userError $ join [assignmentKeyMap id a, " assignment does not exist."]
     True  -> liftM snd $ tLoadAssignment p
 
 assignmentDirPath :: AssignmentKey -> FilePath
 assignmentDirPath (AssignmentKey e) = joinPath [assignmentDataDir, e]
 
-tLoadAssignment :: FilePath -> TIO (AssignmentKey, Assignment)
+tLoadAssignment :: FilePath -> Persist (AssignmentKey, Assignment)
 tLoadAssignment dirName = do
   let exerciseKey = takeBaseName dirName
   e <- load dirName
@@ -601,9 +623,9 @@ objectsIn
   :: (Show sk, DirName sk)
   => FilePath               -- Subdir where to look at
   -> (String -> rk)         -- Result's key constructor
-  -> (FilePath -> TIO Bool) -- Checks if the given subdir is appropiate
+  -> (FilePath -> Persist Bool) -- Checks if the given subdir is appropiate
   -> sk                     -- The source's key
-  -> TIO [rk]
+  -> Persist [rk]
 objectsIn subdir keyConstructor isValidDir sourceKey = do
   let dirname = joinPath [dirName sourceKey, subdir]
   map (keyConstructor . takeBaseName) <$> (selectValidDirsFrom dirname isValidDir)
@@ -614,74 +636,76 @@ objectIn s k v sk = objectsIn s k v sk >>= just
     just [k] = return $ Just k
     just _   = throwEx . userError $ "Impossible: found more than one object found for: " ++ show sk
 
-objectIn' msg subdir keyConstructor isValidDir sourceKey = do
+-- Browses the objects in the given directory all the subdirectories,
+-- checks if entry with the 'isValidDir'
+objectOrError msg subdir keyConstructor isValidDir sourceKey = do
   m <- objectIn subdir keyConstructor isValidDir sourceKey
   case m of
     Nothing -> throwEx . userError $ msg ++ show sourceKey
     Just  x -> return x
 
-courseOfAssignment :: AssignmentKey -> TIO (Maybe CourseKey)
+courseOfAssignment :: AssignmentKey -> Persist (Maybe CourseKey)
 courseOfAssignment = objectIn "course" CourseKey isCourseDir
 
-groupOfAssignment :: AssignmentKey -> TIO (Maybe GroupKey)
+groupOfAssignment :: AssignmentKey -> Persist (Maybe GroupKey)
 groupOfAssignment = objectIn  "group" GroupKey isGroupDir
 
-testCaseOfAssignment :: AssignmentKey -> TIO (Maybe TestCaseKey)
+testCaseOfAssignment :: AssignmentKey -> Persist (Maybe TestCaseKey)
 testCaseOfAssignment = objectIn "test-case" TestCaseKey isTestCaseDir
 
-submissionsForAssignment :: AssignmentKey -> TIO [SubmissionKey]
+submissionsForAssignment :: AssignmentKey -> Persist [SubmissionKey]
 submissionsForAssignment = objectsIn "submission" SubmissionKey isSubmissionDir
 
-saveAndLinkAssignment :: (ForeignKey k) => FilePath -> k -> Assignment -> TIO AssignmentKey
+saveAndLinkAssignment :: (ForeignKey k) => FilePath -> k -> Assignment -> Persist AssignmentKey
 saveAndLinkAssignment subdir k a = do
   ak <- saveAssignment a
   link ak k "assignments"
   link k ak subdir
   return ak
 
-saveCourseAssignment :: CourseKey -> Assignment -> TIO AssignmentKey
+saveCourseAssignment :: CourseKey -> Assignment -> Persist AssignmentKey
 saveCourseAssignment = saveAndLinkAssignment "course"
 
-saveGroupAssignment :: GroupKey  -> Assignment -> TIO AssignmentKey
+saveGroupAssignment :: GroupKey  -> Assignment -> Persist AssignmentKey
 saveGroupAssignment = saveAndLinkAssignment "group"
 
-isAssignmentDir :: FilePath -> TIO Bool
+isAssignmentDir :: FilePath -> Persist Bool
 isAssignmentDir = isCorrectDirStructure assignmentDirStructure
 
-assignmentsFor :: (a -> FilePath) -> a -> TIO [AssignmentKey]
+assignmentsFor :: (a -> FilePath) -> a -> Persist [AssignmentKey]
 assignmentsFor dirPath k = do
   fp <- (selectValidDirsFrom (joinPath [dirPath k, "assignments"]) isAssignmentDir)
   return ((AssignmentKey . takeBaseName) <$> fp)
 
-courseAssignments :: CourseKey -> TIO [AssignmentKey]
+courseAssignments :: CourseKey -> Persist [AssignmentKey]
 courseAssignments = assignmentsFor courseDirPath
 
-groupAssignments :: GroupKey -> TIO [AssignmentKey]
+groupAssignments :: GroupKey -> Persist [AssignmentKey]
 groupAssignments = assignmentsFor groupDirPath
 
-courseKeys :: TIO [CourseKey]
+courseKeys :: Persist [CourseKey]
 courseKeys =
   (selectValidDirsFrom courseDataDir isCourseDir) >>=
   calcCourseKeys
     where
       calcCourseKeys = return . map (CourseKey . takeBaseName)
 
-isCourseDir :: FilePath -> TIO Bool
+isCourseDir :: FilePath -> Persist Bool
 isCourseDir = isCorrectDirStructure courseDirStructure
 
-isUserRegDir :: FilePath -> TIO Bool
+isUserRegDir :: FilePath -> Persist Bool
 isUserRegDir = isCorrectDirStructure userRegDirStructure
 
-filterCourses :: (CourseKey -> Course -> Bool) -> TIO [(CourseKey, Course)]
+filterCourses :: (CourseKey -> Course -> Bool) -> Persist [(CourseKey, Course)]
 filterCourses f = filterDirectory courseDataDir isCourseDir tLoadCourse (filter (uncurry f))
 
 -- * Submission
 
-isSubmissionDir :: FilePath -> TIO Bool
+isSubmissionDir :: FilePath -> Persist Bool
 isSubmissionDir = isCorrectDirStructure submissionDirStructure
 
 
-saveSubmission :: AssignmentKey -> Username -> Submission -> TIO SubmissionKey
+saveSubmission :: AssignmentKey -> Username -> Submission -> Persist SubmissionKey
 saveSubmission ak u s = do
   dirName <- createTmpDir submissionDataDir "s"
   let submissionKey = SubmissionKey . takeBaseName $ dirName
@@ -693,7 +717,7 @@ saveSubmission ak u s = do
   nPlaceToOpened ak u submissionKey
   return submissionKey
     where
-      linkUserSubmission :: SubmissionKey -> TIO ()
+      linkUserSubmission :: SubmissionKey -> Persist ()
       linkUserSubmission sk = do
         let dirName = userAsgSubmissionDir u ak
         createDirIfMissing dirName
@@ -704,7 +728,7 @@ saveSubmission ak u s = do
 userAsgSubmissionDir :: Username -> AssignmentKey -> FilePath
 userAsgSubmissionDir u ak = joinPath [referredPath u, "submissions", baseName ak]
 
-lastSubmission :: AssignmentKey -> Username -> TIO (Maybe SubmissionKey)
+lastSubmission :: AssignmentKey -> Username -> Persist (Maybe SubmissionKey)
 lastSubmission ak u = do
   let dirName = userAsgSubmissionDir u ak
   e <- hasNoRollback $ doesDirectoryExist dirName
@@ -721,28 +745,28 @@ lastSubmission ak u = do
       return (s, SubmissionKey . takeBaseName $ p)
 
 -- TODO: Validate the directory
-loadSubmission :: SubmissionKey -> TIO Submission
+loadSubmission :: SubmissionKey -> Persist Submission
 loadSubmission = load . dirName
 
-assignmentOfSubmission :: SubmissionKey -> TIO AssignmentKey
+assignmentOfSubmission :: SubmissionKey -> Persist AssignmentKey
 assignmentOfSubmission sk =
-  objectIn' "No assignment was found for the " "assignment" AssignmentKey isAssignmentDir sk
+  objectOrError "No assignment was found for the " "assignment" AssignmentKey isAssignmentDir sk
 
-usernameOfSubmission :: SubmissionKey -> TIO Username
+usernameOfSubmission :: SubmissionKey -> Persist Username
 usernameOfSubmission sk =
-  objectIn' "No assignment was found for the " "user" Username isUserDir sk
+  objectOrError "No assignment was found for the " "user" Username isUserDir sk
 
-evaluationOfSubmission :: SubmissionKey -> TIO (Maybe EvaluationKey)
+evaluationOfSubmission :: SubmissionKey -> Persist (Maybe EvaluationKey)
 evaluationOfSubmission =
   objectIn "evaluation" EvaluationKey isEvaluationDir
 
-filterSubmissions :: (SubmissionKey -> Submission -> Bool) -> TIO [(SubmissionKey, Submission)]
+filterSubmissions :: (SubmissionKey -> Submission -> Bool) -> Persist [(SubmissionKey, Submission)]
 filterSubmissions f = filterDirectory submissionDataDir isSubmissionDir tLoadSubmission (filter (uncurry f))
 
-submissionKeys :: TIO [SubmissionKey]
+submissionKeys :: Persist [SubmissionKey]
 submissionKeys = map fst <$> filterSubmissions (\_ _ -> True)
 
-tLoadSubmission :: FilePath -> TIO (SubmissionKey, Submission)
+tLoadSubmission :: FilePath -> Persist (SubmissionKey, Submission)
 tLoadSubmission dirName = do
   s <- load dirName
   return (SubmissionKey . takeBaseName $ dirName, s)
@@ -751,7 +775,7 @@ openedSubmissionDataDirPath :: AssignmentKey -> Username -> FilePath
 openedSubmissionDataDirPath ak u =
   joinPath [openSubmissionDataDir, "assignment", baseName ak, baseName u]
 
-nPlaceToOpened :: AssignmentKey -> Username -> SubmissionKey -> TIO ()
+nPlaceToOpened :: AssignmentKey -> Username -> SubmissionKey -> Persist ()
 nPlaceToOpened ak u sk = do
   let lookupPath = openedSubmissionDataDirPath ak u
   createLink
@@ -762,7 +786,7 @@ nPlaceToOpened ak u sk = do
     (joinPath ["..", "..", "..", "..", "..", (referredPath sk)])
     (joinPath [lookupPath, baseName sk])
 
-removeFromOpened :: AssignmentKey -> Username -> SubmissionKey -> TIO ()
+removeFromOpened :: AssignmentKey -> Username -> SubmissionKey -> Persist ()
 removeFromOpened ak u sk = do
 
   let openedAllSubmissionKeyPath = joinPath [openSubmissionAllDataDir, baseName sk]
@@ -773,7 +797,7 @@ removeFromOpened ak u sk = do
   exist <- hasNoRollback $ fileExist openedSubmissionDataDir
   when exist $ removeSymLink openedSubmissionDataDir
 
-usersOpenedSubmissions :: AssignmentKey -> Username -> TIO [SubmissionKey]
+usersOpenedSubmissions :: AssignmentKey -> Username -> Persist [SubmissionKey]
 usersOpenedSubmissions ak u = do
   let path = openedSubmissionDataDirPath ak u
   exists <- doesDirExist path
@@ -781,19 +805,19 @@ usersOpenedSubmissions ak u = do
     then filterDirectory path isSubmissionDir tLoadSubmission (map fst)
     else return []
 
-filterDirectory :: FilePath -> (FilePath -> TIO Bool) -> (FilePath -> TIO a) -> ([a] -> [b]) -> TIO [b]
+filterDirectory :: FilePath -> (FilePath -> Persist Bool) -> (FilePath -> Persist a) -> ([a] -> [b]) -> Persist [b]
 filterDirectory dir isValid loader f = f <$> ((selectValidDirsFrom dir isValid) >>= (mapM loader))
 
 -- | First it checks if the directory exist, if not the result is an empty list
 --   else, the result is the original filtered data
-safeFilterDirectory :: FilePath -> (FilePath -> TIO Bool) -> (FilePath -> TIO a) -> ([a] -> [b]) -> TIO [b]
+safeFilterDirectory :: FilePath -> (FilePath -> Persist Bool) -> (FilePath -> Persist a) -> ([a] -> [b]) -> Persist [b]
 safeFilterDirectory dir isValid loader f = do
   e <- doesDirExist dir
   case e of
     False -> return []
     True  -> filterDirectory dir isValid loader f
 
-openedSubmissions :: TIO [SubmissionKey]
+openedSubmissions :: Persist [SubmissionKey]
 openedSubmissions = filterDirectory openSubmissionAllDataDir isSubmissionDir tLoadSubmission (map fst)
 
 userDirPath :: Username -> FilePath
@@ -802,7 +826,7 @@ userDirPath (Username u) = joinPath [userDataDir, u]
 submissionDirPath :: SubmissionKey -> FilePath
 submissionDirPath (SubmissionKey sk) = joinPath [submissionDataDir, sk]
 
-userSubmissions :: Username -> AssignmentKey -> TIO [SubmissionKey]
+userSubmissions :: Username -> AssignmentKey -> Persist [SubmissionKey]
 userSubmissions u ak =
   safeFilterDirectory
     (joinPath [userDirPath u, "submissions", baseName ak])
@@ -810,7 +834,7 @@ userSubmissions u ak =
     (return . takeBaseName)
     (map SubmissionKey)
 
-commentsOfSubmission :: SubmissionKey -> TIO [CommentKey]
+commentsOfSubmission :: SubmissionKey -> Persist [CommentKey]
 commentsOfSubmission sk =
   filterDirectory
     (joinPath [submissionDirPath sk, "comment"])
@@ -824,38 +848,54 @@ instance ForeignKey EvaluationKey where
   referredPath (EvaluationKey e) = joinPath [evaluationDataDir, e]
   baseName     (EvaluationKey e) = e
 
-isEvaluationDir :: FilePath -> TIO Bool
+isEvaluationDir :: FilePath -> Persist Bool
 isEvaluationDir = isCorrectDirStructure evaluationDirStructure
 
-saveEvaluation :: SubmissionKey -> Evaluation -> TIO EvaluationKey
-saveEvaluation sk e = do
+saveEvaluation :: Evaluation -> Persist EvaluationKey
+saveEvaluation e = do
   dirName <- createTmpDir evaluationDataDir "ev"
   let evKey = EvaluationKey . takeBaseName $ dirName
   save dirName e
-  link evKey sk "evaluation"
-  link sk evKey "submission"
   return evKey
+
+saveSubmissionEvaluation :: SubmissionKey -> Evaluation -> Persist EvaluationKey
+saveSubmissionEvaluation sk e = do
+  key <- saveEvaluation e
+  link key sk "evaluation"
+  link sk key "submission"
+  return key
+
+saveScoreEvaluation :: ScoreKey -> Evaluation -> Persist EvaluationKey
+saveScoreEvaluation sk e = do
+  key <- saveEvaluation e
+  link key sk "evaluation"
+  link sk key "score"
+  return key
 
 evaluationDirPath :: EvaluationKey -> FilePath
 evaluationDirPath (EvaluationKey e) = joinPath [evaluationDataDir, e]
 
-loadEvaluation :: EvaluationKey -> TIO Evaluation
+loadEvaluation :: EvaluationKey -> Persist Evaluation
 loadEvaluation e = do
   let p = evaluationDirPath e
   isE <- isEvaluationDir p
   unless isE . throwEx . userError . join $ ["Evaluation does not exist."]
   liftM snd . tLoadPersistenceObject EvaluationKey $ p
 
-modifyEvaluation :: EvaluationKey -> Evaluation -> TIO ()
+modifyEvaluation :: EvaluationKey -> Evaluation -> Persist ()
 modifyEvaluation ek e = do
   let p = evaluationDirPath ek
   isE <- isEvaluationDir p
   unless isE . throwEx . userError . join $ ["Evaluation does not exist."]
   update p e
 
-submissionOfEvaluation :: EvaluationKey -> TIO SubmissionKey
+submissionOfEvaluation :: EvaluationKey -> Persist (Maybe SubmissionKey)
 submissionOfEvaluation =
-  objectIn' "No submission was found for " "submission" SubmissionKey isSubmissionDir
+  objectIn "submission" SubmissionKey isSubmissionDir
+
+scoreOfEvaluation :: EvaluationKey -> Persist (Maybe ScoreKey)
+scoreOfEvaluation =
+  objectIn "score" ScoreKey isScoreDir
 
 -- * Comment
 
@@ -866,10 +906,10 @@ instance ForeignKey CommentKey where
 commentDirPath :: CommentKey -> FilePath
 commentDirPath (CommentKey c) = joinPath [commentDataDir, c]
 
-isCommentDir :: FilePath -> TIO Bool
+isCommentDir :: FilePath -> Persist Bool
 isCommentDir = isCorrectDirStructure commentDirStructure
 
-saveComment :: SubmissionKey -> Comment -> TIO CommentKey
+saveComment :: SubmissionKey -> Comment -> Persist CommentKey
 saveComment sk c = do
   dirName <- createTmpDir commentDataDir "cm"
   let key = CommentKey . takeBaseName $ dirName
@@ -878,30 +918,30 @@ saveComment sk c = do
   link sk key "submission"
   return key
 
-loadComment :: CommentKey -> TIO Comment
+loadComment :: CommentKey -> Persist Comment
 loadComment ck = do
   let p = commentDirPath ck
   isC <- isCommentDir p
   unless isC . throwEx $ userError "Comment does not exist."
   liftM snd . tLoadPersistenceObject CommentKey $ p
 
-submissionOfComment :: CommentKey -> TIO SubmissionKey
+submissionOfComment :: CommentKey -> Persist SubmissionKey
 submissionOfComment =
-  objectIn' "No submission was found for " "submission" SubmissionKey isSubmissionDir
+  objectOrError "No submission was found for " "submission" SubmissionKey isSubmissionDir
 
 -- * Test Script
 
 testScriptDirPath :: TestScriptKey -> FilePath
 testScriptDirPath = testScriptKeyCata $ \k -> joinPath [testScriptDataDir, k]
 
-isTestScriptDir :: FilePath -> TIO Bool
+isTestScriptDir :: FilePath -> Persist Bool
 isTestScriptDir = isCorrectDirStructure testScriptDirStructure
 
 instance ForeignKey TestScriptKey where
   referredPath = testScriptDirPath
   baseName     (TestScriptKey k) = k
 
-saveTestScript :: CourseKey -> TestScript -> TIO TestScriptKey
+saveTestScript :: CourseKey -> TestScript -> Persist TestScriptKey
 saveTestScript ck ts = do
   dirName <- createTmpDir testScriptDataDir "ts"
   let key = TestScriptKey $ takeBaseName dirName
@@ -910,18 +950,18 @@ saveTestScript ck ts = do
   link ck key "course"
   return key
 
-loadTestScript :: TestScriptKey -> TIO TestScript
+loadTestScript :: TestScriptKey -> Persist TestScript
 loadTestScript tk = do
   let p = testScriptDirPath tk
   isTS <- isTestScriptDir p
   unless isTS . throwEx $ userError "Not a test script directory"
   snd <$> tLoadPersistenceObject TestScriptKey p
 
-courseOfTestScript :: TestScriptKey -> TIO CourseKey
+courseOfTestScript :: TestScriptKey -> Persist CourseKey
 courseOfTestScript =
-  objectIn' "No course was found for " "course" CourseKey isCourseDir
+  objectOrError "No course was found for " "course" CourseKey isCourseDir
 
-modifyTestScript :: TestScriptKey -> TestScript -> TIO ()
+modifyTestScript :: TestScriptKey -> TestScript -> Persist ()
 modifyTestScript tk ts = do
   let p = testScriptDirPath tk
   isTS <- isTestScriptDir p
@@ -933,14 +973,14 @@ modifyTestScript tk ts = do
 testCaseDirPath :: TestCaseKey -> FilePath
 testCaseDirPath = testCaseKeyCata $ \k -> joinPath [testCaseDataDir, k]
 
-isTestCaseDir :: FilePath -> TIO Bool
+isTestCaseDir :: FilePath -> Persist Bool
 isTestCaseDir = isCorrectDirStructure testCaseDirStructure
 
 instance ForeignKey TestCaseKey where
   referredPath = testCaseDirPath
   baseName (TestCaseKey k) = k
 
-saveTestCase :: TestScriptKey -> AssignmentKey -> TestCase -> TIO TestCaseKey
+saveTestCase :: TestScriptKey -> AssignmentKey -> TestCase -> Persist TestCaseKey
 saveTestCase tk ak tc = do
   dirName <- createTmpDir testCaseDataDir "tc"
   let key = TestCaseKey $ takeBaseName dirName
@@ -950,36 +990,36 @@ saveTestCase tk ak tc = do
   link tk key "test-script"
   return key
 
-removeTestCaseAssignment :: TestCaseKey -> AssignmentKey -> TIO ()
+removeTestCaseAssignment :: TestCaseKey -> AssignmentKey -> Persist ()
 removeTestCaseAssignment tk ak = do
   unlink tk ak "test-case"
   unlink ak tk "assignment"
 
-modifyTestScriptOfTestCase :: TestCaseKey -> TestScriptKey -> TIO ()
+modifyTestScriptOfTestCase :: TestCaseKey -> TestScriptKey -> Persist ()
 modifyTestScriptOfTestCase tck tsk = do
   tskOld <- testScriptOfTestCase tck
   unlink tskOld tck "test-script"
   link   tsk    tck "test-script"
 
-loadTestCase :: TestCaseKey -> TIO TestCase
+loadTestCase :: TestCaseKey -> Persist TestCase
 loadTestCase tk = do
   let p = testCaseDirPath tk
   isTC <- isTestCaseDir p
   unless isTC . throwEx $ userError "Not a test case directory"
   snd <$> tLoadPersistenceObject TestCaseKey p
 
-testScriptOfTestCase :: TestCaseKey -> TIO TestScriptKey
+testScriptOfTestCase :: TestCaseKey -> Persist TestScriptKey
 testScriptOfTestCase =
-  objectIn' "No Test Script was found for " "test-script" TestScriptKey isTestScriptDir
+  objectOrError "No Test Script was found for " "test-script" TestScriptKey isTestScriptDir
 
-modifyTestCase :: TestCaseKey -> TestCase -> TIO ()
+modifyTestCase :: TestCaseKey -> TestCase -> Persist ()
 modifyTestCase tk tc = do
   let p = testCaseDirPath tk
   isTC <- isTestCaseDir p
   unless isTC . throwEx $ userError "Test Case does not exist"
   update p tc
 
-copyTestCaseFile :: TestCaseKey -> Username -> UsersFile -> TIO ()
+copyTestCaseFile :: TestCaseKey -> Username -> UsersFile -> Persist ()
 copyTestCaseFile tk u uf = do
   let p = testCaseDirPath tk
   isTC <- isTestCaseDir p
@@ -989,14 +1029,14 @@ copyTestCaseFile tk u uf = do
 
 -- Collects the test script, test case and the submission and copies them to the
 -- the directory named after the submission key placed in the test-outgoing directory
-saveTestJob :: SubmissionKey -> TIO ()
+saveTestJob :: SubmissionKey -> Persist ()
 saveTestJob sk = do
   ak <- assignmentOfSubmission sk
   mtk <- testCaseOfAssignment ak
   maybe (return ()) copyParts mtk
   where
     -- If there is a test case, we copy the information to the desired
-    copyParts :: TestCaseKey -> TIO ()
+    copyParts :: TestCaseKey -> Persist ()
     copyParts tk = do
       tsk <- testScriptOfTestCase tk
       let submissionFile = referredPath sk  </> "solution"
@@ -1011,7 +1051,7 @@ saveTestJob sk = do
       copy testscriptFile (tjPath </> "script")
       copy testcaseFile   (tjPath </> "tests")
 
-insertTestFeedback :: SubmissionKey -> FeedbackInfo -> TIO ()
+insertTestFeedback :: SubmissionKey -> FeedbackInfo -> Persist ()
 insertTestFeedback sk info = do
   let sDir = submissionKeyMap (testIncomingDataDir </>) sk
   hasNoRollback $ createDirectoryIfMissing True sDir
@@ -1024,7 +1064,7 @@ insertTestFeedback sk info = do
 
 -- Test Feedbacks are stored in the persistence layer, in the test-incomming directory
 -- each one in a file, named after an existing submission in the system
-testFeedbacks :: TIO [(SubmissionKey, Feedback)]
+testFeedbacks :: Persist [(SubmissionKey, Feedback)]
 testFeedbacks = getSubDirectories testIncomingDataDir >>= createFeedbacks
   where
     createFeedbacks = fmap join . mapM createFeedback
@@ -1050,7 +1090,7 @@ testFeedbacks = getSubDirectories testIncomingDataDir >>= createFeedbacks
 -- Deletes the comments (test-agent and message as well)
 -- contained file from the test-incomming directory, named after
 -- an existing submission
-deleteTestFeedbacks :: SubmissionKey -> TIO ()
+deleteTestFeedbacks :: SubmissionKey -> Persist ()
 deleteTestFeedbacks =
   submissionKeyMap (hasNoRollback . removeDirectoryRecursive . (testIncomingDataDir </>))
 
@@ -1063,9 +1103,8 @@ feedbacksOfSubmission = objectsIn "feedback" FeedbackKey isFeedbackDir
 feedbackDirPath :: FeedbackKey -> FilePath
 feedbackDirPath = feedbackKey $ \k -> joinPath [feedbackDataDir, k]
 
-isFeedbackDir :: FilePath -> TIO Bool
+isFeedbackDir :: FilePath -> Persist Bool
 isFeedbackDir = isCorrectDirStructure feedbackDirStructure
-
 
 -- Saves the feedback
 saveFeedback :: SubmissionKey -> Feedback -> Persist FeedbackKey
@@ -1088,7 +1127,108 @@ loadFeedback fk = do
 -- Returns the submission of the feedback
 submissionOfFeedback :: FeedbackKey -> Persist SubmissionKey
 submissionOfFeedback =
-  objectIn' "No Submission was found for " "submission" SubmissionKey isSubmissionDir
+  objectOrError "No Submission was found for " "submission" SubmissionKey isSubmissionDir
+
+-- * Assessment
+
+instance ForeignKey AssessmentKey where
+  referredPath (AssessmentKey c) = joinPath [assessmentDataDir, c]
+  baseName     (AssessmentKey c) = c
+
+isAssessmentDir :: FilePath -> Persist Bool
+isAssessmentDir = isCorrectDirStructure assessmentDirStructure
+
+assessmentDirPath :: AssessmentKey -> FilePath
+assessmentDirPath (AssessmentKey e) = joinPath [assessmentDataDir, e]
+
+saveAssessment :: Assessment -> Persist AssessmentKey
+saveAssessment as = do
+  dirName <- createTmpDir assessmentDataDir "at"
+  let key = AssessmentKey $ takeBaseName dirName
+  save dirName as
+  return key
+
+saveCourseAssessment :: CourseKey -> Assessment -> Persist AssessmentKey
+saveCourseAssessment ck as = do
+  key <- saveAssessment as
+  link key ck "assessments"
+  link ck key "course"
+  return key
+
+saveGroupAssessment :: GroupKey -> Assessment -> Persist AssessmentKey
+saveGroupAssessment gk as = do
+  key <- saveAssessment as
+  link key gk "assessments"
+  link gk key "group"
+  return key
+
+loadAssessment :: AssessmentKey -> Persist Assessment
+loadAssessment ak = do
+  let p = assessmentDirPath ak
+  isDir <- isAssessmentDir p
+  unless isDir . throwEx $ userError "Not an assessment directory"
+  snd <$> tLoadPersistenceObject AssessmentKey p
+
+modifyAssessment :: AssessmentKey -> Assessment -> Persist ()
+modifyAssessment ak a = do
+  let p = assessmentDirPath ak
+  isDir <- isAssessmentDir p
+  unless isDir . throwEx $ userError "Not an assessment directory"
+  update p a
+
+courseOfAssessment :: AssessmentKey -> Persist (Maybe CourseKey)
+courseOfAssessment = objectIn "course" CourseKey isCourseDir
+
+groupOfAssessment :: AssessmentKey -> Persist (Maybe GroupKey)
+groupOfAssessment = objectIn "group" GroupKey isGroupDir
+
+scoresOfAssessment :: AssessmentKey -> Persist [ScoreKey]
+scoresOfAssessment = objectsIn "score" ScoreKey isScoreDir
+
+assessmentsOfGroup :: GroupKey -> Persist [AssessmentKey]
+assessmentsOfGroup = objectsIn "assessments" AssessmentKey isAssessmentDir
+
+assessmentsOfCourse :: CourseKey -> Persist [AssessmentKey]
+assessmentsOfCourse = objectsIn "assessments" AssessmentKey isAssessmentDir
+
+-- * Score
+
+instance ForeignKey ScoreKey where
+  referredPath (ScoreKey c) = joinPath [scoreDataDir, c]
+  baseName     (ScoreKey c) = c
+
+isScoreDir :: FilePath -> Persist Bool
+isScoreDir = isCorrectDirStructure scoreDirStructure
+
+scoreDirPath :: ScoreKey -> FilePath
+scoreDirPath (ScoreKey e) = joinPath [scoreDataDir, e]
+
+saveScore :: Username -> AssessmentKey -> Score -> Persist ScoreKey
+saveScore u ak s = do
+  dirName <- createTmpDir scoreDataDir "sc"
+  let key = ScoreKey $ takeBaseName dirName
+  save dirName s
+  link key u  "score"
+  link u key "user"
+  link ak key "assessment"
+  link key ak "score"
+  return key
+
+loadScore :: ScoreKey -> Persist Score
+loadScore sk = do
+  let p = scoreDirPath sk
+  isDir <- isScoreDir p
+  unless isDir . throwEx $ userError "Not a score directory"
+  snd <$> tLoadPersistenceObject ScoreKey p
+
+assessmentOfScore :: ScoreKey -> Persist AssessmentKey
+assessmentOfScore = objectOrError "No assessment was found for " "assessment" AssessmentKey isAssessmentDir
+
+usernameOfScore :: ScoreKey -> Persist Username
+usernameOfScore = objectOrError "No user was found for " "user" Username isUserDir
+
+evaluationOfScore :: ScoreKey -> Persist (Maybe EvaluationKey)
+evaluationOfScore = objectIn "evaluation" EvaluationKey isEvaluationDir
 
 -- * Tools
 

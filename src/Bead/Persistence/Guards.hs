@@ -78,7 +78,9 @@ isAdministratedSubmission u sk = do
 isAdministratedEvaluation :: Username -> EvaluationKey -> Persist Bool
 isAdministratedEvaluation u ek = do
   sk <- submissionOfEvaluation ek
-  isAdministratedSubmission u sk
+  falseOr (isAdministratedSubmission u) sk
+  where
+    falseOr k = maybe (return False) k
 
 -- Returns True if the given user submitted the given submission, otherwise false
 isUserSubmission :: Username -> SubmissionKey -> Persist Bool

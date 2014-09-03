@@ -19,6 +19,8 @@ import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Submission
 import           Bead.Persistence.SQL.User
 
+import           Bead.Persistence.SQL.TestData
+
 import           Test.Themis.Test (ioTest, shrink)
 import           Test.Themis.Keyword.Encaps
 #endif
@@ -52,18 +54,6 @@ submissionOfFeedback key = do
 
 #ifdef TEST
 feedbackTests = do
-  let course  = Domain.Course "name" "desc" Domain.TestScriptSimple
-      time    = read "2014-06-09 12:55:27.959203 UTC"
-      sbm     = Domain.Submission "submission" time
-      sbm2    = Domain.Submission "submission2" time
-      ballot  = Domain.aspectsFromList [Domain.BallotBox]
-      asg     = Domain.Assignment "name" "desc" ballot time time Domain.binaryConfig
-      user1name = Domain.Username "user1"
-      user1 = Domain.User Domain.Student user1name (Domain.Email "email") "name" (Domain.TimeZoneName "UTC") (Domain.Language "hu")
-      fbTestResult = Domain.Feedback (Domain.TestResult True) time
-      fbMsgStudent  = Domain.Feedback (Domain.MessageForStudent "student") time
-      fbMsgForAdmin = Domain.Feedback (Domain.MessageForAdmin "admin") time
-      fbEvaluated = Domain.Feedback (Domain.Evaluated (Domain.percentageResult 0.1) "eval" "author") time
   shrink "Feedback end-to-end story."
     (do ioTest "Feedback end-to-end test" $ runSql $ do
           dbStep $ initDB

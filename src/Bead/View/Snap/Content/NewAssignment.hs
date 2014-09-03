@@ -29,7 +29,6 @@ import           Text.Printf (printf)
 import           Bead.Controller.Pages (PageDesc)
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as S
-import           Bead.Domain.Entity.Assignment (Assignment)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Shared.Evaluation (binaryConfig, evConfigCata)
 import           Bead.View.Snap.Fay.HookIds
@@ -664,7 +663,7 @@ newAssignmentContent tz pd = do
                   keyValue = (id &&& (usersFileCata id))
 
           testCaseText Nothing = Nothing
-          testCaseText (Just (_,tc',_)) = Just . BsUTF8.toString $ tcValue tc'
+          testCaseText (Just (_,tc,_)) = withTestCaseValue (tcValue tc) Just (const Nothing)
 
           testCaseFileName Nothing = return ()
           testCaseFileName (Just (_,tc',_)) = fromString $ tcInfo tc'

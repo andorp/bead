@@ -3,8 +3,6 @@ module Bead.Persistence.SQL.JSON where
 import           Text.JSON.Generic
 
 import qualified Bead.Domain.Entities as Domain
-import qualified Bead.Domain.Entity.Assignment as Domain
-import qualified Bead.Domain.Entity.Comment    as Domain
 import qualified Bead.Domain.Shared.Evaluation as Domain
 import           Bead.Persistence.SQL.Entities (JSONText)
 
@@ -34,12 +32,6 @@ encodeTestScriptType = encodeJSON
 decodeTestScriptType :: JSONText -> Domain.TestScriptType
 decodeTestScriptType = decodeJSON
 
-encodeTestCaseType :: Domain.TestCaseType -> JSONText
-encodeTestCaseType = encodeJSON
-
-decodeTestCaseType :: JSONText -> Domain.TestCaseType
-decodeTestCaseType = decodeJSON
-
 encodeAssignmentType :: Domain.Aspects -> JSONText
 encodeAssignmentType = encodeJSON
 
@@ -63,3 +55,9 @@ encodeFeedbackInfo = encodeJSON
 
 decodeFeedbackInfo :: JSONText -> Domain.FeedbackInfo
 decodeFeedbackInfo = decodeJSON
+
+encodeScore :: Domain.Score -> JSONText
+encodeScore = encodeJSON
+
+decodeScore :: JSONText -> Domain.Score
+decodeScore = decodeJSON

@@ -11,7 +11,6 @@ This module represents the registration pages. The registration process has two 
 2) The user opens the recieved mail and sets her password.
 -}
 
-import           Control.Arrow ((&&&))
 import qualified Data.ByteString.Char8 as B
 import           Data.Maybe (fromJust, isNothing)
 import           Data.String (fromString)

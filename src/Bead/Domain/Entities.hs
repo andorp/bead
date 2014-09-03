@@ -4,6 +4,9 @@ module Bead.Domain.Entities (
     Submission(..)
   , submissionCata
   , withSubmission
+  , SubmissionValue(..)
+  , submissionValue
+  , withSubmissionValue
   , CourseName
   , UsersFullname
   , evaluationResultCata
@@ -76,8 +79,6 @@ module Bead.Domain.Entities (
   , testScriptCata
   , withTestScript
   , testScriptAppAna
-  , TestCaseType(..)
-  , testCaseTypeCata
   , TestCase(..)
   , testCaseCata
   , withTestCase
@@ -87,13 +88,17 @@ module Bead.Domain.Entities (
   , FileInfo(..)
   , fileInfoCata
   , fileInfoAppAna
+  , Score(..)
+  , score
   , CompareHun(..)
   , StatusMessage(..)
   , statusMessage
 
+  , module Bead.Domain.Entity.Assessment
   , module Bead.Domain.Entity.Assignment
   , module Bead.Domain.Entity.Comment
   , module Bead.Domain.Entity.Feedback
+  , module Bead.Domain.Entity.TestCase
 
 #ifdef TEST
   , compareHunTests
@@ -102,7 +107,6 @@ module Bead.Domain.Entities (
   ) where
 
 import           Control.Applicative
-import           Control.Monad (join)
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Data
 import           Data.List (findIndex)
@@ -110,10 +114,11 @@ import           Data.Time (UTCTime(..), LocalTime)
 import           Data.Time.Format (formatTime)
 import           System.Locale (defaultTimeLocale)
 
-import           Bead.Domain.Types
+import           Bead.Domain.Entity.Assessment
 import           Bead.Domain.Entity.Assignment
 import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Entity.Feedback
+import           Bead.Domain.Entity.TestCase
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Translation
 
@@ -121,9 +126,23 @@ import           Bead.View.Snap.Translation
 import           Bead.Invariants (Invariants(..), UnitTests(..))
 #endif
 
+data SubmissionValue
+  = SimpleSubmission String
+  | ZippedSubmission ByteString
+  deriving (Eq, Show)
+
+submissionValue
+  simple
+  zipped
+  v = case v of
+    SimpleSubmission s -> simple s
+    ZippedSubmission z -> zipped z
+
+withSubmissionValue v simple zipped = submissionValue simple zipped v
+
 -- | Solution for one exercise
 data Submission = Submission {
-    solution         :: String
+    solution         :: SubmissionValue
   , solutionPostDate :: UTCTime
   } deriving (Eq, Show)
 
@@ -176,9 +195,6 @@ evaluationToFeedback t u e = Feedback info t where
 
 newtype CourseCode = CourseCode String
   deriving (Eq, Ord, Show)
-
-instance Str CourseCode where
-  str (CourseCode s) = s
 
 -- Course or Group info. Some information is attached to
 -- course or group
@@ -350,9 +366,6 @@ withUsername (Username u) f = f u
 class AsUsername c where
   asUsername :: c -> Username
 
-instance Str Username where
-  str (Username u) = u
-
 type Password = String
 
 class AsPassword p where
@@ -372,9 +385,6 @@ parseEmail = Just . Email
 
 instance Show Email where
   show (Email e) = e
-
-instance Str Email where
-  str (Email e) = e
 
 -- TODO: throw exception if email string is unacceptable
 email' :: String -> Email
@@ -505,50 +515,6 @@ withTestScript t tc f = testScriptCata tc f t
 testScriptAppAna name desc notes script type_
   = TestScript <$> name <*> desc <*> notes <*> script <*> type_
 
--- Test cases can arrive in plain text or in a zip file
-data TestCaseType
-  = TestCaseSimple
-  | TestCaseZipped
-  deriving (Data, Eq, Enum, Ord, Read, Show, Typeable)
-
--- Template function for the test case type
-testCaseTypeCata
-  simple
-  zipped
-  t = case t of
-    TestCaseSimple -> simple
-    TestCaseZipped -> zipped
-
--- Test Cases are for assignment and test script pair, test case
--- has name, description and a piece of code that will be subsctituated
--- during the evaluation of a submission
-data TestCase = TestCase {
-    tcName :: String -- The name of the test case
-  , tcDescription :: String -- The short description of the test case
-  , tcValue :: ByteString -- The stored value of test cases
-  , tcType  :: TestCaseType -- The type of the test case
-  , tcInfo  :: String -- Additional information which interpretation could change depending on the
-                      -- type of the test case
-  } deriving (Eq, Show, Read)
-
--- Template method for test case
-testCaseCata
-  tc -- Transformation of the TestCaseType
-  f
-  (TestCase name
-            description
-            value
-            type_
-            info)
-  = f name description value (tc type_) info
-
--- | Template method for the test case with flipped arguments
-withTestCase t tc f = testCaseCata tc f t
-
--- Applicative functor based TestCase value creation
-testCaseAppAna name desc value type_ info
-  = TestCase <$> name <*> desc <*> value <*> type_ <*> info
-
 -- Name of the file that a user can upload
 newtype UsersFile = UsersFile String
   deriving (Data, Eq, Ord, Read, Show, Typeable)
@@ -567,6 +533,9 @@ fileInfoCata f (FileInfo size date) = f size date
 
 -- Applicative functor based FileInfo construction
 fileInfoAppAna size date = FileInfo <$> size <*> date
+
+data Score = Score
+  deriving (Data, Eq, Ord, Read, Show, Typeable)
 
 -- * PermObjs instance
 

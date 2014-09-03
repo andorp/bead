@@ -26,7 +26,6 @@ import System.FilePath
 
 tests = testGroup "Persistence tests" [
     test_initialize_persistence
-  , test_create_exercise
   , test_create_load_exercise
   , test_create_user
   , test_create_group_user
@@ -71,30 +70,6 @@ test_feedbacks = testCase "Create and delete test feedbacks" $ do
     , (skey', TestResult True)
     ]
     (map (\(sk,f) -> (sk, info f)) rs)
-
-test_create_exercise = testCase "Save an exercise" $ do
-  interp <- createPersistInterpreter defaultConfig
-  str <- getCurrentTime
-  end <- getCurrentTime
-  let assignment = Assignment "Title" "This is an exercise" normal str end binaryConfig
-  ek <- liftE interp $ saveAssignment assignment
-  let uname = Username "student"
-      user = User {
-        u_role     = Student
-      , u_username = uname
-      , u_email    = Email "student@gmail.com"
-      , u_name     = "Student"
-      , u_timezone = utcZoneInfo
-      , u_language = Language "hu"
-      }
-      password = "password"
-  liftE interp $ saveUser user
-  let s = Submission {
-        solution = "Solution"
-      , solutionPostDate = end
-      }
-  sk <- liftE interp $ saveSubmission ek uname s
-  return ()
 
 test_create_load_exercise = testCase "Create and load exercise" $ do
   interp <- createPersistInterpreter defaultConfig
@@ -170,7 +145,7 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
       cAssignment = Assignment "CourseAssignment" "Assignment" ballot str end binaryConfig
       gAssignment1 = Assignment "GroupAssignment" "Assignment" normal str end binaryConfig
       gAssignment2 = Assignment "GroupAssignment" "Assignment" normal str end binaryConfig
-      sbsm = Submission "submission" str
+      sbsm = Submission (SimpleSubmission "submission") str
   join $ liftE interp $ do
     ck  <- saveCourse (Course "name" "desc" TestScriptSimple)
     gk1 <- saveGroup ck (Group "gname1" "gdesc1")
@@ -255,7 +230,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   testHasNoLastSubmission gak username
 
   -- Submission
-  let sbsm = Submission "submission" str
+  let sbsm = Submission (SimpleSubmission "submission") str
   sk <- liftE interp $ saveSubmission gak username sbsm
   sk_user <- liftE interp $ usernameOfSubmission sk
   assertBool
@@ -276,11 +251,11 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   assertBool "Submission is not in the users' submission" (elem sk uss)
 
   let ev = Evaluation (binaryResult Passed) "Good"
-  evKey <- liftE interp $ saveEvaluation sk ev
+  evKey <- liftE interp $ saveSubmissionEvaluation sk ev
   ev1 <- liftE interp $ loadEvaluation evKey
   assertBool "Evaluation was not loaded correctly" (ev == ev1)
   ev_sk <- liftE interp $ submissionOfEvaluation evKey
-  assertBool "Submission key was different for the evaluation" (sk == ev_sk)
+  assertBool "Submission key was different for the evaluation" (Just sk == ev_sk)
   liftE interp $ removeFromOpened gak username sk
 
   testComment sk

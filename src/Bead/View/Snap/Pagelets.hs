@@ -18,8 +18,7 @@ import           Text.Blaze.Html5.Attributes hiding (id)
 
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext (UserState(..))
-import           Bead.Domain.Entities (statusMessage)
-import           Bead.Domain.Types (Str(..))
+import           Bead.Domain.Entities (statusMessage, usernameCata)
 import           Bead.View.Snap.Fay.Hooks
 import           Bead.View.Snap.Fay.JSON.ServerSide
 import qualified Bead.View.Snap.I18N as I18N
@@ -451,7 +450,7 @@ pageHeader s secs = do
     H.div ! A.id "logo" $ "BE-AD"
     H.div ! A.id "user" $ do
       minSecCountdown "hdctd" "--:--" secs
-      (fromString . str . user $ s)
+      (usernameCata fromString $ user s)
       H.br
       (I18N.i18n msg $ linkToPage home)
       H.br

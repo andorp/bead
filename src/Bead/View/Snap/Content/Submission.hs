@@ -57,14 +57,14 @@ submissionPostHandler = do
                    -- Passwords do match
                    then NewSubmission ak
                           <$> (E.Submission
-                                <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege")
+                                <$> (SimpleSubmission <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege"))
                                 <*> liftIO getCurrentTime)
                    -- Passwords do not match
                    else return . ErrorMessage $ Msg_Submission_InvalidPassword "Invalid password, the solution could not be submitted!"
          -- Non password protected assignment
          else NewSubmission ak
                 <$> (E.Submission
-                       <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege")
+                       <$> (SimpleSubmission <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege"))
                        <*> liftIO getCurrentTime))
     -- Assignment is not for the user
     (return . ErrorMessage $ Msg_Submission_NonUsersAssignment "The assignment is not for the actual user!")

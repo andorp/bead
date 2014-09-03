@@ -8,12 +8,7 @@ import Data.Map (Map)
 import Data.Time (UTCTime(..))
 
 import Bead.Domain.Entities
-import Bead.Domain.Entity.Assignment
-import Bead.Domain.Entity.Comment
 import Bead.Domain.Evaluation
-import Bead.Domain.Shared.Evaluation
-import Bead.Domain.Types
-
 
 -- * Relations
 
@@ -273,9 +268,6 @@ newtype UserRegKey = UserRegKey String
 userRegKeyFold :: (String -> a) -> UserRegKey -> a
 userRegKeyFold f (UserRegKey x) = f x
 
-instance Str UserRegKey where
-  str = userRegKeyFold id
-
 newtype CommentKey = CommentKey String
   deriving (Eq, Ord, Show)
 
@@ -337,13 +329,17 @@ newtype FeedbackKey = FeedbackKey String
 
 feedbackKey f (FeedbackKey x) = f x
 
--- * Str instances
+newtype ScoreKey = ScoreKey String
+  deriving (Eq, Ord, Show)
 
-instance Str AssignmentKey where
-  str (AssignmentKey s) = s
+scoreKey f (ScoreKey x) = f x
 
-instance Str CourseKey where
-  str (CourseKey c) = c
+newtype AssessmentKey = AssessmentKey String
+  deriving (Eq, Ord, Show)
 
-instance Str GroupKey where
-  str (GroupKey g) = g
+assessmentKey f (AssessmentKey x) = f x
+
+-- | The scoreboard summarizes the information for a course or group related
+-- assesments and the evaluation for the assesment.
+newtype ScoreBoard = ScoreBoard (Map (AssessmentKey, Username) EvaluationKey)
+  deriving (Eq, Show)

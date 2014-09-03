@@ -1,8 +1,6 @@
 {-# LANGUAGE Rank2Types #-}
 module Bead.Persistence.Initialization where
 
-import Bead.Domain.Types (Erroneous)
-
 -- | Persistence init is a collection of function that checks if the persistence
 -- is setted up correctly, inicializes the persistent layer when it is not set,
 -- and tears down the database

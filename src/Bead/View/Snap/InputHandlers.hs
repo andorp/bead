@@ -3,17 +3,14 @@ module Bead.View.Snap.InputHandlers where
 import           Control.Applicative ((<$>),(<*>))
 import           Control.Arrow ((&&&))
 import           Data.Maybe (fromMaybe)
-import qualified Data.Set as Set (fromList)
 import           Data.Time (UTCTime(..))
 
 import           Text.Blaze.Html5 (Html)
 
 import           Bead.Domain.Entities
-import           Bead.Domain.Entity.Assignment (Assignment)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
 import           Bead.Domain.Relationships
-import           Bead.Domain.Types (Str(..))
 import           Bead.View.Snap.Application (App(..))
 import           Bead.View.Snap.DataBridge
 import           Bead.View.Snap.Fay.Hooks
@@ -44,15 +41,10 @@ emptyGroup = Nothing
 instance InputPagelet Group where
   inputPagelet g = do
     msg <- getI18N
---    let hook = createGroupHook
---    evalConfig <- evaluationConfig (evSelectionId hook)
     return $ do
       table "create-group" "create-group-table" $ do
         tableLine (msg $ Msg_Input_Group_Name "Title") $ required $ textInput (fieldName groupNameField) 10 (fmap groupName g)
         tableLine (msg $ Msg_Input_Group_Description "Description") $ textInput (fieldName groupDescField) 10 (fmap groupDesc g)
---        tableLine (msg $ Msg_Input_Group_Evaluation "Evaluation") $ evalConfig
---      hiddenInputWithId (evHiddenValueId hook) ""
---      evalSelectionDiv hook
 
 instance GetValueHandler Group where
   getValue = Group
@@ -74,16 +66,11 @@ emptyCourse = Nothing
 instance InputPagelet Course where
   inputPagelet c = do
     msg <- getI18N
---    let hook = createCourseHook
---    evalConfig <- evaluationConfig (evSelectionId hook)
     return $ do
       table "create-course" "create-course-table" $ do
         tableLine (msg $ Msg_Input_Course_Name "Title") $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
         tableLine (msg $ Msg_Input_Course_Description "Description") $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
---        tableLine (msg $ Msg_Input_Course_Evaluation "Evaluation") $ evalConfig
         tableLine (msg $ Msg_Input_Course_TestScript "Test type") $ (testScriptTypeSelection msg) c
---      hiddenInputWithId (evHiddenValueId hook) ""
---      evalSelectionDiv hook
     where
       testScriptTypeSelection msg c =
         selectionWithDefault
@@ -122,7 +109,7 @@ emptyUsername :: Maybe Username
 emptyUsername = Nothing
 
 instance InputPagelet Username where
-  inputPagelet u = return $ textInput (fieldName usernameField) 20 (fmap str u)
+  inputPagelet u = return $ textInput (fieldName usernameField) 20 (fmap (usernameCata id) u)
 
 instance GetValueHandler Username where
   getValue = getParameter usernamePrm

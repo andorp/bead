@@ -12,9 +12,7 @@ import           Data.String (fromString)
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories hiding (createGroup)
-import           Bead.Domain.Types (str)
 import           Bead.View.Snap.Content
-import           Bead.View.Snap.Fay.Hooks
 import qualified Bead.View.UserActions as UA (UserAction(..))
 
 import           Text.Blaze.Html5 ((!))
@@ -58,7 +56,7 @@ courseAdminContent info = do
   return $ H.div # textAlign "left" $ do
     H.h3 $ (fromString $ msg $ Msg_CourseAdmin_CreateGroup "New group for the course")
     H.p $ nonEmpty (courses info) (fromString $ msg $ Msg_CourseAdmin_NoCourses "There are no courses.") $
-          (postForm (routeOf createGroup) {-`withId` (evFormId createGroupHook)-}) $ do
+          (postForm (routeOf createGroup)) $ do
             H.b $ (fromString $ msg $ Msg_CourseAdmin_Course "Course")
             H.br
             selection (fieldName courseKeyInfo) courses'
@@ -85,7 +83,7 @@ courseAdminContent info = do
     groups' = (groups info)
     groupAdmins' = map (u_username &&& userLongname) (groupAdmins info)
 
-    userLongname u = concat [ str $ u_username u, " - ", u_name u]
+    userLongname u = concat [ usernameCata id $ u_username u, " - ", u_name u]
 
     createGroup = Pages.createGroup ()
     assignGroupAdmin = Pages.assignGroupAdmin ()

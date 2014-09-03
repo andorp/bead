@@ -4,9 +4,6 @@ import Data.Char (isSpace)
 
 type Erroneous a = Either String a
 
-class Str s where
-  str :: s -> String
-
 readMaybe :: (Read a) => String -> Maybe a
 readMaybe s =
   case reads s of

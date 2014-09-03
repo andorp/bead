@@ -17,7 +17,6 @@ import           System.Posix.Types (COff(..))
 import           System.Posix.Files (getFileStatus, fileSize, modificationTime)
 
 import           Bead.Domain.Entities
-import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Relationships
 import           Bead.Domain.Types
 
@@ -152,9 +151,11 @@ saveTestJob sk submission testScript testCase = liftIO $ do
   exists <- doesDirectoryExist tjPath
   when exists $ error $ concat ["Test job directory already exist:", show tjk]
   createDirectory tjPath
-  fileSave (tjPath </> "submission") (solution submission)
   fileSave (tjPath </> "script") (tsScript testScript)
-  fileSaveBS (tjPath </> "tests") (tcValue testCase)
+  -- Save Simple or Zipped Submission
+  withSubmissionValue (solution submission) (flip fileSave) (flip fileSaveBS) (tjPath </> "submission")
+  -- Save Simple or Zipped Test Case
+  withTestCaseValue (tcValue testCase) (flip fileSave) (flip fileSaveBS) (tjPath </> "tests")
 
 -- Insert the feedback info for the file system part of the database. This method is
 -- used by the tests only, and serves as a model for interfacing with the outside world.

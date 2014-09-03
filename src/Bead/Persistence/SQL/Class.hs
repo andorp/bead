@@ -5,7 +5,6 @@ import qualified Data.Text as Text
 import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
-import qualified Bead.Domain.Entity.Comment as Domain
 import qualified Bead.Domain.Relationships as Domain
 import           Bead.Persistence.SQL.Entities
 import           Bead.Persistence.SQL.JSON
@@ -167,17 +166,27 @@ instance DomainValue Domain.TestCase where
   toDomainValue ent = Domain.TestCase
     (Text.unpack $ testCaseName ent)
     (Text.unpack $ testCaseDescription ent)
-    (testCaseValue ent)
-    (decodeTestCaseType $ testCaseTestCaseType ent)
+    (case (testCaseSimpleValue ent, testCaseZippedValue ent) of
+       (Just simple, Nothing) -> Domain.SimpleTestCase $ Text.unpack simple
+       (Nothing, Just zipped) -> Domain.ZippedTestCase zipped
+       (Just _, Just _)   -> error "toDomainTestCase: simple and zipped value were given"
+       (Nothing, Nothing) -> error "toDomainTestCase: simple or zipped value were given")
     (Text.unpack $ testCaseInfo ent)
 
-  fromDomainValue = Domain.testCaseCata encodeTestCaseType
-    $ \name desc value type_ info ->
-        TestCase (Text.pack name)
-                 (Text.pack desc)
-                 value
-                 type_
-                 (Text.pack info)
+  fromDomainValue = Domain.testCaseCata id -- encodeTestCaseType
+    $ \name desc value {-type_-} info ->
+        let (simple, zipped) = Domain.withTestCaseValue
+                                 value
+                                 (fstNothing Text.pack)
+                                 (nothingSnd id)
+        in TestCase (Text.pack name)
+                    (Text.pack desc)
+                    simple
+                    zipped
+                    (Text.pack info)
+
+fstNothing f s = (Just $ f s, Nothing)
+nothingSnd f s = (Nothing, Just $ f s)
 
 instance DomainKey Domain.AssignmentKey where
   type EntityForKey Domain.AssignmentKey = AssignmentGeneric
@@ -194,14 +203,22 @@ instance DomainValue Domain.Submission where
   type EntityValue Domain.Submission = SubmissionGeneric
 
   fromDomainValue = Domain.submissionCata $ \submission postDate ->
-    Submission (Text.pack submission)
-               postDate
+    let (simple, zipped) = Domain.submissionValue
+                             (fstNothing Text.pack)
+                             (nothingSnd id)
+                             submission
+    in Submission simple
+                  zipped
+                  postDate
 
   toDomainValue ent =
     Domain.Submission
-      (Text.unpack $ submissionSubmission ent)
+      (case (submissionSimple ent, submissionZipped ent) of
+         (Just simple, Nothing) -> Domain.SimpleSubmission $ Text.unpack simple
+         (Nothing, Just zipped) -> Domain.ZippedSubmission zipped
+         (Nothing, Nothing) -> error "toDomainSubmission: no simple or zipped solution was given."
+         (Just _, Just _)   -> error "toDomainSubmission: simple and zipped solution were given.")
       (submissionPostDate ent)
-
 
 instance DomainKey Domain.EvaluationKey where
   type EntityForKey Domain.EvaluationKey = EvaluationGeneric
@@ -255,3 +272,30 @@ instance DomainValue Domain.Feedback where
     Domain.Feedback
       (decodeFeedbackInfo $ feedbackInfo ent)
       (feedbackDate ent)
+
+instance DomainKey Domain.AssessmentKey where
+  type EntityForKey Domain.AssessmentKey = AssessmentGeneric
+  fromDomainKey = domainKeyToEntityKey $ \(Domain.AssessmentKey k) -> k
+  toDomainKey   = entityToDomainKey Domain.AssessmentKey "entityToAssessmentKey"
+
+instance DomainValue Domain.Assessment where
+  type EntityValue Domain.Assessment = AssessmentGeneric
+
+  fromDomainValue = Domain.assessment $
+    \desc cfg -> Assessment
+      (Text.pack desc)
+      (encodeEvalConfig cfg)
+
+  toDomainValue ent = Domain.Assessment
+    (Text.unpack $ assessmentDescription ent)
+    (decodeEvalConfig $ assessmentEvalConfig ent)
+
+instance DomainKey Domain.ScoreKey where
+  type EntityForKey Domain.ScoreKey = ScoreGeneric
+  fromDomainKey = domainKeyToEntityKey $ \(Domain.ScoreKey k) -> k
+  toDomainKey   = entityToDomainKey Domain.ScoreKey "entityToScoreKey"
+
+instance DomainValue Domain.Score where
+  type EntityValue Domain.Score = ScoreGeneric
+  fromDomainValue _s = Score "score"
+  toDomainValue _ent = Domain.Score

@@ -1,18 +1,8 @@
 module Test.Quick.EntityGen where
 
 import Bead.Domain.Entities
-import Bead.Domain.Entity.Assignment
-import Bead.Domain.Entity.Comment
 import Bead.Domain.TimeZone (utcZoneInfo, cetZoneInfo)
-import Bead.Domain.Relationships
 import Bead.Domain.Shared.Evaluation
-import Bead.View.UserActions
-
-import Bead.Controller.UserStories (UserStory)
-import qualified Bead.Controller.UserStories as UserStory
-
-import Bead.Controller.ServiceContext (ServiceContext)
-import qualified Bead.Controller.ServiceContext as Context
 
 import Test.Quick.EnumGen
 
@@ -20,10 +10,8 @@ import Test.QuickCheck.Gen
 import Test.QuickCheck.Arbitrary
 import Control.Monad (join, liftM)
 import Control.Applicative ((<$>),(<*>))
-import Data.List (nub)
+import Data.String (fromString)
 
-import Data.Map (Map)
-import qualified Data.Map as Map
 import qualified Data.ByteString.Char8 as BS (pack)
 
 word = listOf1 $ elements ['a' .. 'z' ]
@@ -76,19 +64,15 @@ courseNames = word
 courseDescs = manyWords
 
 evalConfigs = oneof [
-    binConfig
-  , pctConfigs
+    return binaryConfig
+  , percentageConfig <$> percentage
   ]
-
-binConfig = return (BinEval ())
 
 percentage = do
   (_,f) <- properFraction <$> arbitrary
   return $ case f < 0 of
              True  -> (-1.0) * f
              False -> f
-
-pctConfigs = (PctEval . PctConfig) <$> percentage
 
 courses =
   courseAppAna
@@ -138,8 +122,13 @@ evaluationConfigs = oneof [
 
 passwords = word
 
+solutionValues = oneof [
+    SimpleSubmission <$> solutionTexts
+  , ZippedSubmission . fromString <$> solutionTexts
+  ]
+
 submissions date = Submission
-  <$> solutionTexts
+  <$> solutionValues
   <*> (return date)
 
 commentTypes = elements [CT_Student, CT_GroupAdmin, CT_CourseAdmin, CT_Admin]
@@ -175,15 +164,19 @@ testScripts = testScriptAppAna
   manyWords -- script
   enumGenerator -- type
 
-testCases = testCaseAppAna
-  word      -- name
-  manyWords -- desc
-  (BS.pack <$> manyWords) -- value
-  enumGenerator -- type
-  manyWords -- info
+testCases = oneof [
+    TestCase <$> word <*> manyWords <*> (SimpleTestCase <$> manyWords) <*> manyWords
+  , TestCase <$> word <*> manyWords <*> (ZippedTestCase . BS.pack <$> manyWords) <*> manyWords
+  ]
 
 testFeedbackInfo = oneof
   [ TestResult <$> arbitrary
   , MessageForStudent <$> manyWords
   , MessageForAdmin <$> manyWords
   ]
+
+scores :: Gen Score
+scores = return Score
+
+assessments = Assessment <$> manyWords <*> evalConfigs
+

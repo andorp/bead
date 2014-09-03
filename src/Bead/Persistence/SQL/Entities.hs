@@ -32,6 +32,11 @@ type JSONText = String
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 
+Assessment
+  description Text
+  evalConfig  JSONText
+  deriving Show
+
 Assignment
   name        Text
   description Text
@@ -70,16 +75,21 @@ Group
   description Text
   deriving Show
 
+Score
+  score JSONText
+  deriving Show
+
 Submission
-  submission Text
-  postDate   UTCTime
+  simple   Text       Maybe
+  zipped   ByteString Maybe
+  postDate UTCTime
   deriving Show
 
 TestCase
   name         Text
   description  Text
-  value        ByteString
-  testCaseType JSONText
+  simpleValue  Text       Maybe
+  zippedValue  ByteString Maybe
   info         Text
   deriving Show
 
@@ -149,6 +159,29 @@ AssignmentsOfCourse
   assignment AssignmentId
   UniqueAssignmentsOfCoursePair course assignment
   deriving Show
+
+-- Course -> [Assesment]
+AssessmentsOfCourse
+  course CourseId
+  assessment AssessmentId
+  UniqueAssessmentsOfCoursePair course assessment
+  deriving Show
+
+-- Group -> [Assesment]
+AssessmentsOfGroup
+  group      GroupId
+  assessment AssessmentId
+  UniqueAssessmentsOfGroupPair group assessment
+  deriving Show
+
+-- Score -> (Username, Assessment)
+-- (Username, Assessment) -> [Score]
+ScoresOfUsernameAssessment
+  score ScoreId
+  user  UserId
+  assessment AssessmentId
+  UniqueScoresOfUsernameAssessment score user assessment
+  UniqueScoreOfUsernameAssessment score
 
 -- Course -> [Group]
 -- Group -> Course
@@ -255,6 +288,13 @@ SubmissionOfEvaluation
   UniqueSubmissionOfEvaluationPair submission evaluation
   UniqueSubmissionOfEvaluation evaluation
   deriving Show
+
+-- Evaluation -> Score
+ScoreOfEvaluation
+  score      ScoreId
+  evaluation EvaluationId
+  UniqueScoreOfEvaluationPair score evaluation
+  UniqueScoreOfEvaluation evaluation
 
 |]
 

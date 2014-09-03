@@ -125,3 +125,7 @@ listFiles = FS.listFiles
 -- Get the current path for the user's file
 getFile :: Domain.Username -> Domain.UsersFile -> Persist FilePath
 getFile = FS.getFile
+
+-- TODO: Write user unit tests
+
+

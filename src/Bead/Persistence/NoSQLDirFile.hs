@@ -1,6 +1,7 @@
 {-# LANGUAGE CPP #-}
 module Bead.Persistence.NoSQLDirFile where
 
+import           Control.Applicative ((<$>), (<*>))
 import           Control.DeepSeq (deepseq)
 import           Control.Exception as E
 import           Control.Monad (filterM, join, liftM, unless, when)
@@ -48,6 +49,8 @@ testCaseDir = "test-case"
 testOutgoingDir = "test-outgoing"
 testIncomingDir = "test-incoming"
 feedbackDir = "feedback"
+assessmentDir = "assessment"
+scoreDir = "score"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
@@ -64,6 +67,8 @@ testCaseDataDir = joinPath [dataDir, testCaseDir]
 testOutgoingDataDir = joinPath [dataDir, testOutgoingDir]
 testIncomingDataDir = joinPath [dataDir, testIncomingDir]
 feedbackDataDir = joinPath [dataDir, feedbackDir]
+assessmentDataDir = joinPath [dataDir, assessmentDir]
+scoreDataDir = joinPath [dataDir, scoreDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -83,6 +88,8 @@ persistenceDirs = [
   , testOutgoingDataDir
   , testIncomingDataDir
   , feedbackDataDir
+  , assessmentDataDir
+  , scoreDataDir
   ]
 
 class DirName d where
@@ -108,7 +115,7 @@ class Update s where
 -- * DirName and KeyString instances
 
 instance DirName Username where
-  dirName u = joinPath [dataDir, userDir, str u]
+  dirName = usernameCata $ \u -> joinPath [dataDir, userDir, u]
 
 instance DirName User where
   dirName = dirName . u_username
@@ -146,6 +153,11 @@ instance DirName TestJobKey where
 instance DirName FeedbackKey where
   dirName (FeedbackKey k) = joinPath [feedbackDataDir, k]
 
+instance DirName AssessmentKey where
+  dirName (AssessmentKey k) = joinPath [assessmentDataDir, k]
+
+instance DirName ScoreKey where
+  dirName (ScoreKey k) = joinPath [scoreDataDir, k]
 
 -- * Load and save aux functions
 
@@ -178,6 +190,8 @@ fileLoad :: DirPath -> FilePath -> (String -> Maybe a) -> TIO a
 fileLoad d f reader = step
     (do let fname = joinPath [d,f]
         exist <- doesFileExist fname
+        unless exist $ throwIO . userError . join $
+          [ "File does not exist: ", fname ]
         h <- openFile fname ReadMode
         hSetEncoding h utf8
         s <- hGetContents h
@@ -192,6 +206,8 @@ fileLoadBS :: DirPath -> FilePath -> TIO ByteString
 fileLoadBS d f = step
     (do let fname = joinPath [d,f]
         exist <- doesFileExist fname
+        unless exist $ throwIO . userError . join $
+          [ "File does not exist: ", fname ]
         h <- openFile fname ReadMode
         hSetEncoding h utf8
         s <- BS.hGetContents h
@@ -404,10 +420,20 @@ instance Save Assignment where
     fileSave d "evtype"      (show evtype)
 
 instance Save Submission where
-  save d s = do
+  save d = submissionCata $ \value date -> do
     createStructureDirs d submissionDirStructure
-    fileSave d "solution" (solution s)
-    fileSave d "date"     (show . solutionPostDate $ s)
+    fileSave d "date"     (show $ date)
+    saveSubmissionValue value
+    where
+      saveSubmissionValue = submissionValue simple zipped
+
+      simple value = do
+        fileSave d "type" "simple"
+        fileSave d "solution" value
+
+      zipped value = do
+        fileSave d "type" "zipped"
+        fileSaveBS d "solution" value
 
 instance Save Evaluation where
   save d e = do
@@ -459,19 +485,39 @@ instance Save TestScript where
     fileSave d "type" type_
 
 instance Save TestCase where
-  save d = testCaseCata show $ \name desc value type_ info -> do
+  save d = testCaseCata tcValue $ \name desc saveValue info -> do
     createStructureDirs d testCaseDirStructure
     saveName d name
     saveDesc d desc
-    fileSaveBS d "value" value
-    fileSave d "type" type_
     fileSave d "info" info
+    saveValue
+    where
+      tcValue = testCaseValue simple zipped
+
+      simple value = do
+        fileSave d "type" "simple"
+        fileSave d "value" value
+
+      zipped value = do
+        fileSave   d "type" "zipped"
+        fileSaveBS d "value" value
 
 instance Save Feedback where
   save d = feedback encodeJSON $ \info date -> do
     createStructureDirs d feedbackDirStructure
     fileSave d "info" info
     fileSave d "date" $ show date
+
+instance Save Assessment where
+  save d = assessment $ \desc evalcfg -> do
+    createStructureDirs d assessmentDirStructure
+    fileSave d "desc" desc
+    fileSave d "cfg" $ encodeJSON evalcfg
+
+instance Save Score where
+  save d s = do
+    createStructureDirs d scoreDirStructure
+    fileSave d "score" (show s)
 
 -- * Load instances
 
@@ -501,12 +547,14 @@ instance Load Assignment where
 
 instance Load Submission where
   load d = do
-    s <- fileLoad d "solution" same
     p <- fileLoad d "date" readMaybe
-    return $ Submission {
-        solution = s
-      , solutionPostDate = p
-      }
+    i <- fileLoad d "type" same
+    s <- case i of
+      "simple" -> SimpleSubmission <$> fileLoad d "solution" same
+      "zipped" -> ZippedSubmission <$> fileLoadBS d "solution"
+      _ -> do
+        error "loadSubmission: unrecognized submission type"
+    return $ Submission s p
 
 instance Load Evaluation where
   load d = do
@@ -567,17 +615,28 @@ instance Load TestScript where
     (fileLoad d "type" readMaybe)
 
 instance Load TestCase where
-  load d = testCaseAppAna
-    (loadName d)
-    (loadDesc d)
-    (fileLoadBS d "value")
-    (fileLoad d "type" readMaybe)
-    (fileLoad d "info" same)
+  load d =
+    TestCase <$> loadName d
+             <*> loadDesc d
+             <*> (do type_ <- fileLoad d "type" same
+                     case type_ of
+                       "simple" -> SimpleTestCase <$> fileLoad   d "value" same
+                       "zipped" -> ZippedTestCase <$> fileLoadBS d "value"
+                       _ -> error "")
+             <*> fileLoad d "info" same
 
 instance Load Feedback where
   load d = mkFeedback
     (fileLoad d "info" maybeDecodeJSON)
     (fileLoad d "date" readMaybe)
+
+instance Load Assessment where
+  load d = Assessment
+    <$> fileLoad d "desc" same
+    <*> fileLoad d "cfg"  maybeDecodeJSON
+
+instance Load Score where
+  load _d = return Score
 
 -- * Update instances
 
@@ -628,12 +687,26 @@ instance Update TestScript where
     fileUpdate d "type" type_
 
 instance Update TestCase where
-  update d = testCaseCata show $ \name desc value type_ info -> do
+  update d = testCaseCata tcValue $ \name desc updateValue info -> do
     updateName d name
     fileUpdate d "description" desc
-    fileUpdateBS d "value" value
-    fileUpdate d "type" type_
     fileUpdate d "info" info
+    updateValue
+    where
+      tcValue = testCaseValue simple zipped
+
+      simple value = do
+        fileUpdate d "type" "simple"
+        fileUpdate d "value" value
+
+      zipped value = do
+        fileUpdate d "type" "zipped"
+        fileUpdateBS d "value" value
+
+instance Update Assessment where
+  update d = assessment $ \desc cfg -> do
+    fileUpdate d "desc" desc
+    fileUpdate d "cfg" $ encodeJSON cfg
 
 -- * Dir Structures
 
@@ -642,19 +715,22 @@ data DirStructure = DirStructure {
   , files       :: [FilePath]
   }
 
+-- Returns True if the directory exist and it has the correct sub-directory
+-- structure otherwise False.
 isCorrectStructure :: DirPath -> DirStructure -> IO Bool
 isCorrectStructure dirname ds = do
-  d  <- doesDirectoryExist dirname
-  as <- mapM (doesDirectoryExist . joinPath . f) . directories $ ds
-  bs <- mapM (doesFileExist      . joinPath . f) . files       $ ds
-  return . and $ as ++ bs
+  exist <- doesDirectoryExist dirname
+  if exist
+    then do
+      as <- mapM (doesDirectoryExist . joinPath . f) . directories $ ds
+      bs <- mapM (doesFileExist      . joinPath . f) . files       $ ds
+      return . and $ as ++ bs
+    else return False
   where
     f x = [dirname, x]
 
 createStructureDirs :: DirPath -> DirStructure -> TIO ()
 createStructureDirs p = mapM_ (\x -> createDir (joinPath [p,x])) . directories
-
-created = "created"
 
 saveCreatedTime :: DirPath -> UTCTime -> TIO ()
 saveCreatedTime d = fileSave d "created" . show
@@ -663,8 +739,22 @@ getCreatedTime :: DirPath -> TIO UTCTime
 getCreatedTime d = fileLoad d "created" readMaybe
 
 userDirStructure = DirStructure {
-    files       = ["email", "name", "role", "username", "language"]
-  , directories = ["course", "group" ,"courseadmin" ,"groupadmin", "submissions", "datadir"]
+    files = [
+        "email"
+      , "name"
+      , "role"
+      , "username"
+      , "language"
+      ]
+  , directories = [
+        "course"
+      , "group"
+      , "courseadmin"
+      , "groupadmin"
+      , "submissions"
+      , "datadir"
+      , "score"
+      ]
   }
 
 assignmentDirStructure = DirStructure {
@@ -674,7 +764,7 @@ assignmentDirStructure = DirStructure {
       , "type"    -- The type of the assignment
       , "start"   -- The start date of from when the assignment is active
       , "end"     -- The end data of from when the assignment is inactive
-      , created   -- The time when the assignment is created
+      , "created" -- The time when the assignment is created
       , "evtype"  -- Evaluation type
       ]
   , directories =
@@ -686,7 +776,11 @@ assignmentDirStructure = DirStructure {
   }
 
 submissionDirStructure = DirStructure {
-    files = ["solution", "date"]
+    files = [
+        "solution"
+      , "type"
+      , "date"
+      ]
   , directories = [
         "assignment"
       , "user"
@@ -706,6 +800,7 @@ courseDirStructure = DirStructure {
   , directories =
       [ "groups"       -- Soft links to the groups associated with the course
       , "assignments"  -- Soft links to the assignments associated with the course
+      , "assessments"  -- Soft links to the assessments associated with the course
       , "users"        -- Soft links to the users that are actively registered for the course
       , "admins"       -- Soft links to the users that administrates the course
       , "unsubscribed" -- Soft links to the users that are subscribed and unsubscribed to the course at least once
@@ -723,6 +818,7 @@ groupDirStructure = DirStructure {
       , "course"       -- Soft links to the course that the group is associated with
       , "admins"       -- Soft links to the users that administrated the group
       , "assignments"  -- Soft links to the assignments that are associated with the group
+      , "assessments"  -- Soft links to the assessments that are associated with the group
       , "unsubscribed" -- Soft links to the users that are subscribed and unsubscribed to the group at least once
       ]
   }
@@ -755,7 +851,7 @@ testCaseDirStructure = DirStructure {
 
 evaluationDirStructure = DirStructure {
     files       = ["result", "evaluation"]
-  , directories = ["submission"]
+  , directories = ["submission", "score"]
   }
 
 commentDirStructure = DirStructure {
@@ -780,6 +876,29 @@ testJobDirStructure = DirStructure {
 feedbackDirStructure = DirStructure {
     files = [ "info", "date" ]
   , directories = [ "submission" ]
+  }
+
+assessmentDirStructure = DirStructure {
+    files = [
+        "desc" -- Description of the assessment
+      , "cfg"  -- Evaluation config for the assessement
+      ]
+  , directories = [
+        "course" -- Course of the assessment, or
+      , "group"  -- Group of the assessment
+      , "score"  -- Scores for the assessment, that connects evaluations with users and assessments
+      ]
+  }
+
+scoreDirStructure = DirStructure {
+    files = [
+        "score" -- Score value, a placeholder value
+      ]
+  , directories = [
+        "assessment" -- The assessment for a score
+      , "user"       -- The user who has got the score
+      , "evaluation" -- The evaluation for the user's assessment
+      ]
   }
 
 -- * Encoding
@@ -834,6 +953,8 @@ dirStructures = [
   , testCaseDirStructure
   , testJobDirStructure
   , feedbackDirStructure
+  , assessmentDirStructure
+  , scoreDirStructure
   ]
 
 unitTests = UnitTests [
