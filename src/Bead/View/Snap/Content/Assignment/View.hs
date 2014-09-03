@@ -3,7 +3,6 @@ module Bead.View.Snap.Content.Assignment.View where
 
 import           Control.Arrow ((&&&))
 import qualified Data.Aeson as Aeson
-import qualified Data.ByteString.UTF8 as BsUTF8
 import qualified Data.ByteString.Lazy.Char8 as BsLazy
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid
@@ -490,7 +489,7 @@ newAssignmentContent pd = do
                   keyValue = (id &&& (usersFileCata id))
 
           testCaseText Nothing = Nothing
-          testCaseText (Just (_,tc',_)) = Just . BsUTF8.toString $ tcValue tc'
+          testCaseText (Just (_,tc,_)) = withTestCaseValue (tcValue tc) Just (const Nothing)
 
           testCaseFileName Nothing = return ()
           testCaseFileName (Just (_,tc',_)) = fromString $ tcInfo tc'

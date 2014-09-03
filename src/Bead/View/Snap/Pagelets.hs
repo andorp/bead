@@ -493,7 +493,7 @@ bootStrapHeader s secs = do
                 H.div ! class_ "collapse navbar-collapse navbar-ex1-collapse" $ do
                     ul ! class_ "nav navbar-nav navbar-right" $ do
                         li $ minSecCountdown "hdctd" "--:--" secs
-                        li $ H.a $ fromString . str . user $ s
+                        li $ H.a $ fromString . usernameCata id . user $ s
                         li $ (I18N.i18n msg $ linkToPage profile)
                         li $ (I18N.i18n msg $ linkToPage logout)
   where
