@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Bootstrap, from Twitter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css" rel="stylesheet">
+  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+  <script type="text/javascript" src="http://netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="bootstrap-combobox.js"></script>
+  <link href="bootstrap-combobox.css" rel="stylesheet">
+</head>
+
+<body>
+
+  <script type="text/javascript">
+    //<![CDATA[
+        $(document).ready(function(){
+          $('.combobox').combobox()
+        });
+      //]]>
+  </script>
+
+  <div class="navbar navbar-default navbar-fixed-top">
+    <style>
+      .body{padding-top:70px}
+    </style>
+    <div class="container">
+      <div class="navbar-header">
+        <a class="navbar-brand">BE-AD</a>
+
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <div class="collapse navbar-collapse navbar-ex1-collapse">
+        <ul class="nav navbar-nav navbar-right">
+          <li class="active">
+            <a href="#">Home</a>
+          </li>
+          <li>
+            <a href="#">Profile</a>
+          </li>
+          <li>
+            <a href="#">Logout
+              <br>
+            </a>
+          </li>
+        </ul>
+        <p class="navbar-right navbar-text">Username</p>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12"></div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <hr>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="page-header">
+          <h1>Course Administration
+            <br>
+          </h1>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <h3>New group for the course</h3>
+        <form>
+
+          <div class="form-group">
+            <select class="combobox form-control" style="display:none" id="CourseSelection">
+              <option value="" selected="selected">Select a course</option>
+              <option value="HU">Course #1</option>
+              <option value="EN">Course #2</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="exampleInputEmail1">Name</label>
+            <span class="form-control" id="exampleInputEmail1">Group name</span>
+          </div>
+          <div class="form-group">
+            <label for="exampleInputEmail1">Description</label>
+            <span class="form-control" id="exampleInputEmail1">Group Description</span>
+          </div>
+          <button type="submit" class="btn btn-block btn-default">Create</button>
+          <hr>
+        </form>
+      </div>
+      <div class="col-md-12">
+        <h3>Assign teacher to the group</h3>
+        <form>
+
+          <div class="form-group">
+            <select class="combobox form-control" style="display:none" id="CourseSelection">
+              <option value="" selected="selected">Select a group</option>
+              <option value="HU">Group #1</option>
+              <option value="EN">Group #2</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <select class="combobox form-control" style="display:none" id="CourseSelection">
+              <option value="" selected="selected">Select a teacher</option>
+              <option value="HU">Teacher #1</option>
+              <option value="EN">Teacher #2</option>
+            </select>
+          </div>
+
+          <button type="submit" class="btn btn-block btn-default">Assign</button>
+        </form>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <hr>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <p>The following table(s) contain(s) the course related groups and the username of the group admins.</p>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <table class="table table-bordered table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Group</th>
+              <th>Group Admins</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>Group #1</td>
+              <td>GRP 001</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>Group #2</td>
+              <td>Thornton</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>Group #3</td>
+              <td>GRP 002</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <hr>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</body>
+
+</html>
