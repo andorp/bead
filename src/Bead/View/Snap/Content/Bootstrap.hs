@@ -50,5 +50,8 @@ row = H.div ! class_ "row"
 -- | Creates a bootstrap 12 column
 colMd12 = H.div ! class_ "col-md-12"
 
+-- | Creates a bootstrap page header
+pageHeader = H.div ! class_ "page-header"
+
 -- | Creates a bootstrap table
 table = H.table ! class_ "table table-bordered table-condensed table-hover table-striped"

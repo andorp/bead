@@ -16,6 +16,7 @@ import           Bead.Domain.Entities as E (Role(..))
 import           Bead.View.Snap.Content as Content hiding (userState, table)
 import           Bead.View.Snap.Content.SubmissionTableBS as ST
 
+import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
 import           Bead.View.Snap.Content.Home.Data
 
 homeContent :: HomePageData -> IHtml
@@ -28,18 +29,18 @@ homeContent d = do
   msg <- getI18N
   return $ do
             -- Header
-            H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ H.div ! class_ "page-header" $ do
+            Bootstrap.row $ Bootstrap.colMd12 $ Bootstrap.pageHeader $ do
                 hr
                 h1 . fromString . msg $ Msg_LinkText_Home "Home"
 
             when (isAdmin s) $ do
-              H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ do
+              Bootstrap.row $ Bootstrap.colMd12 $ do
                 h3 . fromString . msg $ Msg_Home_AdminTasks "Administrator Menu"
                 i18n msg $ navigation [administration]
 
             -- Course Administration Menu
             when (courseAdminUser r) $ do
-              H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ do
+              Bootstrap.row $ Bootstrap.colMd12 $ do
                 h3 . fromString . msg $ Msg_Home_CourseAdminTasks "Course Administrator Menu"
                 when (not hasCourse) $ do
                   H.p $ fromString . msg $ Msg_Home_NoCoursesYet
@@ -49,7 +50,7 @@ homeContent d = do
             when ((courseAdminUser r) || (groupAdminUser r)) $ do
               when hasGroup $ do
                 when (not . null $ concatMap submissionTableInfoAssignments $ sTables d) $ do
-                  H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
+                  Bootstrap.row $ Bootstrap.colMd12 $ p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
                     [ "Assignments may be modified by clicking on their identifiers if you have rights for the modification (their names are shown in the tooltip).  "
                     , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
                     , "then clicking on the button."
@@ -57,16 +58,16 @@ homeContent d = do
                 i18n msg $ htmlSubmissionTables d
 
               -- HR
-              H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ hr
+              Bootstrap.row $ Bootstrap.colMd12 $ hr
 
             -- Course Administration links
             when hasCourse $ do
-              H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ h3 $ fromString . msg $ Msg_Home_CourseAdministration "Course Administration"
-              H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ fromString . msg $ Msg_Home_CourseSubmissionTableList_Info $ concat
+              Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString . msg $ Msg_Home_CourseAdministration "Course Administration"
+              Bootstrap.row $ Bootstrap.colMd12 $ fromString . msg $ Msg_Home_CourseSubmissionTableList_Info $ concat
                 [ "Submission table for courses can be found on separate pages, please click on the "
                 , "name of a course."
                 ]
-              H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ ul ! class_ "list-group" $ do
+              Bootstrap.row $ Bootstrap.colMd12 $ ul ! class_ "list-group" $ do
                 let courseList = sortBy (compareHun `on` (courseName . snd)) $ Map.toList $ administratedCourseMap d
                 forM_ courseList $ \(ck, c) ->
                   li ! class_ "list-group-item"
@@ -75,7 +76,7 @@ homeContent d = do
 
             -- Course Administration Button Group
             when (courseAdminUser r && hasCourse) $ do
-              H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
+              Bootstrap.row $ Bootstrap.colMd12 $ p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
                 [ "New groups for courses may be created in the Course Settings menu.  Teachers may be also assigned to "
                 , "each of the groups there as well."
                 ]
@@ -89,21 +90,23 @@ homeContent d = do
 
             -- HR
             when (or [groupAdminUser r && hasGroup, courseAdminUser r && hasCourse]) $ do
-              H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ hr
+              Bootstrap.row $ Bootstrap.colMd12 $ hr
 
             -- Student Menu
             when (not $ isAdmin r) $ do
-              H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ h3 $ fromString $ msg $ Msg_Home_StudentTasks "Student Menu"
+              Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString $ msg $ Msg_Home_StudentTasks "Student Menu"
               i18n msg $ availableAssignments (timeConverter d) (assignments d)
+              i18n msg $ navigation [groupRegistration]
 
             -- End
-            H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ hr
+            Bootstrap.row $ Bootstrap.colMd12 $ hr
 
   where
       administration    = Pages.administration ()
       courseAdmin       = Pages.courseAdmin ()
       courseOverview ck = Pages.courseOverview ck ()
       evaluationTable   = Pages.evaluationTable ()
+      groupRegistration = Pages.groupRegistration ()
       newTestScript     = Pages.newTestScript ()
       setUserPassword   = Pages.setUserPassword ()
       submission     = Pages.submission ()
@@ -128,16 +131,16 @@ htmlSubmissionTables pd = do
       submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
 
 table' m
-  = H.div ! class_ "row"
-  $ H.div ! class_ "col-md-12"
+  = Bootstrap.row
+  $ Bootstrap.colMd12
   $ H.table ! class_ "table table-bordered table-condensed table-striped table-hover" $ m
 
 navigation :: [Pages.Page a b c d] -> IHtml
 navigation links = do
   msg <- getI18N
   return
-    $ H.div ! class_ "row"
-    $ H.div ! class_ "col-md-12"
+    $ Bootstrap.row
+    $ Bootstrap.colMd12
     $ H.div ! class_ "btn-group" -- $ a ! href "#" ! class_ "btn btn-default" $ "Group Registration"
     $ mapM_ (i18n msg . linkButtonToPageBS) links
 
@@ -147,8 +150,8 @@ availableAssignments :: UserTimeConverter -> Maybe [(AssignmentKey, AssignmentDe
 availableAssignments _ Nothing = do
   msg <- getI18N
   return
-    $ H.div ! class_ "row"
-    $ H.div ! class_ "col-md-12"
+    $ Bootstrap.row
+    $ Bootstrap.colMd12
     $ p
     $ fromString
     $ msg $ Msg_Home_HasNoRegisteredCourses "There are no registered courses, register to some."
@@ -156,8 +159,8 @@ availableAssignments _ Nothing = do
 availableAssignments _ (Just []) = do
   msg <- getI18N
   return
-    $ H.div ! class_ "row"
-    $ H.div ! class_ "col-md-12"
+    $ Bootstrap.row
+    $ Bootstrap.colMd12
     $ p
     $ fromString
     $ msg $ Msg_Home_HasNoAssignments "There are no available assignments yet."
@@ -165,8 +168,8 @@ availableAssignments _ (Just []) = do
 availableAssignments timeconverter (Just as) = do
   msg <- getI18N
   return $ do
-    H.div ! class_ "row"
-      $ H.div ! class_ "col-md-12"
+    Bootstrap.row
+      $ Bootstrap.colMd12
       $ p
       $ fromString . msg $ Msg_Home_Assignments_Info $ concat
         [ "Submissions and their evaluations may be accessed by clicking on each assignment's link. "

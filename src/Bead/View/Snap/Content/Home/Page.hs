@@ -11,21 +11,16 @@ module Bead.View.Snap.Content.Home.Page (
 #endif
   ) where
 
-import           Control.Monad.Identity
-import           Data.Function (on)
-import           Data.List (intersperse, sortBy)
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
-import           Data.String (fromString)
 import           Data.Time
 
 import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A (style, id)
+import qualified Text.Blaze.Html5.Attributes as A (id)
 
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as S
-import           Bead.Domain.Entities as E (Role(..))
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Content hiding (userState)
 import qualified Bead.View.UserActions as UA
