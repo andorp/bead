@@ -22,6 +22,7 @@ import           Bead.Domain.Shared.Evaluation (binaryConfig, evConfigCata)
 import           Bead.View.Snap.Fay.HookIds
 import           Bead.View.Snap.Fay.Hooks
 import           Bead.View.Snap.Content hiding (name, option, required)
+import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
 import           Bead.View.Snap.Markdown
 
 import           Bead.View.Snap.Content.Assignment.Data
@@ -32,7 +33,7 @@ newAssignmentContent pd = do
   let hook = assignmentEvTypeHook
   evalConfig <- evaluationConfig (evSelectionId hook)
   return $ do
-            H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ H.div ! class_ "page-header" $ do
+            Bootstrap.row $ Bootstrap.colMd12 $ Bootstrap.pageHeader $ do
                 hr
                 h1 . fromString . msg $ pageDataCata
                    (const5 $ Msg_LinkText_NewCourseAssignment "New Course Assignment")
@@ -44,11 +45,11 @@ newAssignmentContent pd = do
                    (const7 $ Msg_LinkText_ModifyAssignmentPreview "Modify Assignment")
                    pd
 
-            H.div ! class_ "row" $ H.div ! class_ "col-md-12"
+            Bootstrap.row $ Bootstrap.colMd12
               $ H.form ! A.method "post"
               $ H.div ! A.id (fromString $ hookId assignmentForm) $ do
 
-                H.div ! class_ "form-group" $ do
+                Bootstrap.formGroup $ do
                     let assignmentTitleField = fromString $ fieldName assignmentNameField
 
                         assignmentTitlePlaceholder = fromString $
@@ -119,8 +120,8 @@ newAssignmentContent pd = do
                       pd
 
                 -- Opening and closing dates of the assignment
-                H.div ! class_ "form-group" $ do
-                  H.div ! class_ "row" $ do
+                Bootstrap.formGroup $ do
+                  Bootstrap.row $ do
 
                     -- Opening date of the assignment
                     H.div ! class_ "col-md-6" $ do
@@ -163,7 +164,7 @@ newAssignmentContent pd = do
                           assignmentAspect = fromString $ fieldName assignmentAspectField
                           assignmentPwd    = fromString $ fieldName assignmentPwdField
 
-                      H.div ! class_ "form-group" $ do
+                      Bootstrap.formGroup $ do
                           H.div ! class_ "checkbox" $ H.label $ do
                               editable $ checkBox' (fieldName assignmentAspectField)
                                 (Assignment.isBallotBox aas)
@@ -174,7 +175,7 @@ newAssignmentContent pd = do
                                 , "their evaluations until the assignment is closed."
                                 ]
 
-                      H.div ! class_ "form-group" $ do
+                      Bootstrap.formGroup $ do
                           H.div ! class_ "checkbox" $ H.label $ do
                             editable $ checkBox' (fieldName assignmentAspectField)
                               (Assignment.isPasswordProtected aas)
@@ -187,7 +188,7 @@ newAssignmentContent pd = do
                                 , "submission for the student."
                                 ]
 
-                      H.div ! class_ "form-group" $ do
+                      Bootstrap.formGroup $ do
                           H.label $ fromString $ msg $ Msg_NewAssignment_Password "Password"
                           editable $ input ! class_ "form-control"
                                      ! name assignmentPwd ! type_ "text"
@@ -205,7 +206,7 @@ newAssignmentContent pd = do
                   pd
 
                 -- Assignment Description
-                H.div ! class_ "form-group" $ do
+                Bootstrap.formGroup $ do
                     let assignmentDesc = fromString $ fieldName assignmentDescField
                     H.label ! for assignmentDesc $ fromString . msg $ Msg_NewAssignment_Description "Description"
                     editOrReadOnly pd $ textarea ! class_ "form-control" ! A.id assignmentDesc ! rows "20"
@@ -241,7 +242,7 @@ newAssignmentContent pd = do
 
                 -- Preview of the assignment
                 let assignmentPreview a = do
-                      H.div ! class_ "form-group" $ do
+                      Bootstrap.formGroup $ do
                         H.label $ fromString $ msg $ Msg_NewAssignment_AssignmentPreview "Assignment Preview"
                         H.div # assignmentTextDiv $ markdownToHtml $ Assignment.desc a
 
@@ -256,15 +257,15 @@ newAssignmentContent pd = do
                   pd
 
                 -- Assignment Test Script Selection
-                H.div ! class_ "form-group" $ do
+                Bootstrap.formGroup $ do
                       testScriptSelection msg pd
 
                 -- Test Case area
-                H.div ! class_ "form-group" $ do
+                Bootstrap.formGroup $ do
                     testCaseArea msg pd
 
                 -- Evaluation config
-                H.div ! class_ "form-group" $ do
+                Bootstrap.formGroup $ do
                   let previewAndCommitForm cfg = do
                         evalSelectionDiv hook
                         hiddenInputWithId (evHiddenValueId hook) (toFayJSON cfg)
@@ -292,7 +293,7 @@ newAssignmentContent pd = do
                   pd
 
                 -- Submit buttons
-                onlyOnEdit pd $ H.div ! class_ "row" $ do
+                onlyOnEdit pd $ Bootstrap.row $ do
                    H.div ! class_ "col-md-6" $
                       button ! type_ "submit"
                              ! class_ "btn btn-block btn-default"
@@ -304,7 +305,7 @@ newAssignmentContent pd = do
                               ! onclick (fromString $ concat ["javascript: form.action='", routeOf $ page pd, "';"])
                               $ fromString . msg $ Msg_NewAssignment_SaveButton "Commit"
 
-            H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ hr
+            Bootstrap.row $ Bootstrap.colMd12 $ hr
             H.script ! type_ "text/javascript" $ "//\n        $(document).ready(function(){\n          $('.combobox').combobox()\n        });\n      //"
 
     where
