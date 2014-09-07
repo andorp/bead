@@ -108,14 +108,14 @@ newAssignmentContent pd = do
                       (\_tz _k a _ts _fs _tc _tm -> Assignment.start a)
                       pd
 
-                    endDateStringValue = maybe "" (showDate . date) $ pageDataCata
-                      (\_tz _t _c _ts _fs -> Nothing)
-                      (\_tz _t _g _ts _fs -> Nothing)
-                      (\_tz _k a _ts _fs _tc -> Just $ Assignment.end a)
-                      (\_tz _k a _ts _tc -> Just $ Assignment.end a)
-                      (\_tz _t _c _ts _fs a _tc  -> Just $ Assignment.end a)
-                      (\_tz _t _g _ts _fs a _tc  -> Just $ Assignment.end a)
-                      (\_tz _k a _ts _fs _tc _tm -> Just $ Assignment.end a)
+                    endDateStringValue = showDate $ date $ pageDataCata
+                      (\_tz t _c _ts _fs -> t)
+                      (\_tz t _g _ts _fs -> t)
+                      (\_tz _k a _ts _fs _tc -> Assignment.end a)
+                      (\_tz _k a _ts _tc -> Assignment.end a)
+                      (\_tz _t _c _ts _fs a _tc  -> Assignment.end a)
+                      (\_tz _t _g _ts _fs a _tc  -> Assignment.end a)
+                      (\_tz _k a _ts _fs _tc _tm -> Assignment.end a)
                       pd
 
                 -- Opening and closing dates of the assignment
