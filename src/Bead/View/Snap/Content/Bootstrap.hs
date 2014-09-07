@@ -14,10 +14,12 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 import           Bead.View.Snap.Content (selectionWithDefAndAttr)
 
+formGroup = H.div ! class_ "form-group"
+
 -- | Creates a form control selection with the given parameter name, a selector
 -- function which determines the selected value, and possible values
 selection paramName selector values =
-  H.div ! class_ "form-group" $ selectionWithDefAndAttr
+  formGroup $ selectionWithDefAndAttr
     paramName
     [class_ "combobox form-control", A.style "display:none", A.required ""]
     selector
@@ -35,7 +37,7 @@ comboboxScript
 
 -- | Creates a text input with the given name as id, a given label and a placeholder text
 textInput paramName labelText placeholderText =
-  H.div ! class_ "form-group" $ do
+  formGroup $ do
     H.label ! for (fromString paramName) $ (fromString labelText)
     H.input ! class_ "form-control"
             ! type_ "text"
@@ -43,6 +45,30 @@ textInput paramName labelText placeholderText =
             ! A.name (fromString paramName)
             ! A.id (fromString paramName)
             ! A.placeholder (fromString placeholderText)
+
+-- | Creates a text area input with the given name as id, a given label
+textArea paramName labelText html =
+  formGroup $ do
+    H.label ! for (fromString paramName) $ (fromString labelText)
+    H.textarea ! class_ "form-control"
+               ! A.required ""
+               ! A.rows "20"
+               ! A.id (fromString paramName)
+               ! A.name (fromString paramName) $ html
+
+-- | Creates a radio button group, with a given values and labels, the parameter name
+-- as numbered ids. The first value is the primary active
+radioButtonGroup paramName valuesAndLabel =
+  H.div ! class_ "btn-group" $
+    mapM_ button ([1..] `zip` valuesAndLabel)
+  where
+    button (n,(v,l)) =
+      H.label ! class_ "btn btn-primary" $ do
+        H.input ! type_ "radio"
+                ! name (fromString paramName)
+                ! A.id (fromString (paramName ++ show n))
+                ! A.value (fromString v)
+        fromString l
 
 -- | Creates a bootstrap row
 row = H.div ! class_ "row"
