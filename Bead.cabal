@@ -60,6 +60,13 @@ Executable Bead
   GHC-Options: -threaded -with-rtsopts=-N2 -O2
   if flag(SQLite)
     CPP-Options: -DSQLITE
+    Build-Depends:
+      persistent-sqlite >= 1.3,
+      persistent-template >= 1.3,
+      resourcet >= 1.1
+  if flag(Tests)
+    Build-Depends:
+      themis >= 0.4.0.0
   Build-Depends:
     aeson,
     async,
@@ -85,13 +92,10 @@ Executable Bead
     monad-logger >= 0.3,
     old-locale,
     pandoc,
-    persistent-sqlite >= 1.3,
-    persistent-template >= 1.3,
     pqueue >= 1.2.1 && < 2.0,
     mtl,
     random,
     regex-tdfa,
-    resourcet >= 1.1,
     snap,
     snap-core,
     snap-server,
@@ -101,7 +105,6 @@ Executable Bead
     syb,
     temporary,
     text,
-    themis >= 0.4.0.0,
     time,
     timezone-olson >= 0.1.4,
     timezone-series >= 0.1.2,
@@ -110,22 +113,25 @@ Executable Bead
     unix,
     xmlhtml
 
-
 Executable BeadUnitTest
   if flag(Tests)
     Buildable: True
+    Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
+                   transformers, HUnit, test-framework, test-framework-hunit,
+                   test-framework-quickcheck2, QuickCheck, unix, deepseq
   else
     Buildable: False
   GHC-Options: -fhpc -hpcdir dist/build/BeadUnitTest/Mix/
   if flag(SQLite)
     CPP-Options: -DTEST -DSQLITE
+    Build-Depends:
+      persistent-sqlite >= 1.3,
+      persistent-template >= 1.3,
+      resourcet >= 1.1
   else
     CPP-Options: -DTEST
   HS-Source-Dirs: src, snaplets/fay/src, test
   Main-is: TestMain.hs
-  Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
-                 transformers, HUnit, test-framework, test-framework-hunit,
-                 test-framework-quickcheck2, QuickCheck, unix, deepseq
 
 --Executable BeadEnd2EndTests
 --  if flag(Tests)
