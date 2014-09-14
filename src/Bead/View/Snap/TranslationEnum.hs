@@ -103,6 +103,7 @@ translationList =
   , Msg_NewAssignment_BallotBox ()
   , Msg_NewAssignment_PasswordProtected ()
   , Msg_NewAssignment_Password ()
+  , Msg_NewAssignment_EvaluationType ()
   , Msg_NewAssignment_BinaryEvaluation ()
   , Msg_NewAssignment_PercentageEvaluation ()
 

@@ -87,8 +87,9 @@ DictionaryFile {
     , Msg_NewAssignment_BallotBox { trans = "Urna" }
     , Msg_NewAssignment_PasswordProtected { trans = "Jelszóvédett" }
     , Msg_NewAssignment_Password { trans = "Jelszó:" }
-    , Msg_NewAssignment_BinaryEvaluation { trans = "Kétértékű kiértékelés" }
-    , Msg_NewAssignment_PercentageEvaluation { trans = "Százalékos kiértékelés: " }
+    , Msg_NewAssignment_EvaluationType { trans = "Kiértékelés típusa" }
+    , Msg_NewAssignment_BinaryEvaluation { trans = "Kétértékű" }
+    , Msg_NewAssignment_PercentageEvaluation { trans = "Százalékos" }
     , Msg_GroupRegistration_RegisteredCourses { trans = "Felvett csoportok" }
     , Msg_GroupRegistration_SelectGroup { trans = "Tárgy és csoport kiválasztása" }
     , Msg_GroupRegistration_NoRegisteredCourses { trans = "Nincsenek felvett tárgyak.  Válasszunk egy  csoportot!" }

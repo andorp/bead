@@ -432,7 +432,9 @@ newAssignmentContent tz pd = do
               multiActionPostForm (hookId assignmentForm)
                 [ ((routeOf . pagePreview $ pd), (fromString . msg $ Msg_NewAssignment_PreviewButton "Preview"))
                 , ((routeOf . page $ pd),        (fromString . msg $ Msg_NewAssignment_SaveButton "Commit"))
-                ] $ do evalSelectionDiv hook
+                ] $ do evaluationType msg
+                       evalSelectionDiv hook
+                       -- TODO: Only allow modificiation of evaluation type until the first submission is submitted.
                        hiddenInputWithId (evHiddenValueId hook) (toFayJSON cfg)
                        evalConfig
 
@@ -487,13 +489,12 @@ newAssignmentContent tz pd = do
                  fromString . msg $ Msg_NewAssignment_Password "Password:"
                  editable $ textInput (fieldName assignmentPwdField) 20 pwd ! asgField
 
+      evaluationType msg = do
+        H.b (fromString . msg $ Msg_NewAssignment_EvaluationType "Evaluation Type")
+
       showEvaluationType msg = H.div . evConfigCata
         (fromString . msg $ Msg_NewAssignment_BinaryEvaluation "Binary Evaluation")
-        (\p -> do fromString . msg $ Msg_NewAssignment_PercentageEvaluation "Pass Limit: "
-                  fromString ((show $ pct p) ++ " %"))
-          where
-            pct :: Double -> Int
-            pct = floor . (100 *)
+        (const . fromString . msg $ Msg_NewAssignment_PercentageEvaluation "Percentage Evaluation")
 
       editOrReadonly = pageDataCata
         (const5 id)
