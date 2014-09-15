@@ -73,6 +73,7 @@ regTimeZoneField = RegComp "reg_time_zone"
 newtype SubmissionField = SubmissionField { sfFieldName :: String }
 
 submissionTextField = SubmissionField "submission-text"
+submissionFileField = SubmissionField "submission-file"
 submissionKeyField  = SubmissionField "submission-key"
 submissionPwdField  = SubmissionField "submission-pwd"
 submissionPwdAgainField = SubmissionField "submission-pwda"

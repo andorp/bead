@@ -45,12 +45,10 @@ data SubmissionDesc = SubmissionDesc {
   , eStudent  :: String
   , eUsername :: Username
   , eSolution :: String
-  , eConfig   :: EvConfig
   , eAssignmentKey   :: AssignmentKey
+  , eAssignment      :: Assignment
   , eAssignmentDate  :: UTCTime
   , eSubmissionDate  :: UTCTime
-  , eAssignmentTitle :: String
-  , eAssignmentDesc  :: String
   , eComments :: [Comment]
   , eFeedbacks :: [Feedback]
   }

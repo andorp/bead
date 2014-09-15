@@ -201,6 +201,7 @@ assignmentEvField    = AssignmentField    "asg-ev"
 assignmentTestCaseField = AssignmentField "asg-testcase"
 assignmentTestScriptField = AssignmentField "asg-testscript"
 assignmentUsersFileField = AssignmentField "asg-usersfield"
+assignmentSubmissionTypeField = AssignmentField "asg-subt"
 
 instance SnapFieldName AssignmentField where
   fieldName = fromString . aFieldName
@@ -411,7 +412,7 @@ fieldList = map fieldName $ join [
   , SFN delUserFromCourseField, SFN delUserFromGroupField, SFN unsubscribeFromCourseSubmitBtn
   , SFN fileUploadField, SFN fileUploadSubmit, SFN usersFileTableName
   , SFN assignmentTestScriptField, SFN assignmentUsersFileField, SFN assignmentPwdField
-  , SFN submissionPwdAgainField
+  , SFN submissionPwdAgainField, SFN assignmentSubmissionTypeField
 
   , SFN testScriptNameField, SFN testScriptTypeField, SFN testScriptDescField
   , SFN testScriptNotesField, SFN testScriptScriptField, SFN testScriptSaveButton

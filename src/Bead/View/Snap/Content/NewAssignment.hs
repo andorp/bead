@@ -425,6 +425,13 @@ newAssignmentContent tz pd = do
                 pd
         H.br
         courseOrGroupName pd
+      H.p $ do
+        submissionType msg
+        selectionWithDefault (fieldName assignmentSubmissionTypeField) currentSubmissionType
+          [ (txtSubmission, fromString . msg $ Msg_NewAssignment_TextSubmission "Text")
+          , (zipSubmission, fromString . msg $ Msg_NewAssignment_ZipSubmission "Zip file")
+          ] ! asgField
+      H.p $ do
         hiddenKeyField pd
         testScriptSelection msg pd
 
@@ -448,6 +455,8 @@ newAssignmentContent tz pd = do
           (\_timezone _key asg _tsType _files _testcase _tcmod -> previewAndCommitForm (Assignment.evType asg))
           pd
     where
+      aas = fromMaybe Assignment.emptyAspects . amap Assignment.aspects Nothing $ pd
+
       -- Converts a given value to a string that represents a JSON acceptable string
       -- for the Fay client side
       toFayJSON = BsLazy.unpack . Aeson.encode . showToFay
@@ -472,8 +481,7 @@ newAssignmentContent tz pd = do
           editable = True
           readOnly = False
           ts ed = H.div $ do
-                 let aas = fromMaybe Assignment.emptyAspects . amap Assignment.aspects Nothing $ pd
-                     pwd = if Assignment.isPasswordProtected aas
+                 let pwd = if Assignment.isPasswordProtected aas
                              then Just (Assignment.getPassword aas)
                              else Nothing
                      editable x = if ed then x else (x ! A.readonly "")
@@ -495,6 +503,16 @@ newAssignmentContent tz pd = do
       showEvaluationType msg = H.div . evConfigCata
         (fromString . msg $ Msg_NewAssignment_BinaryEvaluation "Binary Evaluation")
         (const . fromString . msg $ Msg_NewAssignment_PercentageEvaluation "Percentage Evaluation")
+
+      [txtSubmission, zipSubmission] = [Assignment.TextSubmission, Assignment.ZipSubmission]
+
+      currentSubmissionType =
+        if Assignment.isZippedSubmissions aas
+          then zipSubmission
+          else txtSubmission
+
+      submissionType msg = do
+        H.b (fromString . msg $ Msg_NewAssignment_SubmissionType "Submission Type")
 
       editOrReadonly = pageDataCata
         (const5 id)

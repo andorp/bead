@@ -99,6 +99,9 @@ data Translation a
   | Msg_NewAssignment_EvaluationType { trans :: a }
   | Msg_NewAssignment_BinaryEvaluation { trans :: a }
   | Msg_NewAssignment_PercentageEvaluation { trans :: a }
+  | Msg_NewAssignment_SubmissionType { trans :: a }
+  | Msg_NewAssignment_TextSubmission { trans :: a }
+  | Msg_NewAssignment_ZipSubmission { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }
@@ -130,6 +133,11 @@ data Translation a
   | Msg_Submission_Password { trans :: a }
   | Msg_Submission_PasswordAgain { trans :: a }
   | Msg_Submission_Info_Password { trans :: a }
+  | Msg_Submission_Info_File { trans :: a }
+  | Msg_Submission_File_NoFileReceived { trans :: a }
+  | Msg_Submission_File_PolicyFailure { trans :: a }
+  | Msg_Submission_File_InvalidFile { trans :: a }
+  | Msg_Submission_File_InternalError { trans :: a }
 
   | Msg_Comments_Title { trans :: a }
   | Msg_Comments_SubmitButton { trans :: a }
@@ -146,7 +154,11 @@ data Translation a
   | Msg_Evaluation_Group { trans :: a }
   | Msg_Evaluation_Student { trans :: a }
   | Msg_Evaluation_SaveButton { trans :: a }
-  | Msg_Evaluation_Submited_Solution { trans :: a }
+  | Msg_Evaluation_Submitted_Solution { trans :: a }
+  | Msg_Evaluation_Submitted_Solution_Text_Info { trans :: a }
+  | Msg_Evaluation_Submitted_Solution_Text_Link { trans :: a }
+  | Msg_Evaluation_Submitted_Solution_Zip_Info { trans :: a }
+  | Msg_Evaluation_Submitted_Solution_Zip_Link { trans :: a }
   | Msg_Evaluation_Accepted { trans :: a }
   | Msg_Evaluation_Rejected { trans :: a }
   | Msg_Evaluation_New_Comment { trans :: a }
@@ -160,6 +172,10 @@ data Translation a
   | Msg_SubmissionDetails_Deadline { trans :: a }
   | Msg_SubmissionDetails_Description { trans :: a }
   | Msg_SubmissionDetails_Solution { trans :: a }
+  | Msg_SubmissionDetails_Solution_Text_Info { trans :: a }
+  | Msg_SubmissionDetails_Solution_Text_Link { trans :: a }
+  | Msg_SubmissionDetails_Solution_Zip_Info { trans :: a }
+  | Msg_SubmissionDetails_Solution_Zip_Link { trans :: a }
   | Msg_SubmissionDetails_Evaluation { trans :: a }
   | Msg_SubmissionDetails_NewComment { trans :: a }
   | Msg_SubmissionDetails_SubmitComment { trans :: a }

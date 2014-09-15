@@ -488,7 +488,7 @@ submissionDescTest = do
     maybe (return ()) (flip assertNonEmpty "Group name was empty") $ eGroup desc
     assertNonEmpty (eStudent desc) "Student name was empty"
     assertNonEmpty (eSolution desc) "Solution was empty"
-    assertNonEmpty (eAssignmentTitle desc) "Assignment title was empty"
+    assertNonEmpty (Assignment.name . eAssignment $ desc) "Assignment title was empty"
     assertEmpty (eComments desc) "The comment list was not empty"
 
 -- Every assignment must have a course name and the

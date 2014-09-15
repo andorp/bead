@@ -130,9 +130,13 @@ instance GetValueHandler Assignment where
     when (endDate < startDate) . throwError $ strMsg "A feladat kezdetének dátuma később van mint a feladat vége"
     pwd <- getParameter (stringParameter (fieldName assignmentPwdField) "Jelszó")
     asp <- Assignment.aspectsFromList <$> getJSONParameters (fieldName assignmentAspectField) "Aspect parameter"
-    let aspects = if Assignment.isPasswordProtected asp
-                    then Assignment.setPassword pwd asp
-                    else asp
+    stype <- getJSONParam (fieldName assignmentSubmissionTypeField) "Submission type"
+    let asp' = if stype == Assignment.TextSubmission
+                 then Assignment.clearZippedSubmissions asp
+                 else Assignment.setZippedSubmissions asp
+    let aspects = if Assignment.isPasswordProtected asp'
+                    then Assignment.setPassword pwd asp'
+                    else asp'
     Assignment.assignmentAna
       (getParameter (stringParameter (fieldName assignmentNameField) "Név"))
       (getParameter (stringParameter (fieldName assignmentDescField) "Leírás"))

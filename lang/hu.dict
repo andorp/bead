@@ -90,6 +90,9 @@ DictionaryFile {
     , Msg_NewAssignment_EvaluationType { trans = "Kiértékelés típusa" }
     , Msg_NewAssignment_BinaryEvaluation { trans = "Kétértékű" }
     , Msg_NewAssignment_PercentageEvaluation { trans = "Százalékos" }
+    , Msg_NewAssignment_SubmissionType { trans = "Beküldés típusa" }
+    , Msg_NewAssignment_TextSubmission { trans = "Szöveges" }
+    , Msg_NewAssignment_ZipSubmission { trans = "Zip állomány" }
     , Msg_GroupRegistration_RegisteredCourses { trans = "Felvett csoportok" }
     , Msg_GroupRegistration_SelectGroup { trans = "Tárgy és csoport kiválasztása" }
     , Msg_GroupRegistration_NoRegisteredCourses { trans = "Nincsenek felvett tárgyak.  Válasszunk egy  csoportot!" }
@@ -118,6 +121,11 @@ DictionaryFile {
     , Msg_Submission_Password { trans = "A feladat jelszava:" }
     , Msg_Submission_PasswordAgain { trans = "A feladat jelszava újra:" }
     , Msg_Submission_Info_Password { trans = "Ezt a feladatot csak a jelszó megadásával lehet beküldeni." }
+    , Msg_Submission_Info_File { trans = "Válasszuk ki a beadni kívánt, .zip kiterjesztésű állományt!  A maximális méret kilobyte-ban: " }
+    , Msg_Submission_File_NoFileReceived { trans = "Nem érkezett állomány!" }
+    , Msg_Submission_File_PolicyFailure { trans = "A feltöltendő állomány nem felel meg a korlátozásoknak!" }
+    , Msg_Submission_File_InvalidFile { trans = "Az állomány kiterjesztése nem megfelelő!" }
+    , Msg_Submission_File_InternalError { trans = "Valamilyen hiba történt feltöltés közben." }
     , Msg_Comments_Title { trans = "Hozzászólások" }
     , Msg_Comments_SubmitButton { trans = "Beküld" }
     , Msg_Comments_AuthorTestScript_Private { trans = "Automata tesztelői komment (csak az oktató láthatja)" }
@@ -132,7 +140,11 @@ DictionaryFile {
     , Msg_Evaluation_Group { trans = "Csoport: " }
     , Msg_Evaluation_Student { trans = "Hallgató: " }
     , Msg_Evaluation_SaveButton { trans = "Beküld" }
-    , Msg_Evaluation_Submited_Solution { trans = "Beadott megoldás" }
+    , Msg_Evaluation_Submitted_Solution { trans = "Beadott megoldás" }
+    , Msg_Evaluation_Submitted_Solution_Text_Info { trans = "A megoldás letölthető szöveges állományként a linkre kattintva." }
+    , Msg_Evaluation_Submitted_Solution_Text_Link { trans = "Letöltés" }
+    , Msg_Evaluation_Submitted_Solution_Zip_Info { trans = "A megoldás tömörített állományként lett feltöltve, ezért nem jeleníthető meg.  A linkre kattintva viszont letölthető." }
+    , Msg_Evaluation_Submitted_Solution_Zip_Link { trans = "Letöltés" }
     , Msg_Evaluation_Accepted { trans = "Elfogadott" }
     , Msg_Evaluation_Rejected { trans = "Elutasított" }
     , Msg_Evaluation_New_Comment { trans = "Új hozzászólás" }
@@ -145,6 +157,10 @@ DictionaryFile {
     , Msg_SubmissionDetails_Deadline { trans = "Határidő:" }
     , Msg_SubmissionDetails_Description { trans = "A feladat szövege" }
     , Msg_SubmissionDetails_Solution { trans = "A beadott megoldás" }
+    , Msg_SubmissionDetails_Solution_Text_Info { trans = "A megoldás letölthető szöveges állományként a linkre kattintva." }
+    , Msg_SubmissionDetails_Solution_Text_Link { trans = "Letöltés" }
+    , Msg_SubmissionDetails_Solution_Zip_Info { trans = "A megoldás tömörített állományként lett feltöltve, ezért nem jeleníthető meg.  A linkre kattintva viszont letölthető." }
+    , Msg_SubmissionDetails_Solution_Zip_Link { trans = "Letöltés" }
     , Msg_SubmissionDetails_Evaluation { trans = "Értékelés" }
     , Msg_SubmissionDetails_NewComment { trans = "Új hozzászólás" }
     , Msg_SubmissionDetails_SubmitComment { trans = "Beküld" }
