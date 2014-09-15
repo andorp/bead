@@ -88,6 +88,14 @@ isUserSubmission u sk = do
   ak <- assignmentOfSubmission sk
   isUsersAssignment u ak
 
+-- Returns True if the given user submitted the given submission or
+-- administrates a course or group that the submission is submitted
+isAccessibleSubmission :: Username -> SubmissionKey -> Persist Bool
+isAccessibleSubmission u sk = do
+  owns <- isUserSubmission u sk
+  admined <- isAdministratedSubmission u sk
+  return $ or [owns, admined]
+
 -- * Helpers
 
 -- Returns a function that returns True if the user administrates

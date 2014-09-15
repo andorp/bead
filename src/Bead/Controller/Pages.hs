@@ -26,6 +26,7 @@ data ViewPage a
   | UserSubmissions a
   | Administration a
   | CourseAdmin a
+  | GetSubmission SubmissionKey a
   deriving (Eq, Ord, Show, Functor)
 
 viewPageCata
@@ -39,6 +40,7 @@ viewPageCata
   userSubmissions
   administration
   courseAdmin
+  getSubmission
   p = case p of
     Login a -> login a
     Logout a -> logout a
@@ -50,6 +52,7 @@ viewPageCata
     UserSubmissions a -> userSubmissions a
     Administration a -> administration a
     CourseAdmin a -> courseAdmin a
+    GetSubmission sk a -> getSubmission sk a
 
 viewPageValue :: ViewPage a -> a
 viewPageValue = viewPageCata
@@ -63,6 +66,7 @@ viewPageValue = viewPageCata
   id -- userSubmissions
   id -- administration
   id -- courseAdmin
+  cid -- getSubmisson
   where
     cid = const id
 
@@ -262,6 +266,7 @@ submissionList          = View . SubmissionList
 userSubmissions         = View . UserSubmissions
 administration          = View . Administration
 courseAdmin             = View . CourseAdmin
+getSubmission sk        = View . GetSubmission sk
 
 newGroupAssignmentPreview gk  = UserView . NewGroupAssignmentPreview gk
 newCourseAssignmentPreview ck = UserView . NewCourseAssignmentPreview ck
@@ -328,6 +333,7 @@ pageCata
   deleteUsersFromCourse
   deleteUsersFromGroup
   unsubscribeFromCourse
+  getSubmission
   p = case p of
     (View (Login a)) -> login a
     (View (Logout a)) -> logout a
@@ -364,6 +370,7 @@ pageCata
     (Modify (DeleteUsersFromCourse ck a)) -> deleteUsersFromCourse ck a
     (Modify (DeleteUsersFromGroup gk a)) -> deleteUsersFromGroup gk a
     (Modify (UnsubscribeFromCourse gk a)) -> unsubscribeFromCourse gk a
+    (View (GetSubmission sk a)) -> getSubmission sk a
 
 -- Constants that attached each of the page constructor
 constantsP
@@ -402,6 +409,7 @@ constantsP
   deleteUsersFromCourse_
   deleteUsersFromGroup_
   unsubscribeFromCourse_
+  getSubmission_
   = pageCata
       (c $ login login_)
       (c $ logout logout_)
@@ -438,6 +446,7 @@ constantsP
       (\ck _ -> deleteUsersFromCourse ck deleteUsersFromCourse_)
       (\gk _ -> deleteUsersFromGroup gk deleteUsersFromGroup_)
       (\gk _ -> unsubscribeFromCourse gk unsubscribeFromCourse_)
+      (\sk _ -> getSubmission sk getSubmission_)
   where
     c = const
 
@@ -478,6 +487,7 @@ liftsP
   deleteUsersFromCourse_
   deleteUsersFromGroup_
   unsubscribeFromCourse_
+  getSubmission_
   = pageCata
       (login . login_)
       (logout . logout_)
@@ -514,6 +524,7 @@ liftsP
       (\ck a -> deleteUsersFromCourse ck (deleteUsersFromCourse_ ck a))
       (\gk a -> deleteUsersFromGroup gk (deleteUsersFromGroup_ gk a))
       (\gk a -> unsubscribeFromCourse gk (unsubscribeFromCourse_ gk a))
+      (\sk a -> getSubmission sk (getSubmission_ sk a))
 
 isLogin (View (Login _)) = True
 isLogin _ = False
@@ -620,6 +631,9 @@ isDeleteUsersFromGroup _ = False
 isUnsubscribeFromCourse (Modify (UnsubscribeFromCourse _ _)) = True
 isUnsubscribeFromCourse _ = False
 
+isGetSubmission (View (GetSubmission _ _)) = True
+isGetSubmission _ = False
+
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
 isPage :: [Page a b c d -> Bool] -> Page a b c d -> Bool
@@ -639,6 +653,7 @@ regularPages = [
   , isSubmissionList
   , isSubmissionDetails
   , isGroupRegistration
+  , isGetSubmission
   ]
 
 groupAdminPages = [

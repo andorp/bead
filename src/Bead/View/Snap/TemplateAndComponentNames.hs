@@ -180,6 +180,7 @@ menuId = P.pageCata
   (c2 "link-delete-users-from-course")
   (c2 "link-delete-users-from-group")
   (c2 "link-unsubscribe-from-course")
+  (c2 "link-get-submission")
     where
       c = const
       c2 = c . const

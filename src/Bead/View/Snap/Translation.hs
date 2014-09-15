@@ -392,6 +392,7 @@ data Translation a
   | Msg_UserStoryError_NonAdministratedSubmission { trans :: a }
   | Msg_UserStoryError_NonAdministratedTestScript { trans :: a }
   | Msg_UserStoryError_NonCommentableSubmission { trans :: a }
+  | Msg_UserStoryError_NonAccessibleSubmission { trans :: a }
 
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 
@@ -431,6 +432,7 @@ data Translation a
   | Msg_LinkText_DeleteUsersFromCourse { trans :: a }
   | Msg_LinkText_DeleteUsersFromGroup { trans :: a }
   | Msg_LinkText_UnsubscribeFromCourse { trans :: a }
+  | Msg_LinkText_GetSubmission { trans :: a }
 
   | Msg_TestScriptTypeSimple { trans :: a }
   | Msg_TestScriptTypeZipped { trans :: a }

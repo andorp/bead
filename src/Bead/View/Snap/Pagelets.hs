@@ -344,6 +344,7 @@ linkText = P.pageCata
   (c2 $ Msg_LinkText_DeleteUsersFromCourse "Remove Students")
   (c2 $ Msg_LinkText_DeleteUsersFromGroup "Remove Students")
   (c2 $ Msg_LinkText_UnsubscribeFromCourse "Unregister")
+  (c2 $ Msg_LinkText_GetSubmission "Download Submission")
   where
     c = const
     c2 = c . const

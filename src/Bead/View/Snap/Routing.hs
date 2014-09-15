@@ -301,6 +301,7 @@ routeToPageMap = Map.fromList [
   , (deleteUsersFromCoursePath , \ps -> P.deleteUsersFromCourse <$> courseKey ps <*> unit)
   , (deleteUsersFromGroupPath , \ps -> P.deleteUsersFromGroup <$> groupKey ps <*> unit)
   , (unsubscribeFromCoursePath , \ps -> P.unsubscribeFromCourse <$> groupKey ps <*> unit)
+  , (getSubmissionPath, \ps -> P.getSubmission <$> submissionKey ps <*> unit)
   ] where
       j = const . Just
       unit = return ()

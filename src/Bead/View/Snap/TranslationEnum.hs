@@ -394,6 +394,7 @@ translationList =
   , Msg_UserStoryError_NonAdministratedSubmission ()
   , Msg_UserStoryError_NonAdministratedTestScript ()
   , Msg_UserStoryError_NonCommentableSubmission ()
+  , Msg_UserStoryError_NonAccessibleSubmission ()
 
   , Msg_UserActions_ChangedUserDetails ()
 
@@ -433,6 +434,7 @@ translationList =
   , Msg_LinkText_DeleteUsersFromCourse ()
   , Msg_LinkText_DeleteUsersFromGroup ()
   , Msg_LinkText_UnsubscribeFromCourse ()
+  , Msg_LinkText_GetSubmission ()
 
   , Msg_TestScriptTypeSimple ()
   , Msg_TestScriptTypeZipped ()

@@ -27,6 +27,7 @@ import Bead.View.Snap.Content.UserSubmissions
 import Bead.View.Snap.Content.SetUserPassword
 import Bead.View.Snap.Content.NewTestScript
 import Bead.View.Snap.Content.UploadFile
+import Bead.View.Snap.Content.GetSubmission
 
 #ifdef TEST
 import Bead.Invariants (Invariants(..))
@@ -69,6 +70,7 @@ pageContent = Pages.constantsP
   deleteUsersFromCourse
   deleteUsersFromGroup
   unsubscribeFromCourse
+  getSubmission
   where
     nullViewHandler = ViewHandler (return ())
 

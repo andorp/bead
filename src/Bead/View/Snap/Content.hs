@@ -31,6 +31,7 @@ module Bead.View.Snap.Content (
   , HandlerError
   , UserState(..)
   , userStateCata
+  , usernameInState
   , ReqParam(..)
   , RequestParam(..)
   , ReqParamValue(..)
@@ -76,7 +77,7 @@ import Snap hiding (Config(..), empty, get, route, (<$>))
 import Snap.Blaze (blaze)
 
 import Bead.Controller.Pages
-import Bead.Controller.ServiceContext (UserState(..), userStateCata)
+import Bead.Controller.ServiceContext
 import Bead.Domain.Entities hiding (name)
 import Bead.Domain.Entity.Comment
 import Bead.Domain.Func

@@ -360,6 +360,7 @@ DictionaryFile {
     , Msg_UserStoryError_NonAdministratedTestScript { trans = "Nem vagy oktatója a teszt szkript kurzusának!" }
     , Msg_UserStoryError_NonCommentableSubmission { trans = "Nem kommentelhető feladat!" }
     , Msg_UserActions_ChangedUserDetails { trans = "A felhasználói beállításai megváltoztak!" }
+    , Msg_UserStoryError_NonAccessibleSubmission { trans = "A megoldás nem hozzád tartozik!" }
     , Msg_LinkText_Login { trans = "Bejelentkezés" }
     , Msg_LinkText_Logout { trans = "Kijelentkezés" }
     , Msg_LinkText_Home { trans = "Főoldal" }
@@ -396,6 +397,7 @@ DictionaryFile {
     , Msg_LinkText_DeleteUsersFromCourse { trans = "Hallgatók törlése" }
     , Msg_LinkText_DeleteUsersFromGroup { trans = "Hallgatók törlése" }
     , Msg_LinkText_UnsubscribeFromCourse { trans = "Leiratkozás" }
+    , Msg_LinkText_GetSubmission { trans = "A megoldás letöltése" }
     , Msg_Domain_EvalPassed { trans = "Elfogadva" }
     , Msg_Domain_EvalFailed { trans = "Elutasítva" }
     , Msg_Domain_EvalNoResultError { trans = "Ismeretlen hiba folyamán nem található értékelés!" }

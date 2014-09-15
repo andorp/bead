@@ -24,7 +24,6 @@ import qualified Control.Monad.Error  as CME
 import qualified Control.Monad.Reader as CMR
 import           Control.Monad.Trans
 import           Prelude hiding (log, userError)
-import qualified Data.ByteString.UTF8  as BsUTF8 (fromString)
 import           Data.Hashable
 import           Data.List (nub)
 import           Data.Maybe (catMaybes)
@@ -897,6 +896,13 @@ loadSubmission sk = logAction INFO ("loads submission " ++ show sk) $ do
   authorize P_Open P_Submission
   persistence $ Persist.loadSubmission sk
 
+-- Checks if the submission is accessible for the user and loads it,
+-- otherwise throws an exception.
+getSubmission :: SubmissionKey -> UserStory Submission
+getSubmission sk = logAction INFO ("downloads submission " ++ show sk) $ do
+  isAccessibleSubmission sk
+  loadSubmission sk
+
 -- Produces a list of assignments and information about the submissions for the
 -- described assignment
 userAssignments :: UserStory (Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)])
@@ -1145,6 +1151,14 @@ isAdministratedTestScript = guard
   "The user tries to access a test script (%s) which is not administrated by him."
   (userError nonAdministratedTestScript)
 
+-- Checks if the submission is submitted by the user, or is part of a course
+-- or group that the user administrates
+isAccessibleSubmission :: SubmissionKey -> UserStory ()
+isAccessibleSubmission = guard
+  Persist.isAccessibleSubmission
+  "The user tries to download a submission (%s) which is not accessible for him."
+  (userError nonAccessibleSubmission)
+
 -- * User Story combinators
 
 -- * Tools
@@ -1227,4 +1241,4 @@ nonAdministratedAssignment = Msg_UserStoryError_NonAdministratedAssignment "This
 nonAdministratedSubmission = Msg_UserStoryError_NonAdministratedSubmission "The submission is not administrated by you."
 nonAdministratedTestScript = Msg_UserStoryError_NonAdministratedTestScript "The test script is not administrated by you."
 nonRelatedAssignment = Msg_UserStoryError_NonRelatedAssignment "The assignment is not belongs to you."
-
+nonAccessibleSubmission = Msg_UserStoryError_NonAccessibleSubmission "The submission is not belongs to you."

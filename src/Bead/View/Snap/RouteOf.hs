@@ -47,6 +47,7 @@ module Bead.View.Snap.RouteOf (
   , deleteUsersFromGroupPath
   , unsubscribeFromCoursePath
   , pageRoutePath
+  , getSubmissionPath
   , pageRequestParams
 #ifdef TEST
   , routeOfInvariants
@@ -181,6 +182,9 @@ deleteUsersFromGroupPath = "/delete-users-from-group"
 unsubscribeFromCoursePath :: RoutePath
 unsubscribeFromCoursePath = "/unsubscribe-from-course"
 
+getSubmissionPath :: RoutePath
+getSubmissionPath = "/get-submission"
+
 type PageRoutePath = Page RoutePath RoutePath RoutePath RoutePath
 
 -- Returns a base path for the given page
@@ -222,6 +226,7 @@ pageRoutePath = pfmap id id id id . r where
     deleteUsersFromCoursePath
     deleteUsersFromGroupPath
     unsubscribeFromCoursePath
+    getSubmissionPath
 
 type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam]
 
@@ -263,6 +268,7 @@ pageRequestParams = liftsP
   (\ck _ -> [requestParam ck]) -- deleteUsersFromCourse
   (\gk _ -> [requestParam gk]) -- deleteUsersFromGroup
   (\gk _ -> [requestParam gk]) -- unsubscribeFromCourse
+  (\sk _ -> [requestParam sk]) -- getSubmission
     where
       c = const
 
