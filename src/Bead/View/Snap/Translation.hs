@@ -102,6 +102,7 @@ data Translation a
   | Msg_NewAssignment_SubmissionType { trans :: a }
   | Msg_NewAssignment_TextSubmission { trans :: a }
   | Msg_NewAssignment_ZipSubmission { trans :: a }
+  | Msg_NewAssignment_EvalTypeWarn { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }
@@ -382,6 +383,7 @@ data Translation a
   | Msg_UserStory_NewTestScriptIsCreated { trans :: a }
   | Msg_UserStory_ModifyTestScriptIsDone { trans :: a }
   | Msg_UserStory_AlreadyEvaluated { trans :: a }
+  | Msg_UserStory_EvalTypeWarning { trans :: a }
 
   | Msg_UserStoryError_UnknownError { trans :: a }
   | Msg_UserStoryError_Message { trans :: a }

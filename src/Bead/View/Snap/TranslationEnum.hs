@@ -106,6 +106,7 @@ translationList =
   , Msg_NewAssignment_EvaluationType ()
   , Msg_NewAssignment_BinaryEvaluation ()
   , Msg_NewAssignment_PercentageEvaluation ()
+  , Msg_NewAssignment_EvalTypeWarn ()
 
   , Msg_GroupRegistration_RegisteredCourses ()
   , Msg_GroupRegistration_SelectGroup ()
@@ -381,6 +382,7 @@ translationList =
   , Msg_UserStory_SuccessfulCourseUnsubscription ()
   , Msg_UserStory_NewTestScriptIsCreated ()
   , Msg_UserStory_ModifyTestScriptIsDone ()
+  , Msg_UserStory_EvalTypeWarning ()
 
   , Msg_UserStoryError_UnknownError ()
   , Msg_UserStoryError_Message ()

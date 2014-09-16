@@ -1078,15 +1078,40 @@ userSubmissions s ak = logAction INFO msg $ do
   where
     msg = join ["lists ",show s,"'s submissions for assignment ", show ak]
 
+-- Helper function: checks if there at least one submission for the given
+isThereSubmissionPersist = fmap (not . null) . Persist.submissionsForAssignment
+
+-- | Checks if there is at least one submission for the given assignment
+isThereASubmission :: AssignmentKey -> UserStory Bool
+isThereASubmission ak = logAction INFO ("" ++ show ak) $ do
+  authorize P_Open P_Assignment
+  isAdministratedAssignment ak
+  persistence $ isThereSubmissionPersist ak
+
+-- | Modify the given assignment but keeps the evaluation type if there is
+-- a submission for the given assignment, also shows a warning message if the
+-- modification of the assignment type is not viable.
 modifyAssignment :: AssignmentKey -> Assignment -> TCModification -> UserStory ()
 modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ do
   authorize P_Modify P_Assignment
   join . withUserAndPersist $ \u -> do
     admined <- Persist.isAdministratedAssignment u ak
     if admined
-      then do Persist.modifyAssignment ak a
+      then do hasSubmission <- isThereSubmissionPersist ak
+              new <- if hasSubmission
+                       then do -- Overwrite the assignment type with the old one
+                               -- if there is submission for the given assignment
+                               ev <- Assignment.evType <$> Persist.loadAssignment ak
+                               return (a { Assignment.evType = ev })
+                       else return a
+              Persist.modifyAssignment ak new
               testCaseModificationForAssignment u ak tc
-              return (return ())
+              if and [hasSubmission, Assignment.evType a /= Assignment.evType new]
+                then return . putStatusMessage . Msg_UserStory_EvalTypeWarning $ concat
+                  [ "The evaluation type of the assignment is not modified. "
+                  , "A solution is submitted already."
+                  ]
+                else (return (return ()))
       else return $ do
              logMessage INFO . violation $ printf "User tries to modify the assignment: (%s)" (assignmentKeyMap id ak)
              errorPage $ userError nonAdministratedAssignment
