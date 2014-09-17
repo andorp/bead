@@ -448,12 +448,7 @@ newAssignmentContent tz pd = do
                 pd
         H.br
         courseOrGroupName pd
-      H.p $ do
-        submissionType msg
-        selectionWithDefault (fieldName assignmentSubmissionTypeField) currentSubmissionType
-          [ (txtSubmission, fromString . msg $ Msg_NewAssignment_TextSubmission "Text")
-          , (zipSubmission, fromString . msg $ Msg_NewAssignment_ZipSubmission "Zip file")
-          ] ! asgField
+      H.p $ submissionTypeSelection msg pd
       H.p $ do
         hiddenKeyField pd
         testScriptSelection msg pd
@@ -488,6 +483,33 @@ newAssignmentContent tz pd = do
 
       asgField = A.form (fromString $ hookId assignmentForm)
 
+      -- Renders a submission type selection for all page type but the view
+      -- which prints only the selected type
+      submissionTypeSelection msg pd = do
+
+        let submissionTypeSelection =
+              selectionWithDefault (fieldName assignmentSubmissionTypeField) currentSubmissionType
+                [ (txtSubmission, fromString . msg $ Msg_NewAssignment_TextSubmission "Text")
+                , (zipSubmission, fromString . msg $ Msg_NewAssignment_ZipSubmission "Zip file")
+                ] ! asgField
+
+        let submissionTypeText =
+              Assignment.submissionType
+                (fromString . msg $ Msg_NewAssignment_TextSubmission "Text")
+                (fromString . msg $ Msg_NewAssignment_ZipSubmission "Zip file")
+                  . Assignment.aspectsToSubmissionType . Assignment.aspects
+
+        H.b (fromString . msg $ Msg_NewAssignment_SubmissionType "Submission Type")
+        H.br
+        pageDataCata
+          (const5 submissionTypeSelection)
+          (const5 submissionTypeSelection)
+          (const7 submissionTypeSelection)
+          (\_timezone _key asg _tsInfo _testcase -> submissionTypeText asg)
+          (const7 submissionTypeSelection)
+          (const7 submissionTypeSelection)
+          (const8 submissionTypeSelection)
+          pd
 
       typeSelection msg pd = do
         H.b (fromString . msg $ Msg_NewAssignment_Properties "Properties")
@@ -535,8 +557,6 @@ newAssignmentContent tz pd = do
           then zipSubmission
           else txtSubmission
 
-      submissionType msg = do
-        H.b (fromString . msg $ Msg_NewAssignment_SubmissionType "Submission Type")
 
       editOrReadonly = pageDataCata
         (const5 id)

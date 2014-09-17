@@ -4,6 +4,7 @@ module Bead.Domain.Entity.Assignment (
     Aspect(..)
   , aspect
   , SubmissionType(..)
+  , submissionType
   , Aspects
   , fromAspects
   , toAspects
@@ -20,6 +21,7 @@ module Bead.Domain.Entity.Assignment (
   , isZippedSubmissions
   , setZippedSubmissions
   , clearZippedSubmissions
+  , aspectsToSubmissionType
 
   , Assignment(..)
   , assignmentCata
@@ -44,6 +46,7 @@ import           Bead.Domain.Shared.Evaluation
 
 #ifdef TEST
 import           Test.Themis.Test hiding (testCaseCata)
+import           Test.Themis.Test.Asserts
 import           Bead.Invariants (UnitTests(..))
 #endif
 
@@ -65,10 +68,19 @@ aspect
     Password p -> pwd p
     ZippedSubmissions -> zipped
 
+-- Submission Type of the assignment, this information
+-- will be stored as an aspect
 data SubmissionType
   = TextSubmission
   | ZipSubmission
   deriving (Data, Eq, Show, Read, Ord, Typeable)
+
+submissionType
+  text
+  zip
+  s = case s of
+    TextSubmission -> text
+    ZipSubmission -> zip
 
 -- An assignment can have several aspects, which is a list represented
 -- set. The reason here, is the set can not be converted to JSON representation
@@ -151,6 +163,7 @@ isBallotBoxTests = group "isBallotBox" $ do
 isZippedSubmissions :: Aspects -> Bool
 isZippedSubmissions = fromAspects (not . Set.null . Set.filter isZippedSubmissionsAspect)
 
+
 setZippedSubmissions :: Aspects -> Aspects
 setZippedSubmissions x@(Aspects as)
   | not (isZippedSubmissions x) = Aspects (ZippedSubmissions:as)
@@ -162,26 +175,39 @@ clearZippedSubmissions x@(Aspects as)
   | otherwise = Aspects $ filter (not . isZippedSubmissionsAspect) as
 
 #ifdef TEST
-isZippedSubmissionsTests = group "isZippedSubmissions" $ do
-  test "Empty aspect set"
-       (Equals False (isZippedSubmissions emptyAspects)
-               "Empty set should not contain zipped submissions")
-  test "Setting zipped submissions aspect"
-       (Equals True (isZippedSubmissions $ setZippedSubmissions emptyAspects)
-               "Zipped submissions aspect should be set")
-  test "Clearing zipped submissions aspect"
-       (Equals False (isZippedSubmissions $ clearZippedSubmissions $
-          fromList [ZippedSubmissions])
-               "Zipped submissions aspect should be cleared")
-  test "Non password aspects"
-       (Equals True (isZippedSubmissions (fromList [ZippedSubmissions]))
-               "Zipped submissions should be found")
-  test "Password aspect"
-       (Equals False (isZippedSubmissions (fromList [Password ""]))
-               "Password aspect should be rejected")
-  test "Password aspect within more aspects"
-       (Equals True (isZippedSubmissions (fromList [Password "", BallotBox, ZippedSubmissions]))
-               "Zipped submissions aspect should be found")
+isZippedSubmissionsTests = group "isZippedSubmissions" $
+  eqPartitions isZippedSubmissions
+    [ ( "Empty aspect set", emptyAspects, False, "Empty set should not contain zipped submissions")
+
+    , ( "Setting zipped submissions aspect"
+           , setZippedSubmissions emptyAspects
+           , True, "Zipped submissions aspect should be set")
+
+    , ( "Clearing zipped submissions aspect"
+           , clearZippedSubmissions $ fromList [ZippedSubmissions]
+           , False, "Zipped submissions aspect should be cleared")
+
+    , ( "Non password aspects", fromList [ZippedSubmissions], True, "Zipped submissions should be found")
+
+    , ( "Password aspect", fromList [Password ""], False, "Password aspect should be rejected")
+
+    , ( "Password aspect within more aspects"
+           , fromList [Password "", BallotBox, ZippedSubmissions]
+           , True, "Zipped submissions aspect should be found")
+    ]
+#endif
+
+-- Extract the submission type from the aspects set
+aspectsToSubmissionType :: Aspects -> SubmissionType
+aspectsToSubmissionType x = if isZippedSubmissions x then ZipSubmission else TextSubmission
+
+#ifdef TEST
+aspectsToSubmissionTypeTests = group "aspectsToSubmissionType" $
+  eqPartitions aspectsToSubmissionType
+    [ ("Zipped Submission", fromList [ZippedSubmissions], ZipSubmission, "Zipped submission should be found")
+    , ("Emtpy aspect set", emptyAspects, TextSubmission, "Empty set should not contain zipped submissions")
+    , ( "Password aspect", fromList [Password ""], TextSubmission, "Password aspect should be rejected")
+    ]
 #endif
 
 -- Calculates True if the assignment aspects set contains at least one elements
@@ -278,6 +304,7 @@ asgTests = group "Bead.Domain.Entity.Assignment" $ do
   isPasswordProtectedTests
   isBallotBoxTests
   isZippedSubmissionsTests
+  aspectsToSubmissionTypeTests
   assignmentAspectPredTests
   assignmentAspectsSetPasswordTests
 #endif
