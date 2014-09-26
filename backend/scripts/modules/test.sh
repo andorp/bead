@@ -40,8 +40,10 @@ INPUT="${_INPUT}${PENDING}"
 # grab job
 mv ${_INPUT} ${INPUT}
 
-OUTPUT="${SCRIPT_PREFIX}/../jobs/${JAILNAME}/outgoing/${JOB_ID}"
-MESSAGE="${OUTPUT}.message"
+OUTPUT_DIR="${SCRIPT_PREFIX}/../jobs/${JAILNAME}/outgoing/${JOB_ID}"
+OUTPUT="${OUTPUT_DIR}/private"
+MESSAGE="${OUTPUT_DIR}/public"
+RESULT="${OUTPUT_DIR}/result"
 TEMPLATES="${SCRIPT_PREFIX}/../templates"
 BUILD_PATH="/bead/build"
 SANDBOX_PATH="/bead/run"
@@ -66,9 +68,11 @@ test_build() {
     local result
     local build_log
     local build_msg
+    local build_rst
 
     build_log=/tmp/build.${JOB_ID}.log
     build_msg=${JAIL_PATH}${BUILD_PATH}/.message
+    build_rst=${JAIL_PATH}${BUILD_PATH}/.result
 
     mkdir -p ${JAIL_PATH}${BUILD_PATH}
     mkdir -p ${JAIL_PATH}${SANDBOX_PATH}
@@ -77,9 +81,13 @@ test_build() {
     chown -R nobody:nogroup ${JAIL_PATH}${SANDBOX_PATH}
     chroot -u nobody -g nogroup ${JAIL_PATH} ${BUILD_PATH}/build.sh ${SANDBOX_PATH} > ${build_log} 2>&1
     build_result="$?"
+    mkdir -p ${OUTPUT_DIR}
+    chmod g+w,o+w ${OUTPUT_DIR}
     if [ "${build_result}" -ne "0" ]; then
         publish ${build_log} ${OUTPUT}
         publish ${build_msg} ${MESSAGE}
+        echo "False" > ${build_rst}
+        publish ${build_rst} ${RESULT}
         rm -rf ${JAIL_PATH}${SANDBOX_PATH}
         result=1
     else
@@ -94,17 +102,24 @@ test_run() {
     local run_result
     local run_log
     local run_msg
+    local run_rst
 
     run_log=/tmp/run.${JOB_ID}.log
     run_msg=${JAIL_PATH}${SANDBOX_PATH}/.message
+    run_rst=${JAIL_PATH}${SANDBOX_PATH}/.result
 
     cp ${INPUT}/script ${INPUT}/tests ${TEMPLATES}/run.sh ${JAIL_PATH}${SANDBOX_PATH}
     cd ${JAIL_PATH}${SANDBOX_PATH}
     chown -R nobody:nogroup ${JAIL_PATH}${SANDBOX_PATH}
     chroot -u nobody -g nogroup ${JAIL_PATH} ${SANDBOX_PATH}/run.sh > ${run_log} 2>&1
     run_result="$?"
+
+    if [ "${run_result}" -ne "0" ]; then echo "False" > ${run_rst}
+    else echo "True" > ${run_rst}; fi
+
     publish ${run_log} ${OUTPUT}
     publish ${run_msg} ${MESSAGE}
+    publish ${run_rst} ${RESULT}
     rm -rf ${JAIL_PATH}${SANDBOX_PATH}
     return ${run_result}
 }
