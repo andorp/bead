@@ -898,10 +898,14 @@ loadSubmission sk = logAction INFO ("loads submission " ++ show sk) $ do
 
 -- Checks if the submission is accessible for the user and loads it,
 -- otherwise throws an exception.
-getSubmission :: SubmissionKey -> UserStory Submission
+getSubmission :: SubmissionKey -> UserStory (Submission, SubmissionDesc)
 getSubmission sk = logAction INFO ("downloads submission " ++ show sk) $ do
+  authorize P_Open P_Submission
   isAccessibleSubmission sk
-  loadSubmission sk
+  persistence $ do
+    s <- Persist.loadSubmission sk
+    d <- Persist.submissionDesc sk
+    return (s,d)
 
 -- Produces a list of assignments and information about the submissions for the
 -- described assignment

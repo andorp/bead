@@ -9,10 +9,11 @@ import qualified Data.ByteString.UTF8 as BsUTF8 (fromString)
 import qualified Bead.Controller.UserStories as Story
 import           Bead.View.Snap.Content
 
-getSubmission = ViewHandler $ withUserState $ \s -> do
+getSubmission = ViewHandler $ do
   sk <- getParameter submissionKeyPrm
-  submission <- fmap solution $ userStory (Story.getSubmission sk)
-  let basename = concat [usernameCata id $ usernameInState s, "_", submissionKeyMap id sk]
+  (s, description) <- userStory (Story.getSubmission sk)
+  let submission = solution s
+  let basename = concat [usernameCata id $ eUsername description, "_", submissionKeyMap id sk]
   let fname = submissionValue (const (++ ".txt")) (const (++ ".zip")) submission basename
   modifyResponse $
     setHeader "Content-Disposition" (fromString $ concat ["attachment; filename=\"",fname,"\""])
