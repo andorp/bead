@@ -60,29 +60,6 @@ instance GetValueHandler Course where
     <*> getParameter (stringParameter (fieldName courseDescField) "Tárgy leírása")
     <*> getParameter (jsonParameter (fieldName testScriptTypeField) "Script típusa")
 
-emptyCourse :: Maybe Course
-emptyCourse = Nothing
-
-instance InputPagelet Course where
-  inputPagelet c = do
-    msg <- getI18N
-    return $ do
-      table "create-course" "create-course-table" $ do
-        tableLine (msg $ Msg_Input_Course_Name "Title") $ required $ textInput (fieldName courseNameField) 10 (fmap courseName c)
-        tableLine (msg $ Msg_Input_Course_Description "Description") $ textInput (fieldName courseDescField) 10 (fmap courseDesc c)
-        tableLine (msg $ Msg_Input_Course_TestScript "Test type") $ (testScriptTypeSelection msg) c
-    where
-      testScriptTypeSelection msg c =
-        selectionWithDefault
-          (fieldName testScriptTypeField)
-          (fromMaybe TestScriptSimple (fmap courseTestScriptType c))
-          (testScriptTypes msg)
-
-      testScriptTypes msg = [
-          (TestScriptSimple, msg $ Msg_Input_TestScriptSimple "Simple")
-        , (TestScriptZipped, msg $ Msg_Input_TestScriptZipped "Zipped")
-        ]
-
 emptyRole :: Maybe Role
 emptyRole = Nothing
 
@@ -104,12 +81,6 @@ instance InputPagelet Role where
 
 instance GetValueHandler Role where
   getValue = getParameter rolePrm
-
-emptyUsername :: Maybe Username
-emptyUsername = Nothing
-
-instance InputPagelet Username where
-  inputPagelet u = return $ textInput (fieldName usernameField) 20 (fmap (usernameCata id) u)
 
 instance GetValueHandler Username where
   getValue = getParameter usernamePrm

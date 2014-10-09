@@ -14,7 +14,7 @@ import Bead.View.Snap.Content.Home.Page
 import Bead.View.Snap.Content.Profile.Page
 import Bead.View.Snap.Content.CourseAdmin.Page
 import Bead.View.Snap.Content.CourseOverview.Page
-import Bead.View.Snap.Content.Administration
+import Bead.View.Snap.Content.Administration.Page
 import Bead.View.Snap.Content.EvaluationTable
 import Bead.View.Snap.Content.Evaluation.Page
 import Bead.View.Snap.Content.Assignment.Page
