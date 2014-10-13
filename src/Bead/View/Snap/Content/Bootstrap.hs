@@ -35,6 +35,16 @@ submitButton nameValue =
 comboboxScript
   = script ! type_ "text/javascript" $ "//\n$(document).ready(function(){\n$('.combobox').combobox()\n});\n//"
 
+-- | Creates a password input with the given name as id, a given label within a form-group control
+passwordInput paramName labelText =
+  formGroup $ do
+    H.label ! for (fromString paramName) $ (fromString labelText)
+    H.input ! class_ "form-control"
+            ! type_ "password"
+            ! required ""
+            ! name (fromString paramName)
+            ! A.id (fromString paramName)
+
 -- | Creates a text input with the given name as id, a given label and a placeholder text
 textInput paramName labelText placeholderText =
   formGroup $ do

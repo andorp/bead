@@ -18,7 +18,7 @@ import Bead.View.Snap.Content.Administration.Page
 import Bead.View.Snap.Content.EvaluationTable
 import Bead.View.Snap.Content.Evaluation.Page
 import Bead.View.Snap.Content.Assignment.Page
-import Bead.View.Snap.Content.Submission
+import Bead.View.Snap.Content.Submission.Page
 import Bead.View.Snap.Content.SubmissionList
 import Bead.View.Snap.Content.SubmissionDetails
 import Bead.View.Snap.Content.GroupRegistration
