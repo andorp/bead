@@ -17,7 +17,6 @@ import           Bead.View.Snap.Content.Utils
 import           Bead.View.Snap.Markdown (markdownToHtml)
 
 import           Text.Blaze.Html5 as H
-import           Text.Blaze.Html5.Attributes as A
 
 submission = ViewModifyHandler submissionPage submissionPostHandler
 
@@ -128,11 +127,3 @@ invalidAssignment = do
 resolveStatus :: I18N -> Maybe String -> H.Html
 resolveStatus msg Nothing     = fromString . msg $ Msg_SubmissionList_NotEvaluatedYet "Not evaluated yet"
 resolveStatus _msg (Just str) = fromString str
-
--- CSS Section
-
-formDiv = A.style "width: 100%; height: 300px"
-title   = A.style "float: left; width: 100%"
-leftInput = A.style "float: left; width: 58%; height: 80%"
-rightInfo = A.style "float: right; width: 39% height: 80%"
-fillDiv   = A.style "width: 98%; height: 98%"
