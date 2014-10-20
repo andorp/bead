@@ -79,7 +79,7 @@ pages = do
   page <- requestToPageHandler path
   case page of
     -- No Page value is calculated from the request, pass to other handler
-    Nothing -> logoutAndErrorPage "Invalid route in request"
+    Nothing -> pass
     Just pd
       | P.isLogin pd -> loginSubmit
       | otherwise ->  handlePage (pageContent pd)
