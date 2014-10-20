@@ -97,11 +97,13 @@ appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $
 
   tz <- nestSnaplet "timezoneconveter" timeZoneContext $ createTimeZoneContext timeZoneConverter
 
+  dl <- nestSnaplet "debuglogger" debugLoggerContext $ createDebugLogger
+
   addRoutes (routes config)
 
   wrapSite (<|> pages)
 
-  return $ App sm as ss ds se rp fs ts cs un tz
+  return $ App sm as ss ds se rp fs ts cs un tz dl
   where
     description = "The BEAD website"
 
