@@ -86,7 +86,8 @@ userIsLoggedInFilter inside outside onError = do
       -- Correct user is logged in, run the handler and save the data
       result <- lift inside
       case result of
-        HFailure -> do lift $ HU.logout
+        HFailure -> do lift $ withTop debugLoggerContext $ debugMessage "Login filter."
+                       lift $ HU.logout
                        return Nothing
         HSuccess x -> do
           mUserData <- lift (liftIO $ users `userData` usrToken)
