@@ -73,11 +73,11 @@ submissionContent p = do
   msg <- getI18N
   return $ do
     -- Header
-    rowColMd12 $ hr
-    rowColMd12 $ Bootstrap.pageHeader $ h1 $
+    Bootstrap.rowColMd12 $ hr
+    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h1 $
       fromString . msg $ Msg_LinkText_Submission "Submission"
     -- Informational table on the page
-    rowColMd12 $ Bootstrap.table $
+    Bootstrap.rowColMd12 $ Bootstrap.table $
       H.tbody $ do
         (msg $ Msg_Submission_Course "Course: ")         .|. (fromString . aGroup $ asDesc p)
         (msg $ Msg_Submission_Admin "Teacher: ")         .|. (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
@@ -90,21 +90,19 @@ submissionContent p = do
                 (msg $ Msg_Submission_DeadlineReached "Deadline is reached")
                 (asNow p)
                 (Assignment.end $ asValue p))
-    rowColMd12 $ do
+    Bootstrap.rowColMd12 $ do
       H.h2 $ fromString $ msg $ Msg_Submission_Description "Description"
       H.div # assignmentTextDiv $ markdownToHtml $ Assignment.desc $ asValue p
     postForm (routeOf submission) $ do
       hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
       assignmentPassword msg
-      rowColMd12 $ h2 $
+      Bootstrap.rowColMd12 $ h2 $
         fromString $ msg $ Msg_Submission_Solution "Submission"
       Bootstrap.textArea (fieldName submissionTextField) "" ""
       Bootstrap.submitButton (fieldName submitSolutionBtn) (fromString $ msg $ Msg_Submission_Submit "Submit")
 
   where
     submission = Pages.submission ()
-
-    rowColMd12 x = Bootstrap.row $ Bootstrap.colMd12 x
 
     assignmentPassword msg =
       when (Assignment.isPasswordProtected . Assignment.aspects $ asValue p) $ do

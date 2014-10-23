@@ -50,20 +50,20 @@ submissionListContent :: PageData -> IHtml
 submissionListContent p = do
   msg <- getI18N
   return $ do
-    rowColMd12 $ hr
-    rowColMd12 $ Bootstrap.pageHeader $ h1 $
+    Bootstrap.rowColMd12 $ hr
+    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h1 $
       fromString $ msg $ Msg_LinkText_SubmissionList "Submissions"
     let info = smList p -- Submission List Info
-    rowColMd12 $ Bootstrap.table $ tbody $ do
+    Bootstrap.rowColMd12 $ Bootstrap.table $ tbody $ do
       (msg $ Msg_SubmissionList_CourseOrGroup "Course, group:") .|. (slGroup info)
       (msg $ Msg_SubmissionList_Admin "Teacher:") .|. (join $ slTeacher info)
       (msg $ Msg_SubmissionList_Assignment "Assignment:") .|. (Assignment.name $ slAssignment info)
       (msg $ Msg_SubmissionList_Deadline "Deadline:") .|. (showDate . (uTime p) . Assignment.end $ slAssignment info)
-    rowColMd12 $ h2 $ fromString $ msg $ Msg_SubmissionList_Description "Description"
+    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ Msg_SubmissionList_Description "Description"
     H.div # assignmentTextDiv $
       (markdownToHtml . Assignment.desc . slAssignment . smList $ p)
     let submissions = slSubmissions info
-    rowColMd12 $ h2 $ fromString $ msg $ Msg_SubmissionList_SubmittedSolutions "Submissions"
+    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ Msg_SubmissionList_SubmittedSolutions "Submissions"
     either (userSubmissionTimes msg) (userSubmissionInfo msg) submissions
   where
     submissionDetails ak sk = Pages.submissionDetails ak sk ()
@@ -97,29 +97,29 @@ submissionListContent p = do
     userSubmission msg line submissions =
       if (not $ null submissions)
         then do
-          rowColMd12 $ H.p $ fromString $ msg $ Msg_SubmissionList_Info "Comments may be added for submissions."
-          rowColMd12 $ Bootstrap.listGroup $ mapM_ line submissions
+          Bootstrap.rowColMd12 $ H.p $ fromString $ msg $ Msg_SubmissionList_Info "Comments may be added for submissions."
+          Bootstrap.rowColMd12 $ Bootstrap.listGroup $ mapM_ line submissions
         else do
-          (rowColMd12 $ fromString $ msg $ Msg_SubmissionList_NoSubmittedSolutions "There are no submissions.")
+          (Bootstrap.rowColMd12 $ fromString $ msg $ Msg_SubmissionList_NoSubmittedSolutions "There are no submissions.")
 
 invalidAssignment :: IHtml
 invalidAssignment = do
   msg <- getI18N
   return $ do
-    rowColMd12 $ hr
-    rowColMd12 $ Bootstrap.pageHeader $ h1 $
+    Bootstrap.rowColMd12 $ hr
+    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h1 $
       fromString $ msg $ Msg_LinkText_SubmissionList "Submissions"
-    rowColMd12 $ p $ fromString $
+    Bootstrap.rowColMd12 $ p $ fromString $
       msg $ Msg_SubmissionList_NonAssociatedAssignment "This assignment cannot be accessed by this user."
 
 assignmentNotStartedYet :: IHtml
 assignmentNotStartedYet = do
   msg <- getI18N
   return $ do
-    rowColMd12 $ hr
-    rowColMd12 $ Bootstrap.pageHeader $ h1 $
+    Bootstrap.rowColMd12 $ hr
+    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h1 $
       fromString $ msg $ Msg_LinkText_SubmissionList "Submissions"
-    rowColMd12 $ p $ fromString $
+    Bootstrap.rowColMd12 $ p $ fromString $
       msg $ Msg_SubmissionList_NonReachableAssignment "This assignment cannot be accessed."
 
 -- Creates a table line first element is a bold text and the second is a text
@@ -127,5 +127,3 @@ infixl 7 .|.
 name .|. value = H.tr $ do
   H.td $ b $ fromString $ name
   H.td $ fromString value
-
-rowColMd12 x = Bootstrap.row $ Bootstrap.colMd12 x

@@ -99,6 +99,9 @@ row = H.div ! class_ "row"
 -- | Creates a bootstrap 12 column
 colMd12 = H.div ! class_ "col-md-12"
 
+-- | Creates a bootstrap raw with only one colMd12 column
+rowColMd12 = row . colMd12
+
 -- | Creates a bootstrap page header
 pageHeader = H.div ! class_ "page-header"
 
