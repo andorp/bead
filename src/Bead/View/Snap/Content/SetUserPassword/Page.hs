@@ -42,7 +42,6 @@ setUserPasswordContent = do
       fromString $ msg $ Msg_LinkText_SetUserPassword "Set Student's Password"
     Bootstrap.row $ Bootstrap.colMd Bootstrap.colSize4 Bootstrap.colOffset4 $
       postForm (routeOf setUserPassword) `withId` (rFormId setStudentPwdForm) $ do
---        table (fieldName changePasswordTable) (fieldName changePasswordTable) $ do
         Bootstrap.textInput     (B.name usernamePrm)           (msg $ Msg_SetUserPassword_User "Username: ") ""
         Bootstrap.passwordInput (B.name studentNewPwdPrm)      (msg $ Msg_SetUserPassword_NewPassword "New password: ")
         Bootstrap.passwordInput (B.name studentNewPwdAgainPrm) (msg $ Msg_SetUserPassword_NewPasswordAgain "New password (again): ")
