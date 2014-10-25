@@ -89,8 +89,8 @@ submitButton nameValue text =
          ! class_ "btn btn-block btn-default"
          $ fromString text
 
--- | Creates an entry that triggers the combobox creation after the page load
-comboboxScript
+-- | Turns the selection into combobox like selections
+turnSelectionsOn
   = script ! type_ "text/javascript" $ "//\n$(document).ready(function(){\n$('.combobox').combobox()\n});\n//"
 
 -- | Creates a password input with the given name as id, a given label within a form-group control

@@ -224,7 +224,7 @@ hasPageContent pd = do
 
       Bootstrap.row $ Bootstrap.colMd12 $ hr
 
-    Bootstrap.comboboxScript
+    Bootstrap.turnSelectionsOn
 --    script ! type_ "text/javascript" $ "//\n$(document).ready(function(){\n$('.combobox').combobox()\n});\n//"
   where
 --    const2 = const . const

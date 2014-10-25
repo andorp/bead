@@ -130,7 +130,7 @@ courseAdminContent info = do
     -- Group Administrators table
     groupAdministratorsTable msg (assignedGroups info)
 
-    Bootstrap.comboboxScript
+    Bootstrap.turnSelectionsOn
   where
     courses' = Prelude.map (Prelude.id *** courseName) (courses info)
     groups' = (groups info)

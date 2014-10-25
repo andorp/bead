@@ -95,7 +95,7 @@ administrationContent info = do
         -- i18n msg $ inputPagelet emptyUsername
         Bootstrap.textInput (fieldName usernameField) "" ""
         Bootstrap.submitButton (fieldName selectBtn) (fromString . msg $ Msg_Administration_SelectUser "Select")
-    Bootstrap.comboboxScript
+    Bootstrap.turnSelectionsOn
   where
     noCourseAdminInfo msg coursesInfo = do
       fromString . msg $ Msg_Administration_NoCourseAdmins "There are no teachers. Teachers can be created by modifying roles of users."

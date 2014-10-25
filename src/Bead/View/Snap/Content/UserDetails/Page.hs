@@ -58,7 +58,7 @@ userDetailForm timeZones user dictionaries = do
       Bootstrap.selection (B.name userLanguagePrm) (== u_language user) languages
       hiddenInput (fieldName usernameField) . usernameCata id $ u_username user
       Bootstrap.submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Update")
-    Bootstrap.comboboxScript
+    Bootstrap.turnSelectionsOn
   where
     userTimeZones = map (id &&& timeZoneName id) timeZones
     userDetails = Pages.userDetails ()
