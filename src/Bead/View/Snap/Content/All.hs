@@ -22,7 +22,7 @@ import Bead.View.Snap.Content.Submission.Page
 import Bead.View.Snap.Content.SubmissionList.Page
 import Bead.View.Snap.Content.SubmissionDetails.Page
 import Bead.View.Snap.Content.GroupRegistration
-import Bead.View.Snap.Content.UserDetails
+import Bead.View.Snap.Content.UserDetails.Page
 import Bead.View.Snap.Content.UserSubmissions
 import Bead.View.Snap.Content.SetUserPassword.Page
 import Bead.View.Snap.Content.NewTestScript

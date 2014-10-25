@@ -1,8 +1,6 @@
 module Bead.View.Snap.InputHandlers where
 
 import           Control.Applicative ((<$>),(<*>))
-import           Control.Arrow ((&&&))
-import           Data.Maybe (fromMaybe)
 import           Data.Time (UTCTime(..))
 
 import           Text.Blaze.Html5 (Html)
@@ -59,25 +57,6 @@ instance GetValueHandler Course where
     <$> getParameter (stringParameter (fieldName courseNameField) "Tárgy neve")
     <*> getParameter (stringParameter (fieldName courseDescField) "Tárgy leírása")
     <*> getParameter (jsonParameter (fieldName testScriptTypeField) "Script típusa")
-
-emptyRole :: Maybe Role
-emptyRole = Nothing
-
-instance InputPagelet Role where
-  inputPagelet q = do
-    msg <- getI18N
-    return . maybe
-      (selection (fieldName userRoleField))
-      (selectionWithDefault (fieldName userRoleField)) q $ (roles msg)
-    where
-      allRoles = [toEnum 0 ..]
-      roles msg = map (id &&& (msg . roleLabel)) allRoles
-
-      roleLabel = roleCata
-        (Msg_InputHandlers_Role_Student "Student")
-        (Msg_InputHandlers_Role_GroupAdmin "Teacher")
-        (Msg_InputHandlers_Role_CourseAdmin "Course Admin")
-        (Msg_InputHandlers_Role_Admin "Administrator")
 
 instance GetValueHandler Role where
   getValue = getParameter rolePrm

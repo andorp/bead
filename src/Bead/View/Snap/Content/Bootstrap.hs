@@ -114,6 +114,17 @@ textInput paramName labelText placeholderText =
             ! A.id (fromString paramName)
             ! A.placeholder (fromString placeholderText)
 
+-- | Creates a text input with the given name as id, a given label and a default value
+textInputWithDefault paramName labelText value =
+  formGroup $ do
+    H.label ! for (fromString paramName) $ (fromString labelText)
+    H.input ! class_ "form-control"
+            ! type_ "text"
+            ! A.required ""
+            ! A.name (fromString paramName)
+            ! A.id (fromString paramName)
+            ! A.value (fromString value)
+
 -- | Creates a text area input with the given name as id, a given label
 textArea paramName labelText html =
   formGroup $ do
