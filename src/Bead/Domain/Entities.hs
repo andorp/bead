@@ -87,6 +87,7 @@ module Bead.Domain.Entities (
   , usersFileCata
   , FileInfo(..)
   , fileInfoCata
+  , withFileInfo
   , fileInfoAppAna
   , Score(..)
   , score
@@ -530,6 +531,9 @@ data FileInfo = FileInfo {
 
 -- Template function for the FileInfo value
 fileInfoCata f (FileInfo size date) = f size date
+
+-- Template function for the FileInfo value
+withFileInfo (FileInfo size date) f = f size date
 
 -- Applicative functor based FileInfo construction
 fileInfoAppAna size date = FileInfo <$> size <*> date

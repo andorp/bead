@@ -26,7 +26,7 @@ import Bead.View.Snap.Content.UserDetails.Page
 import Bead.View.Snap.Content.UserSubmissions.Page
 import Bead.View.Snap.Content.SetUserPassword.Page
 import Bead.View.Snap.Content.NewTestScript
-import Bead.View.Snap.Content.UploadFile
+import Bead.View.Snap.Content.UploadFile.Page
 
 #ifdef TEST
 import Bead.Invariants (Invariants(..))
