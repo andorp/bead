@@ -74,53 +74,6 @@ userDetailForm timeZones user dictionaries = do
     allRoles = [toEnum 0 ..]
     roles msg = map (id &&& (msg . roleLabel)) allRoles
 
-{-
-    msg <- getI18N
-    return . maybe
-      (selection (fieldName userRoleField))
-      (selectionWithDefault (fieldName userRoleField)) q $ (roles msg)
-    where
-      allRoles = [toEnum 0 ..]
-      roles msg = map (id &&& (msg . roleLabel)) allRoles
-
-      roleLabel = roleCata
-        (Msg_InputHandlers_Role_Student "Student")
-        (Msg_InputHandlers_Role_GroupAdmin "Teacher")
-        (Msg_InputHandlers_Role_CourseAdmin "Course Admin")
-        (Msg_InputHandlers_Role_Admin "Administrator")
-
--}
-
-{-
-userDetailForm :: [TimeZoneName] -> User -> DictionaryInfos -> IHtml
-userDetailForm ts u languages = do
-  msg <- getI18N
-  return $ postForm (routeOf userDetails) $ do
-    table "user-detail-table" "user-detail-table" $ do
-      tableLine (msg $ Msg_Input_User_Role "Role")  $ required $ i18n msg $ inputPagelet (Just $ u_role u)
-      tableLine (msg $ Msg_Input_User_Email "Email") $ required $ textInput (fieldName userEmailField) 20 (Just . emailCata id $ u_email u)
-      tableLine (msg $ Msg_Input_User_FullName "Full name") $ required $ textInput (fieldName userFamilyNameField) 20 (Just $ u_name u)
-      tableLine (msg $ Msg_Input_User_TimeZone "Time zone") $ required $
-        selectionWithDefault (B.name userTimeZonePrm) (u_timezone u) userTimeZones
-      tableLine (msg $ Msg_Input_User_Language "Language") $ required $
-        selectionWithDefault' (B.name userLanguagePrm) ((u_language u)==) (map langVal languages)
-      hiddenTableLine . hiddenInput (fieldName usernameField) . usernameCata id $ u_username u
-    submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Update")
-  where
-    userTimeZones = map (id &&& timeZoneName id) ts
-
-    userDetails = Pages.userDetails ()
-
-    langVal (lang,info) = (lang, languageName info)
-
-userDoesNotExist :: Username -> IHtml
-userDoesNotExist username = do
-  msg <- getI18N
-  return $ H.p $ do
-    (fromString $ msg $ Msg_UserDetails_NonExistingUser "No such user:")
-    usernameCata fromString username
--}
-
 userDoesNotExist :: Username -> IHtml
 userDoesNotExist username = do
   msg <- getI18N
