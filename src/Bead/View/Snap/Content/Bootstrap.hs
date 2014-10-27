@@ -82,11 +82,18 @@ selection paramName selector values =
     selector
     values
 
--- | Creates a submit button with a given name and the given text
+-- | Creates a submit block button with a given name and the given text
 submitButton nameValue text =
   button ! type_ "submit"
          ! (name $ fromString nameValue)
          ! class_ "btn btn-block btn-default"
+         $ fromString text
+
+-- | Creates a submit small button with a given name and the given text
+smallSubmitButton nameValue text =
+  button ! type_ "submit"
+         ! (name $ fromString nameValue)
+         ! class_ "btn btn-default"
          $ fromString text
 
 -- | Turns the selection into combobox like selections
