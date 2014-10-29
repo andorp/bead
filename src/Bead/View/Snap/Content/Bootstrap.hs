@@ -82,6 +82,16 @@ selection paramName selector values =
     selector
     values
 
+-- | Creates a form control selection with the given parameter name, a label, a selector
+-- function which determines the selected value, and possible values
+selectionWithLabel paramName labelText selector values = do
+  H.label ! for (fromString paramName) $ (fromString labelText)
+  formGroup $ selectionWithDefAndAttr
+    paramName
+    [class_ "combobox form-control", A.style "display:none", A.required ""]
+    selector
+    values
+
 -- | Creates a submit block button with a given name and the given text
 submitButton nameValue text =
   button ! type_ "submit"
@@ -141,6 +151,19 @@ textArea paramName labelText html =
                ! A.rows "20"
                ! A.id (fromString paramName)
                ! A.name (fromString paramName) $ html
+
+-- | Creates a text area input with the given name as id, a given label
+utf8TextArea paramName labelText html =
+  formGroup $ do
+    H.label ! for (fromString paramName) $ (fromString labelText)
+    H.textarea ! class_ "form-control"
+               ! A.required ""
+               ! A.rows "20"
+               ! A.id (fromString paramName)
+               ! A.name (fromString paramName)
+               ! A.acceptCharset "utf-8"
+               $ html
+
 
 -- | Creates a radio button group, with a given values and labels, the parameter name
 -- as numbered ids. The first value is the primary active
