@@ -5,6 +5,8 @@ module Bead.View.Snap.Content.Bootstrap where
 Collection of bootstrap related pagelets.
 -}
 
+import           Data.Data
+import           Data.Maybe (fromMaybe)
 import           Data.String
 
 import           Text.Blaze.Html5 hiding (map)
@@ -12,7 +14,7 @@ import qualified Text.Blaze.Html5 as H hiding (map)
 import           Text.Blaze.Html5.Attributes
 import qualified Text.Blaze.Html5.Attributes as A
 
-import           Bead.View.Snap.Content (selectionWithDefAndAttr)
+import           Bead.View.Snap.Fay.JSON.ServerSide
 
 -- | Represents the possible sizes of columns
 newtype ColumnSize = ColumnSize Int
@@ -76,7 +78,7 @@ badge text = H.span ! class_ "badge" $ fromString text
 -- | Creates a form control selection with the given parameter name, a selector
 -- function which determines the selected value, and possible values
 selection paramName selector values =
-  formGroup $ selectionWithDefAndAttr
+  formGroup $ selectionPart
     paramName
     [class_ "combobox form-control", A.style "display:none", A.required ""]
     selector
@@ -86,7 +88,7 @@ selection paramName selector values =
 -- function which determines the selected value, and possible values
 selectionWithLabel paramName labelText selector values = do
   H.label ! for (fromString paramName) $ (fromString labelText)
-  formGroup $ selectionWithDefAndAttr
+  formGroup $ selectionPart
     paramName
     [class_ "combobox form-control", A.style "display:none", A.required ""]
     selector
@@ -197,3 +199,25 @@ pageHeader = H.div ! class_ "page-header"
 
 -- | Creates a bootstrap table
 table = H.table ! class_ "table table-bordered table-condensed table-hover table-striped"
+
+-- HTML helpers
+
+optionTag :: String -> String -> Bool -> Html
+optionTag value text False = H.option ! A.value (fromString value)                 $ fromString text
+optionTag value text True  = H.option ! A.value (fromString value) ! A.selected "" $ fromString text
+
+selectTag :: String -> Html -> Html
+selectTag name =
+    H.select ! A.id (fromString name)
+             ! A.name (fromString name)
+             ! A.required ""
+
+-- Encodes the value to Fay JSON representation or throw an error for the given name
+encode :: (Data a, Show a, IsString s) => String -> a -> s
+encode name value = fromString $ fromMaybe (name ++ ": error encoding value") (encodeToFay value)
+
+selectionPart :: (Show a, Data a) =>
+  String -> [Attribute] -> (a -> Bool) -> [(a, String)] -> Html
+selectionPart name attrs def = foldl (!) (selectTag name) attrs . mapM_ option
+  where
+    option (v,t) = optionTag (encode "selection" v) t (def v)
