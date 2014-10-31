@@ -33,18 +33,6 @@ newAssignmentContent pd = do
   let hook = assignmentEvTypeHook
   evalConfig <- evaluationConfig (evSelectionId hook)
   return $ do
-            Bootstrap.row $ Bootstrap.colMd12 $ Bootstrap.pageHeader $ do
-                hr
-                h1 . fromString . msg $ pageDataCata
-                   (const5 $ Msg_LinkText_NewCourseAssignment "New Course Assignment")
-                   (const5 $ Msg_LinkText_NewGroupAssignment "New Group Assignment")
-                   (const6 $ Msg_LinkText_ModifyAssignment "Modify Assignment")
-                   (const5 $ Msg_LinkText_ViewAssignment "View Assignment")
-                   (const7 $ Msg_LinkText_NewCourseAssignmentPreview "New Course Assignment")
-                   (const7 $ Msg_LinkText_NewGroupAssignmentPreview "New Group Assignment")
-                   (const7 $ Msg_LinkText_ModifyAssignmentPreview "Modify Assignment")
-                   pd
-
             Bootstrap.row $ Bootstrap.colMd12
               $ H.form ! A.method "post"
               $ H.div ! A.id (fromString $ hookId assignmentForm) $ do

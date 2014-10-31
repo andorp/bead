@@ -30,7 +30,7 @@ data PageData = PageData {
 
 submissionPage :: GETContentHandler
 submissionPage = withUserState $ \s -> do
-  let render p = renderBootstrapPage $ bootStrapUserFrame s p
+  let render p = renderBootstrapPage $ bootstrapUserFrame s p
   ak <- getParameter assignmentKeyPrm
   ut <- userTimeZoneToLocalTimeConverter
   now <- liftIO $ getCurrentTime
@@ -72,10 +72,6 @@ submissionContent :: PageData -> IHtml
 submissionContent p = do
   msg <- getI18N
   return $ do
-    -- Header
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h1 $
-      fromString . msg $ Msg_LinkText_Submission "Submission"
     -- Informational table on the page
     Bootstrap.rowColMd12 $ Bootstrap.table $
       H.tbody $ do

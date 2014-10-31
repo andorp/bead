@@ -29,7 +29,7 @@ profilePage = withUserState $ \s -> do
   user <- userStory currentUser
   languages <- getDictionaryInfos
   ts <- lift foundTimeZones
-  renderBootstrapPage . bootStrapUserFrame s $ profileContent ts user languages
+  renderBootstrapPage . bootstrapUserFrame s $ profileContent ts user languages
 
 changeUserDetails :: POSTContentHandler
 changeUserDetails = do

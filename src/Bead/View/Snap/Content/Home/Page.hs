@@ -50,7 +50,7 @@ homePage :: GETContentHandler
 homePage = withUserState $ \s -> do
   converter <- userTimeZoneToLocalTimeConverter
   now <- liftIO getCurrentTime
-  (renderBootstrapPage . bootStrapUserFrame s . homeContent) =<< do
+  (renderBootstrapPage . bootstrapUserFrame s . homeContent) =<< do
     (userStory $ do
        ua <- S.userAssignments
        sbmTables <- (map sortUserLines <$> S.submissionTables)

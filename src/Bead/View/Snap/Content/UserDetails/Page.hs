@@ -21,7 +21,7 @@ userDetailPage :: GETContentHandler
 userDetailPage = withUserState $ \s -> do
   username <- getParameter usernamePrm
   exist    <- userStory $ doesUserExist username
-  let render p = renderBootstrapPage $ bootStrapUserFrame s p
+  let render p = renderBootstrapPage $ bootstrapUserFrame s p
   case exist of
     True -> do
       user      <- userStory $ loadUser username
@@ -46,9 +46,6 @@ userDetailForm :: [TimeZoneName] -> User -> DictionaryInfos -> IHtml
 userDetailForm timeZones user dictionaries = do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
-      fromString $ msg $ Msg_LinkText_UserDetails "User Details"
     postForm (routeOf userDetails) $ do
       --tableLine (msg $ Msg_Input_User_Role "Role")  $ required $ i18n msg $ inputPagelet (Just $ u_role u)
       Bootstrap.selection (fieldName userRoleField) (== u_role user) (roles msg)
@@ -78,9 +75,6 @@ userDoesNotExist :: Username -> IHtml
 userDoesNotExist username = do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
-      fromString $ msg $ Msg_LinkText_UserDetails "User Details"
     Bootstrap.rowColMd12 $ p $ do
       (fromString $ msg $ Msg_UserDetails_NonExistingUser "No such user:")
       usernameCata fromString username

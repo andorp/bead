@@ -40,7 +40,7 @@ groupRegistrationPage = withUserState $ \s -> do
         groups = gs
       , groupsRegistered = as
       }
-  renderBootstrapPage . bootStrapUserFrame s $ groupRegistrationContent desc
+  renderBootstrapPage . bootstrapUserFrame s $ groupRegistrationContent desc
   where
     fst3 (f,_,_) = f
 
@@ -49,9 +49,6 @@ groupRegistrationContent desc = do
   msg <- getI18N
   return $ do
     let registeredGroups = groupsRegistered desc
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
-      fromString $ msg $ Msg_LinkText_GroupRegistration "Group Registration"
     Bootstrap.rowColMd12 $ do
       H.h3 $ fromString $ msg $ Msg_GroupRegistration_RegisteredCourses "Registered courses"
       i18n msg $ groupsAlreadyRegistered registeredGroups

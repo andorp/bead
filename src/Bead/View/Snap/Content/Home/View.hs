@@ -28,11 +28,6 @@ homeContent d = do
       testScripts = courseTestScripts d
   msg <- getI18N
   return $ do
-            -- Header
-            Bootstrap.row $ Bootstrap.colMd12 $ Bootstrap.pageHeader $ do
-                hr
-                h1 . fromString . msg $ Msg_LinkText_Home "Home"
-
             when (isAdmin s) $ do
               Bootstrap.row $ Bootstrap.colMd12 $ do
                 h3 . fromString . msg $ Msg_Home_AdminTasks "Administrator Menu"

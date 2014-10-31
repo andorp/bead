@@ -46,7 +46,7 @@ courseAdminPage = withUserState $ \s -> do
       , groupAdmins = ps
       , assignedGroups = gs
       }
-  renderBootstrapPage . bootStrapUserFrame s $ courseAdminContent pageData
+  renderBootstrapPage . bootstrapUserFrame s $ courseAdminContent pageData
   where
     group_admin = groupAdmin . u_role
 

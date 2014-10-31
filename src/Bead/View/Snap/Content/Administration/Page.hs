@@ -44,7 +44,7 @@ administrationPage = withUserState $ \s -> do
     , courseAdmins = filter courseAdmin ausers
     , assignedCourseAdmins = assigned
     }
-  renderBootstrapPage . bootStrapUserFrame s $ administrationContent info
+  renderBootstrapPage . bootstrapUserFrame s $ administrationContent info
   where
     each _ _ = True
 
@@ -61,9 +61,6 @@ administrationContent :: PageInfo -> IHtml
 administrationContent info = do
   msg <- getI18N
   return $ do
-    Bootstrap.row $ Bootstrap.colMd12 $ hr
-    Bootstrap.row $ Bootstrap.colMd12 $ Bootstrap.pageHeader $ h1 $
-      fromString . msg $ Msg_LinkText_Administration "administration"
     Bootstrap.row $ Bootstrap.colMd12 $ do
       H.h3 $ (fromString . msg $ Msg_Administration_NewCourse "New course")
       postForm (routeOf createCourse) $ do

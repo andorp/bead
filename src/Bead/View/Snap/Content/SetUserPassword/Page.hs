@@ -17,7 +17,7 @@ setUserPassword = ViewModifyHandler setUserPasswordPage setUsrPwd
 
 setUserPasswordPage :: GETContentHandler
 setUserPasswordPage = withUserState $ \s -> do
-  renderBootstrapPage $ bootStrapUserFrame s setUserPasswordContent
+  renderBootstrapPage $ bootstrapUserFrame s setUserPasswordContent
 
 setUsrPwd :: POSTContentHandler
 setUsrPwd = do
@@ -37,9 +37,6 @@ setUserPasswordContent :: IHtml
 setUserPasswordContent = do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
-      fromString $ msg $ Msg_LinkText_SetUserPassword "Set Student's Password"
     Bootstrap.row $ Bootstrap.colMd Bootstrap.colSize4 Bootstrap.colOffset4 $
       postForm (routeOf setUserPassword) `withId` (rFormId setStudentPwdForm) $ do
         Bootstrap.textInput     (B.name usernamePrm)           (msg $ Msg_SetUserPassword_User "Username: ") ""

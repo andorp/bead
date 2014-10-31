@@ -26,15 +26,12 @@ evaluationTablePage :: GETContentHandler
 evaluationTablePage = withUserState $ \s -> do
   os <- userStory openSubmissions
   tc <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootStrapUserFrame s $ evaluationTableContent tc os
+  renderBootstrapPage . bootstrapUserFrame s $ evaluationTableContent tc os
 
 evaluationTableContent :: UserTimeConverter -> OpenedSubmissions -> IHtml
 evaluationTableContent tc = openedSubmissionsCata $ \admincourse admingroup related -> do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
-      fromString $ msg $ Msg_LinkText_EvaluationTable "Evaluations"
     noUnevaluatedSubmission msg admincourse admingroup related
     when (not $ null admingroup) $ Bootstrap.rowColMd12 $ do
       H.h4 $ fromString . msg $ Msg_EvaluationTable_GroupAssignment "Group assignments"

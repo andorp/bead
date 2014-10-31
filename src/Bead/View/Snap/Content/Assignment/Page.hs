@@ -43,7 +43,7 @@ newCourseAssignmentPage = withUserState $ \s -> do
     return ((ck, course), nonEmptyList tss', ufs)
   now <- liftIO $ getCurrentTime
   tz <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootStrapUserFrame s . newAssignmentContent $ PD_Course tz now c tss ufs
+  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $ PD_Course tz now c tss ufs
 
 postCourseAssignment :: POSTContentHandler
 postCourseAssignment = do
@@ -65,7 +65,7 @@ newCourseAssignmentPreviewPage = withUserState $ \s -> do
     return ((ck, course), nonEmptyList tss', ufs)
   now <- liftIO $ getCurrentTime
   tz <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootStrapUserFrame s . newAssignmentContent $
+  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $
     PD_Course_Preview tz now c tss ufs assignment tc
 
 -- Tries to create a TCCreation descriptive value. If the test script, usersfile and testcase
@@ -126,7 +126,7 @@ newGroupAssignmentPage = withUserState $ \s -> do
     ufs  <- map fst <$> S.listUsersFiles
     return ((gk, group), nonEmptyList tss', ufs)
   tz <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootStrapUserFrame s . newAssignmentContent $ PD_Group tz now g tss ufs
+  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $ PD_Group tz now g tss ufs
 
 postGroupAssignment :: POSTContentHandler
 postGroupAssignment = do
@@ -148,7 +148,7 @@ newGroupAssignmentPreviewPage = withUserState $ \s -> do
     return ((gk, group), nonEmptyList tss', ufs)
   tz <- userTimeZoneToLocalTimeConverter
   now <- liftIO $ getCurrentTime
-  renderBootstrapPage . bootStrapUserFrame s . newAssignmentContent $
+  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $
     PD_Group_Preview tz now g tss ufs assignment tc
 
 -- * Modify Assignment
@@ -164,7 +164,7 @@ modifyAssignmentPage = withUserState $ \s -> do
     tc   <- S.testCaseOfAssignment ak
     return (as, nonEmptyList tss', ufs, tc)
   tz <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootStrapUserFrame s . newAssignmentContent $
+  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $
     PD_Assignment tz ak as tss ufs tc
 
 postModifyAssignment :: POSTContentHandler
@@ -183,7 +183,7 @@ modifyAssignmentPreviewPage = withUserState $ \s -> do
     tc   <- S.testCaseOfAssignment ak
     return (nonEmptyList tss', ufs, tc)
   tz <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootStrapUserFrame s . newAssignmentContent $
+  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $
     PD_Assignment_Preview tz ak as tss ufs tc tm
 
 viewAssignmentPage :: GETContentHandler
@@ -198,7 +198,7 @@ viewAssignmentPage = withUserState $ \s -> do
   tz <- userTimeZoneToLocalTimeConverter
   let ti = do (_tck, _tc, tsk) <- tc
               Map.lookup tsk $ Map.fromList tss
-  renderBootstrapPage . bootStrapUserFrame s .
+  renderBootstrapPage . bootstrapUserFrame s .
     newAssignmentContent $ PD_ViewAssignment tz ak as ti tc
 
 -- * Helpers

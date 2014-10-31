@@ -27,6 +27,7 @@ import           Bead.View.Snap.RouteOf
 import           Bead.View.Snap.Style
 import           Bead.View.Snap.TemplateAndComponentNames
 import           Bead.View.Snap.Translation
+import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
 #ifdef TEST
 import           Bead.Invariants (Invariants(..))
 #endif
@@ -124,17 +125,22 @@ withUserFrame s content secs = withUserFrame' content
         status
         H.div ! A.id "content" $ content
 
-bootStrapUserFrame :: UserState -> IHtml -> Int -> IHtml
-bootStrapUserFrame s content secs = withUserFrame' content
+bootstrapUserFrame :: UserState -> IHtml -> Int -> IHtml
+bootstrapUserFrame s content secs = withUserFrame' content
   where
     withUserFrame' content = do
       header <- bootStrapHeader s secs
       content <- content
       status <- bootStrapStatus s
+      msg <- getI18N
       return $ do
         header
         status
-        H.div ! class_ "container" $ content
+        H.div ! class_ "container" $ do
+          Bootstrap.rowColMd12 $ hr
+          Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
+            fromString $ msg $ linkText $ page s
+          content
 
 -- * Basic building blocks
 

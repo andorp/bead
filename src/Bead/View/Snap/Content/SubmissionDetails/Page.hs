@@ -38,7 +38,7 @@ submissionDetailsPage = withUserState $ \s -> do
   sk <- getParameter submissionKeyPrm
   -- TODO: Refactor use guards
   usersSubmission ak sk $ \submission -> do
-    let render p = renderBootstrapPage $ bootStrapUserFrame s p
+    let render p = renderBootstrapPage $ bootstrapUserFrame s p
     case submission of
       Nothing -> render invalidSubmission
       Just _sm -> do
@@ -82,9 +82,6 @@ submissionDetailsContent :: PageData -> IHtml
 submissionDetailsContent p = do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h1 $
-      fromString $ msg $ Msg_LinkText_SubmissionDetails "Submission Details"
     let info = smDetails p
     let tc   = uTime p
     Bootstrap.rowColMd12 $ Bootstrap.table $ tbody $ do
@@ -121,9 +118,6 @@ invalidSubmission :: IHtml
 invalidSubmission = do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h1 $
-      fromString $ msg $ Msg_LinkText_SubmissionDetails "Submission Details"
     Bootstrap.rowColMd12 $ p $
       fromString $ msg $ Msg_SubmissionDetails_InvalidSubmission "This submission cannot be accessed by this user."
 

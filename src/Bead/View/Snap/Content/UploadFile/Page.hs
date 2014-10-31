@@ -29,7 +29,7 @@ getUploadFile :: GETContentHandler
 getUploadFile = withUserState $ \s -> do
   fs <- userStory Story.listUsersFiles
   size <- fmap maxUploadSizeInKb $ lift $ withTop configContext getConfiguration
-  renderBootstrapPage $ bootStrapUserFrame s $ uploadFileContent (PageData fs size)
+  renderBootstrapPage $ bootstrapUserFrame s $ uploadFileContent (PageData fs size)
 
 data Success
   = PolicyFailure String
@@ -98,9 +98,6 @@ uploadFileContent :: PageData -> IHtml
 uploadFileContent pd = do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
-      fromString $ msg $ Msg_LinkText_UploadFile "Upload file"
     Bootstrap.rowColMd12 $ do
       h3 $ fromString $ msg $ Msg_UploadFile_FileSelection "File Selection"
       p $ do

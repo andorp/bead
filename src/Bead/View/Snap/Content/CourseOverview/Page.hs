@@ -34,7 +34,7 @@ courseSubmissionsPage = withUserState $ \s -> do
     stc <- submissionTableContext
     sti <- sortUserLines <$> Story.courseSubmissionTable ck
     return (stc, sti)
-  renderBootstrapPage . bootStrapUserFrame s . content $ CourseSubmissions now stc sti
+  renderBootstrapPage . bootstrapUserFrame s . content $ CourseSubmissions now stc sti
 
 content :: PageData -> IHtml
 content = pageDataCata courseSubmissionsContent

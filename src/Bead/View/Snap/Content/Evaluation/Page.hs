@@ -50,7 +50,7 @@ evaluationPage = withUserState $ \s -> do
     , sbmEvaluationKey = Nothing
     , userTime = tc
     }
-  renderBootstrapPage . bootStrapUserFrame s $ evaluationContent pageData
+  renderBootstrapPage . bootstrapUserFrame s $ evaluationContent pageData
 
 modifyEvaluationPage :: GETContentHandler
 modifyEvaluationPage = withUserState $ \s -> do
@@ -64,7 +64,7 @@ modifyEvaluationPage = withUserState $ \s -> do
   , sbmEvaluationKey = Just ek
   , userTime = tc
   }
-  renderBootstrapPage . bootStrapUserFrame s $ evaluationContent pageData
+  renderBootstrapPage . bootstrapUserFrame s $ evaluationContent pageData
 
 -- Reads the evaluation result, from the parameters and determine if the content
 -- of the text area would be a comment of the textual evaluation of the given submission.
@@ -151,9 +151,6 @@ evaluationContent pd = do
       tc = userTime pd
   msg <- getI18N
   return $ do
-    Bootstrap.row $ Bootstrap.colMd12 $ hr
-    Bootstrap.row $ Bootstrap.colMd12 $ Bootstrap.pageHeader $
-      h1 $ fromString $ msg $ Msg_LinkText_Evaluation "Evaluation"
     Bootstrap.row $ Bootstrap.colMd12 $
       H.p $ fromString . msg $ Msg_Evaluation_Info $ concat
         [ "It is not mandatory to evaluate the submission, it is allowed to comment on it only.  "

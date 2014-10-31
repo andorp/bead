@@ -28,7 +28,7 @@ data PageData = PageData {
 submissionListPage :: GETContentHandler
 submissionListPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
-  let render p = renderBootstrapPage $ bootStrapUserFrame s p
+  let render p = renderBootstrapPage $ bootstrapUserFrame s p
   -- TODO: Refactor use guards
   usersAssignment ak $ \assignment -> do
     case assignment of
@@ -50,9 +50,6 @@ submissionListContent :: PageData -> IHtml
 submissionListContent p = do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h1 $
-      fromString $ msg $ Msg_LinkText_SubmissionList "Submissions"
     let info = smList p -- Submission List Info
     Bootstrap.rowColMd12 $ Bootstrap.table $ tbody $ do
       (msg $ Msg_SubmissionList_CourseOrGroup "Course, group:") .|. (slGroup info)
@@ -106,9 +103,6 @@ invalidAssignment :: IHtml
 invalidAssignment = do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h1 $
-      fromString $ msg $ Msg_LinkText_SubmissionList "Submissions"
     Bootstrap.rowColMd12 $ p $ fromString $
       msg $ Msg_SubmissionList_NonAssociatedAssignment "This assignment cannot be accessed by this user."
 
@@ -116,9 +110,6 @@ assignmentNotStartedYet :: IHtml
 assignmentNotStartedYet = do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h1 $
-      fromString $ msg $ Msg_LinkText_SubmissionList "Submissions"
     Bootstrap.rowColMd12 $ p $ fromString $
       msg $ Msg_SubmissionList_NonReachableAssignment "This assignment cannot be accessed."
 

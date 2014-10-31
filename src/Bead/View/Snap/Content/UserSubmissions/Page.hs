@@ -26,7 +26,7 @@ userSubmissionPage = withUserState $ \s -> do
   mDesc <- userStory $ do
              Story.isAdministratedAssignment aKey
              Story.userSubmissions username aKey
-  let render p = renderBootstrapPage $ bootStrapUserFrame s p
+  let render p = renderBootstrapPage $ bootstrapUserFrame s p
   case mDesc of
     Nothing -> render unauthorized
     Just  d -> do
@@ -38,16 +38,10 @@ unauthorized = do
   msg <- getI18N
   return . fromString . msg $ Msg_UserSubmissions_NonAccessibleSubmissions "This submission cannot be accessed by this user."
 
-submissionHeader msg = do
-  Bootstrap.rowColMd12 $ hr
-  Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
-    fromString $ msg $ Msg_LinkText_UserSubmissions "Submissions"
-
 userSubmissionHtml :: UserTimeConverter -> UserSubmissionDesc -> IHtml
 userSubmissionHtml ut u = do
   msg <- getI18N
   return $ do
-    submissionHeader msg
     Bootstrap.rowColMd12 $ Bootstrap.table $ tbody $ do
       (msg $ Msg_UserSubmissions_Course "Course:")         .|. (usCourse u)
       (msg $ Msg_UserSubmissions_Assignment "Assignment:") .|. (usAssignmentName u)

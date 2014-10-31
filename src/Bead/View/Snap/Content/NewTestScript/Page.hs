@@ -40,7 +40,7 @@ modifyTestScript = ViewModifyHandler modifyTestScriptPage postModifyTestScript
 newTestScriptPage :: GETContentHandler
 newTestScriptPage = withUserState $ \s -> do
   cs <- userStory Story.administratedCourses
-  renderBootstrapPage . bootStrapUserFrame s $ testScriptContent (Create cs)
+  renderBootstrapPage . bootstrapUserFrame s $ testScriptContent (Create cs)
 
 postNewTestScript :: POSTContentHandler
 postNewTestScript = do
@@ -64,7 +64,7 @@ modifyTestScriptPage = withUserState $ \s -> do
     (script, ck)  <- Story.loadTestScript tsk
     (course, _gk) <- Story.loadCourse ck
     return (course, script)
-  renderBootstrapPage . bootStrapUserFrame s $
+  renderBootstrapPage . bootstrapUserFrame s $
     testScriptContent (Modify (courseName course) tsk script)
 
 postModifyTestScript :: POSTContentHandler
@@ -93,9 +93,6 @@ hasNoCourses pd = do
   msg <- getI18N
   return $ do
     let pageTitle = pageDataCata (const $ Msg_LinkText_NewTestScript "New Test") (const3 $ Msg_LinkText_ModifyTestScript "Modify Test Script") pd
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
-      fromString $ msg $ pageTitle
     Bootstrap.rowColMd12 $ p $
       fromString . msg $ Msg_NewTestScript_HasNoCourses "This user cannot administer any courses."
 
@@ -122,12 +119,8 @@ pageContent pd = do
   let description = textField testScriptDescField (Msg_NewTestScript_Description "Description") tsDescription
   let help        = textArea  testScriptNotesField (Msg_NewTestScript_Notes "Help for writing test cases") tsNotes
   let script      = textArea  testScriptScriptField (Msg_NewTestScript_Script "Test script") tsScript
-  let pageTitle   = pageDataCata (const $ Msg_LinkText_NewTestScript "New Test") (const3 $ Msg_LinkText_ModifyTestScript "Modify Test Script") pd
 
   return $ do
-    Bootstrap.rowColMd12 $ hr
-    Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
-      fromString $ msg $ pageTitle
     postForm (routeOf $ testScriptPage pd) $ do
       course msg
       name

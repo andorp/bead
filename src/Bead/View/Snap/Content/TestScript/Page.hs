@@ -43,7 +43,7 @@ modifyTestScript = ViewModifyHandler modifyTestScriptPage postModifyTestScript
 newTestScriptPage :: GETContentHandler
 newTestScriptPage = withUserState $ \s -> do
   cs <- userStory Story.administratedCourses
-  renderBootstrapPage . bootStrapUserFrame s $ testScriptContent (Create cs)
+  renderBootstrapPage . bootstrapUserFrame s $ testScriptContent (Create cs)
 
 postNewTestScript :: POSTContentHandler
 postNewTestScript = do
@@ -67,7 +67,7 @@ modifyTestScriptPage = withUserState $ \s -> do
     (script, ck)  <- Story.loadTestScript tsk
     (course, _gk) <- Story.loadCourse ck
     return (course, script)
-  renderBootstrapPage . bootStrapUserFrame s $
+  renderBootstrapPage . bootstrapUserFrame s $
     testScriptContent (Modify (courseName course) tsk script)
 
 postModifyTestScript :: POSTContentHandler
@@ -106,8 +106,6 @@ hasPageContent :: PageData -> IHtml
 hasPageContent pd = do
   msg <- getI18N
   return $ do
-    Bootstrap.row $ Bootstrap.colMd12 $ hr
-    Bootstrap.row $ Bootstrap.colMd12 $ Bootstrap.pageHeader $ h1 "Test Script"
     Bootstrap.row $ Bootstrap.colMd12 $ H.form $ do
       postForm (routeOf $ testScriptPage pd) $ do
         Bootstrap.textInput
