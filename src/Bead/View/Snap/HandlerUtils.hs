@@ -18,6 +18,7 @@ module Bead.View.Snap.HandlerUtils (
   , renderPagelet
   , renderDynamicPagelet
   , renderBootstrapPage
+  , renderBootstrapPublicPage
   , renderPublicPage
   , setInSessionE
   , setReqParamInSession
@@ -197,6 +198,16 @@ renderPublicPage p = do
   t <- maybe (return Nothing) (withTop dictionaryContext . getDictionary) language
   let translator = maybe trans unDictionary t
   blaze $ translate translator p
+
+-- Renders the public page selecting the I18N translation based on the
+-- language stored in the session, if there is no such value, the
+-- default translator function is used
+renderBootstrapPublicPage :: IHtml -> Handler App b ()
+renderBootstrapPublicPage p = do
+  language <- withTop sessionManager languageFromSession
+  t <- maybe (return Nothing) (withTop dictionaryContext . getDictionary) language
+  let translator = maybe trans unDictionary t
+  blaze (runBootstrapPage p translator)
 
 withUserState :: (UserState -> HandlerError App b c) -> HandlerError App b c
 withUserState = (userState >>=)

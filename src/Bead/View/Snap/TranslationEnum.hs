@@ -20,6 +20,8 @@ translationList =
   , Msg_Login_Registration ()
   , Msg_Login_Forgotten_Password ()
   , Msg_Login_InternalError ()
+  , Msg_Login_SelectLanguage ()
+  , Msg_Login_InvalidPasswordOrUser ()
 
   , Msg_Routing_InvalidRoute ()
   , Msg_Routing_SessionTimedOut ()

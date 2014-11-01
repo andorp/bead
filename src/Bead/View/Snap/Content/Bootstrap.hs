@@ -7,6 +7,7 @@ Collection of bootstrap related pagelets.
 
 import           Data.Data
 import           Data.Maybe (fromMaybe)
+import           Data.Monoid (mempty)
 import           Data.String
 
 import           Text.Blaze.Html5 hiding (map)
@@ -60,6 +61,8 @@ colOffset12 = ColumnOffset 12
 -- Returns the HTML class attribute value for the given column offset
 columnOffsetClass = columnOffset $ \offset -> "col-md-offset-" ++ show offset
 
+container = H.div ! class_ "container"
+
 formGroup = H.div ! class_ "form-group"
 
 -- | Creates a list group div, which can contain a various list group items
@@ -74,6 +77,37 @@ listGroupTextItem text = H.a ! href "#" ! class_ "list-group-item" $ fromString 
 
 -- | Creates a badge that can be displayed in the list group
 badge text = H.span ! class_ "badge" $ fromString text
+
+-- | Creates a caret sign
+caret = H.span ! class_ "caret" $ mempty
+
+-- | Creates a justified button group
+buttonGroupJustified = H.div ! class_ "btn-group btn-group-justified"
+
+-- | Creates a button group
+buttonGroup = H.div ! class_ "btn-group"
+
+-- | Creates a button styled link
+buttonLink ref text =
+  a ! class_ "btn btn-default"
+    ! customAttribute "role" "button"
+    ! href (fromString ref)
+    $ (fromString text)
+
+-- | Creates a dropdown button
+dropdownButton text =
+  button ! type_ "button"
+         ! class_ "btn btn-default dropdown-toggle"
+         ! dataAttribute "toggle" "dropdown"
+         $ do (fromString text); caret
+
+-- | Creates a list of dropdown menu items
+dropdownMenu items = H.ul ! class_ "dropdown-menu" ! customAttribute "role" "menu" $ mapM_ li items
+
+-- | Creates a dropdown from the items with the given text on the button
+dropdown text items = buttonGroup $ do
+  dropdownButton text
+  dropdownMenu items
 
 -- | Creates a form control selection with the given parameter name, a selector
 -- function which determines the selected value, and possible values

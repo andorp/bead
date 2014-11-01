@@ -11,6 +11,8 @@ DictionaryFile {
     , Msg_Login_Registration { trans = "Regisztráció" }
     , Msg_Login_Forgotten_Password { trans = "Elfelejtett jelszó" }
     , Msg_Login_InternalError { trans = "Belső hiba történt, jelezzük az üzemeltetőknek!" }
+    , Msg_Login_SelectLanguage { trans = "Nyelvek" }
+    , Msg_Login_InvalidPasswordOrUser { trans = "Ismeretlen felhasználó vagy jelszó!" }
     , Msg_Routing_InvalidRoute { trans = "Érvénytelen útvonal" }
     , Msg_Routing_SessionTimedOut { trans = "Lejárt a munkamenet" }
     , Msg_ErrorPage_Title { trans = "Error" }

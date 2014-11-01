@@ -13,6 +13,8 @@ data Translation a
   | Msg_Login_Registration { trans :: a }
   | Msg_Login_Forgotten_Password { trans :: a }
   | Msg_Login_InternalError { trans :: a }
+  | Msg_Login_SelectLanguage { trans :: a }
+  | Msg_Login_InvalidPasswordOrUser { trans :: a }
 
   | Msg_Routing_InvalidRoute { trans :: a }
   | Msg_Routing_SessionTimedOut { trans :: a }

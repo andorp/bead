@@ -4,6 +4,8 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Bead.View.Snap.Pagelets where
 
+import           Prelude hiding (span)
+
 import           Data.Char (isAlphaNum)
 import           Data.Data
 import           Data.Maybe (fromMaybe)
@@ -14,7 +16,7 @@ import           Data.Time.Clock
 import           Text.Blaze.Html5 hiding (link, option)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
-import           Text.Blaze.Html5.Attributes hiding (id)
+import           Text.Blaze.Html5.Attributes hiding (id, span)
 
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext (UserState(..))
@@ -136,11 +138,20 @@ bootstrapUserFrame s content secs = withUserFrame' content
       return $ do
         header
         status
-        H.div ! class_ "container" $ do
+        Bootstrap.container $ do
           Bootstrap.rowColMd12 $ hr
           Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
             fromString $ msg $ linkText $ page s
           content
+
+-- | Places a given content in a public frame
+publicFrame :: IHtml -> IHtml
+publicFrame content = do
+  header <- publicHeader
+  content <- content
+  return $ do
+    header
+    Bootstrap.container content
 
 -- * Basic building blocks
 
@@ -481,6 +492,16 @@ pageStatus = maybe noMessage message . status
       let message = fromString . statusMessage msg msg
           color = statusMessage (const "yellow") (const "red")
       return $ H.div ! A.id "status" # backgroundColor (color m) $ H.span $ (message m)
+
+publicHeader :: IHtml
+publicHeader = do
+  msg <- getI18N
+  return $ do
+    H.div ! class_ "navbar navbar-default" $ do
+      H.style ".body{padding-top:70px}"
+      H.div ! class_ "container" $ do
+        H.div ! class_ "navbar-header" $ do
+         span ! class_ "navbar-brand" $ "BE-AD"
 
 bootStrapHeader :: UserState -> Int -> IHtml
 bootStrapHeader s secs = do
