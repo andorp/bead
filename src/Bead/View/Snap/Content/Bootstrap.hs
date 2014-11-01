@@ -228,6 +228,9 @@ colMd12 = H.div ! class_ "col-md-12"
 -- | Creates a bootstrap raw with only one colMd12 column
 rowColMd12 = row . colMd12
 
+-- | Creates a boostrap row with a 4 sized column in the middle of the page
+rowCol4Offset4 = row . colMd colSize4 colOffset4
+
 -- | Creates a bootstrap page header
 pageHeader = H.div ! class_ "page-header"
 
