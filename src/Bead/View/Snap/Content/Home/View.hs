@@ -5,6 +5,7 @@ import           Control.Monad.Identity
 import           Data.Function (on)
 import           Data.List (intersperse, sortBy)
 import qualified Data.Map as Map
+import           Data.Maybe (isNothing)
 import           Data.String (fromString)
 
 import           Text.Blaze.Html5 hiding (map, id)
@@ -91,7 +92,8 @@ homeContent d = do
             when (not $ isAdmin r) $ do
               Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString $ msg $ Msg_Home_StudentTasks "Student Menu"
               i18n msg $ availableAssignments (timeConverter d) (assignments d)
-              i18n msg $ navigation [groupRegistration]
+              let noCourseRegistered = isNothing (assignments d)
+              when noCourseRegistered $ i18n msg $ navigation [groupRegistration]
 
             -- End
             Bootstrap.row $ Bootstrap.colMd12 $ hr
