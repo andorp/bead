@@ -117,12 +117,7 @@ hasPageContent pd = do
           (fromString . msg $ Msg_NewTestScript_Description "Description")
           (maybe mempty fromString $ testScriptDesc pd)
 
-        H.div ! class_ "form-group" $ do
-          H.label ! for "exampleInputEmail1" $ "Test Script"
-          select ! class_ "combobox form-control" ! A.style "display:none" ! A.id "CountrySelection" $ do
-            option ! value "" ! selected "selected" $ "Select Test Script"
-            option ! value "TestScript1" $ "Test Script 1"
-            option ! value "TestScript2" $ "Test Script 2"
+        testScriptCourse msg
 
         Bootstrap.textArea
           (fieldName testScriptScriptField)
@@ -138,9 +133,9 @@ hasPageContent pd = do
         submitButton (fieldName testScriptSaveButton)
         (fromString . msg $ Msg_NewTestScript_Save "Commit")
 
-      Bootstrap.row $ Bootstrap.colMd12 $ hr
-
+    Bootstrap.row $ Bootstrap.colMd12 $ hr
     Bootstrap.turnSelectionsOn
+
   where
     testScriptPage = pageDataCata (const (Pages.newTestScript ())) (\_name key _script -> Pages.modifyTestScript key ())
     testScriptName = pageDataCata (const Nothing) (const2 (Just . tsName))
@@ -148,7 +143,7 @@ hasPageContent pd = do
     testScriptNotes = pageDataCata (const Nothing) (const2 (Just . tsNotes))
     testScriptScript = pageDataCata (const Nothing) (const2 (Just . tsScript))
     testScriptCourse msg = pageDataCata
-      (selection (fieldName testScriptCourseKeyField) . Prelude.map (Prelude.id *** courseNameAndType))
+      (Bootstrap.selection (fieldName testScriptCourseKeyField) (const False) . Prelude.map (Prelude.id *** courseNameAndType))
       (\courseName _key _script -> fromString courseName)
       where
         courseNameAndType c = concat
