@@ -95,9 +95,6 @@ courseAdminContent :: PageData -> IHtml
 courseAdminContent info = do
   msg <- getI18N
   return $ do
-    Bootstrap.row $ Bootstrap.colMd12 $ hr
-    Bootstrap.row $ Bootstrap.colMd12 $ H.div ! class_ "page-header" $ h1 $ do
-      fromString . msg $ Msg_LinkText_CourseAdministration "Course Administration"
     Bootstrap.row $ do
       -- New Group for the course
       Bootstrap.colMd12 $ do
