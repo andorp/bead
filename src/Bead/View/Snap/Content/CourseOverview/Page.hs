@@ -12,6 +12,7 @@ import           Text.Blaze.Html5.Attributes hiding (content)
 
 import qualified Bead.Controller.UserStories as Story
 import           Bead.View.Snap.Content
+import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
 import           Bead.View.Snap.RequestParams
 import           Bead.View.Snap.Content.SubmissionTableBS
 
@@ -43,17 +44,11 @@ courseSubmissionsContent :: UTCTime -> SubmissionTableContext -> SubmissionTable
 courseSubmissionsContent now c s = do
   msg <- getI18N
   return $ do
-            -- Header
-            H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ H.div ! class_ "page-header" $ do
-                hr
-                h1 . fromString . msg $ Msg_LinkText_CourseOverview "Course Overview"
-
-            H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ p $ fromString  . msg $ Msg_Home_SubmissionTable_Info $ concat
-              [ "Assignments may be modified by clicking on their identifiers if you have rights for the modification (their names are shown in the tooltip).  "
-              , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
-              , "then clicking on the button."
-              ]
-            i18n msg $ submissionTable "course-table" now c s
-
-            -- End
-            H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ hr
+    Bootstrap.rowColMd12 $
+      fromString  . msg $ Msg_Home_SubmissionTable_Info $ concat
+        [ "Assignments may be modified by clicking on their identifiers if you have rights for the modification (their names are shown in the tooltip).  "
+        , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
+        , "then clicking on the button."
+        ]
+    i18n msg $ submissionTable "course-table" now c s
+    Bootstrap.rowColMd12 $ hr
