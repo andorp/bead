@@ -53,10 +53,6 @@ profileContent :: [TimeZoneName] -> User -> DictionaryInfos -> IHtml
 profileContent ts user ls = do
   msg <- getI18N
   return $ do
-        H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ H.div ! class_ "page-header" $ do
-            hr
-            h1 . fromString . msg $ Msg_LinkText_Profile "Profile"
-
         H.div ! class_ "row" $ do
             -- User Details
             let regFullNameField = fromString $ B.name regFullNamePrm
