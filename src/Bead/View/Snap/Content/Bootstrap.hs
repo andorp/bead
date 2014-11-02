@@ -178,6 +178,12 @@ textInputWithDefault paramName labelText value =
             ! A.id (fromString paramName)
             ! A.value (fromString value)
 
+-- | Creates a labeled text as a form group element
+labeledText name value =
+  formGroup $ do
+    H.label $ fromString $ name
+    H.span ! class_ "form-control" $ value
+
 -- | Creates a text area input with the given name as id, a given label
 textArea paramName labelText html =
   formGroup $ do
@@ -224,6 +230,9 @@ colMd size offset =
 
 -- | Creates a bootstrap 12 column
 colMd12 = H.div ! class_ "col-md-12"
+
+-- | Creates a bootstrap 6 width column
+colMd6 = H.div ! class_ "col-md-6"
 
 -- | Creates a bootstrap raw with only one colMd12 column
 rowColMd12 = row . colMd12

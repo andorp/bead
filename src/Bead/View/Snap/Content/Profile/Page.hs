@@ -8,14 +8,12 @@ import           Control.Arrow ((&&&))
 import           Data.String
 
 import           Text.Blaze.Html5 hiding (map)
-import qualified Text.Blaze.Html5 as H hiding (map)
-import           Text.Blaze.Html5.Attributes
-import qualified Text.Blaze.Html5.Attributes as A
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (currentUser)
 import           Bead.Domain.Entities hiding (name)
 import           Bead.View.Snap.Content hiding (name, option)
+import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
 import qualified Bead.View.Snap.DataBridge as B
 import           Bead.View.Snap.Dictionary
 import           Bead.View.Snap.ResetPassword
@@ -53,69 +51,30 @@ profileContent :: [TimeZoneName] -> User -> DictionaryInfos -> IHtml
 profileContent ts user ls = do
   msg <- getI18N
   return $ do
-        H.div ! class_ "row" $ do
-            -- User Details
-            let regFullNameField = fromString $ B.name regFullNamePrm
-                userLanguageField = fromString $ B.name userLanguagePrm
-                userTimeZoneField = fromString $ B.name userTimeZonePrm
-                fullName = fromString $ u_name user
-            H.div ! class_ "col-md-6" $
-              postForm (routeOf profile) $ do
-                H.div ! class_ "form-group" $ do
-                    H.label $ fromString $ msg $ Msg_Profile_User "Username: "
-                    H.span ! class_ "form-control" $ usernameCata fromString $ u_username user
-                H.div ! class_ "form-group" $ do
-                    H.label $ fromString $ msg $ Msg_Profile_Email "Email: "
-                    H.span ! class_ "form-control" $ emailCata fromString $ u_email user
-                H.div ! class_ "form-group" $ do
-                    H.label ! for regFullNameField $ fromString $ msg $ Msg_Profile_FullName "Full name: "
-                    input ! class_ "form-control" -- ! placeholder fullName
-                          ! type_ "text" ! A.id regFullNameField ! A.name regFullNameField
-                          ! value fullName
-                -- Languages
-                H.div ! class_ "form-group" $
-                  selectionWithDefAndAttr
-                    userLanguageField
-                    [class_ "combobox form-control", A.style "display:none", A.required ""]
-                    (== u_language user)
-                        languages
-
-                -- Timezones
-                H.div ! class_ "form-group" $
-                  selectionWithDefAndAttr
-                    userTimeZoneField
-                    [class_ "combobox form-control", A.style "display:none", A.required ""]
-                    (== u_timezone user)
-                    timeZones
-
-                button ! type_ "submit"
-                       ! (name . fromString $ fieldName changeProfileBtn)
-                       ! class_ "btn btn-block btn-default"
-                       $ fromString $ msg $ Msg_Profile_SaveButton "Save"
-
-            -- Password Section
-            let oldPasswordField = fromString $ B.name oldPasswordPrm
-                newPasswordField = fromString $ B.name newPasswordPrm
-                newPasswordAgain = fromString $ B.name newPasswordAgainPrm
-            H.div ! class_ "col-md-6" $
-              postForm (routeOf changePassword) `withId` (rFormId changePwdForm) $ do
-                H.div ! class_ "form-group" $ do
-                    H.label ! for oldPasswordField $ fromString $ msg $ Msg_Profile_OldPassword "Old password: "
-                    input ! class_ "form-control" ! A.id oldPasswordField ! A.name oldPasswordField
-                          ! placeholder "Password" ! type_ "password"
-                H.div ! class_ "form-group" $ do
-                    H.label ! for newPasswordField $ fromString $ msg $ Msg_Profile_NewPassword "New password: "
-                    input ! class_ "form-control" ! A.id newPasswordField ! A.name newPasswordField
-                          ! placeholder "Password" ! type_ "password"
-                H.div ! class_ "form-group" $ do
-                    H.label ! for newPasswordAgain $ fromString $ msg $ Msg_Profile_NewPasswordAgain "New password (again): "
-                    input ! class_ "form-control" ! A.id newPasswordAgain ! A.name newPasswordAgain
-                          ! placeholder "Password" ! type_ "password"
-                button ! type_ "submit" ! name (fieldName changePasswordBtn) ! class_ "btn btn-block btn-default" $ 
-                  fromString $ msg $ Msg_Profile_ChangePwdButton "Update"
-
-        H.div ! class_ "row" $ H.div ! class_ "col-md-12" $ hr
-        script ! type_ "text/javascript" $ "//\n $(document).ready(function(){\n $('.combobox').combobox()\n });\n //"
+    Bootstrap.row $ do
+      -- User Details
+      let regFullNameField = fromString $ B.name regFullNamePrm
+      let userLanguageField = fromString $ B.name userLanguagePrm
+      let userTimeZoneField = fromString $ B.name userTimeZonePrm
+      let fullName = fromString $ u_name user
+      Bootstrap.colMd6 $ postForm (routeOf profile) $ do
+        Bootstrap.labeledText (msg $ Msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
+        Bootstrap.labeledText (msg $ Msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
+        Bootstrap.textInputWithDefault regFullNameField (msg $ Msg_Profile_FullName "Full name: ") fullName
+        Bootstrap.selection userLanguageField (== u_language user) languages
+        Bootstrap.selection userTimeZoneField (== u_timezone user) timeZones
+        Bootstrap.submitButton (fieldName changeProfileBtn) (msg $ Msg_Profile_SaveButton "Save")
+      -- Password Section
+      let oldPasswordField = fromString $ B.name oldPasswordPrm
+      let newPasswordField = fromString $ B.name newPasswordPrm
+      let newPasswordAgain = fromString $ B.name newPasswordAgainPrm
+      Bootstrap.colMd6 $ postForm (routeOf changePassword) `withId` (rFormId changePwdForm) $ do
+        Bootstrap.passwordInput oldPasswordField (msg $ Msg_Profile_OldPassword "Old password: ")
+        Bootstrap.passwordInput newPasswordField (msg $ Msg_Profile_NewPassword "New password: ")
+        Bootstrap.passwordInput newPasswordAgain (msg $ Msg_Profile_NewPasswordAgain "New password (again): ")
+        Bootstrap.submitButton (fieldName changePasswordBtn) (msg $ Msg_Profile_ChangePwdButton "Update")
+      Bootstrap.colMd12 $ hr
+      Bootstrap.turnSelectionsOn
   where
     timeZones = map (Prelude.id &&& timeZoneName Prelude.id) ts
     languages = map langValue ls
