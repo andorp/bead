@@ -68,6 +68,9 @@ formGroup = H.div ! class_ "form-group"
 -- | Creates a list group div, which can contain a various list group items
 listGroup = H.div ! class_ "list-group"
 
+-- | Creates and unordered list as a list group
+unorderedListGroup = H.ul ! class_ "list-group"
+
 -- | Creates a linked list group item with a route to point at, and a text to
 -- display
 listGroupLinkItem route text = H.a ! href (fromString route) ! class_ "list-group-item" $ text

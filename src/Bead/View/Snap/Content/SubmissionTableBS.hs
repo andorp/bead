@@ -29,6 +29,7 @@ import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (UserStory)
 import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Content
+import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
 import qualified Bead.View.Snap.DataBridge as Param
 
 import           Text.Blaze.Html5 ((!))
@@ -297,21 +298,14 @@ testScriptTable cti ck = maybe (return "") courseFound $ Map.lookup ck cti where
   courseFound ts = do
     msg <- getI18N
     return $ do
-      table' $ do
-        headLine . msg $ Msg_Home_ModifyTestScriptTable "Testers"
+      Bootstrap.rowColMd12 $ do
+        H.h3 $ fromString $ msg $ Msg_Home_ModifyTestScriptTable "Testers"
         case ts of
-          []  -> dataCell noStyle $ fromString . msg $
-                   Msg_Home_NoTestScriptsWereDefined "There are no testers for the course."
-          ts' -> mapM_ testScriptLine ts'
-    where
-      headLine = H.tr . (H.th # textAlign "left" ! A.colspan "4") . fromString
-      tableId = join ["tst-", courseKeyMap id ck]
-      dataCell r = H.td -- # (informationalCell <> r)
-
-      testScriptLine (tsk,tsi) = do
-        dataCell noStyle $ linkWithText
-          (routeOf (Pages.modifyTestScript tsk ()))
-          (tsiName tsi)
+          []  -> H.p $ fromString $ msg $ Msg_Home_NoTestScriptsWereDefined "There are no testers for the course."
+          ts' -> Bootstrap.unorderedListGroup $ forM_ ts' $ \(tsk, tsi) ->
+                   Bootstrap.listGroupLinkItem
+                     (routeOf (Pages.modifyTestScript tsk ()))
+                     (fromString $ tsiName tsi)
 
 -- Renders a menu for the creation of the course or group assignment if the
 -- user administrates the given group or course
