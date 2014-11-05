@@ -47,7 +47,6 @@ userDetailForm timeZones user dictionaries = do
   msg <- getI18N
   return $ do
     postForm (routeOf userDetails) $ do
-      --tableLine (msg $ Msg_Input_User_Role "Role")  $ required $ i18n msg $ inputPagelet (Just $ u_role u)
       Bootstrap.selection (fieldName userRoleField) (== u_role user) (roles msg)
       Bootstrap.textInputWithDefault (fieldName userEmailField) (msg $ Msg_Input_User_Email "Email") (emailCata id $ u_email user)
       Bootstrap.textInputWithDefault (fieldName userFamilyNameField) (msg $ Msg_Input_User_FullName "Full name") (u_name user)
