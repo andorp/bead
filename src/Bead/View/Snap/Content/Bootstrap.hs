@@ -5,6 +5,8 @@ module Bead.View.Snap.Content.Bootstrap where
 Collection of bootstrap related pagelets.
 -}
 
+import           Control.Monad (when)
+
 import           Data.Data
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid (mempty)
@@ -97,6 +99,30 @@ buttonLink ref text =
     ! href (fromString ref)
     $ (fromString text)
 
+-- | Creates a date time picker using a third party library and turns on if the on switch
+-- is set to True
+datetimePicker paramName date on =
+  H.div ! class_ "input-group date"
+        ! A.id (fromString paramName) $ do
+    input ! class_ "form-control"
+          ! name (fromString paramName)
+          ! type_ "text"
+          ! readonly ""
+          ! required ""
+          ! value (fromString date)
+    H.span ! class_ "input-group-addon" $ H.span ! class_ "glyphicon glyphicon-calendar" $ mempty
+    when on $ dateTimePickerScript paramName
+
+dateTimePickerScript pickerId = script . fromString $ concat
+  [ "$(function () {"
+  ,   "$('#", pickerId, "').datetimepicker({"
+  ,     "format: 'YYYY-MM-DD HH:mm:ss',"
+  ,     "pick12HourFormat: false,"
+  ,     "pickSeconds: true"
+  ,   "});"
+  , "});"
+  ]
+
 -- | Creates a dropdown button
 dropdownButton text =
   button ! type_ "button"
@@ -112,6 +138,9 @@ dropdown text items = buttonGroup $ do
   dropdownButton text
   dropdownMenu items
 
+-- | Creates a paragrapth that represents a help block from a given text
+helpBlock text = p ! class_ "help-block" $ fromString text
+
 -- | Creates a form control selection with the given parameter name, a selector
 -- function which determines the selected value, and possible values
 selection paramName selector values =
@@ -123,9 +152,9 @@ selection paramName selector values =
 
 -- | Creates a form control selection with the given parameter name, a label, a selector
 -- function which determines the selected value, and possible values
-selectionWithLabel paramName labelText selector values = do
-  H.label ! for (fromString paramName) $ (fromString labelText)
-  formGroup $ selectionPart
+selectionWithLabel paramName labelText selector values = formGroup $ do
+  labelFor paramName labelText
+  selectionPart
     paramName
     [class_ "combobox form-control", A.style "display:none", A.required ""]
     selector
@@ -136,6 +165,13 @@ submitButton nameValue text =
   button ! type_ "submit"
          ! (name $ fromString nameValue)
          ! class_ "btn btn-block btn-default"
+         $ fromString text
+
+-- | Creates a submit button with a given attrbute and a given text
+submitButtonWithAttr attr text =
+  button ! type_ "submit"
+         ! class_ "btn btn-block btn-default"
+         ! attr
          $ fromString text
 
 -- | Creates a submit small button with a given name and the given text
@@ -152,17 +188,28 @@ turnSelectionsOn
 -- | Creates a password input with the given name as id, a given label within a form-group control
 passwordInput paramName labelText =
   formGroup $ do
-    H.label ! for (fromString paramName) $ (fromString labelText)
+    labelFor paramName labelText
     H.input ! class_ "form-control"
             ! type_ "password"
             ! required ""
             ! name (fromString paramName)
             ! A.id (fromString paramName)
 
+inputForFormControl = H.input ! class_ "form-control"
+
+-- | Creates a text input field only with a defualt value
+textInputFieldWithDefault paramName value =
+    H.input ! class_ "form-control"
+            ! type_ "text"
+            ! A.required ""
+            ! A.name (fromString paramName)
+            ! A.id (fromString paramName)
+            ! A.value (fromString value)
+
 -- | Creates a text input with the given name as id, a given label and a placeholder text
 textInput paramName labelText placeholderText =
   formGroup $ do
-    H.label ! for (fromString paramName) $ (fromString labelText)
+    labelFor paramName labelText
     H.input ! class_ "form-control"
             ! type_ "text"
             ! A.required ""
@@ -173,13 +220,12 @@ textInput paramName labelText placeholderText =
 -- | Creates a text input with the given name as id, a given label and a default value
 textInputWithDefault paramName labelText value =
   formGroup $ do
-    H.label ! for (fromString paramName) $ (fromString labelText)
-    H.input ! class_ "form-control"
-            ! type_ "text"
-            ! A.required ""
-            ! A.name (fromString paramName)
-            ! A.id (fromString paramName)
-            ! A.value (fromString value)
+    labelFor paramName labelText
+    textInputFieldWithDefault paramName value
+
+-- | Creates a label for the given id and given text
+labelFor name text =
+  H.label ! for (fromString name) $ (fromString text)
 
 -- | Creates a labeled text as a form group element
 labeledText name value =
@@ -187,28 +233,25 @@ labeledText name value =
     H.label $ fromString $ name
     H.span ! class_ "form-control" $ value
 
--- | Creates a text area input with the given name as id, a given label
-textArea paramName labelText html =
-  formGroup $ do
-    H.label ! for (fromString paramName) $ (fromString labelText)
-    H.textarea ! class_ "form-control"
-               ! A.required ""
-               ! A.rows "20"
-               ! A.id (fromString paramName)
-               ! A.name (fromString paramName) $ html
-
--- | Creates a text area input with the given name as id, a given label
-utf8TextArea paramName labelText html =
-  formGroup $ do
-    H.label ! for (fromString paramName) $ (fromString labelText)
+-- | Creates a text area input field with the given name as id, a given id
+textAreaField paramName =
     H.textarea ! class_ "form-control"
                ! A.required ""
                ! A.rows "20"
                ! A.id (fromString paramName)
                ! A.name (fromString paramName)
-               ! A.acceptCharset "utf-8"
-               $ html
 
+-- | Creates a text area input with the given name as id, a given label
+textArea paramName labelText html =
+  formGroup $ do
+    labelFor paramName labelText
+    textAreaField paramName html
+
+-- | Creates a text area input with the given name as id, a given label
+utf8TextArea paramName labelText html =
+  formGroup $ do
+    labelFor paramName labelText
+    textAreaField paramName ! A.acceptCharset "utf-8" $ html
 
 -- | Creates a radio button group, with a given values and labels, the parameter name
 -- as numbered ids. The first value is the primary active

@@ -48,15 +48,8 @@ newAssignmentContent pd = do
 
                         assignmentTitle = fromAssignment (fromString . Assignment.name) mempty pd
 
-                    H.label ! for assignmentTitleField $
-                      fromString $ msg $ Msg_NewAssignment_Title "Title"
-
-                    editOrReadOnly pd $
-                      input ! class_ "form-control" ! A.id assignmentTitleField
-                            ! name assignmentTitleField
-                            ! placeholder assignmentTitlePlaceholder ! type_ "text"
-                            ! required ""
-                            ! value assignmentTitle
+                    Bootstrap.labelFor assignmentTitleField (fromString $ msg $ Msg_NewAssignment_Title "Title")
+                    editOrReadOnly pd $ Bootstrap.textInputFieldWithDefault assignmentTitleField assignmentTitle
 
                     H.p ! class_ "help-block"$ fromString . msg $ Msg_NewAssignment_Info_Normal $ concat
                       [ "Solutions may be submitted from the time of opening until the time of closing. "
@@ -67,17 +60,7 @@ newAssignmentContent pd = do
                 -- Visibility information of the assignment
                 H.h4 $ fromString $ msg $ Msg_NewAssignment_SubmissionDeadline "Visibility"
 
-                let dateTimePickerScript pickerId = script . fromString $ concat
-                      [ "$(function () {"
-                      ,   "$('#", pickerId, "').datetimepicker({"
-                      ,     "format: 'YYYY-MM-DD HH:mm:ss',"
-                      ,     "pick12HourFormat: false,"
-                      ,     "pickSeconds: true"
-                      ,   "});"
-                      , "});"
-                      ]
-
-                    date t =
+                let date t =
                       let localTime = timeZoneConverter t
                           timeOfDay = Time.localTimeOfDay localTime
                       in ( show $ Time.localDay         localTime
@@ -112,30 +95,16 @@ newAssignmentContent pd = do
                   Bootstrap.row $ do
 
                     -- Opening date of the assignment
-                    H.div ! class_ "col-md-6" $ do
-                      let assignmentStart' = fieldName assignmentStartField
-                          assignmentStart  = fromString assignmentStart'
-
-                      H.label ! for assignmentStart $ fromString $ msg $ Msg_NewAssignment_StartDate "Opens"
-                      H.div ! class_ "input-group date" ! A.id assignmentStart $ do
-                        input ! class_ "form-control" ! A.name assignmentStart
-                              ! type_ "text" ! readonly "" ! required ""
-                              ! value (fromString startDateStringValue)
-                        H.span ! class_ "input-group-addon" $ H.span ! class_ "glyphicon glyphicon-calendar" $ mempty
-                      onlyOnEdit pd $ dateTimePickerScript assignmentStart'
+                    Bootstrap.colMd6 $ do
+                      let assignmentStart = fieldName assignmentStartField
+                      Bootstrap.labelFor assignmentStart $ fromString $ msg $ Msg_NewAssignment_StartDate "Opens"
+                      Bootstrap.datetimePicker assignmentStart startDateStringValue isEditPage
 
                     -- Closing date of the assignment
-                    H.div ! class_ "col-md-6" $ do
-                      let assignmentEnd' = fieldName assignmentEndField
-                          assignmentEnd  = fromString assignmentEnd'
-
-                      H.label ! for assignmentEnd $ fromString $ msg $ Msg_NewAssignment_EndDate "Closes"
-                      H.div ! class_ "input-group date" ! A.id assignmentEnd $ do
-                        input ! class_ "form-control" ! A.name assignmentEnd
-                              ! type_ "text" ! readonly "" ! required ""
-                              ! value (fromString endDateStringValue)
-                        H.span ! class_ "input-group-addon" $ H.span ! class_ "glyphicon glyphicon-calendar" $ mempty
-                      onlyOnEdit pd $ dateTimePickerScript assignmentEnd'
+                    Bootstrap.colMd6 $ do
+                      let assignmentEnd = fieldName assignmentEndField
+                      Bootstrap.labelFor assignmentEnd $ msg $ Msg_NewAssignment_EndDate "Closes"
+                      Bootstrap.datetimePicker assignmentEnd endDateStringValue isEditPage
 
                 -- Properties of the assignment
                 H.h4 $ fromString $ msg $ Msg_NewAssignment_Properties "Properties"
@@ -152,25 +121,23 @@ newAssignmentContent pd = do
                           assignmentAspect = fromString $ fieldName assignmentAspectField
                           assignmentPwd    = fromString $ fieldName assignmentPwdField
 
-                      Bootstrap.formGroup $ do
-                          H.div ! class_ "checkbox" $ H.label $ do
+                      bootstrapCheckbox $
                               editable $ checkBox' (fieldName assignmentAspectField)
                                 (Assignment.isBallotBox aas)
                                 Assignment.BallotBox (msg $ Msg_NewAssignment_BallotBox "Ballot Box")
 
-                          p ! class_ "help-block" $  fromString . msg $ Msg_NewAssignment_Info_BallotBox $ concat
+                      Bootstrap.helpBlock $ msg $ Msg_NewAssignment_Info_BallotBox $ concat
                                 [ "(Recommended for tests.) Students will not be able to access submissions and "
                                 , "their evaluations until the assignment is closed."
                                 ]
 
-                      Bootstrap.formGroup $ do
-                          H.div ! class_ "checkbox" $ H.label $ do
+                      bootstrapCheckbox $
                             editable $ checkBox' (fieldName assignmentAspectField)
                               (Assignment.isPasswordProtected aas)
                               (Assignment.Password "")
                               (msg $ Msg_NewAssignment_PasswordProtected "Password-protected")
 
-                          p ! class_ "help-block" $ fromString . msg $ Msg_NewAssignment_Info_Password $ concat
+                      Bootstrap.helpBlock $ msg $ Msg_NewAssignment_Info_Password $ concat
                                 [ "(Recommended for tests.) Submissions may be only submitted by providing the password. "
                                 , "The teacher shall use the password during the test in order to authenticate the "
                                 , "submission for the student."
@@ -178,7 +145,7 @@ newAssignmentContent pd = do
 
                       Bootstrap.formGroup $ do
                           H.label $ fromString $ msg $ Msg_NewAssignment_Password "Password"
-                          editable $ input ! class_ "form-control"
+                          editable $ Bootstrap.inputForFormControl
                                      ! name assignmentPwd ! type_ "text"
                                      ! value (fromString $ fromMaybe "" pwd)
 
@@ -196,9 +163,8 @@ newAssignmentContent pd = do
                 -- Assignment Description
                 Bootstrap.formGroup $ do
                     let assignmentDesc = fromString $ fieldName assignmentDescField
-                    H.label ! for assignmentDesc $ fromString . msg $ Msg_NewAssignment_Description "Description"
-                    editOrReadOnly pd $ textarea ! class_ "form-control" ! A.id assignmentDesc ! rows "20"
-                                                 ! name assignmentDesc ! A.required "" $ do
+                    Bootstrap.labelFor assignmentDesc $ fromString . msg $ Msg_NewAssignment_Description "Description"
+                    editOrReadOnly pd $ Bootstrap.textAreaField assignmentDesc $ do
                       fromString $ fromAssignment Assignment.desc (fromString . msg $
                         Msg_NewAssignment_Description_Default $ unlines
                           [ concat
@@ -281,20 +247,15 @@ newAssignmentContent pd = do
                   pd
 
                 -- Submit buttons
-                onlyOnEdit pd $ Bootstrap.row $ do
-                   H.div ! class_ "col-md-6" $
-                      button ! type_ "submit"
-                             ! class_ "btn btn-block btn-default"
-                             ! onclick (fromString $ concat ["javascript: form.action='", routeOf $ pagePreview pd, "';"])
-                             $ fromString . msg $ Msg_NewAssignment_PreviewButton "Preview"
-                   H.div ! class_ "col-md-6"
-                     $ button ! type_ "submit"
-                              ! class_ "btn btn-block btn-default"
-                              ! onclick (fromString $ concat ["javascript: form.action='", routeOf $ page pd, "';"])
-                              $ fromString . msg $ Msg_NewAssignment_SaveButton "Commit"
+                Bootstrap.row $ do
+                   let formAction page = onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
+                   Bootstrap.colMd6 $
+                      onlyOnEdit pd $ Bootstrap.submitButtonWithAttr (formAction $ pagePreview pd) (msg $ Msg_NewAssignment_PreviewButton "Preview")
+                   Bootstrap.colMd6 $
+                      onlyOnEdit pd $ Bootstrap.submitButtonWithAttr (formAction $ page pd) (msg $ Msg_NewAssignment_SaveButton "Commit")
 
             Bootstrap.row $ Bootstrap.colMd12 $ hr
-            H.script ! type_ "text/javascript" $ "//\n        $(document).ready(function(){\n          $('.combobox').combobox()\n        });\n      //"
+            Bootstrap.turnSelectionsOn
 
     where
 
@@ -315,6 +276,16 @@ newAssignmentContent pd = do
         (const7 t)
         (const7 t)
         (const7 t)
+        pd
+
+      isEditPage = pageDataCata
+        (const5 True)
+        (const5 True)
+        (const6 True)
+        (const5 False)
+        (const7 True)
+        (const7 True)
+        (const7 True)
         pd
 
       timeZoneConverter = pageDataCata
@@ -355,10 +326,9 @@ newAssignmentContent pd = do
             ts
 
           tsSelection ts = do
-            H.label ! for testScriptField $ fromString . msg $ Msg_NewAssignment_TestScripts "Tester"
-            selectionWithDefAndAttr
+            Bootstrap.selectionWithLabel
               testScriptField
-              [class_ "combobox form-control", A.style "display:none"]
+              (msg $ Msg_NewAssignment_TestScripts "Tester")
               (const False)
               (map keyValue (Nothing:map Just ts))
 
@@ -370,10 +340,9 @@ newAssignmentContent pd = do
               preview ts tsk = maybe (return ()) (tsSelectionPreview tsk) ts
 
           tsSelectionPreview tsk ts = do
-            H.label ! for testScriptField $ fromString . msg $ Msg_NewAssignment_TestScripts "Tester"
-            selectionWithDefAndAttr
+            Bootstrap.selectionWithLabel
               testScriptField
-              [class_ "combobox form-control", A.style "display:none"]
+              (msg $ Msg_NewAssignment_TestScripts "Tester")
               ((Just tsk)==)
               (map keyValue (Nothing:map Just ts))
 
@@ -383,10 +352,9 @@ newAssignmentContent pd = do
             ts
 
           mtsSelection mts ts = do
-            H.label ! for testScriptField $ fromString . msg $ Msg_NewAssignment_TestScripts "Tester"
-            selectionWithDefAndAttr
+            Bootstrap.selectionWithLabel
               testScriptField
-              [class_ "combobox form-control", A.style "display:none"]
+              (msg $ Msg_NewAssignment_TestScripts "Tester")
               (def mts)
               (map keyValue (Nothing:map Just ts))
             where
@@ -402,10 +370,9 @@ newAssignmentContent pd = do
               _                           -> return ()
             where
               mtsSelection' tsk ts = do
-                H.label ! for testScriptField $ fromString . msg $ Msg_NewAssignment_TestScripts "Test scripts"
-                selectionWithDefAndAttr
+                Bootstrap.selectionWithLabel
                   testScriptField
-                  [class_ "combobox form-control", A.style "display:none"]
+                  (msg $ Msg_NewAssignment_TestScripts "Test scripts")
                   (def tsk)
                   (map keyValue (Nothing:map Just ts))
                 where
@@ -433,10 +400,8 @@ newAssignmentContent pd = do
         (\_tz _k _a tsType fs tc tm -> overwriteTestCaseAreaPreview fs tsType tc tm)
         where
           textArea val = do
-            H.label ! for (fromString $ fieldName assignmentTestCaseField)
-                    $ fromString $ msg $ Msg_NewAssignment_TestCase "Test cases"
-            editOrReadOnly pd $ textAreaInput (fieldName assignmentTestCaseField) val
-                                  ! class_ "form-control" ! rows "20"
+            Bootstrap.labelFor (fieldName assignmentTestCaseField) (msg $ Msg_NewAssignment_TestCase "Test cases")
+            editOrReadOnly pd $ Bootstrap.textAreaField (fieldName assignmentTestCaseField) (maybe mempty fromString val)
 
           createTestCaseAreaPreview fs ts tcp = case tcp of
             (Just Nothing , Nothing, Nothing) -> createTestCaseArea fs ts
@@ -445,12 +410,11 @@ newAssignmentContent pd = do
             _ -> return ()
             where
               userFileSelection uf = do
-                H.label ! for (fromString $ fieldName assignmentUsersFileField)
-                        $ fromString $ msg $ Msg_NewAssignment_TestFile "Test File"
-                selectionWithDefault (fieldName assignmentUsersFileField) uf (map keyValue fs)
-                H.p ! class_ "help-block" $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
+                Bootstrap.labelFor (fieldName assignmentUsersFileField) (msg $ Msg_NewAssignment_TestFile "Test File")
+                Bootstrap.selection (fieldName assignmentUsersFileField) (uf==) (map keyValue fs)
+                Bootstrap.helpBlock $ fromString (printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
-                  (msg $ Msg_LinkText_UploadFile "Upload File")
+                  (msg $ Msg_LinkText_UploadFile "Upload File"))
                 H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue = (id &&& (usersFileCata id))
@@ -467,10 +431,9 @@ newAssignmentContent pd = do
                 usersFileSelection
 
               usersFileSelection = do
-                H.label ! for (fromString $ fieldName assignmentUsersFileField)
-                        $ fromString $ msg $ Msg_NewAssignment_TestFile "Test File"
+                Bootstrap.labelFor (fromString $ fieldName assignmentUsersFileField) (msg $ Msg_NewAssignment_TestFile "Test File")
                 selection (fieldName assignmentUsersFileField) (map keyValue fs)
-                H.p ! class_ "help-block" $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
+                Bootstrap.helpBlock $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
                 H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
@@ -591,3 +554,5 @@ newAssignmentContent pd = do
       viewAssignment k = Pages.viewAssignment k ()
       uploadFile = Pages.uploadFile ()
 
+      -- Boostrap
+      bootstrapCheckbox tag = H.div ! A.class_ "checkbox" $ H.label $ tag
