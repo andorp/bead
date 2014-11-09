@@ -13,6 +13,7 @@ import           Data.Time (UTCTime)
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (openSubmissions)
+import           Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Pagelets
 import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
@@ -82,7 +83,7 @@ evaluationTableContent tc = openedSubmissionsCata $ \admincourse admingroup rela
 
 submissionInfo tc msg isGroup (key, desc) = H.tr $ do
   H.td $ link (routeOf (evaluation key)) (msg $ Msg_EvaluationTable_Solution "Submission")
-  H.td . fromString . eAssignmentTitle $ desc
+  H.td . fromString . Assignment.name . eAssignment $ desc
   usernameCata (H.td . fromString) $ eUsername desc
   H.td . fromString . eStudent $ desc
   H.td . fromString . eCourse $ desc

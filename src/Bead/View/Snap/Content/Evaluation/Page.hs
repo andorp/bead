@@ -12,6 +12,7 @@ import           Data.Time (getCurrentTime)
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (submissionDescription)
+import           Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Content as C
 import           Bead.View.Snap.Content.Bootstrap as Bootstrap
@@ -180,7 +181,7 @@ evaluationContent pd = do
             td $ fromString $ showDate . tc $ eSubmissionDate sd
 
     Bootstrap.row $ Bootstrap.colMd12 $
-      h2 $ fromString $ msg $ Msg_Evaluation_Submited_Solution "Submission"
+      h2 $ fromString $ msg $ Msg_Evaluation_Submitted_Solution "Submission"
 
     Bootstrap.row $ Bootstrap.colMd12 $ pre # submissionTextDiv $ do
       seeMorePre msg maxLength maxLines (eSolution sd)
@@ -190,7 +191,7 @@ evaluationContent pd = do
         Bootstrap.textArea (fieldName evaluationValueField) "" $ mempty
         hiddenInput (fieldName assignmentKeyField) (paramValue $ eAssignmentKey sd)
         hiddenInput (fieldName evCommentOnlyText) (msg $ Msg_Evaluation_New_Comment "New Comment")
-        evaluationDiv . i18n msg . inputEvalResult $ eConfig sd
+        evaluationDiv . i18n msg . inputEvalResult . Assignment.evType $ eAssignment sd
         Bootstrap.submitButton
           (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Submit")
 
@@ -206,7 +207,7 @@ evaluationContent pd = do
     Bootstrap.row $ Bootstrap.colMd12 $ hr
   where
     evaluationDiv = withEvaluationData
-      (evConfig . eConfig $ sbmDesc pd)
+      (evConfig . Assignment.evType . eAssignment $ sbmDesc pd)
       (const H.div)
       (const $ H.div ! A.id (fieldName evaluationPercentageDiv))
 
