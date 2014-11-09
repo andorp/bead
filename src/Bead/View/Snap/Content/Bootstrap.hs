@@ -9,7 +9,7 @@ import           Control.Monad (when)
 
 import           Data.Data
 import           Data.Maybe (fromMaybe)
-import           Data.Monoid (mempty)
+import           Data.Monoid
 import           Data.String
 
 import           Text.Blaze.Html5 hiding (map)
@@ -92,12 +92,17 @@ buttonGroupJustified = H.div ! class_ "btn-group btn-group-justified"
 -- | Creates a button group
 buttonGroup = H.div ! class_ "btn-group"
 
--- | Creates a button styled link
-buttonLink ref text =
-  a ! class_ "btn btn-default"
+-- | Creates a button link with custom button attribute, a route to point
+-- a title and a text to show
+customButtonLink custom ref ttl text =
+  a ! class_ (fromString ("btn " <> custom))
     ! customAttribute "role" "button"
+    ! A.title (fromString ttl)
     ! href (fromString ref)
     $ (fromString text)
+
+-- | Creates a button styled link
+buttonLink ref text = customButtonLink "btn-default" ref "" text
 
 -- | Creates a date time picker using a third party library and turns on if the on switch
 -- is set to True

@@ -93,7 +93,7 @@ table' m
 submissionTablePart :: String -> UTCTime -> SubmissionTableContext -> SubmissionTableInfo -> IHtml
 
 -- Empty table
-submissionTablePart tableId _now _ctx s
+submissionTablePart _tableId _now _ctx s
   | and [null $ submissionTableInfoAssignments s, null $ stiUsers s] = do
     msg <- getI18N
     return $ do
@@ -155,17 +155,10 @@ submissionTablePart tableId now ctx s = do
       assignmentLinks
       deleteHeaderCell msg
       where
-        openedHeaderCell o c (_i,ak) =
-          if isActiveAssignment ak
-            then H.th # o
-            else H.th # c
-
         assignmentLinks = submissionTableInfoCata course group s
 
         course _name _users as _ulines _anames _key =
-          mapM_ (\x -> openedHeaderCell openCourseAssignmentStyle closedCourseAssignmentStyle x
-                         $ modifyAssignmentLink "" x)
-              $ zip [1..] as
+          mapM_ (modifyAssignmentLink courseButtonStyle "") $ zip [1..] as
 
         group  _name _users cgas _ulines _anames ckey _gkey = do
           let as = reverse . snd $ foldl numbering ((1,1),[]) cgas
@@ -176,25 +169,29 @@ submissionTablePart tableId now ctx s = do
               (\ak -> ((c,g+1),(GroupInfo  (g,ak):as)))
 
             header = cgInfoCata
-              (\x -> openedHeaderCell openCourseAssignmentStyle closedCourseAssignmentStyle x $
-                       viewAssignmentLink ckey (msg $ Msg_Home_CourseAssignmentIDPreffix "C") x)
-              (\x -> openedHeaderCell openGroupAssignmentStyle closedGroupAssignmentStyle x $
-                       modifyAssignmentLink (msg $ Msg_Home_GroupAssignmentIDPreffix "G") x)
+              (viewAssignmentLink courseButtonStyle ckey (msg $ Msg_Home_CourseAssignmentIDPreffix "C"))
+              (modifyAssignmentLink groupButtonStyle (msg $ Msg_Home_GroupAssignmentIDPreffix "G"))
 
     assignmentName ak = maybe "" Assignment.name . Map.lookup ak $ stiAssignmentInfos s
 
     isActiveAssignment ak =
       maybe False (flip Assignment.isActive now) . Map.lookup ak $ stiAssignmentInfos s
 
-    modifyAssignmentLink pfx (i,ak) =
-      linkWithTitle
+    courseButtonStyle = ("btn-hcao", "btn-hcac")
+    groupButtonStyle  = ("btn-hgao", "btn-hgac")
+
+    modifyAssignmentLink _buttonStyle@(active, passive) pfx (i,ak) =
+      -- If the assignment is active we render with active assignment button style,
+      -- if not active the closed button style
+      H.td $ Bootstrap.customButtonLink
+        (if (isActiveAssignment ak) then active else passive)
         (routeOf $ Pages.modifyAssignment ak ())
         (assignmentName ak)
         (concat [pfx, show i])
 
-
-    viewAssignmentLink ck pfx (i,ak) =
-      linkWithTitle
+    viewAssignmentLink _buttonStyle@(active, passive) ck pfx (i,ak) =
+      H.td $ Bootstrap.customButtonLink
+        (if (isActiveAssignment ak) then active else passive)
         (viewOrModifyAssignmentLink ck ak)
         (assignmentName ak)
         (concat [pfx, show i])
@@ -229,7 +226,7 @@ submissionTablePart tableId now ctx s = do
             mapM_ (cgInfoCata (submissionInfoCell username) (submissionInfoCell username)) as
 
         submissionInfoCell u ak = case Map.lookup ak submissionInfoMap of
-          Nothing -> H.td $ mempty -- dataCell noStyle $ fromString "░░░"
+          Nothing -> H.td $ mempty
           Just si -> submissionCell u (ak,si)
 
     submissionCell u (ak,si) =

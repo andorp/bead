@@ -71,6 +71,7 @@ bootStrapDocument body' = do
         js "/jquery-ui.js"
         js "/moment.js"
         css "/bootstrap.min.css"
+        css "/bootstrap.custombutton.css"
         js "/bootstrap.min.js"
         css "/bootstrap-combobox.css"
         js "/bootstrap-combobox.js"
