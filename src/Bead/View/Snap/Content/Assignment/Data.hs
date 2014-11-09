@@ -28,6 +28,7 @@ data PageData
     , pdTestScripts   :: Maybe [(TestScriptKey, TestScriptInfo)]
     , pdUsersFile     :: [UsersFile]
     , pdTestCase      :: Maybe (TestCaseKey, TestCase, TestScriptKey)
+    , pdEvalTypeMod   :: Bool -- True, the evalution type can be modified
     }
   | PD_ViewAssignment {
       pdTimeZone      :: UserTimeConverter
@@ -62,6 +63,7 @@ data PageData
     , pdUsersFile     :: [UsersFile]
     , pdTestCase      :: Maybe (TestCaseKey, TestCase, TestScriptKey)
     , pdTCModificationPreview :: TCModificationParameters
+    , pdEvalTypeMod   :: Bool -- True, the evalution type can be modified
     }
 
 type TCModificationParameters = (Maybe (Maybe TestScriptKey), Maybe (Either () UsersFile), Maybe String)
@@ -92,8 +94,8 @@ pageDataCata
   PD_Group  timezone time groups tsType files ->
      group  timezone time groups tsType files
 
-  PD_Assignment timezone key asg tsType files testcase ->
-     assignment timezone key asg tsType files testcase
+  PD_Assignment timezone key asg tsType files testcase ev ->
+     assignment timezone key asg tsType files testcase ev
 
   PD_ViewAssignment timezone key asg tsInfo testcase ->
      viewAssignment timezone key asg tsInfo testcase
@@ -104,6 +106,6 @@ pageDataCata
   PD_Group_Preview timezone time groups tsType files assignment tccreation ->
      groupPreview  timezone time groups tsType files assignment tccreation
 
-  PD_Assignment_Preview timezone key asg tsType files testcase tcmod ->
-     assignmentPreview  timezone key asg tsType files testcase tcmod
+  PD_Assignment_Preview timezone key asg tsType files testcase tcmod ev ->
+     assignmentPreview  timezone key asg tsType files testcase tcmod ev
 

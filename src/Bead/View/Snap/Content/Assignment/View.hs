@@ -31,7 +31,26 @@ newAssignmentContent :: PageData -> IHtml
 newAssignmentContent pd = do
   msg <- getI18N
   let hook = assignmentEvTypeHook
-  evalConfig <- evaluationConfig (evSelectionId hook)
+
+  -- Renders a evaluation selection or hides it if there is a submission already for the assignment,
+  -- and renders an explanation.
+  evalConfig <- do
+    let cfg = evaluationConfig (evSelectionId hook)
+    let hiddencfg asg = return $ do
+          let e = Assignment.evType asg
+          showEvaluationType msg e
+          fromString . msg $ Msg_NewAssignment_EvalTypeWarn "The evaluation type can not be modified, there is a submission for the assignment."
+          hiddenInput (evSelectionId hook) (toFayJSON e)
+    pageDataCata
+      (const5 cfg)
+      (const5 cfg)
+      (\_tz _key asg _ts _fs _tc ev -> if ev then cfg else hiddencfg asg)
+      (const5 cfg)
+      (const7 cfg)
+      (const7 cfg)
+      (\_tz _key asg _ts _fs _tc _tm ev -> if ev then cfg else hiddencfg asg)
+      pd
+
   return $ do
             Bootstrap.row $ Bootstrap.colMd12
               $ H.form ! A.method "post"
@@ -73,21 +92,21 @@ newAssignmentContent pd = do
                     startDateStringValue = showDate $ date $ pageDataCata
                       (\_tz t _c _ts _fs -> t)
                       (\_tz t _g _ts _fs -> t)
-                      (\_tz _k a _ts _fs _tc -> Assignment.start a)
+                      (\_tz _k a _ts _fs _tc _ev -> Assignment.start a)
                       (\_tz _k a _ts _tc -> Assignment.start a)
                       (\_tz _t _c _ts _fs a _tc  -> Assignment.start a)
                       (\_tz _t _g _ts _fs a _tc  -> Assignment.start a)
-                      (\_tz _k a _ts _fs _tc _tm -> Assignment.start a)
+                      (\_tz _k a _ts _fs _tc _tm _ev -> Assignment.start a)
                       pd
 
                     endDateStringValue = showDate $ date $ pageDataCata
                       (\_tz t _c _ts _fs -> t)
                       (\_tz t _g _ts _fs -> t)
-                      (\_tz _k a _ts _fs _tc -> Assignment.end a)
+                      (\_tz _k a _ts _fs _tc _ev -> Assignment.end a)
                       (\_tz _k a _ts _tc -> Assignment.end a)
                       (\_tz _t _c _ts _fs a _tc  -> Assignment.end a)
                       (\_tz _t _g _ts _fs a _tc  -> Assignment.end a)
-                      (\_tz _k a _ts _fs _tc _tm -> Assignment.end a)
+                      (\_tz _k a _ts _fs _tc _tm _ev -> Assignment.end a)
                       pd
 
                 -- Opening and closing dates of the assignment
@@ -113,8 +132,7 @@ newAssignmentContent pd = do
                     readOnly = False
 
                     assignmentPropertiesSection ed = do
-                      let aas = fromAssignment Assignment.aspects Assignment.emptyAspects pd
-                          pwd = if Assignment.isPasswordProtected aas
+                      let pwd = if Assignment.isPasswordProtected aas
                                    then Just (Assignment.getPassword aas)
                                    else Nothing
                           editable x = if ed then x else (x ! A.readonly "")
@@ -153,12 +171,14 @@ newAssignmentContent pd = do
                 pageDataCata
                   (const5 $ assignmentPropertiesSection editable)
                   (const5 $ assignmentPropertiesSection editable)
-                  (const6 $ assignmentPropertiesSection editable)
+                  (const7 $ assignmentPropertiesSection editable)
                   (const5 $ assignmentPropertiesSection readOnly)
                   (const7 $ assignmentPropertiesSection editable)
                   (const7 $ assignmentPropertiesSection editable)
-                  (const7 $ assignmentPropertiesSection editable)
+                  (const8 $ assignmentPropertiesSection editable)
                   pd
+
+                submissionTypeSelection msg pd
 
                 -- Assignment Description
                 Bootstrap.formGroup $ do
@@ -203,11 +223,11 @@ newAssignmentContent pd = do
                 pageDataCata
                   (const5 empty)
                   (const5 empty)
-                  (const6 empty)
+                  (const7 empty)
                   (const5 empty)
                   (\_tz _t _key _tsType _fs a _tc -> assignmentPreview a)
                   (\_tz _t _key _tsType _fs a _tc -> assignmentPreview a)
-                  (\_tz _k a _t _fs _tst _tm -> assignmentPreview a)
+                  (\_tz _k a _t _fs _tst _tm _ev -> assignmentPreview a)
                   pd
 
                 -- Assignment Test Script Selection
@@ -223,27 +243,29 @@ newAssignmentContent pd = do
                   let previewAndCommitForm cfg = do
                         evalSelectionDiv hook
                         hiddenInputWithId (evHiddenValueId hook) (toFayJSON cfg)
+                        H.label $ fromString $ msg $ Msg_NewAssignment_EvaluationType "Evaluation Type"
+                        H.br
                         evalConfig
 
                   pageDataCata
                     (const5 (previewAndCommitForm binaryConfig))
                     (const5 (previewAndCommitForm binaryConfig))
-                    (\_timezone _key asg _tsType _files _testcase -> previewAndCommitForm (Assignment.evType asg))
+                    (\_timezone _key asg _tsType _files _testcase _ev -> previewAndCommitForm (Assignment.evType asg))
                     (\_timezone _key asg _tsInfo _testcase -> showEvaluationType msg $ Assignment.evType asg)
                     (\_timezone _time _courses _tsType _files assignment _tccreatio -> previewAndCommitForm (Assignment.evType assignment))
                     (\_timezone _time _groups _tsType _files assignment _tccreation -> previewAndCommitForm (Assignment.evType assignment))
-                    (\_timezone _key asg _tsType _files _testcase _tcmod -> previewAndCommitForm (Assignment.evType asg))
+                    (\_timezone _key asg _tsType _files _testcase _tcmod _ev -> previewAndCommitForm (Assignment.evType asg))
                     pd
 
                 -- Hidden course or group keys for the assignment creation
                 pageDataCata
                   (\_tz _t (key,_course) _tsType _fs -> hiddenInput (fieldName selectedCourse) (courseKeyMap id key))
                   (\_tz _t (key,_group)  _tsType _fs -> hiddenInput (fieldName selectedGroup) (groupKeyMap id key))
-                  (const6 (return ()))
+                  (const7 (return ()))
                   (const5 (return ()))
                   (\_tz _t (key,_course) _tsType _fs _a _tc -> hiddenInput (fieldName selectedCourse) (courseKeyMap id key))
                   (\_tz _t (key,_group)  _tsType _fs _a _tc -> hiddenInput (fieldName selectedGroup) (groupKeyMap id key))
-                  (const7 (return ()))
+                  (const8 (return ()))
                   pd
 
                 -- Submit buttons
@@ -258,67 +280,97 @@ newAssignmentContent pd = do
             Bootstrap.turnSelectionsOn
 
     where
+      aas = fromAssignment Assignment.aspects Assignment.emptyAspects pd
 
       editOrReadOnly = pageDataCata
         (const5 id)
         (const5 id)
-        (const6 id)
+        (const7 id)
         (const5 (! A.readonly ""))
         (const7 id)
         (const7 id)
-        (const7 id)
+        (const8 id)
 
       onlyOnEdit pd t = pageDataCata
         (const5 t)
         (const5 t)
-        (const6 t)
+        (const7 t)
         (const5 mempty)
         (const7 t)
         (const7 t)
-        (const7 t)
+        (const8 t)
         pd
 
       isEditPage = pageDataCata
         (const5 True)
         (const5 True)
-        (const6 True)
+        (const7 True)
         (const5 False)
         (const7 True)
         (const7 True)
-        (const7 True)
+        (const8 True)
         pd
 
       timeZoneConverter = pageDataCata
         (\tz _t _c _ts _fs -> tz)
         (\tz _t _g _ts _fs -> tz)
-        (\tz _k _a _ts _fs _tc -> tz)
+        (\tz _k _a _ts _fs _tc _ev -> tz)
         (\tz _k _a _ts _tc -> tz)
         (\tz _t _c _ts _fs _a _tc  -> tz)
         (\tz _t _g _ts _fs _a _tc  -> tz)
-        (\tz _k _a _ts _fs _tc _tm -> tz)
+        (\tz _k _a _ts _fs _tc _tm _ev -> tz)
         pd
 
       fromAssignment :: (Assignment -> a) -> a -> PageData -> a
       fromAssignment f d pd = maybe d f (get pd) where
-        get (PD_Assignment _ _ a _ _ _)           = Just a
-        get (PD_Assignment_Preview _ _ a _ _ _ _) = Just a
-        get (PD_ViewAssignment _ _ a _ _)     = Just a
+        get (PD_Assignment _ _ a _ _ _ _)           = Just a
+        get (PD_Assignment_Preview _ _ a _ _ _ _ _) = Just a
+        get (PD_ViewAssignment _ _ a _ __   ) = Just a
         get (PD_Course_Preview _ _ _ _ _ a _) = Just a
         get (PD_Group_Preview  _ _ _ _ _ a _) = Just a
         get _ = Nothing
+
+      -- Renders a submission type selection for all page type but the view
+      -- which prints only the selected type
+      submissionTypeSelection msg pd = do
+
+        let submissionTypeSelection =
+              Bootstrap.selectionWithLabel
+                (fieldName assignmentSubmissionTypeField)
+                (msg $ Msg_NewAssignment_SubmissionType "Submission Type")
+                (== currentSubmissionType)
+                [ (txtSubmission, fromString . msg $ Msg_NewAssignment_TextSubmission "Text")
+                , (zipSubmission, fromString . msg $ Msg_NewAssignment_ZipSubmission "Zip file")
+                ]
+
+        let submissionTypeText =
+              Assignment.submissionType
+                (fromString . msg $ Msg_NewAssignment_TextSubmission "Text")
+                (fromString . msg $ Msg_NewAssignment_ZipSubmission "Zip file")
+                  . Assignment.aspectsToSubmissionType . Assignment.aspects
+
+        pageDataCata
+          (const5 submissionTypeSelection)
+          (const5 submissionTypeSelection)
+          (const7 submissionTypeSelection)
+          (\_timezone _key asg _tsInfo _testcase -> submissionTypeText asg)
+          (const7 submissionTypeSelection)
+          (const7 submissionTypeSelection)
+          (const8 submissionTypeSelection)
+          pd
 
       testScriptSelection :: (Translation String -> String) -> PageData -> H.Html
       testScriptSelection msg = pageDataCata
         (\_tz _t _c tsType _fs -> scriptSelection tsType)
         (\_tz _t _g tsType _fs -> scriptSelection tsType)
-        (\_tz _k _a tsType _fs mts -> modificationScriptSelection tsType mts)
+        (\_tz _k _a tsType _fs mts _ev -> modificationScriptSelection tsType mts)
         (const5 (return ()))
         (\_tz _t _c tsType _fs _a tc  -> scriptSelectionPreview tsType tc)
         (\_tz _t _g tsType _fs _a tc  -> scriptSelectionPreview tsType tc)
-        (\_tz _k _a tsType _fs mts tm -> modificationScriptSelectionPreview tsType mts tm)
+        (\_tz _k _a tsType _fs mts tm _ev -> modificationScriptSelectionPreview tsType mts tm)
         where
           testScriptField :: (IsString s) => s
-          testScriptField = {-fromString $-} fieldName assignmentTestScriptField
+          testScriptField = fieldName assignmentTestScriptField
 
           scriptSelection ts = maybe
             (return ())
@@ -393,11 +445,11 @@ newAssignmentContent pd = do
       testCaseArea msg = pageDataCata
         (\_tz _t _c tsType fs -> createTestCaseArea fs tsType)
         (\_tz _t _g tsType fs -> createTestCaseArea fs tsType)
-        (\_tz _k _a tsType fs tc -> overwriteTestCaseArea fs tsType tc)
+        (\_tz _k _a tsType fs tc _ev -> overwriteTestCaseArea fs tsType tc)
         (\_tz _k _a ts tc -> viewTestCaseArea ts tc)
         (\_tz _t _c tsType fs _a tc -> createTestCaseAreaPreview fs tsType tc)
         (\_tz _t _g tsType fs _a tc -> createTestCaseAreaPreview fs tsType tc)
-        (\_tz _k _a tsType fs tc tm -> overwriteTestCaseAreaPreview fs tsType tc tm)
+        (\_tz _k _a tsType fs tc tm _ev -> overwriteTestCaseAreaPreview fs tsType tc tm)
         where
           textArea val = do
             Bootstrap.labelFor (fieldName assignmentTestCaseField) (msg $ Msg_NewAssignment_TestCase "Test cases")
@@ -410,12 +462,13 @@ newAssignmentContent pd = do
             _ -> return ()
             where
               userFileSelection uf = do
-                Bootstrap.labelFor (fieldName assignmentUsersFileField) (msg $ Msg_NewAssignment_TestFile "Test File")
-                Bootstrap.selection (fieldName assignmentUsersFileField) (uf==) (map keyValue fs)
+                Bootstrap.selectionWithLabel
+                  (fieldName assignmentUsersFileField)
+                  (msg $ Msg_NewAssignment_TestFile "Test File") (uf==) (map keyValue fs)
                 Bootstrap.helpBlock $ fromString (printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File"))
-                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
+                Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue = (id &&& (usersFileCata id))
 
@@ -431,12 +484,14 @@ newAssignmentContent pd = do
                 usersFileSelection
 
               usersFileSelection = do
-                Bootstrap.labelFor (fromString $ fieldName assignmentUsersFileField) (msg $ Msg_NewAssignment_TestFile "Test File")
-                selection (fieldName assignmentUsersFileField) (map keyValue fs)
+                Bootstrap.selectionWithLabel
+                  (fieldName assignmentUsersFileField)
+                  (msg $ Msg_NewAssignment_TestFile "Test File")
+                  (const False) (map keyValue fs)
                 Bootstrap.helpBlock $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
-                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
+                Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue = (id &&& (usersFileCata id))
 
@@ -456,7 +511,7 @@ newAssignmentContent pd = do
                 (usersFile)
 
               usersFile = do
-                H.b $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
+                H.h4 $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
                 H.pre $ testCaseFileName tc
 
           overwriteTestCaseAreaPreview fs ts tc tm = maybe
@@ -470,13 +525,15 @@ newAssignmentContent pd = do
                 (maybe (return ()) userFileSelectionPreview (tcmpFileTestCase tm)) -- zipped
 
               userFileSelectionPreview uf = do
-                H.label ! for (fromString $ fieldName assignmentUsersFileField) $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
+                Bootstrap.selectionWithLabel
+                  (fieldName assignmentUsersFileField)
+                  (msg $ Msg_NewAssignment_TestFile "Test File")
+                  (==uf) (map keyValue ((Left ()):map Right fs))
                 H.pre $ testCaseFileName tc
-                selectionWithDefault (fieldName assignmentUsersFileField) uf (map keyValue ((Left ()):map Right fs))
-                H.p ! class_ "help-block" $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
+                Bootstrap.helpBlock $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
-                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
+                Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue l@(Left ()) = (l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
                   keyValue r@(Right uf) = (r, usersFileCata id uf)
@@ -493,13 +550,16 @@ newAssignmentContent pd = do
                 usersFileSelection           -- zipped
 
               usersFileSelection = do
-                H.label ! for (fromString (fieldName assignmentUsersFileField)) $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
+                Bootstrap.selectionWithLabel
+                  (fieldName assignmentUsersFileField)
+                  (msg $ Msg_NewAssignment_TestFile "Test File")
+                  (const False)
+                  (map keyValue ((Left ()):map Right fs))
                 H.pre $ testCaseFileName tc
-                selection (fieldName assignmentUsersFileField) (map keyValue ((Left ()):map Right fs))
-                H.p ! class_ "help-block" $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
+                Bootstrap.helpBlock $ printf (msg $ Msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
                   (msg $ Msg_LinkText_UploadFile "Upload File")
-                H.div ! A.id "menu" $ H.ul $ i18n msg $ linkToPageBlank uploadFile
+                Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue l@(Left ()) = (l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
                   keyValue r@(Right uf) = (r, usersFileCata id uf)
@@ -514,34 +574,37 @@ newAssignmentContent pd = do
       pagePreview = pageDataCata
         (\_tz _t (key,_course) _tsType _fs -> newCourseAssignmentPreview key)
         (\_tz _t (key,_group)  _tsType _fs -> newGroupAssignmentPreview key)
-        (\_timezone key _asg _tsType _files _testcase -> modifyAssignmentPreview key)
+        (\_timezone key _asg _tsType _files _testcase _ev -> modifyAssignmentPreview key)
         (\_tz k _a _ts _tc -> viewAssignment k)
         (\_tz _t (key,_course) _tsType _fs _a _tc -> newCourseAssignmentPreview key)
         (\_tz _t (key,_group)  _tsType _fs _a _tc -> newGroupAssignmentPreview key)
-        (\_timezone key _asg _tsType _files _testcase _tc -> modifyAssignmentPreview key)
+        (\_timezone key _asg _tsType _files _testcase _tc _ev -> modifyAssignmentPreview key)
 
       page :: PageData -> PageDesc
       page = pageDataCata
         (\_tz _t (key,_course) _tsType _fs -> newCourseAssignment key)
         (\_tz _t (key,_group)  _tsType _fs -> newGroupAssignment key)
-        (\_tz ak _asg _tsType _files _testcase -> modifyAssignment ak)
+        (\_tz ak _asg _tsType _files _testcase _ev -> modifyAssignment ak)
         (\_tz k _a _ts _tc -> viewAssignment k)
         (\_tz _t (key,_course) _tsType _fs _a _tc -> newCourseAssignment key)
         (\_tz _t (key,_group)  _tsType _fs _a _tc -> newGroupAssignment key)
-        (\_tz k _a _fs _ts _tc _tm -> modifyAssignment k)
+        (\_tz k _a _fs _ts _tc _tm _ev -> modifyAssignment k)
 
 
       -- Converts a given value to a string that represents a JSON acceptable string
       -- for the Fay client side
       toFayJSON = BsLazy.unpack . Aeson.encode . showToFay
 
-      showEvaluationType msg = H.div . evConfigCata
+      showEvaluationType msg = H.div . H.pre . evConfigCata
         (fromString . msg $ Msg_NewAssignment_BinaryEvaluation "Binary Evaluation")
-        (\p -> do fromString . msg $ Msg_NewAssignment_PercentageEvaluation "Pass Limit: "
-                  fromString ((show $ pct p) ++ " %"))
-          where
-            pct :: Double -> Int
-            pct = floor . (100 *)
+        (const . fromString . msg $ Msg_NewAssignment_PercentageEvaluation "Percentage Evaluation")
+
+      [txtSubmission, zipSubmission] = [Assignment.TextSubmission, Assignment.ZipSubmission]
+
+      currentSubmissionType =
+        if Assignment.isZippedSubmissions aas
+          then zipSubmission
+          else txtSubmission
 
       -- Pages constants
 

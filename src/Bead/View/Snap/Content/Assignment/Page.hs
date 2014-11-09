@@ -156,16 +156,17 @@ newGroupAssignmentPreviewPage = withUserState $ \s -> do
 modifyAssignmentPage :: GETContentHandler
 modifyAssignmentPage = withUserState $ \s -> do
   ak <- getValue
-  (as,tss,ufs,tc) <- userStory $ do
+  (as,tss,ufs,tc,ev) <- userStory $ do
     S.isAdministratedAssignment ak
     as <- S.loadAssignment ak
     tss' <- S.testScriptInfosOfAssignment ak
     ufs  <- map fst <$> S.listUsersFiles
     tc   <- S.testCaseOfAssignment ak
-    return (as, nonEmptyList tss', ufs, tc)
+    ev   <- not <$> S.isThereASubmission ak
+    return (as, nonEmptyList tss', ufs, tc, ev)
   tz <- userTimeZoneToLocalTimeConverter
   renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $
-    PD_Assignment tz ak as tss ufs tc
+    PD_Assignment tz ak as tss ufs tc ev
 
 postModifyAssignment :: POSTContentHandler
 postModifyAssignment = do
@@ -176,15 +177,16 @@ modifyAssignmentPreviewPage = withUserState $ \s -> do
   ak <- getValue
   as <- getValue
   tm <- readTCModificationParameters
-  (tss,ufs,tc) <- userStory $ do
+  (tss,ufs,tc,ev) <- userStory $ do
     S.isAdministratedAssignment ak
     tss' <- S.testScriptInfosOfAssignment ak
     ufs  <- map fst <$> S.listUsersFiles
     tc   <- S.testCaseOfAssignment ak
-    return (nonEmptyList tss', ufs, tc)
+    ev   <- not <$> S.isThereASubmission ak
+    return (nonEmptyList tss', ufs, tc, ev)
   tz <- userTimeZoneToLocalTimeConverter
   renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $
-    PD_Assignment_Preview tz ak as tss ufs tc tm
+    PD_Assignment_Preview tz ak as tss ufs tc tm ev
 
 viewAssignmentPage :: GETContentHandler
 viewAssignmentPage = withUserState $ \s -> do
