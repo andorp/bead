@@ -195,10 +195,10 @@ availableAssignments timeconverter (Just as) = do
       td (fromString . join . intersperse ", " . aTeachers $ a)
       td $ linkWithText (routeWithParams (Pages.submissionList ()) [requestParam k]) (fromString (aTitle a))
       td (fromString . showDate . timeconverter $ aEndDate a)
-      (resultCell fromString {-coloredSubmissionCell (const H.td) (H.td) fromString -}
-        (msg $ Msg_Home_SubmissionCell_NoSubmission "No submission")
-        (msg $ Msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
-        (const . msg $ Msg_Home_SubmissionCell_Tested "Tested")
-        (msg $ Msg_Home_SubmissionCell_Accepted "Accepted")
-        (msg $ Msg_Home_SubmissionCell_Rejected "Rejected")
+      (resultCell id
+        (fromString $ msg $ Msg_Home_SubmissionCell_NoSubmission "No submission")
+        (fromString $ msg $ Msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
+        (const . fromString $ msg $ Msg_Home_SubmissionCell_Tested "Tested")
+        (fromString $ msg $ Msg_Home_SubmissionCell_Accepted "Accepted")
+        (fromString $ msg $ Msg_Home_SubmissionCell_Rejected "Rejected")
         s)
