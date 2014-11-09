@@ -12,6 +12,7 @@ module Bead.Controller.ServiceContext (
   , getStatus
   , setStatus
   , clearStatus
+  , usernameInState
   , InRole(..)
   , actualPage
   , UserContainer(..)
@@ -87,6 +88,14 @@ getStatus = userStateCata Nothing Nothing Nothing status where
 -- Produces a new status expect that the status message is cleared.
 clearStatus = userStateCata UserNotLoggedIn Registration TestAgent userState where
   userState u p n r t tz _ = UserState u p n r t tz Nothing
+
+-- Returns a username stored in the user state, or a description
+-- string for the state
+usernameInState = userStateCata
+  (Username "NotLoggedIn")
+  (Username "Registration")
+  (Username "TestAgent")
+  (\user _p _n _r _t _tz _s -> user)
 
 instance UserToken UserState where
   userToken = userStateCata

@@ -2,6 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Application where
 
+import           Prelude hiding (log)
+
 import           Control.Lens.TH
 import qualified Data.ByteString.Lazy.Char8 as BL
 import           Data.IORef
@@ -19,6 +21,7 @@ import           Snap.Snaplet.Fay
 import           Snap.Snaplet.Session
 
 import           Bead.Configuration (Config(..))
+import           Bead.Controller.Logging
 import           Bead.Controller.ServiceContext
 import           Bead.Daemon.Email as EmailDaemon
 import           Bead.Daemon.Logout
@@ -26,6 +29,8 @@ import           Bead.Domain.Entities
 import           Bead.Domain.TimeZone
 import           Bead.View.Snap.Dictionary
 import           Bead.View.Snap.EmailTemplate
+import           Bead.View.Snap.Logger (SnapLogger)
+import qualified Bead.View.Snap.Logger as SnapLogger
 
 -- * Mini snaplet : Service context
 
@@ -245,6 +250,25 @@ createPasswordGenerator = do
     digit :: Int -> Char
     digit n = ['0'..'9'] !! (mod n 10)
 
+-- | Represents an application context that has a debugging
+-- log capacibility
+type DebugLoggerContext = SnapContext SnapLogger
+
+-- | Creates a debug logger for pointing the "./log/debug.log" file
+createDebugLogger :: SnapletInit a DebugLoggerContext
+createDebugLogger = makeSnaplet
+  "Debug logger"
+  "A snaplet holding a debug logger output"
+  Nothing $ liftIO $ do
+    logger <- SnapLogger.createSnapLogger "./log/debug.log"
+    ref <- newIORef logger
+    return $! SnapContext ref
+
+-- | Log the message to the debug stream
+debugMessage :: String -> Handler a DebugLoggerContext ()
+debugMessage msg = snapContextHandlerCata $ \logger ->
+  liftIO (log (SnapLogger.snapLogger logger) DEBUG msg)
+
 type TimeZoneContext = SnapContext TimeZoneConverter
 
 createTimeZoneContext :: TimeZoneConverter -> SnapletInit a TimeZoneContext
@@ -269,6 +293,7 @@ data App = App {
   , _configContext  :: Snaplet ConfigServiceContext
   , _checkUsernameContext :: Snaplet CheckUsernameContext
   , _timeZoneContext :: Snaplet TimeZoneContext
+  , _debugLoggerContext :: Snaplet DebugLoggerContext
   }
 
 makeLenses ''App

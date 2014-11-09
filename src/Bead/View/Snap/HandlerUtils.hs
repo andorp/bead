@@ -385,6 +385,7 @@ runStory story = withTop serviceContext $ do
 
 logout :: Handler App b ()
 logout = do
+  withTop debugLoggerContext $ debugMessage "Logout is called!"
   um <- withTop auth $ currentUser
   case um of
     Nothing -> do

@@ -329,77 +329,37 @@ hookEvaluationTypeForm hook = do
   existForm <- exists form
   when existForm $ do
     selection <- select . cssId . evSelectionId $ hook
-    pctInput <- addPercentageField 0 form
-    change (changeFormContent form pctInput) selection
-    setDefaultEvalConfig form selection pctInput
+    change (changeFormContent form) selection
+    setDefaultEvalConfig form selection
     putStrLn $ "Evaluation form " ++ formId ++ " is loaded."
 
   where
-    setDefaultEvalConfig :: JQuery -> JQuery -> JQuery -> Fay ()
-    setDefaultEvalConfig form selection pctInput = do
+    setDefaultEvalConfig :: JQuery -> JQuery -> Fay ()
+    setDefaultEvalConfig form selection = do
       val <- (select . cssId $ evHiddenValueId hook) >>= getVal
       dt <- convertJsonToData val
       case dt of
         (EvConfig (BinEval _)) -> do
-           disableSpinner (Spinner pctInput)
            setEvaluationConfig binaryConfig
            setSelectionValue selection "\"BinEval\""
         (EvConfig (PctEval p)) -> do
-           enableSpinner (Spinner pctInput)
-           setSpinnerValue (doubleToPercentage p) pctInput
-           setEvaluationConfig (percentageConfig p)
+           setEvaluationConfig (percentageConfig 0.0)
            setSelectionValue selection "\"PctEval\""
 
-    changeFormContent :: JQuery -> JQuery -> Event -> Fay ()
-    changeFormContent form pctInput e = void $ do
+    changeFormContent :: JQuery -> Event -> Fay ()
+    changeFormContent form e = void $ do
       t <- target e
       v <- decodeEvalType <$> selectedValue t
       case v of
         (BinEval _) -> do
-          disableSpinner (Spinner pctInput)
           setEvaluationConfig binaryConfig
         (PctEval _) -> do
-          enableSpinner (Spinner pctInput)
-          p <- getVal pctInput
-          let pct = calcPercentage p
-          setEvaluationConfig (percentageConfig pct)
-          --addPercentageField 0.0 form
-
-    addPercentageField :: Double -> JQuery -> Fay JQuery
-    addPercentageField pct form = do
-      div <- findSelector (cssId . evSelectionDivId $ hook) form
-      msgSpan <- select . cssId $ evHelpMessageId hook
-      msgValue <- getText msgSpan
-      msg <- select (fromString ("<span class=\"evtremoveable\">" ++ (unpack msgValue) ++ "</span><br class=\"evtremoveable\">"))
-      appendTo div msg
-      pctInput <- select (fromString "<input type=\"text\" id=\"percentage\" class=\"evtremoveable\" size=\"3\" required />")
-      appendTo div pctInput
-      select (fromString "<span class=\"evtremoveable\">&#37;</span>") >>= appendTo div
-      numberField pctInput 0 100
-      pctSpinner setEvalLimit pctInput
-      setSpinnerValue (doubleToPercentage pct) pctInput
-      change setEvalLimit pctInput
-      disableSpinner (Spinner pctInput)
-      return pctInput
-
-    setEvalLimit :: Event -> Fay ()
-    setEvalLimit e = do
-      t <- targetElement e
-      v <- getVal t
-      let pct = calcPercentage v
-      setEvaluationConfig (percentageConfig pct)
-
-    calcPercentage :: Text -> Double
-    calcPercentage v = parseDouble $ case unpack v of
-      "100" -> "1.0"
-      ds    -> "0." ++ (twoDigits ds)
+          setEvaluationConfig (percentageConfig 0.0)
 
     setEvaluationConfig :: EvConfig -> Fay ()
     setEvaluationConfig c =
       void $ select (cssId . evHiddenValueId $ hook) >>=
              setVal (fromString . evConfigJson $ c)
-
-    doubleToPercentage = floor . (100 *)
 
 hookLargeComments :: Fay ()
 hookLargeComments = void $ do

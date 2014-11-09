@@ -12,7 +12,6 @@ module Bead.View.Snap.Content.NewAssignment (
 import           Control.Arrow ((&&&))
 import           Control.Monad.Error
 import qualified Data.Aeson as Aeson
-import qualified Data.ByteString.UTF8 as BsUTF8
 import qualified Data.ByteString.Lazy.Char8 as BsLazy
 import qualified Data.Map as Map
 import           Data.Maybe (fromMaybe)
@@ -71,6 +70,7 @@ data PageData
     , pdTestScripts   :: Maybe [(TestScriptKey, TestScriptInfo)]
     , pdUsersFile     :: [UsersFile]
     , pdTestCase      :: Maybe (TestCaseKey, TestCase, TestScriptKey)
+    , pdEvalTypeMod   :: Bool -- True, the evalution type can be modified
     }
   | PD_ViewAssignment {
       pdTimeZone      :: UserTimeConverter
@@ -105,6 +105,7 @@ data PageData
     , pdUsersFile     :: [UsersFile]
     , pdTestCase      :: Maybe (TestCaseKey, TestCase, TestScriptKey)
     , pdTCModificationPreview :: TCModificationParameters
+    , pdEvalTypeMod   :: Bool -- True, the evalution type can be modified
     }
 
 type TCModificationParameters = (Maybe (Maybe TestScriptKey), Maybe (Either () UsersFile), Maybe String)
@@ -135,8 +136,8 @@ pageDataCata
   PD_Group  timezone time groups tsType files ->
      group  timezone time groups tsType files
 
-  PD_Assignment timezone key asg tsType files testcase ->
-     assignment timezone key asg tsType files testcase
+  PD_Assignment timezone key asg tsType files testcase ev ->
+     assignment timezone key asg tsType files testcase ev
 
   PD_ViewAssignment timezone key asg tsInfo testcase ->
      viewAssignment timezone key asg tsInfo testcase
@@ -147,8 +148,9 @@ pageDataCata
   PD_Group_Preview timezone time groups tsType files assignment tccreation ->
      groupPreview  timezone time groups tsType files assignment tccreation
 
-  PD_Assignment_Preview timezone key asg tsType files testcase tcmod ->
-     assignmentPreview  timezone key asg tsType files testcase tcmod
+  PD_Assignment_Preview timezone key asg tsType files testcase tcmod ev ->
+     assignmentPreview  timezone key asg tsType files testcase tcmod ev
+
 
 -- * Course Assignment
 
@@ -280,16 +282,17 @@ newGroupAssignmentPreviewPage = withUserState $ \s -> do
 modifyAssignmentPage :: GETContentHandler
 modifyAssignmentPage = withUserState $ \s -> do
   ak <- getValue
-  (as,tss,ufs,tc) <- userStory $ do
+  (as,tss,ufs,tc,ev) <- userStory $ do
     S.isAdministratedAssignment ak
     as <- S.loadAssignment ak
     tss' <- S.testScriptInfosOfAssignment ak
     ufs  <- map fst <$> S.listUsersFiles
     tc   <- S.testCaseOfAssignment ak
-    return (as, nonEmptyList tss', ufs, tc)
+    ev   <- not <$> S.isThereASubmission ak
+    return (as, nonEmptyList tss', ufs, tc, ev)
   tz <- userTimeZoneToLocalTimeConverter
   tn <- userTimeZone
-  renderDynamicPagelet $ withUserFrame s (newAssignmentContent tn (PD_Assignment tz ak as tss ufs tc))
+  renderDynamicPagelet $ withUserFrame s (newAssignmentContent tn (PD_Assignment tz ak as tss ufs tc ev))
 
 postModifyAssignment :: POSTContentHandler
 postModifyAssignment = do
@@ -300,16 +303,17 @@ modifyAssignmentPreviewPage = withUserState $ \s -> do
   ak <- getValue
   as <- getValue
   tm <- readTCModificationParameters
-  (tss,ufs,tc) <- userStory $ do
+  (tss,ufs,tc,ev) <- userStory $ do
     S.isAdministratedAssignment ak
     tss' <- S.testScriptInfosOfAssignment ak
     ufs  <- map fst <$> S.listUsersFiles
     tc   <- S.testCaseOfAssignment ak
-    return (nonEmptyList tss', ufs, tc)
+    ev   <- not <$> S.isThereASubmission ak
+    return (nonEmptyList tss', ufs, tc, ev)
   tz <- userTimeZoneToLocalTimeConverter
   tn <- userTimeZone
   renderDynamicPagelet . withUserFrame s . newAssignmentContent tn $
-    PD_Assignment_Preview tz ak as tss ufs tc tm
+    PD_Assignment_Preview tz ak as tss ufs tc tm ev
 
 viewAssignmentPage :: GETContentHandler
 viewAssignmentPage = withUserState $ \s -> do
@@ -337,8 +341,27 @@ nonEmptyList xs = Just xs
 newAssignmentContent :: TimeZoneName -> PageData -> IHtml
 newAssignmentContent tz pd = do
   let hook = assignmentEvTypeHook
-  evalConfig <- evaluationConfig (evSelectionId hook)
   msg <- getI18N
+
+  -- Renders a evaluation selection or hides it if there is a submission already for the assignment,
+  -- and renders an explanation.
+  evalConfig <- do
+    let cfg = evaluationConfig (evSelectionId hook)
+    let hiddencfg asg = return $ do
+          let e = Assignment.evType asg
+          showEvaluationType msg e
+          fromString . msg $ Msg_NewAssignment_EvalTypeWarn "The evaluation type can not be modified, there is a submission for the assignment."
+          hiddenInput (evSelectionId hook) (toFayJSON e)
+    pageDataCata
+      (const5 cfg)
+      (const5 cfg)
+      (\_tz _key asg _ts _fs _tc ev -> if ev then cfg else hiddencfg asg)
+      (const5 cfg)
+      (const7 cfg)
+      (const7 cfg)
+      (\_tz _key asg _ts _fs _tc _tm ev -> if ev then cfg else hiddencfg asg)
+      pd
+
   return $ H.div ! formDiv $ do
     H.div ! rightCell $ do
       H.span ! boldText $ fromString . msg $ Msg_NewAssignment_Title "Title"
@@ -417,14 +440,16 @@ newAssignmentContent tz pd = do
               pageDataCata
                 (const5 . fromString . msg $ Msg_NewAssignment_Course "Course")
                 (const5 . fromString . msg $ Msg_NewAssignment_Group "Group")
-                (const6 $ "")
+                (const7 $ "")
                 (const5 $ "")
                 (const7 . fromString . msg $ Msg_NewAssignment_Course "Course")
                 (const7 . fromString . msg $ Msg_NewAssignment_Group "Group")
-                (const7 $ "")
+                (const8 $ "")
                 pd
         H.br
         courseOrGroupName pd
+      H.p $ submissionTypeSelection msg pd
+      H.p $ do
         hiddenKeyField pd
         testScriptSelection msg pd
 
@@ -432,20 +457,24 @@ newAssignmentContent tz pd = do
               multiActionPostForm (hookId assignmentForm)
                 [ ((routeOf . pagePreview $ pd), (fromString . msg $ Msg_NewAssignment_PreviewButton "Preview"))
                 , ((routeOf . page $ pd),        (fromString . msg $ Msg_NewAssignment_SaveButton "Commit"))
-                ] $ do evalSelectionDiv hook
+                ] $ do evaluationType msg
+                       evalSelectionDiv hook
+                       -- TODO: Only allow modificiation of evaluation type until the first submission is submitted.
                        hiddenInputWithId (evHiddenValueId hook) (toFayJSON cfg)
                        evalConfig
 
         pageDataCata
           (const5 (previewAndCommitForm binaryConfig))
           (const5 (previewAndCommitForm binaryConfig))
-          (\_timezone _key asg _tsType _files _testcase -> previewAndCommitForm (Assignment.evType asg))
+          (\_timezone _key asg _tsType _files _testcase _ev -> previewAndCommitForm (Assignment.evType asg))
           (\_timezone _key asg _tsInfo _testcase -> showEvaluationType msg $ Assignment.evType asg)
           (\_timezone _time _courses _tsType _files assignment _tccreatio -> previewAndCommitForm (Assignment.evType assignment))
           (\_timezone _time _groups _tsType _files assignment _tccreation -> previewAndCommitForm (Assignment.evType assignment))
-          (\_timezone _key asg _tsType _files _testcase _tcmod -> previewAndCommitForm (Assignment.evType asg))
+          (\_timezone _key asg _tsType _files _testcase _tcmod _ev -> previewAndCommitForm (Assignment.evType asg))
           pd
     where
+      aas = fromMaybe Assignment.emptyAspects . amap Assignment.aspects Nothing $ pd
+
       -- Converts a given value to a string that represents a JSON acceptable string
       -- for the Fay client side
       toFayJSON = BsLazy.unpack . Aeson.encode . showToFay
@@ -454,24 +483,51 @@ newAssignmentContent tz pd = do
 
       asgField = A.form (fromString $ hookId assignmentForm)
 
+      -- Renders a submission type selection for all page type but the view
+      -- which prints only the selected type
+      submissionTypeSelection msg pd = do
+
+        let submissionTypeSelection =
+              selectionWithDefault (fieldName assignmentSubmissionTypeField) currentSubmissionType
+                [ (txtSubmission, fromString . msg $ Msg_NewAssignment_TextSubmission "Text")
+                , (zipSubmission, fromString . msg $ Msg_NewAssignment_ZipSubmission "Zip file")
+                ] ! asgField
+
+        let submissionTypeText =
+              Assignment.submissionType
+                (fromString . msg $ Msg_NewAssignment_TextSubmission "Text")
+                (fromString . msg $ Msg_NewAssignment_ZipSubmission "Zip file")
+                  . Assignment.aspectsToSubmissionType . Assignment.aspects
+
+        H.b (fromString . msg $ Msg_NewAssignment_SubmissionType "Submission Type")
+        H.br
+        pageDataCata
+          (const5 submissionTypeSelection)
+          (const5 submissionTypeSelection)
+          (const7 submissionTypeSelection)
+          (\_timezone _key asg _tsInfo _testcase -> submissionTypeText asg)
+          (const7 submissionTypeSelection)
+          (const7 submissionTypeSelection)
+          (const8 submissionTypeSelection)
+          pd
+
       typeSelection msg pd = do
         H.b (fromString . msg $ Msg_NewAssignment_Properties "Properties")
         H.br
         pageDataCata
           (const5 $ ts editable)
           (const5 $ ts editable)
-          (const6 $ ts editable)
+          (const7 $ ts editable)
           (const5 $ ts readOnly)
           (const7 $ ts editable)
           (const7 $ ts editable)
-          (const7 $ ts editable)
+          (const8 $ ts editable)
           pd
         where
           editable = True
           readOnly = False
           ts ed = H.div $ do
-                 let aas = fromMaybe Assignment.emptyAspects . amap Assignment.aspects Nothing $ pd
-                     pwd = if Assignment.isPasswordProtected aas
+                 let pwd = if Assignment.isPasswordProtected aas
                              then Just (Assignment.getPassword aas)
                              else Nothing
                      editable x = if ed then x else (x ! A.readonly "")
@@ -487,22 +543,29 @@ newAssignmentContent tz pd = do
                  fromString . msg $ Msg_NewAssignment_Password "Password:"
                  editable $ textInput (fieldName assignmentPwdField) 20 pwd ! asgField
 
+      evaluationType msg = do
+        H.b (fromString . msg $ Msg_NewAssignment_EvaluationType "Evaluation Type")
+
       showEvaluationType msg = H.div . evConfigCata
         (fromString . msg $ Msg_NewAssignment_BinaryEvaluation "Binary Evaluation")
-        (\p -> do fromString . msg $ Msg_NewAssignment_PercentageEvaluation "Pass Limit: "
-                  fromString ((show $ pct p) ++ " %"))
-          where
-            pct :: Double -> Int
-            pct = floor . (100 *)
+        (const . fromString . msg $ Msg_NewAssignment_PercentageEvaluation "Percentage Evaluation")
+
+      [txtSubmission, zipSubmission] = [Assignment.TextSubmission, Assignment.ZipSubmission]
+
+      currentSubmissionType =
+        if Assignment.isZippedSubmissions aas
+          then zipSubmission
+          else txtSubmission
+
 
       editOrReadonly = pageDataCata
         (const5 id)
         (const5 id)
-        (const6 id)
+        (const7 id)
         (const5 (! A.readonly ""))
         (const7 id)
         (const7 id)
-        (const7 id)
+        (const8 id)
 
       linkToPandocMarkdown = "http://johnmacfarlane.net/pandoc/demo/example9/pandocs-markdown.html"
 
@@ -510,21 +573,21 @@ newAssignmentContent tz pd = do
       pagePreview = pageDataCata
         (\_tz _t (key,_course) _tsType _fs -> newCourseAssignmentPreview key)
         (\_tz _t (key,_group)  _tsType _fs -> newGroupAssignmentPreview key)
-        (\_timezone key _asg _tsType _files _testcase -> modifyAssignmentPreview key)
+        (\_timezone key _asg _tsType _files _testcase _ev -> modifyAssignmentPreview key)
         (\_tz k _a _ts _tc -> viewAssignment k)
         (\_tz _t (key,_course) _tsType _fs _a _tc -> newCourseAssignmentPreview key)
         (\_tz _t (key,_group)  _tsType _fs _a _tc -> newGroupAssignmentPreview key)
-        (\_timezone key _asg _tsType _files _testcase _tc -> modifyAssignmentPreview key)
+        (\_timezone key _asg _tsType _files _testcase _tc _ev -> modifyAssignmentPreview key)
 
       page :: PageData -> PageDesc
       page = pageDataCata
         (\_tz _t (key,_course) _tsType _fs -> newCourseAssignment key)
         (\_tz _t (key,_group)  _tsType _fs -> newGroupAssignment key)
-        (\_tz ak _asg _tsType _files _testcase -> modifyAssignment ak)
+        (\_tz ak _asg _tsType _files _testcase _ev -> modifyAssignment ak)
         (\_tz k _a _ts _tc -> viewAssignment k)
         (\_tz _t (key,_course) _tsType _fs _a _tc -> newCourseAssignment key)
         (\_tz _t (key,_group)  _tsType _fs _a _tc -> newGroupAssignment key)
-        (\_tz k _a _fs _ts _tc _tm -> modifyAssignment k)
+        (\_tz k _a _fs _ts _tc _tm _ev -> modifyAssignment k)
 
       newCourseAssignment k = Pages.newCourseAssignment k ()
       newGroupAssignment k  = Pages.newGroupAssignment k ()
@@ -536,8 +599,8 @@ newAssignmentContent tz pd = do
       uploadFile = Pages.uploadFile ()
 
       amap :: (Assignment -> a) -> Maybe a -> PageData -> Maybe a
-      amap f _ (PD_Assignment _ _ a _ _ _)           = Just . f $ a
-      amap f _ (PD_Assignment_Preview _ _ a _ _ _ _) = Just . f $ a
+      amap f _ (PD_Assignment _ _ a _ _ _ _) = Just . f $ a
+      amap f _ (PD_Assignment_Preview _ _ a _ _ __ _ _) = Just . f $ a
       amap f _ (PD_ViewAssignment _ _ a _ _)     = Just . f $ a
       amap f _ (PD_Course_Preview _ _ _ _ _ a _) = Just . f $ a
       amap f _ (PD_Group_Preview  _ _ _ _ _ a _) = Just . f $ a
@@ -546,11 +609,11 @@ newAssignmentContent tz pd = do
       previewDiv msg = pageDataCata
         (const5 empty)
         (const5 empty)
-        (const6 empty)
+        (const7 empty)
         (const5 empty)
         (\_tz _t _key _tsType _fs a _tc -> assignmentPreview a)
         (\_tz _t _key _tsType _fs a _tc -> assignmentPreview a)
-        (\_timezone _key asg _tst _files _testcase _tm -> assignmentPreview asg)
+        (\_timezone _key asg _tst _files _testcase _tm _ev -> assignmentPreview asg)
         where
          assignmentPreview a = H.div $ do
            H.h3 $ fromString . msg $ Msg_NewAssignment_AssignmentPreview "Assignment Preview"
@@ -559,11 +622,11 @@ newAssignmentContent tz pd = do
       startTimePart = pageDataCata
         (const5 hiddenStartTime)
         (const5 hiddenStartTime)
-        (const6 hiddenStartTime)
+        (const7 hiddenStartTime)
         (const5 (fromString $ concat [startDefDate, " ", startDefHour, ":", startDefMin, ":00"]))
         (const7 hiddenStartTime)
         (const7 hiddenStartTime)
-        (const7 hiddenStartTime)
+        (const8 hiddenStartTime)
 
       hiddenStartTime = do
         hiddenInput (fieldName assignmentStartDefaultDate) (fromString startDefDate) ! asgField
@@ -577,11 +640,11 @@ newAssignmentContent tz pd = do
       endTimePart = pageDataCata
         (const5 hiddenEndTime)
         (const5 hiddenEndTime)
-        (const6 hiddenEndTime)
+        (const7 hiddenEndTime)
         (const5 (fromString $ concat [endDefDate, " ", endDefHour, ":", endDefMin, ":00"]))
         (const7 hiddenEndTime)
         (const7 hiddenEndTime)
-        (const7 hiddenEndTime)
+        (const8 hiddenEndTime)
 
       hiddenEndTime = do
         hiddenInput (fieldName assignmentEndDefaultDate) (fromString endDefDate) ! asgField
@@ -595,29 +658,29 @@ newAssignmentContent tz pd = do
       courseOrGroupName = pageDataCata
         (\_tz _t (_key,course) _tsType _fs -> fromString $ courseName course)
         (\_tz _t (_key,group)  _tsType _fs -> fromString $ groupName group)
-        (const6 (return ()))
+        (const7 (return ()))
         (const5 (return ()))
         (\_tz _t (_key,course) _tsType _fs _a _tc -> fromString $ courseName course)
         (\_tz _t (_key,group)  _tsType _fs _a _tc -> fromString $ groupName group)
-        (const7 (return ()))
+        (const8 (return ()))
 
       hiddenKeyField = pageDataCata
         (\_tz _t (key,_course) _tsType _fs -> hiddenInput (fieldName selectedCourse) (courseKeyMap id key) ! asgField)
         (\_tz _t (key,_group)  _tsType _fs -> hiddenInput (fieldName selectedGroup) (groupKeyMap id key) ! asgField)
-        (const6 (return ()))
+        (const7 (return ()))
         (const5 (return ()))
         (\_tz _t (key,_course) _tsType _fs _a _tc -> hiddenInput (fieldName selectedCourse) (courseKeyMap id key) ! asgField)
         (\_tz _t (key,_group)  _tsType _fs _a _tc -> hiddenInput (fieldName selectedGroup) (groupKeyMap id key) ! asgField)
-        (const7 (return ()))
+        (const8 (return ()))
 
       testCaseArea msg = pageDataCata
         (\_tz _t _c tsType fs -> createTestCaseArea fs tsType)
         (\_tz _t _g tsType fs -> createTestCaseArea fs tsType)
-        (\_tz _k _a tsType fs tc -> overwriteTestCaseArea fs tsType tc)
+        (\_tz _k _a tsType fs tc _ev -> overwriteTestCaseArea fs tsType tc)
         (\_tz _k _a ts tc -> viewTestCaseArea ts tc)
         (\_tz _t _c tsType fs _a tc -> createTestCaseAreaPreview fs tsType tc)
         (\_tz _t _g tsType fs _a tc -> createTestCaseAreaPreview fs tsType tc)
-        (\_tz _k _a tsType fs tc tm -> overwriteTestCaseAreaPreview fs tsType tc tm)
+        (\_tz _k _a tsType fs tc tm _ev -> overwriteTestCaseAreaPreview fs tsType tc tm)
         where
           textArea val = do
             H.b . fromString . msg $ Msg_NewAssignment_TestCase "Test cases"
@@ -731,11 +794,11 @@ newAssignmentContent tz pd = do
       testScriptSelection msg = pageDataCata
         (\_tz _t _c tsType _fs -> scriptSelection tsType)
         (\_tz _t _g tsType _fs -> scriptSelection tsType)
-        (\_tz _k _a tsType _fs mts -> modificationScriptSelection tsType mts)
+        (\_tz _k _a tsType _fs mts _ev -> modificationScriptSelection tsType mts)
         (const5 (return ()))
         (\_tz _t _c tsType _fs _a tc  -> scriptSelectionPreview tsType tc)
         (\_tz _t _g tsType _fs _a tc  -> scriptSelectionPreview tsType tc)
-        (\_tz _k _a tsType _fs mts tm -> modificationScriptSelectionPreview tsType mts tm)
+        (\_tz _k _a tsType _fs mts tm _ev -> modificationScriptSelectionPreview tsType mts tm)
         where
           scriptSelection ts = maybe
             (return ())
@@ -817,11 +880,11 @@ newAssignmentContent tz pd = do
       timeZoneConverter = pageDataCata
         (\tz _t _c _ts _fs -> tz)
         (\tz _t _g _ts _fs -> tz)
-        (\tz _k _a _ts _fs _tc -> tz)
+        (\tz _k _a _ts _fs _tc _ev -> tz)
         (\tz _k _a _ts _tc -> tz)
         (\tz _t _c _ts _fs _a _tc  -> tz)
         (\tz _t _g _ts _fs _a _tc  -> tz)
-        (\tz _k _a _ts _fs _tc _tm -> tz)
+        (\tz _k _a _ts _fs _tc _tm _ev -> tz)
         pd
 
       date t =
@@ -835,21 +898,21 @@ newAssignmentContent tz pd = do
       (startDefDate, startDefHour, startDefMin) = date $ pageDataCata
         (\_tz t _c _ts _fs -> t)
         (\_tz t _g _ts _fs -> t)
-        (\_tz _k a _ts _fs _tc -> Assignment.start a)
+        (\_tz _k a _ts _fs _tc _ev -> Assignment.start a)
         (\_tz _k a _ts _tc -> Assignment.start a)
         (\_tz _t _c _ts _fs a _tc  -> Assignment.start a)
         (\_tz _t _g _ts _fs a _tc  -> Assignment.start a)
-        (\_tz _k a _ts _fs _tc _tm -> Assignment.start a)
+        (\_tz _k a _ts _fs _tc _tm _ev -> Assignment.start a)
         pd
 
       (endDefDate, endDefHour, endDefMin) = date $ pageDataCata
         (\_tz t _c _ts _fs -> t)
         (\_tz t _g _ts _fs -> t)
-        (\_tz _k a _ts _fs _tc -> Assignment.end a)
+        (\_tz _k a _ts _fs _tc _ev -> Assignment.end a)
         (\_tz _k a _ts _tc -> Assignment.end a)
         (\_tz _t _c _ts _fs a _tc  -> Assignment.end a)
         (\_tz _t _g _ts _fs a _tc  -> Assignment.end a)
-        (\_tz _k a _ts _fs _tc _tm -> Assignment.end a)
+        (\_tz _k a _ts _fs _tc _tm _ev -> Assignment.end a)
         pd
 
       testScriptType' Nothing   = Nothing

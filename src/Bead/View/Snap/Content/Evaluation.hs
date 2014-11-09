@@ -6,11 +6,13 @@ module Bead.View.Snap.Content.Evaluation (
 
 import           Control.Arrow ((&&&))
 import           Data.Maybe (fromMaybe)
+import           Data.Monoid (mconcat)
 import           Data.String (fromString)
 import           Data.Time (getCurrentTime)
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (submissionDescription)
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Content as C
 import           Bead.View.Snap.Content.Comments
@@ -146,15 +148,28 @@ evaluationContent pd = do
             infoCell
               (msg $ Msg_Evaluation_SubmissionDate "Date of submission: ")
               (showDate . tc $ eSubmissionDate sd)
-      H.div $ H.h2 $ (fromString . msg $ Msg_Evaluation_Submited_Solution "Submission")
-      H.div # submissionTextDiv $ do
-        seeMorePre msg maxLength maxLines (eSolution sd)
+      H.div $ H.h2 $ (fromString . msg $ Msg_Evaluation_Submitted_Solution "Submission")
+      if (Assignment.isZippedSubmissions . Assignment.aspects . eAssignment $ sd)
+        then do
+          H.p $ fromString . msg $ Msg_Evaluation_Submitted_Solution_Zip_Info $ mconcat
+            [ "The submission was uploaded as a compressed file so it could not be displayed verbatim.  "
+            , "But it may be downloaded as a file by clicking on the link."
+            ]
+          H.p $ H.a ! A.href (routeOf $ Pages.getSubmission submissionKey ()) $
+            fromString . msg $ Msg_Evaluation_Submitted_Solution_Zip_Link "Download"
+        else do
+          H.p $ fromString . msg $ Msg_Evaluation_Submitted_Solution_Text_Info $
+            "The submission may be downloaded as a plain text file by clicking on the link."
+          H.a ! A.href (routeOf $ Pages.getSubmission submissionKey ()) $ fromString . msg $
+            Msg_Evaluation_Submitted_Solution_Text_Link "Download"
+          H.br
+          H.div # submissionTextDiv $ seeMorePre msg maxLength maxLines . eSolution $ sd
       H.div $ do
         textAreaInput (fieldName evaluationValueField) Nothing ! fillDiv ! A.rows "10"
         hiddenInput (fieldName assignmentKeyField) (paramValue $ eAssignmentKey sd)
         H.div ! alignToRight $ do
           hiddenInput (fieldName evCommentOnlyText) (msg $ Msg_Evaluation_New_Comment "New Comment")
-          evaluationDiv . i18n msg . inputEvalResult $ eConfig sd
+          evaluationDiv . i18n msg . inputEvalResult . Assignment.evType . eAssignment $ sd
           submitButton
             (fieldName saveEvalBtn)
             (fromString . msg $ Msg_Evaluation_SaveButton "Submit")
@@ -172,7 +187,7 @@ evaluationContent pd = do
       H.td ! A.style "padding: 0px 10px 0px 0px" $ fromString value
 
     evaluationDiv = withEvaluationData
-      (evConfig . eConfig $ sbmDesc pd)
+      (evConfig . Assignment.evType . eAssignment $ sbmDesc pd)
       (const H.div)
       (const $ H.div ! A.id (fieldName evaluationPercentageDiv))
 

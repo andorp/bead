@@ -98,8 +98,13 @@ data Translation a
   | Msg_NewAssignment_BallotBox { trans :: a }
   | Msg_NewAssignment_PasswordProtected { trans :: a }
   | Msg_NewAssignment_Password { trans :: a }
+  | Msg_NewAssignment_EvaluationType { trans :: a }
   | Msg_NewAssignment_BinaryEvaluation { trans :: a }
   | Msg_NewAssignment_PercentageEvaluation { trans :: a }
+  | Msg_NewAssignment_SubmissionType { trans :: a }
+  | Msg_NewAssignment_TextSubmission { trans :: a }
+  | Msg_NewAssignment_ZipSubmission { trans :: a }
+  | Msg_NewAssignment_EvalTypeWarn { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }
@@ -131,6 +136,11 @@ data Translation a
   | Msg_Submission_Password { trans :: a }
   | Msg_Submission_PasswordAgain { trans :: a }
   | Msg_Submission_Info_Password { trans :: a }
+  | Msg_Submission_Info_File { trans :: a }
+  | Msg_Submission_File_NoFileReceived { trans :: a }
+  | Msg_Submission_File_PolicyFailure { trans :: a }
+  | Msg_Submission_File_InvalidFile { trans :: a }
+  | Msg_Submission_File_InternalError { trans :: a }
 
   | Msg_Comments_Title { trans :: a }
   | Msg_Comments_SubmitButton { trans :: a }
@@ -147,7 +157,11 @@ data Translation a
   | Msg_Evaluation_Group { trans :: a }
   | Msg_Evaluation_Student { trans :: a }
   | Msg_Evaluation_SaveButton { trans :: a }
-  | Msg_Evaluation_Submited_Solution { trans :: a }
+  | Msg_Evaluation_Submitted_Solution { trans :: a }
+  | Msg_Evaluation_Submitted_Solution_Text_Info { trans :: a }
+  | Msg_Evaluation_Submitted_Solution_Text_Link { trans :: a }
+  | Msg_Evaluation_Submitted_Solution_Zip_Info { trans :: a }
+  | Msg_Evaluation_Submitted_Solution_Zip_Link { trans :: a }
   | Msg_Evaluation_Accepted { trans :: a }
   | Msg_Evaluation_Rejected { trans :: a }
   | Msg_Evaluation_New_Comment { trans :: a }
@@ -161,6 +175,10 @@ data Translation a
   | Msg_SubmissionDetails_Deadline { trans :: a }
   | Msg_SubmissionDetails_Description { trans :: a }
   | Msg_SubmissionDetails_Solution { trans :: a }
+  | Msg_SubmissionDetails_Solution_Text_Info { trans :: a }
+  | Msg_SubmissionDetails_Solution_Text_Link { trans :: a }
+  | Msg_SubmissionDetails_Solution_Zip_Info { trans :: a }
+  | Msg_SubmissionDetails_Solution_Zip_Link { trans :: a }
   | Msg_SubmissionDetails_Evaluation { trans :: a }
   | Msg_SubmissionDetails_NewComment { trans :: a }
   | Msg_SubmissionDetails_SubmitComment { trans :: a }
@@ -367,6 +385,7 @@ data Translation a
   | Msg_UserStory_NewTestScriptIsCreated { trans :: a }
   | Msg_UserStory_ModifyTestScriptIsDone { trans :: a }
   | Msg_UserStory_AlreadyEvaluated { trans :: a }
+  | Msg_UserStory_EvalTypeWarning { trans :: a }
 
   | Msg_UserStoryError_UnknownError { trans :: a }
   | Msg_UserStoryError_Message { trans :: a }
@@ -393,6 +412,7 @@ data Translation a
   | Msg_UserStoryError_NonAdministratedSubmission { trans :: a }
   | Msg_UserStoryError_NonAdministratedTestScript { trans :: a }
   | Msg_UserStoryError_NonCommentableSubmission { trans :: a }
+  | Msg_UserStoryError_NonAccessibleSubmission { trans :: a }
 
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 
@@ -432,6 +452,7 @@ data Translation a
   | Msg_LinkText_DeleteUsersFromCourse { trans :: a }
   | Msg_LinkText_DeleteUsersFromGroup { trans :: a }
   | Msg_LinkText_UnsubscribeFromCourse { trans :: a }
+  | Msg_LinkText_GetSubmission { trans :: a }
 
   | Msg_TestScriptTypeSimple { trans :: a }
   | Msg_TestScriptTypeZipped { trans :: a }

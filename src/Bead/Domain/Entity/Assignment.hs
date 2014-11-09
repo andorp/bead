@@ -3,6 +3,8 @@
 module Bead.Domain.Entity.Assignment (
     Aspect(..)
   , aspect
+  , SubmissionType(..)
+  , submissionType
   , Aspects
   , fromAspects
   , toAspects
@@ -16,6 +18,10 @@ module Bead.Domain.Entity.Assignment (
 
   , isPasswordProtected
   , isBallotBox
+  , isZippedSubmissions
+  , setZippedSubmissions
+  , clearZippedSubmissions
+  , aspectsToSubmissionType
 
   , Assignment(..)
   , assignmentCata
@@ -40,6 +46,7 @@ import           Bead.Domain.Shared.Evaluation
 
 #ifdef TEST
 import           Test.Themis.Test hiding (testCaseCata)
+import           Test.Themis.Test.Asserts
 import           Bead.Invariants (UnitTests(..))
 #endif
 
@@ -49,14 +56,31 @@ import           Bead.Invariants (UnitTests(..))
 data Aspect
   = BallotBox -- Submission should not shown for the students only after the end of the dead line
   | Password String -- The assignment is password protected
+  | ZippedSubmissions -- Submissions are zipped (i.e. binary files)
   deriving (Data, Eq, Show, Read, Ord, Typeable)
 
 aspect
   ballot
   pwd
+  zipped
   a = case a of
     BallotBox -> ballot
     Password p -> pwd p
+    ZippedSubmissions -> zipped
+
+-- Submission Type of the assignment, this information
+-- will be stored as an aspect
+data SubmissionType
+  = TextSubmission
+  | ZipSubmission
+  deriving (Data, Eq, Show, Read, Ord, Typeable)
+
+submissionType
+  text
+  zip
+  s = case s of
+    TextSubmission -> text
+    ZipSubmission -> zip
 
 -- An assignment can have several aspects, which is a list represented
 -- set. The reason here, is the set can not be converted to JSON representation
@@ -81,8 +105,9 @@ fromList = toAspects Set.fromList
 
 aspectsFromList = fromList
 
-isPasswordAspect = aspect False (const True)
-isBallotBoxAspect = aspect True (const False)
+isPasswordAspect = aspect False (const True) False
+isBallotBoxAspect = aspect True (const False) False
+isZippedSubmissionsAspect = aspect False (const False) True
 
 #ifdef TEST
 assignmentAspectPredTests = group "assignmentAspectPred" $ do
@@ -90,6 +115,8 @@ assignmentAspectPredTests = group "assignmentAspectPred" $ do
     Equals True (isPasswordAspect (Password "pwd")) "Password aspect is not recognized"
   test "Ballow box aspect predicate" $
     Equals True (isBallotBoxAspect BallotBox) "Ballot box aspect is not recognized"
+  test "Zipped submissions aspect predicate" $
+    Equals True (isZippedSubmissionsAspect ZippedSubmissions) "Zipped submissions aspect is not recognized"
 #endif
 
 -- Returns True if the aspect set contains a password protected value
@@ -108,7 +135,7 @@ isPasswordProtectedTests = group "isPasswordProtected" $ do
        (Equals True (isPasswordProtected (fromList [Password ""]))
                "Password aspect should be found")
   test "Password aspect within more aspects"
-       (Equals True (isPasswordProtected (fromList [Password "", BallotBox]))
+       (Equals True (isPasswordProtected (fromList [Password "", BallotBox, ZippedSubmissions]))
                "Password aspect should be found")
 #endif
 
@@ -128,10 +155,60 @@ isBallotBoxTests = group "isBallotBox" $ do
        (Equals False (isBallotBox (fromList [Password ""]))
                "Password aspect should be rejected")
   test "Password aspect within more aspects"
-       (Equals True (isBallotBox (fromList [Password "", BallotBox]))
+       (Equals True (isBallotBox (fromList [Password "", BallotBox, ZippedSubmissions]))
                "BallotBox aspect should be found")
 #endif
 
+-- Returns True if the aspect set contains a "zipped submissions" value
+isZippedSubmissions :: Aspects -> Bool
+isZippedSubmissions = fromAspects (not . Set.null . Set.filter isZippedSubmissionsAspect)
+
+
+setZippedSubmissions :: Aspects -> Aspects
+setZippedSubmissions x@(Aspects as)
+  | not (isZippedSubmissions x) = Aspects (ZippedSubmissions:as)
+  | otherwise = x
+
+clearZippedSubmissions :: Aspects -> Aspects
+clearZippedSubmissions x@(Aspects as)
+  | not (isZippedSubmissions x) = x
+  | otherwise = Aspects $ filter (not . isZippedSubmissionsAspect) as
+
+#ifdef TEST
+isZippedSubmissionsTests = group "isZippedSubmissions" $
+  eqPartitions isZippedSubmissions
+    [ ( "Empty aspect set", emptyAspects, False, "Empty set should not contain zipped submissions")
+
+    , ( "Setting zipped submissions aspect"
+           , setZippedSubmissions emptyAspects
+           , True, "Zipped submissions aspect should be set")
+
+    , ( "Clearing zipped submissions aspect"
+           , clearZippedSubmissions $ fromList [ZippedSubmissions]
+           , False, "Zipped submissions aspect should be cleared")
+
+    , ( "Non password aspects", fromList [ZippedSubmissions], True, "Zipped submissions should be found")
+
+    , ( "Password aspect", fromList [Password ""], False, "Password aspect should be rejected")
+
+    , ( "Password aspect within more aspects"
+           , fromList [Password "", BallotBox, ZippedSubmissions]
+           , True, "Zipped submissions aspect should be found")
+    ]
+#endif
+
+-- Extract the submission type from the aspects set
+aspectsToSubmissionType :: Aspects -> SubmissionType
+aspectsToSubmissionType x = if isZippedSubmissions x then ZipSubmission else TextSubmission
+
+#ifdef TEST
+aspectsToSubmissionTypeTests = group "aspectsToSubmissionType" $
+  eqPartitions aspectsToSubmissionType
+    [ ("Zipped Submission", fromList [ZippedSubmissions], ZipSubmission, "Zipped submission should be found")
+    , ("Emtpy aspect set", emptyAspects, TextSubmission, "Empty set should not contain zipped submissions")
+    , ( "Password aspect", fromList [Password ""], TextSubmission, "Password aspect should be rejected")
+    ]
+#endif
 
 -- Calculates True if the assignment aspects set contains at least one elements
 -- That satisfies the preduicate
@@ -144,7 +221,7 @@ getPassword :: Aspects -> String
 getPassword = fromAspects $ \as ->
   case (Set.toList . Set.filter isPasswordAspect $ as) of
     [] -> error $ "getPassword: no password aspects was found"
-    (pwd:_) -> aspect (error "getPassword: no password aspect was filtered in") id pwd
+    (pwd:_) -> aspect (error "getPassword: no password aspect was filtered in") id (error "getPassword: no password aspect was filtered in") pwd
 
 -- | Set the assignments passwords in the assignment aspect set.
 -- if the set already contains a password the password is replaced.
@@ -163,8 +240,8 @@ assignmentAspectsSetPasswordTests = group "setPassword" $ do
     (setPassword "new" (fromList [Password "old"]))
     "Password is not replaced in a password empty set"
   test "Replace the password in a multiple set" $ Equals
-    (fromList [BallotBox, Password "new"])
-    (setPassword "new" (fromList [BallotBox, Password "old"]))
+    (fromList [ZippedSubmissions, BallotBox, Password "new"])
+    (setPassword "new" (fromList [ZippedSubmissions, BallotBox, Password "old"]))
     "Password is not replaced in a non empty set"
 #endif
 
@@ -226,6 +303,8 @@ assignmentTests =
 asgTests = group "Bead.Domain.Entity.Assignment" $ do
   isPasswordProtectedTests
   isBallotBoxTests
+  isZippedSubmissionsTests
+  aspectsToSubmissionTypeTests
   assignmentAspectPredTests
   assignmentAspectsSetPasswordTests
 #endif

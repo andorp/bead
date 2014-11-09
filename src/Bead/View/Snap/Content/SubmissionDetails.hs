@@ -4,6 +4,7 @@ module Bead.View.Snap.Content.SubmissionDetails (
   ) where
 
 import           Data.List (intersperse)
+import           Data.Monoid (mconcat)
 import           Data.Time (getCurrentTime)
 import           Data.String (fromString)
 
@@ -19,7 +20,7 @@ import           Bead.View.Snap.Markdown
 
 import           Text.Blaze.Html5 ((!))
 import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A (style)
+import qualified Text.Blaze.Html5.Attributes as A (style, href)
 
 submissionDetails = ViewModifyHandler submissionDetailsPage submissionDetailsPostHandler
 
@@ -97,8 +98,22 @@ submissionDetailsContent p = do
     H.h2 . fromString . msg $ Msg_SubmissionDetails_Description "Assignment text"
     H.div # assignmentTextDiv $
       markdownToHtml . Assignment.desc . sdAssignment $ sm
-    H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "Submission text"
-    H.div # submissionTextDiv $ seeMorePre msg maxLength maxLines . sdSubmission $ sm
+    H.h2 . fromString . msg $ Msg_SubmissionDetails_Solution "Submission"
+    if (Assignment.isZippedSubmissions . Assignment.aspects . sdAssignment $ sm)
+      then do
+        H.p $ fromString . msg $ Msg_SubmissionDetails_Solution_Zip_Info $ mconcat
+          [ "The submission was uploaded as a compressed file so it could not be displayed verbatim.  "
+          , "But it may be downloaded as a file by clicking on the link."
+          ]
+        H.a ! A.href (routeOf $ Pages.getSubmission (smKey p) ()) $
+          fromString . msg $ Msg_SubmissionDetails_Solution_Zip_Link "Download"
+      else do
+        H.p $ fromString . msg $ Msg_SubmissionDetails_Solution_Text_Info $
+          "The submission may be downloaded as a plain text file by clicking on the link."
+        H.a ! A.href (routeOf $ Pages.getSubmission (smKey p) ()) $ fromString . msg $
+          Msg_SubmissionDetails_Solution_Text_Link "Download"
+        H.br
+        H.div # submissionTextDiv $ seeMorePre msg maxLength maxLines . sdSubmission $ sm
     H.h2 . fromString . msg $ Msg_SubmissionDetails_Evaluation "Evaluation"
     (resolveStatus msg $ sdStatus sm)
     H.h2 (fromString . msg $ Msg_Comments_Title "Comments")

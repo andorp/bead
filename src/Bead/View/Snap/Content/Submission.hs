@@ -4,10 +4,18 @@ module Bead.View.Snap.Content.Submission (
   , resolveStatus
   ) where
 
-import           Data.List (intersperse)
+import           Data.List (intersperse, partition)
+import           Data.Maybe (listToMaybe)
 import           Data.String (fromString)
+import qualified Data.Text as T
+import qualified Data.ByteString.Char8 as B
 import           Data.Time
+import           System.Directory (doesFileExist)
+import           System.FilePath.Posix (takeExtension)
 
+import           Snap.Util.FileUploads
+
+import           Bead.Configuration (maxUploadSizeInKb)
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Domain.Entities as E
 import qualified Bead.Domain.Entity.Assignment as Assignment
@@ -27,7 +35,15 @@ data PageData = PageData {
   , asDesc  :: AssignmentDesc
   , asTimeConv :: UserTimeConverter
   , asNow :: UTCTime
+  , asMaxFileSize :: Int
   }
+
+data UploadResult
+  = PolicyFailure
+  | File FilePath !ByteString
+  | InvalidFile
+  | UnnamedFile
+  deriving (Eq,Show)
 
 submissionPage :: GETContentHandler
 submissionPage = withUserState $ \s -> do
@@ -35,15 +51,25 @@ submissionPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
   ut <- userTimeZoneToLocalTimeConverter
   now <- liftIO $ getCurrentTime
+  size <- fmap maxUploadSizeInKb $ lift $ withTop configContext getConfiguration
   -- TODO: Refactor use guards
   userAssignmentForSubmission
     ak
     (\desc asg -> render $ submissionContent
-       (PageData { asKey = ak, asValue = asg, asDesc = desc, asTimeConv = ut, asNow = now }))
+       (PageData { asKey = ak, asValue = asg, asDesc = desc, asTimeConv = ut, asNow = now, asMaxFileSize = size }))
     (render invalidAssignment)
 
 submissionPostHandler :: POSTContentHandler
 submissionPostHandler = do
+  uploadResult <- join $ lift $ do
+    tmpDir <- withTop tempDirContext $ getTempDirectory
+    size <- maxUploadSizeInKb <$> withTop configContext getConfiguration
+    let maxSize = fromIntegral (size * 1024)
+    let uploadPolicy = setMaximumFormInputSize maxSize defaultUploadPolicy
+    let perPartUploadPolicy = const $ allowWithMaximumSize maxSize
+    handleFileUploads tmpDir uploadPolicy perPartUploadPolicy $ \parts -> do
+      results <- mapM handlePart parts
+      return . return $ results
   ak <- getParameter assignmentKeyPrm
   userAssignmentForSubmission
     ak
@@ -55,24 +81,61 @@ submissionPostHandler = do
          then do pwd <- getParameter (stringParameter (fieldName submissionPwdField) "Feltöltési jelszó")
                  if Assignment.getPassword aspects == pwd
                    -- Passwords do match
-                   then NewSubmission ak
-                          <$> (E.Submission
-                                <$> (SimpleSubmission <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege"))
-                                <*> liftIO getCurrentTime)
+                   then newSubmission ak aspects uploadResult
                    -- Passwords do not match
                    else return . ErrorMessage $ Msg_Submission_InvalidPassword "Invalid password, the solution could not be submitted!"
          -- Non password protected assignment
-         else NewSubmission ak
-                <$> (E.Submission
-                       <$> (SimpleSubmission <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege"))
-                       <*> liftIO getCurrentTime))
+         else newSubmission ak aspects uploadResult)
     -- Assignment is not for the user
     (return . ErrorMessage $ Msg_Submission_NonUsersAssignment "The assignment is not for the actual user!")
+  where
+    newSubmission ak as up =
+      if (not $ Assignment.isZippedSubmissions as)
+        then submit $ SimpleSubmission <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege")
+        else
+          case uploadedFile of
+            Just (File name contents) ->
+              if (takeExtension name == ".zip")
+                then submit $ return $ ZippedSubmission contents
+                else return $
+                  ErrorMessage $ Msg_Submission_File_InvalidFile
+                    "The extension of the file to be uploaded is incorrect."
+            Just PolicyFailure      -> return $
+              ErrorMessage $ Msg_Submission_File_PolicyFailure
+                "The upload policy has been violated, probably the file was too large."
+            Nothing                 -> return $
+              ErrorMessage $ Msg_Submission_File_NoFileReceived
+                "No file has been received."
+            _                       -> return $
+              ErrorMessage $ Msg_Submission_File_InternalError
+                "Some error happened during upload."
+       where
+         submit s = NewSubmission ak <$> (E.Submission <$> s <*> liftIO getCurrentTime)
+         uploadedFile = listToMaybe $ uncurry (++) $ partition isFile up
+
+         isFile (File _ _) = True
+         isFile _          = False
+
+    handlePart (_partInfo, Left _exception) = return PolicyFailure
+    handlePart (partInfo, Right filePath) =
+      case (partFileName partInfo) of
+        Just fp | not (B.null fp) -> do
+          contents <- liftIO $ do
+            exists <- doesFileExist filePath
+            if exists
+              then do
+                body <- B.readFile filePath
+                return $ Just body
+              else return $ Nothing
+          return $ case contents of
+            Just body -> File (unpack fp) body
+            _         -> InvalidFile
+        _                         -> return UnnamedFile
 
 submissionContent :: PageData -> IHtml
 submissionContent p = do
   msg <- getI18N
-  return $ postForm (routeOf submission) `withId` (rFormId submissionForm) $ H.div ! formDiv $ do
+  return $ (postForm (routeOf submission) `withId` (rFormId submissionForm)) ! A.enctype "multipart/form-data" $ H.div ! formDiv $ do
     H.table $ do
       H.tr $ do
         H.td $ H.b $ (fromString . msg $ Msg_Submission_Course "Course: ")
@@ -99,15 +162,26 @@ submissionContent p = do
       markdownToHtml . Assignment.desc . asValue $ p
     H.h2 $ (fromString . msg $ Msg_Submission_Solution "Submission")
     (assignmentPasswordDiv msg)
-    H.div $ do
-      textAreaInput (fieldName submissionTextField) Nothing ! A.rows "25" ! A.cols "80"
+    if (Assignment.isZippedSubmissions aspects)
+      then
+        H.div $ do
+          H.p $ do
+            fromString . msg $ Msg_Submission_Info_File
+              "Please select a file with .zip extension to submit.  Note that the maximum file size in kilobytes: "
+            fromString (show $ asMaxFileSize p)
+          fileInput (fieldName submissionFileField)
+      else
+        H.div $ do
+          textAreaInput (fieldName submissionTextField) Nothing ! A.rows "25" ! A.cols "80"
+    H.br
     submitButton (fieldName submitSolutionBtn) (msg $ Msg_Submission_Submit "Submit")
     hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
   where
     submission = Pages.submission ()
+    aspects = Assignment.aspects $ asValue p
 
     assignmentPasswordDiv msg =
-      when (Assignment.isPasswordProtected . Assignment.aspects $ asValue p) $ do
+      when (Assignment.isPasswordProtected aspects) $ do
         H.div $ do
           H.p $ fromString . msg $ Msg_Submission_Info_Password
             "This assignment can only accept submissions by providing the password."

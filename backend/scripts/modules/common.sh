@@ -6,7 +6,7 @@ WATCHDOG_TIMEOUT=5
 msg_n() {
     local tz
 
-    tz="Europe/Budapest"
+    tz="UTC"
     date=`env TZ=$tz date '+%Y.%m.%d. %H:%M:%S'`
     echo -n "[${date}] $1";
 }

@@ -60,6 +60,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           mpasswFromAuth = passwordFromAuthUser authUser
       case mpasswFromAuth of
         Nothing -> do logMessage ERROR "No password was given"
+                      withTop debugLoggerContext $ debugMessage "Login.loginSubmit"
                       A.logout
         Just _passwFromAuth -> do
           i18n <- i18nH
@@ -69,6 +70,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           case result of
             Left err -> do
               logMessage ERROR $ "Error happened processing user story: " ++ S.translateUserError trans err
+              withTop debugLoggerContext $ debugMessage "Login.loginSubmit2"
               -- Service context authentication
               liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
               A.logout

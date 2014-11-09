@@ -78,8 +78,8 @@ pages = do
             returnA -< (BS.append ctx pth)
   page <- requestToPageHandler path
   case page of
-    -- No Page value is calculated from the request
-    Nothing -> logoutAndErrorPage "Invalid route in request"
+    -- No Page value is calculated from the request, pass to other handler
+    Nothing -> pass
     Just pd
       | P.isLogin pd -> loginSubmit
       | otherwise ->  handlePage (pageContent pd)
@@ -169,11 +169,13 @@ runUserViewPOSTHandler onError userViewHandler
 
 logoutAndResetRoute :: Handler App App ()
 logoutAndResetRoute = do
+  withTop debugLoggerContext $ debugMessage "Routing.logoutAndResetRoute"
   HU.logout
   redirect "/"
 
 logoutAndErrorPage :: String -> Handler App App ()
 logoutAndErrorPage msg = do
+  withTop debugLoggerContext $ debugMessage "Routing.logoutAndErrorPage"
   HU.logout
   msgErrorPage msg
 
@@ -192,17 +194,17 @@ handlePage page = P.pageKindCata view userView viewModify modify page where
   loggedInFilter m = userIsLoggedInFilter
     m
     -- Not logged in user tries to get some data
-    logoutAndResetRoute
+    (logoutAndResetRoute' "Routing.loggedInFilter1")
     -- Some internal error happened
-    logoutAndErrorPage
+    (logoutAndErrorPage' "Routing.loggedInFilter2")
 
   invalidPOSTMethodCall = do
      logMessage DEBUG $ "Invalid POST handler " ++ show pageDesc
-     logoutAndResetRoute
+     (logoutAndResetRoute' "Rounting.invalidPOSTMethodCall")
 
   invalidGETMethodCall = do
      logMessage DEBUG $ "Invalid GET handler" ++ show pageDesc
-     logoutAndResetRoute
+     (logoutAndResetRoute' "Routing.invalidGETMethodCall")
 
   changePage handler =
     allowedPageByTransition pageDesc
@@ -215,7 +217,16 @@ handlePage page = P.pageKindCata view userView viewModify modify page where
       , ": Page transition is not allowed "
       , show (SC.page s), " -> ", show pageDesc
       ]
-    lift $ logoutAndResetRoute
+    lift $ (logoutAndResetRoute' "Routing.notAllowedPage")
+
+  logoutAndResetRoute' name = do
+    withTop debugLoggerContext $ debugMessage name
+    logoutAndResetRoute
+
+  logoutAndErrorPage' name msg = do
+    withTop debugLoggerContext $ debugMessage name
+    logoutAndErrorPage msg
+
 
   get  h = method GET h <|> method POST invalidPOSTMethodCall
   post h = method GET invalidGETMethodCall <|> method POST h
@@ -301,6 +312,7 @@ routeToPageMap = Map.fromList [
   , (deleteUsersFromCoursePath , \ps -> P.deleteUsersFromCourse <$> courseKey ps <*> unit)
   , (deleteUsersFromGroupPath , \ps -> P.deleteUsersFromGroup <$> groupKey ps <*> unit)
   , (unsubscribeFromCoursePath , \ps -> P.unsubscribeFromCourse <$> groupKey ps <*> unit)
+  , (getSubmissionPath, \ps -> P.getSubmission <$> submissionKey ps <*> unit)
   ] where
       j = const . Just
       unit = return ()

@@ -24,7 +24,6 @@ import qualified Control.Monad.Error  as CME
 import qualified Control.Monad.Reader as CMR
 import           Control.Monad.Trans
 import           Prelude hiding (log, userError)
-import qualified Data.ByteString.UTF8  as BsUTF8 (fromString)
 import           Data.Hashable
 import           Data.List (nub)
 import           Data.Maybe (catMaybes)
@@ -897,6 +896,17 @@ loadSubmission sk = logAction INFO ("loads submission " ++ show sk) $ do
   authorize P_Open P_Submission
   persistence $ Persist.loadSubmission sk
 
+-- Checks if the submission is accessible for the user and loads it,
+-- otherwise throws an exception.
+getSubmission :: SubmissionKey -> UserStory (Submission, SubmissionDesc)
+getSubmission sk = logAction INFO ("downloads submission " ++ show sk) $ do
+  authorize P_Open P_Submission
+  isAccessibleSubmission sk
+  persistence $ do
+    s <- Persist.loadSubmission sk
+    d <- Persist.submissionDesc sk
+    return (s,d)
+
 -- Produces a list of assignments and information about the submissions for the
 -- described assignment
 userAssignments :: UserStory (Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)])
@@ -1072,15 +1082,40 @@ userSubmissions s ak = logAction INFO msg $ do
   where
     msg = join ["lists ",show s,"'s submissions for assignment ", show ak]
 
+-- Helper function: checks if there at least one submission for the given
+isThereSubmissionPersist = fmap (not . null) . Persist.submissionsForAssignment
+
+-- | Checks if there is at least one submission for the given assignment
+isThereASubmission :: AssignmentKey -> UserStory Bool
+isThereASubmission ak = logAction INFO ("" ++ show ak) $ do
+  authorize P_Open P_Assignment
+  isAdministratedAssignment ak
+  persistence $ isThereSubmissionPersist ak
+
+-- | Modify the given assignment but keeps the evaluation type if there is
+-- a submission for the given assignment, also shows a warning message if the
+-- modification of the assignment type is not viable.
 modifyAssignment :: AssignmentKey -> Assignment -> TCModification -> UserStory ()
 modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ do
   authorize P_Modify P_Assignment
   join . withUserAndPersist $ \u -> do
     admined <- Persist.isAdministratedAssignment u ak
     if admined
-      then do Persist.modifyAssignment ak a
+      then do hasSubmission <- isThereSubmissionPersist ak
+              new <- if hasSubmission
+                       then do -- Overwrite the assignment type with the old one
+                               -- if there is submission for the given assignment
+                               ev <- Assignment.evType <$> Persist.loadAssignment ak
+                               return (a { Assignment.evType = ev })
+                       else return a
+              Persist.modifyAssignment ak new
               testCaseModificationForAssignment u ak tc
-              return (return ())
+              if and [hasSubmission, Assignment.evType a /= Assignment.evType new]
+                then return . putStatusMessage . Msg_UserStory_EvalTypeWarning $ concat
+                  [ "The evaluation type of the assignment is not modified. "
+                  , "A solution is submitted already."
+                  ]
+                else (return (return ()))
       else return $ do
              logMessage INFO . violation $ printf "User tries to modify the assignment: (%s)" (assignmentKeyMap id ak)
              errorPage $ userError nonAdministratedAssignment
@@ -1144,6 +1179,14 @@ isAdministratedTestScript = guard
   Persist.isAdministratedTestScript
   "The user tries to access a test script (%s) which is not administrated by him."
   (userError nonAdministratedTestScript)
+
+-- Checks if the submission is submitted by the user, or is part of a course
+-- or group that the user administrates
+isAccessibleSubmission :: SubmissionKey -> UserStory ()
+isAccessibleSubmission = guard
+  Persist.isAccessibleSubmission
+  "The user tries to download a submission (%s) which is not accessible for him."
+  (userError nonAccessibleSubmission)
 
 -- * User Story combinators
 
@@ -1227,4 +1270,4 @@ nonAdministratedAssignment = Msg_UserStoryError_NonAdministratedAssignment "This
 nonAdministratedSubmission = Msg_UserStoryError_NonAdministratedSubmission "The submission is not administrated by you."
 nonAdministratedTestScript = Msg_UserStoryError_NonAdministratedTestScript "The test script is not administrated by you."
 nonRelatedAssignment = Msg_UserStoryError_NonRelatedAssignment "The assignment is not belongs to you."
-
+nonAccessibleSubmission = Msg_UserStoryError_NonAccessibleSubmission "The submission is not belongs to you."

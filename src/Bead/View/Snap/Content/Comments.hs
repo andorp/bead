@@ -16,6 +16,7 @@ import           Data.String
 import           Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import           Text.Printf
 
 import           Bead.Controller.Pages as Pages
 import           Bead.View.Snap.Content
@@ -100,8 +101,8 @@ commentPar i18n t c = H.div # (commentDiv c) $ do
 
         evaluationText result comment _author =
           withEvResult result
-            (\b -> join [comment, "\n", translateMessage i18n (binaryResult b)])
-            (\p -> join [comment, "\n", translateMessage i18n (pctResult p)])
+            (\b -> join [comment, "\n\n", translateMessage i18n (binaryResult b)])
+            (const $ join [comment, "\n\n", translateMessage i18n (pctResult result)])
 
         binaryResult (Binary b) =
           TransMsg $ resultCata (Msg_Comments_BinaryResultPassed "The submission is accepted.")
@@ -110,7 +111,10 @@ commentPar i18n t c = H.div # (commentDiv c) $ do
 
         pctResult p = TransPrmMsg
           (Msg_Comments_PercentageResult "The percentage of the evaluation: %s")
-          (show p)
+          (maybe "ERROR: Invalid percentage value! Please contact with the administrations"
+                 doubleToPercentageStr $ percentValue p)
+          where
+            doubleToPercentageStr = printf "%.0f%%" . (100 *)
 
     commentAuthor =
       commentOrFeedback

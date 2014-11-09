@@ -67,6 +67,7 @@ pageGen = oneof [
         , newCourseAssignmentPreview <$> courseKey <*> unit
         , newGroupAssignmentPreview <$> groupKey <*> unit
         , modifyAssignmentPreview <$> assignmentKey <*> unit
+        , getSubmission <$> submissionKey <*> unit
         ]
 
       unit = return ()
