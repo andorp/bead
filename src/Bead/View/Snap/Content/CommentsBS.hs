@@ -101,8 +101,8 @@ commentPar i18n t c = Bootstrap.row $ Boostrap.colMd12 $ H.div # (commentDiv c) 
 
         evaluationText result comment _author =
           withEvResult result
-            (\b -> join [comment, "\n", translateMessage i18n (binaryResult b)])
-            (\p -> join [comment, "\n", translateMessage i18n (pctResult p)])
+            (\b -> join [comment, "\n\n", translateMessage i18n (binaryResult b)])
+            (const $ join [comment, "\n\n", translateMessage i18n (pctResult result)])
 
         binaryResult (Binary b) =
           TransMsg $ resultCata (Msg_Comments_BinaryResultPassed "The submission is accepted.")
@@ -111,7 +111,10 @@ commentPar i18n t c = Bootstrap.row $ Boostrap.colMd12 $ H.div # (commentDiv c) 
 
         pctResult p = TransPrmMsg
           (Msg_Comments_PercentageResult "The percentage of the evaluation: %s")
-          (show p)
+          (maybe "ERROR: Invalid percentage value! Please contact with the administrations"
+                 doubleToPercentageStr $ percentValue p)
+          where
+            doubleToPercentageStr = printf "%.0f%%" . (100 *)
 
     commentAuthor =
       commentOrFeedback
