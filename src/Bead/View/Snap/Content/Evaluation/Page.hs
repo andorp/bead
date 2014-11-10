@@ -180,11 +180,25 @@ evaluationContent pd = do
             td $ fromString $ msg $ Msg_Evaluation_SubmissionDate "Date of submission: "
             td $ fromString $ showDate . tc $ eSubmissionDate sd
 
-    Bootstrap.row $ Bootstrap.colMd12 $
-      h2 $ fromString $ msg $ Msg_Evaluation_Submitted_Solution "Submission"
+    Bootstrap.row $ Bootstrap.colMd12 $ do
+      let downloadSubmissionButton =
+            Bootstrap.buttonLink
+              (routeOf $ Pages.getSubmission submissionKey ())
+              (msg $ Msg_Evaluation_Submitted_Solution_Zip_Link "Download")
 
-    Bootstrap.row $ Bootstrap.colMd12 $ pre # submissionTextDiv $ do
-      seeMorePre msg maxLength maxLines (eSolution sd)
+      h2 $ fromString $ msg $ Msg_Evaluation_Submitted_Solution "Submission"
+      if (Assignment.isZippedSubmissions . Assignment.aspects . eAssignment $ sd)
+        then do
+          H.p $ fromString . msg $ Msg_Evaluation_Submitted_Solution_Zip_Info $ mconcat
+            [ "The submission was uploaded as a compressed file so it could not be displayed verbatim.  "
+            , "But it may be downloaded as a file by clicking on the link."
+            ]
+          downloadSubmissionButton
+        else do
+          H.p $ fromString . msg $ Msg_Evaluation_Submitted_Solution_Text_Info $
+            "The submission may be downloaded as a plain text file by clicking on the link."
+          downloadSubmissionButton
+          seeMorePre msg maxLength maxLines (eSolution sd)
 
     Bootstrap.row $ Bootstrap.colMd12 $
       postForm (routeOf . evPage $ maybeEvalKey) $ do
