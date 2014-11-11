@@ -138,12 +138,12 @@ bootstrapUserFrame s content secs = withUserFrame' content
       msg <- getI18N
       return $ do
         header
-        status
         Bootstrap.container $ do
           Bootstrap.rowColMd12 $ hr
           Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
             fromString $ msg $ linkText $ page s
           content
+        status
 
 -- | Places a given content in a public frame
 publicFrame :: IHtml -> IHtml
@@ -538,7 +538,8 @@ bootStrapStatus = maybe noMessage message . status
       msg <- getI18N
       let message = fromString . statusMessage msg msg
           color = statusMessage (const "yellow") (const "red")
-      return $ H.div ! A.id "status" # backgroundColor (color m) $ H.span $ (message m)
+      return $ Bootstrap.footer # backgroundColor (color m)
+        $ Bootstrap.container $ H.p ! Bootstrap.textCenter $ (message m)
 
 
 -- * Picklist

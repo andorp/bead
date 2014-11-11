@@ -65,6 +65,8 @@ columnOffsetClass = columnOffset $ \offset -> "col-md-offset-" ++ show offset
 
 container = H.div ! class_ "container"
 
+footer = H.div ! class_ "navbar navbar-default navbar-fixed-bottom"
+
 formGroup = H.div ! class_ "form-group"
 
 -- | Creates a list group div, which can contain a various list group items
@@ -318,3 +320,5 @@ selectionPart :: (Show a, Data a) =>
 selectionPart name attrs def = foldl (!) (selectTag name) attrs . mapM_ option
   where
     option (v,t) = optionTag (encode "selection" v) t (def v)
+
+textCenter = A.class_ "text-center"
