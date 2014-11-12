@@ -321,4 +321,15 @@ selectionPart name attrs def = foldl (!) (selectTag name) attrs . mapM_ option
   where
     option (v,t) = optionTag (encode "selection" v) t (def v)
 
+-- Attributes
+
 textCenter = A.class_ "text-center"
+
+dataToggle = customAttribute "data-toggle"
+dataPlacement = customAttribute "data-placement"
+
+-- | Adds a tooltip to a given HTML tag
+tooltip = dataToggle "tooltip"
+
+-- | Place the tooltip on the top
+tooltipAtTop = dataPlacement "top"

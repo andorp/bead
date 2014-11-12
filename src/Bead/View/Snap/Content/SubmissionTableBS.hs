@@ -233,11 +233,11 @@ submissionTablePart tableId now ctx s = do
       resultCell
         (linkWithHtml (routeWithParams (Pages.userSubmissions ()) [requestParam u, requestParam ak]))
         mempty -- not found
-        (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: xx-large" $ mempty) -- non-evaluated
-        (bool (H.i ! A.class_ "glyphicon glyphicon-ok-circle" ! A.style "color:#00FF00; font-size: xx-large" $ mempty)  -- tested accepted
-              (H.i ! A.class_ "glyphicon glyphicon-remove-circle" ! A.style "color:#FF0000; font-size: xx-large" $ mempty)) -- tested rejected
+        (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: xx-large" ! A.title "hmmmmmm"$ mempty) -- non-evaluated
+        (bool (H.i ! A.class_ "glyphicon glyphicon-ok-circle" ! A.style "color:#AAAAAA; font-size: xx-large" $ mempty)  -- tested accepted
+              (H.i ! A.class_ "glyphicon glyphicon-remove-circle" ! A.style "color:#AAAAAA; font-size: xx-large" $ mempty)) -- tested rejected
         (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: xx-large" $ mempty) -- accepted
-        (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#F00; font-size: xx-large" $ mempty) -- rejected
+        (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: xx-large" $ mempty) -- rejected
         si -- of percent
 
     deleteHeaderCell msg = submissionTableInfoCata deleteForCourseButton deleteForGroupButton s where

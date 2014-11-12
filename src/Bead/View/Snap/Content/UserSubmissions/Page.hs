@@ -73,7 +73,7 @@ submissionTable userTime submissions = do
     submissionInfo msg = fromString . submissionInfoCata
       (msg $ Msg_UserSubmissions_NotFound "Not found")
       (msg $ Msg_UserSubmissions_NonEvaluated "Not evaluated")
-      (const . msg $ Msg_UserSubmissions_Tested "Tested")
+      (msg . bool (Msg_UserSubmissions_Tests_Passed "Tests are passed") (Msg_UserSubmissions_Tests_Failed "Tests are failed"))
       (const (evaluationDataMap bin pct . evResult))
       where
         bin (Binary b) = msg $ resultCata (Msg_UserSubmissions_Accepted "Accepted")

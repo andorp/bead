@@ -14,6 +14,7 @@ import           Text.Blaze.Html5.Attributes hiding (id)
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Domain.Entities as E (Role(..))
+import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Content as Content hiding (userState, table)
 import           Bead.View.Snap.Content.SubmissionTableBS as ST
 
@@ -195,10 +196,28 @@ availableAssignments timeconverter (Just as) = do
       td (fromString . join . intersperse ", " . aTeachers $ a)
       td $ linkWithText (routeWithParams (Pages.submissionList ()) [requestParam k]) (fromString (aTitle a))
       td (fromString . showDate . timeconverter $ aEndDate a)
-      (resultCell id
-        (fromString $ msg $ Msg_Home_SubmissionCell_NoSubmission "No submission")
-        (fromString $ msg $ Msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
-        (const . fromString $ msg $ Msg_Home_SubmissionCell_Tested "Tested")
-        (fromString $ msg $ Msg_Home_SubmissionCell_Accepted "Accepted")
-        (fromString $ msg $ Msg_Home_SubmissionCell_Rejected "Rejected")
-        s)
+      let grayLabel  tag = H.span ! class_ "label label-default" $ tag
+      let greenLabel tag = H.span ! class_ "label label-success" $ tag
+      let redLabel   tag = H.span ! class_ "label label-danger"  $ tag
+      let blueLabel  tag = H.span ! class_ "label label-primary" $ tag
+      let label = submissionInfoCata grayLabel grayLabel (const grayLabel)
+             (\_evKey evResult -> undefined)
+      H.td $ withSubmissionInfo s
+               (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_NoSubmission "No submission")
+               (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
+               (bool (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_Tests_Passed "Tests are passed")
+                     (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_Tests_Failed "Tests are failed"))
+               (\_key result -> evResult
+                                  (greenLabel $ fromString $ msg $ Msg_Home_SubmissionCell_Accepted "Accepted")
+                                  (redLabel   $ fromString $ msg $ Msg_Home_SubmissionCell_Rejected "Rejected")
+                                  (blueLabel . fromString)
+                                  result)
+      where
+        evResult passed failed percentage r
+          = case r of
+             (EvResult (BinEval (Binary Passed))) -> passed
+             (EvResult (BinEval (Binary Failed))) -> failed
+             (EvResult (PctEval (Percentage (Scores [p])))) -> percentage $ percent p
+             (EvResult (PctEval (Percentage _))) -> error "SubmissionTable.coloredSubmissionCell percentage is not defined"
+
+            where percent x = join [show . round $ (100 * x), "%"]

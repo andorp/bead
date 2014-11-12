@@ -245,7 +245,8 @@ data Translation a
   | Msg_UserSubmissions_Rejected { trans :: a }
   | Msg_UserSubmissions_NotFound { trans :: a }
   | Msg_UserSubmissions_NonEvaluated { trans :: a }
-  | Msg_UserSubmissions_Tested { trans :: a }
+  | Msg_UserSubmissions_Tests_Passed { trans :: a }
+  | Msg_UserSubmissions_Tests_Failed { trans :: a }
 
   | Msg_SubmissionList_CourseOrGroup { trans :: a }
   | Msg_SubmissionList_Admin { trans :: a }
@@ -325,7 +326,8 @@ data Translation a
   | Msg_Home_SubmissionCell_NonEvaluated { trans :: a }
   | Msg_Home_SubmissionCell_Accepted { trans :: a }
   | Msg_Home_SubmissionCell_Rejected { trans :: a }
-  | Msg_Home_SubmissionCell_Tested { trans :: a }
+  | Msg_Home_SubmissionCell_Tests_Failed { trans :: a }
+  | Msg_Home_SubmissionCell_Tests_Passed { trans :: a }
   | Msg_Home_SubmissionTable_NoCoursesOrStudents { trans :: a }
 
   | Msg_Home_SubmissionTable_StudentName { trans :: a}

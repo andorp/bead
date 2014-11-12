@@ -220,7 +220,8 @@ DictionaryFile {
     , Msg_UserSubmissions_SubmissionDate { trans = "Beküldés dátuma" }
     , Msg_UserSubmissions_Evaluation { trans = "Értékelés" }
     , Msg_UserSubmissions_Accepted { trans = "Elfogadott" }
-    , Msg_UserSubmissions_Tested { trans = "Letesztelt" }
+    , Msg_UserSubmissions_Tests_Failed { trans = "Megbukott a teszteken" }
+    , Msg_UserSubmissions_Tests_Passed { trans = "Átment a teszteken" }
     , Msg_UserSubmissions_Rejected { trans = "Elutasított" }
     , Msg_UserSubmissions_NotFound { trans = "Nem található" }
     , Msg_UserSubmissions_NonEvaluated { trans = "Nem értékelt" }
@@ -294,7 +295,8 @@ DictionaryFile {
     , Msg_Home_ClosedSubmission { trans = "Lezárva" }
     , Msg_Home_SubmissionCell_NoSubmission { trans = "Nincs megoldás" }
     , Msg_Home_SubmissionCell_NonEvaluated { trans = "Nem értékelt" }
-    , Msg_Home_SubmissionCell_Tested { trans = "Tesztelve" }
+    , Msg_Home_SubmissionCell_Tests_Passed { trans = "Átment a teszteken" }
+    , Msg_Home_SubmissionCell_Tests_Failed { trans = "Megbukott a teszteken" }
     , Msg_Home_SubmissionCell_Accepted { trans = "Elfogadott" }
     , Msg_Home_SubmissionCell_Rejected { trans = "Elutasított" }
     , Msg_Home_SubmissionTable_NoCoursesOrStudents { trans = "Nincsenek feladatok vagy hallgatók a csoporthoz!" }
