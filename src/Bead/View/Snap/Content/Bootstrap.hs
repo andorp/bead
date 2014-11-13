@@ -321,15 +321,50 @@ selectionPart name attrs def = foldl (!) (selectTag name) attrs . mapM_ option
   where
     option (v,t) = optionTag (encode "selection" v) t (def v)
 
+-- Collapsible
+
+-- | Creates a panel group
+panelGroup =
+  H.div ! A.class_ "panel-group" ! role "tablist"
+
+-- | Creates a paned with a given id, a header text, and a body
+panel collapsed id_ header_ body_ =
+  let headingId = "heading" ++ id_
+      collapseClass = if collapsed then "panel-collapse collapse in"
+                                   else "panel-collapse collapse"
+  in
+  H.div ! A.class_ "panel panel-default" $ do
+    H.div ! A.class_ "panel-heading" ! role "tab" ! A.id (fromString headingId) $
+      H.h4 ! A.class_ "panel-title" $
+        H.a ! dataToggle "collapse" ! A.href (fromString $ '#':id_)
+            ! ariaExpanded "true" ! ariaControls (fromString id_) $ fromString header_
+    H.div ! A.id (fromString id_) ! A.class_ (fromString collapseClass)
+          ! role "tabpanel" ! ariaLabelledBy (fromString headingId) $
+      H.div ! A.class_ "panel-body" $ body_
+
 -- Attributes
+
+ariaExpanded = customAttribute "aria-expanded"
+
+ariaControls = customAttribute "aria-controls"
+
+ariaLabelledBy = customAttribute "aria-labelledby"
 
 textCenter = A.class_ "text-center"
 
 dataToggle = customAttribute "data-toggle"
+
 dataPlacement = customAttribute "data-placement"
+
+role = customAttribute "role"
 
 -- | Adds a tooltip to a given HTML tag
 tooltip = dataToggle "tooltip"
 
 -- | Place the tooltip on the top
 tooltipAtTop = dataPlacement "top"
+
+-- | Constants
+
+closed    = False
+collapsed = True
