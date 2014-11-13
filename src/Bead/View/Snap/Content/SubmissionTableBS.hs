@@ -81,11 +81,6 @@ submissionTable tableId now stb table = submissionTableContextCata html stb wher
       i18n msg $ submissionTablePart tableId now stb table
       i18n msg $ courseTestScriptTable testscripts table
 
-table' m
-  = H.div ! A.class_ "row"
-  $ H.div ! A.class_ "col-md-12" ! A.draggable "true"
-  $ H.table ! A.class_ "table table-bordered table-condensed table-striped table-hover" $ m
-
 -- Produces the HTML table from the submission table information,
 -- if there is no users registered and submission posted to the
 -- group or course students, an informational text is shown.
@@ -97,7 +92,7 @@ submissionTablePart _tableId _now _ctx s
   | and [null $ submissionTableInfoAssignments s, null $ stiUsers s] = do
     msg <- getI18N
     return $ do
-      table' $ do
+      Bootstrap.rowColMd12 $ Bootstrap.table $ do
         H.td (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "There are no assignments or students yet.")
 
 
@@ -105,11 +100,11 @@ submissionTablePart _tableId _now _ctx s
 submissionTablePart tableId now ctx s = do
   msg <- getI18N
   return $ do
-    courseForm $ do
-      table' $ do
+    courseForm $ Bootstrap.rowColMd12 $ do
+      Bootstrap.table $ do
         checkedUserScript
         assignmentLine msg
-        mapM_ (userLine s) (stiUserLines s)
+        mapM_ (userLine msg s) (stiUserLines s)
   where
     -- JavaScript
     tableIdJSName = filter isAlphaNum tableId
@@ -201,12 +196,12 @@ submissionTablePart tableId now ctx s = do
             Nothing -> routeOf $ Pages.viewAssignment ak ()
             Just _  -> routeOf $ Pages.modifyAssignment ak ()
 
-    userLine s (u,_p,submissionInfoMap) = do
+    userLine msg s (u,_p,submissionInfoMap) = do
       H.tr $ do
         let username = ud_username u
         H.td . fromString $ ud_fullname u
         H.td . fromString $ usernameCata id username
-        submissionCells username s
+        submissionCells msg username s
         deleteUserCheckbox u
       where
         submissionInfos = submissionTableInfoCata course group where
@@ -219,26 +214,33 @@ submissionTablePart tableId now ctx s = do
               lookup = cgInfoCata (const Nothing) (flip Map.lookup submissionInfoMap)
 
 
-        submissionCells username = submissionTableInfoCata course group where
-          course _n _users as _ulines _anames _key = mapM_ (submissionInfoCell username) as
+        submissionCells msg username = submissionTableInfoCata course group where
+          course _n _users as _ulines _anames _key = mapM_ (submissionInfoCell msg username) as
 
           group _n _users as _ulines _anames _ck _gk =
-            mapM_ (cgInfoCata (submissionInfoCell username) (submissionInfoCell username)) as
+            mapM_ (cgInfoCata (submissionInfoCell msg username) (submissionInfoCell msg username)) as
 
-        submissionInfoCell u ak = case Map.lookup ak submissionInfoMap of
+        submissionInfoCell msg u ak = case Map.lookup ak submissionInfoMap of
           Nothing -> H.td $ mempty
-          Just si -> submissionCell u (ak,si)
+          Just si -> submissionCell msg u (ak,si)
 
-    submissionCell u (ak,si) =
+    submissionCell msg u (ak,si) =
       resultCell
         (linkWithHtml (routeWithParams (Pages.userSubmissions ()) [requestParam u, requestParam ak]))
         mempty -- not found
-        (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: xx-large" ! A.title "hmmmmmm"$ mempty) -- non-evaluated
-        (bool (H.i ! A.class_ "glyphicon glyphicon-ok-circle" ! A.style "color:#AAAAAA; font-size: xx-large" $ mempty)  -- tested accepted
-              (H.i ! A.class_ "glyphicon glyphicon-remove-circle" ! A.style "color:#AAAAAA; font-size: xx-large" $ mempty)) -- tested rejected
-        (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: xx-large" $ mempty) -- accepted
-        (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: xx-large" $ mempty) -- rejected
+        (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: xx-large"
+             ! tooltip (Msg_Home_SubmissionCell_NonEvaluated "Non evaluated") $ mempty) -- non-evaluated
+        (bool (H.i ! A.class_ "glyphicon glyphicon-ok-circle" ! A.style "color:#AAAAAA; font-size: xx-large"
+                   ! tooltip (Msg_Home_SubmissionCell_Tests_Passed "Tests are passed") $ mempty)  -- tested accepted
+              (H.i ! A.class_ "glyphicon glyphicon-remove-circle" ! A.style "color:#AAAAAA; font-size: xx-large"
+                   ! tooltip (Msg_Home_SubmissionCell_Tests_Failed "Tests are failed") $ mempty)) -- tested rejected
+        (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: xx-large"
+             ! tooltip (Msg_Home_SubmissionCell_Accepted "Accepted") $ mempty) -- accepted
+        (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: xx-large"
+             ! tooltip (Msg_Home_SubmissionCell_Accepted "Rejected") $ mempty) -- rejected
         si -- of percent
+      where
+        tooltip m = A.title (fromString $ msg m)
 
     deleteHeaderCell msg = submissionTableInfoCata deleteForCourseButton deleteForGroupButton s where
         deleteForCourseButton _n _us _as _uls _ans _ck =
