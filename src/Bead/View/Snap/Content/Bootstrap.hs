@@ -65,7 +65,10 @@ columnOffsetClass = columnOffset $ \offset -> "col-md-offset-" ++ show offset
 
 container = H.div ! class_ "container"
 
-footer = H.div ! class_ "navbar navbar-default navbar-fixed-bottom"
+footer = H.div ! A.id "bead-footer" ! class_ "navbar navbar-default navbar-fixed-bottom"
+
+-- | Fades out the footer after the given seconds
+fadeOutFooter secs = H.script $ fromString $ concat ["$('#bead-footer').delay(", show (secs * 1000), ").fadeOut('slow')"]
 
 formGroup = H.div ! class_ "form-group"
 
