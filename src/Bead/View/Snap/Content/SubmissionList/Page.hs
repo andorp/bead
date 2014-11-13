@@ -88,13 +88,15 @@ submissionListContent p = do
 
     submissionTimeLine time = Bootstrap.listGroupTextItem $ showDate $ (uTime p) time
 
-    userSubmissionInfo  msg = userSubmission msg (submissionLine msg)
+    userSubmissionInfo  msg submissions = do
+      Bootstrap.rowColMd12 $ H.p $ fromString $ msg $ Msg_SubmissionList_Info "Comments may be added for submissions."
+      userSubmission msg (submissionLine msg) submissions
+
     userSubmissionTimes msg = userSubmission msg submissionTimeLine
 
     userSubmission msg line submissions =
       if (not $ null submissions)
         then do
-          Bootstrap.rowColMd12 $ H.p $ fromString $ msg $ Msg_SubmissionList_Info "Comments may be added for submissions."
           Bootstrap.rowColMd12 $ Bootstrap.listGroup $ mapM_ line submissions
         else do
           (Bootstrap.rowColMd12 $ fromString $ msg $ Msg_SubmissionList_NoSubmittedSolutions "There are no submissions.")
