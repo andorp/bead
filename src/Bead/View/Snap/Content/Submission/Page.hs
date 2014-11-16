@@ -153,7 +153,7 @@ submissionContent p = do
     Bootstrap.rowColMd12 $ do
       H.h2 $ fromString $ msg $ Msg_Submission_Description "Description"
       H.div # assignmentTextDiv $ markdownToHtml $ Assignment.desc $ asValue p
-    postForm (routeOf submission) ! A.enctype "multipart/form-data" $ do
+    postForm (routeOf submission) `withId` (rFormId submissionForm) ! A.enctype "multipart/form-data" $ do
       hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
       assignmentPassword msg
       Bootstrap.rowColMd12 $ h2 $
