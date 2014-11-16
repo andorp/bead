@@ -68,7 +68,22 @@ container = H.div ! class_ "container"
 footer = H.div ! A.id "bead-footer" ! class_ "navbar navbar-default navbar-fixed-bottom"
 
 -- | Fades out the footer after the given seconds
-fadeOutFooter secs = H.script $ fromString $ concat ["$('#bead-footer').delay(", show (secs * 1000), ").fadeOut('slow')"]
+fadeOutFooter secs = do
+  H.script $ fromString $ concat ["$('#bead-footer').delay(", show (secs * 1000), ").fadeOut('slow')"]
+
+fadeOutFooterButton custom ttl text = do
+  a ! class_ (fromString ("btn " <> custom))
+    ! role "button"
+    ! A.title (fromString ttl)
+    ! href "#"
+    ! disabled ""
+    $ (fromString text)
+
+-- | Creates a warning style button, if the user clicks on the button the footer fades away.
+fadeOutFooterWarningButton = fadeOutFooterButton "btn-warning"
+
+-- | Creates a danger style button, if the user clicks on the button the footer fades away
+fadeOutFooterDangerButton = fadeOutFooterButton "btn-danger"
 
 formGroup = H.div ! class_ "form-group"
 
@@ -108,6 +123,12 @@ customButtonLink custom ref ttl text =
 
 -- | Creates a button styled link
 buttonLink ref text = customButtonLink "btn-default" ref "" text
+
+-- | Warning button with a given text
+warningButtonLink ref text = customButtonLink "btn-warning" ref "" text
+
+-- | Danger button with a given text
+dangerButtonLink ref text = customButtonLink "btn-danger" ref "" text
 
 -- | Creates a date time picker using a third party library and turns on if the on switch
 -- is set to True

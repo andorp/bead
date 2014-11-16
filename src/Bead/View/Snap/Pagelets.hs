@@ -536,11 +536,13 @@ bootStrapStatus = maybe noMessage message . status
     noMessage = return $ return ()
     message m = do
       msg <- getI18N
-      let message = fromString . statusMessage msg msg
-          color = statusMessage (const "yellow") (const "red")
+      let labelMessage = statusMessage
+            (Bootstrap.fadeOutFooterWarningButton "title" . msg)
+            (Bootstrap.fadeOutFooterDangerButton "title" . msg)
+            m
       return $ do
-        Bootstrap.footer # backgroundColor (color m)
-          $ Bootstrap.container $ H.p ! Bootstrap.textCenter $ (message m)
+        Bootstrap.footer
+          $ Bootstrap.container $ Bootstrap.rowColMd12 $ Bootstrap.buttonGroupJustified $ labelMessage
         Bootstrap.fadeOutFooter 30
 
 -- * Picklist
