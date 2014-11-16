@@ -278,7 +278,7 @@ resultCell contentWrapper notFound unevaluated tested passed failed s =
 
     val (EvResult (BinEval (Binary Passed))) = passed
     val (EvResult (BinEval (Binary Failed))) = failed
-    val (EvResult (PctEval (Percentage (Scores [p])))) = Bootstrap.badge $ percent p
+    val (EvResult (PctEval (Percentage (Scores [p])))) = H.span ! A.class_ "label label-primary" $ fromString $ percent p
     val (EvResult (PctEval (Percentage _))) = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
     percent x = join [show . round $ (100 * x), "%"]
