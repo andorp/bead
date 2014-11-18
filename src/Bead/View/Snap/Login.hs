@@ -112,6 +112,16 @@ userForm act = do
       tableLine (msg $ Msg_Login_Username "Username:") (textInput (fieldName loginUsername) 20 Nothing ! A.required "")
       tableLine (msg $ Msg_Login_Password "Password:") (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
     submitButton (fieldName loginSubmitBtn) (msg $ Msg_Login_Submit "Login")
+    H.div ! A.style "text-align:center" $ do
+      H.p $ "A BE-AD felülete hamarosan megújul!  A linkekre kattintva láthatóak, miként fog kinézni:"
+      H.p $ "The interface of BE-AD is about to be revamped soon!  Click on the links to see how it will look like:"
+      H.p $ do
+        H.a ! A.href "/preview/Login.png" $ "Kép 1: Login"
+        H.span " "
+        H.a ! A.href "/preview/Home.png"  $ "Kép 2: Főoldal"
+        H.span " "
+        H.a ! A.href "/preview/Home2.png" $ "Kép 3: Home"
+        H.span " "
 
 loginPage :: Maybe AuthFailure -> DictionaryInfos -> IHtml
 loginPage err langInfos = withTitleAndHead (Msg_Login_Title "Login") content
