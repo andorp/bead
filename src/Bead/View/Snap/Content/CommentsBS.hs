@@ -16,6 +16,7 @@ import           Data.String
 import           Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
+import           Text.Printf
 
 import           Bead.Controller.Pages as Pages
 import           Bead.View.Snap.Content
@@ -78,7 +79,7 @@ commentsDiv t cs = do
     mapM_ (commentPar msg t) $ sortDecreasingTime cs
 
 commentPar :: I18N -> UserTimeConverter -> CommentOrFeedback -> Html
-commentPar i18n t c = Bootstrap.row $ Boostrap.colMd12 $ H.div # (commentDiv c) $ do
+commentPar i18n t c = Bootstrap.row $ Bootstrap.colMd12 $ H.div # (commentDiv c) $ do
   H.p # textAlign "left" $
     fromString $ (showDate . t . commentOrFeedbackTime $ c) ++ ", " ++ (commentAuthor $ c)
   seeMorePre i18n maxLength maxLines (commentText c)

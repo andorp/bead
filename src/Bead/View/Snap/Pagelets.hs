@@ -42,19 +42,6 @@ css c = H.link ! A.type_ "text/css" ! A.href (fromString c) ! A.rel "stylesheet"
 js :: String -> Html
 js j = H.script ! A.src (fromString j) $ empty
 
-document :: Html -> IHtml -> IHtml
-document headers body' = do
-  body <- body'
-  return $ do
-    H.docTypeHtml $ do
-      H.head $ do
-        H.title "BE-AD beadandókezelő"
-        H.meta ! A.charset "UTF-8"
-        H.link ! A.rel "shortcut icon" ! A.href "icon.ico"
-        headers
-        css "header.css"
-      H.body $ body
-
 bootStrapDocument :: IHtml -> IHtml
 bootStrapDocument body' = do
   body <- body'
@@ -80,24 +67,8 @@ bootStrapDocument body' = do
         js "/fay/DynamicContents.js"
     H.body $ body
 
-dynamicDocument :: Html -> IHtml -> IHtml
-dynamicDocument header body = document
-    (do css "jquery-ui.css"
-        js "/jquery.js"
-        js "/helpers.js"
-        js "/jquery-ui.js"
-        js "/fay/DynamicContents.js"
-        header)
-    body
-
-runPagelet :: IHtml -> I18N -> Html
-runPagelet p i = translate i $ document (css "inside.css") p
-
 runBootstrapPage :: IHtml -> I18N -> Html
 runBootstrapPage p i = translate i $ bootStrapDocument p
-
-runDynamicPagelet :: IHtml -> I18N -> Html
-runDynamicPagelet p i = translate i $ dynamicDocument (css "inside.css") p
 
 titleAndHead :: (Html -> IHtml -> IHtml) -> Translation String -> IHtml -> IHtml
 titleAndHead doc title content = doc
@@ -109,24 +80,6 @@ titleAndHead doc title content = doc
           H.div ! A.id "logo" $ "BE-AD"
           H.div ! A.id "title" $ fromString $ msg title
         H.div ! A.id "content" $ content)
-
-dynamicTitleAndHead :: Translation String -> IHtml -> IHtml
-dynamicTitleAndHead = titleAndHead dynamicDocument
-
-withTitleAndHead :: Translation String -> IHtml -> IHtml
-withTitleAndHead = titleAndHead document
-
-withUserFrame :: UserState -> IHtml -> Int -> IHtml
-withUserFrame s content secs = withUserFrame' content
-  where
-    withUserFrame' content = do
-      header <- pageHeader s secs
-      content <- content
-      status <- pageStatus s
-      return $ do
-        H.div ! A.id "header" $ header
-        status
-        H.div ! A.id "content" $ content
 
 bootstrapUserFrame :: UserState -> IHtml -> Int -> IHtml
 bootstrapUserFrame s content secs = withUserFrame' content
@@ -457,44 +410,6 @@ linkToRoute = link "/"
 spanWithTitle :: String -> String -> Html
 spanWithTitle title text = H.span ! A.title (fromString title) $ fromString text
 
-navigationMenu :: UserState -> IHtml
-navigationMenu s = do
-  msg <- getI18N
-  return $ H.ul $ mapM_ (H.li . (I18N.i18n msg . linkToPage)) $ P.menuPages (role s) (page s)
-
-pageHeader :: UserState -> Int -> IHtml
-pageHeader s secs = do
-  msg <- getI18N
-  return $ do
-    H.div ! A.id "logo" $ "BE-AD"
-    H.div ! A.id "user" $ do
-      minSecCountdown "hdctd" "--:--" secs
-      (usernameCata fromString $ user s)
-      H.br
-      (I18N.i18n msg $ linkToPage home)
-      H.br
-      (I18N.i18n msg $ linkToPage profile)
-      H.br
-      (I18N.i18n msg $ linkToPage logout)
-    H.div ! A.id "title" $ title msg s
-  where
-    logout = P.logout ()
-    profile = P.profile ()
-    home = P.home ()
-
-    title msg u@(UserState {}) = fromString . msg . linkText . page $ u
-    title _ _ = ""
-
-pageStatus :: UserState -> IHtml
-pageStatus = maybe noMessage message . status
-  where
-    noMessage = return $ return ()
-    message m = do
-      msg <- getI18N
-      let message = fromString . statusMessage msg msg
-          color = statusMessage (const "yellow") (const "red")
-      return $ H.div ! A.id "status" # backgroundColor (color m) $ H.span $ (message m)
-
 publicHeader :: IHtml
 publicHeader = do
   msg <- getI18N
@@ -622,4 +537,3 @@ invariants = Invariants [
       linkText' = trans . linkText
 
 #endif
-

@@ -15,10 +15,10 @@ import           Bead.Controller.UserStories (submissionDetailsDesc)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Bootstrap as Bootstrap
-import           Bead.View.Snap.Content.Comments
+import           Bead.View.Snap.Content.CommentsBS
 import           Bead.View.Snap.Content.Utils
 import           Bead.View.Snap.Content.SeeMore
-import           Bead.View.Snap.Content.Submission (resolveStatus)
+import           Bead.View.Snap.Content.Submission.Page (resolveStatus)
 import           Bead.View.Snap.Markdown
 
 import           Text.Blaze.Html5 as H
