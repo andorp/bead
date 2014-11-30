@@ -22,9 +22,6 @@ import           Snap hiding (Config(..), get)
 import           Snap.Snaplet.Auth as A hiding (createUser)
 import           Snap.Snaplet.Auth.Backends.JsonFile (mkJsonAuthMgr)
 import           Snap.Snaplet.Session
-import           Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5.Attributes as A hiding (title, rows, accept)
-import qualified Text.Blaze.Html5 as H
 
 import           Bead.Controller.Logging
 import qualified Bead.Controller.UserStories as S
@@ -33,6 +30,7 @@ import           Bead.Domain.TimeZone (utcZoneInfo)
 import qualified Bead.Persistence.Persist as Persist
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content
+import qualified Bead.View.Snap.Content.Public.Registration as View
 import           Bead.View.Snap.DataBridge as DataBridge
 import           Bead.View.Snap.EmailTemplate
 import           Bead.View.Snap.ErrorPage
@@ -86,8 +84,6 @@ readParameter param = do
   reqParam <- getParam . B.pack . DataBridge.name $ param
   return (reqParam >>= decode param . T.unpack . decodeUtf8)
 
-registrationTitle :: Translation String
-registrationTitle = Msg_Registration_Title "Registration"
 
 {-
 User registration request
@@ -118,17 +114,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
     , reg_timeout  = timeout 2 now
     }
 
-  renderForm = renderPublicPage . dynamicTitleAndHead registrationTitle $ do
-    msg <- getI18N
-    return $ do
-      postForm "/reg_request" ! (A.id . formId $ regForm) $ do
-        table (fieldName registrationTable) (fieldName registrationTable) $ do
-          tableLine (msg $ Msg_Registration_Username "Username:") $ textInput (DataBridge.name regUsernamePrm) 20 Nothing ! A.required ""
-          tableLine (msg $ Msg_Registration_Email "Email:") $ textInput (DataBridge.name regEmailPrm) 20 Nothing ! A.required ""
-          tableLine (msg $ Msg_Registration_FullName "Full name:") $ textInput (DataBridge.name regFullNamePrm) 20 Nothing ! A.required ""
-        submitButton (fieldName regSubmitBtn) (msg $ Msg_Registration_SubmitButton "Registration")
-      linkToRoute (msg $ Msg_Registration_GoBackToLogin "Back to login")
-
+  renderForm = renderBootstrapPublicPage $ publicFrame View.registrationFirstStep
 
   saveUserRegData = do
     u <- checkUsernamePrm
@@ -161,7 +147,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
                     regUsername = reg_username userRegData
                   , regUrl = createUserRegAddress key language userRegData
                   }
-            lift $ pageContent
+            lift $ renderBootstrapPublicPage $ publicFrame View.registrationFirstStepEmailSent
         _ -> throwSError . i18n $
                Msg_Registration_RequestParameterIsMissing "Some request parameter is missing."
 
@@ -257,22 +243,8 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                 (i18n $ Msg_RegistrationFinalize_UserAlreadyExist "This user already exists.")
               (False, False) -> do
                 timeZones <- map (\t -> (t, timeZoneName id t)) <$> foundTimeZones
-                renderPublicPage . dynamicTitleAndHead registrationTitle $ do
-                return $ do
-                  postForm "reg_final" ! (A.id . formId $ regFinalForm) $ do
-                    table (fieldName registrationTable) (fieldName registrationTable) $ do
-                      tableLine (i18n $ Msg_RegistrationFinalize_Password "Password:") $ passwordInput (DataBridge.name regPasswordPrm) 20 Nothing ! A.required ""
-                      tableLine (i18n $ Msg_RegistrationFinalize_PwdAgain "Password (again):") $ passwordInput (DataBridge.name regPasswordAgainPrm) 20 Nothing ! A.required ""
-                      tableLine (i18n $ Msg_RegistrationFinalize_Timezone "Time zone:") $
-                        selectionWithDefault (DataBridge.name regTimeZonePrm) utcZoneInfo timeZones ! A.required ""
-                    hiddenParam regUserRegKeyPrm key
-                    hiddenParam regTokenPrm      token
-                    hiddenParam regUsernamePrm   username
-                    hiddenParam regLanguagePrm   language
-                    H.br
-                    submitButton (fieldName regSubmitBtn) (i18n $ Msg_RegistrationFinalize_SubmitButton "Register")
-                  H.br
-                  linkToRoute (i18n $ Msg_RegistrationFinalize_GoBackToLogin "Back to login")
+                renderBootstrapPublicPage . publicFrame $
+                  View.registrationPasswordStep utcZoneInfo timeZones key token username language
 
   hiddenParam parameter value = hiddenInput (DataBridge.name parameter) (DataBridge.encode parameter value)
 
@@ -342,16 +314,8 @@ createNewUser reg timezone language = runErrorT $ do
 
     checkFailure (Right x) = return x
 
-pageContent :: Handler App a ()
-pageContent = renderPublicPage . dynamicTitleAndHead (Msg_Registration_Title "Registration") $ do
-  msg <- getI18N
-  return $ do
-    H.p . fromString . msg $ Msg_RegistrationTokenSend_Title "The registration token has been sent in email, it shall arrive soon."
-    H.br
-    linkToRoute (msg $ Msg_RegistrationTokenSend_GoBackToLogin "Back to login")
-
 registrationErrorPage :: (ErrorPage e) => e -> Handler App b ()
-registrationErrorPage = errorPage registrationTitle
+registrationErrorPage = errorPage (Msg_Registration_Title "Registration")
 
 -- * Tools
 

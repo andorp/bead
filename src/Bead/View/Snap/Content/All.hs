@@ -10,23 +10,23 @@ module Bead.View.Snap.Content.All (
 
 import qualified Bead.Controller.Pages as Pages hiding (invariants)
 import Bead.View.Snap.Content
-import Bead.View.Snap.Content.Home
-import Bead.View.Snap.Content.Profile
-import Bead.View.Snap.Content.CourseAdmin
-import Bead.View.Snap.Content.CourseOverview
-import Bead.View.Snap.Content.Administration
-import Bead.View.Snap.Content.EvaluationTable
-import Bead.View.Snap.Content.Evaluation
-import Bead.View.Snap.Content.NewAssignment
-import Bead.View.Snap.Content.Submission
-import Bead.View.Snap.Content.SubmissionList
-import Bead.View.Snap.Content.SubmissionDetails
-import Bead.View.Snap.Content.GroupRegistration
-import Bead.View.Snap.Content.UserDetails
-import Bead.View.Snap.Content.UserSubmissions
-import Bead.View.Snap.Content.SetUserPassword
-import Bead.View.Snap.Content.NewTestScript
-import Bead.View.Snap.Content.UploadFile
+import Bead.View.Snap.Content.Home.Page
+import Bead.View.Snap.Content.Profile.Page
+import Bead.View.Snap.Content.CourseAdmin.Page
+import Bead.View.Snap.Content.CourseOverview.Page
+import Bead.View.Snap.Content.Administration.Page
+import Bead.View.Snap.Content.EvaluationTable.Page
+import Bead.View.Snap.Content.Evaluation.Page
+import Bead.View.Snap.Content.Assignment.Page
+import Bead.View.Snap.Content.Submission.Page
+import Bead.View.Snap.Content.SubmissionList.Page
+import Bead.View.Snap.Content.SubmissionDetails.Page
+import Bead.View.Snap.Content.GroupRegistration.Page
+import Bead.View.Snap.Content.UserDetails.Page
+import Bead.View.Snap.Content.UserSubmissions.Page
+import Bead.View.Snap.Content.SetUserPassword.Page
+import Bead.View.Snap.Content.NewTestScript.Page
+import Bead.View.Snap.Content.UploadFile.Page
 import Bead.View.Snap.Content.GetSubmission
 
 #ifdef TEST

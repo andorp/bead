@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Bootstrap, from Twitter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="">
+  <meta name="author" content="">
+  <link href="http://netdna.bootstrapcdn.com/bootstrap/3.1.0/css/bootstrap.min.css" rel="stylesheet">
+  <script type="text/javascript" src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.0.3/jquery.min.js"></script>
+  <script type="text/javascript" src="http://netdna.bootstrapcdn.com/bootstrap/3.1.0/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="bootstrap-combobox.js"></script>
+  <link href="bootstrap-combobox.css" rel="stylesheet">
+</head>
+
+<body>
+  <div class="navbar navbar-default navbar-fixed-top">
+    <style>
+      .body{padding-top:70px}
+    </style>
+    <div class="container">
+      <div class="navbar-header">
+        <a class="navbar-brand">BE-AD</a>
+
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+      </div>
+      <div class="collapse navbar-collapse navbar-ex1-collapse">
+        <ul class="nav navbar-nav navbar-right">
+          <li class="active">
+            <a href="#">Home</a>
+          </li>
+          <li>
+            <a href="#">Profile</a>
+          </li>
+          <li>
+            <a href="#">Logout
+              <br>
+            </a>
+          </li>
+        </ul>
+        <p class="navbar-right navbar-text">Username</p>
+      </div>
+    </div>
+  </div>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12"></div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <hr>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <div class="page-header">
+          <h1>Assignment</h1>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <form>
+          <div class="form-group">
+            <label for="exampleInputEmail1">Title</label>
+            <input class="form-control" id="exampleInputEmail1" placeholder="Enter title" type="text">
+            <p class="help-block">Solutions may be submitted from the time of opening until the time of closing. The assignment will not be visible until it is opened. The assignments open and close automatically.</p>
+          </div>
+          <div class="form-group">
+            <label for="exampleInputEmail1">Start</label>
+            <input class="form-control" id="exampleInputEmail1" placeholder="Enter start date" type="text">
+          </div>
+          <div class="form-group">
+            <label for="exampleInputEmail1">End</label>
+            <input class="form-control" id="exampleInputEmail1" placeholder="Enter end date" type="text">
+          </div>
+          <div class="form-group">
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" value="">Ballot-Box</label>
+            </div>
+            <p class="help-block">(Recommended for tests.) Students will not be able to access submissions and their evaluations until the assignment is closed.</p>
+          </div>
+          <div class="form-group">
+            <div class="checkbox">
+              <label>
+                <input type="checkbox" value="">Password Protected</label>
+            </div>
+            <p class="help-block">(Recommended for tests.) Submissions may be only submitted by providing the password. The teacher shall use the password during the test in order to authenticate the submission for the student.</p>
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input class="form-control" placeholder="Password" type="text">
+          </div>
+          <div class="form-group">
+            <label for="exampleInputEmail1">Test Script</label>
+            <select class="combobox form-control" style="display:none" id="CountrySelection">
+              <option value="" selected="selected">Select Test Script</option>
+              <option value="TestScript1">Test Script 1</option>
+              <option value="TestScript2">Test Script 2</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="exampleInputPassword1">Assignment</label>
+            <textarea class="form-control" id="exampleInputPassword1" placeholder="" rows="20">Text of the assignment</textarea>
+          </div>
+          <div class="form-group">
+            <label for="exampleInputPassword1">Test Case</label>
+            <textarea class="form-control" id="exampleInputPassword1" placeholder="" rows="20">Text of the test case</textarea>
+          </div>
+          <div class="row">
+            <div class="col-md-6">
+              <button type="submit" class="btn btn-block btn-default">Preview</button>
+            </div>
+            <div class="col-md-6 text-center">
+              <button type="submit" class="btn btn-block btn-default">Save</button>
+            </div>
+          </div>
+
+        </form>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-md-12">
+        <hr>
+      </div>
+    </div>
+
+  </div>
+  <script type="text/javascript">
+    //<![CDATA[
+        $(document).ready(function(){
+          $('.combobox').combobox()
+        });
+      //]]>
+  </script>
+
+
+
+
+
+
+</body>
+
+</html>

@@ -15,8 +15,8 @@ module Bead.View.Snap.HandlerUtils (
   , i18nE
   , i18nH
   , blazeI18n
-  , renderPagelet
-  , renderDynamicPagelet
+  , renderBootstrapPage
+  , renderBootstrapPublicPage
   , renderPublicPage
   , setInSessionE
   , setReqParamInSession
@@ -67,7 +67,7 @@ import           Bead.View.Snap.Application
 import           Bead.View.Snap.DataBridge
 import           Bead.View.Snap.Dictionary
 import           Bead.View.Snap.I18N (IHtml, translate)
-import           Bead.View.Snap.Pagelets (runPagelet, runDynamicPagelet)
+import           Bead.View.Snap.Pagelets (runBootstrapPage)
 import           Bead.View.Snap.RouteOf (ReqParam(..))
 import           Bead.View.Snap.Session
 import           Bead.View.Snap.Translation
@@ -167,17 +167,10 @@ blazeI18n h = i18nE >>= blaze . h
 
 -- Renders a Page from the given IHtml function which
 -- needs the session timeout seconds
-renderPagelet :: (Int -> IHtml) -> HandlerError App b ()
-renderPagelet p = do
+renderBootstrapPage :: (Int -> IHtml) -> HandlerError App b ()
+renderBootstrapPage p = do
   secs <- fmap sessionTimeout . lift . withTop configContext $ getConfiguration
-  i18nE >>= blaze . (runPagelet (p secs))
-
--- Renders a Page from the given IHtml function which
--- needs the session timeout seconds
-renderDynamicPagelet :: (Int -> IHtml) -> HandlerError App b ()
-renderDynamicPagelet p = do
-  secs <- fmap sessionTimeout . lift . withTop configContext $ getConfiguration
-  i18nE >>= blaze . (runDynamicPagelet (p secs))
+  i18nE >>= blaze . (runBootstrapPage (p secs))
 
 -- Renders the public page selecting the I18N translation based on the
 -- language stored in the session, if there is no such value, the
@@ -188,6 +181,16 @@ renderPublicPage p = do
   t <- maybe (return Nothing) (withTop dictionaryContext . getDictionary) language
   let translator = maybe trans unDictionary t
   blaze $ translate translator p
+
+-- Renders the public page selecting the I18N translation based on the
+-- language stored in the session, if there is no such value, the
+-- default translator function is used
+renderBootstrapPublicPage :: IHtml -> Handler App b ()
+renderBootstrapPublicPage p = do
+  language <- withTop sessionManager languageFromSession
+  t <- maybe (return Nothing) (withTop dictionaryContext . getDictionary) language
+  let translator = maybe trans unDictionary t
+  blaze (runBootstrapPage p translator)
 
 withUserState :: (UserState -> HandlerError App b c) -> HandlerError App b c
 withUserState = (userState >>=)

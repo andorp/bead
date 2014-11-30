@@ -161,6 +161,9 @@ submissionInfoCata
     Submission_Tested r    -> tested r
     Submission_Result k r  -> result k r
 
+withSubmissionInfo s notFound unevaluated tested result
+  = submissionInfoCata notFound unevaluated tested result s
+
 siEvaluationKey :: SubmissionInfo -> Maybe EvaluationKey
 siEvaluationKey = submissionInfoCata
   Nothing -- notFound

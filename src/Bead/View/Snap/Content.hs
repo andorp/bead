@@ -17,14 +17,12 @@ module Bead.View.Snap.Content (
   , userState
   , i18nE
   , i18nH
-  , renderPagelet
-  , renderDynamicPagelet
+  , renderBootstrapPage
   , userTimeZone
   , userTimeZoneToLocalTimeConverter
   , userTimeZoneToUTCTimeConverter
   , foundTimeZones
   , withUserState
-  , withUserStateAndFrame
   , GETContentHandler
   , POSTContentHandler
   , ViewPOSTContentHandler
@@ -136,6 +134,3 @@ modifyHandlerCata f (ModifyHandler x) = f x
 
 type PageHandler = Page ViewHandler UserViewHandler ViewModifyHandler ModifyHandler
 
-withUserStateAndFrame :: (UserState -> IHtml) -> HandlerError App App ()
-withUserStateAndFrame f = withUserState $ \state ->
-  renderPagelet $ withUserFrame state (f state)

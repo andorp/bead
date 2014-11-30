@@ -8,15 +8,11 @@ module Bead.View.Snap.Login (
 
 import           Data.ByteString.Char8 hiding (index, putStrLn)
 import           Data.Maybe (isNothing)
-import           Data.String
 import qualified Data.Text as T
 import           Prelude as P
 
 import           Snap.Snaplet.Auth as A
 import           Snap.Snaplet.Session
-import           Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5 as H
-import qualified Text.Blaze.Html5.Attributes as A
 
 import           Bead.Controller.Logging as L
 import qualified Bead.Controller.Pages as P
@@ -24,10 +20,9 @@ import           Bead.Controller.ServiceContext hiding (serviceContext)
 import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content hiding (BlazeTemplate, template)
-import           Bead.View.Snap.Dictionary
+import qualified Bead.View.Snap.Content.Public.Login as View
 import           Bead.View.Snap.ErrorPage
 import           Bead.View.Snap.HandlerUtils
-import           Bead.View.Snap.RouteOf
 import           Bead.View.Snap.Session
 
 
@@ -44,7 +39,9 @@ login authError = do
     commitSession
 
   -- Render the page content
-  renderPublicPage $ loginPage authError languages
+  renderBootstrapPublicPage . publicFrame $ do
+    msg <- getI18N
+    View.login (authError >>= visibleFailure msg) languages
 
 loginSubmit :: Handler App b ()
 loginSubmit = withTop auth $ handleError $ runErrorT $ do
@@ -55,7 +52,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
     (ClearText . pack $ pwd)
     False
   case loggedIn of
-    Left failure -> lift $ login $ visibleFailure $ failure
+    Left failure -> lift . login $ Just failure
     Right authUser -> lift $ do
       context <- withTop serviceContext getServiceContext
       token   <- sessionToken
@@ -101,58 +98,11 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
         logMessage DEBUG $ "Username is set in session to: " ++ show username
         logMessage DEBUG $ "User's actual page is set in session to: " ++ show page
 
--- * Blaze --
-
-userForm :: String -> IHtml
-userForm act = do
-  msg <- getI18N
-  return $ postForm act $ do
-    table (formId loginForm) (formId loginForm) $ do
-      return ()
-      tableLine (msg $ Msg_Login_Username "Username:") (textInput (fieldName loginUsername) 20 Nothing ! A.required "")
-      tableLine (msg $ Msg_Login_Password "Password:") (passwordInput (fieldName loginPassword) 20 Nothing ! A.required "")
-    submitButton (fieldName loginSubmitBtn) (msg $ Msg_Login_Submit "Login")
-    H.div ! A.style "text-align:center" $ do
-      H.p $ "A BE-AD felülete hamarosan megújul!  A linkekre kattintva láthatóak, miként fog kinézni:"
-      H.p $ "The interface of BE-AD is about to be revamped soon!  Click on the links to see how it will look like:"
-      H.p $ do
-        H.a ! A.href "/preview/Login.png" $ "Kép 1: Login"
-        H.span " "
-        H.a ! A.href "/preview/Home.png"  $ "Kép 2: Főoldal"
-        H.span " "
-        H.a ! A.href "/preview/Home2.png" $ "Kép 3: Home"
-        H.span " "
-
-loginPage :: Maybe AuthFailure -> DictionaryInfos -> IHtml
-loginPage err langInfos = withTitleAndHead (Msg_Login_Title "Login") content
-  where
-    content = do
-      msg <- getI18N
-      return $ do
-        i18n msg $ userForm "/login"
-        maybe (return ())
-              ((H.p ! A.style "font-size: smaller") . fromString . show)
-              err
-        H.p $ do
-          H.a ! A.href "/reg_request" $ fromString $ msg $ Msg_Login_Registration "Registration"
-          H.br
-          H.a ! A.href "/reset_pwd" $ fromString $ msg $ Msg_Login_Forgotten_Password "Forgotten password"
-        when ((P.length langInfos) > 1) $ do
-          H.p $ do
-            forM_ langInfos $ \(language,info) -> do
-              -- TODO: I18N put the icon
-              H.a ! A.href (queryString changeLanguagePath [requestParam language])
-                $ (dictionaryInfoCata (\_icon -> fromString) info)
-              H.br
-
--- TODO: I18N
--- Keeps only the authentication failures which are
--- visible for the user
-visibleFailure :: AuthFailure -> Maybe AuthFailure
-visibleFailure (AuthError e)     = Just (AuthError e)
-visibleFailure IncorrectPassword = Just (AuthError "Hibás jelszó!")
-visibleFailure UserNotFound      = Just (AuthError "A felhasználó nem található!")
-visibleFailure _ = Nothing
+visibleFailure :: I18N -> AuthFailure -> Maybe AuthFailure
+visibleFailure _   (AuthError e)     = Just $ AuthError e
+visibleFailure msg IncorrectPassword = Just . AuthError . msg $ Msg_Login_InvalidPasswordOrUser "Invalid user or password!"
+visibleFailure msg UserNotFound      = Just . AuthError . msg $ Msg_Login_InvalidPasswordOrUser "Invalid user or password!"
+visibleFailure _   _ = Nothing
 
 -- * Change language in the session
 

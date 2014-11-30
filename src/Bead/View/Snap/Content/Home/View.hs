@@ -1,0 +1,223 @@
+{-# LANGUAGE OverloadedStrings, CPP #-}
+module Bead.View.Snap.Content.Home.View where
+
+import           Control.Monad.Identity
+import           Data.Function (on)
+import           Data.List (intersperse, sortBy)
+import qualified Data.Map as Map
+import           Data.Maybe (isNothing)
+import           Data.String (fromString)
+
+import           Text.Blaze.Html5 hiding (map, id)
+import qualified Text.Blaze.Html5 as H
+import           Text.Blaze.Html5.Attributes hiding (id)
+
+import qualified Bead.Controller.Pages as Pages
+import           Bead.Domain.Entities as E (Role(..))
+import           Bead.Domain.Evaluation
+import           Bead.View.Snap.Content as Content hiding (userState, table)
+import           Bead.View.Snap.Content.SubmissionTableBS as ST
+
+import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
+import           Bead.View.Snap.Content.Home.Data
+
+homeContent :: HomePageData -> IHtml
+homeContent d = do
+  let s = userState d
+      r = role s
+      hasCourse = hasCourses d
+      hasGroup  = hasGroups d
+      testScripts = courseTestScripts d
+  msg <- getI18N
+  return $ do
+            when (isAdmin s) $ do
+              Bootstrap.row $ Bootstrap.colMd12 $ do
+                h3 . fromString . msg $ Msg_Home_AdminTasks "Administrator Menu"
+                i18n msg $ navigation [administration]
+
+            -- Course Administration Menu
+            when (courseAdminUser r) $ do
+              Bootstrap.row $ Bootstrap.colMd12 $ do
+                h3 . fromString . msg $ Msg_Home_CourseAdminTasks "Course Administrator Menu"
+                when (not hasCourse) $ do
+                  H.p $ fromString . msg $ Msg_Home_NoCoursesYet
+                    "There are no courses.  Contact the administrator to have courses assigned."
+
+            -- Submission tables for course or group assignments
+            when ((courseAdminUser r) || (groupAdminUser r)) $ do
+              when hasGroup $ do
+                when (not . null $ concatMap submissionTableInfoAssignments $ sTables d) $ do
+                  Bootstrap.row $ Bootstrap.colMd12 $ p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
+                    [ "Assignments may be modified by clicking on their identifiers if you have rights for the modification (their names are shown in the tooltip).  "
+                    , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
+                    , "then clicking on the button."
+                    ]
+                i18n msg $ htmlSubmissionTables d
+
+              -- HR
+              Bootstrap.row $ Bootstrap.colMd12 $ hr
+
+            -- Course Administration links
+            when hasCourse $ do
+              Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString . msg $ Msg_Home_CourseAdministration "Course Administration"
+              Bootstrap.row $ Bootstrap.colMd12 $ fromString . msg $ Msg_Home_CourseSubmissionTableList_Info $ concat
+                [ "Submission table for courses can be found on separate pages, please click on the "
+                , "name of a course."
+                ]
+              Bootstrap.row $ Bootstrap.colMd12 $ ul ! class_ "list-group" $ do
+                let courseList = sortBy (compareHun `on` (courseName . snd)) $ Map.toList $ administratedCourseMap d
+                forM_ courseList $ \(ck, c) ->
+                  li ! class_ "list-group-item"
+                     $ a ! href (fromString $ routeOf (courseOverview ck))
+                     $ (fromString (courseName c))
+
+            -- Course Administration Button Group
+            when (courseAdminUser r && hasCourse) $ do
+              Bootstrap.row $ Bootstrap.colMd12 $ p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
+                [ "New groups for courses may be created in the Course Settings menu.  Teachers may be also assigned to "
+                , "each of the groups there as well."
+                ]
+              i18n msg $ navigation $ [
+                  courseAdmin, newTestScript, evaluationTable
+                , setUserPassword, uploadFile ]
+
+            -- Group Administration Button Group
+            when (groupAdminUser r && hasGroup) $ do
+              i18n msg $ navigation [evaluationTable, setUserPassword, uploadFile ]
+
+            -- HR
+            when (or [groupAdminUser r && hasGroup, courseAdminUser r && hasCourse]) $ do
+              Bootstrap.row $ Bootstrap.colMd12 $ hr
+
+            -- Student Menu
+            when (not $ isAdmin r) $ do
+              Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString $ msg $ Msg_Home_StudentTasks "Student Menu"
+              i18n msg $ availableAssignments (timeConverter d) (assignments d)
+              let noCourseRegistered = isNothing (assignments d)
+              when noCourseRegistered $ i18n msg $ navigation [groupRegistration]
+
+            -- End
+            Bootstrap.row $ Bootstrap.colMd12 $ hr
+
+  where
+      administration    = Pages.administration ()
+      courseAdmin       = Pages.courseAdmin ()
+      courseOverview ck = Pages.courseOverview ck ()
+      evaluationTable   = Pages.evaluationTable ()
+      groupRegistration = Pages.groupRegistration ()
+      newTestScript     = Pages.newTestScript ()
+      setUserPassword   = Pages.setUserPassword ()
+      submission     = Pages.submission ()
+      submissionList = Pages.submissionList ()
+      uploadFile     = Pages.uploadFile ()
+
+      courseAdminUser = (==E.CourseAdmin)
+      groupAdminUser  = (==E.GroupAdmin)
+
+-- * Helpers
+
+submissionTableInfoAssignments = submissionTableInfoCata course group where
+  course _n _us as _uls _ans _ck = as
+  group _n _us cgas _uls _ans _ck _gk = map (cgInfoCata id id) cgas
+
+htmlSubmissionTables :: HomePageData -> IHtml
+htmlSubmissionTables pd = do
+  tables <- mapM (htmlSubmissionTable pd) $ zip [1..] (sTables pd)
+  return $ sequence_ tables
+  where
+    htmlSubmissionTable pd (i,s) = do
+      submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
+
+table' m
+  = Bootstrap.row
+  $ Bootstrap.colMd12
+  $ H.table ! class_ "table table-bordered table-condensed table-striped table-hover" $ m
+
+navigation :: [Pages.Page a b c d] -> IHtml
+navigation links = do
+  msg <- getI18N
+  return
+    $ Bootstrap.row
+    $ Bootstrap.colMd12
+    $ H.div ! class_ "btn-group" -- $ a ! href "#" ! class_ "btn btn-default" $ "Group Registration"
+    $ mapM_ (i18n msg . linkButtonToPageBS) links
+
+--  return $ H.div ! A.id "menu" $ H.ul $ mapM_ (i18n msg . (linkToPage ! class_ "btn btn-default") links
+
+availableAssignments :: UserTimeConverter -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> IHtml
+availableAssignments _ Nothing = do
+  msg <- getI18N
+  return
+    $ Bootstrap.row
+    $ Bootstrap.colMd12
+    $ p
+    $ fromString
+    $ msg $ Msg_Home_HasNoRegisteredCourses "There are no registered courses, register to some."
+
+availableAssignments _ (Just []) = do
+  msg <- getI18N
+  return
+    $ Bootstrap.row
+    $ Bootstrap.colMd12
+    $ p
+    $ fromString
+    $ msg $ Msg_Home_HasNoAssignments "There are no available assignments yet."
+
+availableAssignments timeconverter (Just as) = do
+  msg <- getI18N
+  return $ do
+    Bootstrap.row
+      $ Bootstrap.colMd12
+      $ p
+      $ fromString . msg $ Msg_Home_Assignments_Info $ concat
+        [ "Submissions and their evaluations may be accessed by clicking on each assignment's link. "
+        , "The table shows only the last evaluation per assignment."
+        ]
+    i18n msg $ navigation [groupRegistration]
+    table' $ do
+      thead $ headerLine msg
+      tbody $ mapM_ (assignmentLine msg) as
+  where
+    groupRegistration = Pages.groupRegistration ()
+
+    headerLine msg = tr $ do
+      th ""
+      th (fromString $ msg $ Msg_Home_Course "Course")
+      th (fromString $ msg $ Msg_Home_CourseAdmin "Teacher")
+      th (fromString $ msg $ Msg_Home_Assignment "Assignment")
+      th (fromString $ msg $ Msg_Home_Deadline "Deadline")
+      th (fromString $ msg $ Msg_Home_Evaluation "Evaluation")
+
+    assignmentLine msg (k,a,s) = H.tr $ do
+      case aActive a of
+        True -> td $ Content.link (routeWithParams (Pages.submission ()) [requestParam k]) (msg $ Msg_Home_NewSolution "New submission")
+        False -> td (fromString . msg $ Msg_Home_ClosedSubmission "Closed")
+      td (fromString . aGroup $ a)
+      td (fromString . join . intersperse ", " . aTeachers $ a)
+      td $ linkWithText (routeWithParams (Pages.submissionList ()) [requestParam k]) (fromString (aTitle a))
+      td (fromString . showDate . timeconverter $ aEndDate a)
+      let grayLabel  tag = H.span ! class_ "label label-default" $ tag
+      let greenLabel tag = H.span ! class_ "label label-success" $ tag
+      let redLabel   tag = H.span ! class_ "label label-danger"  $ tag
+      let blueLabel  tag = H.span ! class_ "label label-primary" $ tag
+      let label = submissionInfoCata grayLabel grayLabel (const grayLabel)
+             (\_evKey evResult -> undefined)
+      H.td $ withSubmissionInfo s
+               (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_NoSubmission "No submission")
+               (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
+               (bool (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_Tests_Passed "Tests are passed")
+                     (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_Tests_Failed "Tests are failed"))
+               (\_key result -> evResult
+                                  (greenLabel $ fromString $ msg $ Msg_Home_SubmissionCell_Accepted "Accepted")
+                                  (redLabel   $ fromString $ msg $ Msg_Home_SubmissionCell_Rejected "Rejected")
+                                  (blueLabel . fromString)
+                                  result)
+      where
+        evResult passed failed percentage r
+          = case r of
+             (EvResult (BinEval (Binary Passed))) -> passed
+             (EvResult (BinEval (Binary Failed))) -> failed
+             (EvResult (PctEval (Percentage (Scores [p])))) -> percentage $ percent p
+             (EvResult (PctEval (Percentage _))) -> error "SubmissionTable.coloredSubmissionCell percentage is not defined"
+
+            where percent x = join [show . round $ (100 * x), "%"]

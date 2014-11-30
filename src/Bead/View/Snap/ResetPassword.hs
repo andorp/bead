@@ -15,18 +15,16 @@ import           Data.String
 
 import           Snap
 import           Snap.Snaplet.Auth as A
-import           Text.Blaze.Html5 ((!))
-import qualified Text.Blaze.Html5  as H
-import qualified Text.Blaze.Html5.Attributes as A
 
 import           Bead.Domain.Entities hiding (name)
 import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content hiding (name)
+import qualified Bead.View.Snap.Content.Public.ResetPassword as View
 import           Bead.View.Snap.DataBridge
 import           Bead.View.Snap.ErrorPage
 import           Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
-import           Bead.View.Snap.HandlerUtils (registrationStory, renderPublicPage)
+import           Bead.View.Snap.HandlerUtils (registrationStory, renderBootstrapPublicPage)
 
 backToLogin :: Translation String
 backToLogin = Msg_ResetPassword_GoBackToLogin "Back to login"
@@ -150,18 +148,7 @@ address. The user fills out the form, and clicks on "Reset password" button
 and submit the requests.
 -}
 resetPasswordGET :: Handler App App ()
-resetPasswordGET = renderForm
-  where
-    renderForm = renderPublicPage . dynamicTitleAndHead resetPasswordTitle $ do
-      msg <- getI18N
-      return $ do
-        postForm "/reset_pwd" $ do
-          table (fieldName resetPasswordTable) (fieldName resetPasswordTable) # centerTable $ do
-            tableLine (msg $ Msg_ResetPassword_Username "Username:") $ textInput (name regUsernamePrm) 20 Nothing ! A.required ""
-            tableLine (msg $ Msg_ResetPassword_Email "Email") $ textInput (name regEmailPrm) 20 Nothing ! A.required ""
-          submitButton (fieldName pwdSubmitBtn) (msg $ Msg_ResetPassword_NewPwdButton "New password")
-        linkToRoute (msg backToLogin)
-
+resetPasswordGET = renderBootstrapPublicPage $ publicFrame View.resetPassword
 
 {- Reset password POST handler
 Reads out the parameters for the username and the email address, checks
@@ -192,12 +179,7 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
         (either (throwError . strMsg . S.translateUserError i18n) return)
 
 pageContent :: (Handler App a) ()
-pageContent = renderPublicPage . dynamicTitleAndHead resetPasswordTitle $ do
-  msg <- getI18N
-  return $ do
-    H.p . fromString . msg $ Msg_ResetPassword_EmailSent $ "The new password has been sent in email, it shall arrive soon."
-    H.br
-    linkToRoute (msg backToLogin)
+pageContent = renderBootstrapPublicPage $ publicFrame View.emailSent
 
 readParameter :: (MonadSnap m) => Parameter a -> m (Maybe a)
 readParameter param = do
