@@ -207,8 +207,8 @@ DictionaryFile {
     , Msg_EvaluationTable_CourseAssignment { trans = "Tárgyszintű feladatok" }
     , Msg_EvaluationTable_GroupAssignment { trans = "Csoportszintű feladatok" }
     , Msg_EvaluationTable_MiscCourseAssignment { trans = "Egyéb csoportszintű feladatok" }
-    , Msg_EvaluationTable_CourseAssignmentInfo { trans = "Tárgyszintű feladatokra beküldött megoldások olyan hallgatóktól, akik valamilyen általunk regisztált csoportba járnak." }
-    , Msg_EvaluationTable_GroupAssignmentInfo { trans = "Csoportszintű feladatokra beküldött megoldások olyan hallgatóktól, akik valamilyen általunk regisztált csoportba járnak." }
+    , Msg_EvaluationTable_CourseAssignmentInfo { trans = "Tárgyszintű feladatokra beküldött megoldások olyan hallgatóktól, akik valamilyen általunk regisztrált csoportba járnak." }
+    , Msg_EvaluationTable_GroupAssignmentInfo { trans = "Csoportszintű feladatokra beküldött megoldások olyan hallgatóktól, akik valamilyen általunk regisztrált csoportba járnak." }
     , Msg_EvaluationTable_MiscCourseAssignmentInfo { trans = "Tárgyszintű feladatokra beküldött megoldások a tárgy többi hallgatójától (más oktatók is láthatják)." }
     , Msg_EvaluationTable_Username { trans = "Neptun" }
     , Msg_EvaluationTable_DateOfSubmission { trans = "Beadás dátuma" }
