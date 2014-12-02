@@ -96,6 +96,7 @@ bootstrapUserFrame s content secs = withUserFrame' content
           Bootstrap.rowColMd12 $ Bootstrap.pageHeader $ h2 $
             fromString $ msg $ linkText $ page s
           content
+          Bootstrap.rowColMd12 $ hr
         status
 
 -- | Places a given content in a public frame

@@ -276,7 +276,6 @@ newAssignmentContent pd = do
                    Bootstrap.colMd6 $
                       onlyOnEdit pd $ Bootstrap.submitButtonWithAttr (formAction $ page pd) (msg $ Msg_NewAssignment_SaveButton "Commit")
 
-            Bootstrap.row $ Bootstrap.colMd12 $ hr
             Bootstrap.turnSelectionsOn
 
     where

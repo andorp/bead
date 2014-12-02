@@ -51,4 +51,3 @@ courseSubmissionsContent now c s = do
         , "then clicking on the button."
         ]
     i18n msg $ submissionTable "course-table" now c s
-    Bootstrap.rowColMd12 $ hr

@@ -133,7 +133,6 @@ hasPageContent pd = do
         submitButton (fieldName testScriptSaveButton)
         (fromString . msg $ Msg_NewTestScript_Save "Commit")
 
-    Bootstrap.row $ Bootstrap.colMd12 $ hr
     Bootstrap.turnSelectionsOn
 
   where

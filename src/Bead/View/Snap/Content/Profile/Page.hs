@@ -73,7 +73,6 @@ profileContent ts user ls = do
         Bootstrap.passwordInput newPasswordField (msg $ Msg_Profile_NewPassword "New password: ")
         Bootstrap.passwordInput newPasswordAgain (msg $ Msg_Profile_NewPasswordAgain "New password (again): ")
         Bootstrap.submitButton (fieldName changePasswordBtn) (msg $ Msg_Profile_ChangePwdButton "Update")
-      Bootstrap.colMd12 $ hr
       Bootstrap.turnSelectionsOn
   where
     timeZones = map (Prelude.id &&& timeZoneName Prelude.id) ts

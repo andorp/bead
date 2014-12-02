@@ -218,7 +218,6 @@ evaluationContent pd = do
       Bootstrap.row $ Bootstrap.colMd12 $ hr
       i18n msg $ commentsDiv tc comments
 
-    Bootstrap.row $ Bootstrap.colMd12 $ hr
   where
     evaluationDiv = withEvaluationData
       (evConfig . Assignment.evType . eAssignment $ sbmDesc pd)

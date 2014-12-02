@@ -95,10 +95,6 @@ homeContent d = do
               i18n msg $ availableAssignments (timeConverter d) (assignments d)
               let noCourseRegistered = isNothing (assignments d)
               when noCourseRegistered $ i18n msg $ navigation [groupRegistration]
-
-            -- End
-            Bootstrap.row $ Bootstrap.colMd12 $ hr
-
   where
       administration    = Pages.administration ()
       courseAdmin       = Pages.courseAdmin ()
