@@ -205,7 +205,7 @@ evaluationContent pd = do
         Bootstrap.textArea (fieldName evaluationValueField) "" $ mempty
         hiddenInput (fieldName assignmentKeyField) (paramValue $ eAssignmentKey sd)
         hiddenInput (fieldName evCommentOnlyText) (msg $ Msg_Evaluation_New_Comment "New Comment")
-        evaluationDiv . i18n msg . inputEvalResult . Assignment.evType $ eAssignment sd
+        Bootstrap.formGroup . evaluationDiv . i18n msg . inputEvalResult . Assignment.evType $ eAssignment sd
         Bootstrap.submitButton
           (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Submit")
 

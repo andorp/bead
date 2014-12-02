@@ -214,7 +214,7 @@ smallSubmitButton nameValue text =
 
 -- | Turns the selection into combobox like selections
 turnSelectionsOn
-  = script ! type_ "text/javascript" $ "//\n$(document).ready(function(){\n$('.combobox').combobox()\n});\n//"
+  = script ! type_ "text/javascript" $ "$(document).ready(function(){$('.combobox').combobox()});"
 
 -- | Creates a password input with the given name as id, a given label within a form-group control
 passwordInput paramName labelText =
@@ -291,7 +291,7 @@ radioButtonGroup paramName valuesAndLabel =
     mapM_ button ([1..] `zip` valuesAndLabel)
   where
     button (n,(v,l)) =
-      H.label ! class_ "btn btn-primary" $ do
+      H.label ! class_ "btn btn-default" $ do
         H.input ! type_ "radio"
                 ! name (fromString paramName)
                 ! A.id (fromString (paramName ++ show n))
