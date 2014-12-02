@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bead.View.Snap.Content.CommentsBS (
+module Bead.View.Snap.Content.Comments (
     CommentOrFeedback
   , submissionDescToCFs
   , submissionDetailsDescToCFs

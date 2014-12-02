@@ -4,7 +4,7 @@ module Bead.View.Snap.Content.Home.Data where
 import           Data.Time
 
 import           Bead.View.Snap.Content hiding (userState)
-import           Bead.View.Snap.Content.SubmissionTableBS
+import           Bead.View.Snap.Content.SubmissionTable
 
 data HomePageData = HomePageData {
     userState   :: UserState

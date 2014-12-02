@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bead.View.Snap.Content.SubmissionTableBS (
+module Bead.View.Snap.Content.SubmissionTable (
     AdministratedCourses
   , AdministratedGroups
   , CourseTestScriptInfos

@@ -16,7 +16,7 @@ import           Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Content as C
 import           Bead.View.Snap.Content.Bootstrap as Bootstrap
-import           Bead.View.Snap.Content.CommentsBS
+import           Bead.View.Snap.Content.Comments
 import           Bead.View.Snap.Content.SeeMore
 
 import           Text.Blaze.Html5 as H

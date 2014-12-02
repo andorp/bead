@@ -14,7 +14,7 @@ import qualified Bead.Controller.UserStories as Story
 import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
 import           Bead.View.Snap.RequestParams
-import           Bead.View.Snap.Content.SubmissionTableBS
+import           Bead.View.Snap.Content.SubmissionTable
 
 data PageData
   = CourseSubmissions UTCTime SubmissionTableContext SubmissionTableInfo

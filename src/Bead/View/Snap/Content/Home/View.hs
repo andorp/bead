@@ -16,7 +16,7 @@ import qualified Bead.Controller.Pages as Pages
 import           Bead.Domain.Entities as E (Role(..))
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Content as Content hiding (userState, table)
-import           Bead.View.Snap.Content.SubmissionTableBS as ST
+import           Bead.View.Snap.Content.SubmissionTable as ST
 
 import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
 import           Bead.View.Snap.Content.Home.Data
