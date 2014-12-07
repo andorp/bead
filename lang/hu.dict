@@ -236,7 +236,8 @@ DictionaryFile {
     , Msg_SubmissionList_NonReachableAssignment { trans = "Ez a feladat nem érhető el!" }
     , Msg_SubmissionList_Info { trans = "A beadott megoldásokhoz a beadás után még hozzászólások írhatóak." }
     , Msg_SubmissionList_NotFound { trans = "Megoldás nem található!" }
-    , Msg_SubmissionList_Tested { trans = "Tesztelve" }
+    , Msg_SubmissionList_TestsPassed { trans = "Átment a teszteken" }
+    , Msg_SubmissionList_TestsFailed { trans = "Megbukott a teszteken" }
     , Msg_SubmissionList_Passed { trans = "Elfogadva" }
     , Msg_SubmissionList_Failed { trans = "Elutasítva" }
     , Msg_ResetPassword_UserDoesNotExist { trans = "A felhasználó nem létezik!" }
