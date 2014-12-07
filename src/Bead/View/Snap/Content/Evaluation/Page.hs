@@ -198,7 +198,8 @@ evaluationContent pd = do
           H.p $ fromString . msg $ Msg_Evaluation_Submitted_Solution_Text_Info $
             "The submission may be downloaded as a plain text file by clicking on the link."
           downloadSubmissionButton
-          seeMorePre msg maxLength maxLines (eSolution sd)
+          H.br
+          H.div # submissionTextDiv $ seeMorePre msg maxLength maxLines (eSolution sd)
 
     Bootstrap.row $ Bootstrap.colMd12 $
       postForm (routeOf . evPage $ maybeEvalKey) $ do

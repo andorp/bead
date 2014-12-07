@@ -109,6 +109,7 @@ submissionDetailsContent p = do
           H.p $ fromString . msg $ Msg_SubmissionDetails_Solution_Text_Info $
             "The submission may be downloaded as a plain text file by clicking on the link."
           downloadSubmissionButton
+          H.br
           div # submissionTextDiv $ seeMorePre msg maxLength maxLines $ sdSubmission info
     Bootstrap.rowColMd12 $ do
       h2 $ fromString $ msg $ Msg_SubmissionDetails_Evaluation "Evaluation"
