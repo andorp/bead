@@ -24,7 +24,7 @@ import qualified Bead.Controller.UserStories as S
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Content hiding (userState)
 import qualified Bead.View.UserActions as UA
-import           Bead.View.Snap.Content.SubmissionTableBS as ST
+import           Bead.View.Snap.Content.SubmissionTable as ST
 
 #ifdef TEST
 import           Bead.Invariants

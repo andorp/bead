@@ -261,7 +261,8 @@ translationList =
   , Msg_SubmissionList_NonReachableAssignment ()
   , Msg_SubmissionList_Info ()
   , Msg_SubmissionList_NotFound ()
-  , Msg_SubmissionList_Tested ()
+  , Msg_SubmissionList_TestsPassed ()
+  , Msg_SubmissionList_TestsFailed ()
   , Msg_SubmissionList_Passed ()
   , Msg_SubmissionList_Failed ()
 

@@ -67,7 +67,11 @@ administrationContent info = do
         -- i18n msg $ inputPagelet emptyCourse
         Bootstrap.textInput (fieldName courseNameField) (msg $ Msg_Input_Course_Name "Title") ""
         Bootstrap.textInput (fieldName courseDescField) (msg $ Msg_Input_Course_Description "Description") ""
-        Bootstrap.selection (fieldName testScriptTypeField) (const False) (testScriptTypes msg)
+        Bootstrap.selectionWithLabel
+          (fieldName testScriptTypeField)
+          (msg $ Msg_Input_Course_TestScript "Type of test script")
+          (const False)
+          (testScriptTypes msg)
 
         -- Help message for the percentage
         H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $

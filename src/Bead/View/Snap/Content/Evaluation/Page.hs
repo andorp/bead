@@ -16,7 +16,7 @@ import           Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
 import           Bead.View.Snap.Content as C
 import           Bead.View.Snap.Content.Bootstrap as Bootstrap
-import           Bead.View.Snap.Content.CommentsBS
+import           Bead.View.Snap.Content.Comments
 import           Bead.View.Snap.Content.SeeMore
 
 import           Text.Blaze.Html5 as H
@@ -198,14 +198,15 @@ evaluationContent pd = do
           H.p $ fromString . msg $ Msg_Evaluation_Submitted_Solution_Text_Info $
             "The submission may be downloaded as a plain text file by clicking on the link."
           downloadSubmissionButton
-          seeMorePre msg maxLength maxLines (eSolution sd)
+          H.br
+          H.div # submissionTextDiv $ seeMorePre msg maxLength maxLines (eSolution sd)
 
     Bootstrap.row $ Bootstrap.colMd12 $
       postForm (routeOf . evPage $ maybeEvalKey) $ do
         Bootstrap.textArea (fieldName evaluationValueField) "" $ mempty
         hiddenInput (fieldName assignmentKeyField) (paramValue $ eAssignmentKey sd)
         hiddenInput (fieldName evCommentOnlyText) (msg $ Msg_Evaluation_New_Comment "New Comment")
-        evaluationDiv . i18n msg . inputEvalResult . Assignment.evType $ eAssignment sd
+        Bootstrap.formGroup . evaluationDiv . i18n msg . inputEvalResult . Assignment.evType $ eAssignment sd
         Bootstrap.submitButton
           (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Submit")
 
@@ -218,7 +219,6 @@ evaluationContent pd = do
       Bootstrap.row $ Bootstrap.colMd12 $ hr
       i18n msg $ commentsDiv tc comments
 
-    Bootstrap.row $ Bootstrap.colMd12 $ hr
   where
     evaluationDiv = withEvaluationData
       (evConfig . Assignment.evType . eAssignment $ sbmDesc pd)

@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Bead.View.Snap.Content.SubmissionTableBS (
+module Bead.View.Snap.Content.SubmissionTable (
     AdministratedCourses
   , AdministratedGroups
   , CourseTestScriptInfos
@@ -237,7 +237,7 @@ submissionTablePart tableId now ctx s = do
         (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: xx-large"
              ! tooltip (Msg_Home_SubmissionCell_Accepted "Accepted") $ mempty) -- accepted
         (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: xx-large"
-             ! tooltip (Msg_Home_SubmissionCell_Accepted "Rejected") $ mempty) -- rejected
+             ! tooltip (Msg_Home_SubmissionCell_Rejected "Rejected") $ mempty) -- rejected
         si -- of percent
       where
         tooltip m = A.title (fromString $ msg m)

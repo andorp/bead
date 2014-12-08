@@ -15,7 +15,7 @@ import           Bead.Controller.UserStories (submissionDetailsDesc)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Bootstrap as Bootstrap
-import           Bead.View.Snap.Content.CommentsBS
+import           Bead.View.Snap.Content.Comments
 import           Bead.View.Snap.Content.Utils
 import           Bead.View.Snap.Content.SeeMore
 import           Bead.View.Snap.Content.Submission.Page (resolveStatus)
@@ -109,6 +109,7 @@ submissionDetailsContent p = do
           H.p $ fromString . msg $ Msg_SubmissionDetails_Solution_Text_Info $
             "The submission may be downloaded as a plain text file by clicking on the link."
           downloadSubmissionButton
+          H.br
           div # submissionTextDiv $ seeMorePre msg maxLength maxLines $ sdSubmission info
     Bootstrap.rowColMd12 $ do
       h2 $ fromString $ msg $ Msg_SubmissionDetails_Evaluation "Evaluation"

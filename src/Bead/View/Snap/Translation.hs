@@ -260,7 +260,8 @@ data Translation a
   | Msg_SubmissionList_NonReachableAssignment { trans :: a }
   | Msg_SubmissionList_Info { trans :: a }
   | Msg_SubmissionList_NotFound { trans :: a }
-  | Msg_SubmissionList_Tested { trans :: a }
+  | Msg_SubmissionList_TestsPassed { trans :: a }
+  | Msg_SubmissionList_TestsFailed { trans :: a }
   | Msg_SubmissionList_Passed { trans :: a }
   | Msg_SubmissionList_Failed { trans :: a }
 
