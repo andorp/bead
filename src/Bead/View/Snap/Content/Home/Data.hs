@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
 module Bead.View.Snap.Content.Home.Data where
 
+import           Data.Map
 import           Data.Time
 
 import           Bead.View.Snap.Content hiding (userState)
@@ -10,7 +11,7 @@ data HomePageData = HomePageData {
     userState   :: UserState
   , hasCourses  :: Bool -- True if the user has administrated courses
   , hasGroups   :: Bool -- True if the user has administrated groups
-  , assignments :: Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -- Nothing means that the user is not registrated in any courses
+  , assignments :: Map (Either Course Group) [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -- Empty map means that the user is not registrated in any courses
   , sTables     :: [SubmissionTableInfo]
     -- ^ The convertes function that convert a given utc time into the users local timezone
   , timeConverter :: UserTimeConverter

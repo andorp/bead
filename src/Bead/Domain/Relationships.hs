@@ -19,13 +19,16 @@ data AssignmentDesc = AssignmentDesc {
   , aTeachers :: [String]
   -- DeadLine for the assignment in UTC
   , aEndDate  :: UTCTime
-  }
+  } deriving (Eq, Ord)
 
 assignmentDescPermissions = ObjectPermissions [
     (P_Open, P_Assignment), (P_Open, P_Course)
   , (P_Open, P_Course)
   ]
 
+-- Maps a course or a group name to a list of the available assignments and information about
+-- the latest submission for the assignment
+type StudentAssignments = Map String [(AssignmentKey, AssignmentDesc, SubmissionInfo)]
 
 data GroupDesc = GroupDesc {
     gName   :: String

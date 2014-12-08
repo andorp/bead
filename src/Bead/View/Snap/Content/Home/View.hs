@@ -6,6 +6,7 @@ import           Data.Function (on)
 import           Data.List (intersperse, sortBy)
 import qualified Data.Map as Map
 import           Data.Maybe (isNothing)
+import qualified Data.Set as Set
 import           Data.String (fromString)
 
 import           Text.Blaze.Html5 hiding (map, id)
@@ -92,8 +93,8 @@ homeContent d = do
             -- Student Menu
             when (not $ isAdmin r) $ do
               Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString $ msg $ Msg_Home_StudentTasks "Student Menu"
-              i18n msg $ availableAssignments (timeConverter d) (assignments d)
-              let noCourseRegistered = isNothing (assignments d)
+              i18n msg $ availableAssignments (timeConverter d) (toMaybeList $ assignments d)
+              let noCourseRegistered = Map.null (assignments d)
               when noCourseRegistered $ i18n msg $ navigation [groupRegistration]
   where
       administration    = Pages.administration ()
@@ -109,6 +110,10 @@ homeContent d = do
 
       courseAdminUser = (==E.CourseAdmin)
       groupAdminUser  = (==E.GroupAdmin)
+
+      toMaybeList m
+        | Map.null m = Nothing
+        | otherwise  = Just $ Map.fold (++) [] m
 
 -- * Helpers
 

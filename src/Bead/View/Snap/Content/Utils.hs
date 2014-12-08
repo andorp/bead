@@ -2,7 +2,9 @@
 module Bead.View.Snap.Content.Utils where
 
 import Data.List (find)
+import qualified Data.Map as Map
 import Data.Maybe (fromMaybe)
+import qualified Data.Set as Set
 
 import Bead.Controller.UserStories
 import Bead.View.Snap.Content
@@ -32,7 +34,7 @@ userAssignmentForSubmission
   -> HandlerError App App b
 userAssignmentForSubmission key found notFound = do
   action <- userStory $ do
-    ks <- (fromMaybe []) <$> userAssignments
+    ks <- toList <$> userAssignments
     maybe
       (return notFound)
       foundAssignment
@@ -41,12 +43,15 @@ userAssignmentForSubmission key found notFound = do
   where
     foundAssignment (ak,desc,_) = (loadAssignment ak) >>= return . found desc
     findAssignmentKey = find (\(k,_v,_s) -> (k==key))
+    toList = Map.fold (++) []
 
 usersAssignment
   :: AssignmentKey
   -> (Maybe Assignment -> HandlerError App App b)
   -> HandlerError App App b
-usersAssignment = usersObject userAssignmentKeys loadAssignment
+usersAssignment = usersObject (fmap toList userAssignmentKeys) loadAssignment
+  where
+    toList = Set.toList . Map.fold Set.union Set.empty
 
 usersSubmission
   :: AssignmentKey
