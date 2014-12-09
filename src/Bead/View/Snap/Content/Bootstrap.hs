@@ -191,6 +191,17 @@ selectionWithLabel paramName labelText selector values = formGroup $ do
     selector
     values
 
+-- | Creates a form control optional selection with the given parameter name, a label, a selector
+-- function which determines the selected value, and possible values
+selectionOptionalWithLabel paramName labelText selector values = formGroup $ do
+  labelFor paramName labelText
+  selectionOptionalPart
+    paramName
+    [class_ "combobox form-control", A.style "display:none"]
+    selector
+    values
+
+
 -- | Creates a submit block button with a given name and the given text
 submitButton nameValue text =
   button ! type_ "submit"
@@ -272,6 +283,13 @@ textAreaField paramName =
                ! A.id (fromString paramName)
                ! A.name (fromString paramName)
 
+-- | Creates an optional text area input field with the given name as id, a given id
+textAreaOptionalField paramName =
+    H.textarea ! class_ "form-control"
+               ! A.rows "20"
+               ! A.id (fromString paramName)
+               ! A.name (fromString paramName)
+
 -- | Creates a text area input with the given name as id, a given label
 textArea paramName labelText html =
   formGroup $ do
@@ -335,6 +353,11 @@ selectTag name =
              ! A.name (fromString name)
              ! A.required ""
 
+selectOptionalTag :: String -> Html -> Html
+selectOptionalTag name =
+    H.select ! A.id (fromString name)
+             ! A.name (fromString name)
+
 -- Encodes the value to Fay JSON representation or throw an error for the given name
 encode :: (Data a, Show a, IsString s) => String -> a -> s
 encode name value = fromString $ fromMaybe (name ++ ": error encoding value") (encodeToFay value)
@@ -342,6 +365,12 @@ encode name value = fromString $ fromMaybe (name ++ ": error encoding value") (e
 selectionPart :: (Show a, Data a) =>
   String -> [Attribute] -> (a -> Bool) -> [(a, String)] -> Html
 selectionPart name attrs def = foldl (!) (selectTag name) attrs . mapM_ option
+  where
+    option (v,t) = optionTag (encode "selection" v) t (def v)
+
+selectionOptionalPart :: (Show a, Data a) =>
+  String -> [Attribute] -> (a -> Bool) -> [(a, String)] -> Html
+selectionOptionalPart name attrs def = foldl (!) (selectOptionalTag name) attrs . mapM_ option
   where
     option (v,t) = optionTag (encode "selection" v) t (def v)
 

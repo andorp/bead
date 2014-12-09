@@ -6,6 +6,7 @@ module Bead.View.Snap.Content (
   , getParameter
   , getParameterValues
   , getOptionalParameter
+  , getOptionalOrNonEmptyParameter
   , getJSONParam
   , getDictionaryInfos
   , setInSessionE

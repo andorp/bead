@@ -80,7 +80,7 @@ readTCCreation = do
 readTCCreationParameters :: HandlerError App b TCCreationParameters
 readTCCreationParameters = do
   mTestScript         <- getOptionalParameter (jsonParameter (fieldName assignmentTestScriptField) "Test Script")
-  mZippedTestCaseName <- getOptionalParameter (jsonParameter (fieldName assignmentUsersFileField) "Test Script File")
+  mZippedTestCaseName <- getOptionalOrNonEmptyParameter (jsonParameter (fieldName assignmentUsersFileField) "Test Script File")
   mPlainTestCase      <- getOptionalParameter (stringParameter (fieldName assignmentTestCaseField) "Test Script")
   return (mTestScript, mZippedTestCaseName, mPlainTestCase)
 
@@ -94,7 +94,7 @@ tcCreation (Just (Just _tsk)) Nothing Nothing = Left "#1"
 readTCModificationParameters :: HandlerError App b TCModificationParameters
 readTCModificationParameters = do
   mTestScript         <- getOptionalParameter (jsonParameter (fieldName assignmentTestScriptField) "Test Script")
-  mZippedTestCaseName <- getOptionalParameter (jsonParameter (fieldName assignmentUsersFileField) "Test Script File")
+  mZippedTestCaseName <- getOptionalOrNonEmptyParameter (jsonParameter (fieldName assignmentUsersFileField) "Test Script File")
   mPlainTestCase      <- getOptionalParameter (stringParameter (fieldName assignmentTestCaseField) "Test Script")
   return (mTestScript,mZippedTestCaseName,mPlainTestCase)
 

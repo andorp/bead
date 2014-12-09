@@ -452,7 +452,7 @@ newAssignmentContent pd = do
         where
           textArea val = do
             Bootstrap.labelFor (fieldName assignmentTestCaseField) (msg $ Msg_NewAssignment_TestCase "Test cases")
-            editOrReadOnly pd $ Bootstrap.textAreaField (fieldName assignmentTestCaseField) (maybe mempty fromString val)
+            editOrReadOnly pd $ Bootstrap.textAreaOptionalField (fieldName assignmentTestCaseField) (maybe mempty fromString val)
 
           createTestCaseAreaPreview fs ts tcp = case tcp of
             (Just Nothing , Nothing, Nothing) -> createTestCaseArea fs ts
@@ -461,7 +461,7 @@ newAssignmentContent pd = do
             _ -> return ()
             where
               userFileSelection uf = do
-                Bootstrap.selectionWithLabel
+                Bootstrap.selectionOptionalWithLabel
                   (fieldName assignmentUsersFileField)
                   (msg $ Msg_NewAssignment_TestFile "Test File") (uf==) (map keyValue fs)
                 Bootstrap.helpBlock $ fromString (printf (msg $ Msg_NewAssignment_TestFile_Info
@@ -483,7 +483,7 @@ newAssignmentContent pd = do
                 usersFileSelection
 
               usersFileSelection = do
-                Bootstrap.selectionWithLabel
+                Bootstrap.selectionOptionalWithLabel
                   (fieldName assignmentUsersFileField)
                   (msg $ Msg_NewAssignment_TestFile "Test File")
                   (const False) (map keyValue fs)
@@ -524,7 +524,7 @@ newAssignmentContent pd = do
                 (maybe (return ()) userFileSelectionPreview (tcmpFileTestCase tm)) -- zipped
 
               userFileSelectionPreview uf = do
-                Bootstrap.selectionWithLabel
+                Bootstrap.selectionOptionalWithLabel
                   (fieldName assignmentUsersFileField)
                   (msg $ Msg_NewAssignment_TestFile "Test File")
                   (==uf) (map keyValue ((Left ()):map Right fs))
@@ -549,7 +549,7 @@ newAssignmentContent pd = do
                 usersFileSelection           -- zipped
 
               usersFileSelection = do
-                Bootstrap.selectionWithLabel
+                Bootstrap.selectionOptionalWithLabel
                   (fieldName assignmentUsersFileField)
                   (msg $ Msg_NewAssignment_TestFile "Test File")
                   (const False)
