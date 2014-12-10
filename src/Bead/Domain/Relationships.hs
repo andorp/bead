@@ -26,10 +26,6 @@ assignmentDescPermissions = ObjectPermissions [
   , (P_Open, P_Course)
   ]
 
--- Maps a course or a group name to a list of the available assignments and information about
--- the latest submission for the assignment
-type StudentAssignments = Map String [(AssignmentKey, AssignmentDesc, SubmissionInfo)]
-
 data GroupDesc = GroupDesc {
     gName   :: String
   , gAdmins :: [String]
