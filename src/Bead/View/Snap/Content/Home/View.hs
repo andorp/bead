@@ -4,9 +4,9 @@ module Bead.View.Snap.Content.Home.View where
 import           Control.Arrow ((***))
 import           Control.Monad.Identity
 import           Data.Function (on)
-import           Data.List (intersperse, sortBy)
+import           Data.List (find, intersperse, sortBy)
 import qualified Data.Map as Map
-import           Data.Maybe (isNothing)
+import           Data.Maybe (isNothing, isJust)
 import qualified Data.Set as Set
 import           Data.String (fromString)
 
@@ -158,7 +158,7 @@ availableAssignments timeconverter studentAssignments
   | otherwise = do
       -- Sort course or groups by their name.
       let asl = sortBy (compare `on` fst)
-                  $ map (name *** id)
+                  $ map (courseName *** id)
                   $ toActiveAssignmentList studentAssignments
       msg <- getI18N
       return $ do
@@ -172,13 +172,24 @@ availableAssignments timeconverter studentAssignments
         i18n msg $ navigation [groupRegistration]
         forM_ asl $ \(key, as) -> when (not $ null as) $ Bootstrap.rowColMd12 $ do
           h4 $ fromString key
+          let areIsolateds = areOpenAndIsolatedAssignments as
+          let assignments = if areIsolateds then (isolatedAssignments as) else as
+          when areIsolateds $ p $ fromString . msg $ Msg_Home_ThereIsIsolatedAssignment $ concat
+            [ "ISOLATED MODE: There is at least one assignment which hides the normal assignments for "
+            , "this course."
+            ]
           Bootstrap.table $ do
             thead $ headerLine msg
             -- Sort assignments by their end date time in reverse
             tbody $ mapM_ (assignmentLine msg)
-                  $ reverse $ sortBy (compare `on` (aEndDate . activeAsgDesc)) as
+                  $ reverse $ sortBy (compare `on` (aEndDate . activeAsgDesc))
+                  $ assignments
   where
-    name = either courseName groupName
+    isOpenAndIsolated a = and [aIsolated a, aActive a]
+
+    areOpenAndIsolatedAssignments = isJust . find (isOpenAndIsolated . activeAsgDesc)
+
+    isolatedAssignments = filter (isOpenAndIsolated . activeAsgDesc)
 
     groupRegistration = Pages.groupRegistration ()
 

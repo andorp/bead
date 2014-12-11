@@ -14,6 +14,7 @@ import Bead.Domain.Evaluation
 
 data AssignmentDesc = AssignmentDesc {
     aActive   :: Bool
+  , aIsolated :: Bool
   , aTitle    :: String
   , aGroup    :: String
   , aTeachers :: [String]

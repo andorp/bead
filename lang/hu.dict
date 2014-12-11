@@ -96,6 +96,8 @@ DictionaryFile {
     , Msg_NewAssignment_TextSubmission { trans = "Szöveges" }
     , Msg_NewAssignment_ZipSubmission { trans = "Zip állomány" }
     , Msg_NewAssignment_EvalTypeWarn { trans = "A kiértékelés típusát nem lehet megváltoztatni, mert már érkezett megoldás a feladatra." }
+    , Msg_NewAssignment_Isolated { trans = "Izolált" }
+    , Msg_NewAssignment_Info_Isolated { trans = "(Zárthelyihez javasolt) A hallgató által más feladatokra beküldött megoldások nem láthatóak a hallgató számára, egy vagy több aktív izolált feladat jelenlétében. Megjegyzés; ha több mint egy izolált feladat van akkor mindegyikre a hallgató által beadott megoldás elérhető a hallgató számára." }
     , Msg_GroupRegistration_RegisteredCourses { trans = "Felvett csoportok" }
     , Msg_GroupRegistration_SelectGroup { trans = "Tárgy és csoport kiválasztása" }
     , Msg_GroupRegistration_NoRegisteredCourses { trans = "Nincsenek felvett tárgyak.  Válasszunk egy  csoportot!" }
@@ -317,6 +319,7 @@ DictionaryFile {
     , Msg_Home_ModifyTestScriptTable { trans = "Tesztelők" }
     , Msg_Home_CourseAssignmentIDPreffix { trans = "T" }
     , Msg_Home_GroupAssignmentIDPreffix { trans = "Cs" }
+    , Msg_Home_ThereIsIsolatedAssignment { trans = "IZOLÁLT MÓD: Egy vagy több izolált feladat aktív, ami elrejti a többi feladatot." }
     , Msg_NewTestScript_Name { trans = "Név" }
     , Msg_NewTestScript_Description { trans = "Leírás" }
     , Msg_NewTestScript_Notes { trans = "Segítség tesztesetek írásához" }

@@ -14,14 +14,14 @@ activeAsgKey  (key,_desc,_info) = key
 activeAsgDesc (_key,desc,_info) = desc
 activeAsgInfo (_key,_desc,info) = info
 
-type StudentAssignments = Map (Either Course Group) [ActiveAssignment]
+type StudentAssignments = Map Course [ActiveAssignment]
 
 -- Returns True if the student is not registered in any courses otherwise False
 isNotRegistered :: StudentAssignments -> Bool
 isNotRegistered = Map.null
 
 -- Returns all the AcitveAssignment list grouped with its courses or groups
-toActiveAssignmentList :: StudentAssignments -> [ ((Either Course Group), [ActiveAssignment]) ]
+toActiveAssignmentList :: StudentAssignments -> [ (Course, [ActiveAssignment]) ]
 toActiveAssignmentList = Map.toList
 
 -- Returns a list of all the ActiveAssignments

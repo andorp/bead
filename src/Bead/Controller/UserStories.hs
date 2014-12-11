@@ -873,8 +873,9 @@ availableGroups = logAction INFO "lists available groups" $ do
 
 -- Produces a list that contains the assignments for the actual user,
 -- if the user is not subscribed to a course or group the list
--- will be empty.
-userAssignmentKeys :: UserStory (Map (Either CourseKey GroupKey) (Set AssignmentKey))
+-- will be empty. The map consist of all the assignment key groupped by the
+-- course key, through group keys if necessary.
+userAssignmentKeys :: UserStory (Map CourseKey (Set AssignmentKey))
 userAssignmentKeys = logAction INFO "lists its assignments" $ do
   authorize P_Open P_Assignment
   uname <- username
@@ -913,7 +914,7 @@ getSubmission sk = logAction INFO ("downloads submission " ++ show sk) $ do
 
 -- Produces a map of assignments and information about the submissions for the
 -- described assignment, which is associated with the course or group
-userAssignments :: UserStory (Map (Either Course Group) [(AssignmentKey, AssignmentDesc, SubmissionInfo)])
+userAssignments :: UserStory (Map Course [(AssignmentKey, AssignmentDesc, SubmissionInfo)])
 userAssignments = logAction INFO "lists assignments" $ do
   authorize P_Open P_Assignment
   authorize P_Open P_Course
@@ -922,9 +923,7 @@ userAssignments = logAction INFO "lists assignments" $ do
   withUserAndPersist $ \u -> do
     asgMap <- Persist.userAssignmentKeys u
     newMap <- forM (Map.toList asgMap) $ \(key,aks) -> do
-      key' <- case key of
-        Left  ck -> Left  <$> Persist.loadCourse ck
-        Right gk -> Right <$> Persist.loadGroup gk
+      key' <- Persist.loadCourse key
       descs <- catMaybes <$> mapM (createDesc u now) (Set.toList aks)
       return $! (key', descs)
     return $! Map.fromList newMap
@@ -941,6 +940,7 @@ userAssignments = logAction INFO "lists assignments" $ do
           (name, adminNames) <- Persist.courseNameAndAdmins ak
           let desc = AssignmentDesc {
             aActive = Assignment.isActive a now
+          , aIsolated = Assignment.isIsolated (Assignment.aspects a)
           , aTitle  = Assignment.name a
           , aTeachers = adminNames
           , aGroup  = name

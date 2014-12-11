@@ -74,7 +74,7 @@ groupsOfUsersCourse u ck = do
 
 -- Produces a Just Assignment list, if the user is registered for some courses,
 -- otherwise Nothing.
-userAssignmentKeys :: Username -> Persist (Map (Either CourseKey GroupKey) (Set AssignmentKey))
+userAssignmentKeys :: Username -> Persist (Map CourseKey (Set AssignmentKey))
 userAssignmentKeys u = do
   gs <- nub <$> userGroups u
   cs <- nub <$> userCourses u
@@ -83,10 +83,17 @@ userAssignmentKeys u = do
     _       -> do
       gas <- foldM groupAssignment Map.empty gs
       as  <- foldM courseAssignment gas cs
-      return as
+      return $! as
   where
-    groupAssignment  m gk = (Map.insert (Right gk)) <$> (Set.fromList <$> groupAssignments gk) <*> (pure m)
-    courseAssignment m ck = (Map.insert (Left ck)) <$> (Set.fromList <$> courseAssignments ck) <*> (pure m)
+    groupAssignment m gk = do
+      ck <- courseOfGroup gk
+      (insert ck) <$> (Set.fromList <$> groupAssignments gk) <*> (pure m)
+
+    courseAssignment m ck =
+      (insert ck) <$> (Set.fromList <$> courseAssignments ck) <*> (pure m)
+
+    insert k v m =
+      maybe (Map.insert k v m) (flip (Map.insert k) m . (Set.union v)) $ Map.lookup k m
 
 #ifdef TEST
 
@@ -115,7 +122,7 @@ userAssignmentKeysTest = do
       dbStep $ subscribe user1name c g
       keyMap <- dbStep $ userAssignmentKeys user1name
       assertEquals
-        (Map.fromList [ (Left c,Set.fromList [a1,a2]), (Right g,Set.fromList [a3,a4])])
+        (Map.fromList [ (c,Set.fromList [a1,a2,a3,a4])])
         keyMap
         "The assignment of the users was different than the sum of the course and group assignment"
       return ()
