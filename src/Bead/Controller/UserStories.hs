@@ -26,7 +26,11 @@ import           Control.Monad.Trans
 import           Prelude hiding (log, userError)
 import           Data.Hashable
 import           Data.List (nub)
+import           Data.Map (Map)
+import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Data.Time (UTCTime(..), getCurrentTime)
 import           Numeric (showHex)
 import           Text.Printf (printf)
@@ -869,12 +873,13 @@ availableGroups = logAction INFO "lists available groups" $ do
 
 -- Produces a list that contains the assignments for the actual user,
 -- if the user is not subscribed to a course or group the list
--- will be empty.
-userAssignmentKeys :: UserStory [AssignmentKey]
+-- will be empty. The map consist of all the assignment key groupped by the
+-- course key, through group keys if necessary.
+userAssignmentKeys :: UserStory (Map CourseKey (Set AssignmentKey))
 userAssignmentKeys = logAction INFO "lists its assignments" $ do
   authorize P_Open P_Assignment
   uname <- username
-  persistence $ Persist.userAssignmentKeyList uname
+  persistence $ Persist.userAssignmentKeys uname
 
 userSubmissionKeys :: AssignmentKey -> UserStory [SubmissionKey]
 userSubmissionKeys ak = logAction INFO msg $ do
@@ -907,21 +912,25 @@ getSubmission sk = logAction INFO ("downloads submission " ++ show sk) $ do
     d <- Persist.submissionDesc sk
     return (s,d)
 
--- Produces a list of assignments and information about the submissions for the
--- described assignment
-userAssignments :: UserStory (Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)])
+-- Produces a map of assignments and information about the submissions for the
+-- described assignment, which is associated with the course or group
+userAssignments :: UserStory (Map Course [(AssignmentKey, AssignmentDesc, SubmissionInfo)])
 userAssignments = logAction INFO "lists assignments" $ do
   authorize P_Open P_Assignment
   authorize P_Open P_Course
   authorize P_Open P_Group
   now <- liftIO getCurrentTime
   withUserAndPersist $ \u -> do
-    maybe (return Nothing) (fmap (Just . catMaybes) . (mapM (createDesc u now))) =<< (Persist.userAssignmentKeys u)
+    asgMap <- Persist.userAssignmentKeys u
+    newMap <- forM (Map.toList asgMap) $ \(key,aks) -> do
+      key' <- Persist.loadCourse key
+      descs <- catMaybes <$> mapM (createDesc u now) (Set.toList aks)
+      return $! (key', descs)
+    return $! Map.fromList newMap
 
   where
-
     -- Produces the assignment description if the assignment is active
-    --   Nothing if the Urn assignment is not in the active state
+    -- Returns Nothing if the assignment is not visible for the user
     createDesc :: Username -> UTCTime -> AssignmentKey -> Persist (Maybe (AssignmentKey, AssignmentDesc, SubmissionInfo))
     createDesc u now ak = do
       a <- Persist.loadAssignment ak
@@ -931,13 +940,14 @@ userAssignments = logAction INFO "lists assignments" $ do
           (name, adminNames) <- Persist.courseNameAndAdmins ak
           let desc = AssignmentDesc {
             aActive = Assignment.isActive a now
+          , aIsolated = Assignment.isIsolated (Assignment.aspects a)
           , aTitle  = Assignment.name a
           , aTeachers = adminNames
           , aGroup  = name
           , aEndDate = Assignment.end a
           }
           si <- Persist.userLastSubmissionInfo u ak
-          return $ Just (ak, desc, si)
+          return $ (Just (ak, desc, si))
 
 submissionDescription :: SubmissionKey -> UserStory SubmissionDesc
 submissionDescription sk = logAction INFO msg $ do

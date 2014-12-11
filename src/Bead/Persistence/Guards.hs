@@ -135,3 +135,4 @@ isStudentOf student admin = do
               ]
   where
     hasIntersection s1 s2 = not . Set.null $ Set.intersection s1 s2
+

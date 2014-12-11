@@ -105,6 +105,8 @@ data Translation a
   | Msg_NewAssignment_TextSubmission { trans :: a }
   | Msg_NewAssignment_ZipSubmission { trans :: a }
   | Msg_NewAssignment_EvalTypeWarn { trans :: a }
+  | Msg_NewAssignment_Isolated { trans :: a }
+  | Msg_NewAssignment_Info_Isolated { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }
@@ -347,6 +349,7 @@ data Translation a
   | Msg_Home_ModifyTestScriptTable { trans :: a }
   | Msg_Home_CourseAssignmentIDPreffix { trans :: a }
   | Msg_Home_GroupAssignmentIDPreffix { trans :: a }
+  | Msg_Home_ThereIsIsolatedAssignment { trans :: a }
 
   | Msg_NewTestScript_Name { trans :: a }
   | Msg_NewTestScript_Type { trans :: a }

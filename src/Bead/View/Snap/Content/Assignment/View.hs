@@ -151,6 +151,18 @@ newAssignmentContent pd = do
 
                       bootstrapCheckbox $
                             editable $ checkBox' (fieldName assignmentAspectField)
+                              (Assignment.isIsolated aas)
+                              Assignment.Isolated
+                              (msg $ Msg_NewAssignment_Isolated "Isolated")
+
+                      Bootstrap.helpBlock $ msg $ Msg_NewAssignment_Info_Isolated $ concat
+                               [ "(Recommended for tests.) Submissions for other assignments of the course are not visible in the "
+                               , "precense of an isolated assignments. Note: If there is more than one isolated assignment for the "
+                               , "same course, all the isolated assignment and submissions will be visible for the students."
+                               ]
+
+                      bootstrapCheckbox $
+                            editable $ checkBox' (fieldName assignmentAspectField)
                               (Assignment.isPasswordProtected aas)
                               (Assignment.Password "")
                               (msg $ Msg_NewAssignment_PasswordProtected "Password-protected")

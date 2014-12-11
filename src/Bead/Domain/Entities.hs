@@ -217,7 +217,7 @@ data Course = Course {
     courseName :: String
   , courseDesc :: String
   , courseTestScriptType :: TestScriptType
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Ord)
 
 courseCata script course (Course name desc scriptType)
   = course name desc (script scriptType)
@@ -229,7 +229,7 @@ courseAppAna name desc test =
 data Group = Group {
     groupName  :: String
   , groupDesc  :: String
-  } deriving (Eq, Show)
+  } deriving (Eq, Show, Ord)
 
 groupCata group (Group name desc)
   = group name desc

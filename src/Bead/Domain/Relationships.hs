@@ -14,18 +14,18 @@ import Bead.Domain.Evaluation
 
 data AssignmentDesc = AssignmentDesc {
     aActive   :: Bool
+  , aIsolated :: Bool
   , aTitle    :: String
   , aGroup    :: String
   , aTeachers :: [String]
   -- DeadLine for the assignment in UTC
   , aEndDate  :: UTCTime
-  }
+  } deriving (Eq, Ord)
 
 assignmentDescPermissions = ObjectPermissions [
     (P_Open, P_Assignment), (P_Open, P_Course)
   , (P_Open, P_Course)
   ]
-
 
 data GroupDesc = GroupDesc {
     gName   :: String

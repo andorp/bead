@@ -33,15 +33,16 @@ useing the primitves defined in the Persist module. Mainly Relations module
 related information is computed.
 -}
 
-import           Control.Applicative ((<$>))
+import           Control.Applicative
 import           Control.Arrow
-import           Control.Monad (forM, when)
+import           Control.Monad (foldM, forM, when)
 import           Control.Monad.IO.Class
 import           Data.Function (on)
 import           Data.List ((\\), nub, sortBy, intersect, find)
 import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
+import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Time (UTCTime, getCurrentTime)
 
@@ -73,16 +74,26 @@ groupsOfUsersCourse u ck = do
 
 -- Produces a Just Assignment list, if the user is registered for some courses,
 -- otherwise Nothing.
-userAssignmentKeys :: Username -> Persist (Maybe [AssignmentKey])
+userAssignmentKeys :: Username -> Persist (Map CourseKey (Set AssignmentKey))
 userAssignmentKeys u = do
-  gs <- userGroups u
-  cs <- userCourses u
+  gs <- nub <$> userGroups u
+  cs <- nub <$> userCourses u
   case (cs,gs) of
-    ([],[]) -> return Nothing
+    ([],[]) -> return Map.empty
     _       -> do
-      asg <- concat <$> (mapM (groupAssignments)  (nub gs))
-      asc <- concat <$> (mapM (courseAssignments) (nub cs))
-      return . Just $ nub (asg ++ asc)
+      gas <- foldM groupAssignment Map.empty gs
+      as  <- foldM courseAssignment gas cs
+      return $! as
+  where
+    groupAssignment m gk = do
+      ck <- courseOfGroup gk
+      (insert ck) <$> (Set.fromList <$> groupAssignments gk) <*> (pure m)
+
+    courseAssignment m ck =
+      (insert ck) <$> (Set.fromList <$> courseAssignments ck) <*> (pure m)
+
+    insert k v m =
+      maybe (Map.insert k v m) (flip (Map.insert k) m . (Set.union v)) $ Map.lookup k m
 
 #ifdef TEST
 
@@ -107,10 +118,13 @@ userAssignmentKeysTest = do
       a3 <- dbStep $ saveGroupAssignment g asg
       a4 <- dbStep $ saveGroupAssignment g asg
       keys <- dbStep $ userAssignmentKeys user1name
-      assertEquals Nothing keys "The unsubscribed user has some assignment keys"
+      assertEquals Map.empty keys "The unsubscribed user has some assignment keys"
       dbStep $ subscribe user1name c g
-      keys <- dbStep $ userAssignmentKeys user1name
-      assertEquals (Just [a1,a2,a3,a4]) keys "The assignment of the users was different than the sum of the course and group assignment"
+      keyMap <- dbStep $ userAssignmentKeys user1name
+      assertEquals
+        (Map.fromList [ (c,Set.fromList [a1,a2,a3,a4])])
+        keyMap
+        "The assignment of the users was different than the sum of the course and group assignment"
       return ()
     tearDown init
     return result
@@ -121,7 +135,7 @@ userAssignmentKeysTest = do
 -- Produces the assignment key list for the user, it the user
 -- is not registered in any course the result is the empty list
 userAssignmentKeyList :: Username -> Persist [AssignmentKey]
-userAssignmentKeyList u = (maybe [] id) <$> (userAssignmentKeys u)
+userAssignmentKeyList u = (nub . concat . map (Set.toList . snd) . Map.toList) <$> (userAssignmentKeys u)
 
 courseOrGroupOfAssignment :: AssignmentKey -> Persist (Either CourseKey GroupKey)
 courseOrGroupOfAssignment ak = do

@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings, CPP #-}
 module Bead.View.Snap.Content.Home.View where
 
+import           Control.Arrow ((***))
 import           Control.Monad.Identity
 import           Data.Function (on)
-import           Data.List (intersperse, sortBy)
+import           Data.List (find, intersperse, sortBy)
 import qualified Data.Map as Map
-import           Data.Maybe (isNothing)
+import           Data.Maybe (isNothing, isJust)
+import qualified Data.Set as Set
 import           Data.String (fromString)
 
 import           Text.Blaze.Html5 hiding (map, id)
@@ -93,7 +95,7 @@ homeContent d = do
             when (not $ isAdmin r) $ do
               Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString $ msg $ Msg_Home_StudentTasks "Student Menu"
               i18n msg $ availableAssignments (timeConverter d) (assignments d)
-              let noCourseRegistered = isNothing (assignments d)
+              let noCourseRegistered = Map.null (assignments d)
               when noCourseRegistered $ i18n msg $ navigation [groupRegistration]
   where
       administration    = Pages.administration ()
@@ -124,56 +126,71 @@ htmlSubmissionTables pd = do
     htmlSubmissionTable pd (i,s) = do
       submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
 
-table' m
-  = Bootstrap.row
-  $ Bootstrap.colMd12
-  $ H.table ! class_ "table table-bordered table-condensed table-striped table-hover" $ m
-
 navigation :: [Pages.Page a b c d] -> IHtml
 navigation links = do
   msg <- getI18N
   return
     $ Bootstrap.row
     $ Bootstrap.colMd12
-    $ H.div ! class_ "btn-group" -- $ a ! href "#" ! class_ "btn btn-default" $ "Group Registration"
+    $ H.div ! class_ "btn-group"
     $ mapM_ (i18n msg . linkButtonToPageBS) links
 
---  return $ H.div ! A.id "menu" $ H.ul $ mapM_ (i18n msg . (linkToPage ! class_ "btn btn-default") links
+availableAssignments :: UserTimeConverter -> StudentAssignments -> IHtml
+availableAssignments timeconverter studentAssignments
+  | isNotRegistered studentAssignments = do
+      msg <- getI18N
+      return
+        $ Bootstrap.row
+        $ Bootstrap.colMd12
+        $ p
+        $ fromString
+        $ msg $ Msg_Home_HasNoRegisteredCourses "There are no registered courses, register to some."
 
-availableAssignments :: UserTimeConverter -> Maybe [(AssignmentKey, AssignmentDesc, SubmissionInfo)] -> IHtml
-availableAssignments _ Nothing = do
-  msg <- getI18N
-  return
-    $ Bootstrap.row
-    $ Bootstrap.colMd12
-    $ p
-    $ fromString
-    $ msg $ Msg_Home_HasNoRegisteredCourses "There are no registered courses, register to some."
+  | null (toAllActiveAssignmentList studentAssignments) = do
+      msg <- getI18N
+      return
+        $ Bootstrap.row
+        $ Bootstrap.colMd12
+        $ p
+        $ fromString
+        $ msg $ Msg_Home_HasNoAssignments "There are no available assignments yet."
 
-availableAssignments _ (Just []) = do
-  msg <- getI18N
-  return
-    $ Bootstrap.row
-    $ Bootstrap.colMd12
-    $ p
-    $ fromString
-    $ msg $ Msg_Home_HasNoAssignments "There are no available assignments yet."
-
-availableAssignments timeconverter (Just as) = do
-  msg <- getI18N
-  return $ do
-    Bootstrap.row
-      $ Bootstrap.colMd12
-      $ p
-      $ fromString . msg $ Msg_Home_Assignments_Info $ concat
-        [ "Submissions and their evaluations may be accessed by clicking on each assignment's link. "
-        , "The table shows only the last evaluation per assignment."
-        ]
-    i18n msg $ navigation [groupRegistration]
-    table' $ do
-      thead $ headerLine msg
-      tbody $ mapM_ (assignmentLine msg) as
+  | otherwise = do
+      -- Sort course or groups by their name.
+      let asl = sortBy (compare `on` fst)
+                  $ map (courseName *** id)
+                  $ toActiveAssignmentList studentAssignments
+      msg <- getI18N
+      return $ do
+        Bootstrap.row
+          $ Bootstrap.colMd12
+          $ p
+          $ fromString . msg $ Msg_Home_Assignments_Info $ concat
+            [ "Submissions and their evaluations may be accessed by clicking on each assignment's link. "
+            , "The table shows only the last evaluation per assignment."
+            ]
+        i18n msg $ navigation [groupRegistration]
+        forM_ asl $ \(key, as) -> when (not $ null as) $ Bootstrap.rowColMd12 $ do
+          h4 $ fromString key
+          let areIsolateds = areOpenAndIsolatedAssignments as
+          let assignments = if areIsolateds then (isolatedAssignments as) else as
+          when areIsolateds $ p $ fromString . msg $ Msg_Home_ThereIsIsolatedAssignment $ concat
+            [ "ISOLATED MODE: There is at least one assignment which hides the normal assignments for "
+            , "this course."
+            ]
+          Bootstrap.table $ do
+            thead $ headerLine msg
+            -- Sort assignments by their end date time in reverse
+            tbody $ mapM_ (assignmentLine msg)
+                  $ reverse $ sortBy (compare `on` (aEndDate . activeAsgDesc))
+                  $ assignments
   where
+    isOpenAndIsolated a = and [aIsolated a, aActive a]
+
+    areOpenAndIsolatedAssignments = isJust . find (isOpenAndIsolated . activeAsgDesc)
+
+    isolatedAssignments = filter (isOpenAndIsolated . activeAsgDesc)
+
     groupRegistration = Pages.groupRegistration ()
 
     headerLine msg = tr $ do

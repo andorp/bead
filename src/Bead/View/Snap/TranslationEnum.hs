@@ -109,6 +109,8 @@ translationList =
   , Msg_NewAssignment_BinaryEvaluation ()
   , Msg_NewAssignment_PercentageEvaluation ()
   , Msg_NewAssignment_EvalTypeWarn ()
+  , Msg_NewAssignment_Isolated ()
+  , Msg_NewAssignment_Info_Isolated ()
 
   , Msg_GroupRegistration_RegisteredCourses ()
   , Msg_GroupRegistration_SelectGroup ()
@@ -348,6 +350,7 @@ translationList =
   , Msg_Home_ModifyTestScriptTable ()
   , Msg_Home_CourseAssignmentIDPreffix ()
   , Msg_Home_GroupAssignmentIDPreffix ()
+  , Msg_Home_ThereIsIsolatedAssignment ()
 
   , Msg_NewTestScript_Name ()
   , Msg_NewTestScript_Type ()
