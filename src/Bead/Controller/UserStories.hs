@@ -1,5 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Bead.Controller.UserStories where
 
 import           Bead.Domain.Entities as E hiding (name)
@@ -1198,6 +1198,18 @@ isAccessibleSubmission = guard
   "The user tries to download a submission (%s) which is not accessible for him."
   (userError nonAccessibleSubmission)
 
+doesBlockSubmissionView :: SubmissionKey -> UserStory ()
+doesBlockSubmissionView = guard
+  (const Persist.doesBlockSubmissionView)
+  "The user tries to access a blocked submission (%s)."
+  (userError blockedSubmission)
+
+doesBlockAssignmentView :: AssignmentKey -> UserStory ()
+doesBlockAssignmentView = guard
+  (const Persist.doesBlockAssignmentView)
+  "The user tries to access a blocked submissions (%s)."
+  (userError blockedSubmission)
+
 -- * User Story combinators
 
 -- * Tools
@@ -1281,3 +1293,4 @@ nonAdministratedSubmission = Msg_UserStoryError_NonAdministratedSubmission "The 
 nonAdministratedTestScript = Msg_UserStoryError_NonAdministratedTestScript "The test script is not administrated by you."
 nonRelatedAssignment = Msg_UserStoryError_NonRelatedAssignment "The assignment is not belongs to you."
 nonAccessibleSubmission = Msg_UserStoryError_NonAccessibleSubmission "The submission is not belongs to you."
+blockedSubmission = Msg_UserStoryError_BlockedSubmission "The submission is blocked by an isolated assignment."

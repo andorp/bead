@@ -49,6 +49,8 @@ import           Bead.Domain.Shared.Evaluation
 #ifdef TEST
 import           Test.Themis.Test hiding (testCaseCata)
 import           Test.Themis.Test.Asserts
+import           Test.Themis.Test.Arbitrary
+import           Test.Themis.Test.RandomData
 import           Bead.Invariants (UnitTests(..))
 #endif
 
@@ -73,6 +75,18 @@ aspect
     ZippedSubmissions -> zipped
     Isolated -> isolated
 
+#ifdef TEST
+instance RandomData Aspect where
+  positive = oneof
+    [ elements [BallotBox, ZippedSubmissions, Isolated]
+    , Password <$> listOf1 alphaNum
+    ]
+  negative = return (Password "")
+
+instance Arbitrary Aspect where
+  arbitrary = positive
+#endif
+
 -- Submission Type of the assignment, this information
 -- will be stored as an aspect
 data SubmissionType
@@ -87,10 +101,24 @@ submissionType
     TextSubmission -> text
     ZipSubmission -> zip
 
+#ifdef TEST
+instance Arbitrary SubmissionType where
+  arbitrary = elements [TextSubmission, ZipSubmission]
+#endif
+
 -- An assignment can have several aspects, which is a list represented
 -- set. The reason here, is the set can not be converted to JSON representation
 newtype Aspects = Aspects ([Aspect])
   deriving (Data, Eq, Read, Show, Typeable)
+
+#ifdef TEST
+instance RandomData Aspects where
+  positive = Aspects <$> listOf positive
+  negative = Aspects . (:[]) <$> negative
+
+instance Arbitrary Aspects where
+  arbitrary = positive
+#endif
 
 fromAspects :: (Set Aspect -> a) -> Aspects -> a
 fromAspects f (Aspects x) = f $ Set.fromList x
@@ -171,7 +199,6 @@ isBallotBoxTests = group "isBallotBox" $ do
 isZippedSubmissions :: Aspects -> Bool
 isZippedSubmissions = fromAspects (not . Set.null . Set.filter isZippedSubmissionsAspect)
 
-
 setZippedSubmissions :: Aspects -> Aspects
 setZippedSubmissions x@(Aspects as)
   | not (isZippedSubmissions x) = Aspects (ZippedSubmissions:as)
@@ -208,7 +235,6 @@ isZippedSubmissionsTests = group "isZippedSubmissions" $
 -- Returns True if the aspect set contains a "isolated" value
 isIsolated :: Aspects -> Bool
 isIsolated = fromAspects (not . Set.null . Set.filter isIsolatedAspect)
-
 
 -- Extract the submission type from the aspects set
 aspectsToSubmissionType :: Aspects -> SubmissionType
@@ -293,6 +319,18 @@ assignmentAna name desc aspect start end evtype =
 -- | Produces True if the given time is between the start-end time of the assignment
 isActive :: Assignment -> UTCTime -> Bool
 isActive a t = and [start a <= t, t <= end a]
+
+#ifdef TEST
+instance Arbitrary Assignment where
+  arbitrary =
+    Assignment
+    <$> listOf1 alphaNum
+    <*> listOf1 alphaNum
+    <*> arbitrary
+    <*> (pure (read "2014-12-12 18:56:29.363547 UTC"))
+    <*> (pure (read "2015-12-12 18:56:29.363547 UTC"))
+    <*> (percentageConfig <$> interval 0.0 1.0)
+#endif
 
 #ifdef TEST
 

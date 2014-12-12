@@ -11,7 +11,7 @@ import           Data.Time (getCurrentTime)
 import           Data.String (fromString)
 
 import qualified Bead.Controller.Pages as Pages
-import           Bead.Controller.UserStories (submissionDetailsDesc)
+import           Bead.Controller.UserStories (submissionDetailsDesc, doesBlockSubmissionView)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Bootstrap as Bootstrap
@@ -36,6 +36,8 @@ submissionDetailsPage :: GETContentHandler
 submissionDetailsPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
   sk <- getParameter submissionKeyPrm
+  userStory $ do
+    doesBlockSubmissionView sk
   -- TODO: Refactor use guards
   usersSubmission ak sk $ \submission -> do
     let render p = renderBootstrapPage $ bootstrapUserFrame s p

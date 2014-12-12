@@ -419,6 +419,7 @@ translationList =
   , Msg_UserStoryError_NonAdministratedTestScript ()
   , Msg_UserStoryError_NonCommentableSubmission ()
   , Msg_UserStoryError_NonAccessibleSubmission ()
+  , Msg_UserStoryError_BlockedSubmission ()
 
   , Msg_UserActions_ChangedUserDetails ()
 

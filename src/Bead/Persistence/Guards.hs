@@ -6,7 +6,12 @@ that check if the user is created or have access to the given objects
 -}
 
 import           Control.Applicative ((<$>))
+import           Control.Monad ((>=>))
+import           Control.Monad.IO.Class (liftIO)
+import           Data.List (find, nub)
+import           Data.Maybe (isNothing)
 import qualified Data.Set as Set
+import           Data.Time (getCurrentTime)
 
 import           Bead.Domain.Entities
 import           Bead.Domain.Relationships
@@ -136,3 +141,27 @@ isStudentOf student admin = do
   where
     hasIntersection s1 s2 = not . Set.null $ Set.intersection s1 s2
 
+-- Return False if the submissions can not be seen for the student,
+-- because there is an other isolated related assignment for the course or group
+doesBlockSubmissionView :: SubmissionKey -> Persist Bool
+doesBlockSubmissionView = assignmentOfSubmission >=> doesBlockAssignmentView
+
+-- Return False if the submissions for the assignment can not be seen for the student,
+-- because there is an other isolated related assignment for the course or group
+doesBlockAssignmentView :: AssignmentKey -> Persist Bool
+doesBlockAssignmentView ak = do
+  key <- courseOrGroupOfAssignment ak
+  others <- filter (/= ak) <$> case key of
+    Left  ck -> courseAssignments ck
+    Right gk -> do ck <- courseOfGroup gk
+                   aks  <- courseAssignments ck
+                   aks' <- groupAssignments gk
+                   return (nub $ (aks ++ aks'))
+  asg <- loadAssignment ak
+  case (isIsolated $ aspects asg) of
+    True  -> return True
+    False -> do
+      now <- liftIO getCurrentTime
+      asgs <- mapM loadAssignment others
+      let otherOpenIsolated = isNothing $ find (\a -> and [isActive a now, isIsolated $ aspects a]) asgs
+      return $! otherOpenIsolated

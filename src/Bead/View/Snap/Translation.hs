@@ -419,6 +419,7 @@ data Translation a
   | Msg_UserStoryError_NonAdministratedTestScript { trans :: a }
   | Msg_UserStoryError_NonCommentableSubmission { trans :: a }
   | Msg_UserStoryError_NonAccessibleSubmission { trans :: a }
+  | Msg_UserStoryError_BlockedSubmission { trans :: a }
 
   | Msg_UserActions_ChangedUserDetails { trans :: a }
 

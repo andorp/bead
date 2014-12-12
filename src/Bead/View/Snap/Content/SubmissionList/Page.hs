@@ -8,7 +8,7 @@ import           Data.Time
 
 import           Text.Blaze.Html5 as H
 
-import           Bead.Controller.UserStories (submissionListDesc)
+import           Bead.Controller.UserStories (submissionListDesc, doesBlockAssignmentView)
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Shared.Evaluation
@@ -30,6 +30,8 @@ submissionListPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
   let render p = renderBootstrapPage $ bootstrapUserFrame s p
   -- TODO: Refactor use guards
+  userStory $ do
+    doesBlockAssignmentView ak
   usersAssignment ak $ \assignment -> do
     case assignment of
       Nothing -> render invalidAssignment

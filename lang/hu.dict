@@ -385,6 +385,7 @@ DictionaryFile {
     , Msg_UserStoryError_NonAdministratedSubmission { trans = "Nem vagy oktatója a megoldás kurzusának vagy csoportjának!" }
     , Msg_UserStoryError_NonAdministratedTestScript { trans = "Nem vagy oktatója a teszt szkript kurzusának!" }
     , Msg_UserStoryError_NonCommentableSubmission { trans = "Nem kommentelhető feladat!" }
+    , Msg_UserStoryError_BlockedSubmission { trans = "A megoldást egy izolált feladat blokkolja."  }
     , Msg_UserActions_ChangedUserDetails { trans = "A felhasználói beállításai megváltoztak!" }
     , Msg_UserStoryError_NonAccessibleSubmission { trans = "A megoldás nem hozzád tartozik!" }
     , Msg_LinkText_Login { trans = "Bejelentkezés" }
