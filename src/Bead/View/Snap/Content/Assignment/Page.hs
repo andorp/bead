@@ -14,11 +14,15 @@ import qualified Data.Map as Map
 import           Data.Time (getCurrentTime)
 
 import qualified Bead.Controller.UserStories as S
+import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
+import           Bead.View.Snap.HandlerUtils (getJSONParameters)
 import           Bead.View.Snap.RequestParams
 
 import           Bead.View.Snap.Content.Assignment.Data
 import           Bead.View.Snap.Content.Assignment.View
+
+import           Bead.View.Snap.Fay.Hooks
 
 -- * Content Handlers
 
@@ -49,13 +53,13 @@ postCourseAssignment :: POSTContentHandler
 postCourseAssignment = do
   CreateCourseAssignment
     <$> getParameter (customCourseKeyPrm (fieldName selectedCourse))
-    <*> getValue -- assignment
+    <*> getAssignment
     <*> readTCCreation
 
 newCourseAssignmentPreviewPage :: ViewPOSTContentHandler
 newCourseAssignmentPreviewPage = withUserState $ \s -> do
   ck <- getParameter (customCourseKeyPrm courseKeyParamName)
-  assignment <- getValue
+  assignment <- getAssignment
   tc <- readTCCreationParameters
   (c, tss, ufs) <- userStory $ do
     S.isAdministratedCourse ck
@@ -132,13 +136,13 @@ postGroupAssignment :: POSTContentHandler
 postGroupAssignment = do
   CreateGroupAssignment
   <$> getParameter (customGroupKeyPrm (fieldName selectedGroup))
-  <*> getValue -- assignment
+  <*> getAssignment
   <*> readTCCreation
 
 newGroupAssignmentPreviewPage :: ViewPOSTContentHandler
 newGroupAssignmentPreviewPage = withUserState $ \s -> do
   gk <- getParameter (customGroupKeyPrm groupKeyParamName)
-  assignment <- getValue
+  assignment <- getAssignment
   tc <- readTCCreationParameters
   (g,tss,ufs) <- userStory $ do
     S.isAdministratedGroup gk
@@ -170,12 +174,15 @@ modifyAssignmentPage = withUserState $ \s -> do
 
 postModifyAssignment :: POSTContentHandler
 postModifyAssignment = do
-  ModifyAssignment <$> getValue <*> getValue <*> readTCModification
+  ModifyAssignment
+  <$> getValue
+  <*> getAssignment
+  <*> readTCModification
 
 modifyAssignmentPreviewPage :: ViewPOSTContentHandler
 modifyAssignmentPreviewPage = withUserState $ \s -> do
   ak <- getValue
-  as <- getValue
+  as <- getAssignment
   tm <- readTCModificationParameters
   (tss,ufs,tc,ev) <- userStory $ do
     S.isAdministratedAssignment ak
@@ -209,3 +216,29 @@ viewAssignmentPage = withUserState $ \s -> do
 nonEmptyList [] = Nothing
 nonEmptyList xs = Just xs
 
+-- Get Assignment Value
+getAssignment = do
+  converter <- userTimeZoneToUTCTimeConverter
+  startDate <- converter <$> getParameter assignmentStartPrm
+  endDate   <- converter <$> getParameter assignmentEndPrm
+  when (endDate < startDate) . throwError $ strMsg "A feladat kezdetének dátuma később van mint a feladat vége"
+  pwd <- getParameter (stringParameter (fieldName assignmentPwdField) "Jelszó")
+  noOfTries <- getParameter (stringParameter (fieldName assignmentNoOfTriesField) "Próbálkozások száma")
+  asp <- Assignment.aspectsFromList <$> getJSONParameters (fieldName assignmentAspectField) "Aspect parameter"
+  stype <- getJSONParam (fieldName assignmentSubmissionTypeField) "Submission type"
+  let asp1 = if stype == Assignment.TextSubmission
+               then Assignment.clearZippedSubmissions asp
+               else Assignment.setZippedSubmissions asp
+  let asp2 = if Assignment.isPasswordProtected asp1
+               then Assignment.setPassword pwd asp1
+               else asp1
+  let asp3 = if Assignment.isNoOfTries asp2
+               then Assignment.setNoOfTries (read noOfTries) asp2
+               else asp2
+  Assignment.assignmentAna
+    (getParameter (stringParameter (fieldName assignmentNameField) "Név"))
+    (getParameter (stringParameter (fieldName assignmentDescField) "Leírás"))
+    (return asp3)
+    (return startDate)
+    (return endDate)
+    (getParameter (evalConfigPrm assignmentEvTypeHook))

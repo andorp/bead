@@ -938,9 +938,20 @@ userAssignments = logAction INFO "lists assignments" $ do
         True -> return Nothing
         False -> do
           (name, adminNames) <- Persist.courseNameAndAdmins ak
+          let aspects = Assignment.aspects a
+          limit <- case Assignment.isNoOfTries aspects of
+            False -> return Unlimited
+            True -> do
+              let limit = Assignment.getNoOfTries aspects
+              noOfSubmissions <- length <$> Persist.userSubmissions u ak
+              let rest = limit - noOfSubmissions
+              case (rest <= 0) of
+                True  -> return Reached
+                False -> return $ Remaining rest
           let desc = AssignmentDesc {
             aActive = Assignment.isActive a now
-          , aIsolated = Assignment.isIsolated (Assignment.aspects a)
+          , aIsolated = Assignment.isIsolated aspects
+          , aLimit = limit
           , aTitle  = Assignment.name a
           , aTeachers = adminNames
           , aGroup  = name

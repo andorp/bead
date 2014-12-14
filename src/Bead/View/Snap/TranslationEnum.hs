@@ -111,6 +111,8 @@ translationList =
   , Msg_NewAssignment_EvalTypeWarn ()
   , Msg_NewAssignment_Isolated ()
   , Msg_NewAssignment_Info_Isolated ()
+  , Msg_NewAssignment_Info_NoOfTries ()
+  , Msg_NewAssignment_NoOfTries ()
 
   , Msg_GroupRegistration_RegisteredCourses ()
   , Msg_GroupRegistration_SelectGroup ()
@@ -321,6 +323,7 @@ translationList =
   , Msg_Home_HasNoAssignments ()
   , Msg_Home_Assignments_Info ()
   , Msg_Home_Course ()
+  , Msg_Home_Limit ()
   , Msg_Home_CourseAdmin ()
   , Msg_Home_Assignment ()
   , Msg_Home_Deadline ()

@@ -6,6 +6,7 @@ module Bead.Domain.Entity.Assignment (
   , SubmissionType(..)
   , submissionType
   , Aspects
+  , createAspects
   , fromAspects
   , toAspects
   , emptyAspects
@@ -16,6 +17,9 @@ module Bead.Domain.Entity.Assignment (
   , isIsolatedAspect
   , getPassword
   , setPassword
+  , isNoOfTries
+  , getNoOfTries
+  , setNoOfTries
 
   , isPasswordProtected
   , isBallotBox
@@ -31,7 +35,6 @@ module Bead.Domain.Entity.Assignment (
   , assignmentAna
   , isActive
 
-
 #ifdef TEST
   , assignmentTests
   , asgTests
@@ -40,6 +43,8 @@ module Bead.Domain.Entity.Assignment (
 
 import           Control.Applicative
 import           Data.Data
+import           Data.List (find)
+import           Data.Maybe (catMaybes)
 import           Data.Set (Set)
 import qualified Data.Set as Set
 import           Data.Time (UTCTime(..))
@@ -62,6 +67,7 @@ data Aspect
   | Password String -- The assignment is password protected
   | ZippedSubmissions -- Submissions are zipped (i.e. binary files)
   | Isolated -- When an assignment is isolated the others related are not visible for the user
+  | NoOfTries Int -- It limits the number of the submissions that can be sent for the assignment
   deriving (Data, Eq, Show, Read, Ord, Typeable)
 
 aspect
@@ -69,19 +75,25 @@ aspect
   pwd
   zipped
   isolated
+  noOfTries
   a = case a of
     BallotBox -> ballot
     Password p -> pwd p
     ZippedSubmissions -> zipped
     Isolated -> isolated
+    NoOfTries n -> noOfTries n
 
 #ifdef TEST
 instance RandomData Aspect where
   positive = oneof
     [ elements [BallotBox, ZippedSubmissions, Isolated]
     , Password <$> listOf1 alphaNum
+    , NoOfTries <$> interval 1 100
     ]
-  negative = return (Password "")
+  negative = oneof
+    [ return (Password "")
+    , NoOfTries <$> interval (-2) 0
+    ]
 
 instance Arbitrary Aspect where
   arbitrary = positive
@@ -111,10 +123,18 @@ instance Arbitrary SubmissionType where
 newtype Aspects = Aspects ([Aspect])
   deriving (Data, Eq, Read, Show, Typeable)
 
+-- Creates Aspects from the given list of aspect keeping only the first occurrence
+-- of every aspect, supposing that the list is not infinite.
+createAspects :: [Aspect] -> Aspects
+createAspects as = Aspects . catMaybes $ map (find' as) preds
+  where
+    find' = flip find
+    preds = [ isPasswordAspect, isBallotBoxAspect, isZippedSubmissionsAspect, isIsolatedAspect, isNoOfTriesAspect ]
+
 #ifdef TEST
 instance RandomData Aspects where
-  positive = Aspects <$> listOf positive
-  negative = Aspects . (:[]) <$> negative
+  positive = createAspects <$> listOf positive
+  negative = createAspects <$> listOf negative
 
 instance Arbitrary Aspects where
   arbitrary = positive
@@ -138,10 +158,11 @@ fromList = toAspects Set.fromList
 
 aspectsFromList = fromList
 
-isPasswordAspect = aspect False (const True) False False
-isBallotBoxAspect = aspect True (const False) False False
-isZippedSubmissionsAspect = aspect False (const False) True False
-isIsolatedAspect = aspect False (const False) False True
+isPasswordAspect = aspect False (const True) False False (const False)
+isBallotBoxAspect = aspect True (const False) False False (const False)
+isZippedSubmissionsAspect = aspect False (const False) True False (const False)
+isIsolatedAspect = aspect False (const False) False True (const False)
+isNoOfTriesAspect = aspect False (const False) False False (const True)
 
 #ifdef TEST
 assignmentAspectPredTests = group "assignmentAspectPred" $ do
@@ -153,6 +174,8 @@ assignmentAspectPredTests = group "assignmentAspectPred" $ do
     Equals True (isZippedSubmissionsAspect ZippedSubmissions) "Zipped submissions aspect is not recognized"
   test "Isolated assignment" $
     Equals True (isIsolatedAspect Isolated) "Isolated aspect is not recognized"
+  test "No of tries" $
+    Equals True (isNoOfTriesAspect (NoOfTries 4)) "No of tries is not recognized"
 #endif
 
 -- Returns True if the aspect set contains a password protected value
@@ -173,6 +196,14 @@ isPasswordProtectedTests = group "isPasswordProtected" $ do
   test "Password aspect within more aspects"
        (Equals True (isPasswordProtected (fromList [Password "", BallotBox, ZippedSubmissions, Isolated]))
                "Password aspect should be found")
+  test "Password protected positive random tests (password is given)"
+       (Property isPasswordProtected
+                 ((createAspects . (Password "a":)) <$> listOf positive)
+                 "Password protected is not recognized")
+  test "Password protected positive random tests (password is not given)"
+       (Property (not . isPasswordProtected)
+                 ((createAspects . (filter (not . isPasswordAspect))) <$> listOf positive)
+                 "Non password protected is recognized")
 #endif
 
 -- Returns True if the aspect set contains a ballot box value
@@ -259,12 +290,10 @@ containsAspect pred = fromAspects (not . Set.null . Set.filter pred)
 getPassword :: Aspects -> String
 getPassword = fromAspects $ \as ->
   case (Set.toList . Set.filter isPasswordAspect $ as) of
-    [] -> error $ "getPassword: no password aspects was found"
-    (pwd:_) -> aspect (error "getPassword: no password aspect was filtered in")
-                      id
-                      (error "getPassword: no password aspect was filtered in")
-                      (error "getPassword: no password aspect was filtered in")
-                      pwd
+    []      -> err
+    (pwd:_) -> aspect err id err err err pwd
+  where
+    err = error "getPassword: no password aspect was filtered in"
 
 -- | Set the assignments passwords in the assignment aspect set.
 -- if the set already contains a password the password is replaced.
@@ -283,9 +312,45 @@ assignmentAspectsSetPasswordTests = group "setPassword" $ do
     (setPassword "new" (fromList [Password "old"]))
     "Password is not replaced in a password empty set"
   test "Replace the password in a multiple set" $ Equals
-    (fromList [ZippedSubmissions, BallotBox, Password "new"])
+    (fromList [ZippedSubmissions, BallotBox, Password "new", Isolated])
     (setPassword "new" (fromList [ZippedSubmissions, BallotBox, Password "old", Isolated]))
     "Password is not replaced in a non empty set"
+#endif
+
+-- Returns True if the no of submissions flag is active
+isNoOfTries :: Aspects -> Bool
+isNoOfTries = containsAspect isNoOfTriesAspect
+
+-- Returns the first values no of tries found in the assignment aspects set, if there
+-- is no such value throws an error
+getNoOfTries :: Aspects -> Int
+getNoOfTries = fromAspects $ \as ->
+  case (Set.toList . Set.filter isNoOfTriesAspect $ as) of
+    []     -> err
+    (no:_) -> aspect err err err err id no
+  where
+    err = error "getNoOfTries: no no of tries aspect was filtered in"
+
+-- | Set the assignments passwords in the assignment aspect set.
+-- if the set already contains a password the password is replaced.
+setNoOfTries :: Int -> Aspects -> Aspects
+setNoOfTries no = fromAspects updateOrSet where
+  updateOrSet = Aspects . Set.toList . Set.insert (NoOfTries no) . Set.filter (not . isNoOfTriesAspect)
+
+#ifdef TEST
+noOfTriesTests = do
+  test "noOfTries positive tests (no of tries is given)" $
+    Property isNoOfTries (createAspects . ((NoOfTries 1):) <$> listOf positive)
+             "No of tries is not recognized"
+  test "noOfTries positive tests (no of tries is not given)" $
+    Property (not . isNoOfTries) (createAspects . (filter (not . isNoOfTriesAspect)) <$> listOf positive)
+             "No of tries is recognized"
+  test "noOfTests: get (set n aspects) == n" $
+    Property id
+      (do a <- createAspects <$> listOf positive
+          n <- interval 1 100
+          return $ getNoOfTries (setNoOfTries n a) == n)
+      "Set/Get property is broken"
 #endif
 
 -- | Assignment for the student
@@ -362,4 +427,5 @@ asgTests = group "Bead.Domain.Entity.Assignment" $ do
   aspectsToSubmissionTypeTests
   assignmentAspectPredTests
   assignmentAspectsSetPasswordTests
+  noOfTriesTests
 #endif

@@ -107,6 +107,8 @@ data Translation a
   | Msg_NewAssignment_EvalTypeWarn { trans :: a }
   | Msg_NewAssignment_Isolated { trans :: a }
   | Msg_NewAssignment_Info_Isolated { trans :: a }
+  | Msg_NewAssignment_Info_NoOfTries { trans :: a }
+  | Msg_NewAssignment_NoOfTries { trans :: a }
 
   | Msg_GroupRegistration_RegisteredCourses { trans :: a }
   | Msg_GroupRegistration_SelectGroup { trans :: a }
@@ -320,6 +322,7 @@ data Translation a
   | Msg_Home_HasNoAssignments { trans :: a }
   | Msg_Home_Assignments_Info { trans :: a }
   | Msg_Home_Course { trans :: a }
+  | Msg_Home_Limit { trans :: a }
   | Msg_Home_CourseAdmin { trans :: a }
   | Msg_Home_Assignment { trans :: a }
   | Msg_Home_Deadline { trans :: a }

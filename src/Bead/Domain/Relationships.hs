@@ -12,9 +12,25 @@ import Bead.Domain.Evaluation
 
 -- * Relations
 
+data SubmissionLimit
+  = Unlimited
+  | Remaining Int -- Positive
+  | Reached
+  deriving (Eq, Show, Ord)
+
+submissionLimit
+  unlimited
+  remaining
+  reached
+  sl = case sl of
+    Unlimited -> unlimited
+    Remaining n -> remaining n
+    Reached -> reached
+
 data AssignmentDesc = AssignmentDesc {
     aActive   :: Bool
   , aIsolated :: Bool
+  , aLimit    :: SubmissionLimit
   , aTitle    :: String
   , aGroup    :: String
   , aTeachers :: [String]

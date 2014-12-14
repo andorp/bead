@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Snap.Content.Assignment.View where
 
+import           Prelude hiding (min)
+
 import           Control.Arrow ((&&&))
 import qualified Data.Aeson as Aeson
 import qualified Data.ByteString.Lazy.Char8 as BsLazy
@@ -125,6 +127,8 @@ newAssignmentContent pd = do
                       Bootstrap.labelFor assignmentEnd $ msg $ Msg_NewAssignment_EndDate "Closes"
                       Bootstrap.datetimePicker assignmentEnd endDateStringValue isEditPage
 
+                Bootstrap.rowColMd12 $ H.hr
+
                 -- Properties of the assignment
                 H.h4 $ fromString $ msg $ Msg_NewAssignment_Properties "Properties"
 
@@ -135,9 +139,14 @@ newAssignmentContent pd = do
                       let pwd = if Assignment.isPasswordProtected aas
                                    then Just (Assignment.getPassword aas)
                                    else Nothing
+                          noOfTries = if Assignment.isNoOfTries aas
+                                        then Just (Assignment.getNoOfTries aas)
+                                        else Nothing
                           editable x = if ed then x else (x ! A.readonly "")
                           assignmentAspect = fromString $ fieldName assignmentAspectField
                           assignmentPwd    = fromString $ fieldName assignmentPwdField
+                          assignmentNoOfTries = fromString $ fieldName assignmentNoOfTriesField
+
 
                       bootstrapCheckbox $
                               editable $ checkBox' (fieldName assignmentAspectField)
@@ -161,6 +170,19 @@ newAssignmentContent pd = do
                                , "same course, all the isolated assignment and submissions will be visible for the students."
                                ]
 
+                      Bootstrap.row $ Bootstrap.colMd6 $ do
+                          bootstrapCheckbox $ do
+                                  editable $ checkBox' (fieldName assignmentAspectField)
+                                    (Assignment.isNoOfTries aas)
+                                    (Assignment.NoOfTries 0)
+                                    (msg $ Msg_NewAssignment_NoOfTries "No of tries")
+
+                      Bootstrap.row $ Bootstrap.colMd6 $ Bootstrap.formGroup $
+                            editable $ numberInput assignmentNoOfTries (Just 1) Nothing noOfTries ! Bootstrap.formControl
+
+                      Bootstrap.helpBlock $ msg $ Msg_NewAssignment_Info_NoOfTries $
+                               "Limitation the number of the submissions (per student) for the assignment."
+
                       bootstrapCheckbox $
                             editable $ checkBox' (fieldName assignmentAspectField)
                               (Assignment.isPasswordProtected aas)
@@ -173,11 +195,13 @@ newAssignmentContent pd = do
                                 , "submission for the student."
                                 ]
 
-                      Bootstrap.formGroup $ do
+                      Bootstrap.row $ Bootstrap.colMd6 $ Bootstrap.formGroup $ do
                           H.label $ fromString $ msg $ Msg_NewAssignment_Password "Password"
                           editable $ Bootstrap.inputForFormControl
                                      ! name assignmentPwd ! type_ "text"
                                      ! value (fromString $ fromMaybe "" pwd)
+
+                      Bootstrap.rowColMd12 $ H.hr
 
                 -- Assignment Properties
                 pageDataCata

@@ -198,6 +198,7 @@ availableAssignments timeconverter studentAssignments
       th (fromString $ msg $ Msg_Home_Course "Course")
       th (fromString $ msg $ Msg_Home_CourseAdmin "Teacher")
       th (fromString $ msg $ Msg_Home_Assignment "Assignment")
+      th (fromString $ msg $ Msg_Home_Limit "Limit")
       th (fromString $ msg $ Msg_Home_Deadline "Deadline")
       th (fromString $ msg $ Msg_Home_Evaluation "Evaluation")
 
@@ -208,6 +209,7 @@ availableAssignments timeconverter studentAssignments
       td (fromString . aGroup $ a)
       td (fromString . join . intersperse ", " . aTeachers $ a)
       td $ linkWithText (routeWithParams (Pages.submissionList ()) [requestParam k]) (fromString (aTitle a))
+      td (fromString . limit $ aLimit a)
       td (fromString . showDate . timeconverter $ aEndDate a)
       let grayLabel  tag = H.span ! class_ "label label-default" $ tag
       let greenLabel tag = H.span ! class_ "label label-success" $ tag
@@ -226,6 +228,7 @@ availableAssignments timeconverter studentAssignments
                                   (blueLabel . fromString)
                                   result)
       where
+        limit = show
         evResult passed failed percentage r
           = case r of
              (EvResult (BinEval (Binary Passed))) -> passed
