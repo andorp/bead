@@ -296,6 +296,12 @@ textArea paramName labelText html =
     labelFor paramName labelText
     textAreaField paramName html
 
+-- | Creates an optional text area input with the given name as id, a given label
+optionalTextArea paramName labelText html =
+  formGroup $ do
+    labelFor paramName labelText
+    textAreaOptionalField paramName html
+
 -- | Creates a text area input with the given name as id, a given label
 utf8TextArea paramName labelText html =
   formGroup $ do

@@ -203,7 +203,7 @@ evaluationContent pd = do
 
     Bootstrap.row $ Bootstrap.colMd12 $
       postForm (routeOf . evPage $ maybeEvalKey) $ do
-        Bootstrap.textArea (fieldName evaluationValueField) "" $ mempty
+        Bootstrap.optionalTextArea (fieldName evaluationValueField) "" $ mempty
         hiddenInput (fieldName assignmentKeyField) (paramValue $ eAssignmentKey sd)
         hiddenInput (fieldName evCommentOnlyText) (msg $ Msg_Evaluation_New_Comment "New Comment")
         Bootstrap.formGroup . evaluationDiv . i18n msg . inputEvalResult . Assignment.evType $ eAssignment sd
