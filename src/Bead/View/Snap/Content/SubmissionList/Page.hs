@@ -8,12 +8,13 @@ import           Data.Time
 
 import           Text.Blaze.Html5 as H
 
-import           Bead.Controller.UserStories (submissionListDesc)
+import           Bead.Controller.UserStories
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Shared.Evaluation
 import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
+import           Bead.View.Snap.Content.Submission.Common
 import           Bead.View.Snap.Content.Utils
 import           Bead.View.Snap.Markdown
 
@@ -23,6 +24,7 @@ data PageData = PageData {
     asKey :: AssignmentKey
   , smList :: SubmissionListDesc
   , uTime :: UserTimeConverter
+  , smLimit :: SubmissionLimit
   }
 
 submissionListPage :: GETContentHandler
@@ -30,6 +32,8 @@ submissionListPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
   let render p = renderBootstrapPage $ bootstrapUserFrame s p
   -- TODO: Refactor use guards
+  userStory $ do
+    doesBlockAssignmentView ak
   usersAssignment ak $ \assignment -> do
     case assignment of
       Nothing -> render invalidAssignment
@@ -38,12 +42,13 @@ submissionListPage = withUserState $ \s -> do
         case (Assignment.start asg > now) of
           True  -> render assignmentNotStartedYet
           False -> do
-            sl <- userStory (submissionListDesc ak)
+            (sl,lmt) <- userStory $ (,) <$> submissionListDesc ak <*> assignmentSubmissionLimit ak
             tc <- userTimeZoneToLocalTimeConverter
             render $ submissionListContent $
                 PageData { asKey = ak
                          , smList = sortSbmListDescendingByTime sl
                          , uTime = tc
+                         , smLimit = lmt
                          }
 
 submissionListContent :: PageData -> IHtml
@@ -56,6 +61,7 @@ submissionListContent p = do
       (msg $ Msg_SubmissionList_Admin "Teacher:") .|. (join $ slTeacher info)
       (msg $ Msg_SubmissionList_Assignment "Assignment:") .|. (Assignment.name $ slAssignment info)
       (msg $ Msg_SubmissionList_Deadline "Deadline:") .|. (showDate . (uTime p) . Assignment.end $ slAssignment info)
+      maybe (return ()) (uncurry (.|.)) (remainingTries msg (smLimit p))
     Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ Msg_SubmissionList_Description "Description"
     H.div # assignmentTextDiv $
       (markdownToHtml . Assignment.desc . slAssignment . smList $ p)

@@ -111,6 +111,8 @@ translationList =
   , Msg_NewAssignment_EvalTypeWarn ()
   , Msg_NewAssignment_Isolated ()
   , Msg_NewAssignment_Info_Isolated ()
+  , Msg_NewAssignment_Info_NoOfTries ()
+  , Msg_NewAssignment_NoOfTries ()
 
   , Msg_GroupRegistration_RegisteredCourses ()
   , Msg_GroupRegistration_SelectGroup ()
@@ -133,7 +135,6 @@ translationList =
   , Msg_Submission_Description ()
   , Msg_Submission_Solution ()
   , Msg_Submission_Submit ()
-  , Msg_Submission_Invalid_Assignment ()
   , Msg_Submission_TimeLeft ()
   , Msg_Submission_Days ()
   , Msg_Submission_DeadlineReached ()
@@ -143,6 +144,8 @@ translationList =
   , Msg_Submission_File_PolicyFailure ()
   , Msg_Submission_File_InvalidFile ()
   , Msg_Submission_File_InternalError ()
+  , Msg_Submission_Remaining ()
+  , Msg_Submission_NoTriesLeft ()
 
   , Msg_Comments_Title ()
   , Msg_Comments_SubmitButton ()
@@ -321,6 +324,7 @@ translationList =
   , Msg_Home_HasNoAssignments ()
   , Msg_Home_Assignments_Info ()
   , Msg_Home_Course ()
+  , Msg_Home_Limit ()
   , Msg_Home_CourseAdmin ()
   , Msg_Home_Assignment ()
   , Msg_Home_Deadline ()
@@ -351,6 +355,8 @@ translationList =
   , Msg_Home_CourseAssignmentIDPreffix ()
   , Msg_Home_GroupAssignmentIDPreffix ()
   , Msg_Home_ThereIsIsolatedAssignment ()
+  , Msg_Home_Remains ()
+  , Msg_Home_Reached ()
 
   , Msg_NewTestScript_Name ()
   , Msg_NewTestScript_Type ()
@@ -419,6 +425,7 @@ translationList =
   , Msg_UserStoryError_NonAdministratedTestScript ()
   , Msg_UserStoryError_NonCommentableSubmission ()
   , Msg_UserStoryError_NonAccessibleSubmission ()
+  , Msg_UserStoryError_BlockedSubmission ()
 
   , Msg_UserActions_ChangedUserDetails ()
 

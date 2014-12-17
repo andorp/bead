@@ -1,5 +1,5 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
-{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Bead.Controller.UserStories where
 
 import           Bead.Domain.Entities as E hiding (name)
@@ -912,6 +912,43 @@ getSubmission sk = logAction INFO ("downloads submission " ++ show sk) $ do
     d <- Persist.submissionDesc sk
     return (s,d)
 
+-- Creates a submission limit for the given assignment
+assignmentSubmissionLimit :: AssignmentKey -> UserStory SubmissionLimit
+assignmentSubmissionLimit key = logAction INFO msg $ do
+  authorize P_Open P_Assignment
+  authorize P_Open P_Submission
+  withUserAndPersist $ \user -> Persist.submissionLimitOfAssignment user key
+  where
+    msg = "user assignments submission Limit"
+
+-- Loads the assignment and the assignment description if the given assignment key
+-- refers an assignment accessible by the user for submission
+userAssignmentForSubmission :: AssignmentKey -> UserStory (AssignmentDesc, Assignment)
+userAssignmentForSubmission key = logAction INFO "check user assignment for submission" $ do
+  authorize P_Open P_Assignment
+  authorize P_Open P_Submission
+  isUsersAssignment key
+  now <- liftIO getCurrentTime
+  withUserAndPersist $ \user ->
+    (,) <$> (assignmentDesc now user key) <*> (Persist.loadAssignment key)
+
+-- Helper function which computes the assignment description
+assignmentDesc :: UTCTime -> Username -> AssignmentKey -> Persist AssignmentDesc
+assignmentDesc now user key = do
+  a <- Persist.loadAssignment key
+  limit <- Persist.submissionLimitOfAssignment user key
+  let aspects = Assignment.aspects a
+  (name, adminNames) <- Persist.courseNameAndAdmins key
+  return $! AssignmentDesc {
+      aActive = Assignment.isActive a now
+    , aIsolated = Assignment.isIsolated aspects
+    , aLimit = limit
+    , aTitle  = Assignment.name a
+    , aTeachers = adminNames
+    , aGroup  = name
+    , aEndDate = Assignment.end a
+    }
+
 -- Produces a map of assignments and information about the submissions for the
 -- described assignment, which is associated with the course or group
 userAssignments :: UserStory (Map Course [(AssignmentKey, AssignmentDesc, SubmissionInfo)])
@@ -937,15 +974,7 @@ userAssignments = logAction INFO "lists assignments" $ do
       case (now < Assignment.start a) of
         True -> return Nothing
         False -> do
-          (name, adminNames) <- Persist.courseNameAndAdmins ak
-          let desc = AssignmentDesc {
-            aActive = Assignment.isActive a now
-          , aIsolated = Assignment.isIsolated (Assignment.aspects a)
-          , aTitle  = Assignment.name a
-          , aTeachers = adminNames
-          , aGroup  = name
-          , aEndDate = Assignment.end a
-          }
+          desc <- assignmentDesc now u ak
           si <- Persist.userLastSubmissionInfo u ak
           return $ (Just (ak, desc, si))
 
@@ -1198,6 +1227,18 @@ isAccessibleSubmission = guard
   "The user tries to download a submission (%s) which is not accessible for him."
   (userError nonAccessibleSubmission)
 
+doesBlockSubmissionView :: SubmissionKey -> UserStory ()
+doesBlockSubmissionView = guard
+  (const Persist.doesBlockSubmissionView)
+  "The user tries to access a blocked submission (%s)."
+  (userError blockedSubmission)
+
+doesBlockAssignmentView :: AssignmentKey -> UserStory ()
+doesBlockAssignmentView = guard
+  (const Persist.doesBlockAssignmentView)
+  "The user tries to access a blocked submissions (%s)."
+  (userError blockedSubmission)
+
 -- * User Story combinators
 
 -- * Tools
@@ -1281,3 +1322,4 @@ nonAdministratedSubmission = Msg_UserStoryError_NonAdministratedSubmission "The 
 nonAdministratedTestScript = Msg_UserStoryError_NonAdministratedTestScript "The test script is not administrated by you."
 nonRelatedAssignment = Msg_UserStoryError_NonRelatedAssignment "The assignment is not belongs to you."
 nonAccessibleSubmission = Msg_UserStoryError_NonAccessibleSubmission "The submission is not belongs to you."
+blockedSubmission = Msg_UserStoryError_BlockedSubmission "The submission is blocked by an isolated assignment."

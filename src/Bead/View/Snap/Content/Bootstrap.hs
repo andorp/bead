@@ -87,6 +87,8 @@ fadeOutFooterDangerButton = fadeOutFooterButton "btn-danger"
 
 formGroup = H.div ! class_ "form-group"
 
+inputGroup = H.div ! class_ "input-group"
+
 -- | Creates a list group div, which can contain a various list group items
 listGroup = H.div ! class_ "list-group"
 
@@ -135,7 +137,7 @@ dangerButtonLink ref text = customButtonLink "btn-danger" ref "" text
 datetimePicker paramName date on =
   H.div ! class_ "input-group date"
         ! A.id (fromString paramName) $ do
-    input ! class_ "form-control"
+    input ! formControl
           ! name (fromString paramName)
           ! type_ "text"
           ! readonly ""
@@ -231,17 +233,17 @@ turnSelectionsOn
 passwordInput paramName labelText =
   formGroup $ do
     labelFor paramName labelText
-    H.input ! class_ "form-control"
+    H.input ! formControl
             ! type_ "password"
             ! required ""
             ! name (fromString paramName)
             ! A.id (fromString paramName)
 
-inputForFormControl = H.input ! class_ "form-control"
+inputForFormControl = H.input ! formControl
 
 -- | Creates a text input field only with a defualt value
 textInputFieldWithDefault paramName value =
-    H.input ! class_ "form-control"
+    H.input ! formControl
             ! type_ "text"
             ! A.required ""
             ! A.name (fromString paramName)
@@ -252,7 +254,7 @@ textInputFieldWithDefault paramName value =
 textInput paramName labelText placeholderText =
   formGroup $ do
     labelFor paramName labelText
-    H.input ! class_ "form-control"
+    H.input ! formControl
             ! type_ "text"
             ! A.required ""
             ! A.name (fromString paramName)
@@ -273,11 +275,11 @@ labelFor name text =
 labeledText name value =
   formGroup $ do
     H.label $ fromString $ name
-    H.span ! class_ "form-control" $ value
+    H.span ! formControl $ value
 
 -- | Creates a text area input field with the given name as id, a given id
 textAreaField paramName =
-    H.textarea ! class_ "form-control"
+    H.textarea ! formControl
                ! A.required ""
                ! A.rows "20"
                ! A.id (fromString paramName)
@@ -285,7 +287,7 @@ textAreaField paramName =
 
 -- | Creates an optional text area input field with the given name as id, a given id
 textAreaOptionalField paramName =
-    H.textarea ! class_ "form-control"
+    H.textarea ! formControl
                ! A.rows "20"
                ! A.id (fromString paramName)
                ! A.name (fromString paramName)
@@ -414,6 +416,8 @@ textCenter = A.class_ "text-center"
 dataToggle = customAttribute "data-toggle"
 
 dataPlacement = customAttribute "data-placement"
+
+formControl = class_ "form-control"
 
 role = customAttribute "role"
 

@@ -97,7 +97,9 @@ DictionaryFile {
     , Msg_NewAssignment_ZipSubmission { trans = "Zip állomány" }
     , Msg_NewAssignment_EvalTypeWarn { trans = "A kiértékelés típusát nem lehet megváltoztatni, mert már érkezett megoldás a feladatra." }
     , Msg_NewAssignment_Isolated { trans = "Izolált" }
-    , Msg_NewAssignment_Info_Isolated { trans = "(Zárthelyihez javasolt) A hallgató által más feladatokra beküldött megoldások nem láthatóak a hallgató számára, egy vagy több aktív izolált feladat jelenlétében. Megjegyzés; ha több mint egy izolált feladat van akkor mindegyikre a hallgató által beadott megoldás elérhető a hallgató számára." }
+    , Msg_NewAssignment_Info_Isolated { trans = "(Zárthelyihez javasolt) A hallgató által más feladatokra beküldött megoldások nem láthatóak a hallgató számára, egy vagy több aktív izolált feladat jelenlétében. Megjegyzés: ha több mint egy izolált feladat van akkor mindegyikre a hallgató által beadott megoldás elérhető a hallgató számára." }
+    , Msg_NewAssignment_Info_NoOfTries { trans = "A hallgató által a feladatra beadható megoldások számának maximuma." }
+    , Msg_NewAssignment_NoOfTries { trans = "Próbálkozások száma" }
     , Msg_GroupRegistration_RegisteredCourses { trans = "Felvett csoportok" }
     , Msg_GroupRegistration_SelectGroup { trans = "Tárgy és csoport kiválasztása" }
     , Msg_GroupRegistration_NoRegisteredCourses { trans = "Nincsenek felvett tárgyak.  Válasszunk egy  csoportot!" }
@@ -117,7 +119,6 @@ DictionaryFile {
     , Msg_Submission_Description { trans = "Leírás" }
     , Msg_Submission_Solution { trans = "Megoldás" }
     , Msg_Submission_Submit { trans = "Beküld" }
-    , Msg_Submission_Invalid_Assignment { trans = "Ez a feladat nem érhető el ezzel a felhasználóval!" }
     , Msg_Submission_TimeLeft { trans = "Hátralévő idő:" }
     , Msg_Submission_Days { trans = "nap" }
     , Msg_Submission_DeadlineReached { trans = "A határidő lejárt" }
@@ -131,6 +132,8 @@ DictionaryFile {
     , Msg_Submission_File_PolicyFailure { trans = "A feltöltendő állomány nem felel meg a korlátozásoknak!" }
     , Msg_Submission_File_InvalidFile { trans = "Az állomány kiterjesztése nem megfelelő!" }
     , Msg_Submission_File_InternalError { trans = "Valamilyen hiba történt feltöltés közben." }
+    , Msg_Submission_Remaining { trans = "Hátralévő próbálkozások:" }
+    , Msg_Submission_NoTriesLeft { trans = "Elfogytak." }
     , Msg_Comments_Title { trans = "Hozzászólások" }
     , Msg_Comments_SubmitButton { trans = "Beküld" }
     , Msg_Comments_AuthorTestScript_Private { trans = "Automata tesztelői komment (csak az oktató láthatja)" }
@@ -291,6 +294,7 @@ DictionaryFile {
     , Msg_Home_HasNoAssignments { trans = "Még nincsenek kiírva feladatok!" }
     , Msg_Home_Assignments_Info { trans = "A feladat linkjére kattintva lehet elérni az eddig beadott megoldásokat és a hozzájuk tartozó értékeléseket.  A táblázatban mindig az utolsó értékelés eredménye látható." }
     , Msg_Home_Course { trans = "Tárgy" }
+    , Msg_Home_Limit { trans = "Limit" }
     , Msg_Home_CourseAdmin { trans = "Oktató" }
     , Msg_Home_Assignment { trans = "Feladat" }
     , Msg_Home_Deadline { trans = "Határidő" }
@@ -320,6 +324,8 @@ DictionaryFile {
     , Msg_Home_CourseAssignmentIDPreffix { trans = "T" }
     , Msg_Home_GroupAssignmentIDPreffix { trans = "Cs" }
     , Msg_Home_ThereIsIsolatedAssignment { trans = "IZOLÁLT MÓD: Egy vagy több izolált feladat aktív, ami elrejti a többi feladatot." }
+    , Msg_Home_Remains { trans = "Hátralévő: " }
+    , Msg_Home_Reached { trans = "Elérve" }
     , Msg_NewTestScript_Name { trans = "Név" }
     , Msg_NewTestScript_Description { trans = "Leírás" }
     , Msg_NewTestScript_Notes { trans = "Segítség tesztesetek írásához" }
@@ -385,6 +391,7 @@ DictionaryFile {
     , Msg_UserStoryError_NonAdministratedSubmission { trans = "Nem vagy oktatója a megoldás kurzusának vagy csoportjának!" }
     , Msg_UserStoryError_NonAdministratedTestScript { trans = "Nem vagy oktatója a teszt szkript kurzusának!" }
     , Msg_UserStoryError_NonCommentableSubmission { trans = "Nem kommentelhető feladat!" }
+    , Msg_UserStoryError_BlockedSubmission { trans = "A megoldást egy izolált feladat blokkolja."  }
     , Msg_UserActions_ChangedUserDetails { trans = "A felhasználói beállításai megváltoztak!" }
     , Msg_UserStoryError_NonAccessibleSubmission { trans = "A megoldás nem hozzád tartozik!" }
     , Msg_LinkText_Login { trans = "Bejelentkezés" }

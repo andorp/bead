@@ -18,11 +18,12 @@ import           Text.Blaze.Html5.Attributes as A
 
 import           Bead.Configuration (maxUploadSizeInKb)
 import qualified Bead.Controller.Pages as Pages
+import qualified Bead.Controller.UserStories as Story
 import qualified Bead.Domain.Entities as E
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
-import           Bead.View.Snap.Content.Utils
+import           Bead.View.Snap.Content.Submission.Common
 import           Bead.View.Snap.Markdown (markdownToHtml)
 
 submission = ViewModifyHandler submissionPage submissionPostHandler
@@ -34,6 +35,7 @@ data PageData = PageData {
   , asTimeConv :: UserTimeConverter
   , asNow :: UTCTime
   , asMaxFileSize :: Int
+  , asLimit :: SubmissionLimit
   }
 
 data UploadResult
@@ -51,11 +53,22 @@ submissionPage = withUserState $ \s -> do
   now <- liftIO $ getCurrentTime
   size <- fmap maxUploadSizeInKb $ lift $ withTop configContext getConfiguration
   -- TODO: Refactor use guards
-  userAssignmentForSubmission
-    ak
-    (\desc asg -> render $ submissionContent
-       (PageData { asKey = ak, asValue = asg, asDesc = desc, asTimeConv = ut, asNow = now, asMaxFileSize = size }))
-    (render invalidAssignment)
+  let renderPage limit (desc,asg) =
+        render $ submissionContent
+          (PageData { asKey = ak, asValue = asg, asDesc = desc, asTimeConv = ut, asNow = now, asMaxFileSize = size, asLimit = limit })
+
+  limit <- userStory $ do
+    asg <- Story.userAssignmentForSubmission ak -- GUARD
+    lmt <- Story.assignmentSubmissionLimit ak
+    return $! fmap (const asg) lmt
+
+  let limit' = fmap (const ()) limit
+  submissionLimit
+    (renderPage limit')
+    (const (renderPage limit'))
+    (const $ render (fromString "Limit is reached"))
+    limit
+
 
 submissionPostHandler :: POSTContentHandler
 submissionPostHandler = do
@@ -69,23 +82,19 @@ submissionPostHandler = do
       results <- mapM handlePart parts
       return . return $ results
   ak <- getParameter assignmentKeyPrm
-  userAssignmentForSubmission
-    ak
-    -- Assignment is for the user
-    (\_desc asg -> do
-       let aspects = Assignment.aspects asg
-       if Assignment.isPasswordProtected aspects
-         -- Password-protected assignment
-         then do pwd <- getParameter (stringParameter (fieldName submissionPwdField) "Submission password")
-                 if Assignment.getPassword aspects == pwd
-                   -- Passwords do match
-                   then newSubmission ak aspects uploadResult
-                   -- Passwords do not match
-                   else return . ErrorMessage $ Msg_Submission_InvalidPassword "Invalid password, the solution could not be submitted!"
-         -- Non password protected assignment
-         else newSubmission ak aspects uploadResult)
-    -- Assignment is not for the user
-    (return . ErrorMessage $ Msg_Submission_NonUsersAssignment "The assignment is not for the actual user!")
+  (_desc,asg) <- userStory $ Story.userAssignmentForSubmission ak
+  -- Assignment is for the user
+  let aspects = Assignment.aspects asg
+  if Assignment.isPasswordProtected aspects
+    -- Password-protected assignment
+    then do pwd <- getParameter (stringParameter (fieldName submissionPwdField) "Submission password")
+            if Assignment.getPassword aspects == pwd
+              -- Passwords do match
+              then newSubmission ak aspects uploadResult
+              -- Passwords do not match
+              else return . ErrorMessage $ Msg_Submission_InvalidPassword "Invalid password, the solution could not be submitted!"
+    -- Non password protected assignment
+    else newSubmission ak aspects uploadResult
   where
     newSubmission ak as up =
       if (not $ Assignment.isZippedSubmissions as)
@@ -150,6 +159,7 @@ submissionContent p = do
                 (msg $ Msg_Submission_DeadlineReached "Deadline is reached")
                 (asNow p)
                 (Assignment.end $ asValue p))
+        maybe (return ()) (uncurry (.|.)) (remainingTries msg (asLimit p))
     Bootstrap.rowColMd12 $ do
       H.h2 $ fromString $ msg $ Msg_Submission_Description "Description"
       H.div # assignmentTextDiv $ markdownToHtml $ Assignment.desc $ asValue p
@@ -186,11 +196,6 @@ infixl 7 .|.
 name .|. value = H.tr $ do
   H.td $ b $ fromString $ name
   H.td value
-
-invalidAssignment :: IHtml
-invalidAssignment = do
-  msg <- getI18N
-  return . fromString . msg $ Msg_Submission_Invalid_Assignment "It is not allowed to access this assignment with this user."
 
 resolveStatus :: I18N -> Maybe String -> H.Html
 resolveStatus msg Nothing     = fromString . msg $ Msg_SubmissionList_NotEvaluatedYet "Not evaluated yet"

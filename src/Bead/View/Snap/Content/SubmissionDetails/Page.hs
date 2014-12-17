@@ -11,13 +11,13 @@ import           Data.Time (getCurrentTime)
 import           Data.String (fromString)
 
 import qualified Bead.Controller.Pages as Pages
-import           Bead.Controller.UserStories (submissionDetailsDesc)
+import qualified Bead.Controller.UserStories as Story
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
 import           Bead.View.Snap.Content.Bootstrap as Bootstrap
 import           Bead.View.Snap.Content.Comments
-import           Bead.View.Snap.Content.Utils
 import           Bead.View.Snap.Content.SeeMore
+import           Bead.View.Snap.Content.Submission.Common
 import           Bead.View.Snap.Content.Submission.Page (resolveStatus)
 import           Bead.View.Snap.Markdown
 
@@ -30,27 +30,33 @@ data PageData = PageData {
   , aKey  :: AssignmentKey
   , smDetails :: SubmissionDetailsDesc
   , uTime :: UserTimeConverter
+  , smLimit :: SubmissionLimit
   }
 
 submissionDetailsPage :: GETContentHandler
 submissionDetailsPage = withUserState $ \s -> do
   ak <- getParameter assignmentKeyPrm
   sk <- getParameter submissionKeyPrm
+
+  (limit,sd) <- userStory $ do
+    Story.doesBlockSubmissionView sk
+    Story.isAccessibleSubmission sk
+    sd  <- Story.submissionDetailsDesc sk
+    lmt <- Story.assignmentSubmissionLimit ak
+    return (lmt,sd)
+
   -- TODO: Refactor use guards
-  usersSubmission ak sk $ \submission -> do
-    let render p = renderBootstrapPage $ bootstrapUserFrame s p
-    case submission of
-      Nothing -> render invalidSubmission
-      Just _sm -> do
-        sd <- userStory $ submissionDetailsDesc sk
-        tc <- userTimeZoneToLocalTimeConverter
-        render $
-          submissionDetailsContent PageData {
-              smKey = sk
-            , aKey  = ak
-            , smDetails = sd
-            , uTime = tc
-            }
+  -- getSubmission ak sk $ \submission -> do
+  let render p = renderBootstrapPage $ bootstrapUserFrame s p
+  tc <- userTimeZoneToLocalTimeConverter
+  render $
+    submissionDetailsContent PageData {
+        smKey = sk
+      , aKey  = ak
+      , smDetails = sd
+      , uTime = tc
+      , smLimit = limit
+      }
 
 submissionDetailsPostHandler :: POSTContentHandler
 submissionDetailsPostHandler = do
@@ -62,10 +68,12 @@ submissionDetailsPostHandler = do
   let uname = case mname of
                 Just un -> un
                 Nothing -> "???"
-  usersSubmission ak sk $ \s -> do
-    return $ case s of
-      Nothing -> LogMessage "Submission does not belong to the user"
-      Just _  -> SubmissionComment sk Comment {
+
+  _ <- userStory $ do
+    Story.doesBlockSubmissionView sk
+    Story.isAccessibleSubmission sk
+
+  return $! SubmissionComment sk Comment {
                      comment = c
                    , commentAuthor = uname
                    , commentDate = now
@@ -89,6 +97,7 @@ submissionDetailsContent p = do
       (msg $ Msg_SubmissionDetails_Admins "Teacher:")        .|. (join . intersperse ", " $ sdTeacher info)
       (msg $ Msg_SubmissionDetails_Assignment "Assignment:") .|. (Assignment.name $ sdAssignment info)
       (msg $ Msg_SubmissionDetails_Deadline "Deadline:")     .|. (showDate . tc . Assignment.end $ sdAssignment info)
+      maybe (return ()) (uncurry (.|.)) (remainingTries msg (smLimit p))
     Bootstrap.rowColMd12 $ do
       h2 $ fromString $ msg $ Msg_SubmissionDetails_Description "Assignment"
       div # assignmentTextDiv $ markdownToHtml . Assignment.desc $ sdAssignment info
