@@ -165,3 +165,4 @@ doesBlockAssignmentView ak = do
       asgs <- mapM loadAssignment others
       let otherOpenIsolated = isNothing $ find (\a -> and [isActive a now, isIsolated $ aspects a]) asgs
       return $! otherOpenIsolated
+

@@ -20,6 +20,8 @@ module Bead.Domain.Entity.Assignment (
   , isNoOfTries
   , getNoOfTries
   , setNoOfTries
+  , noOfTries
+  , clearNoOfTries
 
   , isPasswordProtected
   , isBallotBox
@@ -130,6 +132,11 @@ createAspects as = Aspects . catMaybes $ map (find' as) preds
   where
     find' = flip find
     preds = [ isPasswordAspect, isBallotBoxAspect, isZippedSubmissionsAspect, isIsolatedAspect, isNoOfTriesAspect ]
+
+-- If the aspects is not recognized by the predicate it returns the given value
+-- otherwise extract the information and applies the transformation to it.
+aspectsMap :: (Aspects -> Bool) -> (Aspects -> a) -> b -> (a -> b) -> Aspects -> b
+aspectsMap pred extract def trans a = if pred a then trans (extract a) else def
 
 #ifdef TEST
 instance RandomData Aspects where
@@ -331,11 +338,21 @@ getNoOfTries = fromAspects $ \as ->
   where
     err = error "getNoOfTries: no no of tries aspect was filtered in"
 
+-- Returns the 'x' value if the aspects does not contain the noOfTries aspect
+-- otherwise applies the function to it.
+noOfTries :: a -> (Int -> a) -> Aspects -> a
+noOfTries = aspectsMap isNoOfTries getNoOfTries
+
 -- | Set the assignments passwords in the assignment aspect set.
 -- if the set already contains a password the password is replaced.
 setNoOfTries :: Int -> Aspects -> Aspects
 setNoOfTries no = fromAspects updateOrSet where
   updateOrSet = Aspects . Set.toList . Set.insert (NoOfTries no) . Set.filter (not . isNoOfTriesAspect)
+
+-- | Clears the number of tries aspect from the aspects
+clearNoOfTries :: Aspects -> Aspects
+clearNoOfTries = fromAspects clear where
+  clear = Aspects . Set.toList . Set.filter (not . isNoOfTriesAspect)
 
 #ifdef TEST
 noOfTriesTests = do

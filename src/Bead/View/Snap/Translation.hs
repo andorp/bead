@@ -131,7 +131,6 @@ data Translation a
   | Msg_Submission_Description { trans :: a }
   | Msg_Submission_Solution { trans :: a }
   | Msg_Submission_Submit { trans :: a }
-  | Msg_Submission_Invalid_Assignment { trans :: a }
   | Msg_Submission_TimeLeft { trans :: a }
   | Msg_Submission_Days { trans :: a }
   | Msg_Submission_DeadlineReached { trans :: a }
@@ -145,6 +144,8 @@ data Translation a
   | Msg_Submission_File_PolicyFailure { trans :: a }
   | Msg_Submission_File_InvalidFile { trans :: a }
   | Msg_Submission_File_InternalError { trans :: a }
+  | Msg_Submission_Remaining { trans :: a }
+  | Msg_Submission_NoTriesLeft { trans :: a }
 
   | Msg_Comments_Title { trans :: a }
   | Msg_Comments_SubmitButton { trans :: a }
@@ -335,6 +336,8 @@ data Translation a
   | Msg_Home_SubmissionCell_Tests_Failed { trans :: a }
   | Msg_Home_SubmissionCell_Tests_Passed { trans :: a }
   | Msg_Home_SubmissionTable_NoCoursesOrStudents { trans :: a }
+  | Msg_Home_Remains { trans :: a }
+  | Msg_Home_Reached { trans :: a }
 
   | Msg_Home_SubmissionTable_StudentName { trans :: a}
   | Msg_Home_SubmissionTable_Username { trans :: a }

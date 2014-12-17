@@ -1,4 +1,6 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveFunctor #-}
 module Bead.Domain.Relationships where
 
 import Data.Data
@@ -10,22 +12,69 @@ import Data.Time (UTCTime(..))
 import Bead.Domain.Entities
 import Bead.Domain.Evaluation
 
+#ifdef TEST
+import Test.Themis.Test
+import Test.Themis.Test.Arbitrary
+#endif
+
 -- * Relations
 
-data SubmissionLimit
-  = Unlimited
-  | Remaining Int -- Positive
-  | Reached
-  deriving (Eq, Show, Ord)
+-- The submission limitation for an assignment
+data SubmissionLimitF a
+  = Unlimited a -- Unlimited submissions are allowed
+  | Remaining Int a -- Positive number of the remaning submission
+  | Reached a -- The submission limit is already reached
+  deriving (Eq, Functor, Show, Ord)
+
+type SubmissionLimit = SubmissionLimitF ()
+
+unlimited   = Unlimited ()
+remaining x = Remaining x ()
+reached     = Reached ()
 
 submissionLimit
   unlimited
   remaining
   reached
   sl = case sl of
-    Unlimited -> unlimited
-    Remaining n -> remaining n
-    Reached -> reached
+    Unlimited x   -> unlimited x
+    Remaining n x -> remaining n x
+    Reached x     -> reached x
+
+-- Calc the Submission Limit for the assignment and the given number of submissions
+calcSubLimit :: Assignment -> Int -> SubmissionLimit
+calcSubLimit assignment noOfSubmissions = noOfTries unlimited limited $ aspects assignment
+  where
+    limited limit =
+      let rest = limit - noOfSubmissions
+      in if rest > 0 then (remaining rest) else reached
+
+#ifdef TEST
+calcSubLimitTests = do
+  test "No no of tries given" $
+    Property (==unlimited)
+      (do asg <- fmap clear arbitrary
+          sbm <- choose (-100, 100)
+          return $ calcSubLimit asg sbm)
+      "No of tries is recognized"
+  test "No of tries is given and exceeds the limit" $
+    Property (==reached)
+      (do lmt <- choose (1,100)
+          asg <- fmap (set lmt) arbitrary
+          sbm <- choose (lmt,lmt + 100)
+          return $ calcSubLimit asg sbm)
+      "Limit is not reached"
+  test "Submissions are not reached the limit" $
+    Property (\(lmt,sbm,sbl) -> remaining (lmt - sbm) == sbl)
+      (do lmt <- choose (1,100)
+          asg <- fmap (set lmt) arbitrary
+          sbm <- choose (0,lmt-1)
+          return $ (lmt,sbm,calcSubLimit asg sbm))
+      "Remaining is not calculated properly"
+  where
+    clear a = a {aspects = clearNoOfTries (aspects a)}
+    set n a = a {aspects = setNoOfTries n (aspects a)}
+#endif
 
 data AssignmentDesc = AssignmentDesc {
     aActive   :: Bool
@@ -360,3 +409,8 @@ assessmentKey f (AssessmentKey x) = f x
 -- assesments and the evaluation for the assesment.
 newtype ScoreBoard = ScoreBoard (Map (AssessmentKey, Username) EvaluationKey)
   deriving (Eq, Show)
+
+#ifdef TEST
+relationShipTests = do
+  calcSubLimitTests
+#endif

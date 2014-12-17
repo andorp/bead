@@ -135,7 +135,6 @@ translationList =
   , Msg_Submission_Description ()
   , Msg_Submission_Solution ()
   , Msg_Submission_Submit ()
-  , Msg_Submission_Invalid_Assignment ()
   , Msg_Submission_TimeLeft ()
   , Msg_Submission_Days ()
   , Msg_Submission_DeadlineReached ()
@@ -145,6 +144,8 @@ translationList =
   , Msg_Submission_File_PolicyFailure ()
   , Msg_Submission_File_InvalidFile ()
   , Msg_Submission_File_InternalError ()
+  , Msg_Submission_Remaining ()
+  , Msg_Submission_NoTriesLeft ()
 
   , Msg_Comments_Title ()
   , Msg_Comments_SubmitButton ()
@@ -354,6 +355,8 @@ translationList =
   , Msg_Home_CourseAssignmentIDPreffix ()
   , Msg_Home_GroupAssignmentIDPreffix ()
   , Msg_Home_ThereIsIsolatedAssignment ()
+  , Msg_Home_Remains ()
+  , Msg_Home_Reached ()
 
   , Msg_NewTestScript_Name ()
   , Msg_NewTestScript_Type ()

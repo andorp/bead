@@ -174,17 +174,22 @@ availableAssignments timeconverter studentAssignments
           h4 $ fromString key
           let areIsolateds = areOpenAndIsolatedAssignments as
           let assignments = if areIsolateds then (isolatedAssignments as) else as
+          let isLimited = isLimitedAssignments assignments
           when areIsolateds $ p $ fromString . msg $ Msg_Home_ThereIsIsolatedAssignment $ concat
             [ "ISOLATED MODE: There is at least one assignment which hides the normal assignments for "
             , "this course."
             ]
           Bootstrap.table $ do
-            thead $ headerLine msg
+            thead $ headerLine msg isLimited
             -- Sort assignments by their end date time in reverse
-            tbody $ mapM_ (assignmentLine msg)
+            tbody $ mapM_ (assignmentLine msg isLimited)
                   $ reverse $ sortBy (compare `on` (aEndDate . activeAsgDesc))
                   $ assignments
   where
+    isLimitedAssignments = isJust . find limited
+
+    limited = submissionLimit (const False) (\_ _ -> True) (const True) . (\(a,ad,si) -> aLimit ad)
+
     isOpenAndIsolated a = and [aIsolated a, aActive a]
 
     areOpenAndIsolatedAssignments = isJust . find (isOpenAndIsolated . activeAsgDesc)
@@ -193,23 +198,23 @@ availableAssignments timeconverter studentAssignments
 
     groupRegistration = Pages.groupRegistration ()
 
-    headerLine msg = tr $ do
+    headerLine msg isLimited = tr $ do
       th ""
       th (fromString $ msg $ Msg_Home_Course "Course")
       th (fromString $ msg $ Msg_Home_CourseAdmin "Teacher")
       th (fromString $ msg $ Msg_Home_Assignment "Assignment")
-      th (fromString $ msg $ Msg_Home_Limit "Limit")
+      when isLimited $ th (fromString $ msg $ Msg_Home_Limit "Limit")
       th (fromString $ msg $ Msg_Home_Deadline "Deadline")
       th (fromString $ msg $ Msg_Home_Evaluation "Evaluation")
 
-    assignmentLine msg (k,a,s) = H.tr $ do
-      case aActive a of
+    assignmentLine msg isLimited (k,a,s) = H.tr $ do
+      case and [aActive a, noLimitIsReached a] of
         True -> td $ Content.link (routeWithParams (Pages.submission ()) [requestParam k]) (msg $ Msg_Home_NewSolution "New submission")
         False -> td (fromString . msg $ Msg_Home_ClosedSubmission "Closed")
       td (fromString . aGroup $ a)
       td (fromString . join . intersperse ", " . aTeachers $ a)
       td $ linkWithText (routeWithParams (Pages.submissionList ()) [requestParam k]) (fromString (aTitle a))
-      td (fromString . limit $ aLimit a)
+      when isLimited $ td (fromString . limit $ aLimit a)
       td (fromString . showDate . timeconverter $ aEndDate a)
       let grayLabel  tag = H.span ! class_ "label label-default" $ tag
       let greenLabel tag = H.span ! class_ "label label-success" $ tag
@@ -228,7 +233,9 @@ availableAssignments timeconverter studentAssignments
                                   (blueLabel . fromString)
                                   result)
       where
-        limit = show
+        noLimitIsReached = submissionLimit (const True) (\n _ -> n > 0) (const False) . aLimit
+        limit = fromString . submissionLimit
+          (const "") (\n _ -> (msg $ Msg_Home_Remains "Remains: ") ++ show n) (const $ msg $ Msg_Home_Reached "Reached")
         evResult passed failed percentage r
           = case r of
              (EvResult (BinEval (Binary Passed))) -> passed

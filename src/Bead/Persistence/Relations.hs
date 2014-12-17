@@ -22,6 +22,7 @@ module Bead.Persistence.Relations (
   , isThereASubmissionForCourse -- Checks if the user submitted any solutions for the course
   , testScriptInfo -- Calculates the test script information for the given test key
   , openedSubmissionInfo -- Calculates the opened submissions for the user from the administrated groups and courses
+  , submissionLimitOfAssignment
 #ifdef TEST
   , persistRelationsTests
 #endif
@@ -554,6 +555,12 @@ isThereASubmissionForCourse :: Username -> CourseKey -> Persist Bool
 isThereASubmissionForCourse u ck = do
   aks <- courseAssignments ck
   (not . null . catMaybes) <$> mapM (flip (lastSubmission) u) aks
+
+-- Returns the number of the possible submission for the given assignment
+-- by the given user.
+submissionLimitOfAssignment :: Username -> AssignmentKey -> Persist SubmissionLimit
+submissionLimitOfAssignment username key =
+  calcSubLimit <$> (loadAssignment key) <*> (length <$> userSubmissions username key)
 
 #ifdef TEST
 
