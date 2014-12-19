@@ -20,7 +20,7 @@ import           Text.Printf (printf)
 import           Bead.Controller.Pages (PageDesc)
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Domain.Entity.Assignment as Assignment
-import           Bead.Domain.Shared.Evaluation (binaryConfig, evConfigCata)
+import           Bead.Domain.Shared.Evaluation
 import           Bead.View.Snap.Fay.HookIds
 import           Bead.View.Snap.Fay.Hooks
 import           Bead.View.Snap.Content hiding (name, option, required)
@@ -654,3 +654,13 @@ newAssignmentContent pd = do
 
       -- Boostrap
       bootstrapCheckbox tag = H.div ! A.class_ "checkbox" $ H.label $ tag
+
+evaluationConfig :: String -> IHtml
+evaluationConfig n = do
+  msg <- getI18N
+  return $ selection n $ map (valueAndName msg) evaluationTypes
+  where
+    valueAndName msg e = (encodeEvalType e, msg $ name e)
+
+    name (BinEval ()) = Msg_InputHandlers_BinEval "Binary"
+    name (PctEval ()) = Msg_InputHandlers_PctEval "Percentage"

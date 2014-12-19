@@ -57,10 +57,9 @@ createGroup :: ModifyHandler
 createGroup = ModifyHandler submitGroup
 
 submitGroup :: POSTContentHandler
-submitGroup = do
-  courseKey <- getParameter (jsonCourseKeyPrm (fieldName courseKeyInfo))
-  group     <- getValue
-  return $ UA.CreateGroup courseKey group
+submitGroup = UA.CreateGroup
+  <$> getParameter (jsonCourseKeyPrm (fieldName courseKeyInfo))
+  <*> getGroup
 
 -- * Assign GroupAdmin to a group
 
@@ -138,3 +137,6 @@ courseAdminContent info = do
     createGroup = Pages.createGroup ()
     assignGroupAdmin = Pages.assignGroupAdmin ()
 
+getGroup = Group
+  <$> getParameter (stringParameter (fieldName groupNameField) "Csoport neve")
+  <*> getParameter (stringParameter (fieldName groupDescField) "Csoport leírása")

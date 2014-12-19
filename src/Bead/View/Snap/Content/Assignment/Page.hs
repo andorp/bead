@@ -159,7 +159,7 @@ newGroupAssignmentPreviewPage = withUserState $ \s -> do
 
 modifyAssignmentPage :: GETContentHandler
 modifyAssignmentPage = withUserState $ \s -> do
-  ak <- getValue
+  ak <- getAssignmentKey
   (as,tss,ufs,tc,ev) <- userStory $ do
     S.isAdministratedAssignment ak
     as <- S.loadAssignment ak
@@ -175,13 +175,13 @@ modifyAssignmentPage = withUserState $ \s -> do
 postModifyAssignment :: POSTContentHandler
 postModifyAssignment = do
   ModifyAssignment
-  <$> getValue
+  <$> getAssignmentKey
   <*> getAssignment
   <*> readTCModification
 
 modifyAssignmentPreviewPage :: ViewPOSTContentHandler
 modifyAssignmentPreviewPage = withUserState $ \s -> do
-  ak <- getValue
+  ak <- getAssignmentKey
   as <- getAssignment
   tm <- readTCModificationParameters
   (tss,ufs,tc,ev) <- userStory $ do
@@ -197,7 +197,7 @@ modifyAssignmentPreviewPage = withUserState $ \s -> do
 
 viewAssignmentPage :: GETContentHandler
 viewAssignmentPage = withUserState $ \s -> do
-  ak <- getValue
+  ak <- getAssignmentKey
   (as,tss,tc) <- userStory $ do
     S.isAdministratedAssignment ak
     as <- S.loadAssignment ak
@@ -242,3 +242,5 @@ getAssignment = do
     (return startDate)
     (return endDate)
     (getParameter (evalConfigPrm assignmentEvTypeHook))
+
+getAssignmentKey = getParameter assignmentKeyPrm

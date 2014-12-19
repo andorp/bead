@@ -151,4 +151,10 @@ submitCourse = UA.CreateCourseAdmin
 -- Create Course
 
 createCourse :: ModifyHandler
-createCourse = ModifyHandler $ UA.CreateCourse <$> getValue
+createCourse = ModifyHandler $ UA.CreateCourse <$> getCourse
+
+getCourse = Course
+  <$> getParameter (stringParameter (fieldName courseNameField) "Tárgy neve")
+  <*> getParameter (stringParameter (fieldName courseDescField) "Tárgy leírása")
+  <*> getParameter (jsonParameter (fieldName testScriptTypeField) "Script típusa")
+

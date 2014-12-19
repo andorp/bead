@@ -62,7 +62,6 @@ module Bead.View.Snap.Content (
   , module Bead.View.Snap.Pagelets
   , module Bead.View.Snap.Style
   , module Bead.View.Snap.DataBridge
-  , module Bead.View.Snap.InputHandlers
   , module Bead.View.Snap.TemplateAndComponentNames
   , module Bead.View.Snap.Fay.HookIds
   , module Bead.View.Snap.Fay.JSON.ServerSide
@@ -88,7 +87,6 @@ import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Fay.JSON.ServerSide
 import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.I18N
-import Bead.View.Snap.InputHandlers
 import Bead.View.Snap.Translation
 import Bead.View.Snap.TemplateAndComponentNames hiding (tcName)
 import Bead.View.Snap.RouteOf

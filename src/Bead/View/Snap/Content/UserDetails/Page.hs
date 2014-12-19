@@ -34,8 +34,8 @@ userDetailPage = withUserState $ \s -> do
 userDataChange :: POSTContentHandler
 userDataChange = do
   user <- User
-    <$> getValue -- role
-    <*> getValue -- username
+    <$> getRole
+    <*> getUsername
     <*> getParameter userEmailPrm
     <*> getParameter (stringParameter (fieldName userFamilyNameField) "Teljes név")
     <*> getParameter userTimeZonePrm
@@ -77,3 +77,8 @@ userDoesNotExist username = do
     Bootstrap.rowColMd12 $ p $ do
       (fromString $ msg $ Msg_UserDetails_NonExistingUser "No such user:")
       usernameCata fromString username
+
+getRole = getParameter rolePrm
+
+getUsername = getParameter usernamePrm
+
