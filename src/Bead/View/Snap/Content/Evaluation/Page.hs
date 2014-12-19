@@ -129,9 +129,9 @@ inputEvalResult :: EvConfig -> IHtml
 inputEvalResult (EvConfig (BinEval _cfg)) = do
   msg <- getI18N
   return $ Bootstrap.radioButtonGroup (fieldName evaluationResultField) $
-    [ (encodeToFay' "inputEvalResult" EvCmtComment,  msg $ Msg_Evaluation_New_Comment "New Comment")
-    , (encodeToFay' "inputEvalResult" $ binary Passed, msg $ Msg_Evaluation_Accepted "Accepted")
-    , (encodeToFay' "inputEvalResult" $ binary Failed, msg $ Msg_Evaluation_Rejected "Rejected")
+    [ (True,  encodeToFay' "inputEvalResult" EvCmtComment,  msg $ Msg_Evaluation_New_Comment "New Comment")
+    , (False, encodeToFay' "inputEvalResult" $ binary Passed, msg $ Msg_Evaluation_Accepted "Accepted")
+    , (False, encodeToFay' "inputEvalResult" $ binary Failed, msg $ Msg_Evaluation_Rejected "Rejected")
     ]
   where
     binary = EvCmtResult . binaryResult

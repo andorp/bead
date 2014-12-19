@@ -316,13 +316,15 @@ radioButtonGroup paramName valuesAndLabel =
   H.div ! class_ "btn-group" $
     mapM_ button ([1..] `zip` valuesAndLabel)
   where
-    button (n,(v,l)) =
+    button (n,(c,v,l)) =
       H.label ! class_ "btn btn-default" $ do
-        H.input ! type_ "radio"
-                ! name (fromString paramName)
-                ! A.id (fromString (paramName ++ show n))
-                ! A.value (fromString v)
+        checked c $
+          H.input ! type_ "radio"
+                  ! name (fromString paramName)
+                  ! A.id (fromString (paramName ++ show n))
+                  ! A.value (fromString v)
         fromString l
+    checked c tag = if c then (tag ! A.checked "") else tag
 
 -- | Creates a bootstrap row
 row = H.div ! class_ "row"
