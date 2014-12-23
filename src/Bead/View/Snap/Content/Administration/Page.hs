@@ -32,7 +32,7 @@ data PageInfo = PageInfo {
   }
 
 administrationPage :: GETContentHandler
-administrationPage = withUserState $ \s -> do
+administrationPage = do
   (cs,ausers,assigned) <- userStory $ do
     cs <- selectCourses each
     ausers <- selectUsers adminOrCourseAdmin
@@ -44,7 +44,7 @@ administrationPage = withUserState $ \s -> do
     , courseAdmins = filter courseAdmin ausers
     , assignedCourseAdmins = assigned
     }
-  renderBootstrapPage . bootstrapUserFrame s $ administrationContent info
+  return $ administrationContent info
   where
     each _ _ = True
 

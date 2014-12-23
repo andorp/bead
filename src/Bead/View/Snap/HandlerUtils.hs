@@ -68,7 +68,7 @@ import           Bead.View.Snap.Application
 import           Bead.View.Snap.DataBridge
 import           Bead.View.Snap.Dictionary
 import           Bead.View.Snap.I18N (IHtml, translate)
-import           Bead.View.Snap.Pagelets (runBootstrapPage)
+import           Bead.View.Snap.Pagelets (runBootstrapPage, bootstrapUserFrame)
 import           Bead.View.Snap.RouteOf (ReqParam(..))
 import           Bead.View.Snap.Session
 import           Bead.View.Snap.Translation
@@ -168,10 +168,11 @@ blazeI18n h = i18nE >>= blaze . h
 
 -- Renders a Page from the given IHtml function which
 -- needs the session timeout seconds
-renderBootstrapPage :: (Int -> IHtml) -> HandlerError App b ()
-renderBootstrapPage p = do
+renderBootstrapPage :: IHtml -> HandlerError App b ()
+renderBootstrapPage page = do
+  state <- userState
   secs <- fmap sessionTimeout . lift . withTop configContext $ getConfiguration
-  i18nE >>= blaze . (runBootstrapPage (p secs))
+  i18nE >>= blaze . (runBootstrapPage (bootstrapUserFrame state page secs))
 
 -- Renders the public page selecting the I18N translation based on the
 -- language stored in the session, if there is no such value, the

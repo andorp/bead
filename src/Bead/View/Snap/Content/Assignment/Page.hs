@@ -37,7 +37,7 @@ modifyAssignmentPreview    = UserViewHandler modifyAssignmentPreviewPage
 -- * Course Assignment
 
 newCourseAssignmentPage :: GETContentHandler
-newCourseAssignmentPage = withUserState $ \s -> do
+newCourseAssignmentPage = do
   ck <- getParameter (customCourseKeyPrm courseKeyParamName)
   (c, tss, ufs) <- userStory $ do
     S.isAdministratedCourse ck
@@ -47,7 +47,7 @@ newCourseAssignmentPage = withUserState $ \s -> do
     return ((ck, course), nonEmptyList tss', ufs)
   now <- liftIO $ getCurrentTime
   tz <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $ PD_Course tz now c tss ufs
+  return $ newAssignmentContent $ PD_Course tz now c tss ufs
 
 postCourseAssignment :: POSTContentHandler
 postCourseAssignment = do
@@ -57,7 +57,7 @@ postCourseAssignment = do
     <*> readTCCreation
 
 newCourseAssignmentPreviewPage :: ViewPOSTContentHandler
-newCourseAssignmentPreviewPage = withUserState $ \s -> do
+newCourseAssignmentPreviewPage = do
   ck <- getParameter (customCourseKeyPrm courseKeyParamName)
   assignment <- getAssignment
   tc <- readTCCreationParameters
@@ -69,7 +69,7 @@ newCourseAssignmentPreviewPage = withUserState $ \s -> do
     return ((ck, course), nonEmptyList tss', ufs)
   now <- liftIO $ getCurrentTime
   tz <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $
+  return $ newAssignmentContent $
     PD_Course_Preview tz now c tss ufs assignment tc
 
 -- Tries to create a TCCreation descriptive value. If the test script, usersfile and testcase
@@ -120,7 +120,7 @@ tcModification _ _ _                                 = Nothing
 -- * Group Assignment
 
 newGroupAssignmentPage :: GETContentHandler
-newGroupAssignmentPage = withUserState $ \s -> do
+newGroupAssignmentPage = do
   now <- liftIO $ getCurrentTime
   gk <- getParameter (customGroupKeyPrm groupKeyParamName)
   (g,tss,ufs) <- userStory $ do
@@ -130,7 +130,7 @@ newGroupAssignmentPage = withUserState $ \s -> do
     ufs  <- map fst <$> S.listUsersFiles
     return ((gk, group), nonEmptyList tss', ufs)
   tz <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $ PD_Group tz now g tss ufs
+  return $ newAssignmentContent $ PD_Group tz now g tss ufs
 
 postGroupAssignment :: POSTContentHandler
 postGroupAssignment = do
@@ -140,7 +140,7 @@ postGroupAssignment = do
   <*> readTCCreation
 
 newGroupAssignmentPreviewPage :: ViewPOSTContentHandler
-newGroupAssignmentPreviewPage = withUserState $ \s -> do
+newGroupAssignmentPreviewPage = do
   gk <- getParameter (customGroupKeyPrm groupKeyParamName)
   assignment <- getAssignment
   tc <- readTCCreationParameters
@@ -152,13 +152,13 @@ newGroupAssignmentPreviewPage = withUserState $ \s -> do
     return ((gk, group), nonEmptyList tss', ufs)
   tz <- userTimeZoneToLocalTimeConverter
   now <- liftIO $ getCurrentTime
-  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $
+  return $ newAssignmentContent $
     PD_Group_Preview tz now g tss ufs assignment tc
 
 -- * Modify Assignment
 
 modifyAssignmentPage :: GETContentHandler
-modifyAssignmentPage = withUserState $ \s -> do
+modifyAssignmentPage = do
   ak <- getAssignmentKey
   (as,tss,ufs,tc,ev) <- userStory $ do
     S.isAdministratedAssignment ak
@@ -169,7 +169,7 @@ modifyAssignmentPage = withUserState $ \s -> do
     ev   <- not <$> S.isThereASubmission ak
     return (as, nonEmptyList tss', ufs, tc, ev)
   tz <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $
+  return $ newAssignmentContent $
     PD_Assignment tz ak as tss ufs tc ev
 
 postModifyAssignment :: POSTContentHandler
@@ -180,7 +180,7 @@ postModifyAssignment = do
   <*> readTCModification
 
 modifyAssignmentPreviewPage :: ViewPOSTContentHandler
-modifyAssignmentPreviewPage = withUserState $ \s -> do
+modifyAssignmentPreviewPage = do
   ak <- getAssignmentKey
   as <- getAssignment
   tm <- readTCModificationParameters
@@ -192,11 +192,11 @@ modifyAssignmentPreviewPage = withUserState $ \s -> do
     ev   <- not <$> S.isThereASubmission ak
     return (nonEmptyList tss', ufs, tc, ev)
   tz <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootstrapUserFrame s . newAssignmentContent $
+  return $ newAssignmentContent $
     PD_Assignment_Preview tz ak as tss ufs tc tm ev
 
 viewAssignmentPage :: GETContentHandler
-viewAssignmentPage = withUserState $ \s -> do
+viewAssignmentPage = do
   ak <- getAssignmentKey
   (as,tss,tc) <- userStory $ do
     S.isAdministratedAssignment ak
@@ -207,8 +207,7 @@ viewAssignmentPage = withUserState $ \s -> do
   tz <- userTimeZoneToLocalTimeConverter
   let ti = do (_tck, _tc, tsk) <- tc
               Map.lookup tsk $ Map.fromList tss
-  renderBootstrapPage . bootstrapUserFrame s .
-    newAssignmentContent $ PD_ViewAssignment tz ak as ti tc
+  return $ newAssignmentContent $ PD_ViewAssignment tz ak as ti tc
 
 -- * Helpers
 

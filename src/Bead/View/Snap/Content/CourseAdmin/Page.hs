@@ -29,7 +29,7 @@ data PageData = PageData {
   }
 
 courseAdminPage :: GETContentHandler
-courseAdminPage = withUserState $ \s -> do
+courseAdminPage = do
   pageData <- userStory $ do
     theCourses <- administratedCourses
     courseAndGroupKeys <- forM theCourses $ \(ck,_) -> loadCourse ck
@@ -46,7 +46,7 @@ courseAdminPage = withUserState $ \s -> do
       , groupAdmins = ps
       , assignedGroups = gs
       }
-  renderBootstrapPage . bootstrapUserFrame s $ courseAdminContent pageData
+  return $ courseAdminContent pageData
   where
     group_admin = groupAdmin . u_role
 

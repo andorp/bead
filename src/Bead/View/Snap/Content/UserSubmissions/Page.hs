@@ -26,12 +26,12 @@ userSubmissionPage = withUserState $ \s -> do
   mDesc <- userStory $ do
              Story.isAdministratedAssignment aKey
              Story.userSubmissions username aKey
-  let render p = renderBootstrapPage $ bootstrapUserFrame s p
-  case mDesc of
-    Nothing -> render unauthorized
+  page <- case mDesc of
+    Nothing -> return unauthorized
     Just  d -> do
       tc <- userTimeZoneToLocalTimeConverter
-      render $ userSubmissionHtml tc d
+      return $ userSubmissionHtml tc d
+  return page
 
 unauthorized :: IHtml
 unauthorized = do

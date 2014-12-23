@@ -43,7 +43,7 @@ modifyTestScript = ViewModifyHandler modifyTestScriptPage postModifyTestScript
 newTestScriptPage :: GETContentHandler
 newTestScriptPage = withUserState $ \s -> do
   cs <- userStory Story.administratedCourses
-  renderBootstrapPage . bootstrapUserFrame s $ testScriptContent (Create cs)
+  return $ testScriptContent (Create cs)
 
 postNewTestScript :: POSTContentHandler
 postNewTestScript = do
@@ -67,8 +67,7 @@ modifyTestScriptPage = withUserState $ \s -> do
     (script, ck)  <- Story.loadTestScript tsk
     (course, _gk) <- Story.loadCourse ck
     return (course, script)
-  renderBootstrapPage . bootstrapUserFrame s $
-    testScriptContent (Modify (courseName course) tsk script)
+  return $ testScriptContent (Modify (courseName course) tsk script)
 
 postModifyTestScript :: POSTContentHandler
 postModifyTestScript = do

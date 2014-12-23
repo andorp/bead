@@ -33,7 +33,7 @@ import Bead.View.Snap.Content.GetSubmission
 import Bead.Invariants (Invariants(..))
 #endif
 
-pageContent :: Pages.Page a b c d -> PageHandler
+pageContent :: Pages.Page a b c d e -> PageHandler
 pageContent = Pages.constantsP
   nullViewHandler -- login
   nullViewHandler -- logout
@@ -72,18 +72,20 @@ pageContent = Pages.constantsP
   unsubscribeFromCourse
   getSubmission
   where
-    nullViewHandler = ViewHandler (return ())
+    -- Returns an empty handler that computes an empty I18N Html monadic value
+    nullViewHandler = ViewHandler (return (return (return ())))
 
 
 #ifdef TEST
 
 invariants :: Invariants Pages.PageDesc
 invariants = Invariants [
-    ("Content handler must be defined ", Pages.pageKindCata view userView viewModify modify . pageContent)
+    ("Content handler must be defined ", Pages.pageKindCata view userView viewModify modify data_ . pageContent)
   ] where
       view !_x = True
       userView !_x = True
       viewModify !_x = True
       modify !_x = True
+      data_ !_x = True
 
 #endif

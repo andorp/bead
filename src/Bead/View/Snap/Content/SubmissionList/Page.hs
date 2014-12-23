@@ -28,28 +28,28 @@ data PageData = PageData {
   }
 
 submissionListPage :: GETContentHandler
-submissionListPage = withUserState $ \s -> do
+submissionListPage = do
   ak <- getParameter assignmentKeyPrm
-  let render p = renderBootstrapPage $ bootstrapUserFrame s p
   -- TODO: Refactor use guards
   userStory $ do
     doesBlockAssignmentView ak
-  usersAssignment ak $ \assignment -> do
+  page <- usersAssignment ak $ \assignment -> do
     case assignment of
-      Nothing -> render invalidAssignment
+      Nothing -> return invalidAssignment
       Just asg -> do
         now <- liftIO getCurrentTime
         case (Assignment.start asg > now) of
-          True  -> render assignmentNotStartedYet
+          True  -> return assignmentNotStartedYet
           False -> do
             (sl,lmt) <- userStory $ (,) <$> submissionListDesc ak <*> assignmentSubmissionLimit ak
             tc <- userTimeZoneToLocalTimeConverter
-            render $ submissionListContent $
+            return $ submissionListContent $
                 PageData { asKey = ak
                          , smList = sortSbmListDescendingByTime sl
                          , uTime = tc
                          , smLimit = lmt
                          }
+  return page
 
 submissionListContent :: PageData -> IHtml
 submissionListContent p = do

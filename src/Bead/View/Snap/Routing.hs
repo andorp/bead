@@ -15,7 +15,7 @@ import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.String (fromString)
 import           Prelude hiding (id)
-import qualified Prelude as P
+import qualified Prelude
 
 import qualified Data.ByteString.Char8 as BS
 import           Snap.Snaplet.Auth as A
@@ -82,7 +82,7 @@ pages = do
     Nothing -> pass
     Just pd
       | P.isLogin pd -> loginSubmit
-      | otherwise ->  handlePage (pageContent pd)
+      | otherwise ->  handlePage $ renderResponse $ pageContent pd
 
 -- * Handlers
 
@@ -114,18 +114,19 @@ evalHandlerError onError onSuccess h = do
 -- the onError handler is run, in both cases returns information about
 -- the successfullness.
 runGETHandler
-  :: (ContentHandlerError -> Handler App App ())
-  -> HandlerError App App ()
-  -> Handler App App (HandlerResult ())
+  :: (ContentHandlerError -> Handler App App a)
+  -> HandlerError App App a
+  -> Handler App App (HandlerResult a)
 runGETHandler onError handler
   = evalHandlerError
       (hfailure . onError)
       (return . HSuccess)
-      (do handler
+      (do x <- handler
           userStory S.clearStatusMessage
           lift . with sessionManager $ do
             touchSession
-            commitSession)
+            commitSession
+          return x)
 
 -- Runs the 'h' handler if no error occurs during the run of the handler
 -- calculates the parent page for the given 'p', and runs the attached userstory
@@ -155,17 +156,18 @@ runPOSTHandler onError p h
     changeToParentPage = maybe (return ()) S.changePage . P.parentPage
 
 runUserViewPOSTHandler
-  :: (ContentHandlerError -> Handler App App ())
-  -> HandlerError App App ()
-  -> Handler App App (HandlerResult ())
+  :: (ContentHandlerError -> Handler App App a)
+  -> HandlerError App App a
+  -> Handler App App (HandlerResult a)
 runUserViewPOSTHandler onError userViewHandler
   = evalHandlerError
       (hfailure . onError)
       (return . HSuccess)
-      (do userViewHandler
+      (do x <- userViewHandler
           lift . with sessionManager $ do
             touchSession
-            commitSession)
+            commitSession
+          return x)
 
 logoutAndResetRoute :: Handler App App ()
 logoutAndResetRoute = do
@@ -179,6 +181,20 @@ logoutAndErrorPage msg = do
   HU.logout
   msgErrorPage msg
 
+-- Helper type synonyms
+type HE   = HandlerError App App ()
+type HEUA = HandlerError App App UserAction
+
+type PageRenderer = P.Page HE HE (HE,HEUA) HEUA HE
+
+renderResponse :: PageHandler -> PageRenderer
+renderResponse = P.pfmap
+  (viewHandlerCata (>>= renderBootstrapPage))
+  (userViewHandlerCata (>>= renderBootstrapPage))
+  (viewModifyHandlerCata (\get post -> (get >>= renderBootstrapPage, post)))
+  (modifyHandlerCata Prelude.id)
+  (dataHandlerCata Prelude.id)
+
 {- When a user logs in the home page is shown for her. An universal handler
    is used. E.g "/home" -> handlePage P.Home.
    * If the user can navigate to the
@@ -187,8 +203,8 @@ logoutAndErrorPage msg = do
    * When a user submits information with a POST request, from the submitted information
    we calculate the appropiate user action and runs it
 -}
-handlePage :: PageHandler -> Handler App App ()
-handlePage page = P.pageKindCata view userView viewModify modify page where
+handlePage :: PageRenderer -> Handler App App ()
+handlePage page = P.pageKindCata view userView viewModify modify data_ page where
   pageDesc = P.pageToPageDesc page
 
   loggedInFilter m = userIsLoggedInFilter
@@ -242,20 +258,16 @@ handlePage page = P.pageKindCata view userView viewModify modify page where
     runStory $ S.changePage pageDesc
     runUserViewPOSTHandler defErrorPage h
 
-  view = viewHandlerCata (get . void . loggedInFilter . runGetOrError) . P.viewPageValue
-
-  userView = userViewHandlerCata (post . void . loggedInFilter . runUserViewPostOrError) . P.userViewPageValue
-
-  viewModify = void . viewModifyHandlerCata
-    (\get post -> getPost (loggedInFilter $ runGetOrError  get)
-                          (loggedInFilter $ runPostOrError post))
-    . P.viewModifyPageValue
-
-  modify = modifyHandlerCata (post . void . loggedInFilter . runPostOrError) . P.modifyPageValue
-
+  view       = get . void . loggedInFilter . runGetOrError . P.viewPageValue
+  data_      = get . void . loggedInFilter . runGetOrError . P.dataPageValue
+  userView   = post . void . loggedInFilter . runUserViewPostOrError . P.userViewPageValue
+  viewModify = void . uncurry (\get post -> getPost (loggedInFilter $ runGetOrError get)
+                                                    (loggedInFilter $ runPostOrError post))
+                    . P.viewModifyPageValue
+  modify     = post . void . loggedInFilter . runPostOrError . P.modifyPageValue
 
 allowedPageByTransition
-  :: P.Page a b c d -> HandlerError App App a -> HandlerError App App a -> HandlerError App App a
+  :: P.Page a b c d e -> HandlerError App App a -> HandlerError App App a -> HandlerError App App a
 allowedPageByTransition p allowed restricted = withUserState $ \state ->
   let allow = P.allowedPage (role state) p
   in case allow of

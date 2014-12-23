@@ -26,7 +26,6 @@ data ViewPage a
   | UserSubmissions a
   | Administration a
   | CourseAdmin a
-  | GetSubmission SubmissionKey a
   deriving (Eq, Ord, Show, Functor)
 
 viewPageCata
@@ -40,7 +39,6 @@ viewPageCata
   userSubmissions
   administration
   courseAdmin
-  getSubmission
   p = case p of
     Login a -> login a
     Logout a -> logout a
@@ -52,7 +50,6 @@ viewPageCata
     UserSubmissions a -> userSubmissions a
     Administration a -> administration a
     CourseAdmin a -> courseAdmin a
-    GetSubmission sk a -> getSubmission sk a
 
 viewPageValue :: ViewPage a -> a
 viewPageValue = viewPageCata
@@ -66,9 +63,23 @@ viewPageValue = viewPageCata
   id -- userSubmissions
   id -- administration
   id -- courseAdmin
-  cid -- getSubmisson
   where
     cid = const id
+
+-- Pages that extract information from the persistence
+-- and all the data will be rendered in the response
+data DataPage a
+  = GetSubmission SubmissionKey a
+  deriving (Eq, Ord, Show, Functor)
+
+dataPageCata
+  getSubmission
+  p = case p of
+    GetSubmission sk a -> getSubmission sk a
+
+dataPageValue :: DataPage a -> a
+dataPageValue = dataPageCata
+  (const id) -- getSubmission
 
 -- User View pages are rendered using the data stored in the
 -- persistence and some temporary data given by the user. Mainly
@@ -215,11 +226,12 @@ modifyPageValue = modifyPageCata
     c2id = const . cid
 
 -- The kind of the possible page types
-data Page a b c d
+data Page a b c d e
   = View       (ViewPage a)
   | UserView   (UserViewPage b)
   | ViewModify (ViewModifyPage c)
   | Modify     (ModifyPage d)
+  | Data       (DataPage e)
   deriving (Eq, Ord, Show)
 
 liftPK
@@ -227,33 +239,39 @@ liftPK
   userView
   viewModify
   modify
+  data_
   v = case v of
     View v       -> View       $ view v
     UserView u   -> UserView   $ userView u
     ViewModify v -> ViewModify $ viewModify v
     Modify m     -> Modify     $ modify m
+    Data d       -> Data       $ data_ d
 
-pfmap f0 f1 f2 f3 = liftPK (fmap f0) (fmap f1) (fmap f2) (fmap f3)
+pfmap f0 f1 f2 f3 f4 = liftPK (fmap f0) (fmap f1) (fmap f2) (fmap f3) (fmap f4)
 
 pageKindCata
   view
   userView
   viewModify
   modify
+  data_
   q = case q of
     View p -> view p
     UserView p -> userView p
     ViewModify p -> viewModify p
     Modify p -> modify p
+    Data p -> data_ p
 
 pageCata' = pageKindCata
 
-pageValue :: Page a a a a -> a
-pageValue = pageCata' viewPageValue userViewPageValue viewModifyPageValue modifyPageValue
+pageValue :: Page a a a a a -> a
+pageValue = pageCata' viewPageValue userViewPageValue viewModifyPageValue modifyPageValue dataPageValue
 
-type PageDesc = Page () () () ()
+type Page' a = Page a a a a a
 
-pageToPageDesc = pfmap unit unit unit unit where
+type PageDesc = Page' ()
+
+pageToPageDesc = pfmap unit unit unit unit unit where
   unit = const ()
 
 login                   = View . Login
@@ -266,7 +284,7 @@ submissionList          = View . SubmissionList
 userSubmissions         = View . UserSubmissions
 administration          = View . Administration
 courseAdmin             = View . CourseAdmin
-getSubmission sk        = View . GetSubmission sk
+getSubmission sk        = Data . GetSubmission sk
 
 newGroupAssignmentPreview gk  = UserView . NewGroupAssignmentPreview gk
 newCourseAssignmentPreview ck = UserView . NewCourseAssignmentPreview ck
@@ -370,7 +388,7 @@ pageCata
     (Modify (DeleteUsersFromCourse ck a)) -> deleteUsersFromCourse ck a
     (Modify (DeleteUsersFromGroup gk a)) -> deleteUsersFromGroup gk a
     (Modify (UnsubscribeFromCourse gk a)) -> unsubscribeFromCourse gk a
-    (View (GetSubmission sk a)) -> getSubmission sk a
+    (Data (GetSubmission sk a)) -> getSubmission sk a
 
 -- Constants that attached each of the page constructor
 constantsP
@@ -631,12 +649,12 @@ isDeleteUsersFromGroup _ = False
 isUnsubscribeFromCourse (Modify (UnsubscribeFromCourse _ _)) = True
 isUnsubscribeFromCourse _ = False
 
-isGetSubmission (View (GetSubmission _ _)) = True
+isGetSubmission (Data (GetSubmission _ _)) = True
 isGetSubmission _ = False
 
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
-isPage :: [Page a b c d -> Bool] -> Page a b c d -> Bool
+isPage :: [Page a b c d e -> Bool] -> Page a b c d e -> Bool
 isPage fs p = or $ map ($ p) fs
 
 -- Shortcut binary or for the given predicates
@@ -710,8 +728,13 @@ dataModificationPages = [
   , isUnsubscribeFromCourse
   ]
 
-isUserViewPage :: Page a b c d -> Bool
-isUserViewPage = pageCata' false true false false
+isUserViewPage :: Page a b c d e -> Bool
+isUserViewPage = pageCata'
+  false -- view
+  true  -- userView
+  false -- viewModify
+  false -- modify
+  false -- data
   where
     false = const False
     true  = const True
@@ -737,7 +760,7 @@ menuPageList = map ($ ()) [
 
 -- Returns a page predicate function depending on the role, which page transition is allowed,
 -- from a given page
-allowedPage :: E.Role -> (Page a b c d -> Bool)
+allowedPage :: E.Role -> (Page a b c d e -> Bool)
 allowedPage = E.roleCata student groupAdmin courseAdmin admin
   where
     student     = isPage regularPages
@@ -763,6 +786,7 @@ parentPage = pageCata'
   (const Nothing) -- userView
   viewModifyParent
   modifyParent
+  (const Nothing)
   where
     c2 = const . const
     viewModifyParent = Just . viewModifyPageCata

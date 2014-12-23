@@ -41,7 +41,7 @@ data PageData = PageData {
   }
 
 evaluationPage :: GETContentHandler
-evaluationPage = withUserState $ \s -> do
+evaluationPage = do
   sk <- getParameter submissionKeyPrm
   sd <- userStory (submissionDescription sk)
   tc <- userTimeZoneToLocalTimeConverter
@@ -51,10 +51,10 @@ evaluationPage = withUserState $ \s -> do
     , sbmEvaluationKey = Nothing
     , userTime = tc
     }
-  renderBootstrapPage . bootstrapUserFrame s $ evaluationContent pageData
+  return $ evaluationContent pageData
 
 modifyEvaluationPage :: GETContentHandler
-modifyEvaluationPage = withUserState $ \s -> do
+modifyEvaluationPage = do
   sk <- getParameter submissionKeyPrm
   ek <- getParameter evaluationKeyPrm
   sd <- userStory (submissionDescription sk)
@@ -65,7 +65,7 @@ modifyEvaluationPage = withUserState $ \s -> do
   , sbmEvaluationKey = Just ek
   , userTime = tc
   }
-  renderBootstrapPage . bootstrapUserFrame s $ evaluationContent pageData
+  return $ evaluationContent pageData
 
 -- Reads the evaluation result, from the parameters and determine if the content
 -- of the text area would be a comment of the textual evaluation of the given submission.

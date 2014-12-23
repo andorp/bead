@@ -6,10 +6,6 @@ module Bead.View.Snap.Content.CourseOverview.Page (
 import           Data.String (fromString)
 import           Data.Time (UTCTime, getCurrentTime)
 
-import           Text.Blaze.Html5
-import qualified Text.Blaze.Html5 as H
-import           Text.Blaze.Html5.Attributes hiding (content)
-
 import qualified Bead.Controller.UserStories as Story
 import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
@@ -28,14 +24,14 @@ courseOverview :: ViewHandler
 courseOverview = ViewHandler courseSubmissionsPage
 
 courseSubmissionsPage :: GETContentHandler
-courseSubmissionsPage = withUserState $ \s -> do
+courseSubmissionsPage = do
   ck <- getParameter (customCourseKeyPrm courseKeyParamName)
   now <- liftIO $ getCurrentTime
   (stc,sti) <- userStory $ do
     stc <- submissionTableContext
     sti <- sortUserLines <$> Story.courseSubmissionTable ck
     return (stc, sti)
-  renderBootstrapPage . bootstrapUserFrame s . content $ CourseSubmissions now stc sti
+  return . content $ CourseSubmissions now stc sti
 
 content :: PageData -> IHtml
 content = pageDataCata courseSubmissionsContent

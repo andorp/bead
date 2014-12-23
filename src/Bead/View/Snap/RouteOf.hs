@@ -185,11 +185,11 @@ unsubscribeFromCoursePath = "/unsubscribe-from-course"
 getSubmissionPath :: RoutePath
 getSubmissionPath = "/get-submission"
 
-type PageRoutePath = Page RoutePath RoutePath RoutePath RoutePath
+type PageRoutePath = Page RoutePath RoutePath RoutePath RoutePath RoutePath
 
 -- Returns a base path for the given page
-pageRoutePath :: Page a b c d -> PageRoutePath
-pageRoutePath = pfmap id id id id . r where
+pageRoutePath :: Page a b c d e -> PageRoutePath
+pageRoutePath = pfmap id id id id id . r where
   r = constantsP
     loginPath
     logoutPath
@@ -228,10 +228,10 @@ pageRoutePath = pfmap id id id id . r where
     unsubscribeFromCoursePath
     getSubmissionPath
 
-type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam]
+type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam] [ReqParam]
 
 -- Calculates a request parameter list from the given page value
-pageRequestParams :: Page a b c d -> PageReqParams
+pageRequestParams :: Page a b c d e -> PageReqParams
 pageRequestParams = liftsP
   (c []) -- login
   (c []) -- logout
@@ -274,7 +274,7 @@ pageRequestParams = liftsP
 
 -- Calculates the full path from a page value, including the base path and the
 -- request parameters
-routeOf :: (IsString s) => Page a b c d -> s
+routeOf :: (IsString s) => Page a b c d e -> s
 routeOf p = queryString (pageValue (pageRoutePath p)) (pageValue (pageRequestParams p))
 
 -- Produces a query string for a GET request from the given base name, and the
@@ -283,7 +283,7 @@ queryString :: (IsString s) => ByteString -> [ReqParam] -> s
 queryString base []     = fromString $ Char8.unpack base
 queryString base params = fromString . join $ [Char8.unpack base, "?"] ++ (intersperse "&" (map queryStringParam params))
 
-routeWithParams :: (IsString s) => Page a b c d -> [ReqParam] -> s
+routeWithParams :: (IsString s) => Page a b c d e -> [ReqParam] -> s
 routeWithParams p rs = fromString . join $
   [routeOf p, "?"] ++ (intersperse "&" (map queryStringParam rs))
 

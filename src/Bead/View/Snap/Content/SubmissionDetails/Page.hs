@@ -34,7 +34,7 @@ data PageData = PageData {
   }
 
 submissionDetailsPage :: GETContentHandler
-submissionDetailsPage = withUserState $ \s -> do
+submissionDetailsPage = do
   ak <- getParameter assignmentKeyPrm
   sk <- getParameter submissionKeyPrm
 
@@ -47,9 +47,8 @@ submissionDetailsPage = withUserState $ \s -> do
 
   -- TODO: Refactor use guards
   -- getSubmission ak sk $ \submission -> do
-  let render p = renderBootstrapPage $ bootstrapUserFrame s p
   tc <- userTimeZoneToLocalTimeConverter
-  render $
+  return $
     submissionDetailsContent PageData {
         smKey = sk
       , aKey  = ak

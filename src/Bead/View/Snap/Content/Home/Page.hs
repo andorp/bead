@@ -50,7 +50,7 @@ homePage :: GETContentHandler
 homePage = withUserState $ \s -> do
   converter <- userTimeZoneToLocalTimeConverter
   now <- liftIO getCurrentTime
-  (renderBootstrapPage . bootstrapUserFrame s . homeContent) =<< do
+  fmap homeContent $ do
     (userStory $ do
        ua <- S.userAssignments
        sbmTables <- (map sortUserLines <$> S.submissionTables)
@@ -78,7 +78,7 @@ deleteUsersFromGroupHandler =
     <$> (getParameter delUserFromGroupKeyPrm)
     <*> (getParameterValues delUserFromGroupPrm)
 
-navigation :: [Pages.Page a b c d] -> IHtml
+navigation :: [Pages.Page a b c d e] -> IHtml
 navigation links = do
   msg <- getI18N
   return $ H.div ! A.id "menu" $ H.ul $ mapM_ (i18n msg . linkToPage) links

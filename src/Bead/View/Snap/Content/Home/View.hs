@@ -126,7 +126,7 @@ htmlSubmissionTables pd = do
     htmlSubmissionTable pd (i,s) = do
       submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
 
-navigation :: [Pages.Page a b c d] -> IHtml
+navigation :: [Pages.Page a b c d e] -> IHtml
 navigation links = do
   msg <- getI18N
   return

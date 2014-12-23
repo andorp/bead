@@ -7,8 +7,6 @@ module Bead.View.Snap.Content.Profile.Page (
 import           Control.Arrow ((&&&))
 import           Data.String
 
-import           Text.Blaze.Html5 hiding (map)
-
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (currentUser)
 import           Bead.Domain.Entities hiding (name)
@@ -23,11 +21,11 @@ import           Bead.View.Snap.Session (setLanguageInSession)
 profile = ViewModifyHandler profilePage changeUserDetails
 
 profilePage :: GETContentHandler
-profilePage = withUserState $ \s -> do
+profilePage = do
   user <- userStory currentUser
   languages <- getDictionaryInfos
   ts <- lift foundTimeZones
-  renderBootstrapPage . bootstrapUserFrame s $ profileContent ts user languages
+  return $ profileContent ts user languages
 
 changeUserDetails :: POSTContentHandler
 changeUserDetails = do

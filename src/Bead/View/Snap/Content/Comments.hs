@@ -155,7 +155,7 @@ commentPar i18n t c = Bootstrap.row $ Bootstrap.colMd12 $ H.div # (commentDiv c)
 -- Creates a post form for the given route assignment key and submission key, where
 -- a comment can be placed and the result is submitted to the given page, which is
 -- need to understand the given parameters
-commentPostForm :: Page a b c d -> AssignmentKey -> IHtml
+commentPostForm :: Page a b c d e -> AssignmentKey -> IHtml
 commentPostForm p ak = do
   msg <- getI18N
   return $ postForm (routeOf p) $ do

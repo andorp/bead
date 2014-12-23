@@ -26,10 +26,10 @@ pageDataCata f (PageData x s) = f x s
 uploadFile = ViewModifyHandler getUploadFile postUploadFile
 
 getUploadFile :: GETContentHandler
-getUploadFile = withUserState $ \s -> do
+getUploadFile = do
   fs <- userStory Story.listUsersFiles
   size <- fmap maxUploadSizeInKb $ lift $ withTop configContext getConfiguration
-  renderBootstrapPage $ bootstrapUserFrame s $ uploadFileContent (PageData fs size)
+  return $ uploadFileContent (PageData fs size)
 
 data Success
   = PolicyFailure String

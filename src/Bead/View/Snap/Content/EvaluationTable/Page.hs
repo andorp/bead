@@ -24,10 +24,10 @@ evaluationTable :: ViewHandler
 evaluationTable = ViewHandler evaluationTablePage
 
 evaluationTablePage :: GETContentHandler
-evaluationTablePage = withUserState $ \s -> do
-  os <- userStory openSubmissions
-  tc <- userTimeZoneToLocalTimeConverter
-  renderBootstrapPage . bootstrapUserFrame s $ evaluationTableContent tc os
+evaluationTablePage =
+  evaluationTableContent
+  <$> userTimeZoneToLocalTimeConverter
+  <*> userStory openSubmissions
 
 evaluationTableContent :: UserTimeConverter -> OpenedSubmissions -> IHtml
 evaluationTableContent tc = openedSubmissionsCata $ \admincourse admingroup related -> do

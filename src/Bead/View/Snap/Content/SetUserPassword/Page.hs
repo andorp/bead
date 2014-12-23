@@ -16,8 +16,7 @@ import qualified Bead.View.Snap.DataBridge as B
 setUserPassword = ViewModifyHandler setUserPasswordPage setUsrPwd
 
 setUserPasswordPage :: GETContentHandler
-setUserPasswordPage = withUserState $ \s -> do
-  renderBootstrapPage $ bootstrapUserFrame s setUserPasswordContent
+setUserPasswordPage = return setUserPasswordContent
 
 setUsrPwd :: POSTContentHandler
 setUsrPwd = do

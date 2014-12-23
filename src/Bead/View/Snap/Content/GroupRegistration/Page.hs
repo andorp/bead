@@ -30,7 +30,7 @@ postGroupReg = SubscribeToGroup
   <$> getParameter (jsonGroupKeyPrm (fieldName groupRegistrationField))
 
 groupRegistrationPage :: GETContentHandler
-groupRegistrationPage = withUserState $ \s -> do
+groupRegistrationPage = do
   desc <- userStory $ do
     as <- attendedGroups
     let attendedGroupKeys = map fst3 as
@@ -40,7 +40,7 @@ groupRegistrationPage = withUserState $ \s -> do
         groups = gs
       , groupsRegistered = as
       }
-  renderBootstrapPage . bootstrapUserFrame s $ groupRegistrationContent desc
+  return $ groupRegistrationContent desc
   where
     fst3 (f,_,_) = f
 

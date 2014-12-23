@@ -46,15 +46,14 @@ data UploadResult
   deriving (Eq,Show)
 
 submissionPage :: GETContentHandler
-submissionPage = withUserState $ \s -> do
-  let render p = renderBootstrapPage $ bootstrapUserFrame s p
+submissionPage = do
   ak <- getParameter assignmentKeyPrm
   ut <- userTimeZoneToLocalTimeConverter
   now <- liftIO $ getCurrentTime
   size <- fmap maxUploadSizeInKb $ lift $ withTop configContext getConfiguration
   -- TODO: Refactor use guards
   let renderPage limit (desc,asg) =
-        render $ submissionContent
+        return $ submissionContent
           (PageData { asKey = ak, asValue = asg, asDesc = desc, asTimeConv = ut, asNow = now, asMaxFileSize = size, asLimit = limit })
 
   limit <- userStory $ do
@@ -66,7 +65,7 @@ submissionPage = withUserState $ \s -> do
   submissionLimit
     (renderPage limit')
     (const (renderPage limit'))
-    (const $ render (fromString "Limit is reached"))
+    (const $ return (fromString "Limit is reached"))
     limit
 
 

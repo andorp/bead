@@ -9,7 +9,7 @@ import qualified Data.ByteString.UTF8 as BsUTF8 (fromString)
 import qualified Bead.Controller.UserStories as Story
 import           Bead.View.Snap.Content
 
-getSubmission = ViewHandler $ do
+getSubmission = DataHandler $ do
   sk <- getParameter submissionKeyPrm
   (s, description) <- userStory (Story.getSubmission sk)
   let submission = solution s

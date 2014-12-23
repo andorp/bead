@@ -18,18 +18,18 @@ import           Bead.View.Snap.Dictionary
 userDetails = ViewModifyHandler userDetailPage userDataChange
 
 userDetailPage :: GETContentHandler
-userDetailPage = withUserState $ \s -> do
+userDetailPage = do
   username <- getParameter usernamePrm
   exist    <- userStory $ doesUserExist username
-  let render p = renderBootstrapPage $ bootstrapUserFrame s p
-  case exist of
+  page <- case exist of
     True -> do
       user      <- userStory $ loadUser username
       languages <- getDictionaryInfos
       ts <- lift foundTimeZones
-      render (userDetailForm ts user languages)
+      return (userDetailForm ts user languages)
 
-    False -> render (userDoesNotExist username)
+    False -> return (userDoesNotExist username)
+  return page
 
 userDataChange :: POSTContentHandler
 userDataChange = do
