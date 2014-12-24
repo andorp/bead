@@ -93,17 +93,17 @@ index =
             (redirect (routeOf $ P.home ()))
 
 -- Redirects to the parent page of the given page
-redirectToParentPage :: P.PageDesc -> HandlerError App b ()
+redirectToParentPage :: P.PageDesc -> ContentHandler ()
 redirectToParentPage = maybe (return ()) (redirect . routeOf) . P.parentPage
 
 hfailure :: Handler App a b -> Handler App a (HandlerResult b)
 hfailure h = h >> (return HFailure)
 
 evalHandlerError
-  :: (ContentHandlerError -> Handler App b a)
-  -> (c -> Handler App b a)
-  -> HandlerError App b c
-  -> Handler App b a
+  :: (ContentError -> Handler App App a)
+  -> (c -> Handler App App a)
+  -> ContentHandler c
+  -> Handler App App a
 evalHandlerError onError onSuccess h = do
   x <- runErrorT h
   case x of
@@ -114,8 +114,8 @@ evalHandlerError onError onSuccess h = do
 -- the onError handler is run, in both cases returns information about
 -- the successfullness.
 runGETHandler
-  :: (ContentHandlerError -> Handler App App a)
-  -> HandlerError App App a
+  :: (ContentError -> Handler App App a)
+  -> ContentHandler a
   -> Handler App App (HandlerResult a)
 runGETHandler onError handler
   = evalHandlerError
@@ -135,9 +135,9 @@ runGETHandler onError handler
 -- a temporary view page, otherwise runs the onError handler
 -- in both ways returns information about the successfulness.
 runPOSTHandler
-  :: (ContentHandlerError -> Handler App App ())
+  :: (ContentError -> Handler App App ())
   -> P.PageDesc
-  -> HandlerError App App UserAction
+  -> ContentHandler UserAction
   -> Handler App App (HandlerResult ())
 runPOSTHandler onError p h
   = evalHandlerError
@@ -156,8 +156,8 @@ runPOSTHandler onError p h
     changeToParentPage = maybe (return ()) S.changePage . P.parentPage
 
 runUserViewPOSTHandler
-  :: (ContentHandlerError -> Handler App App a)
-  -> HandlerError App App a
+  :: (ContentError -> Handler App App a)
+  -> ContentHandler a
   -> Handler App App (HandlerResult a)
 runUserViewPOSTHandler onError userViewHandler
   = evalHandlerError
@@ -182,10 +182,10 @@ logoutAndErrorPage msg = do
   msgErrorPage msg
 
 -- Helper type synonyms
-type HE   = HandlerError App App ()
-type HEUA = HandlerError App App UserAction
+type CH   = ContentHandler ()
+type CHUA = ContentHandler UserAction
 
-type PageRenderer = P.Page HE HE (HE,HEUA) HEUA HE
+type PageRenderer = P.Page CH CH (CH,CHUA) CHUA CH
 
 renderResponse :: PageHandler -> PageRenderer
 renderResponse = P.pfmap
@@ -267,7 +267,7 @@ handlePage page = P.pageKindCata view userView viewModify modify data_ page wher
   modify     = post . void . loggedInFilter . runPostOrError . P.modifyPageValue
 
 allowedPageByTransition
-  :: P.Page a b c d e -> HandlerError App App a -> HandlerError App App a -> HandlerError App App a
+  :: P.Page a b c d e -> ContentHandler a -> ContentHandler a -> ContentHandler a
 allowedPageByTransition p allowed restricted = withUserState $ \state ->
   let allow = P.allowedPage (role state) p
   in case allow of

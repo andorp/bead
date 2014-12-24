@@ -72,7 +72,7 @@ modifyEvaluationPage = do
 -- The result of the computation is a UserActon which is a CreateComment or
 -- something that depends on the key end the evaluation itself.
 abstractEvaluationPostHandler
-  :: HandlerError App App key
+  :: ContentHandler key
   -> (key -> C.Evaluation -> UserAction)
   -> POSTContentHandler
 abstractEvaluationPostHandler getEvKeyParameter evCommand = do

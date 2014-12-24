@@ -29,8 +29,8 @@ module Bead.View.Snap.HandlerUtils (
   , foundTimeZones
   , fileUpload
   , logout
-  , HandlerError(..)
-  , ContentHandlerError
+  , ContentHandler
+  , ContentError
   , UserTimeConverter
   , contentHandlerError
   , contentHandlerErrorMap
@@ -75,23 +75,27 @@ import           Bead.View.Snap.Translation
 
 import           Bead.View.Snap.Fay.JSON.ServerSide
 
-newtype ContentHandlerError = ContentHandlerError (Maybe String)
+newtype ContentError = ContentError (Maybe String)
   deriving (Show)
 
-instance Error ContentHandlerError where
-  noMsg  = ContentHandlerError Nothing
-  strMsg = ContentHandlerError . Just
+instance Error ContentError where
+  noMsg  = ContentError Nothing
+  strMsg = ContentError . Just
 
-contentHandlerError :: String -> ContentHandlerError
-contentHandlerError = ContentHandlerError . Just
+contentHandlerError :: String -> ContentError
+contentHandlerError = ContentError . Just
 
-contentHandlerErrorMap :: (Maybe String -> a) -> ContentHandlerError -> a
-contentHandlerErrorMap f (ContentHandlerError x) = f x
+contentHandlerErrorMap :: (Maybe String -> a) -> ContentError -> a
+contentHandlerErrorMap f (ContentError x) = f x
 
 contentHandlerErrorMsg = contentHandlerErrorMap (maybe "Unknown message" id)
 
-type HandlerError a b c = ErrorT ContentHandlerError (Handler a b) c
+-- XXX is is handler for render Bead pages or information to the client
+-- also equiped with error handling, mainly used for render inner pages.
+type ContentHandler' b c = ErrorT ContentError (Handler App b) c
+--type HandlerError a b c = ErrorT ContentHandlerError (Handler a b) c
 
+type ContentHandler c = ContentHandler' App c
 
 -- | The 'logMessage' logs a message at a given level using the service context logger
 logMessage :: LogLevel -> String -> Handler App b ()
@@ -147,7 +151,7 @@ userTimeZoneToUTCTimeConverter = withUserTimeZoneContext zoneInfoToUTCTimeSafe
 foundTimeZones :: Handler App b [TimeZoneName]
 foundTimeZones = zoneInfos <$> (withTop timeZoneContext getTimeZoneConverter)
 
-i18nE :: (IsString s) => HandlerError App b (Translation String -> s)
+i18nE :: (IsString s) => ContentHandler (Translation String -> s)
 i18nE = do
   lang <- lift . withTop sessionManager $ languageFromSession
   when (isNothing lang) . throwError . strMsg $ "Language was not defined in session"
@@ -163,12 +167,12 @@ i18nH = do
   t <- maybe (return Nothing) (withTop dictionaryContext . getDictionary) language
   return $ maybe trans unDictionary t
 
-blazeI18n :: (I18N -> Html) -> HandlerError App b ()
+blazeI18n :: (I18N -> Html) -> ContentHandler ()
 blazeI18n h = i18nE >>= blaze . h
 
 -- Renders a Page from the given IHtml function which
 -- needs the session timeout seconds
-renderBootstrapPage :: IHtml -> HandlerError App b ()
+renderBootstrapPage :: IHtml -> ContentHandler ()
 renderBootstrapPage page = do
   state <- userState
   secs <- fmap sessionTimeout . lift . withTop configContext $ getConfiguration
@@ -194,7 +198,7 @@ renderBootstrapPublicPage p = do
   let translator = maybe trans unDictionary t
   blaze (runBootstrapPage p translator)
 
-withUserState :: (UserState -> HandlerError App b c) -> HandlerError App b c
+withUserState :: (UserState -> ContentHandler c) -> ContentHandler c
 withUserState = (userState >>=)
 
 getParameterOrError :: Parameter a -> Handler App b (Either String a)
@@ -204,7 +208,7 @@ getParameterOrError param
 
 -- Tries to decode the given value with the parameter description, if
 -- fails throws an error, otherwise returns the value
-decodeParamValue :: Parameter a -> BU.ByteString -> HandlerError App b a
+decodeParamValue :: Parameter a -> BU.ByteString -> ContentHandler' b a
 decodeParamValue param value = do
   let v = T.unpack $ TE.decodeUtf8 value
       decoded = decode param v
@@ -213,7 +217,7 @@ decodeParamValue param value = do
     return
     decoded
 
-getParameter :: Parameter a -> HandlerError App b a
+getParameter :: Parameter a -> ContentHandler' b a
 getParameter param = do
   reqParam <- getParam . B.pack . name $ param
   maybe
@@ -225,7 +229,7 @@ getParameter param = do
 -- If the parameter is not found throws an error, if one of the parameter
 -- values are not decodable throws an error otherwise
 -- returns a list of the decoded values
-getParameterValues :: Parameter a -> HandlerError App b [a]
+getParameterValues :: Parameter a -> ContentHandler' b [a]
 getParameterValues param = do
   params <- getParams
   let paramName = name param
@@ -237,7 +241,7 @@ getParameterValues param = do
 -- Calculates a Just value named and decoded by the given paramater,
 -- supposing that the parameter are optional, if it not presented
 -- calculates Nothing, if decoding fails, throws an Error
-getOptionalParameter :: Parameter a -> HandlerError App b (Maybe a)
+getOptionalParameter :: Parameter a -> ContentHandler' b (Maybe a)
 getOptionalParameter param = do
   params <- getParams
   let paramName = name param
@@ -250,7 +254,7 @@ getOptionalParameter param = do
 -- Calculates a Just value named and decoded by the given paramater,
 -- supposing that the parameter are optional, if it not presented
 -- calculates Nothing, if decoding fails, throws an Error
-getOptionalOrNonEmptyParameter :: Parameter a -> HandlerError App b (Maybe a)
+getOptionalOrNonEmptyParameter :: Parameter a -> ContentHandler' b (Maybe a)
 getOptionalOrNonEmptyParameter param = do
   params <- getParams
   let paramName = name param
@@ -263,7 +267,7 @@ getOptionalOrNonEmptyParameter param = do
     Just (_:_) -> throwError . strMsg $ concat [paramName, " has more than one value."] -- TODO: I18N
 
 
-getJSONParam :: (Data a) => String -> String -> HandlerError App b a
+getJSONParam :: (Data a) => String -> String -> ContentHandler a
 getJSONParam param msg = do
   x <- getParam . B.pack $ param
   case x of
@@ -275,7 +279,7 @@ getJSONParam param msg = do
 -- Decode multiple values for the given parameter names.
 -- This approach can be used for checkbox contained values.
 -- If no parameter is found in the request, an empty list is returned.
-getJSONParameters :: (Data a, Show a) => String -> String -> HandlerError App b [a]
+getJSONParameters :: (Data a, Show a) => String -> String -> ContentHandler [a]
 getJSONParameters param msg = do
   params <- getParams
   case Map.lookup (fromString param) params of
@@ -290,20 +294,20 @@ getJSONParameters param msg = do
            Just  x -> return x
 
 -- Computes a list that contains language and dictionary info pairs
-getDictionaryInfos :: HandlerError App b DictionaryInfos
+getDictionaryInfos :: ContentHandler DictionaryInfos
 getDictionaryInfos = lift (withTop dictionaryContext dcGetDictionaryInfos)
 
-setReqParamInSession :: ReqParam -> HandlerError App b ()
+setReqParamInSession :: ReqParam -> ContentHandler ()
 setReqParamInSession (ReqParam (k,v)) = setInSessionE k v
 
-setInSessionE :: String -> String -> HandlerError App b ()
+setInSessionE :: String -> String -> ContentHandler ()
 setInSessionE k v
   = lift . withTop sessionManager $ setInSession (T.pack k) (T.pack v)
 
 -- Runs a user story within a service context where the user is logged in
 -- and throws a handler error if the story has failed
 -- otherwise returns the computed value
-userStory :: S.UserStory a -> HandlerError App b a
+userStory :: S.UserStory a -> ContentHandler a
 userStory story = do
   i18n <- lift i18nH
   x <- lift . runStory $ story

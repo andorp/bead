@@ -33,7 +33,7 @@ instance ErrorPage TransMsg where
     i18n <- i18nH
     render . (page title) $ Just (translateMessage i18n msg)
 
-instance ErrorPage ContentHandlerError where
+instance ErrorPage ContentError where
   errorPage title msg = contentHandlerErrorMap (render . (page title)) msg
 
 msgErrorPage :: String -> Handler App b ()

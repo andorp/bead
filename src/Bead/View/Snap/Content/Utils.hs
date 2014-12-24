@@ -14,8 +14,8 @@ usersObject
   => UserStory [k]
   -> (k -> UserStory v)
   -> k
-  -> (Maybe v -> HandlerError App App a)
-  -> HandlerError App App a
+  -> (Maybe v -> ContentHandler a)
+  -> ContentHandler a
 usersObject objectKeys keyLoader key onKeyFound =
   (userStory $ do
     ks <- objectKeys
@@ -29,9 +29,9 @@ usersObject objectKeys keyLoader key onKeyFound =
 -- runs the notFound handler
 userAssignmentForSubmission
   :: AssignmentKey
-  -> (AssignmentDesc -> Assignment -> HandlerError App App b)
-  -> (HandlerError App App b)
-  -> HandlerError App App b
+  -> (AssignmentDesc -> Assignment -> ContentHandler b)
+  -> ContentHandler b
+  -> ContentHandler b
 userAssignmentForSubmission key found notFound = do
   action <- userStory $ do
     ks <- toList <$> userAssignments
@@ -47,8 +47,8 @@ userAssignmentForSubmission key found notFound = do
 
 usersAssignment
   :: AssignmentKey
-  -> (Maybe Assignment -> HandlerError App App b)
-  -> HandlerError App App b
+  -> (Maybe Assignment -> ContentHandler b)
+  -> ContentHandler b
 usersAssignment = usersObject (fmap toList userAssignmentKeys) loadAssignment
   where
     toList = Set.toList . Map.fold Set.union Set.empty
@@ -56,7 +56,7 @@ usersAssignment = usersObject (fmap toList userAssignmentKeys) loadAssignment
 usersSubmission
   :: AssignmentKey
   -> SubmissionKey
-  -> (Maybe Submission -> HandlerError App App a)
-  -> HandlerError App App a
+  -> (Maybe Submission -> ContentHandler b)
+  -> ContentHandler b
 usersSubmission ak = usersObject (userSubmissionKeys ak) loadSubmission
 

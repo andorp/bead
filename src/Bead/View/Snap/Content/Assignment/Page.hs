@@ -74,14 +74,14 @@ newCourseAssignmentPreviewPage = do
 
 -- Tries to create a TCCreation descriptive value. If the test script, usersfile and testcase
 -- parameters are included returns Just tccreation otherwise Nothing
-readTCCreation :: HandlerError App b TCCreation
+readTCCreation :: ContentHandler TCCreation
 readTCCreation = do
   (mTestScript, mZippedTestCaseName, mPlainTestCase) <- readTCCreationParameters
   case tcCreation mTestScript mZippedTestCaseName mPlainTestCase of
     Left  e  -> throwError . strMsg $ "Some error in test case parameters " ++ e
     Right tc -> return tc
 
-readTCCreationParameters :: HandlerError App b TCCreationParameters
+readTCCreationParameters :: ContentHandler TCCreationParameters
 readTCCreationParameters = do
   mTestScript         <- getOptionalParameter (jsonParameter (fieldName assignmentTestScriptField) "Test Script")
   mZippedTestCaseName <- getOptionalOrNonEmptyParameter (jsonParameter (fieldName assignmentUsersFileField) "Test Script File")
@@ -95,14 +95,14 @@ tcCreation (Just (Just tsk)) (Just uf) _ = Right $ FileCreation tsk uf
 tcCreation (Just (Just tsk)) _ (Just t)  = Right $ TextCreation tsk t
 tcCreation (Just (Just _tsk)) Nothing Nothing = Left "#1"
 
-readTCModificationParameters :: HandlerError App b TCModificationParameters
+readTCModificationParameters :: ContentHandler TCModificationParameters
 readTCModificationParameters = do
   mTestScript         <- getOptionalParameter (jsonParameter (fieldName assignmentTestScriptField) "Test Script")
   mZippedTestCaseName <- getOptionalOrNonEmptyParameter (jsonParameter (fieldName assignmentUsersFileField) "Test Script File")
   mPlainTestCase      <- getOptionalParameter (stringParameter (fieldName assignmentTestCaseField) "Test Script")
   return (mTestScript,mZippedTestCaseName,mPlainTestCase)
 
-readTCModification :: HandlerError App b TCModification
+readTCModification :: ContentHandler TCModification
 readTCModification = do
   (mTestScript,mZippedTestCaseName,mPlainTestCase) <- readTCModificationParameters
   case tcModification mTestScript mZippedTestCaseName mPlainTestCase of

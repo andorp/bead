@@ -106,13 +106,14 @@ visibleFailure _   _ = Nothing
 
 -- * Change language in the session
 
-changeLanguage :: Handler App b ()
+changeLanguage :: Handler App App ()
 changeLanguage = method GET setLanguage <|> method POST (redirect "/") where
   setLanguage = withTop sessionManager $ do
     elang <- getParameterOrError changeLanguagePrm
     either
       (liftIO . putStrLn)
-      (\l -> do setLanguageInSession l
-                withTop sessionManager commitSession)
+      (\l -> withTop sessionManager $ do
+                setLanguageInSession l
+                commitSession)
       elang -- TODO: Log the error message
     redirect "/"
