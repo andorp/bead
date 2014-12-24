@@ -119,7 +119,7 @@ encryptPwd = liftIO . encryptPassword . ClearText . fromString
 -- TODO: I18N
 -- Check if the current auth password is the same as the given one
 -- If they are different an error is thrown.
-checkCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
+checkCurrentAuthPassword :: String -> ContentHandler ()
 checkCurrentAuthPassword pwd = do
   msg <- lift i18nH
   name <- user <$> userState
@@ -129,7 +129,7 @@ checkCurrentAuthPassword pwd = do
     Msg_ResetPassword_InvalidPassword "Invalid password."
 
 -- Update the currently logged in user's password in the authentication module
-updateCurrentAuthPassword :: (Error e) => String -> ErrorT e (Handler App a) ()
+updateCurrentAuthPassword :: String -> ContentHandler ()
 updateCurrentAuthPassword password = do
   name <- user <$> userState
   usr <- loadAuthUser name

@@ -90,11 +90,10 @@ contentHandlerErrorMap f (ContentError x) = f x
 
 contentHandlerErrorMsg = contentHandlerErrorMap (maybe "Unknown message" id)
 
--- XXX is is handler for render Bead pages or information to the client
--- also equiped with error handling, mainly used for render inner pages.
 type ContentHandler' b c = ErrorT ContentError (Handler App b) c
---type HandlerError a b c = ErrorT ContentHandlerError (Handler a b) c
 
+-- ContentHandler is a handler for render Bead pages or information to the client
+-- also equiped with error handling, mainly used for render inner pages.
 type ContentHandler c = ContentHandler' App c
 
 -- | The 'logMessage' logs a message at a given level using the service context logger
@@ -106,7 +105,7 @@ logMessage lvl msg = do
 sessionToken :: Handler App b String
 sessionToken = T.unpack <$> (withTop sessionManager $ csrfToken)
 
-userState :: (Error e) => ErrorT e (Handler App b) UserState
+userState :: ContentHandler UserState
 userState = do
   context   <- lift $ withTop serviceContext $ getServiceContext
   mUsername <- lift $ withTop sessionManager $ usernameFromSession
@@ -125,26 +124,26 @@ userState = do
         Just ud -> return ud
 
 -- Produces a handler that returns the user's actual time zone
-userTimeZone :: (Error e) => ErrorT e (Handler App b) TimeZoneName
+userTimeZone :: ContentHandler TimeZoneName
 userTimeZone = timezone <$> userState
 
 -- Represents a functions that converts a given UTC time into
 -- the user's timezone
 type UserTimeConverter = UTCTime -> LocalTime
 
-withUserTimeZoneContext :: (Error e) => (TimeZoneConverter -> TimeZoneName -> a) -> ErrorT e (Handler App b) a
+withUserTimeZoneContext :: (TimeZoneConverter -> TimeZoneName -> a) -> ContentHandler a
 withUserTimeZoneContext f = do
   zi  <- userTimeZone
   tzc <- lift $ withTop timeZoneContext getTimeZoneConverter
   return (f tzc zi)
 
 -- Produces the a UserTimeZoneConverter function for the user's time zone
-userTimeZoneToLocalTimeConverter :: (Error e) => ErrorT e (Handler App b) UserTimeConverter
+userTimeZoneToLocalTimeConverter :: ContentHandler UserTimeConverter
 userTimeZoneToLocalTimeConverter = withUserTimeZoneContext zoneInfoToLocalTimeSafe
 
 -- Produces a function that convert a given local time into a UTC time using
 -- the user's actual time zone
-userTimeZoneToUTCTimeConverter :: (Error e) => ErrorT e (Handler App b) (LocalTime -> UTCTime)
+userTimeZoneToUTCTimeConverter :: ContentHandler (LocalTime -> UTCTime)
 userTimeZoneToUTCTimeConverter = withUserTimeZoneContext zoneInfoToUTCTimeSafe
 
 -- Produces a list of the found time zones
