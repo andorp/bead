@@ -32,8 +32,8 @@ import           Bead.Domain.Entities as E
 import           Bead.View.Snap.Application
 import qualified Bead.View.Snap.Command.Fayax as Command
 import           Bead.View.Snap.Content hiding (BlazeTemplate, template, void)
+import           Bead.View.Snap.ContentHandler as ContentHandler hiding (void)
 import           Bead.View.Snap.Content.All
-import           Bead.View.Snap.HandlerUtils as HU hiding (void)
 import           Bead.View.Snap.ErrorPage
 import           Bead.View.Snap.Login as L
 import           Bead.View.Snap.LoggedInFilter
@@ -172,13 +172,13 @@ runUserViewPOSTHandler onError userViewHandler
 logoutAndResetRoute :: Handler App App ()
 logoutAndResetRoute = do
   withTop debugLoggerContext $ debugMessage "Routing.logoutAndResetRoute"
-  HU.logout
+  ContentHandler.logout
   redirect "/"
 
 logoutAndErrorPage :: String -> Handler App App ()
 logoutAndErrorPage msg = do
   withTop debugLoggerContext $ debugMessage "Routing.logoutAndErrorPage"
-  HU.logout
+  ContentHandler.logout
   msgErrorPage msg
 
 -- Helper type synonyms

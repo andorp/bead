@@ -1,5 +1,5 @@
 {-# LANGUAGE OverloadedStrings  #-}
-module Bead.View.Snap.HandlerUtils (
+module Bead.View.Snap.ContentHandler (
     logMessage
   , withUserState
   , runStory

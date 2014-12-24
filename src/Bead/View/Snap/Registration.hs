@@ -31,10 +31,10 @@ import qualified Bead.Persistence.Persist as Persist
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.Content.Public.Registration as View
+import           Bead.View.Snap.ContentHandler
 import           Bead.View.Snap.DataBridge as DataBridge
 import           Bead.View.Snap.EmailTemplate
 import           Bead.View.Snap.ErrorPage
-import           Bead.View.Snap.HandlerUtils
 import           Bead.View.Snap.RouteOf (requestRoute)
 import           Bead.View.Snap.Session
 

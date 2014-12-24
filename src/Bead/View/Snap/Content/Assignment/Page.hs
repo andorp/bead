@@ -16,7 +16,7 @@ import           Data.Time (getCurrentTime)
 import qualified Bead.Controller.UserStories as S
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Snap.Content
-import           Bead.View.Snap.HandlerUtils (getJSONParameters)
+import           Bead.View.Snap.ContentHandler (getJSONParameters)
 import           Bead.View.Snap.RequestParams
 
 import           Bead.View.Snap.Content.Assignment.Data

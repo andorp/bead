@@ -84,10 +84,10 @@ import Bead.Domain.Func
 import Bead.Domain.Relationships
 import Bead.View.UserActions
 import Bead.View.Snap.Application
+import Bead.View.Snap.ContentHandler
 import Bead.View.Snap.DataBridge hiding (name)
 import Bead.View.Snap.Fay.HookIds
 import Bead.View.Snap.Fay.JSON.ServerSide
-import Bead.View.Snap.HandlerUtils
 import Bead.View.Snap.I18N
 import Bead.View.Snap.Translation
 import Bead.View.Snap.TemplateAndComponentNames hiding (tcName)

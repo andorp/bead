@@ -21,8 +21,8 @@ import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import qualified Bead.View.Snap.Content.Public.Login as View
+import           Bead.View.Snap.ContentHandler
 import           Bead.View.Snap.ErrorPage
-import           Bead.View.Snap.HandlerUtils
 import           Bead.View.Snap.Session
 
 

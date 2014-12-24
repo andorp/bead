@@ -14,7 +14,7 @@ import           Snap
 
 import           Bead.View.Snap.Application (App)
 import qualified Bead.View.Snap.Content.Public.ErrorPage as View
-import           Bead.View.Snap.HandlerUtils
+import           Bead.View.Snap.ContentHandler
 import           Bead.View.Snap.I18N (IHtml, getI18N)
 import           Bead.View.Snap.Pagelets (publicFrame)
 import           Bead.View.Snap.Translation

@@ -19,7 +19,7 @@ import           Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as SC hiding (serviceContext)
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content hiding (BlazeTemplate, template)
-import           Bead.View.Snap.HandlerUtils as HU
+import           Bead.View.Snap.ContentHandler as ContentHandler
 import           Bead.View.Snap.Session
 
 -- TODO: I18N
@@ -87,7 +87,7 @@ userIsLoggedInFilter inside outside onError = do
       result <- lift inside
       case result of
         HFailure -> do lift $ withTop debugLoggerContext $ debugMessage "Login filter."
-                       lift $ HU.logout
+                       lift $ ContentHandler.logout
                        return Nothing
         HSuccess x -> do
           mUserData <- lift (liftIO $ users `userData` usrToken)

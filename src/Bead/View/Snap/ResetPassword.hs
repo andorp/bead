@@ -20,11 +20,11 @@ import           Bead.Domain.Entities hiding (name)
 import qualified Bead.Controller.UserStories as S
 import           Bead.View.Snap.Application
 import           Bead.View.Snap.Content hiding (name)
+import           Bead.View.Snap.ContentHandler (registrationStory, renderBootstrapPublicPage)
 import qualified Bead.View.Snap.Content.Public.ResetPassword as View
 import           Bead.View.Snap.DataBridge
 import           Bead.View.Snap.ErrorPage
 import           Bead.View.Snap.EmailTemplate (ForgottenPassword(..))
-import           Bead.View.Snap.HandlerUtils (registrationStory, renderBootstrapPublicPage)
 
 backToLogin :: Translation String
 backToLogin = Msg_ResetPassword_GoBackToLogin "Back to login"
