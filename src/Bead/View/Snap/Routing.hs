@@ -29,7 +29,7 @@ import           Bead.Controller.ServiceContext as SC hiding (serviceContext)
 import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.UserStories as S
 import           Bead.Domain.Entities as E
-import           Bead.View.Snap.Application
+import           Bead.View.Snap.BeadContext
 import qualified Bead.View.Snap.Command.Fayax as Command
 import           Bead.View.Snap.Content hiding (BlazeTemplate, template, void)
 import           Bead.View.Snap.ContentHandler as ContentHandler hiding (void)

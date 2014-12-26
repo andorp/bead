@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Bead.View.Snap.Application where
+module Bead.View.Snap.BeadContext where
 
 import           Prelude hiding (log)
 

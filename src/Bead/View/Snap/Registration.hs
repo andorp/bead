@@ -28,7 +28,7 @@ import qualified Bead.Controller.UserStories as S
 import           Bead.Configuration (Config(..))
 import           Bead.Domain.TimeZone (utcZoneInfo)
 import qualified Bead.Persistence.Persist as Persist
-import           Bead.View.Snap.Application
+import           Bead.View.Snap.BeadContext
 import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.Content.Public.Registration as View
 import           Bead.View.Snap.ContentHandler

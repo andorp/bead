@@ -12,7 +12,7 @@ import           Data.String
 
 import           Snap
 
-import           Bead.View.Snap.Application (BeadHandler')
+import           Bead.View.Snap.BeadContext (BeadHandler')
 import qualified Bead.View.Snap.Content.Public.ErrorPage as View
 import           Bead.View.Snap.ContentHandler
 import           Bead.View.Snap.I18N (IHtml, getI18N)

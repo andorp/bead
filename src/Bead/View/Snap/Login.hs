@@ -18,7 +18,7 @@ import           Bead.Controller.Logging as L
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext hiding (serviceContext)
 import qualified Bead.Controller.UserStories as S
-import           Bead.View.Snap.Application
+import           Bead.View.Snap.BeadContext
 import           Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import qualified Bead.View.Snap.Content.Public.Login as View
 import           Bead.View.Snap.ContentHandler

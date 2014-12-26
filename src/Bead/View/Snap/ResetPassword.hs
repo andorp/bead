@@ -18,7 +18,7 @@ import           Snap.Snaplet.Auth as A
 
 import           Bead.Domain.Entities hiding (name)
 import qualified Bead.Controller.UserStories as S
-import           Bead.View.Snap.Application
+import           Bead.View.Snap.BeadContext
 import           Bead.View.Snap.Content hiding (name)
 import           Bead.View.Snap.ContentHandler (registrationStory, renderBootstrapPublicPage)
 import qualified Bead.View.Snap.Content.Public.ResetPassword as View

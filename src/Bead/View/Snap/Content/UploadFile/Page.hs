@@ -15,7 +15,7 @@ import           Text.Blaze.Html5.Attributes as A (enctype)
 import           Bead.Configuration (maxUploadSizeInKb)
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
-import           Bead.View.Snap.Application
+import           Bead.View.Snap.BeadContext
 import           Bead.View.Snap.Content
 import qualified Bead.View.Snap.Content.Bootstrap as Bootstrap
 

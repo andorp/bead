@@ -15,7 +15,7 @@ import qualified Text.Blaze.Html5.Attributes as A
 
 import           Bead.Shared.Command
 import           Bead.View.Snap.LoggedInFilter
-import           Bead.View.Snap.Application
+import           Bead.View.Snap.BeadContext
 import           Bead.View.Snap.Pagelets
 
 -- The command is received through ajax request and the answer of

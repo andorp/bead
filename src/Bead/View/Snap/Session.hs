@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import qualified Data.List as L
 
 import           Bead.Domain.Entities as E
-import           Bead.View.Snap.Application
+import           Bead.View.Snap.BeadContext
 
 import           Snap hiding (get)
 import           Snap.Snaplet.Auth as A

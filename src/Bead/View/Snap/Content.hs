@@ -60,7 +60,7 @@ module Bead.View.Snap.Content (
   , module Bead.View.UserActions
   , module Bead.View.Snap.I18N
   , module Bead.View.Snap.Translation
-  , module Bead.View.Snap.Application
+  , module Bead.View.Snap.BeadContext
   , module Bead.View.Snap.Pagelets
   , module Bead.View.Snap.Style
   , module Bead.View.Snap.DataBridge
@@ -83,7 +83,7 @@ import Bead.Domain.Entity.Comment
 import Bead.Domain.Func
 import Bead.Domain.Relationships
 import Bead.View.UserActions
-import Bead.View.Snap.Application
+import Bead.View.Snap.BeadContext
 import Bead.View.Snap.ContentHandler
 import Bead.View.Snap.DataBridge hiding (name)
 import Bead.View.Snap.Fay.HookIds

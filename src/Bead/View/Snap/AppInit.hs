@@ -17,13 +17,13 @@ import           System.FilePath ((</>))
 import           System.Directory
 
 import           Bead.Configuration (Config(..))
-import           Bead.Controller.ServiceContext as S
+import           Bead.Controller.ServiceContext as S hiding (serviceContext)
 import           Bead.Daemon.Email
 import           Bead.Daemon.Logout
 import           Bead.Domain.Entities (UserRegInfo)
 
 import           Bead.Domain.TimeZone
-import           Bead.View.Snap.Application as A
+import           Bead.View.Snap.BeadContext
 import           Bead.View.Snap.DataDir
 import           Bead.View.Snap.Dictionary (Language(..))
 import           Bead.View.Snap.DictionaryLoader (loadDictionaries)
@@ -76,7 +76,7 @@ appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $
   as <- nestSnaplet "auth" auth $
           initSafeJsonFileAuthManager defAuthSettings sessionManager usersJson
 
-  ss <- nestSnaplet "context" A.serviceContext $ contextSnaplet s (logoutDaemon daemons)
+  ss <- nestSnaplet "context" serviceContext $ contextSnaplet s (logoutDaemon daemons)
 
   ds <- nestSnaplet "dictionary" dictionaryContext $
           dictionarySnaplet dictionaries (Language $ defaultLoginLanguage config)

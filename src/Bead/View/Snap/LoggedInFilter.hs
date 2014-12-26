@@ -17,7 +17,7 @@ import           Text.Printf (printf)
 
 import           Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as SC hiding (serviceContext)
-import           Bead.View.Snap.Application
+import           Bead.View.Snap.BeadContext
 import           Bead.View.Snap.Content hiding (BlazeTemplate, template)
 import           Bead.View.Snap.ContentHandler as ContentHandler
 import           Bead.View.Snap.Session

@@ -64,7 +64,7 @@ import qualified Bead.Controller.UserStories as S
 import           Bead.Daemon.Logout
 import           Bead.Domain.Entities (TimeZoneName)
 import           Bead.Domain.TimeZone
-import           Bead.View.Snap.Application
+import           Bead.View.Snap.BeadContext
 import           Bead.View.Snap.DataBridge
 import           Bead.View.Snap.Dictionary
 import           Bead.View.Snap.I18N (IHtml, translate)
