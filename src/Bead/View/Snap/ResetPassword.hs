@@ -34,7 +34,7 @@ resetPasswordTitle = Msg_ResetPassword_ForgottenPassword "Forgotten password"
 
 -- Generates a new random password for the given user. If the user does
 -- not exist it thows an error
-resetPassword :: (Error e) => Username -> ErrorT e (Handler App a) ()
+resetPassword :: (Error e) => Username -> ErrorT e (BeadHandler' a) ()
 resetPassword u = do
   user <- loadAuthUser u
   password <- randomPassword
@@ -47,7 +47,7 @@ resetPassword u = do
 -- Saves the users password it to the persistence layer and the authentication
 -- and sends the email to the given user.
 -- The handler returns a status message that should be displayed to the user.
-setUserPassword :: (Error e) => Username -> String -> ErrorT e (Handler App a) (Translation String)
+setUserPassword :: (Error e) => Username -> String -> ErrorT e (BeadHandler' a) (Translation String)
 setUserPassword u password = do
   let username = usernameCata id u
   authUser <- getAuthUser u
@@ -61,7 +61,7 @@ setUserPassword u password = do
       return $
         Msg_ResetPassword_PasswordIsSet "The password has been set."
 
-emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (Handler App a) ()
+emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (BeadHandler' a) ()
 emailPasswordToUser user pwd = do
   msg <- lift i18nH
   address <- fmap u_email (loadUserFromPersistence msg)
@@ -81,13 +81,13 @@ emailPasswordToUser user pwd = do
 -- amount of information
 errorMsg = Msg_ResetPassword_GenericError "Invalid username or password."
 
-checkUserInAuth :: (Error e) => Username -> ErrorT e (Handler App a) ()
+checkUserInAuth :: (Error e) => Username -> ErrorT e (BeadHandler' a) ()
 checkUserInAuth u = do
   msg <- lift i18nH
   exist <- lift . withTop auth $ usernameExists (usernameStr u)
   unless exist $ throwError . strMsg $ msg errorMsg
 
-checkUserInPersistence :: (Error e) => Username -> ErrorT e (Handler App a) ()
+checkUserInPersistence :: (Error e) => Username -> ErrorT e (BeadHandler' a) ()
 checkUserInPersistence u = do
   msg <- lift i18nH
   x <- lift $ registrationStory $ S.doesUserExist u
@@ -97,23 +97,23 @@ checkUserInPersistence u = do
 usernameStr :: (IsString s) => Username -> s
 usernameStr = usernameCata fromString
 
-getAuthUser :: (Error e) => Username -> ErrorT e (Handler App a) (Maybe AuthUser)
+getAuthUser :: (Error e) => Username -> ErrorT e (BeadHandler' a) (Maybe AuthUser)
 getAuthUser u =
   lift . withTop auth $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameStr u)
 
-loadAuthUser :: (Error e) => Username -> ErrorT e (Handler App a) AuthUser
+loadAuthUser :: (Error e) => Username -> ErrorT e (BeadHandler' a) AuthUser
 loadAuthUser u = do
   msg <- lift i18nH
   usr <- getAuthUser u
   when (isNothing usr) $ throwError . strMsg $ msg errorMsg
   return . fromJust $ usr
 
-updateUser :: (Error e) => AuthUser -> ErrorT e (Handler App a) AuthUser
+updateUser :: (Error e) => AuthUser -> ErrorT e (BeadHandler' a) AuthUser
 updateUser usr =
   (lift $ withTop auth $ withBackend $ \r -> liftIO $ save r usr) >>=
   either (throwError . strMsg . show) return
 
-encryptPwd :: (Error e) => String -> ErrorT e (Handler App a) A.Password
+encryptPwd :: (Error e) => String -> ErrorT e (BeadHandler' a) A.Password
 encryptPwd = liftIO . encryptPassword . ClearText . fromString
 
 -- TODO: I18N
@@ -137,7 +137,7 @@ updateCurrentAuthPassword password = do
   updateUser (usr { userPassword = Just encPwd })
   return ()
 
-resetPasswordPage :: Handler App App ()
+resetPasswordPage :: BeadHandler ()
 resetPasswordPage = method GET resetPasswordGET <|> method POST resetPasswordPOST
 
 
@@ -147,7 +147,7 @@ two input fields for the user's name and the user's email
 address. The user fills out the form, and clicks on "Reset password" button
 and submit the requests.
 -}
-resetPasswordGET :: Handler App App ()
+resetPasswordGET :: BeadHandler ()
 resetPasswordGET = renderBootstrapPublicPage $ publicFrame View.resetPassword
 
 {- Reset password POST handler
@@ -155,7 +155,7 @@ Reads out the parameters for the username and the email address, checks
 if the user exist in the persistence layer with the given email address.
 If the user is not exist or the given address differs, the error page is rendered.
 -}
-resetPasswordPOST :: Handler App App ()
+resetPasswordPOST :: BeadHandler ()
 resetPasswordPOST = renderErrorPage $ runErrorT $ do
   u <- readParameter regUsernamePrm
   e <- readParameter regEmailPrm
@@ -170,7 +170,7 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
       lift pageContent
     _ -> throwError . strMsg . msg $ errorMsg
   where
-    renderErrorPage :: Handler App App (Either String ()) -> Handler App App ()
+    renderErrorPage :: BeadHandler (Either String ()) -> BeadHandler ()
     renderErrorPage m = m >>=
        (either (errorPage resetPasswordTitle) return)
 
@@ -178,7 +178,7 @@ resetPasswordPOST = renderErrorPage $ runErrorT $ do
       (lift $ registrationStory $ S.loadUser u) >>=
         (either (throwError . strMsg . S.translateUserError i18n) return)
 
-pageContent :: (Handler App a) ()
+pageContent :: BeadHandler' a ()
 pageContent = renderBootstrapPublicPage $ publicFrame View.emailSent
 
 readParameter :: (MonadSnap m) => Parameter a -> m (Maybe a)

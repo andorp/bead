@@ -12,7 +12,7 @@ import           Data.String
 
 import           Snap
 
-import           Bead.View.Snap.Application (App)
+import           Bead.View.Snap.Application (BeadHandler')
 import qualified Bead.View.Snap.Content.Public.ErrorPage as View
 import           Bead.View.Snap.ContentHandler
 import           Bead.View.Snap.I18N (IHtml, getI18N)
@@ -20,7 +20,7 @@ import           Bead.View.Snap.Pagelets (publicFrame)
 import           Bead.View.Snap.Translation
 
 class ErrorPage e where
-  errorPage :: Translation String -> e -> Handler App b ()
+  errorPage :: Translation String -> e -> BeadHandler' b ()
 
 instance ErrorPage String where
   errorPage title msg = renderPublicErrorPage title msg
@@ -36,15 +36,15 @@ instance ErrorPage TransMsg where
 instance ErrorPage ContentError where
   errorPage title msg = contentHandlerErrorMap (render . (page title)) msg
 
-msgErrorPage :: String -> Handler App b ()
+msgErrorPage :: String -> BeadHandler' b ()
 msgErrorPage = defErrorPage
 
-defErrorPage :: (ErrorPage e) => e -> Handler App b ()
+defErrorPage :: (ErrorPage e) => e -> BeadHandler' b ()
 defErrorPage = errorPage (Msg_ErrorPage_Title "Error!")
 
 -- Produces a handler that renders the error page, with the
 -- given title and message for the user
-translationErrorPage :: Translation String -> Translation String -> Handler App b ()
+translationErrorPage :: Translation String -> Translation String -> BeadHandler' b ()
 translationErrorPage = errorPage
 
 page :: Translation String -> (Maybe String) -> IHtml

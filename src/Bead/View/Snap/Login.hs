@@ -28,7 +28,7 @@ import           Bead.View.Snap.Session
 
 -- * Login and Logout handlers
 
-login :: Maybe AuthFailure -> Handler App b ()
+login :: Maybe AuthFailure -> BeadHandler' b ()
 login authError = do
   -- Set the default language in session if no information is found
   languages <- withTop dictionaryContext dcGetDictionaryInfos
@@ -43,7 +43,7 @@ login authError = do
     msg <- getI18N
     View.login (authError >>= visibleFailure msg) languages
 
-loginSubmit :: Handler App b ()
+loginSubmit :: BeadHandler' b ()
 loginSubmit = withTop auth $ handleError $ runErrorT $ do
   user <- getParameter loginUsernamePrm
   pwd  <- getParameter loginPasswordPrm
@@ -88,7 +88,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
     handleError m =
       m >>= (either (login . Just . AuthError . contentHandlerErrorMsg) (const $ return ()))
 
-    initSessionValues :: P.PageDesc -> Username -> Language -> Handler App b ()
+    initSessionValues :: P.PageDesc -> Username -> Language -> BeadHandler' b ()
     initSessionValues page username language = do
       withTop sessionManager $ do
         setSessionVersion
@@ -106,7 +106,7 @@ visibleFailure _   _ = Nothing
 
 -- * Change language in the session
 
-changeLanguage :: Handler App App ()
+changeLanguage :: BeadHandler ()
 changeLanguage = method GET setLanguage <|> method POST (redirect "/") where
   setLanguage = withTop sessionManager $ do
     elang <- getParameterOrError changeLanguagePrm

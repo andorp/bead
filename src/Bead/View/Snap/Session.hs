@@ -44,7 +44,7 @@ isPublicKey t
   | otherwise = False
 
 -- Removes the session values from the session that satisties the key predicate
-removeSessionKeys :: (T.Text -> Bool) -> Handler App b ()
+removeSessionKeys :: (T.Text -> Bool) -> Handler BeadContext b ()
 removeSessionKeys pred = withTop sessionManager $ do
   values <- L.filter (not . pred . fst) <$> sessionToList
   resetSession
@@ -52,11 +52,11 @@ removeSessionKeys pred = withTop sessionManager $ do
   commitSession
 
 -- Clears the private session data from the session
-resetPrivateSessionData :: Handler App b ()
+resetPrivateSessionData :: Handler BeadContext b ()
 resetPrivateSessionData = removeSessionKeys isPrivateKey
 
 -- Clears the public session data from the session
-resetPublicSessionData :: Handler App b ()
+resetPublicSessionData :: Handler BeadContext b ()
 resetPublicSessionData = removeSessionKeys isPublicKey
 
 -- * Session Key and Values for Page
@@ -106,30 +106,30 @@ instance SessionRestore SessionVersion where
     Nothing -> Nothing
     Just v -> Just . SessionVersion $ v
 
-setInSessionKeyValues :: [(T.Text, T.Text)] -> Handler App SessionManager ()
+setInSessionKeyValues :: [(T.Text, T.Text)] -> Handler BeadContext SessionManager ()
 setInSessionKeyValues = mapM_ (\(key,value) -> setInSession key value)
 
-fromSession :: (SessionRestore r) => T.Text -> Handler App SessionManager (Maybe r)
+fromSession :: (SessionRestore r) => T.Text -> Handler BeadContext SessionManager (Maybe r)
 fromSession key = do
   v <- getFromSession key
   return $ join $ fmap (restoreFromSession . (\v' -> [(key,v')])) v
 
-getSessionVersion :: Handler App SessionManager (Maybe SessionVersion)
+getSessionVersion :: Handler BeadContext SessionManager (Maybe SessionVersion)
 getSessionVersion = fromSession sessionVersionKey
 
-setSessionVersion :: Handler App SessionManager ()
+setSessionVersion :: Handler BeadContext SessionManager ()
 setSessionVersion = setInSessionKeyValues [(sessionVersionKey, sessionVersionValue)]
 
-usernameFromSession :: Handler App SessionManager (Maybe E.Username)
+usernameFromSession :: Handler BeadContext SessionManager (Maybe E.Username)
 usernameFromSession = fromSession usernameSessionKey
 
-setUsernameInSession :: Username -> Handler App SessionManager ()
+setUsernameInSession :: Username -> Handler BeadContext SessionManager ()
 setUsernameInSession = setInSessionKeyValues . sessionStore
 
-languageFromSession :: Handler App SessionManager (Maybe Language)
+languageFromSession :: Handler BeadContext SessionManager (Maybe Language)
 languageFromSession = fromSession languageSessionKey
 
-setLanguageInSession :: Language -> Handler App SessionManager ()
+setLanguageInSession :: Language -> Handler BeadContext SessionManager ()
 setLanguageInSession = setInSessionKeyValues . sessionStore
 
 -- * Username and UserState correspondence
@@ -159,7 +159,7 @@ instance AsPassword A.Password where
 
 -- * Debugging
 
-sessionCookies :: Handler App SessionManager String
+sessionCookies :: Handler BeadContext SessionManager String
 sessionCookies = do
   as <- sessionToList
   return . join . join . L.map (\(k,v) -> ["(KEY: ",T.unpack k,",","VALUE: ",T.unpack v,")"]) $ as

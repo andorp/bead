@@ -95,7 +95,7 @@ User registration request
   runs the User story to create a UserRegistration
   data in the persistence layer, after send the information via email
 -}
-registrationRequest :: Config -> Handler App App ()
+registrationRequest :: Config -> BeadHandler ()
 registrationRequest config = method GET renderForm <|> method POST saveUserRegData where
 
   -- Creates a timeout days later than the given time
@@ -168,7 +168,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
   -- Calculates the result of an (ErrorT String ...) transformator and
   -- returns the (Right x) or renders the error page with the given error
   -- message in (Left x)
-  renderPage :: (Error e, ErrorPage e) => ErrorT e (Handler App b) () -> Handler App b ()
+  renderPage :: (Error e, ErrorPage e) => ErrorT e (BeadHandler' b) () -> BeadHandler' b ()
   renderPage m = do
     x <- runErrorT m
     either registrationErrorPage return x
@@ -203,7 +203,7 @@ Registration finalization
   is passed than the user registration happens. If any error occurs during the registration
   an error page is shown, otherwise the page is redirected to "/"
 -}
-finalizeRegistration :: Handler App App ()
+finalizeRegistration :: BeadHandler ()
 finalizeRegistration = method GET renderForm <|> method POST createStudent where
 
   readRegParameters = do
@@ -274,7 +274,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
   log lvl msg = withTop serviceContext $ logMessage lvl msg
 
 
-createNewUser :: UserRegistration -> TimeZoneName -> Language -> Handler App (AuthManager App) (Either RegError ())
+createNewUser :: UserRegistration -> TimeZoneName -> Language -> BeadHandler' (AuthManager BeadContext) (Either RegError ())
 createNewUser reg timezone language = runErrorT $ do
   -- Check if the user is exist already
   userExistence <- checkFailure =<< lift (registrationStory (S.doesUserExist username))
@@ -314,7 +314,7 @@ createNewUser reg timezone language = runErrorT $ do
 
     checkFailure (Right x) = return x
 
-registrationErrorPage :: (ErrorPage e) => e -> Handler App b ()
+registrationErrorPage :: (ErrorPage e) => e -> BeadHandler' b ()
 registrationErrorPage = errorPage (Msg_Registration_Title "Registration")
 
 -- * Tools

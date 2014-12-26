@@ -52,7 +52,7 @@ data Daemons = Daemons {
   , emailDaemon  :: EmailDaemon
   }
 
-appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> Daemons -> FilePath -> SnapletInit App App
+appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> Daemons -> FilePath -> SnapletInit BeadContext BeadContext
 appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $ do
   copyDataContext
 
@@ -103,7 +103,7 @@ appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $
 
   wrapSite (<|> pages)
 
-  return $ App sm as ss ds se rp fs ts cs un tz dl
+  return $ BeadContext sm as ss ds se rp fs ts cs un tz dl
   where
     description = "The BEAD website"
 

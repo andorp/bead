@@ -281,9 +281,9 @@ getTimeZoneConverter = snapContextCata id
 
 -- * Application
 
-data App = App {
+data BeadContext = BeadContext {
     _sessionManager :: Snaplet SessionManager
-  , _auth           :: Snaplet (AuthManager App)
+  , _auth           :: Snaplet (AuthManager BeadContext)
   , _serviceContext :: Snaplet SnapletServiceContext
   , _dictionaryContext :: Snaplet DictionaryContext
   , _sendEmailContext   :: Snaplet SendEmailContext
@@ -296,5 +296,10 @@ data App = App {
   , _debugLoggerContext :: Snaplet DebugLoggerContext
   }
 
-makeLenses ''App
+makeLenses ''BeadContext
 
+-- | Bead Context related handlers
+type BeadHandler a = Handler BeadContext BeadContext a
+
+-- | Bead Context with different view context
+type BeadHandler' view = Handler BeadContext view

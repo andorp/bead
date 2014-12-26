@@ -8,7 +8,6 @@ import           Data.Data
 import           Data.Maybe
 
 import qualified Fay.Text as Text
-import           Snap hiding (route)
 import           Snap.Snaplet.Fay
 import           Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H
@@ -23,11 +22,11 @@ import           Bead.View.Snap.Pagelets
 -- that command is send as the response to the client.
 class (Data c, Read c, Show (Answer c)) => Command c where
   type Answer c
-  fayaxInteract :: c -> Handler App App (HandlerResult (Answer c))
+  fayaxInteract :: c -> BeadHandler (HandlerResult (Answer c))
 
 ping = FCPing ()
 
-routeHandler :: FayaxCommand a -> (ByteString, Handler App App ())
+routeHandler :: FayaxCommand a -> (ByteString, BeadHandler ())
 routeHandler f = (fayaxCmdValue $ route f, fayaxCmdValue $ handler f)
 
 -- Combines a given Fay ajax handler with the logged in filter,
@@ -38,8 +37,8 @@ routeHandler f = (fayaxCmdValue $ route f, fayaxCmdValue $ handler f)
 -- final message is generated with the "User is not logged in." message
 fayaxLoginFilter
   :: (Data f1, Read f1, Show f2)
-  => (f1 -> Handler App App (HandlerResult f2))
-  -> (f1 -> Handler App App f2)
+  => (f1 -> BeadHandler (HandlerResult f2))
+  -> (f1 -> BeadHandler f2)
 fayaxLoginFilter handler x = do
   result <- userIsLoggedInFilter (handler x) outside onError
   return $ fromMaybe resultError result
@@ -49,10 +48,10 @@ fayaxLoginFilter handler x = do
       resultError = error "User is not logged in."
 
 -- Abstract request handler, for the type instanciation
-req :: (Command c) => c -> Handler App App (Answer c)
+req :: (Command c) => c -> BeadHandler (Answer c)
 req = fayaxLoginFilter fayaxInteract
 
-pingc :: Ping -> Handler App App Pong
+pingc :: Ping -> BeadHandler Pong
 pingc = req
 
 instance Command Ping where
@@ -70,7 +69,7 @@ route = fayaxCmdConsts
 -- Associates a fayax command with a handler
 handler
   :: FayaxCommand a
-  -> FayaxCommand (Handler App App ())
+  -> FayaxCommand (BeadHandler ())
 handler = fayaxCmdConsts
   (fayax pingc)
 

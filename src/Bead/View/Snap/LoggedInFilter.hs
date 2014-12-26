@@ -31,10 +31,10 @@ import           Bead.View.Snap.Session
 -- If the authentication is done, the 'inside' method is computed and the
 -- result is propagated in (Just x) otherwise the whole computation returns Nothing
 userIsLoggedInFilter
-  :: Handler App b (HandlerResult a)
-  -> Handler App b ()
-  -> (String -> Handler App b ())
-  -> Handler App b (Maybe a)
+  :: BeadHandler' b (HandlerResult a)
+  -> BeadHandler' b ()
+  -> (String -> BeadHandler' b ())
+  -> BeadHandler' b (Maybe a)
 userIsLoggedInFilter inside outside onError = do
   sessionVer <- withTop sessionManager $ getSessionVersion
   case sessionVer of
@@ -53,7 +53,7 @@ userIsLoggedInFilter inside outside onError = do
       outside
       return Nothing
 
-    someExceptionHandler :: (String -> Handler App b ()) -> CE.SomeException -> Handler App b ()
+    someExceptionHandler :: (String -> BeadHandler' b ()) -> CE.SomeException -> BeadHandler' b ()
     someExceptionHandler onError e = do
       logMessage ERROR $ "Exception occured, redirecting to error page. " ++ show e
       onError $ show e

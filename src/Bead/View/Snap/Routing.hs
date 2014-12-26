@@ -53,7 +53,7 @@ is selected of the path is known otherwise an error page is rendered.
 
 -- * Route table
 
-routes :: Config -> [(ByteString, Handler App App ())]
+routes :: Config -> [(ByteString, BeadHandler ())]
 routes config = join
   [ -- Add login handlers
     [ ("/",         index)
@@ -70,7 +70,7 @@ routes config = join
   , [ ("",          serveDirectory "static") ]
   ]
 
-pages :: Handler App App ()
+pages :: BeadHandler ()
 pages = do
   path <- getRequest >>= return . proc req -> do
             ctx <- rqContextPath -< req
@@ -86,7 +86,7 @@ pages = do
 
 -- * Handlers
 
-index :: Handler App App ()
+index :: BeadHandler ()
 index =
   ifTop $ requireUser auth
             (with auth $ login Nothing)
@@ -96,14 +96,14 @@ index =
 redirectToParentPage :: P.PageDesc -> ContentHandler ()
 redirectToParentPage = maybe (return ()) (redirect . routeOf) . P.parentPage
 
-hfailure :: Handler App a b -> Handler App a (HandlerResult b)
+hfailure :: BeadHandler' a b -> BeadHandler' a (HandlerResult b)
 hfailure h = h >> (return HFailure)
 
 evalHandlerError
-  :: (ContentError -> Handler App App a)
-  -> (c -> Handler App App a)
+  :: (ContentError -> BeadHandler a)
+  -> (c -> BeadHandler a)
   -> ContentHandler c
-  -> Handler App App a
+  -> BeadHandler a
 evalHandlerError onError onSuccess h = do
   x <- runErrorT h
   case x of
@@ -114,9 +114,9 @@ evalHandlerError onError onSuccess h = do
 -- the onError handler is run, in both cases returns information about
 -- the successfullness.
 runGETHandler
-  :: (ContentError -> Handler App App a)
+  :: (ContentError -> BeadHandler a)
   -> ContentHandler a
-  -> Handler App App (HandlerResult a)
+  -> BeadHandler (HandlerResult a)
 runGETHandler onError handler
   = evalHandlerError
       (hfailure . onError)
@@ -135,10 +135,10 @@ runGETHandler onError handler
 -- a temporary view page, otherwise runs the onError handler
 -- in both ways returns information about the successfulness.
 runPOSTHandler
-  :: (ContentError -> Handler App App ())
+  :: (ContentError -> BeadHandler ())
   -> P.PageDesc
   -> ContentHandler UserAction
-  -> Handler App App (HandlerResult ())
+  -> BeadHandler (HandlerResult ())
 runPOSTHandler onError p h
   = evalHandlerError
       (hfailure . onError)
@@ -156,9 +156,9 @@ runPOSTHandler onError p h
     changeToParentPage = maybe (return ()) S.changePage . P.parentPage
 
 runUserViewPOSTHandler
-  :: (ContentError -> Handler App App a)
+  :: (ContentError -> BeadHandler a)
   -> ContentHandler a
-  -> Handler App App (HandlerResult a)
+  -> BeadHandler (HandlerResult a)
 runUserViewPOSTHandler onError userViewHandler
   = evalHandlerError
       (hfailure . onError)
@@ -169,13 +169,13 @@ runUserViewPOSTHandler onError userViewHandler
             commitSession
           return x)
 
-logoutAndResetRoute :: Handler App App ()
+logoutAndResetRoute :: BeadHandler ()
 logoutAndResetRoute = do
   withTop debugLoggerContext $ debugMessage "Routing.logoutAndResetRoute"
   ContentHandler.logout
   redirect "/"
 
-logoutAndErrorPage :: String -> Handler App App ()
+logoutAndErrorPage :: String -> BeadHandler ()
 logoutAndErrorPage msg = do
   withTop debugLoggerContext $ debugMessage "Routing.logoutAndErrorPage"
   ContentHandler.logout
@@ -203,7 +203,7 @@ renderResponse = P.pfmap
    * When a user submits information with a POST request, from the submitted information
    we calculate the appropiate user action and runs it
 -}
-handlePage :: PageRenderer -> Handler App App ()
+handlePage :: PageRenderer -> BeadHandler ()
 handlePage page = P.pageKindCata view userView viewModify modify data_ page where
   pageDesc = P.pageToPageDesc page
 
@@ -276,7 +276,7 @@ allowedPageByTransition p allowed restricted = withUserState $ \state ->
 
 -- Creates a handler, that tries to calculate a Page value
 -- from the requested route and the parameters of the request uri
-requestToPageHandler :: RoutePath -> Handler App App (Maybe P.PageDesc)
+requestToPageHandler :: RoutePath -> BeadHandler (Maybe P.PageDesc)
 requestToPageHandler path = requestToPage path <$> getParams
 
 -- Calculates a Just page if the route is a valid route path
