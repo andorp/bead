@@ -21,7 +21,7 @@ import           Bead.Domain.Entities (UserRegInfo(..))
 import           Bead.Domain.TimeZone (utcZoneInfo)
 import           Bead.Persistence.Initialization
 import qualified Bead.Persistence.Persist as Persist (Config, defaultConfig, createPersistInit, createPersistInterpreter)
-import           Bead.View.Snap.AppInit
+import           Bead.View.Snap.BeadContextInit
 import           Bead.View.Snap.Logger
 import           Bead.View.Snap.Validators hiding (toLower)
 
@@ -93,7 +93,7 @@ checkConfig cfg = do
 
     configCheck s = putStrLn $ "CONFIG CHECK: " ++ s
 
-interpretTasks :: Config -> [InitTask] -> IO AppInitTasks
+interpretTasks :: Config -> [InitTask] -> IO InitTasks
 interpretTasks cfg tasks = case elem CreateAdmin tasks of
   False -> return Nothing
   True  -> fmap Just (readAdminUser cfg)
@@ -160,8 +160,8 @@ readAdminUser cfg = do
         (\msg -> do putStrLn msg
                     readUsername)
 
-startService :: Config -> AppInitTasks -> IO ()
-startService config appInitTasks = do
+startService :: Config -> InitTasks -> IO ()
+startService config initTasks = do
   userActionLogs <- creating "logger" $ createSnapLogger . userActionLogFile $ config
   let userActionLogger = snapLogger userActionLogs
 
@@ -179,7 +179,7 @@ startService config appInitTasks = do
 
   let daemons = Daemons logoutDaemon emailDaemon
 
-  serveSnaplet defaultConfig (appInit config appInitTasks context daemons tempDir)
+  serveSnaplet defaultConfig (beadContextInit config initTasks context daemons tempDir)
   stopLogger userActionLogs
   removeDirectoryRecursive tempDir
   where

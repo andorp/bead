@@ -1,8 +1,8 @@
 {-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
-module Bead.View.Snap.AppInit (
-    appInit
+module Bead.View.Snap.BeadContextInit (
+    beadContextInit
   , beadConfigFileName
-  , AppInitTasks
+  , InitTasks
   , Daemons(..)
   ) where
 
@@ -43,7 +43,7 @@ usersJson = "users.json"
 -- During the initialization what other tasks need to be done.
 -- Just userRegInfo means that a new admin user should be craeted
 -- Nothing means there is no additional init task to be done.
-type AppInitTasks = Maybe UserRegInfo
+type InitTasks = Maybe UserRegInfo
 
 -- The collection of the daemons that are neccesary to create the
 -- application
@@ -52,8 +52,8 @@ data Daemons = Daemons {
   , emailDaemon  :: EmailDaemon
   }
 
-appInit :: Config -> Maybe UserRegInfo -> ServiceContext -> Daemons -> FilePath -> SnapletInit BeadContext BeadContext
-appInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $ do
+beadContextInit :: Config -> InitTasks -> ServiceContext -> Daemons -> FilePath -> SnapletInit BeadContext BeadContext
+beadContextInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $ do
   copyDataContext
 
   let dictionaryDir = "lang"
