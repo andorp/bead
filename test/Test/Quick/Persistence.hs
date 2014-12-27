@@ -7,7 +7,7 @@ import Control.Concurrent (forkIO)
 import qualified Data.ByteString.Char8 as BS
 import qualified Data.Set as Set
 
-import Data.List ((\\), intersperse)
+import Data.List ((\\), intersperse, nub)
 import qualified Data.Map as Map
 import Data.Maybe
 import Data.IORef
@@ -422,7 +422,7 @@ userAssignmentKeyTests = do
     gas <- runPersistCmd $ groupAssignments gk
     cas <- runPersistCmd $ courseAssignments ck
     let uas = gas ++ cas
-    as <- runPersistCmd $ fmap (maybe [] id) $ userAssignmentKeys u
+    as <- runPersistCmd $ fmap toList $ userAssignmentKeys u
     when (null as) $ assertTrue (null gas)
       "Group has assignment, but user does not see it"
     unless (or [null uas, null as]) $ assertTrue
@@ -435,6 +435,8 @@ userAssignmentKeyTests = do
         , " Group assignments: ", show gas
         , " Course assignment: ", show cas
         ])
+  where
+    toList = nub . join . map (Set.toList . snd) . Map.toList
 
 -- Every assignment has a group or a course
 courseOrGroupAssignmentTest = do
