@@ -7,7 +7,7 @@ import           Control.Concurrent
 import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
 import           Bead.Controller.UserStories (runUserStory, testAgentFeedbacks)
-import           Bead.View.Snap.Translation (trans)
+import           Bead.View.Translation (trans)
 
 -- Starts a thread that polls the persistence layer for new test agent comments in every w seconds
 -- and places them into the right place.

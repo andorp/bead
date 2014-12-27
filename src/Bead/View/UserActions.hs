@@ -4,7 +4,7 @@ import qualified Bead.Controller.UserStories as Story
 import qualified Bead.Controller.Logging as L
 import           Bead.Domain.Entities
 import           Bead.Domain.Relationships
-import           Bead.View.Snap.Translation
+import           Bead.View.Translation
 
 -- | The user can preform the following actions on the user interface
 data UserAction

@@ -21,9 +21,9 @@ import           Bead.Domain.Entities (UserRegInfo(..))
 import           Bead.Domain.TimeZone (utcZoneInfo)
 import           Bead.Persistence.Initialization
 import qualified Bead.Persistence.Persist as Persist (Config, defaultConfig, createPersistInit, createPersistInterpreter)
-import           Bead.View.Snap.BeadContextInit
-import           Bead.View.Snap.Logger
-import           Bead.View.Snap.Validators hiding (toLower)
+import           Bead.View.BeadContextInit
+import           Bead.View.Logger
+import           Bead.View.Validators hiding (toLower)
 
 
 -- Creates a service context that includes the given logger

@@ -1,8 +1,8 @@
 module Main where
 
-import Bead.View.Snap.Dictionary
-import Bead.View.Snap.Translation
-import Bead.View.Snap.TranslationEnum
+import Bead.View.Dictionary
+import Bead.View.Translation
+import Bead.View.TranslationEnum
 
 {-
 Creates dictionary file named language.dict

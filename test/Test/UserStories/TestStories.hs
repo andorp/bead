@@ -18,7 +18,7 @@ import           Bead.Domain.Shared.Evaluation
 import           Bead.Domain.TimeZone (utcZoneInfo)
 import qualified Bead.Persistence.Initialization as PersistInit
 import           Bead.Persistence.Persist
-import           Bead.View.Snap.Translation (trans)
+import           Bead.View.Translation (trans)
 
 import           Test.HUnit hiding (Test(..))
 import           Test.Framework (testGroup)

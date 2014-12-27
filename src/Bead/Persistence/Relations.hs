@@ -52,7 +52,7 @@ import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Relationships
 import           Bead.Domain.Shared.Evaluation
 import           Bead.Persistence.Persist
-import           Bead.View.Snap.Translation
+import           Bead.View.Translation
 
 #ifdef TEST
 import           Bead.Persistence.Initialization

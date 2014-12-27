@@ -28,7 +28,7 @@ import           Control.Concurrent.STM
 import           Bead.Controller.Pages as Pages
 import           Bead.Controller.Logging
 import           Bead.Domain.Entities as Entities
-import           Bead.View.Snap.Translation
+import           Bead.View.Translation
 import qualified Bead.Persistence.Persist as Persist
 
 newtype UsrToken = UsrToken (Username, String)

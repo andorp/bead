@@ -121,7 +121,7 @@ import           Bead.Domain.Entity.Comment
 import           Bead.Domain.Entity.Feedback
 import           Bead.Domain.Entity.TestCase
 import           Bead.Domain.Evaluation
-import           Bead.View.Snap.Translation
+import           Bead.View.Translation
 
 #ifdef TEST
 import           Bead.Invariants (Invariants(..), UnitTests(..))

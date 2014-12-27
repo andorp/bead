@@ -13,7 +13,7 @@ import           Bead.Persistence.Persist (Persist)
 import qualified Bead.Persistence.Persist   as Persist
 import qualified Bead.Persistence.Relations as Persist
 import qualified Bead.Persistence.Guards    as Persist
-import           Bead.View.Snap.Translation
+import           Bead.View.Translation
 
 import           Control.Applicative
 import           Control.Exception
