@@ -162,6 +162,7 @@ changeUserDetails name timezone language = logAction INFO ("changes fullname, ti
   persistence $ Persist.updateUser user { u_name = name , u_timezone = timezone , u_language = language }
   putStatusMessage $ Msg_UserStory_ChangedUserDetails "The user details have been updated."
 
+-- Updates the user information
 updateUser :: User -> UserStory ()
 updateUser u = logAction INFO ("updates user " ++ (usernameCata id $ u_username u)) $ do
   authorize P_Modify P_User
@@ -771,6 +772,7 @@ authorize p o = do
     regPermObjects = [
         (P_Create, P_User),    (P_Open, P_User)
       , (P_Create, P_UserReg), (P_Open, P_UserReg)
+      , (P_Modify, P_User)
       ]
 
     testAgentPermObjects = [

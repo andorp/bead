@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Content.Profile.Page (
     profile
@@ -14,9 +15,12 @@ import           Bead.View.Content hiding (name, option)
 import qualified Bead.View.Content.Bootstrap as Bootstrap
 import qualified Bead.View.DataBridge as B
 import           Bead.View.Dictionary
-import           Bead.View.ResetPassword
 import           Bead.View.Session (setLanguageInSession)
 
+#ifdef LDAP
+#else
+import           Bead.View.ResetPassword
+#endif
 
 profile = ViewModifyHandler profilePage changeUserDetails
 
@@ -38,12 +42,17 @@ changeUserDetails = do
   where
     setLanguage = lift . withTop sessionManager . setLanguageInSession
 
+#ifdef LDAP
+changePassword = ModifyHandler $ do
+  return $ LogMessage "LDAP authentication can not change password from Profile page."
+#else
 changePassword = ModifyHandler $ do
   oldPwd <- getParameter oldPasswordPrm
   newPwd <- getParameter newPasswordPrm
   checkCurrentAuthPassword oldPwd
   updateCurrentAuthPassword newPwd
   return . StatusMessage $ Msg_Profile_PasswordHasBeenChanged "The password has been changed."
+#endif
 
 profileContent :: [TimeZoneName] -> User -> DictionaryInfos -> IHtml
 profileContent ts user ls = do
@@ -51,18 +60,28 @@ profileContent ts user ls = do
   return $ do
     Bootstrap.row $ do
       -- User Details
-      let regFullNameField = fromString $ B.name regFullNamePrm
-      let userLanguageField = fromString $ B.name userLanguagePrm
-      let userTimeZoneField = fromString $ B.name userTimeZonePrm
-      let fullName = fromString $ u_name user
-      Bootstrap.colMd6 $ postForm (routeOf profile) $ do
-        Bootstrap.labeledText (msg $ Msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
-        Bootstrap.labeledText (msg $ Msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
-        Bootstrap.textInputWithDefault regFullNameField (msg $ Msg_Profile_FullName "Full name: ") fullName
-        Bootstrap.selection userLanguageField (== u_language user) languages
-        Bootstrap.selection userTimeZoneField (== u_timezone user) timeZones
+      userDetailsCol $ postForm (routeOf profile) $ do
+        profileFields msg
         Bootstrap.submitButton (fieldName changeProfileBtn) (msg $ Msg_Profile_SaveButton "Save")
-      -- Password Section
+      passwordSection msg
+      Bootstrap.turnSelectionsOn
+  where
+    regFullNameField  = fromString $ B.name regFullNamePrm
+    userLanguageField = fromString $ B.name userLanguagePrm
+    userTimeZoneField = fromString $ B.name userTimeZonePrm
+    fullName          = fromString $ u_name user
+
+    userDetailsCol =
+#ifdef LDAP
+      Bootstrap.colMd12
+#else
+      Bootstrap.colMd6
+#endif
+
+    passwordSection msg = do
+#ifdef LDAP
+      return ()
+#else
       let oldPasswordField = fromString $ B.name oldPasswordPrm
       let newPasswordField = fromString $ B.name newPasswordPrm
       let newPasswordAgain = fromString $ B.name newPasswordAgainPrm
@@ -71,8 +90,24 @@ profileContent ts user ls = do
         Bootstrap.passwordInput newPasswordField (msg $ Msg_Profile_NewPassword "New password: ")
         Bootstrap.passwordInput newPasswordAgain (msg $ Msg_Profile_NewPasswordAgain "New password (again): ")
         Bootstrap.submitButton (fieldName changePasswordBtn) (msg $ Msg_Profile_ChangePwdButton "Update")
-      Bootstrap.turnSelectionsOn
-  where
+#endif
+
+    profileFields msg = do
+#ifdef LDAP
+      Bootstrap.labeledText (msg $ Msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
+      Bootstrap.labeledText (msg $ Msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
+      Bootstrap.labeledText (msg $ Msg_Profile_FullName "Full name: ") fullName
+      hiddenInput regFullNameField (u_name user)
+      Bootstrap.selection userLanguageField (== u_language user) languages
+      Bootstrap.selection userTimeZoneField (== u_timezone user) timeZones
+#else
+      Bootstrap.labeledText (msg $ Msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
+      Bootstrap.labeledText (msg $ Msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
+      Bootstrap.textInputWithDefault regFullNameField (msg $ Msg_Profile_FullName "Full name: ") fullName
+      Bootstrap.selection userLanguageField (== u_language user) languages
+      Bootstrap.selection userTimeZoneField (== u_timezone user) timeZones
+#endif
+
     timeZones = map (Prelude.id &&& timeZoneName Prelude.id) ts
     languages = map langValue ls
     profile = Pages.profile ()

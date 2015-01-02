@@ -1,9 +1,12 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Content.UserDetails.Page (
     userDetails
   ) where
 
 import           Control.Arrow ((&&&))
+import qualified Data.Map as Map
+import           Data.Maybe
 import           Data.String (fromString)
 
 import           Text.Blaze.Html5 hiding (map)
@@ -47,18 +50,37 @@ userDetailForm timeZones user dictionaries = do
   msg <- getI18N
   return $ do
     postForm (routeOf userDetails) $ do
+      Bootstrap.labeledText "" (usernameCata fromString $ u_username user)
+      userDetailsFields msg
+      Bootstrap.submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Update")
+    Bootstrap.turnSelectionsOn
+  where
+    userDetailsFields msg = do
+#ifdef LDAP
+      Bootstrap.selection (fieldName userRoleField) (== u_role user) (roles msg)
+      emailCata (Bootstrap.labeledText (msg $ Msg_Input_User_Email "Email") . fromString) (u_email user)
+      hiddenInput (fieldName userEmailField) (emailCata id $ u_email user)
+      Bootstrap.labeledText (msg $ Msg_Input_User_FullName "Full name") $ fromString (u_name user)
+      hiddenInput (fieldName userFamilyNameField) (u_name user)
+      timeZoneName (Bootstrap.labeledText (msg $ Msg_Input_User_TimeZone "Timezone") . fromString) (u_timezone user)
+      hiddenInput (B.name userTimeZonePrm) (Bootstrap.encode "timezone" $ u_timezone user)
+      Bootstrap.labeledText
+        (msg $ Msg_Input_User_Language "Language")
+        (fromString $ fromMaybe "Language is not found" $ Map.lookup (u_language user) languageMap)
+      hiddenInput (B.name userLanguagePrm) (Bootstrap.encode "language" $ u_language user)
+      hiddenInput (fieldName usernameField) . usernameCata id $ u_username user
+#else
       Bootstrap.selection (fieldName userRoleField) (== u_role user) (roles msg)
       Bootstrap.textInputWithDefault (fieldName userEmailField) (msg $ Msg_Input_User_Email "Email") (emailCata id $ u_email user)
       Bootstrap.textInputWithDefault (fieldName userFamilyNameField) (msg $ Msg_Input_User_FullName "Full name") (u_name user)
       Bootstrap.selection (B.name userTimeZonePrm) (== u_timezone user) userTimeZones
       Bootstrap.selection (B.name userLanguagePrm) (== u_language user) languages
       hiddenInput (fieldName usernameField) . usernameCata id $ u_username user
-      Bootstrap.submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Update")
-    Bootstrap.turnSelectionsOn
-  where
+#endif
     userTimeZones = map (id &&& timeZoneName id) timeZones
     userDetails = Pages.userDetails ()
     langVal (lang,info) = (lang, languageName info)
+    languageMap = Map.fromList languages
     languages = map langVal dictionaries
 
     roleLabel = roleCata

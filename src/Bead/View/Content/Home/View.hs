@@ -59,19 +59,19 @@ homeContent d = do
               -- HR
               Bootstrap.row $ Bootstrap.colMd12 $ hr
 
-            -- Course Administration links
-            when hasCourse $ do
-              Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString . msg $ Msg_Home_CourseAdministration "Course Administration"
-              Bootstrap.row $ Bootstrap.colMd12 $ fromString . msg $ Msg_Home_CourseSubmissionTableList_Info $ concat
-                [ "Submission table for courses can be found on separate pages, please click on the "
-                , "name of a course."
-                ]
-              Bootstrap.row $ Bootstrap.colMd12 $ ul ! class_ "list-group" $ do
-                let courseList = sortBy (compareHun `on` (courseName . snd)) $ Map.toList $ administratedCourseMap d
-                forM_ courseList $ \(ck, c) ->
-                  li ! class_ "list-group-item"
-                     $ a ! href (fromString $ routeOf (courseOverview ck))
-                     $ (fromString (courseName c))
+              -- Course Administration links
+              when hasCourse $ do
+                Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString . msg $ Msg_Home_CourseAdministration "Course Administration"
+                Bootstrap.row $ Bootstrap.colMd12 $ fromString . msg $ Msg_Home_CourseSubmissionTableList_Info $ concat
+                  [ "Submission table for courses can be found on separate pages, please click on the "
+                  , "name of a course."
+                  ]
+                Bootstrap.row $ Bootstrap.colMd12 $ ul ! class_ "list-group" $ do
+                  let courseList = sortBy (compareHun `on` (courseName . snd)) $ Map.toList $ administratedCourseMap d
+                  forM_ courseList $ \(ck, c) ->
+                    li ! class_ "list-group-item"
+                       $ a ! href (fromString $ routeOf (courseOverview ck))
+                       $ (fromString (courseName c))
 
             -- Course Administration Button Group
             when (courseAdminUser r && hasCourse) $ do
@@ -79,13 +79,10 @@ homeContent d = do
                 [ "New groups for courses may be created in the Course Settings menu.  Teachers may be also assigned to "
                 , "each of the groups there as well."
                 ]
-              i18n msg $ navigation $ [
-                  courseAdmin, newTestScript, evaluationTable
-                , setUserPassword, uploadFile ]
-
+              i18n msg $ navigation $ courseAdminButtons
             -- Group Administration Button Group
             when (groupAdminUser r && hasGroup) $ do
-              i18n msg $ navigation [evaluationTable, setUserPassword, uploadFile ]
+              i18n msg $ navigation groupAdminButtons
 
             -- HR
             when (or [groupAdminUser r && hasGroup, courseAdminUser r && hasCourse]) $ do
@@ -111,6 +108,15 @@ homeContent d = do
 
       courseAdminUser = (==E.CourseAdmin)
       groupAdminUser  = (==E.GroupAdmin)
+
+      -- With LDAP authentication there passwords can not be set.
+#ifdef LDAP
+      courseAdminButtons = [courseAdmin, newTestScript, evaluationTable, uploadFile ]
+      groupAdminButtons = [evaluationTable, uploadFile ]
+#else
+      courseAdminButtons = [courseAdmin, newTestScript, evaluationTable, setUserPassword, uploadFile ]
+      groupAdminButtons = [evaluationTable, setUserPassword, uploadFile ]
+#endif
 
 -- * Helpers
 

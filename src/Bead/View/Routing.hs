@@ -58,17 +58,27 @@ routes config = join
   [ -- Add login handlers
     [ ("/",         index)
     , ("/logout",   logoutAndResetRoute)
-    , ("/reset_pwd",resetPasswordPage)
-    , ("/reg_request", registrationRequest config)
-    , ("/reg_final", finalizeRegistration)
     , ("/change-language", changeLanguage)
-    , ("/fay", with fayContext fayServe)
+    ]
+  , registrationRoutes config
+  , [ ("/fay", with fayContext fayServe)
     , Command.routeHandler Command.ping
     , ("/upload", fileUpload)
     ]
     -- Add static handlers
   , [ ("",          serveDirectory "static") ]
   ]
+
+registrationRoutes :: Config -> [(ByteString, BeadHandler ())]
+#ifdef LDAP
+registrationRoutes _ = []
+#else
+registrationRoutes config = [
+    ("/reset_pwd",resetPasswordPage)
+  , ("/reg_request", registrationRequest config)
+  , ("/reg_final", finalizeRegistration)
+  ]
+#endif
 
 pages :: BeadHandler ()
 pages = do

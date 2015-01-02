@@ -1,9 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings  #-}
 module Bead.View.Content.Public.Login (
     login
   ) where
 
-import           Data.Monoid (mempty)
 import           Data.String (fromString)
 
 import           Snap.Snaplet.Auth
@@ -26,9 +26,12 @@ login err langInfos = do
       Bootstrap.passwordInput (fieldName loginPassword) (msg $ Msg_Login_Password "Password:")
       Bootstrap.submitButton  (fieldName loginSubmitBtn) (msg $ Msg_Login_Submit "Login")
     maybe mempty (Bootstrap.rowCol4Offset4 . (p ! class_ "text-center bg-danger") . fromString . show) err
+#ifndef LDAP
+    -- Registration and password reset is not available for LDAP as LDAP handles these functionality
     Bootstrap.rowCol4Offset4 $ Bootstrap.buttonGroupJustified $ do
       Bootstrap.buttonLink "/reg_request" (msg $ Msg_Login_Registration "Registration")
       Bootstrap.buttonLink "/reset_pwd"   (msg $ Msg_Login_Forgotten_Password "Forgotten password")
+#endif
     when (length langInfos > 1) $ do
       Bootstrap.rowCol4Offset4 $ Bootstrap.buttonGroupJustified $
         Bootstrap.dropdown (msg $ Msg_Login_SelectLanguage "Select a language") $

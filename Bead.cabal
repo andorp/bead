@@ -57,6 +57,10 @@ Flag SQLite
   Description:  Enable SQLite persistent layer
   Default:      False
 
+Flag LDAP
+  Description:  Enable LDAP based authentication
+  Default:      True
+
 Executable CreateBeadLanguageFile
   Main-is: UtilsMain.hs
   HS-Source-Dirs: src, snaplets/fay/src
@@ -77,6 +81,8 @@ Executable Bead
   if flag(Tests)
     Build-Depends:
       themis >= 0.4.1.0
+  if flag(LDAP)
+    CPP-Options: -DLDAP
   Build-Depends:
     aeson,
     async,
