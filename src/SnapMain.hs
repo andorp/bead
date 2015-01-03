@@ -53,7 +53,7 @@ main = do
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
 printConfigInfo = configCata $
-  \logfile timeout hostname fromEmail loginlang regexp example zoneInfoDir up -> do
+  \logfile timeout hostname fromEmail loginlang regexp example zoneInfoDir up nonLDAP -> do
   configLn $ "Log file: " ++ logfile
   configLn $ concat ["Session timeout: ", show timeout, " seconds"]
   configLn $ "Hostname included in emails: " ++ hostname
@@ -63,6 +63,7 @@ printConfigInfo = configCata $
   configLn $ "Username example for the regular expression: " ++ example
   configLn $ "TimeZone informational dir: " ++ zoneInfoDir
   configLn $ concat ["Maximum size of a file to upload: ", show up, "K"]
+  configLn $ "Non LDAP Users config file: " ++ show nonLDAP
   where
     configLn s = putStrLn ("CONFIG: " ++ s)
 
@@ -77,8 +78,14 @@ checkConfig cfg = do
   check (usernameRegExpExample cfg =~ usernameRegExp cfg)
     "Given username example does not match with the given pattern!"
 
-  check' (doesDirectoryExist (timeZoneInfoDirectory cfg))
+  checkIO (doesDirectoryExist (timeZoneInfoDirectory cfg))
     "The given time-zone info directory"
+
+  maybe
+    (return ())
+    (\fp -> checkIO (doesFileExist fp)
+               "The given non LDAP Users configuration file")
+    (nonLDAPUsersFile cfg)
 
   configCheck "Config is OK."
   where
@@ -87,7 +94,7 @@ checkConfig cfg = do
       configCheck $ "There can be more errors. The check fails at the first."
       exitFailure
 
-    check' pred msg = do
+    checkIO pred msg = do
       p <- pred
       check p msg
 

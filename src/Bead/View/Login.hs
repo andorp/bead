@@ -63,8 +63,13 @@ loginSubmit :: BeadHandler' b ()
 loginSubmit = withTop auth $ handleError $ runErrorT $ do
   username <- getParameter loginUsernamePrm
   pwd      <- getParameter loginPasswordPrm
-  lResult  <- ldapLogin user pwd
-  ldapResult (ldapError username pwd) ldapInvalidUser (ldapUser username pwd) lResult
+  needsLDAPAuth <- lift $ withTop ldapContext $ isLDAPUser username
+  case needsLDAPAuth of
+    False -> do
+      beadLogin username pwd
+    True -> do
+      lResult  <- ldapLogin user pwd
+      ldapResult (ldapError username pwd) ldapInvalidUser (ldapUser username pwd) lResult
   where
     ldapLogin _ _ = return LDAPError
 

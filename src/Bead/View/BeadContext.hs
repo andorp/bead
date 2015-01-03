@@ -6,8 +6,11 @@ import           Prelude hiding (log)
 
 import           Control.Lens.TH
 import qualified Data.ByteString.Lazy.Char8 as BL
+import           Data.Char (toUpper)
 import           Data.IORef
 import qualified Data.Map as Map
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import           Data.String (fromString)
 import qualified Data.Text as DT
 import qualified Data.Text.Lazy as LT
@@ -279,6 +282,29 @@ createTimeZoneContext = makeSnapContext
 getTimeZoneConverter :: Handler b TimeZoneContext TimeZoneConverter
 getTimeZoneConverter = snapContextCata id
 
+-- * LDAP Context
+
+-- Contains all the secondary configuration values, that reifies
+-- how the LDAP authentication should work.
+data LDAPConfig = LDAPConfig {
+    nonLDAPUsers :: Set Username -- ^ Usernames which do not need LDAP authentication
+  }
+
+ldapConfig f (LDAPConfig x) = f x
+
+type LDAPConfigContext = SnapContext LDAPConfig
+
+createLDAPContext :: LDAPConfig -> SnapletInit a LDAPConfigContext
+createLDAPContext = makeSnapContext
+  "LDAP Configuration"
+  "A snaplet holding a reference to the ldap configuration"
+
+-- Returns True if the given user (automatically capitalized) needs to have LDAP authentication
+isLDAPUser :: Username -> Handler b LDAPConfigContext Bool
+isLDAPUser username = snapContextCata (ldapConfig (not . Set.member username'))
+  where
+    username' = usernameCata (Username . map toUpper) username
+
 -- * Application
 
 data BeadContext = BeadContext {
@@ -294,6 +320,7 @@ data BeadContext = BeadContext {
   , _checkUsernameContext :: Snaplet CheckUsernameContext
   , _timeZoneContext :: Snaplet TimeZoneContext
   , _debugLoggerContext :: Snaplet DebugLoggerContext
+  , _ldapContext :: Snaplet LDAPConfigContext
   }
 
 makeLenses ''BeadContext

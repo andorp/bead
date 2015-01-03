@@ -1,4 +1,5 @@
-{-# LANGUAGE TemplateHaskell, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Bead.View.BeadContextInit (
     beadContextInit
   , beadConfigFileName
@@ -6,7 +7,9 @@ module Bead.View.BeadContextInit (
   , Daemons(..)
   ) where
 
+import           Data.Char (toUpper)
 import qualified Data.Map as Map
+import qualified Data.Set as Set
 
 import           Snap hiding (Config(..))
 import           Snap.Snaplet.Auth
@@ -20,7 +23,7 @@ import           Bead.Configuration (Config(..))
 import           Bead.Controller.ServiceContext as S hiding (serviceContext)
 import           Bead.Daemon.Email
 import           Bead.Daemon.Logout
-import           Bead.Domain.Entities (UserRegInfo)
+import           Bead.Domain.Entities (UserRegInfo, Username(..))
 
 import           Bead.Domain.TimeZone
 import           Bead.View.BeadContext
@@ -99,11 +102,14 @@ beadContextInit config user s daemons tempDir = makeSnaplet "bead" description d
 
   dl <- nestSnaplet "debuglogger" debugLoggerContext $ createDebugLogger
 
+  ldapConfig <- liftIO $ loadNonLDAPUsers (nonLDAPUsersFile config)
+  ldap <- nestSnaplet "ldap-config" ldapContext $ createLDAPContext ldapConfig
+
   addRoutes (routes config)
 
   wrapSite (<|> pages)
 
-  return $ BeadContext sm as ss ds se rp fs ts cs un tz dl
+  return $ BeadContext sm as ss ds se rp fs ts cs un tz dl ldap
   where
     description = "The BEAD website"
 
@@ -143,3 +149,13 @@ copyFiles skips src dst = do
               return $ dstDate < srcDate
             else return True
           when doCopy $ copyFile srcPath dstPath
+
+-- Creates an LDAP config if the users file is given, otherwise
+-- creates an empty config.
+loadNonLDAPUsers :: Maybe FilePath -> IO LDAPConfig
+loadNonLDAPUsers Nothing = return $ LDAPConfig Set.empty
+loadNonLDAPUsers (Just fp) = do
+  users <- fmap (Set.fromList . map username . lines) $ readFile fp
+  return $! LDAPConfig users
+  where
+    username = Username . map toUpper

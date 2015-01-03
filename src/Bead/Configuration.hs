@@ -59,6 +59,9 @@ data Config = Config {
   , timeZoneInfoDirectory :: FilePath
     -- The maximum upload size of a file given in Kbs
   , maxUploadSizeInKb :: Int
+    -- File which contains a non ldap authenticated users, if there is no need to this file
+    -- Nothing us used
+  , nonLDAPUsersFile :: Maybe FilePath
   } deriving (Eq, Show, Read)
 
 -- The defualt system parameters
@@ -72,10 +75,11 @@ defaultConfiguration = Config {
   , usernameRegExpExample = "QUER42"
   , timeZoneInfoDirectory = "/usr/share/zoneinfo"
   , maxUploadSizeInKb = 128
+  , nonLDAPUsersFile = Nothing
   }
 
-configCata f (Config useraction timeout host from loginlang regexp reexample tz up) =
-  f useraction timeout host from loginlang regexp reexample tz up
+configCata f (Config useraction timeout host from loginlang regexp reexample tz up nlu) =
+  f useraction timeout host from loginlang regexp reexample tz up nlu
 
 readConfiguration :: FilePath -> IO Config
 readConfiguration path = do
