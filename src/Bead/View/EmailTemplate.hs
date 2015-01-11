@@ -16,6 +16,7 @@ module Bead.View.EmailTemplate
 
 import Data.Data
 import Data.ByteString.Lazy.Char8 hiding (readFile)
+import qualified Data.Text.Lazy as DTL
 import Text.Hastache
 import Text.Hastache.Context
 
@@ -45,7 +46,7 @@ runEmailTemplate template v = emailTemplateCata id template v
 -- Creates a simple email template using the given string
 emailTemplate :: (Data a, Typeable a) => String -> EmailTemplate a
 emailTemplate = emailTemplateAna
-  (\t x -> fmap unpack $ hastacheStr defaultConfig (encodeStr t) (mkGenericContext x))
+  (\t x -> fmap DTL.unpack $ hastacheStr defaultConfig (encodeStr t) (mkGenericContext x))
 
 -- * Templates
 

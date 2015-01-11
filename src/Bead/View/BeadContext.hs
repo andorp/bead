@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TemplateHaskell   #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.BeadContext where
@@ -6,7 +7,7 @@ import           Prelude hiding (log)
 
 import           Control.Lens.TH
 import qualified Data.ByteString.Lazy.Char8 as BL
-import           Data.Char (toUpper)
+import           Data.Char (isAlphaNum, toUpper)
 import           Data.IORef
 import qualified Data.Map as Map
 import           Data.Set (Set)
@@ -27,6 +28,7 @@ import           Bead.Configuration (Config(..))
 import           Bead.Controller.Logging
 import           Bead.Controller.ServiceContext
 import           Bead.Daemon.Email as EmailDaemon
+import           Bead.Daemon.LDAP as LDAPDaemon
 import           Bead.Daemon.Logout
 import           Bead.Domain.Entities
 import           Bead.Domain.TimeZone
@@ -65,8 +67,6 @@ configurationServiceContext = makeSnapContext
   "Configuration"
   "A snaplet providin the service context of the configuration"
 
-getConfiguration :: Handler b ConfigServiceContext Config
-getConfiguration = snapContextCata id
 
 type SnapletServiceContext = SnapContext (ServiceContext, LogoutDaemon)
 
@@ -194,13 +194,20 @@ regexpUsernameChecker :: Config -> SnapletInit a CheckUsernameContext
 regexpUsernameChecker cfg = makeSnaplet
   "Regexp username checker"
   "A snaplet providing checks against the regular expression defined in the configuration file"
-  Nothing $ liftIO $ do
-    let pattern = usernameRegExp cfg
-    ref <- newIORef (\username -> return $ check username pattern)
-    return $! SnapContext ref
-  where
-    check :: String -> String -> Bool
-    check usr ptn = usr =~ ptn
+  Nothing $ liftIO $ checkUsername
+    where
+      checkUsername = do
+#ifdef LDAPEnabled
+        ref <- newIORef (\username -> return $ and [all isAlphaNum username, length username > 0])
+        return $! SnapContext ref
+#else
+        let pattern = usernameRegExp cfg
+        ref <- newIORef (\username -> return $ check username pattern)
+        return $! SnapContext ref
+          where
+            check :: String -> String -> Bool
+            check usr ptn = usr =~ ptn
+#endif
 
 -- Returns True, if the username pass the check otherwise False
 checkUsername :: String -> Handler b CheckUsernameContext Bool
@@ -286,24 +293,19 @@ getTimeZoneConverter = snapContextCata id
 
 -- Contains all the secondary configuration values, that reifies
 -- how the LDAP authentication should work.
-data LDAPConfig = LDAPConfig {
+data LDAP = LDAP {
     nonLDAPUsers :: Set Username -- ^ Usernames which do not need LDAP authentication
+  , ldapDaemon   :: LDAPDaemon   -- ^ Authenticates the LDAP users
   }
 
-ldapConfig f (LDAPConfig x) = f x
+ldap f (LDAP x y) = f x y
 
-type LDAPConfigContext = SnapContext LDAPConfig
+type LDAPContext = SnapContext LDAP
 
-createLDAPContext :: LDAPConfig -> SnapletInit a LDAPConfigContext
+createLDAPContext :: LDAP -> SnapletInit a LDAPContext
 createLDAPContext = makeSnapContext
   "LDAP Configuration"
   "A snaplet holding a reference to the ldap configuration"
-
--- Returns True if the given user (automatically capitalized) needs to have LDAP authentication
-isLDAPUser :: Username -> Handler b LDAPConfigContext Bool
-isLDAPUser username = snapContextCata (ldapConfig (not . Set.member username'))
-  where
-    username' = usernameCata (Username . map toUpper) username
 
 -- * Application
 
@@ -320,7 +322,7 @@ data BeadContext = BeadContext {
   , _checkUsernameContext :: Snaplet CheckUsernameContext
   , _timeZoneContext :: Snaplet TimeZoneContext
   , _debugLoggerContext :: Snaplet DebugLoggerContext
-  , _ldapContext :: Snaplet LDAPConfigContext
+  , _ldapContext :: Snaplet LDAPContext
   }
 
 makeLenses ''BeadContext
@@ -330,3 +332,24 @@ type BeadHandler a = Handler BeadContext BeadContext a
 
 -- | Bead Context with different view context
 type BeadHandler' view = Handler BeadContext view
+
+-- * Handlers
+
+-- * Config
+
+getConfiguration :: BeadHandler' b Config
+getConfiguration = withTop configContext $ snapContextCata id
+
+-- * LDAP
+
+-- Returns True if the given user (automatically capitalized) needs to have LDAP authentication
+isLDAPUser :: Username -> BeadHandler' b Bool
+isLDAPUser username = withTop ldapContext $ snapContextCata (ldap (\nonLDAPUsers _daemon -> not $ Set.member username' nonLDAPUsers))
+  where
+    username' = usernameCata (Username . map toUpper) username
+
+-- Authenticates the user with the given password and returns an LDAPResult for further processing
+ldapAuthenticate :: Username -> String -> BeadHandler' b LDAPResult
+ldapAuthenticate username password = withTop ldapContext . snapContextHandlerCata $ \l -> do
+  resultEnvelope <- liftIO $ ldap (\_nonLDAPUsers daemon -> authenticate daemon (usernameCata id username) password) l
+  liftIO resultEnvelope

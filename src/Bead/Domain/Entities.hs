@@ -62,6 +62,8 @@ module Bead.Domain.Entities (
   , userRegInfoCata
   , Language(..)
   , languageCata
+  , Uid(..)
+  , uid
   , User(..)
   , userCata
   , withUser
@@ -418,6 +420,13 @@ newtype Language = Language String
 
 languageCata f (Language l) = f l
 
+-- User ID is unique identifier for the user, which
+-- can be different than the username
+newtype Uid = Uid String
+  deriving (Data, Eq, Ord, Read, Show, Typeable)
+
+uid f (Uid x) = f x
+
 -- | Logged in user
 data User = User {
     u_role     :: Role
@@ -426,6 +435,7 @@ data User = User {
   , u_name     :: String
   , u_timezone :: TimeZoneName
   , u_language :: Language
+-- TODO , u_uid      :: Uid
   } deriving (Eq, Ord, Show)
 
 userCata f (User role username email name timezone language) =

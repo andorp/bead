@@ -31,10 +31,12 @@ module Bead.View.ContentHandler (
   , logout
   , ContentHandler
   , ContentError
+  , contentError
   , UserTimeConverter
   , contentHandlerError
   , contentHandlerErrorMap
   , contentHandlerErrorMsg
+  , module Bead.Controller.Logging
   , module Control.Monad.Error
   ) where
 
@@ -59,6 +61,7 @@ import           Text.Blaze.Html5 (Html)
 
 import           Bead.Configuration
 import           Bead.Controller.Logging as L
+import           Bead.Controller.Logging
 import           Bead.Controller.ServiceContext hiding (serviceContext, name)
 import qualified Bead.Controller.UserStories as S
 import           Bead.Daemon.Logout
@@ -77,6 +80,13 @@ import           Bead.View.Fay.JSON.ServerSide
 
 newtype ContentError = ContentError (Maybe String)
   deriving (Show)
+
+contentError
+  nothing
+  msg
+  c = case c of
+    (ContentError Nothing)    -> nothing
+    (ContentError (Just msg)) -> msg
 
 instance Error ContentError where
   noMsg  = ContentError Nothing

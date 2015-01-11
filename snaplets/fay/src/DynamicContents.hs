@@ -8,7 +8,7 @@ import Prelude
 import Data.Data
 import JQuery hiding (filter, validate)
 import Fay.JQueryUI
-import Fay.Text
+import Fay.Text hiding (concat)
 
 import Bead.Domain.Shared.Evaluation
 import Bead.Shared.Command
@@ -375,7 +375,7 @@ hookLargeComments = void $ do
 
     toggle :: Event -> Fay ()
     toggle e = void $ do
-      seeMore <- (target e) >>= selectElement
+      seeMore <- (target e) >>= select
       full <- (nextSelector pre_more seeMore >>= first)
       slideToggle full
       preview <- (prevSelector pre_more seeMore >>= first)
@@ -421,9 +421,6 @@ cssClass c = fromString ('.':c)
 
 -- * Helpers
 
-void :: Fay a -> Fay ()
-void f = f >> return ()
-
 (<$>) :: (a -> b) -> Fay a -> Fay b
 f <$> m = m >>= (return . f)
 
@@ -436,7 +433,7 @@ sValue :: JQuery -> Fay Int
 sValue = ffi "%1.spinner(\"value\")"
 
 targetElement :: Event -> Fay JQuery
-targetElement e = (target e) >>= selectElement
+targetElement e = (target e) >>= select
 
 exists :: JQuery -> Fay Bool
 exists = ffi "(%1.length != 0)"

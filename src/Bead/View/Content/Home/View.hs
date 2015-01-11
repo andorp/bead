@@ -110,7 +110,7 @@ homeContent d = do
       groupAdminUser  = (==E.GroupAdmin)
 
       -- With LDAP authentication there passwords can not be set.
-#ifdef LDAP
+#ifdef LDAPEnabled
       courseAdminButtons = [courseAdmin, newTestScript, evaluationTable, uploadFile ]
       groupAdminButtons = [evaluationTable, uploadFile ]
 #else

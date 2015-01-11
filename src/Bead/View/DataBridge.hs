@@ -226,7 +226,7 @@ jsonUsernamePrm field =
   where
     decodeUsr = usernameCata $ \xs ->
       if (validator isUsername xs)
-         then (Just $ Username $ map toUpper xs)
+         then (Just $ transformUsername xs)
          else Nothing
 
 customUsernamePrm :: String -> Parameter Username
@@ -239,8 +239,15 @@ customUsernamePrm field = Parameter {
   } where
     decodeUsr xs =
       if (validator isUsername xs)
-         then (Just $ Username $ map toUpper xs)
+         then (Just $ transformUsername xs)
          else Nothing
+
+transformUsername :: String -> Username
+#ifdef LDAPEnabled
+transformUsername = Username
+#else
+transformUsername = Username . map toUpper
+#endif
 
 usernamePrm :: Parameter Username
 usernamePrm = customUsernamePrm (fieldName usernameField)

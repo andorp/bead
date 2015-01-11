@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Bead.View.BeadContextInit (
@@ -19,14 +20,15 @@ import           Snap.Snaplet.Session.Backends.CookieSession
 import           System.FilePath ((</>))
 import           System.Directory
 
-import           Bead.Configuration (Config(..))
+import           Bead.Configuration
 import           Bead.Controller.ServiceContext as S hiding (serviceContext)
 import           Bead.Daemon.Email
+import           Bead.Daemon.LDAP
 import           Bead.Daemon.Logout
 import           Bead.Domain.Entities (UserRegInfo, Username(..))
 
 import           Bead.Domain.TimeZone
-import           Bead.View.BeadContext
+import           Bead.View.BeadContext hiding (ldapDaemon)
 import           Bead.View.DataDir
 import           Bead.View.Dictionary (Language(..))
 import           Bead.View.DictionaryLoader (loadDictionaries)
@@ -53,6 +55,7 @@ type InitTasks = Maybe UserRegInfo
 data Daemons = Daemons {
     logoutDaemon :: LogoutDaemon
   , emailDaemon  :: EmailDaemon
+  , ldapDaemon   :: LDAPDaemon
   }
 
 beadContextInit :: Config -> InitTasks -> ServiceContext -> Daemons -> FilePath -> SnapletInit BeadContext BeadContext
@@ -102,8 +105,12 @@ beadContextInit config user s daemons tempDir = makeSnaplet "bead" description d
 
   dl <- nestSnaplet "debuglogger" debugLoggerContext $ createDebugLogger
 
-  ldapConfig <- liftIO $ loadNonLDAPUsers (nonLDAPUsersFile config)
-  ldap <- nestSnaplet "ldap-config" ldapContext $ createLDAPContext ldapConfig
+#ifdef LDAPEnabled
+  nonLDAPUsers <- liftIO $ loadNonLDAPUsers (nonLDAPUsersFile $ loginConfig config)
+  ldap <- nestSnaplet "ldap-config" ldapContext $ createLDAPContext (LDAP nonLDAPUsers (ldapDaemon daemons))
+#else
+  let ldap = error "LDAP related functionality is used in non-LDAP login."
+#endif
 
   addRoutes (routes config)
 
@@ -152,10 +159,10 @@ copyFiles skips src dst = do
 
 -- Creates an LDAP config if the users file is given, otherwise
 -- creates an empty config.
-loadNonLDAPUsers :: Maybe FilePath -> IO LDAPConfig
-loadNonLDAPUsers Nothing = return $ LDAPConfig Set.empty
+loadNonLDAPUsers :: Maybe FilePath -> IO (Set.Set Username)
+loadNonLDAPUsers Nothing = return $ Set.empty
 loadNonLDAPUsers (Just fp) = do
   users <- fmap (Set.fromList . map username . lines) $ readFile fp
-  return $! LDAPConfig users
+  return $! users
   where
     username = Username . map toUpper

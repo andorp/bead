@@ -70,7 +70,7 @@ routes config = join
   ]
 
 registrationRoutes :: Config -> [(ByteString, BeadHandler ())]
-#ifdef LDAP
+#ifdef LDAPEnabled
 registrationRoutes _ = []
 #else
 registrationRoutes config = [

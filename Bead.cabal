@@ -48,6 +48,8 @@ Data-Files:
   lang/hu.dict
 
   bead.config
+  bead.ldap.config
+  bead.std.config
 
 Flag Tests
   Description:  Enable testing
@@ -82,7 +84,10 @@ Executable Bead
     Build-Depends:
       themis >= 0.4.1.0
   if flag(LDAP)
-    CPP-Options: -DLDAP
+    CPP-Options: -DLDAPEnabled
+    Build-Depends:
+      base64-bytestring >= 1.0.0.1 && < 2,
+      either >= 4.3 && < 5
   Build-Depends:
     aeson,
     async,
@@ -96,10 +101,10 @@ Executable Bead
     directory,
     hashable,
     fay,
-    fay-jquery == 0.4.0.*,
+    fay-jquery,
     fay-text,
     filepath,
-    hastache,
+    hastache >= 0.6,
     json >= 0.7,
     lens,
     mime-mail,
@@ -108,8 +113,9 @@ Executable Bead
     monad-logger >= 0.3,
     old-locale,
     pandoc,
-    pqueue >= 1.2.1 && < 2.0,
+    pqueue >= 1.2.0 && < 2.0,
     mtl,
+    process >= 1.2.0 && < 2.0,
     random,
     regex-tdfa,
     snap,

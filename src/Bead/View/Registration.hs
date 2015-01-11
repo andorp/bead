@@ -1,8 +1,11 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Registration (
     createAdminUser
+#ifndef LDAPEnabled
   , registrationRequest
   , finalizeRegistration
+#endif
   ) where
 
 {-
@@ -84,7 +87,7 @@ readParameter param = do
   reqParam <- getParam . B.pack . DataBridge.name $ param
   return (reqParam >>= decode param . T.unpack . decodeUtf8)
 
-
+#ifndef LDAPEnabled
 {-
 User registration request
 - On GET request it renders the HTML registration form with
@@ -348,3 +351,5 @@ registrationEmailTemplate = unlines
   , "PS: If you received this email by accident, or you do not want to register"
   , "    any more, feel free to ignore this message."
   ]
+
+#endif

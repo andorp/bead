@@ -1,7 +1,9 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Main where
 
 import           Data.Char (toUpper)
+import qualified Data.Char as Char
 
 import           Snap hiding (Config(..))
 import           System.Directory
@@ -15,6 +17,7 @@ import           Bead.Configuration
 import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
 import           Bead.Daemon.Email
+import           Bead.Daemon.LDAP
 import           Bead.Daemon.Logout
 import           Bead.Daemon.TestAgent
 import           Bead.Domain.Entities (UserRegInfo(..))
@@ -52,20 +55,27 @@ main = do
 
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
-printConfigInfo = configCata $
-  \logfile timeout hostname fromEmail loginlang regexp example zoneInfoDir up nonLDAP -> do
+printConfigInfo = configCata loginCfg $ \logfile timeout hostname fromEmail loginlang zoneInfoDir up lcfg -> do
   configLn $ "Log file: " ++ logfile
   configLn $ concat ["Session timeout: ", show timeout, " seconds"]
   configLn $ "Hostname included in emails: " ++ hostname
   configLn $ "FROM Address included in emails: " ++ fromEmail
   configLn $ "Default login language: " ++ loginlang
-  configLn $ "Username regular expression for the registration: " ++ regexp
-  configLn $ "Username example for the regular expression: " ++ example
   configLn $ "TimeZone informational dir: " ++ zoneInfoDir
   configLn $ concat ["Maximum size of a file to upload: ", show up, "K"]
-  configLn $ "Non LDAP Users config file: " ++ show nonLDAP
+  lcfg
   where
     configLn s = putStrLn ("CONFIG: " ++ s)
+    loginCfg =
+#ifdef LDAPEnabled
+      ldapLoginConfig $ \file tz -> do
+        configLn $ "Non LDAP Users config file: " ++ show file
+        configLn $ "Default registration timezone: " ++ show tz
+#else
+      standaloneLoginConfig $ \regexp example -> do
+        configLn $ "Username regular expression for the registration: " ++ regexp
+        configLn $ "Username example for the regular expression: " ++ example
+#endif
 
 -- Check if the configuration is valid
 checkConfig :: Config -> IO ()
@@ -73,19 +83,26 @@ checkConfig cfg = do
   check (maxUploadSizeInKb cfg > 0)
     "The maximum upload size must be non-negative!"
 
+#ifdef LDAPEnabled
+#else
   -- Check the given username example against the given username regexp, if the
   -- example does not match with the regepx quit with an exit failure.
-  check (usernameRegExpExample cfg =~ usernameRegExp cfg)
+  let loginCfg = loginConfig cfg
+  check (usernameRegExpExample loginCfg =~ usernameRegExp loginCfg)
     "Given username example does not match with the given pattern!"
+#endif
 
   checkIO (doesDirectoryExist (timeZoneInfoDirectory cfg))
     "The given time-zone info directory"
 
+#ifdef LDAPEnabled
+  let loginCfg = loginConfig cfg
   maybe
     (return ())
     (\fp -> checkIO (doesFileExist fp)
                "The given non LDAP Users configuration file")
-    (nonLDAPUsersFile cfg)
+    (nonLDAPUsersFile loginCfg)
+#endif
 
   configCheck "Config is OK."
   where
@@ -159,13 +176,20 @@ readAdminUser cfg = do
         isUsername
         usr
         -- Valid username
-        (if (usr =~ usernameRegExp cfg)
+        (if (isValidUsername usr)
            then return usr
            else do putStrLn "Username does not match the given regexp!"
                    readUsername)
         -- Invalid username
         (\msg -> do putStrLn msg
                     readUsername)
+      where
+        isValidUsername usr =
+#ifdef LDAPEnabled
+          and [length usr > 0, all Char.isAlphaNum usr]
+#else
+          usr =~ usernameRegExp cfg
+#endif
 
 startService :: Config -> InitTasks -> IO ()
 startService config initTasks = do
@@ -184,7 +208,10 @@ startService config initTasks = do
   emailDaemon <- creating "email daemon" $
     startEmailDaemon userActionLogger
 
-  let daemons = Daemons logoutDaemon emailDaemon
+  ldapDaemon <- creating "ldap daemon" $
+    startLDAPDaemon userActionLogger (LDAPDaemonConfig { tempDir="/tmp/", timeOut=5, noOfWorkers=4 })
+
+  let daemons = Daemons logoutDaemon emailDaemon ldapDaemon
 
   serveSnaplet defaultConfig (beadContextInit config initTasks context daemons tempDir)
   stopLogger userActionLogs
@@ -194,7 +221,7 @@ startService config initTasks = do
       putStr $ concat ["Creating ", name, " ... "]
       x <- m
       putStrLn "DONE"
-      return x
+      return $! x
 
 -- Creates a temporary directory for the bead in the system's temp dir
 createBeadTempDir :: IO FilePath

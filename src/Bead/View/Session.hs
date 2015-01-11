@@ -106,30 +106,30 @@ instance SessionRestore SessionVersion where
     Nothing -> Nothing
     Just v -> Just . SessionVersion $ v
 
-setInSessionKeyValues :: [(T.Text, T.Text)] -> Handler BeadContext SessionManager ()
-setInSessionKeyValues = mapM_ (\(key,value) -> setInSession key value)
+setInSessionKeyValues :: [(T.Text, T.Text)] -> Handler BeadContext b ()
+setInSessionKeyValues = withTop sessionManager . mapM_ (\(key,value) -> setInSession key value)
 
-fromSession :: (SessionRestore r) => T.Text -> Handler BeadContext SessionManager (Maybe r)
-fromSession key = do
+fromSession :: (SessionRestore r) => T.Text -> Handler BeadContext b (Maybe r)
+fromSession key = withTop sessionManager $ do
   v <- getFromSession key
   return $ join $ fmap (restoreFromSession . (\v' -> [(key,v')])) v
 
-getSessionVersion :: Handler BeadContext SessionManager (Maybe SessionVersion)
+getSessionVersion :: Handler BeadContext b (Maybe SessionVersion)
 getSessionVersion = fromSession sessionVersionKey
 
-setSessionVersion :: Handler BeadContext SessionManager ()
+setSessionVersion :: Handler BeadContext b ()
 setSessionVersion = setInSessionKeyValues [(sessionVersionKey, sessionVersionValue)]
 
-usernameFromSession :: Handler BeadContext SessionManager (Maybe E.Username)
+usernameFromSession :: Handler BeadContext b (Maybe E.Username)
 usernameFromSession = fromSession usernameSessionKey
 
-setUsernameInSession :: Username -> Handler BeadContext SessionManager ()
+setUsernameInSession :: Username -> Handler BeadContext b ()
 setUsernameInSession = setInSessionKeyValues . sessionStore
 
-languageFromSession :: Handler BeadContext SessionManager (Maybe Language)
+languageFromSession :: Handler BeadContext b (Maybe Language)
 languageFromSession = fromSession languageSessionKey
 
-setLanguageInSession :: Language -> Handler BeadContext SessionManager ()
+setLanguageInSession :: Language -> Handler BeadContext b ()
 setLanguageInSession = setInSessionKeyValues . sessionStore
 
 -- * Username and UserState correspondence
@@ -159,8 +159,8 @@ instance AsPassword A.Password where
 
 -- * Debugging
 
-sessionCookies :: Handler BeadContext SessionManager String
-sessionCookies = do
+sessionCookies :: Handler BeadContext b String
+sessionCookies = withTop sessionManager $ do
   as <- sessionToList
   return . join . join . L.map (\(k,v) -> ["(KEY: ",T.unpack k,",","VALUE: ",T.unpack v,")"]) $ as
 

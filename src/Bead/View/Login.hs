@@ -14,10 +14,12 @@ import           Prelude as P
 import           Snap.Snaplet.Auth as Auth
 import           Snap.Snaplet.Session
 
+import qualified Bead.Configuration as Config
 import           Bead.Controller.Logging as L
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext hiding (serviceContext)
 import qualified Bead.Controller.UserStories as Story
+import           Bead.Daemon.LDAP.Result
 import           Bead.View.BeadContext
 import           Bead.View.Content hiding (BlazeTemplate, template)
 import qualified Bead.View.Content.Public.Login as View
@@ -43,23 +45,8 @@ login authError = do
     msg <- getI18N
     View.login (authError >>= visibleFailure msg) languages
 
-data LDAPResult
-  = LDAPError
-  | LDAPInvalidAuth
-  | LDAPUser (Username, Email, String, TimeZoneName, Language)
-  deriving (Eq, Show)
-
-ldapResult
-  ldapError
-  ldapInvalidAuth
-  ldapUser
-  l = case l of
-    LDAPError -> ldapError
-    LDAPInvalidAuth -> ldapInvalidAuth
-    LDAPUser user -> ldapUser user
-
 loginSubmit :: BeadHandler' b ()
-#ifdef LDAP
+#ifdef LDAPEnabled
 loginSubmit = withTop auth $ handleError $ runErrorT $ do
   username <- getParameter loginUsernamePrm
   pwd      <- getParameter loginPasswordPrm
@@ -68,11 +55,14 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
     False -> do
       beadLogin username pwd
     True -> do
-      lResult  <- ldapLogin user pwd
-      ldapResult (ldapError username pwd) ldapInvalidUser (ldapUser username pwd) lResult
+      lResult <- lift $ withTop ldapContext $ ldapAuthenticate username pwd
+      ldapResult
+        (ldapError username pwd)
+        (ldapInvalidUser username)
+        (ldapAttrMapError username pwd)
+        (ldapUser username pwd)
+        lResult
   where
-    ldapLogin _ _ = return LDAPError
-
     -- Looks up the user in the auth module and throws an error it the user is not found
     lookupUser username = do
       authUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameCata Text.pack username)
@@ -84,20 +74,36 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
     regStory story = checkFailure =<< (lift $ registrationStory story)
 
     -- Falls back to local credentials
-    ldapError username pwd = beadLogin username pwd
+    ldapError username pwd msg = do
+      lift $ logMessage ERROR $ join ["LDAP ERROR fall back to normal login for ", usernameCata id username, " reason: ", msg]
+      beadLogin username pwd
 
-    ldapInvalidUser = lift . login . Just $ IncorrectPassword
+    ldapInvalidUser username = lift $ do
+      logMessage ERROR $ join ["LDAP ERROR invalid user: ", usernameCata id username]
+      login . Just $ IncorrectPassword
 
-    ldapUser ldapUsername pwd (username,email,name,timezone,lang) = do
+    -- Logs error and authenticates with the fallback
+    ldapAttrMapError username pwd = do
+      lift $ logMessage ERROR $ join ["LDAP ATTR MAPPING ERROR fall back to normal login for ", usernameCata id username]
+      beadLogin username pwd
+
+    ldapUser ldapUsername pwd (uid,email,name) = do
       -- Check if the user exist
       let packedPwd = pack pwd
-      let user role = User role username email name timezone lang
+      timezone <- fmap (TimeZoneName . Config.defaultRegistrationTimezone . Config.loginConfig) $ lift $ getConfiguration
+      lang <- fmap (fromMaybe (Language "en")) $ lift $ languageFromSession
+      let username = ldapUsername
+      let user role = User role ldapUsername email name timezone lang
       exist <- regStory (Story.doesUserExist username)
       case exist of
         False -> do
+          lift $ logMessage INFO $ join [usernameCata id ldapUsername, " registers."]
           -- If the user does not exist, create a user with the given profile related informations
           -- Registers the user in the Snap authentication module
-          lift $ registerUser (usernameCata pack ldapUsername) packedPwd
+          result <- lift $ createUser (usernameCata Text.pack ldapUsername) packedPwd
+          case result of
+            Left err -> throwError . strMsg $ show err
+            Right _auth -> return ()
           -- Check if the Snap Auth registration went fine
           snapAuthUser <- lookupUser username
           when (isNothing . passwordFromAuthUser $ snapAuthUser) . throwError . strMsg $ "Snap Auth: no password is created"
@@ -121,8 +127,8 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
       -- Force login on the user
       result <- lift $ loginByUsername (usernameCata Text.pack username) (ClearText $ pack pwd) False
       case result of
-        Left fail -> throwError . strMsg $ show fail
-        Right _ -> return ()
+        Left fail -> throwError . strMsg $ join [usernameCata id username, ": ", show fail]
+        Right _   -> return ()
       i18n    <- lift $ i18nH
       context <- lift $ withTop serviceContext getServiceContext
       token   <- lift $ sessionToken
@@ -150,8 +156,14 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
     checkFailure (Left _)  = throwError $ strMsg "User story failed"
     checkFailure (Right x) = return x
 
+    -- The error is logged, but it is not disposed to the user, instead
+    -- a false incorrect login is rendered.
     handleError m =
-      m >>= (either (login . Just . AuthError . contentHandlerErrorMsg) (const $ return ()))
+      m >>= (either (\msg -> do logMessage ERROR $ join ["Error during login: ", contentErrorMsg msg]
+                                login $ Just IncorrectPassword)
+                    (const $ return ()))
+
+    contentErrorMsg = contentError "Unknown" id
 
     initSessionValues :: P.PageDesc -> Username -> Language -> BeadHandler' b ()
     initSessionValues page username language = do
@@ -231,9 +243,9 @@ changeLanguage = method GET setLanguage <|> method POST (redirect "/") where
   setLanguage = withTop sessionManager $ do
     elang <- getParameterOrError changeLanguagePrm
     either
-      (liftIO . putStrLn)
+      (logMessage ERROR . ("Change language " ++))
       (\l -> withTop sessionManager $ do
                 setLanguageInSession l
                 commitSession)
-      elang -- TODO: Log the error message
+      elang
     redirect "/"

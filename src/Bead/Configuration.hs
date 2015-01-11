@@ -2,6 +2,13 @@
 module Bead.Configuration (
     InitTask(..)
   , Config(..)
+#ifdef LDAPEnabled
+  , LDAPLoginConfig(..)
+  , ldapLoginConfig
+#else
+  , StandaloneLoginConfig(..)
+  , stnadaloneLoginConfig
+#endif
   , defaultConfiguration
   , configCata
   , initTasks
@@ -49,20 +56,42 @@ data Config = Config {
   , emailFromAddress :: String
     -- The default language of the login page if there is no language set in the session
   , defaultLoginLanguage :: String
-    -- The default regular expression for the user registration
-  , usernameRegExp :: String
-    -- The example that satisfies the given regexp for the username. These are
-    -- rendered to the user as examples on the GUI.
-  , usernameRegExpExample :: String
     -- The directory where all the timezone informations can be found
     -- Eg: /usr/share/zoneinfo/
   , timeZoneInfoDirectory :: FilePath
     -- The maximum upload size of a file given in Kbs
   , maxUploadSizeInKb :: Int
+#ifdef LDAPEnabled
+  , loginConfig :: LDAPLoginConfig
+#else
+  , loginConfig :: SimpleLoginConfig
+#endif
+  } deriving (Eq, Show, Read)
+
+configCata fcfg f (Config useraction timeout host from loginlang tz up cfg) =
+  f useraction timeout host from loginlang tz up (fcfg cfg)
+
+-- Login configuration that is used in standalone registration and login mode
+data StandaloneLoginConfig = StandaloneLoginConfig {
+    -- The default regular expression for the user registration
+    usernameRegExp :: String
+    -- The example that satisfies the given regexp for the username. These are
+    -- rendered to the user as examples on the GUI.
+  , usernameRegExpExample :: String
+  } deriving (Eq, Show, Read)
+
+standaloneLoginConfig f (StandaloneLoginConfig reg exp) = f reg exp
+
+-- Login configuration that is used in LDAP registration and login mode
+data LDAPLoginConfig = LDAPLoginConfig {
     -- File which contains a non ldap authenticated users, if there is no need to this file
     -- Nothing us used
-  , nonLDAPUsersFile :: Maybe FilePath
+    nonLDAPUsersFile :: Maybe FilePath
+    -- The default timezone for a newly registered LDAP user
+  , defaultRegistrationTimezone :: String
   } deriving (Eq, Show, Read)
+
+ldapLoginConfig f (LDAPLoginConfig file tz) = f file tz
 
 -- The defualt system parameters
 defaultConfiguration = Config {
@@ -71,15 +100,24 @@ defaultConfiguration = Config {
   , emailHostname     = "http://127.0.0.1:8000"
   , emailFromAddress  = "noreply@bead.org"
   , defaultLoginLanguage = "en"
-  , usernameRegExp = "^[A-Za-z0-9]{6}$"
-  , usernameRegExpExample = "QUER42"
   , timeZoneInfoDirectory = "/usr/share/zoneinfo"
   , maxUploadSizeInKb = 128
-  , nonLDAPUsersFile = Nothing
+  , loginConfig = defaultLoginConfig
   }
 
-configCata f (Config useraction timeout host from loginlang regexp reexample tz up nlu) =
-  f useraction timeout host from loginlang regexp reexample tz up nlu
+defaultLoginConfig =
+#ifdef LDAPEnabled
+  LDAPLoginConfig {
+      nonLDAPUsersFile = Nothing
+    , defaultRegistrationTimezone = "UTC"
+    }
+#else
+  StandaloneLoginConfig {
+      usernameRegExp = "^[A-Za-z0-9]{6}$"
+    , usernameRegExpExample = "QUER42"
+    }
+#endif
+
 
 readConfiguration :: FilePath -> IO Config
 readConfiguration path = do
