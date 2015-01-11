@@ -188,7 +188,7 @@ readAdminUser cfg = do
 #ifdef LDAPEnabled
           and [length usr > 0, all Char.isAlphaNum usr]
 #else
-          usr =~ usernameRegExp cfg
+          usr =~ (usernameRegExp $ loginConfig cfg)
 #endif
 
 startService :: Config -> InitTasks -> IO ()

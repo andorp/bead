@@ -435,11 +435,11 @@ data User = User {
   , u_name     :: String
   , u_timezone :: TimeZoneName
   , u_language :: Language
--- TODO , u_uid      :: Uid
+  , u_uid      :: Uid
   } deriving (Eq, Ord, Show)
 
-userCata f (User role username email name timezone language) =
-  f role username email name timezone language
+userCata f (User role username email name timezone language uid) =
+  f role username email name timezone language uid
 
 withUser = flip userCata
 

@@ -90,6 +90,7 @@ test_create_user = testCase "Create user" $ do
       , u_name     = "Ursula"
       , u_timezone = utcZoneInfo
       , u_language = Language "hu"
+      , u_uid = usernameCata Uid uname
       }
   liftE interp $ saveUser user
   us <- liftE interp $ filterUsers (const True)
@@ -122,6 +123,7 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
         , u_name = "mystudent"
         , u_timezone = utcZoneInfo
         , u_language = Language "hu"
+        , u_uid = usernameCata Uid myStudent
         }
       otherStudent = Username "otherstudent"
       otherStudentUser = User {
@@ -131,6 +133,7 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
         , u_name = "otherstudent"
         , u_timezone = utcZoneInfo
         , u_language = Language "hu"
+        , u_uid = usernameCata Uid otherStudent
         }
       admin = Username "admin"
       adminUser = User {
@@ -140,6 +143,7 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
         , u_name = "admin"
         , u_timezone = utcZoneInfo
         , u_language = Language "hu"
+        , u_uid = usernameCata Uid admin
         }
       password = "password"
       cAssignment = Assignment "CourseAssignment" "Assignment" ballot str end binaryConfig
@@ -190,6 +194,7 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
         , u_name = "admin"
         , u_timezone = utcZoneInfo
         , u_language = Language "hu"
+        , u_uid = usernameCata Uid admin
         }
       password = "password"
   ck <- liftE interp $ saveCourse (Course "name" "desc" TestScriptSimple)

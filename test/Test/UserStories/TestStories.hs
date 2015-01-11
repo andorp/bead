@@ -3,13 +3,10 @@ module Test.UserStories.TestStories (
   ) where
 
 import           Control.Monad (when)
-import           Data.List (nub)
 import qualified Data.Map as Map
-import qualified Data.Set as Set
 import           Prelude hiding (log)
 
 import           Data.Time.Clock
-import           System.Directory (removeDirectoryRecursive)
 
 import           Bead.Controller.Logging
 import qualified Bead.Controller.Pages as P
@@ -56,6 +53,7 @@ student = User {
   , u_name = "Stu Dent"
   , u_timezone = utcZoneInfo
   , u_language = Language "hu"
+  , u_uid = Uid "student"
   }
 
 student2 = User {
@@ -65,6 +63,7 @@ student2 = User {
   , u_name = "Stu Dent"
   , u_timezone = utcZoneInfo
   , u_language = Language "hu"
+  , u_uid = Uid "student"
   }
 
 
@@ -75,6 +74,7 @@ adminUser = User {
   , u_name = "Admin"
   , u_timezone = utcZoneInfo
   , u_language = Language "hu"
+  , u_uid = Uid "admin"
   }
 
 groupAdminUser = User {
@@ -84,6 +84,7 @@ groupAdminUser = User {
   , u_name = "Group Admin"
   , u_timezone = utcZoneInfo
   , u_language = Language "hu"
+  , u_uid = Uid "groupadmin"
   }
 
 -- * Test Tooles
@@ -146,6 +147,8 @@ loginAndLogout = testCase "Login And Logout" $ do
   case state of
     UserState {} -> error "User is remained logged in"
     UserNotLoggedIn -> return ()
+    Registration -> error "Registration state is returned"
+    TestAgent -> error "TestAgent state is returned"
 
 courseTest = testCase "Create Course" $ do
   c <- context

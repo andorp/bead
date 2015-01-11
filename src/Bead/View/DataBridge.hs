@@ -219,6 +219,9 @@ evalConfigPrmTest = group "evalConfigPrm" $ do
 rolePrm :: Parameter Role
 rolePrm = jsonParameter (fieldName userRoleField) "Szerepkör"
 
+uidPrm :: Parameter Uid
+uidPrm = jsonParameter (fieldName userUidField) "User ID"
+
 jsonUsernamePrm :: String -> Parameter Username
 jsonUsernamePrm field =
   let prm = jsonParameter field "Felhasználónév"

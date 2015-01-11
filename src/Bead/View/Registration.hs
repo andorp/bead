@@ -28,7 +28,7 @@ import           Snap.Snaplet.Session
 
 import           Bead.Controller.Logging
 import qualified Bead.Controller.UserStories as S
-import           Bead.Configuration (Config(..))
+import           Bead.Configuration
 import           Bead.Domain.TimeZone (utcZoneInfo)
 import qualified Bead.Persistence.Persist as Persist
 import           Bead.View.BeadContext
@@ -69,6 +69,7 @@ createAdminUser persist usersdb = userRegInfoCata $
       , u_name = fullName
       , u_timezone = timeZone
       , u_language = Language "hu" -- TODO: I18N
+      , u_uid = Uid name
       }
     in createUser persist usersdb usr password
 
@@ -190,7 +191,7 @@ checkUsernamePrm = do
           config <- withTop configContext $ getConfiguration
           return . Left $ TransPrmMsg
             (Msg_Registration_InvalidUsername "The username is not valid. Try something similar: %s")
-            (usernameRegExpExample config)
+            (usernameRegExpExample $ loginConfig config)
 
 {-
 Registration finalization
@@ -292,6 +293,7 @@ createNewUser reg timezone language = runErrorT $ do
     , u_name = fullname
     , u_timezone = timezone
     , u_language = language
+    , u_uid = usernameCata Uid username
     }
 
   -- Check if the Snap Auth registration went fine

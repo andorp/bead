@@ -24,7 +24,7 @@ import           Snap.Snaplet.Auth
 import           Snap.Snaplet.Fay
 import           Snap.Snaplet.Session
 
-import           Bead.Configuration (Config(..))
+import           Bead.Configuration
 import           Bead.Controller.Logging
 import           Bead.Controller.ServiceContext
 import           Bead.Daemon.Email as EmailDaemon
@@ -201,7 +201,7 @@ regexpUsernameChecker cfg = makeSnaplet
         ref <- newIORef (\username -> return $ and [all isAlphaNum username, length username > 0])
         return $! SnapContext ref
 #else
-        let pattern = usernameRegExp cfg
+        let pattern = usernameRegExp $ loginConfig cfg
         ref <- newIORef (\username -> return $ check username pattern)
         return $! SnapContext ref
           where

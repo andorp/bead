@@ -7,7 +7,7 @@ module Bead.Configuration (
   , ldapLoginConfig
 #else
   , StandaloneLoginConfig(..)
-  , stnadaloneLoginConfig
+  , standaloneLoginConfig
 #endif
   , defaultConfiguration
   , configCata
@@ -64,7 +64,7 @@ data Config = Config {
 #ifdef LDAPEnabled
   , loginConfig :: LDAPLoginConfig
 #else
-  , loginConfig :: SimpleLoginConfig
+  , loginConfig :: StandaloneLoginConfig
 #endif
   } deriving (Eq, Show, Read)
 

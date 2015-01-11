@@ -409,6 +409,9 @@ instance Save Language where
 instance Save TimeZoneName where
   save d = fileSave d "timezonename" . show
 
+instance Save Uid where
+  save d = fileSave d "uid" . show
+
 instance Save Assignment where
   save d = assignmentCata $ \name desc type_ start end evtype -> do
     createStructureDirs d assignmentDirStructure
@@ -462,7 +465,7 @@ instance Save Group where
                 saveName d (groupName g)
 
 instance Save User where
-  save d = userCata $ \role username email name timezone language -> do
+  save d = userCata $ \role username email name timezone language uid -> do
     createStructureDirs d userDirStructure
     save d role
     save d username
@@ -470,6 +473,7 @@ instance Save User where
     saveName d name
     save d timezone
     save d language
+    save d uid
 
 instance Save UserRegistration where
   save d u = do createStructureDirs d userRegDirStructure
@@ -536,6 +540,9 @@ instance Load Email where
 instance Load TimeZoneName where
   load d = fileLoad d "timezonename" readMaybe
 
+instance Load Uid where
+  load d = fileLoad d "uid" readMaybe
+
 instance Load Assignment where
   load d = assignmentAna
       (loadName d)
@@ -594,6 +601,7 @@ instance Load User where
     name  <- loadName d
     zone  <- load d
     lang  <- load d
+    uid   <- load d
     return $ User {
         u_role = role
       , u_username = uname
@@ -601,6 +609,7 @@ instance Load User where
       , u_name = name
       , u_timezone = zone
       , u_language = lang
+      , u_uid = uid
       }
 
 instance Load UserRegistration where
@@ -655,14 +664,18 @@ instance Update Email where
 instance Update TimeZoneName where
   update d = fileUpdate d "timezonename" . show
 
+instance Update Uid where
+  update d = fileUpdate d "uid" . show
+
 instance Update User where
-  update d = userCata $ \username role email name timezone language -> do
+  update d = userCata $ \username role email name timezone language uid -> do
     update d username
     update d role
     update d email
     updateName d name
     update d timezone
     update d language
+    update d uid
 
 instance Update Evaluation where
   update d e = do

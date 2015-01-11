@@ -93,10 +93,13 @@ ldapsearch uid attrs = do
   let r    = map ((DT.unpack *** translate) . DT.break (== ':')) out2
   exitCode' (raise Ldapsearch err) (return r) ec
  where
+   textToBS :: DT.Text -> BS.ByteString
+   textToBS = BS.pack . DT.unpack
+
    translate cs
      | colon `DT.isPrefixOf` cs      = DT.unpack cs1
      | colonColon `DT.isPrefixOf` cs =
-       either (const $ DT.unpack cs2) BS.unpack (decode $ DTE.encodeUtf8 cs2)
+       either (const $ DT.unpack cs2) (DT.unpack . DTE.decodeUtf8) (decode $ textToBS cs2)
      | otherwise = DT.unpack $ cs
      where
        colon      = fromString ": "

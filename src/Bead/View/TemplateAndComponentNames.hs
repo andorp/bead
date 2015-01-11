@@ -124,21 +124,17 @@ groupNameField = GroupNameField "group-name"
 groupDescField = GroupDescField "group-desc"
 groupEvalField = GroupEvalField "group-eval"
 
-data UserField
-  = UserField  { uFieldName :: String }
-  | UserEmailField { uFieldName :: String }
-  | UserRoleField  { uFieldName :: String }
-  | UserFamilyNameField { uFieldName :: String }
-  | UserTimeZoneField { uFieldName :: String }
+newtype UserField = UserField  { uFieldName :: String }
 
 instance SnapFieldName UserField where
   fieldName = fromString . uFieldName
 
 usernameField  = UserField "username"
-userEmailField = UserEmailField "useremail"
-userRoleField  = UserRoleField "userrole"
-userFamilyNameField = UserFamilyNameField "userfamilyname"
-userTimeZoneField = UserTimeZoneField "usertimezone"
+userEmailField = UserField "useremail"
+userRoleField  = UserField "userrole"
+userFamilyNameField = UserField "userfamilyname"
+userTimeZoneField = UserField "usertimezone"
+userUidField = UserField "useruid"
 
 instance SnapFieldName ChangePwdField where
   fieldName = fromString . cpf
@@ -393,7 +389,7 @@ fieldList = map fieldName $ join [
   , SFN exerciseForm,   SFN exerciseKey,     SFN coursesForm,            SFN coursesKey
   , SFN courseFormInfo, SFN courseCodeField, SFN courseNameField,        SFN courseDescField
   , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
-  , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField
+  , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField, SFN userUidField
   , SFN userRoleField,  SFN loginSubmitBtn,  SFN assignmentDescField,    SFN assignmentTCsField
   , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField, SFN evaluationValueField
   , SFN assignmentAspectField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaluationResultField

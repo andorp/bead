@@ -90,10 +90,8 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
     ldapUser ldapUsername pwd (uid,email,name) = do
       -- Check if the user exist
       let packedPwd = pack pwd
-      timezone <- fmap (TimeZoneName . Config.defaultRegistrationTimezone . Config.loginConfig) $ lift $ getConfiguration
-      lang <- fmap (fromMaybe (Language "en")) $ lift $ languageFromSession
       let username = ldapUsername
-      let user role = User role ldapUsername email name timezone lang
+      let user role timezone lang = User role ldapUsername email name timezone lang uid
       exist <- regStory (Story.doesUserExist username)
       case exist of
         False -> do
@@ -109,7 +107,9 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           when (isNothing . passwordFromAuthUser $ snapAuthUser) . throwError . strMsg $ "Snap Auth: no password is created"
           let snapAuthPwd = fromJust . passwordFromAuthUser $ snapAuthUser
           -- Creates the user in the persistence layer
-          _ <- regStory (Story.createUser $ user Student)
+          timezone <- fmap (TimeZoneName . Config.defaultRegistrationTimezone . Config.loginConfig) $ lift $ getConfiguration
+          lang <- fmap (fromMaybe (Language "en")) $ lift $ languageFromSession
+          _ <- regStory (Story.createUser $ user Student timezone lang)
           return ()
 
         True -> do
@@ -117,7 +117,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           authUser <- lookupUser username
           beadUser <- regStory (Story.loadUser username)
           lift $ liftIO $ Auth.setPassword authUser packedPwd
-          _ <- regStory $ Story.updateUser (user $ u_role beadUser)
+          _ <- regStory $ Story.updateUser $ user (u_role beadUser) (u_timezone beadUser) (u_language beadUser)
           return ()
 
       beadLogin username pwd

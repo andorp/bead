@@ -43,6 +43,7 @@ userDataChange = do
     <*> getParameter (stringParameter (fieldName userFamilyNameField) "Teljes név")
     <*> getParameter userTimeZonePrm
     <*> getParameter userLanguagePrm
+    <*> getParameter uidPrm
   return $ UpdateUser user
 
 userDetailForm :: [TimeZoneName] -> User -> DictionaryInfos -> IHtml

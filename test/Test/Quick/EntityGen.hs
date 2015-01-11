@@ -30,6 +30,8 @@ usernames = liftM Username (vectorOf 6 $ oneof [capital, digits])
     capital = elements ['A' .. 'Z']
     digits  = elements ['0' .. '9']
 
+uids = fmap (usernameCata Uid) usernames
+
 roleGen = elements [Student, GroupAdmin, CourseAdmin, Admin]
 
 emails = do
@@ -44,13 +46,14 @@ familyNames = do
 
 languages = Language <$> word
 
-users = userAna
-  roleGen
-  usernames
-  emails
-  familyNames
-  (return utcZoneInfo)
-  languages
+users = User
+  <$> roleGen
+  <*> usernames
+  <*> emails
+  <*> familyNames
+  <*> (return utcZoneInfo)
+  <*> languages
+  <*> uids
 
 userAndEPwds = do
   user <- users
