@@ -180,7 +180,9 @@ submissionDesc :: SubmissionKey -> Persist SubmissionDesc
 submissionDesc sk = do
   submission <- loadSubmission sk
   un <- usernameOfSubmission sk
-  u  <- u_name <$> loadUser un
+  user <- loadUser un
+  let u = u_name user
+  let uid = u_uid user
   ak <- assignmentOfSubmission sk
   asg <- loadAssignment ak
   created <- assignmentCreatedTime ak
@@ -195,6 +197,7 @@ submissionDesc sk = do
         , eGroup    = Nothing
         , eStudent  = u
         , eUsername = un
+        , eUid      = uid
         , eSolution = submissionValue id (const "zipped") (solution submission)
         , eAssignment     = asg
         , eAssignmentKey  = ak
@@ -213,6 +216,7 @@ submissionDesc sk = do
         , eGroup    = Just $ groupName group
         , eStudent  = u
         , eUsername = un
+        , eUid      = uid
         , eSolution = submissionValue id (const "zipped") (solution submission)
         , eAssignment     = asg
         , eAssignmentKey  = ak

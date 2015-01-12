@@ -461,12 +461,14 @@ withPersonalInfo p f = personalInfoCata f p
 data UserDesc = UserDesc {
     ud_username :: Username
   , ud_fullname :: String
+  , ud_uid      :: Uid
   } deriving (Eq, Ord, Show)
 
 mkUserDescription :: User -> UserDesc
 mkUserDescription u = UserDesc {
     ud_username = u_username u
   , ud_fullname = u_name u
+  , ud_uid      = u_uid u
   }
 
 -- | User awaiting for registration
@@ -594,9 +596,9 @@ instance CompareHun Username where
   compareHun (Username u) (Username u') = compareHun u u'
 
 instance CompareHun UserDesc where
-  compareHun (UserDesc u n) (UserDesc u' n') =
-    case compareHun n n' of
-      EQ -> compareHun u u'
+  compareHun (UserDesc username fullname uid) (UserDesc username' fullname' uid') =
+    case compareHun fullname fullname' of
+      EQ -> compareHun username username'
       other -> other
 
 -- Status message is shown for the user on the UI

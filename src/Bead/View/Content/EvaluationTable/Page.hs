@@ -84,7 +84,7 @@ evaluationTableContent tc = openedSubmissionsCata $ \admincourse admingroup rela
 submissionInfo tc msg isGroup (key, desc) = H.tr $ do
   H.td $ link (routeOf (evaluation key)) (msg $ Msg_EvaluationTable_Solution "Submission")
   H.td . fromString . Assignment.name . eAssignment $ desc
-  usernameCata (H.td . fromString) $ eUsername desc
+  uid (H.td . fromString) $ eUid desc
   H.td . fromString . eStudent $ desc
   H.td . fromString . eCourse $ desc
   when isGroup $ H.td . fromString . fromMaybe "" . eGroup $ desc

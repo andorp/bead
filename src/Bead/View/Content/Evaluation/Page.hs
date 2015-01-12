@@ -175,7 +175,7 @@ evaluationContent pd = do
             td $ fromString $ eStudent sd
         tr $ do
             td $ fromString $ msg $ Msg_Evaluation_Username "Username: "
-            td $ fromString $ usernameCata Prelude.id $ eUsername sd
+            td $ fromString $ uid Prelude.id $ eUid sd
         tr $ do
             td $ fromString $ msg $ Msg_Evaluation_SubmissionDate "Date of submission: "
             td $ fromString $ showDate . tc $ eSubmissionDate sd

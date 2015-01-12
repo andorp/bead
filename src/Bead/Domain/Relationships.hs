@@ -109,6 +109,7 @@ data SubmissionDesc = SubmissionDesc {
   , eGroup    :: Maybe String
   , eStudent  :: String
   , eUsername :: Username
+  , eUid      :: Uid
   , eSolution :: String
   , eAssignmentKey   :: AssignmentKey
   , eAssignment      :: Assignment
