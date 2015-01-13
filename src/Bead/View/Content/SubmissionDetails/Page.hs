@@ -83,7 +83,7 @@ submissionDetailsPostHandler = do
       Nothing
       Nothing
       Nothing
-      (\_username _page name _role _token _timezone _status -> Just name)
+      (\_username _uid _page name _role _token _timezone _status -> Just name)
 
 submissionDetailsContent :: PageData -> IHtml
 submissionDetailsContent p = do

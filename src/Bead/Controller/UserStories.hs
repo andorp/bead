@@ -2,7 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.Controller.UserStories where
 
-import           Bead.Domain.Entities as E hiding (name)
+import           Bead.Domain.Entities hiding (name, uid)
+import qualified Bead.Domain.Entities as Entity (name, uid)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
@@ -467,7 +468,7 @@ createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $
   admin <- username
   join . persistence $ do
     info <- Persist.personalInfo u
-    withPersonalInfo info $ \role _name _tz -> do
+    withPersonalInfo info $ \role _name _tz _ui -> do
       admined <- Persist.isAdministratedCourseOfGroup admin gk
       if (and [groupAdmin role, admined])
         then do Persist.createGroupAdmin u gk
@@ -803,7 +804,7 @@ logMessage level msg = do
     userNotLoggedIn    = logMsg "[USER NOT LOGGED IN]"
     registration       = logMsg "[REGISTRATION]"
     testAgent          = logMsg "[TEST AGENT]"
-    loggedIn u _ _ _ t _ _ = logMsg (join [usernameCata id u, " ", t])
+    loggedIn _ u _ _ _ t _ _ = logMsg (join [Entity.uid id u, " ", t])
 
 
 -- | Change user state, if the user state is logged in
@@ -817,9 +818,10 @@ changeUserState f = do
 loadUserData :: Username -> String -> PageDesc -> UserStory ()
 loadUserData uname t p = do
   info <- persistence $ Persist.personalInfo uname
-  flip personalInfoCata info $ \r n tz -> do
+  flip personalInfoCata info $ \r n tz ui -> do
     CMS.put $ UserState {
         user = uname
+      , uid = ui
       , page = p
       , name = n
       , role = r
@@ -1313,7 +1315,7 @@ persistence m = do
         userNotLoggedIn    = "Not logged in user!"
         registration       = "Registration"
         testAgent          = "Test Agent"
-        loggedIn u _ _ _ t _ _ = concat [usernameCata id u, " ", t]
+        loggedIn _ ui _ _ _ t _ _ = concat [Entity.uid id ui, " ", t]
 
 -- * User Error Messages
 

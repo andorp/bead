@@ -26,7 +26,7 @@ login err langInfos = do
       Bootstrap.passwordInput (fieldName loginPassword) (msg $ Msg_Login_Password "Password:")
       Bootstrap.submitButton  (fieldName loginSubmitBtn) (msg $ Msg_Login_Submit "Login")
     maybe mempty (Bootstrap.rowCol4Offset4 . (p ! class_ "text-center bg-danger") . fromString . show) err
-#ifndef LDAP
+#ifndef LDAPEnabled
     -- Registration and password reset is not available for LDAP as LDAP handles these functionality
     Bootstrap.rowCol4Offset4 $ Bootstrap.buttonGroupJustified $ do
       Bootstrap.buttonLink "/reg_request" (msg $ Msg_Login_Registration "Registration")

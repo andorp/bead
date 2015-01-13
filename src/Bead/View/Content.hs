@@ -77,7 +77,7 @@ import Snap hiding (Config(..), empty, get, route, (<$>))
 import Snap.Blaze (blaze)
 
 import Bead.Controller.Pages
-import Bead.Controller.ServiceContext
+import Bead.Controller.ServiceContext hiding (uid)
 import Bead.Domain.Entities hiding (name)
 import Bead.Domain.Entity.Comment
 import Bead.Domain.Func

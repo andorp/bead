@@ -19,8 +19,8 @@ import qualified Text.Blaze.Html5.Attributes as A
 import           Text.Blaze.Html5.Attributes hiding (id, span)
 
 import qualified Bead.Controller.Pages as P
-import           Bead.Controller.ServiceContext (UserState(..))
-import           Bead.Domain.Entities (statusMessage, usernameCata)
+import           Bead.Controller.ServiceContext as ServiceContext (UserState(..))
+import           Bead.Domain.Entities as Entity (statusMessage, usernameCata, uid)
 import           Bead.View.Fay.Hooks
 import           Bead.View.Fay.JSON.ServerSide
 import qualified Bead.View.I18N as I18N
@@ -449,13 +449,14 @@ bootStrapHeader s secs = do
                 H.div ! class_ "collapse navbar-collapse navbar-ex1-collapse" $ do
                     ul ! class_ "nav navbar-nav navbar-right" $ do
                         li $ minSecCountdown "hdctd" "--:--" secs
-                        li $ H.a $ fromString . usernameCata id . user $ s
+                        li $ H.a userId
                         li $ (I18N.i18n msg $ linkToPage profile)
                         li $ (I18N.i18n msg $ linkToPage logout)
   where
     logout = P.logout ()
     profile = P.profile ()
     home = P.home ()
+    userId = fromString $ concat [usernameCata id . user $ s, " / ", Entity.uid id . ServiceContext.uid $ s]
 
 bootStrapStatus :: UserState -> IHtml
 bootStrapStatus = maybe noMessage message . status

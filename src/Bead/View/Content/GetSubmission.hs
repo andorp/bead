@@ -13,7 +13,7 @@ getSubmission = DataHandler $ do
   sk <- getParameter submissionKeyPrm
   (s, description) <- userStory (Story.getSubmission sk)
   let submission = solution s
-  let basename = concat [usernameCata id $ eUsername description, "_", submissionKeyMap id sk]
+  let basename = concat [uid id $ eUid description, "_", submissionKeyMap id sk]
   let fname = submissionValue (const (++ ".txt")) (const (++ ".zip")) submission basename
   modifyResponse $
     setHeader "Content-Disposition" (fromString $ concat ["attachment; filename=\"",fname,"\""])

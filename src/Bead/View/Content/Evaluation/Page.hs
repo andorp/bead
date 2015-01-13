@@ -110,13 +110,13 @@ abstractEvaluationPostHandler getEvKeyParameter evCommand = do
       Nothing
       Nothing
       Nothing
-      (\_username _page _name role _token _timezone _status -> Just role)
+      (\_username _uid _page _name role _token _timezone _status -> Just role)
 
     getName = userStateCata
       Nothing
       Nothing
       Nothing
-      (\_username _page name _role _token _timezone _status -> Just name)
+      (\_username _uid _page name _role _token _timezone _status -> Just name)
 
 evaluationPostHandler :: POSTContentHandler
 evaluationPostHandler = abstractEvaluationPostHandler (getParameter submissionKeyPrm) NewEvaluation

@@ -451,10 +451,10 @@ userAna role username email name timezone language = User
   <*> timezone
   <*> language
 
-newtype PersonalInfo = PersonalInfo (Role, String, TimeZoneName)
+newtype PersonalInfo = PersonalInfo (Role, String, TimeZoneName, Uid)
 
-personalInfoCata f (PersonalInfo (role, name, timezone))
-  = f role name timezone
+personalInfoCata f (PersonalInfo (role, name, timezone, uid))
+  = f role name timezone uid
 
 withPersonalInfo p f = personalInfoCata f p
 

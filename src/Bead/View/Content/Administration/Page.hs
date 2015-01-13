@@ -106,7 +106,7 @@ administrationContent info = do
 
     userLongname u = concat [ usernameCata id $ u_username u, " - ", u_name u ]
     courses' = map (id *** courseName) $ courses info
-    courseAdmins' = map (u_username &&& userLongname) $ courseAdmins info
+    courseAdmins' = map (u_uid &&& userLongname) $ courseAdmins info
 
     createCourse      = Pages.createCourse ()
     assignCourseAdmin = Pages.assignCourseAdmin ()
@@ -135,7 +135,7 @@ courseAdministratorsTable i18n courses = Bootstrap.row $ Bootstrap.colMd12 $ do
     H.tbody $ forM_ courses' $ \(course, admins) -> do
       H.tr $ do
         H.td . fromString $ courseName course
-        let admins' = sort $ map (usernameCata id . u_username) admins
+        let admins' = sort $ map (uid id . u_uid) admins
         H.td . fromString . concat $ intersperse ", " admins'
 
 -- Add Course Admin

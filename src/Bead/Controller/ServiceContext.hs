@@ -46,6 +46,7 @@ data UserState
   | TestAgent
   | UserState {
     user :: Username -- Username
+  , uid  :: Uid
   , page :: PageDesc -- The page descriptor of the last requested one
   , name :: String   -- User's full name
   , role :: Role     -- User's role
@@ -63,7 +64,7 @@ userStateCata
     UserNotLoggedIn -> userNotLoggedIn
     Registration -> registration
     TestAgent -> testAgent
-    UserState u p n r t tz s -> userState u p n r t tz s
+    UserState u ui p n r t tz s -> userState u ui p n r t tz s
 
 userNotLoggedIn :: UserState
 userNotLoggedIn = UserNotLoggedIn
@@ -74,20 +75,20 @@ userRole = userStateCata
   (Left EmptyRole) -- userNotLoggedIn
   (Left RegRole)   -- registration
   (Left TestAgentRole) -- testAgent
-  (\_u _p _n role _t _tz _s -> Right role) -- userState
+  (\_u _ui _p _n role _t _tz _s -> Right role) -- userState
 
 -- Produces a new user state from the old one, setting
 -- the status message to the given one
 setStatus msg = userStateCata UserNotLoggedIn Registration TestAgent userState where
-  userState u p n r t tz _ = UserState u p n r t tz (Just msg)
+  userState u ui p n r t tz _ = UserState u ui p n r t tz (Just msg)
 
 -- Produces the status message of the UserState, otherwise Nothing
 getStatus = userStateCata Nothing Nothing Nothing status where
-  status _ _ _ _ _ _ s = s
+  status _ _ _ _ _ _ _ s = s
 
 -- Produces a new status expect that the status message is cleared.
 clearStatus = userStateCata UserNotLoggedIn Registration TestAgent userState where
-  userState u p n r t tz _ = UserState u p n r t tz Nothing
+  userState u ui p n r t tz _ = UserState u ui p n r t tz Nothing
 
 -- Returns a username stored in the user state, or a description
 -- string for the state
@@ -95,24 +96,24 @@ usernameInState = userStateCata
   (Username "NotLoggedIn")
   (Username "Registration")
   (Username "TestAgent")
-  (\user _p _n _r _t _tz _s -> user)
+  (\user _ui _p _n _r _t _tz _s -> user)
 
 instance UserToken UserState where
   userToken = userStateCata
     (UsrToken (Username "UNL", "UNL")) -- userNotLoggedIn
     (UsrToken (Username "REG", "REG")) -- registration
     (UsrToken (Username "TA", "TA"))   -- testAgent
-    (\user _p _n _r token _tz _s -> UsrToken (user, token))
+    (\user _ui _p _n _r token _tz _s -> UsrToken (user, token))
 
 instance InRole UserState where
-  isAdmin = userStateCata False False False (\_u _p _n role _t _tz _s -> isAdmin role)
-  isCourseAdmin = userStateCata False False False (\_u _p _n role _t _tz _s -> Entities.isCourseAdmin role)
-  isGroupAdmin = userStateCata False False False (\_u _p _n role _t _tz _s -> isGroupAdmin role)
-  isStudent = userStateCata False False False (\_u _p _n role _t _tz _s -> isStudent role)
+  isAdmin = userStateCata False False False (\_u _ui _p _n role _t _tz _s -> isAdmin role)
+  isCourseAdmin = userStateCata False False False (\_u _ui _p _n role _t _tz _s -> Entities.isCourseAdmin role)
+  isGroupAdmin = userStateCata False False False (\_u _ui _p _n role _t _tz _s -> isGroupAdmin role)
+  isStudent = userStateCata False False False (\_u _ui _p _n role _t _tz _s -> isStudent role)
 
 -- | The actual page that corresponds to the user's state
 actualPage :: UserState -> PageDesc
-actualPage = userStateCata login' login' login' (\_u page _n _r _t _tz _s -> page)
+actualPage = userStateCata login' login' login' (\_u _ui page _n _r _t _tz _s -> page)
   where
     login' = login ()
 
