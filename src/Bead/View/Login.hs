@@ -69,6 +69,10 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
       when (isNothing authUser) . throwError . strMsg $ "User was not created in the Snap Auth module"
       return $ fromJust authUser
 
+    -- Saves the user to the user database
+    saveUser authUser = do
+      lift $ withBackend $ \r -> liftIO $ save r authUser
+
     -- Runs a user story in the registration context, and throws an error if the registration
     -- story has failed
     regStory story = checkFailure =<< (lift $ registrationStory story)
@@ -115,8 +119,9 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
         True -> do
           -- If the user exists update its profile and password
           authUser <- lookupUser username
+          authUser <- lift $ liftIO $ Auth.setPassword authUser packedPwd
+          saveUser authUser
           beadUser <- regStory (Story.loadUser username)
-          lift $ liftIO $ Auth.setPassword authUser packedPwd
           _ <- regStory $ Story.updateUser $ user (u_role beadUser) (u_timezone beadUser) (u_language beadUser)
           return ()
 
