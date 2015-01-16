@@ -14,7 +14,7 @@ import           Prelude as P
 import           Snap.Snaplet.Auth as Auth
 import           Snap.Snaplet.Session
 
-import qualified Bead.Configuration as Config
+import qualified Bead.Config as Config
 import           Bead.Controller.Logging as L
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext hiding (serviceContext)
@@ -111,10 +111,16 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           when (isNothing . passwordFromAuthUser $ snapAuthUser) . throwError . strMsg $ "Snap Auth: no password is created"
           let snapAuthPwd = fromJust . passwordFromAuthUser $ snapAuthUser
           -- Creates the user in the persistence layer
-          timezone <- fmap (TimeZoneName . Config.defaultRegistrationTimezone . Config.loginConfig) $ lift $ getConfiguration
+          timezone <- fmap getTimeZone $ lift $ getConfiguration
           lang <- fmap (fromMaybe (Language "en")) $ lift $ languageFromSession
           _ <- regStory (Story.createUser $ user Student timezone lang)
           return ()
+          where
+            getTimeZone =
+              Config.loginCfg
+                (TimeZoneName . Config.defaultRegistrationTimezone) -- LDAP
+                (const $ TimeZoneName "UTC") -- STANDALONE
+                . Config.loginConfig
 
         True -> do
           -- If the user exists update its profile and password

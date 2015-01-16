@@ -13,7 +13,7 @@ import           System.IO (hFlush, hSetEcho, stdout, stdin)
 import           System.IO.Temp (createTempDirectory)
 import           Text.Regex.TDFA
 
-import           Bead.Configuration
+import           Bead.Config
 import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
 import           Bead.Daemon.Email
@@ -55,7 +55,7 @@ main = do
 
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
-printConfigInfo = configCata loginCfg $ \logfile timeout hostname fromEmail loginlang zoneInfoDir up lcfg -> do
+printConfigInfo = configCata loginConfigPart $ \logfile timeout hostname fromEmail loginlang zoneInfoDir up lcfg -> do
   configLn $ "Log file: " ++ logfile
   configLn $ concat ["Session timeout: ", show timeout, " seconds"]
   configLn $ "Hostname included in emails: " ++ hostname
@@ -66,16 +66,13 @@ printConfigInfo = configCata loginCfg $ \logfile timeout hostname fromEmail logi
   lcfg
   where
     configLn s = putStrLn ("CONFIG: " ++ s)
-    loginCfg =
-#ifdef LDAPEnabled
-      ldapLoginConfig $ \file tz -> do
-        configLn $ "Non LDAP Users config file: " ++ show file
-        configLn $ "Default registration timezone: " ++ show tz
-#else
-      standaloneLoginConfig $ \regexp example -> do
-        configLn $ "Username regular expression for the registration: " ++ regexp
-        configLn $ "Username example for the regular expression: " ++ example
-#endif
+    loginConfigPart = loginCfg
+      (ldapLoginConfig $ \file tz -> do
+         configLn $ "Non LDAP Users config file: " ++ show file
+         configLn $ "Default registration timezone: " ++ show tz)
+      (standaloneLoginConfig $ \regexp example -> do
+         configLn $ "Username regular expression for the registration: " ++ regexp
+         configLn $ "Username example for the regular expression: " ++ example)
 
 -- Check if the configuration is valid
 checkConfig :: Config -> IO ()
@@ -83,26 +80,20 @@ checkConfig cfg = do
   check (maxUploadSizeInKb cfg > 0)
     "The maximum upload size must be non-negative!"
 
-#ifdef LDAPEnabled
-#else
-  -- Check the given username example against the given username regexp, if the
-  -- example does not match with the regepx quit with an exit failure.
-  let loginCfg = loginConfig cfg
-  check (usernameRegExpExample loginCfg =~ usernameRegExp loginCfg)
-    "Given username example does not match with the given pattern!"
-#endif
+  let loginCfgPart = loginConfig cfg
+  loginCfg
+    -- LDAP: Check if there is a given non-ldap users file exist
+    (maybe (return ())
+           (\fp -> checkIO (doesFileExist fp) "The given non LDAP Users configuration file")
+      . nonLDAPUsersFile)
+    -- Standalone: Check the given username example against the given username regexp, if the
+    -- example does not match with the regepx quit with an exit failure.
+    (\cfg -> check (usernameRegExpExample cfg =~ usernameRegExp cfg)
+               "Given username example does not match with the given pattern!")
+    (loginCfgPart)
 
   checkIO (doesDirectoryExist (timeZoneInfoDirectory cfg))
     "The given time-zone info directory"
-
-#ifdef LDAPEnabled
-  let loginCfg = loginConfig cfg
-  maybe
-    (return ())
-    (\fp -> checkIO (doesFileExist fp)
-               "The given non LDAP Users configuration file")
-    (nonLDAPUsersFile loginCfg)
-#endif
 
   configCheck "Config is OK."
   where

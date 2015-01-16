@@ -48,8 +48,6 @@ Data-Files:
   lang/hu.dict
 
   bead.config
-  bead.ldap.config
-  bead.std.config
 
 Flag Tests
   Description:  Enable testing
@@ -133,6 +131,7 @@ Executable Bead
     transformers,
     utf8-string,
     unix,
+    yaml >= 0.8.8.4 && < 0.9,
     xmlhtml
 
 Executable BeadUnitTest

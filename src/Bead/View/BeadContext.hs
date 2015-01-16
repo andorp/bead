@@ -24,7 +24,7 @@ import           Snap.Snaplet.Auth
 import           Snap.Snaplet.Fay
 import           Snap.Snaplet.Session
 
-import           Bead.Configuration
+import           Bead.Config
 import           Bead.Controller.Logging
 import           Bead.Controller.ServiceContext
 import           Bead.Daemon.Email as EmailDaemon

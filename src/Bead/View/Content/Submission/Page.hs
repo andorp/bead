@@ -16,7 +16,7 @@ import           System.FilePath.Posix (takeExtension)
 import           Text.Blaze.Html5 as H
 import           Text.Blaze.Html5.Attributes as A
 
-import           Bead.Configuration (maxUploadSizeInKb)
+import           Bead.Config (maxUploadSizeInKb)
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
 import qualified Bead.Domain.Entities as E

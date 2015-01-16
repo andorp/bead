@@ -1,23 +1,17 @@
 {-# LANGUAGE CPP #-}
-module Bead.Configuration (
+module Bead.Config.Configuration (
     InitTask(..)
   , Config(..)
-#ifdef LDAPEnabled
+  , LoginCfg(..)
+  , loginCfg
   , LDAPLoginConfig(..)
   , ldapLoginConfig
-#else
   , StandaloneLoginConfig(..)
   , standaloneLoginConfig
-#endif
   , defaultConfiguration
   , configCata
-  , initTasks
-  , Usage
+  , Usage(..)
   , substProgName
-  , readConfiguration
-#ifdef TEST
-  , initTaskAssertions
-#endif
   ) where
 
 import Control.Monad (join)
@@ -61,15 +55,25 @@ data Config = Config {
   , timeZoneInfoDirectory :: FilePath
     -- The maximum upload size of a file given in Kbs
   , maxUploadSizeInKb :: Int
-#ifdef LDAPEnabled
-  , loginConfig :: LDAPLoginConfig
-#else
-  , loginConfig :: StandaloneLoginConfig
-#endif
+    -- Simple login configuration
+  , loginConfig :: LoginCfg
   } deriving (Eq, Show, Read)
 
 configCata fcfg f (Config useraction timeout host from loginlang tz up cfg) =
   f useraction timeout host from loginlang tz up (fcfg cfg)
+
+-- Two possible login configuration one for LDAP and one for standalone login method
+data LoginCfg
+  = LDAPLC LDAPLoginConfig
+  | STDLC  StandaloneLoginConfig
+  deriving (Eq, Show, Read)
+
+loginCfg
+  ldap
+  std
+  l = case l of
+    LDAPLC x -> ldap x
+    STDLC  x -> std  x
 
 -- Login configuration that is used in standalone registration and login mode
 data StandaloneLoginConfig = StandaloneLoginConfig {
@@ -107,12 +111,12 @@ defaultConfiguration = Config {
 
 defaultLoginConfig =
 #ifdef LDAPEnabled
-  LDAPLoginConfig {
+  LDAPLC $ LDAPLoginConfig {
       nonLDAPUsersFile = Nothing
     , defaultRegistrationTimezone = "UTC"
     }
 #else
-  StandaloneLoginConfig {
+  STDLC $ StandaloneLoginConfig {
       usernameRegExp = "^[A-Za-z0-9]{6}$"
     , usernameRegExpExample = "QUER42"
     }
@@ -151,22 +155,3 @@ usageFold g (Usage f) = g f
 -- Produces an usage string, substituting the given progname into the template
 substProgName :: String -> Usage -> String
 substProgName name = usageFold ($ name)
-
--- Consumes the argument list and produces a task list
--- Produces Left "usage function" if invalid options or extra arguments is given
--- otherwise Right "tasklist"
-initTasks :: [String] -> Either Usage [InitTask]
-initTasks arguments = case filter ((/='-') . head) arguments of
-  []        -> Right []
-  ["admin"] -> Right [CreateAdmin]
-  _         -> Left $ Usage (\p -> join [p, " [OPTION...] [admin]"])
-
-#ifdef TEST
-initTaskAssertions = [
-    Assertion "Empty config list"   (initTasks [])     (Right [])
-  , Assertion "Create admin option" (initTasks ["admin"]) (Right [CreateAdmin])
-  , AssertPredicate "Two options"             (initTasks ["admin","b"]) isLeft
-  ] where
-      isLeft (Left _) = True
-      isLeft _        = False
-#endif

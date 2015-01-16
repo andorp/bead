@@ -59,7 +59,7 @@ import           Snap.Snaplet.Session
 import           Snap.Util.FileUploads
 import           Text.Blaze.Html5 (Html)
 
-import           Bead.Configuration
+import           Bead.Config
 import           Bead.Controller.Logging as L
 import           Bead.Controller.Logging
 import           Bead.Controller.ServiceContext hiding (serviceContext, name)

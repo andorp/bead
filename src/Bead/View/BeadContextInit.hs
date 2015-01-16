@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
 module Bead.View.BeadContextInit (
@@ -20,7 +19,7 @@ import           Snap.Snaplet.Session.Backends.CookieSession
 import           System.FilePath ((</>))
 import           System.Directory
 
-import           Bead.Configuration
+import           Bead.Config
 import           Bead.Controller.ServiceContext as S hiding (serviceContext)
 import           Bead.Daemon.Email
 import           Bead.Daemon.LDAP
@@ -105,12 +104,11 @@ beadContextInit config user s daemons tempDir = makeSnaplet "bead" description d
 
   dl <- nestSnaplet "debuglogger" debugLoggerContext $ createDebugLogger
 
-#ifdef LDAPEnabled
-  nonLDAPUsers <- liftIO $ loadNonLDAPUsers (nonLDAPUsersFile $ loginConfig config)
-  ldap <- nestSnaplet "ldap-config" ldapContext $ createLDAPContext (LDAP nonLDAPUsers (ldapDaemon daemons))
-#else
-  let ldap = error "LDAP related functionality is used in non-LDAP login."
-#endif
+  ldap <- loginCfg
+    (\cfg -> do nonLDAPUsers <- liftIO $ loadNonLDAPUsers (nonLDAPUsersFile cfg)
+                nestSnaplet "ldap-config" ldapContext $ createLDAPContext (LDAP nonLDAPUsers (ldapDaemon daemons)))
+    (const . return $ error "LDAP related functionality is used in non-LDAP login.")
+    (loginConfig config)
 
   addRoutes (routes config)
 

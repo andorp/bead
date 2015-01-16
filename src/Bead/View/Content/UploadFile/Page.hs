@@ -12,7 +12,7 @@ import           Snap.Util.FileUploads
 import           Text.Blaze.Html5 as H
 import           Text.Blaze.Html5.Attributes as A (enctype)
 
-import           Bead.Configuration (maxUploadSizeInKb)
+import           Bead.Config (maxUploadSizeInKb)
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
 import           Bead.View.BeadContext

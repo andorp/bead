@@ -23,7 +23,7 @@ import           Snap.Snaplet.Fay
 import           Snap.Snaplet.Session
 import           Snap.Util.FileServe (serveDirectory)
 
-import           Bead.Configuration (Config(..))
+import           Bead.Config (Config(..))
 import           Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as SC hiding (serviceContext)
 import qualified Bead.Controller.Pages as P

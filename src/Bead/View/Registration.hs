@@ -28,7 +28,7 @@ import           Snap.Snaplet.Session
 
 import           Bead.Controller.Logging
 import qualified Bead.Controller.UserStories as S
-import           Bead.Configuration
+import           Bead.Config
 import           Bead.Domain.TimeZone (utcZoneInfo)
 import qualified Bead.Persistence.Persist as Persist
 import           Bead.View.BeadContext
