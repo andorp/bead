@@ -4,6 +4,7 @@ module Main where
 
 import           Data.Char (toUpper)
 import qualified Data.Char as Char
+import           Data.Maybe
 
 import           Snap hiding (Config(..))
 import           System.Directory
@@ -67,9 +68,15 @@ printConfigInfo = configCata loginConfigPart $ \logfile timeout hostname fromEma
   where
     configLn s = putStrLn ("CONFIG: " ++ s)
     loginConfigPart = loginCfg
-      (ldapLoginConfig $ \file tz -> do
+      (ldapLoginConfig $ \file tz tmpdir timeout threads uik unk uek -> do
          configLn $ "Non LDAP Users config file: " ++ show file
-         configLn $ "Default registration timezone: " ++ show tz)
+         configLn $ "Default registration timezone: " ++ show tz
+         configLn $ "Temporary directory for the LDAP tickets: " ++ show tmpdir
+         configLn $ "Timeout for an LDAP login request: " ++ show timeout
+         configLn $ "Number of LDAP authenticator threads: " ++ show threads
+         configLn $ "LDAP key for the UserID: " ++ show uik
+         configLn $ "LDAP key for the User's full name: " ++ show unk
+         configLn $ "LDAP key for the User's email: " ++ show uek)
       (standaloneLoginConfig $ \regexp example -> do
          configLn $ "Username regular expression for the registration: " ++ regexp
          configLn $ "Username example for the regular expression: " ++ example)
@@ -83,9 +90,17 @@ checkConfig cfg = do
   let loginCfgPart = loginConfig cfg
   loginCfg
     -- LDAP: Check if there is a given non-ldap users file exist
-    (maybe (return ())
-           (\fp -> checkIO (doesFileExist fp) "The given non LDAP Users configuration file")
-      . nonLDAPUsersFile)
+    (ldapLoginConfig $ \file tz tmpdir timeout threads uik unk uek -> do
+      when (isJust file) $ checkIO (doesFileExist $ fromJust file) "The given non LDAP Users configuration file"
+      checkIO (doesDirectoryExist tmpdir) "The given LDAP ticket directory does not exist"
+      check (not $ null tz) "Default registration time zone is empty"
+      check (timeout > 0) "LDAP timeout is less or equal to zero"
+      check (threads > 0) "LDAP thread number is less or equals to zero"
+      check (not $ null uik) "LDAP UID key is empty"
+      check (not $ null unk) "LDAP User's fullname key is empty"
+      check (not $ null uek) "LDAP User's email key is empty"
+    )
+
     -- Standalone: Check the given username example against the given username regexp, if the
     -- example does not match with the regepx quit with an exit failure.
     (\cfg -> check (usernameRegExpExample cfg =~ usernameRegExp cfg)
@@ -200,7 +215,7 @@ startService config initTasks = do
     startEmailDaemon userActionLogger
 
   ldapDaemon <- creating "ldap daemon" $
-    startLDAPDaemon userActionLogger (LDAPDaemonConfig { tempDir="/tmp/", timeOut=5, noOfWorkers=4 })
+    startLDAPDaemon userActionLogger $ ldapDaemonConfig config
 
   let daemons = Daemons logoutDaemon emailDaemon ldapDaemon
 
@@ -213,6 +228,22 @@ startService config initTasks = do
       x <- m
       putStrLn "DONE"
       return $! x
+
+    defaultLDAPConfig = LDAPDaemonConfig "" 0 0 "" "" ""
+
+    ldapDaemonConfig = loginCfg
+      (ldapLoginConfig $ \_file _tz tmpdir timeout threads uik unk uek ->
+        LDAPDaemonConfig {
+          tempDir = tmpdir,
+          timeOut = timeout,
+          noOfWorkers = threads,
+          uidKey = uik,
+          nameKey = unk,
+          emailKey = uek
+        })
+      (standaloneLoginConfig (\_ _ -> defaultLDAPConfig))
+      . loginConfig
+
 
 -- Creates a temporary directory for the bead in the system's temp dir
 createBeadTempDir :: IO FilePath

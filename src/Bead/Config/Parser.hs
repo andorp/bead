@@ -31,14 +31,20 @@ instance FromJSON Config where
 
 instance FromJSON LoginCfg where
   parseJSON (Object v) =
-    (LDAPLC <$> v .: "ldap") <|>
-    (STDLC  <$> v .: "standalone")
+    (STDLC  <$> v .: "standalone") <|>
+    (LDAPLC <$> v .: "ldap")
   parseJSON _ = error "Login config is not parsed"
 
 instance FromJSON LDAPLoginConfig where
   parseJSON (Object v) = LDAPLoginConfig
     <$> v .:? "non-ldap-user-file"
     <*> v .:  "default-timezone"
+    <*> v .:  "ticket-temporary-dir"
+    <*> v .:  "login-time-out-in-sec"
+    <*> v .:  "no-of-login-threads"
+    <*> v .:  "uid-key"
+    <*> v .:  "name-key"
+    <*> v .:  "email-key"
   parseJSON _ = error "LDAP login config is not parsed"
 
 instance FromJSON StandaloneLoginConfig where
@@ -61,18 +67,30 @@ parseTests = group "parserTests" $ do
       ])
     "Standalone config is not parsed correctly"
 
-  let ldapConfig1 = LDAPLoginConfig Nothing "Europe/Budapest"
+  let ldapConfig1 = LDAPLoginConfig Nothing "Europe/Budapest" "/tmp/" 5 4 "l" "cn" "mail"
   assertEquals "LDAP login config #1" (Right ldapConfig1)
     (decodeEither $ fromString $ unlines [
-        "default-timezone: 'Europe/Budapest'"
+        "default-timezone: 'Europe/Budapest'",
+        "ticket-temporary-dir: '/tmp/'",
+        "login-time-out-in-sec: 5",
+        "no-of-login-threads: 4",
+        "uid-key: 'l'",
+        "name-key: 'cn'",
+        "email-key: 'mail'"
       ])
     "LDAP config is not parsed correctly"
 
-  let ldapConfig2 = LDAPLoginConfig (Just "users.file") "Europe/Budapest"
+  let ldapConfig2 = LDAPLoginConfig (Just "users.file") "Europe/Budapest" "/tmp/" 5 4 "l" "cn" "mail"
   assertEquals "LDAP login config #2" (Right ldapConfig2)
     (decodeEither $ fromString $ unlines [
         "non-ldap-user-file: 'users.file'",
-        "default-timezone: 'Europe/Budapest'"
+        "default-timezone: 'Europe/Budapest'",
+        "ticket-template-dir: '/tmp/'",
+        "login-time-out-in-sec: 5",
+        "no-of-login-threads: 4",
+        "uid-key: 'l'",
+        "name-key: 'cn'",
+        "email-key: 'mail'"
       ])
     "LDAP config is not parsed correctly"
 
@@ -103,7 +121,13 @@ parseTests = group "parserTests" $ do
     (Right . config $ LDAPLC ldapConfig1)
     (parseYamlConfig . fromString . configStr $ unlines [
         "  ldap:",
-        "    default-timezone: 'Europe/Budapest'"
+        "    default-timezone: 'Europe/Budapest'",
+        "    ticket-temporary-dir: '/tmp/'",
+        "    login-time-out-in-sec: 5",
+        "    no-of-login-threads: 4",
+        "    uid-key: 'l'",
+        "    name-key: 'cn'",
+        "    email-key: 'mail'"
       ])
     "Config with LDAP is not parsed correctly"
 
@@ -112,7 +136,13 @@ parseTests = group "parserTests" $ do
     (parseYamlConfig . fromString . configStr $ unlines [
         "  ldap:",
         "    non-ldap-user-file: 'users.file'",
-        "    default-timezone: 'Europe/Budapest'"
+        "    default-timezone: 'Europe/Budapest'",
+        "    ticket-temporary-dir: '/tmp/'",
+        "    login-time-out-in-sec: 5",
+        "    no-of-login-threads: 4",
+        "    uid-key: 'l'",
+        "    name-key: 'cn'",
+        "    email-key: 'mail'"
       ])
     "Config with LDAP is not parsed correctly"
 

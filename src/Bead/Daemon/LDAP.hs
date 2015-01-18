@@ -35,6 +35,9 @@ data LDAPDaemonConfig = LDAPDaemonConfig {
     tempDir     :: FilePath
   , timeOut     :: Int
   , noOfWorkers :: Int
+  , uidKey      :: String
+  , nameKey     :: String
+  , emailKey    :: String
   }
 
 startLDAPDaemon :: Logger -> LDAPDaemonConfig -> IO LDAPDaemon
@@ -54,17 +57,23 @@ startLDAPDaemon logger config = do
             log logger INFO $ concat ["There are ", show n, " users waiting in the LDAP queue."]
             atomically $ readTMVar resultEnvelope
 
+  let uid_key = uidKey config
+  let name_key = nameKey config
+  let email_key = emailKey config
+
   let authOK attrs =
        let attrMap = Map.fromList attrs
        in fromMaybe LDAPAttrMapError $
-            do uid   <- fmap Entity.Uid $ Map.lookup "l"  attrMap
-               name  <- Map.lookup "cn" attrMap
-               email <- fmap Entity.Email $ Map.lookup "mail" attrMap
+            do uid   <- fmap Entity.Uid $ Map.lookup uid_key attrMap
+               name  <- Map.lookup name_key attrMap
+               email <- fmap Entity.Email $ Map.lookup email_key attrMap
                return $! LDAPUser (uid, email, name)
 
   let authInvalid = LDAPInvalidAuth
 
   let authError _ msg = LDAPError msg
+
+  let attrs = [uid_key, name_key, email_key]
 
   let loop daemon_id = do
         log logger INFO $ concat ["LDAP Daemon ", daemon_id, " is waiting"]
@@ -73,7 +82,6 @@ startLDAPDaemon logger config = do
           (user,pass,resultEnvelope) <- readTChan authQueue
           return $ do
             let authSettings = AuthSettings (timeOut config) (tempDir config </> concat ["ticket_", daemon_id, "_%s"])
-            let attrs = ["l", "cn", "mail"] -- TODO: Check if these are the needed attributes
             authResult <- waitCatch =<< async (Auth.authenticate authSettings user pass attrs)
             log logger INFO $ concat ["LDAP Daemon ", daemon_id, " authenticates ", user]
             atomically $ putTMVar resultEnvelope $ case authResult of

@@ -93,9 +93,22 @@ data LDAPLoginConfig = LDAPLoginConfig {
     nonLDAPUsersFile :: Maybe FilePath
     -- The default timezone for a newly registered LDAP user
   , defaultRegistrationTimezone :: String
+    -- The temporary directory for the ldap tickets
+  , ticketTemporaryDir :: FilePath
+    -- LDAP Timeout in seconds
+  , ldapTimeout :: Int
+    -- The number of threads for LDAP login
+  , noOfLDAPThreads :: Int
+    -- LDAP Key for the UserID
+  , userIdKey :: String
+    -- LDAP Key for the user's full name
+  , userNameKey :: String
+    -- LDAP Key for the user's email address
+  , userEmailKey :: String
   } deriving (Eq, Show, Read)
 
-ldapLoginConfig f (LDAPLoginConfig file tz) = f file tz
+ldapLoginConfig f (LDAPLoginConfig file tz tmpdir timeout threads uik unk uek)
+  = f file tz tmpdir timeout threads uik unk uek
 
 -- The defualt system parameters
 defaultConfiguration = Config {
@@ -114,6 +127,12 @@ defaultLoginConfig =
   LDAPLC $ LDAPLoginConfig {
       nonLDAPUsersFile = Nothing
     , defaultRegistrationTimezone = "UTC"
+    , ticketTemporaryDir = "/tmp/"
+    , ldapTimeout = 5
+    , noOfLDAPThreads = 4
+    , userIdKey = "l"
+    , userNameKey = "cn"
+    , userEmailKey = "mail"
     }
 #else
   STDLC $ StandaloneLoginConfig {
