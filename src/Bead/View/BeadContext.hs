@@ -26,7 +26,7 @@ import           Snap.Snaplet.Session
 
 import           Bead.Config
 import           Bead.Controller.Logging
-import           Bead.Controller.ServiceContext
+import           Bead.Controller.ServiceContext hiding (serviceContext)
 import           Bead.Daemon.Email as EmailDaemon
 import           Bead.Daemon.LDAP as LDAPDaemon
 import           Bead.Daemon.Logout
@@ -76,15 +76,6 @@ contextSnaplet s l = makeSnapContext
   "A snaplet providing the service context of the user stories"
   (s,l)
 
-getServiceContext :: Handler b SnapletServiceContext ServiceContext
-getServiceContext = snapContextCata fst
-
-getLogoutDaemon :: Handler b SnapletServiceContext LogoutDaemon
-getLogoutDaemon = snapContextCata snd
-
-getServiceContextAndLogoutDaemon :: Handler b SnapletServiceContext (ServiceContext, LogoutDaemon)
-getServiceContextAndLogoutDaemon = snapContextCata id
-
 -- * Mini snaplet : Dictionary snaplet
 
 type DictionaryContext = SnapContext (Dictionaries, Language)
@@ -99,25 +90,11 @@ dictionarySnaplet d l = makeSnapContext
     -- The source code contains english comments by default
     addDefault = Map.insert (Language "en") (idDictionary, DictionaryInfo "en.ico" "English")
 
--- Calculates the default language which comes from the configuration
-configuredDefaultDictionaryLanguage :: Handler b DictionaryContext Language
-configuredDefaultDictionaryLanguage = snapContextCata snd
-
--- | getDictionary returns a (Just dictionary) for the given language
---   if the dictionary is registered for the given language,
---   otherwise returns Nothing
-getDictionary :: Language -> Handler b DictionaryContext (Maybe Dictionary)
-getDictionary l = snapContextCata (fmap fst . Map.lookup l . fst)
-
 -- A dictionary infos is a list that contains the language of and information
 -- about the dictionaries contained by the DictionarySnaplet
 type DictionaryInfos = [(Language, DictionaryInfo)]
 
 dictionaryInfosCata list item d = list $ map item d
-
--- Computes a list with the defined languages and dictionary info
-dcGetDictionaryInfos :: Handler b DictionaryContext DictionaryInfos
-dcGetDictionaryInfos = snapContextCata (Map.toList . Map.map snd . fst)
 
 -- * Email sending snaplet
 
@@ -161,15 +138,6 @@ emailSenderSnaplet config daemon = makeSnapContext
       mail <- verySimpleMail to from subject plain
       EmailDaemon.sendEmail daemon mail
 
--- Send email with a subject to the given address, using the right
--- template to the given values
--- E.g: Registration or ForgottenPassword
-sendEmail :: (Template t)
-  => Email -> Subject -> Message -> t -> Handler b SendEmailContext ()
-sendEmail address sub body value = snapContextHandlerCata $ \send -> do
-  msg <- liftIO . runEmailTemplate (emailTemplate body) $ value
-  liftIO $ send address sub msg
-
 -- * Bead's temp directory
 
 -- Bead temp directory holds a reference to the created temp directory
@@ -180,10 +148,6 @@ tempDirectorySnaplet :: FilePath -> SnapletInit a TempDirectoryContext
 tempDirectorySnaplet = makeSnapContext
   "Template directory"
   "A snaplet holding a reference to the temporary directory"
-
--- Returns the bead temp directory
-getTempDirectory :: Handler b TempDirectoryContext FilePath
-getTempDirectory = snapContextCata id
 
 -- * Username check
 
@@ -209,10 +173,6 @@ regexpUsernameChecker cfg = makeSnaplet
             check usr ptn = usr =~ ptn
 #endif
 
--- Returns True, if the username pass the check otherwise False
-checkUsername :: String -> Handler b CheckUsernameContext Bool
-checkUsername usr = snapContextHandlerCata $ \f -> liftIO (f usr)
-
 -- * Password generation
 
 -- PasswordGeneratorContext is a reference to the password generator computation,
@@ -227,10 +187,6 @@ passwordGeneratorSnaplet = makeSnaplet
     pwdGen <- createPasswordGenerator
     ref <- newIORef pwdGen
     return $! SnapContext ref
-
--- Generates a new password string
-getRandomPassword :: Handler b PasswordGeneratorContext String
-getRandomPassword = snapContextHandlerCata liftIO
 
 -- Creates a password generator that generates 12 length passwords containing
 -- upper, lowercase letters, and digits.
@@ -274,10 +230,7 @@ createDebugLogger = makeSnaplet
     ref <- newIORef logger
     return $! SnapContext ref
 
--- | Log the message to the debug stream
-debugMessage :: String -> Handler a DebugLoggerContext ()
-debugMessage msg = snapContextHandlerCata $ \logger ->
-  liftIO (log (SnapLogger.snapLogger logger) DEBUG msg)
+-- * Timezone
 
 type TimeZoneContext = SnapContext TimeZoneConverter
 
@@ -285,9 +238,6 @@ createTimeZoneContext :: TimeZoneConverter -> SnapletInit a TimeZoneContext
 createTimeZoneContext = makeSnapContext
   "Timezone converter"
   "A snaplet holding a reference to the time zone converter functionality"
-
-getTimeZoneConverter :: Handler b TimeZoneContext TimeZoneConverter
-getTimeZoneConverter = snapContextCata id
 
 -- * LDAP Context
 
@@ -353,3 +303,57 @@ ldapAuthenticate :: Username -> String -> BeadHandler' b LDAPResult
 ldapAuthenticate username password = withTop ldapContext . snapContextHandlerCata $ \l -> do
   resultEnvelope <- liftIO $ ldap (\_nonLDAPUsers daemon -> authenticate daemon (usernameCata id username) password) l
   liftIO resultEnvelope
+
+-- * Timezone
+
+getTimeZoneConverter :: Handler b TimeZoneContext TimeZoneConverter
+getTimeZoneConverter = snapContextCata id
+
+getServiceContext :: BeadHandler' b ServiceContext
+getServiceContext = withTop serviceContext $ snapContextCata fst
+
+getLogoutDaemon :: BeadHandler' b LogoutDaemon
+getLogoutDaemon = withTop serviceContext $ snapContextCata snd
+
+getServiceContextAndLogoutDaemon :: BeadHandler' b (ServiceContext, LogoutDaemon)
+getServiceContextAndLogoutDaemon = withTop serviceContext $ snapContextCata id
+
+-- Calculates the default language which comes from the configuration
+configuredDefaultDictionaryLanguage :: BeadHandler' b Language
+configuredDefaultDictionaryLanguage = withTop dictionaryContext $ snapContextCata snd
+
+-- | getDictionary returns a (Just dictionary) for the given language
+--   if the dictionary is registered for the given language,
+--   otherwise returns Nothing
+getDictionary :: Language -> BeadHandler' b (Maybe Dictionary)
+getDictionary l = withTop dictionaryContext $ snapContextCata (fmap fst . Map.lookup l . fst)
+
+-- Computes a list with the defined languages and dictionary info
+dcGetDictionaryInfos :: BeadHandler' b DictionaryInfos
+dcGetDictionaryInfos = withTop dictionaryContext $ snapContextCata (Map.toList . Map.map snd . fst)
+
+-- Send email with a subject to the given address, using the right
+-- template to the given values
+-- E.g: Registration or ForgottenPassword
+sendEmail :: (Template t)
+  => Email -> Subject -> Message -> t -> BeadHandler' b ()
+sendEmail address sub body value = withTop sendEmailContext . snapContextHandlerCata $ \send -> do
+  msg <- liftIO . runEmailTemplate (emailTemplate body) $ value
+  liftIO $ send address sub msg
+
+-- Returns the bead temp directory
+getTempDirectory :: BeadHandler' b FilePath
+getTempDirectory = withTop tempDirContext $ snapContextCata id
+
+-- Returns True, if the username pass the check otherwise False
+checkUsername :: String -> BeadHandler' b Bool
+checkUsername usr = withTop checkUsernameContext . snapContextHandlerCata $ \f -> liftIO (f usr)
+
+-- Generates a new password string
+getRandomPassword :: BeadHandler' b String
+getRandomPassword = withTop randomPasswordContext $ snapContextHandlerCata liftIO
+
+-- | Log the message to the debug stream
+debugMessage :: String -> BeadHandler' a ()
+debugMessage msg = withTop debugLoggerContext . snapContextHandlerCata $ \logger ->
+  liftIO (log (SnapLogger.snapLogger logger) DEBUG msg)
