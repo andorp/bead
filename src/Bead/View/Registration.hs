@@ -139,10 +139,10 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
             result <- lift $ registrationStory (S.createUserReg userRegData)
             when (isLeft result) . throwSError . i18n $
               Msg_Registration_RegistrationNotSaved "The registration has not been saved."
-            lang <- lift $ withTop sessionManager languageFromSession
+            lang <- lift languageFromSession
             let language = maybe (Language "en") id lang
             let key = fromRight result
-            lift $ withTop sendEmailContext $
+            lift $
               sendEmail
                 email
                 (i18n $ Msg_Registration_EmailSubject "BE-AD: Registration")
@@ -184,11 +184,11 @@ checkUsernamePrm = do
   case username of
     Nothing -> return . Left . TransMsg $ Msg_RegistrationFinalize_NoRegistrationParametersAreFound "No registration parameters found."
     Just u -> do
-      isValid <- withTop checkUsernameContext . checkUsername . usernameCata id $ u
+      isValid <- checkUsername $ usernameCata id u
       if isValid
         then return $ Right u
         else do
-          config <- withTop configContext $ getConfiguration
+          config <- getConfiguration
           return . Left $ TransPrmMsg
             (Msg_Registration_InvalidUsername "The username is not valid. Try something similar: %s")
             (usernameRegExpExample $ loginConfig config)
@@ -229,9 +229,8 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
                     userReg   <- S.loadUserReg key
                     existence <- S.doesUserExist username
                     return (userReg, existence)
-        withTop sessionManager $ do
-          setLanguageInSession (Language language)
-          commitSession
+        setLanguageInSession (Language language)
+        commitSessionTop
         i18n <- i18nH
         case result of
           Left e -> registrationErrorPage $ S.translateUserError i18n e
@@ -271,12 +270,9 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
               True -> errorPage (Msg_Registration_Title "Registration") $ msg $
                 Msg_RegistrationCreateStudent_InvalidToken "The registration token has expired, start the registration over."
               False -> do
-                withTop auth $ createNewUser userRegData timezone (Language language)
+                createNewUser userRegData timezone (Language language)
                 redirect "/"
       (Right _, _, _) -> registrationErrorPage ("Password or timezone is not defined" :: String)
-
-  log lvl msg = withTop serviceContext $ logMessage lvl msg
-
 
 createNewUser :: UserRegistration -> TimeZoneName -> Language -> BeadHandler' (AuthManager BeadContext) (Either RegError ())
 createNewUser reg timezone language = runErrorT $ do

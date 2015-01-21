@@ -33,12 +33,12 @@ import           Bead.View.Session
 login :: Maybe AuthFailure -> BeadHandler' b ()
 login authError = do
   -- Set the default language in session if no information is found
-  languages <- withTop dictionaryContext dcGetDictionaryInfos
-  mLangInSession <- withTop sessionManager languageFromSession
-  when (isNothing mLangInSession) . withTop sessionManager $ do
-    defaultLang <- withTop dictionaryContext configuredDefaultDictionaryLanguage
+  languages <- dcGetDictionaryInfos
+  mLangInSession <- languageFromSession
+  when (isNothing mLangInSession) $ do
+    defaultLang <- configuredDefaultDictionaryLanguage
     setLanguageInSession defaultLang
-    commitSession
+    commitSessionTop
 
   -- Render the page content
   renderBootstrapPublicPage . publicFrame $ do
@@ -50,12 +50,12 @@ loginSubmit :: BeadHandler' b ()
 loginSubmit = withTop auth $ handleError $ runErrorT $ do
   username <- getParameter loginUsernamePrm
   pwd      <- getParameter loginPasswordPrm
-  needsLDAPAuth <- lift $ withTop ldapContext $ isLDAPUser username
+  needsLDAPAuth <- lift $ isLDAPUser username
   case needsLDAPAuth of
     False -> do
       beadLogin username pwd
     True -> do
-      lResult <- lift $ withTop ldapContext $ ldapAuthenticate username pwd
+      lResult <- lift $ ldapAuthenticate username pwd
       ldapResult
         (ldapError username pwd)
         (ldapInvalidUser username)
@@ -111,8 +111,8 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           when (isNothing . passwordFromAuthUser $ snapAuthUser) . throwError . strMsg $ "Snap Auth: no password is created"
           let snapAuthPwd = fromJust . passwordFromAuthUser $ snapAuthUser
           -- Creates the user in the persistence layer
-          timezone <- fmap getTimeZone $ lift $ getConfiguration
-          lang <- fmap (fromMaybe (Language "en")) $ lift $ languageFromSession
+          timezone <- fmap getTimeZone $ lift getConfiguration
+          lang <- fmap (fromMaybe (Language "en")) $ lift languageFromSession
           _ <- regStory (Story.createUser $ user Student timezone lang)
           return ()
           where
@@ -141,7 +141,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
         Left fail -> throwError . strMsg $ join [usernameCata id username, ": ", show fail]
         Right _   -> return ()
       i18n    <- lift $ i18nH
-      context <- lift $ withTop serviceContext getServiceContext
+      context <- lift $ getServiceContext
       token   <- lift $ sessionToken
       result  <- liftIO $ Story.runUserStory context i18n UserNotLoggedIn $ do
         Story.login username token
@@ -151,14 +151,14 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           logMessage ERROR $ "Error happened processing user story: " ++ Story.translateUserError trans err
           -- Service context authentication
           liftIO $ (userContainer context) `userLogsOut` (userToken (username, token))
-          Auth.logout
-          withTop sessionManager $ commitSession
+          logoutTop
+          commitSessionTop
           translationErrorPage
             (Msg_Login_PageTitle "Login")
             (Msg_Login_InternalError "Some internal error happened, please contact the administrators.")
         Right (user,userState) -> do
           initSessionValues (page userState) username (u_language user)
-          withTop sessionManager $ commitSession
+          commitSessionTop
           redirect "/"
 
     -- Checks if the result of a story is failure, in the case of failure
@@ -178,11 +178,9 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
 
     initSessionValues :: P.PageDesc -> Username -> Language -> BeadHandler' b ()
     initSessionValues page username language = do
-      withTop sessionManager $ do
         setSessionVersion
         setLanguageInSession language
         setUsernameInSession username
-      withTop serviceContext $ do
         logMessage DEBUG $ "Username is set in session to: " ++ show username
         logMessage DEBUG $ "User's actual page is set in session to: " ++ show page
 #else
@@ -196,13 +194,12 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
   case loggedIn of
     Left failure -> lift . login $ Just failure
     Right authUser -> lift $ do
-      context <- withTop serviceContext getServiceContext
+      context <- getServiceContext
       token   <- sessionToken
       let unameFromAuth = usernameFromAuthUser authUser
           mpasswFromAuth = passwordFromAuthUser authUser
       case mpasswFromAuth of
         Nothing -> do logMessage ERROR "No password was given"
-                      withTop debugLoggerContext $ debugMessage "Login.loginSubmit"
                       Auth.logout
         Just _passwFromAuth -> do
           i18n <- i18nH
@@ -212,18 +209,17 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           case result of
             Left err -> do
               logMessage ERROR $ "Error happened processing user story: " ++ Story.translateUserError trans err
-              withTop debugLoggerContext $ debugMessage "Login.loginSubmit2"
               -- Service context authentication
               liftIO $ (userContainer context) `userLogsOut` (userToken (unameFromAuth, token))
               Auth.logout
-              withTop sessionManager $ commitSession
+              commitSessionTop
               translationErrorPage
                 (Msg_Login_PageTitle "Login")
                 (Msg_Login_InternalError
                    "Some internal error happened, please contact the administrators.")
             Right (user,userState) -> do
               initSessionValues (page userState) unameFromAuth (u_language user)
-              withTop sessionManager $ commitSession
+              commitSessionTop
               redirect "/"
   return ()
   where
@@ -232,11 +228,9 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
 
     initSessionValues :: P.PageDesc -> Username -> Language -> BeadHandler' b ()
     initSessionValues page username language = do
-      withTop sessionManager $ do
         setSessionVersion
         setLanguageInSession language
         setUsernameInSession username
-      withTop serviceContext $ do
         logMessage DEBUG $ "Username is set in session to: " ++ show username
         logMessage DEBUG $ "User's actual page is set in session to: " ++ show page
 #endif
@@ -251,12 +245,11 @@ visibleFailure _   _ = Nothing
 
 changeLanguage :: BeadHandler ()
 changeLanguage = method GET setLanguage <|> method POST (redirect "/") where
-  setLanguage = withTop sessionManager $ do
+  setLanguage = do
     elang <- getParameterOrError changeLanguagePrm
     either
       (logMessage ERROR . ("Change language " ++))
-      (\l -> withTop sessionManager $ do
-                setLanguageInSession l
-                commitSession)
+      (\l -> do setLanguageInSession l
+                commitSessionTop)
       elang
     redirect "/"

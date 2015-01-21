@@ -306,8 +306,8 @@ ldapAuthenticate username password = withTop ldapContext . snapContextHandlerCat
 
 -- * Timezone
 
-getTimeZoneConverter :: Handler b TimeZoneContext TimeZoneConverter
-getTimeZoneConverter = snapContextCata id
+getTimeZoneConverter :: BeadHandler' b TimeZoneConverter
+getTimeZoneConverter = withTop timeZoneContext $ snapContextCata id
 
 getServiceContext :: BeadHandler' b ServiceContext
 getServiceContext = withTop serviceContext $ snapContextCata fst
@@ -357,3 +357,14 @@ getRandomPassword = withTop randomPasswordContext $ snapContextHandlerCata liftI
 debugMessage :: String -> BeadHandler' a ()
 debugMessage msg = withTop debugLoggerContext . snapContextHandlerCata $ \logger ->
   liftIO (log (SnapLogger.snapLogger logger) DEBUG msg)
+
+-- * Helper top level functions
+
+currentUserTop :: BeadHandler' a (Maybe AuthUser)
+currentUserTop = withTop auth currentUser
+
+logoutTop :: BeadHandler' a ()
+logoutTop = withTop auth logout
+
+usernameExistsTop :: DT.Text -> BeadHandler' a Bool
+usernameExistsTop = withTop auth . usernameExists

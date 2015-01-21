@@ -40,7 +40,7 @@ changeUserDetails = do
     <*> getParameter userTimeZonePrm
     <*> (return language)
   where
-    setLanguage = lift . withTop sessionManager . setLanguageInSession
+    setLanguage = lift . setLanguageInSession
 
 #ifdef LDAPEnabled
 changePassword = ModifyHandler $ do

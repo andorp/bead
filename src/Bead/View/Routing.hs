@@ -181,13 +181,11 @@ runUserViewPOSTHandler onError userViewHandler
 
 logoutAndResetRoute :: BeadHandler ()
 logoutAndResetRoute = do
-  withTop debugLoggerContext $ debugMessage "Routing.logoutAndResetRoute"
   ContentHandler.logout
   redirect "/"
 
 logoutAndErrorPage :: String -> BeadHandler ()
 logoutAndErrorPage msg = do
-  withTop debugLoggerContext $ debugMessage "Routing.logoutAndErrorPage"
   ContentHandler.logout
   msgErrorPage msg
 
@@ -246,11 +244,9 @@ handlePage page = P.pageKindCata view userView viewModify modify data_ page wher
     lift $ (logoutAndResetRoute' "Routing.notAllowedPage")
 
   logoutAndResetRoute' name = do
-    withTop debugLoggerContext $ debugMessage name
     logoutAndResetRoute
 
   logoutAndErrorPage' name msg = do
-    withTop debugLoggerContext $ debugMessage name
     logoutAndErrorPage msg
 
 

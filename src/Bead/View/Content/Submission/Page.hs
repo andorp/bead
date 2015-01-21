@@ -50,7 +50,7 @@ submissionPage = do
   ak <- getParameter assignmentKeyPrm
   ut <- userTimeZoneToLocalTimeConverter
   now <- liftIO $ getCurrentTime
-  size <- fmap maxUploadSizeInKb $ lift $ withTop configContext getConfiguration
+  size <- fmap maxUploadSizeInKb $ lift getConfiguration
   -- TODO: Refactor use guards
   let renderPage limit (desc,asg) =
         return $ submissionContent
@@ -72,8 +72,8 @@ submissionPage = do
 submissionPostHandler :: POSTContentHandler
 submissionPostHandler = do
   uploadResult <- join $ lift $ do
-    tmpDir <- withTop tempDirContext $ getTempDirectory
-    size <- maxUploadSizeInKb <$> withTop configContext getConfiguration
+    tmpDir <- getTempDirectory
+    size <- maxUploadSizeInKb <$> getConfiguration
     let maxSize = fromIntegral (size * 1024)
     let uploadPolicy = setMaximumFormInputSize maxSize defaultUploadPolicy
     let perPartUploadPolicy = const $ allowWithMaximumSize maxSize

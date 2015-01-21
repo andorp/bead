@@ -36,7 +36,7 @@ userIsLoggedInFilter
   -> (String -> BeadHandler' b ())
   -> BeadHandler' b (Maybe a)
 userIsLoggedInFilter inside outside onError = do
-  sessionVer <- withTop sessionManager $ getSessionVersion
+  sessionVer <- getSessionVersion
   case sessionVer of
     -- Session timed out
     Nothing -> onError "Lejárt a munkamenet!" >> return Nothing
@@ -60,8 +60,8 @@ userIsLoggedInFilter inside outside onError = do
 
     loggedInFilter = do
       -- Authenticated user information
-      serverSideUser <- lift . withTop auth           $ currentUser
-      sessionVer     <- lift . withTop sessionManager $ getSessionVersion
+      serverSideUser <- lift currentUserTop
+      sessionVer     <- lift getSessionVersion
 
       -- Guards: invalid session version or invalid user
       when (sessionVer /= (Just sessionVersion)) . CME.throwError . strMsg $ "Nem megfelelő a munkamenet verziója!"
@@ -69,14 +69,14 @@ userIsLoggedInFilter inside outside onError = do
 
       -- Username and page from session
       let unameFromAuth = usernameFromAuthUser . fromJust $ serverSideUser
-      usernameFromSession <- lift . withTop sessionManager $ usernameFromSession
+      usernameFromSession <- lift usernameFromSession
 
       -- Guard: invalid user in session
       when (usernameFromSession /= (Just unameFromAuth)) . CME.throwError . strMsg $
         printf "Hibás felhasználó a munkamenetben: %s, %s." (show unameFromAuth) (show usernameFromSession)
 
       -- Guard: Is user logged in?
-      context <- lift . withTop serviceContext $ getServiceContext
+      context <- lift getServiceContext
       tkn     <- lift sessionToken
       let users = userContainer context
           usrToken = userToken (unameFromAuth, tkn)
@@ -86,7 +86,7 @@ userIsLoggedInFilter inside outside onError = do
       -- Correct user is logged in, run the handler and save the data
       result <- lift inside
       case result of
-        HFailure -> do lift $ withTop debugLoggerContext $ debugMessage "Login filter."
+        HFailure -> do lift $ debugMessage "Login filter."
                        lift $ ContentHandler.logout
                        return Nothing
         HSuccess x -> do

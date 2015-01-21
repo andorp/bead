@@ -42,7 +42,7 @@ resetPassword u = do
   updateUser user { userPassword = Just encryptedPwd }
   emailPasswordToUser u password
   where
-    randomPassword = lift . withTop randomPasswordContext $ getRandomPassword
+    randomPassword = lift getRandomPassword
 
 -- Saves the users password it to the persistence layer and the authentication
 -- and sends the email to the given user.
@@ -65,7 +65,7 @@ emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (BeadHandler'
 emailPasswordToUser user pwd = do
   msg <- lift i18nH
   address <- fmap u_email (loadUserFromPersistence msg)
-  lift $ withTop sendEmailContext $ do
+  lift $
     sendEmail
       address
       (msg $ Msg_ResetPassword_EmailSubject "BE-AD: Forgotten password")
@@ -84,7 +84,7 @@ errorMsg = Msg_ResetPassword_GenericError "Invalid username or password."
 checkUserInAuth :: (Error e) => Username -> ErrorT e (BeadHandler' a) ()
 checkUserInAuth u = do
   msg <- lift i18nH
-  exist <- lift . withTop auth $ usernameExists (usernameStr u)
+  exist <- lift . usernameExistsTop $ usernameStr u
   unless exist $ throwError . strMsg $ msg errorMsg
 
 checkUserInPersistence :: (Error e) => Username -> ErrorT e (BeadHandler' a) ()

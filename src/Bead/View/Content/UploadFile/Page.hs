@@ -28,7 +28,7 @@ uploadFile = ViewModifyHandler getUploadFile postUploadFile
 getUploadFile :: GETContentHandler
 getUploadFile = do
   fs <- userStory Story.listUsersFiles
-  size <- fmap maxUploadSizeInKb $ lift $ withTop configContext getConfiguration
+  size <- fmap maxUploadSizeInKb $ lift getConfiguration
   return $ uploadFileContent (PageData fs size)
 
 data Success
@@ -61,7 +61,7 @@ isFailure = not . isSuccess
 postUploadFile :: POSTContentHandler
 postUploadFile =
   join $ lift $ do
-    tmpDir <- withTop tempDirContext $ getTempDirectory
+    tmpDir <- getTempDirectory
     handleFileUploads tmpDir uploadPolicy perPartUploadPolicy $ \parts -> do
       case parts of
         [] -> return . return . StatusMessage $ Msg_UploadFile_NoFileReceived "No file was received."

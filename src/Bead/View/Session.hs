@@ -44,7 +44,7 @@ isPublicKey t
   | otherwise = False
 
 -- Removes the session values from the session that satisties the key predicate
-removeSessionKeys :: (T.Text -> Bool) -> Handler BeadContext b ()
+removeSessionKeys :: (T.Text -> Bool) -> BeadHandler' b ()
 removeSessionKeys pred = withTop sessionManager $ do
   values <- L.filter (not . pred . fst) <$> sessionToList
   resetSession
@@ -53,11 +53,11 @@ removeSessionKeys pred = withTop sessionManager $ do
 
 -- Clears the private session data from the session
 resetPrivateSessionData :: Handler BeadContext b ()
-resetPrivateSessionData = removeSessionKeys isPrivateKey
+resetPrivateSessionData = withTop sessionManager $ removeSessionKeys isPrivateKey
 
 -- Clears the public session data from the session
 resetPublicSessionData :: Handler BeadContext b ()
-resetPublicSessionData = removeSessionKeys isPublicKey
+resetPublicSessionData = withTop sessionManager $ removeSessionKeys isPublicKey
 
 -- * Session Key and Values for Page
 
@@ -106,30 +106,30 @@ instance SessionRestore SessionVersion where
     Nothing -> Nothing
     Just v -> Just . SessionVersion $ v
 
-setInSessionKeyValues :: [(T.Text, T.Text)] -> Handler BeadContext b ()
+setInSessionKeyValues :: [(T.Text, T.Text)] -> BeadHandler' b ()
 setInSessionKeyValues = withTop sessionManager . mapM_ (\(key,value) -> setInSession key value)
 
-fromSession :: (SessionRestore r) => T.Text -> Handler BeadContext b (Maybe r)
+fromSession :: (SessionRestore r) => T.Text -> BeadHandler' b (Maybe r)
 fromSession key = withTop sessionManager $ do
   v <- getFromSession key
   return $ join $ fmap (restoreFromSession . (\v' -> [(key,v')])) v
 
-getSessionVersion :: Handler BeadContext b (Maybe SessionVersion)
+getSessionVersion :: BeadHandler' b (Maybe SessionVersion)
 getSessionVersion = fromSession sessionVersionKey
 
-setSessionVersion :: Handler BeadContext b ()
+setSessionVersion :: BeadHandler' b ()
 setSessionVersion = setInSessionKeyValues [(sessionVersionKey, sessionVersionValue)]
 
-usernameFromSession :: Handler BeadContext b (Maybe E.Username)
+usernameFromSession :: BeadHandler' b (Maybe E.Username)
 usernameFromSession = fromSession usernameSessionKey
 
-setUsernameInSession :: Username -> Handler BeadContext b ()
+setUsernameInSession :: Username -> BeadHandler' b ()
 setUsernameInSession = setInSessionKeyValues . sessionStore
 
-languageFromSession :: Handler BeadContext b (Maybe Language)
+languageFromSession :: BeadHandler' b (Maybe Language)
 languageFromSession = fromSession languageSessionKey
 
-setLanguageInSession :: Language -> Handler BeadContext b ()
+setLanguageInSession :: Language -> BeadHandler' b ()
 setLanguageInSession = setInSessionKeyValues . sessionStore
 
 -- * Username and UserState correspondence
@@ -159,10 +159,27 @@ instance AsPassword A.Password where
 
 -- * Debugging
 
-sessionCookies :: Handler BeadContext b String
+sessionCookies :: BeadHandler' b String
 sessionCookies = withTop sessionManager $ do
   as <- sessionToList
   return . join . join . L.map (\(k,v) -> ["(KEY: ",T.unpack k,",","VALUE: ",T.unpack v,")"]) $ as
+
+-- * Helper functions to be able to modify session on the top level
+
+commitSessionTop :: BeadHandler' b ()
+commitSessionTop = withTop sessionManager commitSession
+
+resetSessionTop :: BeadHandler' b ()
+resetSessionTop = withTop sessionManager resetSession
+
+touchSessionTop :: BeadHandler' b ()
+touchSessionTop = withTop sessionManager touchSession
+
+csrfTokenTop :: BeadHandler' b T.Text
+csrfTokenTop = withTop sessionManager csrfToken
+
+setInSessionTop :: T.Text -> T.Text -> BeadHandler' b ()
+setInSessionTop k v = withTop sessionManager $ setInSession k v
 
 #ifdef TEST
 
