@@ -69,15 +69,15 @@ userDetailForm timeZones user dictionaries = do
         (msg $ Msg_Input_User_Language "Language")
         (fromString $ fromMaybe "Language is not found" $ Map.lookup (u_language user) languageMap)
       hiddenInput (B.name userLanguagePrm) (Bootstrap.encode "language" $ u_language user)
-      hiddenInput (fieldName usernameField) . usernameCata id $ u_username user
 #else
       Bootstrap.selection (fieldName userRoleField) (== u_role user) (roles msg)
       Bootstrap.textInputWithDefault (fieldName userEmailField) (msg $ Msg_Input_User_Email "Email") (emailCata id $ u_email user)
       Bootstrap.textInputWithDefault (fieldName userFamilyNameField) (msg $ Msg_Input_User_FullName "Full name") (u_name user)
       Bootstrap.selection (B.name userTimeZonePrm) (== u_timezone user) userTimeZones
       Bootstrap.selection (B.name userLanguagePrm) (== u_language user) languages
-      hiddenInput (fieldName usernameField) . usernameCata id $ u_username user
 #endif
+      hiddenInput (fieldName usernameField) . usernameCata id $ u_username user
+      hiddenInput (fieldName userUidField) $ encode uidPrm $ u_uid user
     userTimeZones = map (id &&& timeZoneName id) timeZones
     userDetails = Pages.userDetails ()
     langVal (lang,info) = (lang, languageName info)
