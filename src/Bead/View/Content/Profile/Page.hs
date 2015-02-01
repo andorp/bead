@@ -50,7 +50,7 @@ changePassword = ModifyHandler $ do
   newPwd <- getParameter newPasswordPrm
   checkCurrentAuthPassword oldPwd
   updateCurrentAuthPassword newPwd
-  return . StatusMessage $ Msg_Profile_PasswordHasBeenChanged "The password has been changed."
+  return . StatusMessage $ msg_Profile_PasswordHasBeenChanged "The password has been changed."
 #endif
 
 profileContent :: [TimeZoneName] -> User -> DictionaryInfos -> IHtml
@@ -61,7 +61,7 @@ profileContent ts user ls = do
       -- User Details
       userDetailsCol $ postForm (routeOf profile) $ do
         profileFields msg
-        Bootstrap.submitButton (fieldName changeProfileBtn) (msg $ Msg_Profile_SaveButton "Save")
+        Bootstrap.submitButton (fieldName changeProfileBtn) (msg $ msg_Profile_SaveButton "Save")
       passwordSection msg
       Bootstrap.turnSelectionsOn
   where
@@ -85,24 +85,24 @@ profileContent ts user ls = do
       let newPasswordField = fromString $ B.name newPasswordPrm
       let newPasswordAgain = fromString $ B.name newPasswordAgainPrm
       Bootstrap.colMd6 $ postForm (routeOf changePassword) `withId` (rFormId changePwdForm) $ do
-        Bootstrap.passwordInput oldPasswordField (msg $ Msg_Profile_OldPassword "Old password: ")
-        Bootstrap.passwordInput newPasswordField (msg $ Msg_Profile_NewPassword "New password: ")
-        Bootstrap.passwordInput newPasswordAgain (msg $ Msg_Profile_NewPasswordAgain "New password (again): ")
-        Bootstrap.submitButton (fieldName changePasswordBtn) (msg $ Msg_Profile_ChangePwdButton "Update")
+        Bootstrap.passwordInput oldPasswordField (msg $ msg_Profile_OldPassword "Old password: ")
+        Bootstrap.passwordInput newPasswordField (msg $ msg_Profile_NewPassword "New password: ")
+        Bootstrap.passwordInput newPasswordAgain (msg $ msg_Profile_NewPasswordAgain "New password (again): ")
+        Bootstrap.submitButton (fieldName changePasswordBtn) (msg $ msg_Profile_ChangePwdButton "Update")
 #endif
 
     profileFields msg = do
 #ifdef LDAPEnabled
-      Bootstrap.labeledText (msg $ Msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
-      Bootstrap.labeledText (msg $ Msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
-      Bootstrap.labeledText (msg $ Msg_Profile_FullName "Full name: ") fullName
+      Bootstrap.labeledText (msg $ msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
+      Bootstrap.labeledText (msg $ msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
+      Bootstrap.labeledText (msg $ msg_Profile_FullName "Full name: ") fullName
       hiddenInput regFullNameField (u_name user)
       Bootstrap.selection userLanguageField (== u_language user) languages
       Bootstrap.selection userTimeZoneField (== u_timezone user) timeZones
 #else
-      Bootstrap.labeledText (msg $ Msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
-      Bootstrap.labeledText (msg $ Msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
-      Bootstrap.textInputWithDefault regFullNameField (msg $ Msg_Profile_FullName "Full name: ") fullName
+      Bootstrap.labeledText (msg $ msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
+      Bootstrap.labeledText (msg $ msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
+      Bootstrap.textInputWithDefault regFullNameField (msg $ msg_Profile_FullName "Full name: ") fullName
       Bootstrap.selection userLanguageField (== u_language user) languages
       Bootstrap.selection userTimeZoneField (== u_timezone user) timeZones
 #endif

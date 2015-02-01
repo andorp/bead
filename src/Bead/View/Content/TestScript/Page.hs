@@ -94,7 +94,7 @@ hasNoCourses :: IHtml
 hasNoCourses = do
   msg <- getI18N
   return $ do
-  fromString . msg $ Msg_NewTestScript_HasNoCourses "This user cannot administer any courses."
+  fromString . msg $ msg_NewTestScript_HasNoCourses "This user cannot administer any courses."
 
 -- Helper
 
@@ -109,28 +109,28 @@ hasPageContent pd = do
       postForm (routeOf $ testScriptPage pd) $ do
         Bootstrap.textInput
           (fieldName testScriptNameField)
-          (fromString . msg $ Msg_NewTestScript_Name "Name")
+          (fromString . msg $ msg_NewTestScript_Name "Name")
           (maybe mempty fromString $ testScriptName pd)
         Bootstrap.textInput
           (fieldName testScriptDescField)
-          (fromString . msg $ Msg_NewTestScript_Description "Description")
+          (fromString . msg $ msg_NewTestScript_Description "Description")
           (maybe mempty fromString $ testScriptDesc pd)
 
-        testScriptCourse msg
+        testScriptCourse msg pd
 
         Bootstrap.textArea
           (fieldName testScriptScriptField)
-          (fromString . msg $ Msg_NewTestScript_Script "Test script")
+          (fromString . msg $ msg_NewTestScript_Script "Test script")
           (maybe mempty fromString $ testScriptScript pd)
 
         Bootstrap.textArea
           (fieldName testScriptNotesField)
-          (fromString . msg $ Msg_NewTestScript_Notes "Help for writing test cases")
+          (fromString . msg $ msg_NewTestScript_Notes "Help for writing test cases")
           (maybe mempty fromString $ testScriptNotes pd)
 
       Bootstrap.row $ Bootstrap.colMd12 $
         submitButton (fieldName testScriptSaveButton)
-        (fromString . msg $ Msg_NewTestScript_Save "Commit")
+        (fromString . msg $ msg_NewTestScript_Save "Commit")
 
     Bootstrap.turnSelectionsOn
 
@@ -147,5 +147,5 @@ hasPageContent pd = do
         courseNameAndType c = concat
           [courseName c, " - ", courseTypeStr $ courseTestScriptType c]
         courseTypeStr = msg . testScriptTypeCata
-          (Msg_TestScriptTypeSimple "Textual")
-          (Msg_TestScriptTypeZipped "Binary")
+          (msg_TestScriptTypeSimple "Textual")
+          (msg_TestScriptTypeZipped "Binary")

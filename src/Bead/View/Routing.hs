@@ -220,9 +220,9 @@ handlePage page = P.pageKindCata view userView viewModify modify data_ page wher
   loggedInFilter m = userIsLoggedInFilter
     m
     -- Not logged in user tries to get some data
-    (logoutAndResetRoute' "Routing.loggedInFilter1")
+    (logoutAndResetRoute' ("Routing.loggedInFilter1" :: String))
     -- Some internal error happened
-    (logoutAndErrorPage' "Routing.loggedInFilter2")
+    (logoutAndErrorPage' ("Routing.loggedInFilter2" :: String))
 
   invalidPOSTMethodCall = do
      logMessage DEBUG $ "Invalid POST handler " ++ show pageDesc

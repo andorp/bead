@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 module Bead.View.Dictionary (
     Entry(..)
   , I18N
@@ -14,12 +15,14 @@ module Bead.View.Dictionary (
   , dictionaryFromDFile -- Creates a Dictionary from the DictionaryFile structure
   , dictionaryFileToInfo -- Reads out the icon file name
   , idDictionary
+  , (<|)
   ) where
 
 -- Haskell imports
 
 import Data.Map (Map)
 import qualified Data.Map as Map
+import Data.Typeable
 import Control.Arrow ((&&&))
 
 -- Bead imports
@@ -61,10 +64,13 @@ data DictionaryFile = DictionaryFile {
   , langCode :: String -- The name of the language for a dictionary
   , langName :: String -- The displayable name of the language for a dictioanry
   , entries  :: [Entry] -- The entry list for a dictionary
-  } deriving (Show, Read)
+  } deriving (Show, Read, Typeable)
 
 dictionaryFileCata f (DictionaryFile iconFile langCode langName entries) =
   f iconFile langCode langName entries
+
+(<|) :: (String -> Translation String) -> String -> Translation String
+(<|) = ($)
 
 -- Creates a new dictionary from the entries of the dictionary file,
 -- if no translation key is found in the entries, the original value
@@ -77,7 +83,8 @@ dictionaryFromDFile = dictionaryFileCata $ \_icon _langCode _langName entries ->
       in maybe (trans key) trans . Map.lookup key' . Map.fromList $ map (createKey &&& id) entries
   }
   where
-    createKey k = k { trans = () }
+    createKey :: Translation String -> Translation ()
+    createKey (T (n,_)) = T (n,())
 
 -- Reads out the icon file name into the dictionary info
 dictionaryFileToInfo :: DictionaryFile -> DictionaryInfo
@@ -89,4 +96,3 @@ dictionary = Dictionary
 
 idDictionary :: Dictionary
 idDictionary = Dictionary trans
-

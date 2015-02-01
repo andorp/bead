@@ -35,22 +35,22 @@ evaluationTableContent tc = openedSubmissionsCata $ \admincourse admingroup rela
   return $ do
     noUnevaluatedSubmission msg admincourse admingroup related
     when (not $ null admingroup) $ Bootstrap.rowColMd12 $ do
-      H.h4 $ fromString . msg $ Msg_EvaluationTable_GroupAssignment "Group assignments"
-      fromString . msg $ Msg_EvaluationTable_GroupAssignmentInfo $ concat
+      H.h4 $ fromString . msg $ msg_EvaluationTable_GroupAssignment "Group assignments"
+      fromString . msg $ msg_EvaluationTable_GroupAssignmentInfo $ concat
         [ "Submissions for group assignments sent by the users who correspond "
         , "the groups administrated by you."
         ]
       evaluationTable msg (sortSubmissions admingroup) isGroup
     when (not $ null admincourse) $ Bootstrap.rowColMd12 $ do
-      H.h4 $ fromString . msg $ Msg_EvaluationTable_CourseAssignment "Course assignments"
-      fromString . msg $ Msg_EvaluationTable_CourseAssignmentInfo $ concat
+      H.h4 $ fromString . msg $ msg_EvaluationTable_CourseAssignment "Course assignments"
+      fromString . msg $ msg_EvaluationTable_CourseAssignmentInfo $ concat
         [ "Submissions for course assignments sent by the users who correspond "
         , "the courses of groups administrated by you."
         ]
       evaluationTable msg (sortSubmissions admincourse) isCourse
     when (not $ null related) $ Bootstrap.rowColMd12 $ do
-      H.h4 $ fromString . msg $ Msg_EvaluationTable_MiscCourseAssignment "Miscellaneous Course assignments"
-      fromString . msg $ Msg_EvaluationTable_MiscCourseAssignmentInfo $ concat
+      H.h4 $ fromString . msg $ msg_EvaluationTable_MiscCourseAssignment "Miscellaneous Course assignments"
+      fromString . msg $ msg_EvaluationTable_MiscCourseAssignmentInfo $ concat
         [ "Submissions for course assignments sent by the users who correspond "
         , "the courses of groups administrated by you, but not your students."
         ]
@@ -60,9 +60,9 @@ evaluationTableContent tc = openedSubmissionsCata $ \admincourse admingroup rela
     isCourse = False
 
     noUnevaluatedSubmission msg ac ag rl = Bootstrap.rowColMd12 $ if (and [null ac, null ag, null rl])
-      then (H.p $ fromString $ msg $ Msg_EvaluationTable_EmptyUnevaluatedSolutions "There are no unevaluated submissions.")
+      then (H.p $ fromString $ msg $ msg_EvaluationTable_EmptyUnevaluatedSolutions "There are no unevaluated submissions.")
       else
-        H.p $ fromString . msg $ Msg_EvaluationTable_Info $ concat
+        H.p $ fromString . msg $ msg_EvaluationTable_Info $ concat
           [ "Only the last unevaluated submission is shown per student. The "
           , "other submissions may be accessed through the submission table "
           , "on the home page."
@@ -72,17 +72,17 @@ evaluationTableContent tc = openedSubmissionsCata $ \admincourse admingroup rela
       when (not $ null ks) $ Bootstrap.rowColMd12 $ do
         Bootstrap.table $ do
           thead $ H.tr $ do
-            H.th (fromString . msg $ Msg_EvaluationTable_Link "Link")
-            H.th (fromString . msg $ Msg_EvaluationTable_Assignment "Assignment")
-            H.th (fromString . msg $ Msg_EvaluationTable_Username "Username")
-            H.th (fromString . msg $ Msg_EvaluationTable_Student "Student")
-            H.th (fromString . msg $ Msg_EvaluationTable_Course "Course")
-            when isGroup $ H.th (fromString . msg $ Msg_EvaluationTable_Group "Group")
-            H.th (fromString . msg $ Msg_EvaluationTable_DateOfSubmission "Date")
+            H.th (fromString . msg $ msg_EvaluationTable_Link "Link")
+            H.th (fromString . msg $ msg_EvaluationTable_Assignment "Assignment")
+            H.th (fromString . msg $ msg_EvaluationTable_Username "Username")
+            H.th (fromString . msg $ msg_EvaluationTable_Student "Student")
+            H.th (fromString . msg $ msg_EvaluationTable_Course "Course")
+            when isGroup $ H.th (fromString . msg $ msg_EvaluationTable_Group "Group")
+            H.th (fromString . msg $ msg_EvaluationTable_DateOfSubmission "Date")
           tbody $ forM_ ks (submissionInfo tc msg isGroup)
 
 submissionInfo tc msg isGroup (key, desc) = H.tr $ do
-  H.td $ link (routeOf (evaluation key)) (msg $ Msg_EvaluationTable_Solution "Submission")
+  H.td $ link (routeOf (evaluation key)) (msg $ msg_EvaluationTable_Solution "Submission")
   H.td . fromString . Assignment.name . eAssignment $ desc
   uid (H.td . fromString) $ eUid desc
   H.td . fromString . eStudent $ desc

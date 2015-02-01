@@ -16,11 +16,11 @@ import           Bead.View.DataBridge as DataBridge
 
 backToLogin msg =
   Bootstrap.rowCol4Offset4 $ Bootstrap.buttonGroupJustified $
-    Bootstrap.buttonLink "/" $ msg $ Msg_Registration_GoBackToLogin "Back to login"
+    Bootstrap.buttonLink "/" $ msg $ msg_Registration_GoBackToLogin "Back to login"
 
 registrationTitle msg =
   Bootstrap.rowCol4Offset4 $ h2 $
-    fromString $ msg $ Msg_Registration_Title "Registration"
+    fromString $ msg $ msg_Registration_Title "Registration"
 
 registrationFirstStep :: IHtml
 registrationFirstStep = do
@@ -28,10 +28,10 @@ registrationFirstStep = do
   return $ do
     registrationTitle msg
     Bootstrap.rowCol4Offset4 $ postForm "/reg_request" ! (A.id . formId $ regForm) $ do
-      Bootstrap.textInput (DataBridge.name regUsernamePrm) (msg $ Msg_Registration_Username "Username:") ""
-      Bootstrap.textInput (DataBridge.name regEmailPrm)    (msg $ Msg_Registration_Email "Email:") ""
-      Bootstrap.textInput (DataBridge.name regFullNamePrm) (msg $ Msg_Registration_FullName "Full name:") ""
-      Bootstrap.submitButton (fieldName regSubmitBtn) (msg $ Msg_Registration_SubmitButton "Registration")
+      Bootstrap.textInput (DataBridge.name regUsernamePrm) (msg $ msg_Registration_Username "Username:") ""
+      Bootstrap.textInput (DataBridge.name regEmailPrm)    (msg $ msg_Registration_Email "Email:") ""
+      Bootstrap.textInput (DataBridge.name regFullNamePrm) (msg $ msg_Registration_FullName "Full name:") ""
+      Bootstrap.submitButton (fieldName regSubmitBtn) (msg $ msg_Registration_SubmitButton "Registration")
     backToLogin msg
 
 registrationFirstStepEmailSent :: IHtml
@@ -40,7 +40,7 @@ registrationFirstStepEmailSent = do
   return $ do
     registrationTitle msg
     Bootstrap.rowCol4Offset4 $ p $
-      fromString $ msg $ Msg_RegistrationTokenSend_Title "The registration token has been sent in email, it shall arrive soon."
+      fromString $ msg $ msg_RegistrationTokenSend_Title "The registration token has been sent in email, it shall arrive soon."
     backToLogin msg
 
 -- The second step f the registration
@@ -50,18 +50,18 @@ registrationPasswordStep utcZoneInfo timeZones key language username token = do
   return $ do
     registrationTitle msg
     Bootstrap.rowCol4Offset4 $ postForm "/reg_final" ! (A.id . formId $ regFinalForm) $ do
-      Bootstrap.passwordInput (DataBridge.name regPasswordPrm)      (msg $ Msg_RegistrationFinalize_Password "Password:")
-      Bootstrap.passwordInput (DataBridge.name regPasswordAgainPrm) (msg $ Msg_RegistrationFinalize_PwdAgain "Password (again):")
+      Bootstrap.passwordInput (DataBridge.name regPasswordPrm)      (msg $ msg_RegistrationFinalize_Password "Password:")
+      Bootstrap.passwordInput (DataBridge.name regPasswordAgainPrm) (msg $ msg_RegistrationFinalize_PwdAgain "Password (again):")
       Bootstrap.selectionWithLabel
         (DataBridge.name regTimeZonePrm)
-        (msg $ Msg_RegistrationFinalize_Timezone "Time zone:")
+        (msg $ msg_RegistrationFinalize_Timezone "Time zone:")
         (==utcZoneInfo)
         timeZones
       hiddenParam regUserRegKeyPrm key
       hiddenParam regTokenPrm      token
       hiddenParam regUsernamePrm   username
       hiddenParam regLanguagePrm   language
-      Bootstrap.submitButton (fieldName regSubmitBtn) (msg $ Msg_RegistrationFinalize_SubmitButton "Register")
+      Bootstrap.submitButton (fieldName regSubmitBtn) (msg $ msg_RegistrationFinalize_SubmitButton "Register")
     backToLogin msg
     Bootstrap.turnSelectionsOn
   where

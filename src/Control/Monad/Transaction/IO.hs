@@ -1,5 +1,5 @@
 module Control.Monad.Transaction.IO (
-    module Control.Exception
+    module E
   , TRS
   , step
   , atomically

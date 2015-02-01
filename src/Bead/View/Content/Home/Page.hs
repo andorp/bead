@@ -95,7 +95,7 @@ submissionTableInfoAssignments = submissionTableInfoCata course group where
 calculateSubmissionResult :: I18N -> [SubmissionInfo] -> EvConfig -> Either String Result
 calculateSubmissionResult msg si e =
   case results of
-    [] -> (Left (msg $ Msg_Home_HasNoSummary "N/A"))
+    [] -> (Left (msg $ msg_Home_HasNoSummary "N/A"))
     rs -> evaluationDataMap
             (const (sumBinaryResult msg rs))
             (flip (sumPercentageResult msg) rs)
@@ -120,7 +120,7 @@ sumBinaryResult msg = calcEvaluationResult binary calcBinaryResult
     -- Produces (Left "error") if the result is not a binary result
     -- otherwise (Right result)
     binary :: EvResult -> Either String Binary
-    binary = evaluationDataMap Right (const . Left $ (msg $ Msg_Home_NonBinaryEvaluation "Not a binary evaluation")) . evResult
+    binary = evaluationDataMap Right (const . Left $ (msg $ msg_Home_NonBinaryEvaluation "Not a binary evaluation")) . evResult
 
     calcBinaryResult :: [Binary] -> Result
     calcBinaryResult bs = calculateEvaluation bs ()
@@ -133,7 +133,7 @@ sumPercentageResult msg config = calcEvaluationResult percentage calcPercentageR
   where
     percentage :: EvResult -> Either String Percentage
     percentage = evaluationDataMap
-                   (const . Left $ (msg $ Msg_Home_NonPercentageEvaluation "Not a percentage evaluation"))
+                   (const . Left $ (msg $ msg_Home_NonPercentageEvaluation "Not a percentage evaluation"))
                    Right
                    . evResult
 

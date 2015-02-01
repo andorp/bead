@@ -50,16 +50,16 @@ groupRegistrationContent desc = do
   return $ do
     let registeredGroups = groupsRegistered desc
     Bootstrap.rowColMd12 $ do
-      H.h3 $ fromString $ msg $ Msg_GroupRegistration_RegisteredCourses "Registered courses"
+      H.h3 $ fromString $ msg $ msg_GroupRegistration_RegisteredCourses "Registered courses"
       i18n msg $ groupsAlreadyRegistered registeredGroups
     when (not . null $ registeredGroups) $ Bootstrap.rowColMd12 $ do
-      H.p $ (fromString . msg $ Msg_GroupRegistration_Warning $ concat
+      H.p $ (fromString . msg $ msg_GroupRegistration_Warning $ concat
         [ "It is possible to quit from a group or move between groups until a submission is "
         , "submitted.  Otherwise, the teacher of the given group should be asked to undo the "
         , "group registration."
         ])
     Bootstrap.rowColMd12 $ do
-      H.h3 $ (fromString . msg $ Msg_GroupRegistration_SelectGroup "Select course and group")
+      H.h3 $ (fromString . msg $ msg_GroupRegistration_SelectGroup "Select course and group")
     i18n msg $ groupsForTheUser (groups desc)
     Bootstrap.turnSelectionsOn
 
@@ -67,13 +67,13 @@ groupsAlreadyRegistered :: [(GroupKey, GroupDesc, Bool)] -> IHtml
 groupsAlreadyRegistered ds = do
   msg <- getI18N
   return $ nonEmpty ds
-    (fromString . msg $ Msg_GroupRegistration_NoRegisteredCourses
+    (fromString . msg $ msg_GroupRegistration_NoRegisteredCourses
       "No registered courses.  Choose a group.")
     (Bootstrap.table $ do
       thead $ H.tr $ do
-        H.th . fromString . msg $ Msg_GroupRegistration_Courses "Groups"
-        H.th . fromString . msg $ Msg_GroupRegistration_Admins "Teachers"
-        H.th . fromString . msg $ Msg_GroupRegistration_Unsubscribe "Unregister"
+        H.th . fromString . msg $ msg_GroupRegistration_Courses "Groups"
+        H.th . fromString . msg $ msg_GroupRegistration_Admins "Teachers"
+        H.th . fromString . msg $ msg_GroupRegistration_Unsubscribe "Unregister"
       tbody $ mapM_ (groupLine msg) ds)
   where
     unsubscribeFromCourse k = Pages.unsubscribeFromCourse k ()
@@ -84,22 +84,22 @@ groupsAlreadyRegistered ds = do
         H.td $ fromString $ join $ intersperse " " as
         H.td $
           if hasSubmission
-            then (fromString . msg $ Msg_GroupRegistration_NoUnsubscriptionAvailable
+            then (fromString . msg $ msg_GroupRegistration_NoUnsubscriptionAvailable
               "Unregistration is not allowed.")
             else postForm (routeOf $ unsubscribeFromCourse key) $
                    Bootstrap.smallSubmitButton
                      (fieldName unsubscribeFromCourseSubmitBtn)
-                     (msg $ Msg_GroupRegistration_Unsubscribe "Unregister")
+                     (msg $ msg_GroupRegistration_Unsubscribe "Unregister")
 
 groupsForTheUser :: [(GroupKey, GroupDesc)] -> IHtml
 groupsForTheUser gs = do
   msg <- getI18N
   return $
     nonEmpty gs
-      (Bootstrap.rowColMd12 $ p $ fromString . msg $ Msg_GroupRegistration_NoAvailableCourses "There are no available groups yet.") $
+      (Bootstrap.rowColMd12 $ p $ fromString . msg $ msg_GroupRegistration_NoAvailableCourses "There are no available groups yet.") $
       postForm (routeOf groupRegistration) $ do
         Bootstrap.selection (fieldName groupRegistrationField) (const False) (map (id *** descriptive) gs)
-        Bootstrap.submitButton (fieldName regGroupSubmitBtn) (msg $ Msg_GroupRegistration_Register "Register")
+        Bootstrap.submitButton (fieldName regGroupSubmitBtn) (msg $ msg_GroupRegistration_Register "Register")
   where
     groupRegistration = Pages.groupRegistration ()
 

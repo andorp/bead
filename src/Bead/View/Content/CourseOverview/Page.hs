@@ -41,7 +41,7 @@ courseSubmissionsContent now c s = do
   msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $
-      fromString  . msg $ Msg_Home_SubmissionTable_Info $ concat
+      fromString  . msg $ msg_Home_SubmissionTable_Info $ concat
         [ "Assignments may be modified by clicking on their identifiers if you have rights for the modification (their names are shown in the tooltip).  "
         , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
         , "then clicking on the button."

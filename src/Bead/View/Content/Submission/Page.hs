@@ -91,7 +91,7 @@ submissionPostHandler = do
               -- Passwords do match
               then newSubmission ak aspects uploadResult
               -- Passwords do not match
-              else return . ErrorMessage $ Msg_Submission_InvalidPassword "Invalid password, the solution could not be submitted!"
+              else return . ErrorMessage $ msg_Submission_InvalidPassword "Invalid password, the solution could not be submitted!"
     -- Non password protected assignment
     else newSubmission ak aspects uploadResult
   where
@@ -104,16 +104,16 @@ submissionPostHandler = do
               if (takeExtension name == ".zip")
                 then submit $ return $ ZippedSubmission contents
                 else return $
-                  ErrorMessage $ Msg_Submission_File_InvalidFile
+                  ErrorMessage $ msg_Submission_File_InvalidFile
                     "The extension of the file to be uploaded is incorrect."
             Just PolicyFailure      -> return $
-              ErrorMessage $ Msg_Submission_File_PolicyFailure
+              ErrorMessage $ msg_Submission_File_PolicyFailure
                 "The upload policy has been violated, probably the file was too large."
             Nothing                 -> return $
-              ErrorMessage $ Msg_Submission_File_NoFileReceived
+              ErrorMessage $ msg_Submission_File_NoFileReceived
                 "No file has been received."
             _                       -> return $
-              ErrorMessage $ Msg_Submission_File_InternalError
+              ErrorMessage $ msg_Submission_File_InternalError
                 "Some error happened during upload."
        where
          submit s = NewSubmission ak <$> (E.Submission <$> s <*> liftIO getCurrentTime)
@@ -147,37 +147,37 @@ submissionContent p = do
     -- Informational table on the page
     Bootstrap.rowColMd12 $ Bootstrap.table $
       H.tbody $ do
-        (msg $ Msg_Submission_Course "Course: ")         .|. (fromString . aGroup $ asDesc p)
-        (msg $ Msg_Submission_Admin "Teacher: ")         .|. (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
-        (msg $ Msg_Submission_Assignment "Assignment: ") .|. (fromString . Assignment.name $ asValue p)
-        (msg $ Msg_Submission_Deadline "Deadline: ")     .|.
+        (msg $ msg_Submission_Course "Course: ")         .|. (fromString . aGroup $ asDesc p)
+        (msg $ msg_Submission_Admin "Teacher: ")         .|. (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
+        (msg $ msg_Submission_Assignment "Assignment: ") .|. (fromString . Assignment.name $ asValue p)
+        (msg $ msg_Submission_Deadline "Deadline: ")     .|.
           (fromString . showDate . (asTimeConv p) . Assignment.end $ asValue p)
-        (msg $ Msg_Submission_TimeLeft "Time left: ")    .|. (startEndCountdownDiv
+        (msg $ msg_Submission_TimeLeft "Time left: ")    .|. (startEndCountdownDiv
                 "ctd"
-                (msg $ Msg_Submission_Days "day(s)")
-                (msg $ Msg_Submission_DeadlineReached "Deadline is reached")
+                (msg $ msg_Submission_Days "day(s)")
+                (msg $ msg_Submission_DeadlineReached "Deadline is reached")
                 (asNow p)
                 (Assignment.end $ asValue p))
         maybe (return ()) (uncurry (.|.)) (remainingTries msg (asLimit p))
     Bootstrap.rowColMd12 $ do
-      H.h2 $ fromString $ msg $ Msg_Submission_Description "Description"
+      H.h2 $ fromString $ msg $ msg_Submission_Description "Description"
       H.div # assignmentTextDiv $ markdownToHtml $ Assignment.desc $ asValue p
     postForm (routeOf submission) `withId` (rFormId submissionForm) ! A.enctype "multipart/form-data" $ do
       hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
       assignmentPassword msg
       Bootstrap.rowColMd12 $ h2 $
-        fromString $ msg $ Msg_Submission_Solution "Submission"
+        fromString $ msg $ msg_Submission_Solution "Submission"
       if (Assignment.isZippedSubmissions aspects)
         then
           Bootstrap.formGroup $ do
             Bootstrap.helpBlock $
-              (msg $ Msg_Submission_Info_File
+              (msg $ msg_Submission_Info_File
                 "Please select a file with .zip extension to submit.  Note that the maximum file size in kilobytes: ") ++
               (fromString $ show $ asMaxFileSize p)
             fileInput (fieldName submissionFileField)
         else
           Bootstrap.textArea (fieldName submissionTextField) "" ""
-      Bootstrap.submitButton (fieldName submitSolutionBtn) (fromString $ msg $ Msg_Submission_Submit "Submit")
+      Bootstrap.submitButton (fieldName submitSolutionBtn) (fromString $ msg $ msg_Submission_Submit "Submit")
 
   where
     submission = Pages.submission ()
@@ -185,10 +185,10 @@ submissionContent p = do
 
     assignmentPassword msg =
       when (Assignment.isPasswordProtected aspects) $ do
-        H.p $ fromString . msg $ Msg_Submission_Info_Password
+        H.p $ fromString . msg $ msg_Submission_Info_Password
           "This assignment can only accept submissions by providing the password."
-        Bootstrap.passwordInput (fieldName submissionPwdField) (msg $ Msg_Submission_Password "Password for the assignment:")
-        Bootstrap.passwordInput (fieldName submissionPwdAgainField) (msg $ Msg_Submission_PasswordAgain "Password again:")
+        Bootstrap.passwordInput (fieldName submissionPwdField) (msg $ msg_Submission_Password "Password for the assignment:")
+        Bootstrap.passwordInput (fieldName submissionPwdAgainField) (msg $ msg_Submission_PasswordAgain "Password again:")
 
 -- Creates a table line first element is a bold text and the second is a HTML snippet
 infixl 7 .|.
@@ -197,5 +197,5 @@ name .|. value = H.tr $ do
   H.td value
 
 resolveStatus :: I18N -> Maybe String -> H.Html
-resolveStatus msg Nothing     = fromString . msg $ Msg_SubmissionList_NotEvaluatedYet "Not evaluated yet"
+resolveStatus msg Nothing     = fromString . msg $ msg_SubmissionList_NotEvaluatedYet "Not evaluated yet"
 resolveStatus _msg (Just str) = fromString str

@@ -129,9 +129,9 @@ inputEvalResult :: EvConfig -> IHtml
 inputEvalResult (EvConfig (BinEval _cfg)) = do
   msg <- getI18N
   return $ Bootstrap.radioButtonGroup (fieldName evaluationResultField) $
-    [ (True,  encodeToFay' "inputEvalResult" EvCmtComment,  msg $ Msg_Evaluation_New_Comment "New Comment")
-    , (False, encodeToFay' "inputEvalResult" $ binary Passed, msg $ Msg_Evaluation_Accepted "Accepted")
-    , (False, encodeToFay' "inputEvalResult" $ binary Failed, msg $ Msg_Evaluation_Rejected "Rejected")
+    [ (True,  encodeToFay' "inputEvalResult" EvCmtComment,  msg $ msg_Evaluation_New_Comment "New Comment")
+    , (False, encodeToFay' "inputEvalResult" $ binary Passed, msg $ msg_Evaluation_Accepted "Accepted")
+    , (False, encodeToFay' "inputEvalResult" $ binary Failed, msg $ msg_Evaluation_Rejected "Rejected")
     ]
   where
     binary = EvCmtResult . binaryResult
@@ -153,7 +153,7 @@ evaluationContent pd = do
   msg <- getI18N
   return $ do
     Bootstrap.row $ Bootstrap.colMd12 $
-      H.p $ fromString . msg $ Msg_Evaluation_Info $ concat
+      H.p $ fromString . msg $ msg_Evaluation_Info $ concat
         [ "It is not mandatory to evaluate the submission, it is allowed to comment on it only.  "
         , "The student may answer the comments by further comments.  The submission may be "
         , "evaluated many times."
@@ -162,40 +162,40 @@ evaluationContent pd = do
     Bootstrap.row $ Bootstrap.colMd12 $ Bootstrap.table $
       H.tbody $ do
         tr $ do
-            td $ fromString $ msg $ Msg_Evaluation_Course "Course: "
+            td $ fromString $ msg $ msg_Evaluation_Course "Course: "
             td $ fromString $ eCourse sd
         maybe
           mempty
           (\group -> tr $ do
-             td $ fromString $ msg $ Msg_Evaluation_Group "Group: "
+             td $ fromString $ msg $ msg_Evaluation_Group "Group: "
              td $ fromString group)
           (eGroup sd)
         tr $ do
-            td $ fromString $ msg $ Msg_Evaluation_Student "Student: "
+            td $ fromString $ msg $ msg_Evaluation_Student "Student: "
             td $ fromString $ eStudent sd
         tr $ do
-            td $ fromString $ msg $ Msg_Evaluation_Username "Username: "
+            td $ fromString $ msg $ msg_Evaluation_Username "Username: "
             td $ fromString $ uid Prelude.id $ eUid sd
         tr $ do
-            td $ fromString $ msg $ Msg_Evaluation_SubmissionDate "Date of submission: "
+            td $ fromString $ msg $ msg_Evaluation_SubmissionDate "Date of submission: "
             td $ fromString $ showDate . tc $ eSubmissionDate sd
 
     Bootstrap.row $ Bootstrap.colMd12 $ do
       let downloadSubmissionButton =
             Bootstrap.buttonLink
               (routeOf $ Pages.getSubmission submissionKey ())
-              (msg $ Msg_Evaluation_Submitted_Solution_Zip_Link "Download")
+              (msg $ msg_Evaluation_Submitted_Solution_Zip_Link "Download")
 
-      h2 $ fromString $ msg $ Msg_Evaluation_Submitted_Solution "Submission"
+      h2 $ fromString $ msg $ msg_Evaluation_Submitted_Solution "Submission"
       if (Assignment.isZippedSubmissions . Assignment.aspects . eAssignment $ sd)
         then do
-          H.p $ fromString . msg $ Msg_Evaluation_Submitted_Solution_Zip_Info $ mconcat
+          H.p $ fromString . msg $ msg_Evaluation_Submitted_Solution_Zip_Info $ mconcat
             [ "The submission was uploaded as a compressed file so it could not be displayed verbatim.  "
             , "But it may be downloaded as a file by clicking on the link."
             ]
           downloadSubmissionButton
         else do
-          H.p $ fromString . msg $ Msg_Evaluation_Submitted_Solution_Text_Info $
+          H.p $ fromString . msg $ msg_Evaluation_Submitted_Solution_Text_Info $
             "The submission may be downloaded as a plain text file by clicking on the link."
           downloadSubmissionButton
           H.br
@@ -205,16 +205,16 @@ evaluationContent pd = do
       postForm (routeOf . evPage $ maybeEvalKey) $ do
         Bootstrap.optionalTextArea (fieldName evaluationValueField) "" $ mempty
         hiddenInput (fieldName assignmentKeyField) (paramValue $ eAssignmentKey sd)
-        hiddenInput (fieldName evCommentOnlyText) (msg $ Msg_Evaluation_New_Comment "New Comment")
+        hiddenInput (fieldName evCommentOnlyText) (msg $ msg_Evaluation_New_Comment "New Comment")
         Bootstrap.formGroup . evaluationDiv . i18n msg . inputEvalResult . Assignment.evType $ eAssignment sd
         Bootstrap.submitButton
-          (fieldName saveEvalBtn) (fromString . msg $ Msg_Evaluation_SaveButton "Submit")
+          (fieldName saveEvalBtn) (fromString . msg $ msg_Evaluation_SaveButton "Submit")
 
     let comments = submissionDescToCFs sd
     when (not $ null comments) $ do
       Bootstrap.row $ Bootstrap.colMd12 $ hr
       Bootstrap.row $ Bootstrap.colMd12 $
-        H.h2 (fromString . msg $ Msg_Comments_Title "Comments")
+        H.h2 (fromString . msg $ msg_Comments_Title "Comments")
       -- Renders the comment area where the user can place a comment
       Bootstrap.row $ Bootstrap.colMd12 $ hr
       i18n msg $ commentsDiv tc comments

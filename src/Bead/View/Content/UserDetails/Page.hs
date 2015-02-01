@@ -53,26 +53,26 @@ userDetailForm timeZones user dictionaries = do
     postForm (routeOf userDetails) $ do
       Bootstrap.labeledText "" (usernameCata fromString $ u_username user)
       userDetailsFields msg
-      Bootstrap.submitButton (fieldName saveChangesBtn) (msg $ Msg_UserDetails_SaveButton "Update")
+      Bootstrap.submitButton (fieldName saveChangesBtn) (msg $ msg_UserDetails_SaveButton "Update")
     Bootstrap.turnSelectionsOn
   where
     userDetailsFields msg = do
 #ifdef LDAPEnabled
       Bootstrap.selection (fieldName userRoleField) (== u_role user) (roles msg)
-      emailCata (Bootstrap.labeledText (msg $ Msg_Input_User_Email "Email") . fromString) (u_email user)
+      emailCata (Bootstrap.labeledText (msg $ msg_Input_User_Email "Email") . fromString) (u_email user)
       hiddenInput (fieldName userEmailField) (emailCata id $ u_email user)
-      Bootstrap.labeledText (msg $ Msg_Input_User_FullName "Full name") $ fromString (u_name user)
+      Bootstrap.labeledText (msg $ msg_Input_User_FullName "Full name") $ fromString (u_name user)
       hiddenInput (fieldName userFamilyNameField) (u_name user)
-      timeZoneName (Bootstrap.labeledText (msg $ Msg_Input_User_TimeZone "Timezone") . fromString) (u_timezone user)
+      timeZoneName (Bootstrap.labeledText (msg $ msg_Input_User_TimeZone "Timezone") . fromString) (u_timezone user)
       hiddenInput (B.name userTimeZonePrm) (Bootstrap.encode "timezone" $ u_timezone user)
       Bootstrap.labeledText
-        (msg $ Msg_Input_User_Language "Language")
+        (msg $ msg_Input_User_Language "Language")
         (fromString $ fromMaybe "Language is not found" $ Map.lookup (u_language user) languageMap)
       hiddenInput (B.name userLanguagePrm) (Bootstrap.encode "language" $ u_language user)
 #else
       Bootstrap.selection (fieldName userRoleField) (== u_role user) (roles msg)
-      Bootstrap.textInputWithDefault (fieldName userEmailField) (msg $ Msg_Input_User_Email "Email") (emailCata id $ u_email user)
-      Bootstrap.textInputWithDefault (fieldName userFamilyNameField) (msg $ Msg_Input_User_FullName "Full name") (u_name user)
+      Bootstrap.textInputWithDefault (fieldName userEmailField) (msg $ msg_Input_User_Email "Email") (emailCata id $ u_email user)
+      Bootstrap.textInputWithDefault (fieldName userFamilyNameField) (msg $ msg_Input_User_FullName "Full name") (u_name user)
       Bootstrap.selection (B.name userTimeZonePrm) (== u_timezone user) userTimeZones
       Bootstrap.selection (B.name userLanguagePrm) (== u_language user) languages
 #endif
@@ -85,10 +85,10 @@ userDetailForm timeZones user dictionaries = do
     languages = map langVal dictionaries
 
     roleLabel = roleCata
-      (Msg_InputHandlers_Role_Student "Student")
-      (Msg_InputHandlers_Role_GroupAdmin "Teacher")
-      (Msg_InputHandlers_Role_CourseAdmin "Course Admin")
-      (Msg_InputHandlers_Role_Admin "Administrator")
+      (msg_InputHandlers_Role_Student "Student")
+      (msg_InputHandlers_Role_GroupAdmin "Teacher")
+      (msg_InputHandlers_Role_CourseAdmin "Course Admin")
+      (msg_InputHandlers_Role_Admin "Administrator")
 
     allRoles = [toEnum 0 ..]
     roles msg = map (id &&& (msg . roleLabel)) allRoles
@@ -98,7 +98,7 @@ userDoesNotExist username = do
   msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $ p $ do
-      (fromString $ msg $ Msg_UserDetails_NonExistingUser "No such user:")
+      (fromString $ msg $ msg_UserDetails_NonExistingUser "No such user:")
       usernameCata fromString username
 
 getRole = getParameter rolePrm

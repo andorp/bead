@@ -62,46 +62,46 @@ administrationContent info = do
   msg <- getI18N
   return $ do
     Bootstrap.row $ Bootstrap.colMd12 $ do
-      H.h3 $ (fromString . msg $ Msg_Administration_NewCourse "New course")
+      H.h3 $ (fromString . msg $ msg_Administration_NewCourse "New course")
       postForm (routeOf createCourse) $ do
         -- i18n msg $ inputPagelet emptyCourse
-        Bootstrap.textInput (fieldName courseNameField) (msg $ Msg_Input_Course_Name "Title") ""
-        Bootstrap.textInput (fieldName courseDescField) (msg $ Msg_Input_Course_Description "Description") ""
+        Bootstrap.textInput (fieldName courseNameField) (msg $ msg_Input_Course_Name "Title") ""
+        Bootstrap.textInput (fieldName courseDescField) (msg $ msg_Input_Course_Description "Description") ""
         Bootstrap.selectionWithLabel
           (fieldName testScriptTypeField)
-          (msg $ Msg_Input_Course_TestScript "Type of test script")
+          (msg $ msg_Input_Course_TestScript "Type of test script")
           (const False)
           (testScriptTypes msg)
 
         -- Help message for the percentage
         H.span ! A.id (fieldName pctHelpMessage) ! A.hidden "" $
-          (fromString . msg $ Msg_Administration_PctHelpMessage "Minimum of percent to achieve by students")
-        Bootstrap.submitButton (fieldName createCourseBtn) (fromString . msg $ Msg_Administration_CreateCourse "Create")
+          (fromString . msg $ msg_Administration_PctHelpMessage "Minimum of percent to achieve by students")
+        Bootstrap.submitButton (fieldName createCourseBtn) (fromString . msg $ msg_Administration_CreateCourse "Create")
     Bootstrap.row $ Bootstrap.colMd12 $ do
-      H.h3 $ (fromString . msg $ Msg_Administration_AssignCourseAdminTitle "Assign teacher to course")
+      H.h3 $ (fromString . msg $ msg_Administration_AssignCourseAdminTitle "Assign teacher to course")
       let coursesInfo = courses info
-      nonEmpty coursesInfo (fromString . msg $ Msg_Administration_NoCourses "There are no courses.") $ do
+      nonEmpty coursesInfo (fromString . msg $ msg_Administration_NoCourses "There are no courses.") $ do
         nonEmpty (courseAdmins info) (noCourseAdminInfo msg coursesInfo) $ do
           H.p (fromString . msg $
-            Msg_Administration_HowToAddMoreAdmins
+            msg_Administration_HowToAddMoreAdmins
               "Further teachers can be added by modifying roles of users, then assign them to courses.")
           postForm (routeOf assignCourseAdmin) $ do
             Bootstrap.selection (fieldName selectedCourse) (const False) courses'
             Bootstrap.selection (fieldName selectedCourseAdmin) (const False) courseAdmins'
-            Bootstrap.submitButton (fieldName assignBtn) (fromString . msg $ Msg_Administration_AssignCourseAdminButton "Assign")
+            Bootstrap.submitButton (fieldName assignBtn) (fromString . msg $ msg_Administration_AssignCourseAdminButton "Assign")
       courseAdministratorsTable msg (assignedCourseAdmins info)
     Bootstrap.row $ Bootstrap.colMd12 $ do
-      H.h3 $ (fromString . msg $ Msg_Administration_ChangeUserProfile "Modify users")
+      H.h3 $ (fromString . msg $ msg_Administration_ChangeUserProfile "Modify users")
       getForm (routeOf userDetails) $ do
         -- i18n msg $ inputPagelet emptyUsername
         Bootstrap.textInput (fieldName usernameField) "" ""
-        Bootstrap.submitButton (fieldName selectBtn) (fromString . msg $ Msg_Administration_SelectUser "Select")
+        Bootstrap.submitButton (fieldName selectBtn) (fromString . msg $ msg_Administration_SelectUser "Select")
     Bootstrap.turnSelectionsOn
   where
     noCourseAdminInfo msg coursesInfo = do
-      fromString . msg $ Msg_Administration_NoCourseAdmins "There are no teachers. Teachers can be created by modifying roles of users."
+      fromString . msg $ msg_Administration_NoCourseAdmins "There are no teachers. Teachers can be created by modifying roles of users."
       Bootstrap.table $ do
-        H.thead $ H.tr $ H.th $ fromString . msg $ Msg_Administration_CreatedCourses "Courses"
+        H.thead $ H.tr $ H.th $ fromString . msg $ msg_Administration_CreatedCourses "Courses"
         H.tbody $ forM_ coursesInfo (\(_ckey,c) -> H.tr $ H.td $ fromString $ courseName c)
 
     userLongname u = concat [ usernameCata id $ u_username u, " - ", u_name u ]
@@ -116,22 +116,22 @@ administrationContent info = do
     dataCell   = H.td # informationalCell
 
     testScriptTypes msg = [
-        (TestScriptSimple, msg $ Msg_Input_TestScriptSimple "Simple")
-      , (TestScriptZipped, msg $ Msg_Input_TestScriptZipped "Zipped")
+        (TestScriptSimple, msg $ msg_Input_TestScriptSimple "Simple")
+      , (TestScriptZipped, msg $ msg_Input_TestScriptZipped "Zipped")
       ]
 
 courseAdministratorsTable :: I18N -> [(Course,[User])] -> H.Html
 courseAdministratorsTable _ [] = return ()
 courseAdministratorsTable i18n courses = Bootstrap.row $ Bootstrap.colMd12 $ do
-  H.p . fromString . i18n . Msg_Administration_CourseAdmins_Info $ unlines
+  H.p . fromString . i18n . msg_Administration_CourseAdmins_Info $ unlines
     [ "Each line of the following table contains a course and the username of the administrators,"
     , " that are assigned to the course."
     ]
   let courses' = sortBy (compare `on` (courseName . fst)) courses
   Bootstrap.table $ do
     H.thead $ do
-      H.th (fromString . i18n $ Msg_Administration_CourseAdmins_Course "Course")
-      H.th (fromString . i18n $ Msg_Administration_CourseAdmins_Admins "Administrators")
+      H.th (fromString . i18n $ msg_Administration_CourseAdmins_Course "Course")
+      H.th (fromString . i18n $ msg_Administration_CourseAdmins_Admins "Administrators")
     H.tbody $ forM_ courses' $ \(course, admins) -> do
       H.tr $ do
         H.td . fromString $ courseName course

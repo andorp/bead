@@ -91,9 +91,9 @@ hasNoCourses :: PageData -> IHtml
 hasNoCourses pd = do
   msg <- getI18N
   return $ do
-    let pageTitle = pageDataCata (const $ Msg_LinkText_NewTestScript "New Test") (const3 $ Msg_LinkText_ModifyTestScript "Modify Test Script") pd
+    let pageTitle = pageDataCata (const $ msg_LinkText_NewTestScript "New Test") (const3 $ msg_LinkText_ModifyTestScript "Modify Test Script") pd
     Bootstrap.rowColMd12 $ p $
-      fromString . msg $ Msg_NewTestScript_HasNoCourses "This user cannot administer any courses."
+      fromString . msg $ msg_NewTestScript_HasNoCourses "This user cannot administer any courses."
 
 pageContent :: PageData -> IHtml
 pageContent pd = do
@@ -114,10 +114,10 @@ pageContent pd = do
         (\_name _key script -> Bootstrap.utf8TextArea (fieldName param) (msg label) (fromString (valueSelector script)))
         pd
 
-  let name        = textField testScriptNameField (Msg_NewTestScript_Name "Name") tsName
-  let description = textField testScriptDescField (Msg_NewTestScript_Description "Description") tsDescription
-  let help        = textArea  testScriptNotesField (Msg_NewTestScript_Notes "Help for writing test cases") tsNotes
-  let script      = textArea  testScriptScriptField (Msg_NewTestScript_Script "Test script") tsScript
+  let name        = textField testScriptNameField (msg_NewTestScript_Name "Name") tsName
+  let description = textField testScriptDescField (msg_NewTestScript_Description "Description") tsDescription
+  let help        = textArea  testScriptNotesField (msg_NewTestScript_Notes "Help for writing test cases") tsNotes
+  let script      = textArea  testScriptScriptField (msg_NewTestScript_Script "Test script") tsScript
 
   return $ do
     postForm (routeOf $ testScriptPage pd) $ do
@@ -126,13 +126,13 @@ pageContent pd = do
       description
       help
       script
-      Bootstrap.submitButton (fieldName testScriptSaveButton) (fromString . msg $ Msg_NewTestScript_Save "Commit")
+      Bootstrap.submitButton (fieldName testScriptSaveButton) (fromString . msg $ msg_NewTestScript_Save "Commit")
     Bootstrap.turnSelectionsOn
   where
     testScriptPage = pageDataCata (const (Pages.newTestScript ())) (\_name key _script -> Pages.modifyTestScript key ())
 
     course msg = pageDataCata
-      (Bootstrap.selectionWithLabel (fieldName testScriptCourseKeyField) (msg $ Msg_NewTestScript_Course "Course:")
+      (Bootstrap.selectionWithLabel (fieldName testScriptCourseKeyField) (msg $ msg_NewTestScript_Course "Course:")
                                     (const False) . map (id *** courseNameAndType))
       (\courseName _key _script -> fromString courseName)
       pd
@@ -140,8 +140,8 @@ pageContent pd = do
         courseNameAndType c = concat
           [courseName c, " - ", courseTypeStr $ courseTestScriptType c]
         courseTypeStr = msg . testScriptTypeCata
-          (Msg_TestScriptTypeSimple "Textual")
-          (Msg_TestScriptTypeZipped "Binary")
+          (msg_TestScriptTypeSimple "Textual")
+          (msg_TestScriptTypeZipped "Binary")
 
 -- Helper
 

@@ -27,14 +27,14 @@ import           Bead.View.ErrorPage
 import           Bead.View.EmailTemplate (ForgottenPassword(..))
 
 backToLogin :: Translation String
-backToLogin = Msg_ResetPassword_GoBackToLogin "Back to login"
+backToLogin = msg_ResetPassword_GoBackToLogin "Back to login"
 
 resetPasswordTitle :: Translation String
-resetPasswordTitle = Msg_ResetPassword_ForgottenPassword "Forgotten password"
+resetPasswordTitle = msg_ResetPassword_ForgottenPassword "Forgotten password"
 
 -- Generates a new random password for the given user. If the user does
 -- not exist it thows an error
-resetPassword :: (Error e) => Username -> ErrorT e (BeadHandler' a) ()
+resetPassword :: (Error e) => Username -> ErrorT e (Handler BeadContext BeadContext) ()
 resetPassword u = do
   user <- loadAuthUser u
   password <- randomPassword
@@ -47,29 +47,29 @@ resetPassword u = do
 -- Saves the users password it to the persistence layer and the authentication
 -- and sends the email to the given user.
 -- The handler returns a status message that should be displayed to the user.
-setUserPassword :: (Error e) => Username -> String -> ErrorT e (BeadHandler' a) (Translation String)
+setUserPassword :: (Error e) => Username -> String -> ErrorT e (Handler BeadContext BeadContext) (Translation String)
 setUserPassword u password = do
   let username = usernameCata id u
   authUser <- getAuthUser u
   case authUser of
     Nothing -> return $
-      Msg_ResetPassword_UserDoesNotExist "No such user."
+      msg_ResetPassword_UserDoesNotExist "No such user."
     Just user -> do
       encryptedPwd <- encryptPwd password
       updateUser user { userPassword = Just encryptedPwd }
       emailPasswordToUser u password
       return $
-        Msg_ResetPassword_PasswordIsSet "The password has been set."
+        msg_ResetPassword_PasswordIsSet "The password has been set."
 
-emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (BeadHandler' a) ()
+emailPasswordToUser :: (Error e) => Username -> String -> ErrorT e (Handler BeadContext BeadContext) ()
 emailPasswordToUser user pwd = do
   msg <- lift i18nH
   address <- fmap u_email (loadUserFromPersistence msg)
   lift $
     sendEmail
       address
-      (msg $ Msg_ResetPassword_EmailSubject "BE-AD: Forgotten password")
-      (msg $ Msg_ResetPassword_EmailBody forgottenPasswordEmailTemplate)
+      (msg $ msg_ResetPassword_EmailSubject "BE-AD: Forgotten password")
+      (msg $ msg_ResetPassword_EmailBody forgottenPasswordEmailTemplate)
       ForgottenPassword { fpUsername = usernameCata id user, fpNewPassword = pwd }
   where
     loadUserFromPersistence i18n =
@@ -79,7 +79,7 @@ emailPasswordToUser user pwd = do
 -- Universal error message for every type of error
 -- in such case the attacker could deduce minimal
 -- amount of information
-errorMsg = Msg_ResetPassword_GenericError "Invalid username or password."
+errorMsg = msg_ResetPassword_GenericError "Invalid username or password."
 
 checkUserInAuth :: (Error e) => Username -> ErrorT e (BeadHandler' a) ()
 checkUserInAuth u = do
@@ -87,7 +87,7 @@ checkUserInAuth u = do
   exist <- lift . usernameExistsTop $ usernameStr u
   unless exist $ throwError . strMsg $ msg errorMsg
 
-checkUserInPersistence :: (Error e) => Username -> ErrorT e (BeadHandler' a) ()
+checkUserInPersistence :: (Error e) => Username -> ErrorT e (Handler BeadContext BeadContext) ()
 checkUserInPersistence u = do
   msg <- lift i18nH
   x <- lift $ registrationStory $ S.doesUserExist u
@@ -97,23 +97,23 @@ checkUserInPersistence u = do
 usernameStr :: (IsString s) => Username -> s
 usernameStr = usernameCata fromString
 
-getAuthUser :: (Error e) => Username -> ErrorT e (BeadHandler' a) (Maybe AuthUser)
+getAuthUser :: (Error e) => Username -> ErrorT e (Handler BeadContext BeadContext) (Maybe AuthUser)
 getAuthUser u =
   lift . withTop auth $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameStr u)
 
-loadAuthUser :: (Error e) => Username -> ErrorT e (BeadHandler' a) AuthUser
+loadAuthUser :: (Error e) => Username -> ErrorT e (Handler BeadContext BeadContext) AuthUser
 loadAuthUser u = do
   msg <- lift i18nH
   usr <- getAuthUser u
   when (isNothing usr) $ throwError . strMsg $ msg errorMsg
   return . fromJust $ usr
 
-updateUser :: (Error e) => AuthUser -> ErrorT e (BeadHandler' a) AuthUser
+updateUser :: (Error e) => AuthUser -> ErrorT e (Handler BeadContext BeadContext) AuthUser
 updateUser usr =
   (lift $ withTop auth $ withBackend $ \r -> liftIO $ save r usr) >>=
   either (throwError . strMsg . show) return
 
-encryptPwd :: (Error e) => String -> ErrorT e (BeadHandler' a) A.Password
+encryptPwd :: (Error e) => String -> ErrorT e (Handler BeadContext BeadContext) A.Password
 encryptPwd = liftIO . encryptPassword . ClearText . fromString
 
 -- TODO: I18N
@@ -126,7 +126,7 @@ checkCurrentAuthPassword pwd = do
   result <- lift $ withTop auth $
     loginByUsername (usernameCata fromString name) (ClearText $ fromString pwd) False
   when (isLeft result) . throwError . strMsg . msg $
-    Msg_ResetPassword_InvalidPassword "Invalid password."
+    msg_ResetPassword_InvalidPassword "Invalid password."
 
 -- Update the currently logged in user's password in the authentication module
 updateCurrentAuthPassword :: String -> ContentHandler ()

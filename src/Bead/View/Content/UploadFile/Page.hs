@@ -64,18 +64,18 @@ postUploadFile =
     tmpDir <- getTempDirectory
     handleFileUploads tmpDir uploadPolicy perPartUploadPolicy $ \parts -> do
       case parts of
-        [] -> return . return . StatusMessage $ Msg_UploadFile_NoFileReceived "No file was received."
+        [] -> return . return . StatusMessage $ msg_UploadFile_NoFileReceived "No file was received."
         [part] -> do result <- handlePart part
                      return . return . StatusMessage $ successCata
-                       (const $ Msg_UploadFile_PolicyFailure "Upload policy violation.")
-                       (Msg_UploadFile_UnnamedFile "No file was chosen.")
-                       (const $ Msg_UploadFile_InternalError "Internal error happened during upload.")
-                       (Msg_UploadFile_Successful "File upload was sucessful.")
+                       (const $ msg_UploadFile_PolicyFailure "Upload policy violation.")
+                       (msg_UploadFile_UnnamedFile "No file was chosen.")
+                       (const $ msg_UploadFile_InternalError "Internal error happened during upload.")
+                       (msg_UploadFile_Successful "File upload was sucessful.")
                        result
         _ -> do results <- mapM handlePart parts
                 return . return . StatusMessage $ if (null $ filter isFailure results)
-                  then (Msg_UploadFile_Successful "File upload was sucessful.")
-                  else (Msg_UploadFile_ErrorInManyUploads "An error occured uploading one or more files.")
+                  then (msg_UploadFile_Successful "File upload was sucessful.")
+                  else (msg_UploadFile_ErrorInManyUploads "An error occured uploading one or more files.")
   where
     size128Kb = 128 * 1024
     perPartUploadPolicy = const $ allowWithMaximumSize size128Kb
@@ -99,14 +99,14 @@ uploadFileContent pd = do
   msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $ do
-      h3 $ fromString $ msg $ Msg_UploadFile_FileSelection "File Selection"
+      h3 $ fromString $ msg $ msg_UploadFile_FileSelection "File Selection"
       p $ do
-        fromString . msg $ Msg_UploadFile_Info "Please choose a file to upload.  Note that the maximum file size in kilobytes: "
+        fromString . msg $ msg_UploadFile_Info "Please choose a file to upload.  Note that the maximum file size in kilobytes: "
         fromString (pageDataCata (const show) pd)
 
     postForm (routeOf uploadFile) ! A.enctype "multipart/form-data" $ do
       fileInput (fieldName fileUploadField)
-      Bootstrap.submitButton (fieldName fileUploadSubmit) (msg $ Msg_UploadFile_UploadButton "Upload")
+      Bootstrap.submitButton (fieldName fileUploadSubmit) (msg $ msg_UploadFile_UploadButton "Upload")
 
     Bootstrap.rowColMd12 $ Bootstrap.table $ do
       thead $ headerLine msg
@@ -116,9 +116,9 @@ uploadFileContent pd = do
     uploadFile = Pages.uploadFile ()
 
     headerLine i18n = H.tr $ do
-      td . fromString . i18n $ Msg_UploadFile_FileName "File Name"
-      td . fromString . i18n $ Msg_UploadFile_FileSize "File Size (bytes)"
-      td . fromString . i18n $ Msg_UploadFile_FileDate "File Date"
+      td . fromString . i18n $ msg_UploadFile_FileName "File Name"
+      td . fromString . i18n $ msg_UploadFile_FileSize "File Size (bytes)"
+      td . fromString . i18n $ msg_UploadFile_FileDate "File Date"
 
     numFiles       = pageDataCata (\fs _ -> length fs) pd
 

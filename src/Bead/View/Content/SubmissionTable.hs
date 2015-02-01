@@ -93,7 +93,7 @@ submissionTablePart _tableId _now _ctx s
     msg <- getI18N
     return $ do
       Bootstrap.rowColMd12 $ Bootstrap.table $ do
-        H.td (fromString $ msg $ Msg_Home_SubmissionTable_NoCoursesOrStudents "There are no assignments or students yet.")
+        H.td (fromString $ msg $ msg_Home_SubmissionTable_NoCoursesOrStudents "There are no assignments or students yet.")
 
 
 -- Non empty table
@@ -145,8 +145,8 @@ submissionTablePart tableId now ctx s = do
     headerCell = H.th
 
     assignmentLine msg = H.tr $ do
-      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_StudentName "Name"
-      headerCell $ fromString $ msg $ Msg_Home_SubmissionTable_Username "Username"
+      headerCell $ fromString $ msg $ msg_Home_SubmissionTable_StudentName "Name"
+      headerCell $ fromString $ msg $ msg_Home_SubmissionTable_Username "Username"
       assignmentLinks
       deleteHeaderCell msg
       where
@@ -164,8 +164,8 @@ submissionTablePart tableId now ctx s = do
               (\ak -> ((c,g+1),(GroupInfo  (g,ak):as)))
 
             header = cgInfoCata
-              (viewAssignmentLink courseButtonStyle ckey (msg $ Msg_Home_CourseAssignmentIDPreffix "C"))
-              (modifyAssignmentLink groupButtonStyle (msg $ Msg_Home_GroupAssignmentIDPreffix "G"))
+              (viewAssignmentLink courseButtonStyle ckey (msg $ msg_Home_CourseAssignmentIDPreffix "C"))
+              (modifyAssignmentLink groupButtonStyle (msg $ msg_Home_GroupAssignmentIDPreffix "G"))
 
     assignmentName ak = maybe "" Assignment.name . Map.lookup ak $ stiAssignmentInfos s
 
@@ -229,15 +229,15 @@ submissionTablePart tableId now ctx s = do
         (linkWithHtml (routeWithParams (Pages.userSubmissions ()) [requestParam u, requestParam ak]))
         mempty -- not found
         (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: xx-large"
-             ! tooltip (Msg_Home_SubmissionCell_NonEvaluated "Non evaluated") $ mempty) -- non-evaluated
+             ! tooltip (msg_Home_SubmissionCell_NonEvaluated "Non evaluated") $ mempty) -- non-evaluated
         (bool (H.i ! A.class_ "glyphicon glyphicon-ok-circle" ! A.style "color:#AAAAAA; font-size: xx-large"
-                   ! tooltip (Msg_Home_SubmissionCell_Tests_Passed "Tests are passed") $ mempty)  -- tested accepted
+                   ! tooltip (msg_Home_SubmissionCell_Tests_Passed "Tests are passed") $ mempty)  -- tested accepted
               (H.i ! A.class_ "glyphicon glyphicon-remove-circle" ! A.style "color:#AAAAAA; font-size: xx-large"
-                   ! tooltip (Msg_Home_SubmissionCell_Tests_Failed "Tests are failed") $ mempty)) -- tested rejected
+                   ! tooltip (msg_Home_SubmissionCell_Tests_Failed "Tests are failed") $ mempty)) -- tested rejected
         (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: xx-large"
-             ! tooltip (Msg_Home_SubmissionCell_Accepted "Accepted") $ mempty) -- accepted
+             ! tooltip (msg_Home_SubmissionCell_Accepted "Accepted") $ mempty) -- accepted
         (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: xx-large"
-             ! tooltip (Msg_Home_SubmissionCell_Rejected "Rejected") $ mempty) -- rejected
+             ! tooltip (msg_Home_SubmissionCell_Rejected "Rejected") $ mempty) -- rejected
         si -- of percent
       where
         tooltip m = A.title (fromString $ msg m)
@@ -246,12 +246,12 @@ submissionTablePart tableId now ctx s = do
         deleteForCourseButton _n _us _as _uls _ans _ck =
           headerCell $ submitButtonDanger
             removeButton
-            (msg $ Msg_Home_DeleteUsersFromCourse "Remove") ! A.disabled ""
+            (msg $ msg_Home_DeleteUsersFromCourse "Remove") ! A.disabled ""
 
         deleteForGroupButton _n _us _as _uls _ans _ck _gk =
           headerCell $ submitButtonDanger
             removeButton
-            (msg $ Msg_Home_DeleteUsersFromGroup "Remove") ! A.disabled ""
+            (msg $ msg_Home_DeleteUsersFromGroup "Remove") ! A.disabled ""
 
     deleteUserCheckbox u = submissionTableInfoCata deleteCourseCheckbox deleteGroupCheckbox s where
         deleteCourseCheckbox _n _us _as _uls _ans _ck =
@@ -298,9 +298,9 @@ testScriptTable cti ck = maybe (return "") courseFound $ Map.lookup ck cti where
     msg <- getI18N
     return $ do
       Bootstrap.rowColMd12 $ do
-        H.h3 $ fromString $ msg $ Msg_Home_ModifyTestScriptTable "Testers"
+        H.h3 $ fromString $ msg $ msg_Home_ModifyTestScriptTable "Testers"
         case ts of
-          []  -> H.p $ fromString $ msg $ Msg_Home_NoTestScriptsWereDefined "There are no testers for the course."
+          []  -> H.p $ fromString $ msg $ msg_Home_NoTestScriptsWereDefined "There are no testers for the course."
           ts' -> Bootstrap.unorderedListGroup $ forM_ ts' $ \(tsk, tsi) ->
                    Bootstrap.listGroupLinkItem
                      (routeOf (Pages.modifyTestScript tsk ()))

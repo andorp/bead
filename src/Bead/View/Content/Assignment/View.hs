@@ -41,7 +41,7 @@ newAssignmentContent pd = do
     let hiddencfg asg = return $ do
           let e = Assignment.evType asg
           showEvaluationType msg e
-          fromString . msg $ Msg_NewAssignment_EvalTypeWarn "The evaluation type can not be modified, there is a submission for the assignment."
+          fromString . msg $ msg_NewAssignment_EvalTypeWarn "The evaluation type can not be modified, there is a submission for the assignment."
           hiddenInput (evSelectionId hook) (toFayJSON e)
     pageDataCata
       (const5 cfg)
@@ -64,22 +64,22 @@ newAssignmentContent pd = do
                         assignmentTitlePlaceholder = fromString $
                            fromAssignment
                                 (const "")
-                                (fromString . msg $ Msg_NewAssignment_Title_Default "Unnamed Assignment")
+                                (fromString . msg $ msg_NewAssignment_Title_Default "Unnamed Assignment")
                                 pd
 
                         assignmentTitle = fromAssignment (fromString . Assignment.name) mempty pd
 
-                    Bootstrap.labelFor assignmentTitleField (fromString $ msg $ Msg_NewAssignment_Title "Title")
+                    Bootstrap.labelFor assignmentTitleField (fromString $ msg $ msg_NewAssignment_Title "Title")
                     editOrReadOnly pd $ Bootstrap.textInputFieldWithDefault assignmentTitleField assignmentTitle
 
-                    H.p ! class_ "help-block"$ fromString . msg $ Msg_NewAssignment_Info_Normal $ concat
+                    H.p ! class_ "help-block"$ fromString . msg $ msg_NewAssignment_Info_Normal $ concat
                       [ "Solutions may be submitted from the time of opening until the time of closing. "
                       , "The assignment will not be visible until it is opened. "
                       , "The assignments open and close automatically."
                       ]
 
                 -- Visibility information of the assignment
-                H.h4 $ fromString $ msg $ Msg_NewAssignment_SubmissionDeadline "Visibility"
+                H.h4 $ fromString $ msg $ msg_NewAssignment_SubmissionDeadline "Visibility"
 
                 let date t =
                       let localTime = timeZoneConverter t
@@ -118,19 +118,19 @@ newAssignmentContent pd = do
                     -- Opening date of the assignment
                     Bootstrap.colMd6 $ do
                       let assignmentStart = fieldName assignmentStartField
-                      Bootstrap.labelFor assignmentStart $ fromString $ msg $ Msg_NewAssignment_StartDate "Opens"
+                      Bootstrap.labelFor assignmentStart $ fromString $ msg $ msg_NewAssignment_StartDate "Opens"
                       Bootstrap.datetimePicker assignmentStart startDateStringValue isEditPage
 
                     -- Closing date of the assignment
                     Bootstrap.colMd6 $ do
                       let assignmentEnd = fieldName assignmentEndField
-                      Bootstrap.labelFor assignmentEnd $ msg $ Msg_NewAssignment_EndDate "Closes"
+                      Bootstrap.labelFor assignmentEnd $ msg $ msg_NewAssignment_EndDate "Closes"
                       Bootstrap.datetimePicker assignmentEnd endDateStringValue isEditPage
 
                 Bootstrap.rowColMd12 $ H.hr
 
                 -- Properties of the assignment
-                H.h4 $ fromString $ msg $ Msg_NewAssignment_Properties "Properties"
+                H.h4 $ fromString $ msg $ msg_NewAssignment_Properties "Properties"
 
                 let editable = True
                     readOnly = False
@@ -151,9 +151,9 @@ newAssignmentContent pd = do
                       bootstrapCheckbox $
                               editable $ checkBox' (fieldName assignmentAspectField)
                                 (Assignment.isBallotBox aas)
-                                Assignment.BallotBox (msg $ Msg_NewAssignment_BallotBox "Ballot Box")
+                                Assignment.BallotBox (msg $ msg_NewAssignment_BallotBox "Ballot Box")
 
-                      Bootstrap.helpBlock $ msg $ Msg_NewAssignment_Info_BallotBox $ concat
+                      Bootstrap.helpBlock $ msg $ msg_NewAssignment_Info_BallotBox $ concat
                                 [ "(Recommended for tests.) Students will not be able to access submissions and "
                                 , "their evaluations until the assignment is closed."
                                 ]
@@ -162,9 +162,9 @@ newAssignmentContent pd = do
                             editable $ checkBox' (fieldName assignmentAspectField)
                               (Assignment.isIsolated aas)
                               Assignment.Isolated
-                              (msg $ Msg_NewAssignment_Isolated "Isolated")
+                              (msg $ msg_NewAssignment_Isolated "Isolated")
 
-                      Bootstrap.helpBlock $ msg $ Msg_NewAssignment_Info_Isolated $ concat
+                      Bootstrap.helpBlock $ msg $ msg_NewAssignment_Info_Isolated $ concat
                                [ "(Recommended for tests.) Submissions for other assignments of the course are not visible in the "
                                , "precense of an isolated assignments. Note: If there is more than one isolated assignment for the "
                                , "same course, all the isolated assignment and submissions will be visible for the students."
@@ -175,28 +175,28 @@ newAssignmentContent pd = do
                                   editable $ checkBox' (fieldName assignmentAspectField)
                                     (Assignment.isNoOfTries aas)
                                     (Assignment.NoOfTries 0)
-                                    (msg $ Msg_NewAssignment_NoOfTries "No of tries")
+                                    (msg $ msg_NewAssignment_NoOfTries "No of tries")
 
                       Bootstrap.row $ Bootstrap.colMd6 $ Bootstrap.formGroup $
                             editable $ numberInput assignmentNoOfTries (Just 1) Nothing noOfTries ! Bootstrap.formControl
 
-                      Bootstrap.helpBlock $ msg $ Msg_NewAssignment_Info_NoOfTries $
+                      Bootstrap.helpBlock $ msg $ msg_NewAssignment_Info_NoOfTries $
                                "Limitation the number of the submissions (per student) for the assignment."
 
                       bootstrapCheckbox $
                             editable $ checkBox' (fieldName assignmentAspectField)
                               (Assignment.isPasswordProtected aas)
                               (Assignment.Password "")
-                              (msg $ Msg_NewAssignment_PasswordProtected "Password-protected")
+                              (msg $ msg_NewAssignment_PasswordProtected "Password-protected")
 
-                      Bootstrap.helpBlock $ msg $ Msg_NewAssignment_Info_Password $ concat
+                      Bootstrap.helpBlock $ msg $ msg_NewAssignment_Info_Password $ concat
                                 [ "(Recommended for tests.) Submissions may be only submitted by providing the password. "
                                 , "The teacher shall use the password during the test in order to authenticate the "
                                 , "submission for the student."
                                 ]
 
                       Bootstrap.row $ Bootstrap.colMd6 $ Bootstrap.formGroup $ do
-                          H.label $ fromString $ msg $ Msg_NewAssignment_Password "Password"
+                          H.label $ fromString $ msg $ msg_NewAssignment_Password "Password"
                           editable $ Bootstrap.inputForFormControl
                                      ! name assignmentPwd ! type_ "text"
                                      ! value (fromString $ fromMaybe "" pwd)
@@ -219,10 +219,10 @@ newAssignmentContent pd = do
                 -- Assignment Description
                 Bootstrap.formGroup $ do
                     let assignmentDesc = fromString $ fieldName assignmentDescField
-                    Bootstrap.labelFor assignmentDesc $ fromString . msg $ Msg_NewAssignment_Description "Description"
+                    Bootstrap.labelFor assignmentDesc $ fromString . msg $ msg_NewAssignment_Description "Description"
                     editOrReadOnly pd $ Bootstrap.textAreaField assignmentDesc $ do
                       fromString $ fromAssignment Assignment.desc (fromString . msg $
-                        Msg_NewAssignment_Description_Default $ unlines
+                        msg_NewAssignment_Description_Default $ unlines
                           [ concat
                              [ "This text shall be in markdown format.  Here are some quick "
                              , "examples:"
@@ -253,7 +253,7 @@ newAssignmentContent pd = do
                 -- Preview of the assignment
                 let assignmentPreview a = do
                       Bootstrap.formGroup $ do
-                        H.label $ fromString $ msg $ Msg_NewAssignment_AssignmentPreview "Assignment Preview"
+                        H.label $ fromString $ msg $ msg_NewAssignment_AssignmentPreview "Assignment Preview"
                         H.div # assignmentTextDiv $ markdownToHtml $ Assignment.desc a
 
                 pageDataCata
@@ -279,7 +279,7 @@ newAssignmentContent pd = do
                   let previewAndCommitForm cfg = do
                         evalSelectionDiv hook
                         hiddenInputWithId (evHiddenValueId hook) (toFayJSON cfg)
-                        H.label $ fromString $ msg $ Msg_NewAssignment_EvaluationType "Evaluation Type"
+                        H.label $ fromString $ msg $ msg_NewAssignment_EvaluationType "Evaluation Type"
                         H.br
                         evalConfig
 
@@ -308,9 +308,9 @@ newAssignmentContent pd = do
                 Bootstrap.row $ do
                    let formAction page = onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
                    Bootstrap.colMd6 $
-                      onlyOnEdit pd $ Bootstrap.submitButtonWithAttr (formAction $ pagePreview pd) (msg $ Msg_NewAssignment_PreviewButton "Preview")
+                      onlyOnEdit pd $ Bootstrap.submitButtonWithAttr (formAction $ pagePreview pd) (msg $ msg_NewAssignment_PreviewButton "Preview")
                    Bootstrap.colMd6 $
-                      onlyOnEdit pd $ Bootstrap.submitButtonWithAttr (formAction $ page pd) (msg $ Msg_NewAssignment_SaveButton "Commit")
+                      onlyOnEdit pd $ Bootstrap.submitButtonWithAttr (formAction $ page pd) (msg $ msg_NewAssignment_SaveButton "Commit")
 
             Bootstrap.turnSelectionsOn
 
@@ -372,16 +372,16 @@ newAssignmentContent pd = do
         let submissionTypeSelection =
               Bootstrap.selectionWithLabel
                 (fieldName assignmentSubmissionTypeField)
-                (msg $ Msg_NewAssignment_SubmissionType "Submission Type")
+                (msg $ msg_NewAssignment_SubmissionType "Submission Type")
                 (== currentSubmissionType)
-                [ (txtSubmission, fromString . msg $ Msg_NewAssignment_TextSubmission "Text")
-                , (zipSubmission, fromString . msg $ Msg_NewAssignment_ZipSubmission "Zip file")
+                [ (txtSubmission, fromString . msg $ msg_NewAssignment_TextSubmission "Text")
+                , (zipSubmission, fromString . msg $ msg_NewAssignment_ZipSubmission "Zip file")
                 ]
 
         let submissionTypeText =
               Assignment.submissionType
-                (fromString . msg $ Msg_NewAssignment_TextSubmission "Text")
-                (fromString . msg $ Msg_NewAssignment_ZipSubmission "Zip file")
+                (fromString . msg $ msg_NewAssignment_TextSubmission "Text")
+                (fromString . msg $ msg_NewAssignment_ZipSubmission "Zip file")
                   . Assignment.aspectsToSubmissionType . Assignment.aspects
 
         pageDataCata
@@ -415,7 +415,7 @@ newAssignmentContent pd = do
           tsSelection ts = do
             Bootstrap.selectionWithLabel
               testScriptField
-              (msg $ Msg_NewAssignment_TestScripts "Tester")
+              (msg $ msg_NewAssignment_TestScripts "Tester")
               (const False)
               (map keyValue (Nothing:map Just ts))
 
@@ -429,7 +429,7 @@ newAssignmentContent pd = do
           tsSelectionPreview tsk ts = do
             Bootstrap.selectionWithLabel
               testScriptField
-              (msg $ Msg_NewAssignment_TestScripts "Tester")
+              (msg $ msg_NewAssignment_TestScripts "Tester")
               ((Just tsk)==)
               (map keyValue (Nothing:map Just ts))
 
@@ -441,7 +441,7 @@ newAssignmentContent pd = do
           mtsSelection mts ts = do
             Bootstrap.selectionWithLabel
               testScriptField
-              (msg $ Msg_NewAssignment_TestScripts "Tester")
+              (msg $ msg_NewAssignment_TestScripts "Tester")
               (def mts)
               (map keyValue (Nothing:map Just ts))
             where
@@ -459,7 +459,7 @@ newAssignmentContent pd = do
               mtsSelection' tsk ts = do
                 Bootstrap.selectionWithLabel
                   testScriptField
-                  (msg $ Msg_NewAssignment_TestScripts "Test scripts")
+                  (msg $ msg_NewAssignment_TestScripts "Test scripts")
                   (def tsk)
                   (map keyValue (Nothing:map Just ts))
                 where
@@ -470,7 +470,7 @@ newAssignmentContent pd = do
 
 
           keyValue :: Maybe (TestScriptKey, TestScriptInfo) -> (Maybe TestScriptKey, String)
-          keyValue Nothing = (Nothing, msg $ Msg_NewAssignment_NoTesting "Assignment without testing")
+          keyValue Nothing = (Nothing, msg $ msg_NewAssignment_NoTesting "Assignment without testing")
           keyValue (Just (testScriptKey, tsInfo)) = ((Just testScriptKey), tsiName tsInfo)
 
           nothing = Nothing :: Maybe TestScriptKey
@@ -487,7 +487,7 @@ newAssignmentContent pd = do
         (\_tz _k _a tsType fs tc tm _ev -> overwriteTestCaseAreaPreview fs tsType tc tm)
         where
           textArea val = do
-            Bootstrap.labelFor (fieldName assignmentTestCaseField) (msg $ Msg_NewAssignment_TestCase "Test cases")
+            Bootstrap.labelFor (fieldName assignmentTestCaseField) (msg $ msg_NewAssignment_TestCase "Test cases")
             editOrReadOnly pd $ Bootstrap.textAreaOptionalField (fieldName assignmentTestCaseField) (maybe mempty fromString val)
 
           createTestCaseAreaPreview fs ts tcp = case tcp of
@@ -499,10 +499,10 @@ newAssignmentContent pd = do
               userFileSelection uf = do
                 Bootstrap.selectionOptionalWithLabel
                   (fieldName assignmentUsersFileField)
-                  (msg $ Msg_NewAssignment_TestFile "Test File") (uf==) (map keyValue fs)
-                Bootstrap.helpBlock $ fromString (printf (msg $ Msg_NewAssignment_TestFile_Info
+                  (msg $ msg_NewAssignment_TestFile "Test File") (uf==) (map keyValue fs)
+                Bootstrap.helpBlock $ fromString (printf (msg $ msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
-                  (msg $ Msg_LinkText_UploadFile "Upload File"))
+                  (msg $ msg_LinkText_UploadFile "Upload File"))
                 Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue = (id &&& (usersFileCata id))
@@ -521,11 +521,11 @@ newAssignmentContent pd = do
               usersFileSelection = do
                 Bootstrap.selectionOptionalWithLabel
                   (fieldName assignmentUsersFileField)
-                  (msg $ Msg_NewAssignment_TestFile "Test File")
+                  (msg $ msg_NewAssignment_TestFile "Test File")
                   (const False) (map keyValue fs)
-                Bootstrap.helpBlock $ printf (msg $ Msg_NewAssignment_TestFile_Info
+                Bootstrap.helpBlock $ printf (msg $ msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
-                  (msg $ Msg_LinkText_UploadFile "Upload File")
+                  (msg $ msg_LinkText_UploadFile "Upload File")
                 Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue = (id &&& (usersFileCata id))
@@ -546,7 +546,7 @@ newAssignmentContent pd = do
                 (usersFile)
 
               usersFile = do
-                H.h4 $ fromString . msg $ Msg_NewAssignment_TestFile "Test File"
+                H.h4 $ fromString . msg $ msg_NewAssignment_TestFile "Test File"
                 H.pre $ testCaseFileName tc
 
           overwriteTestCaseAreaPreview fs ts tc tm = maybe
@@ -562,15 +562,15 @@ newAssignmentContent pd = do
               userFileSelectionPreview uf = do
                 Bootstrap.selectionOptionalWithLabel
                   (fieldName assignmentUsersFileField)
-                  (msg $ Msg_NewAssignment_TestFile "Test File")
+                  (msg $ msg_NewAssignment_TestFile "Test File")
                   (==uf) (map keyValue ((Left ()):map Right fs))
                 H.pre $ testCaseFileName tc
-                Bootstrap.helpBlock $ fromString $ printf (msg $ Msg_NewAssignment_TestFile_Info
+                Bootstrap.helpBlock $ fromString $ printf (msg $ msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
-                  (msg $ Msg_LinkText_UploadFile "Upload File")
+                  (msg $ msg_LinkText_UploadFile "Upload File")
                 Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
-                  keyValue l@(Left ()) = (l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
+                  keyValue l@(Left ()) = (l, msg $ msg_NewAssignment_DoNotOverwrite "No changes")
                   keyValue r@(Right uf) = (r, usersFileCata id uf)
 
 
@@ -587,16 +587,16 @@ newAssignmentContent pd = do
               usersFileSelection = do
                 Bootstrap.selectionOptionalWithLabel
                   (fieldName assignmentUsersFileField)
-                  (msg $ Msg_NewAssignment_TestFile "Test File")
+                  (msg $ msg_NewAssignment_TestFile "Test File")
                   (const False)
                   (map keyValue ((Left ()):map Right fs))
                 H.pre $ testCaseFileName tc
-                Bootstrap.helpBlock $ printf (msg $ Msg_NewAssignment_TestFile_Info
+                Bootstrap.helpBlock $ printf (msg $ msg_NewAssignment_TestFile_Info
                   "A file passed to the tester (containing the test data) may be set here.  Files may be added on the \"%s\" subpage.")
-                  (msg $ Msg_LinkText_UploadFile "Upload File")
+                  (msg $ msg_LinkText_UploadFile "Upload File")
                 Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
-                  keyValue l@(Left ()) = (l, msg $ Msg_NewAssignment_DoNotOverwrite "No changes")
+                  keyValue l@(Left ()) = (l, msg $ msg_NewAssignment_DoNotOverwrite "No changes")
                   keyValue r@(Right uf) = (r, usersFileCata id uf)
 
       testScriptType' Nothing   = Nothing
@@ -631,8 +631,8 @@ newAssignmentContent pd = do
       toFayJSON = BsLazy.unpack . Aeson.encode . showToFay
 
       showEvaluationType msg = H.div . H.pre . evConfigCata
-        (fromString . msg $ Msg_NewAssignment_BinaryEvaluation "Binary Evaluation")
-        (const . fromString . msg $ Msg_NewAssignment_PercentageEvaluation "Percentage Evaluation")
+        (fromString . msg $ msg_NewAssignment_BinaryEvaluation "Binary Evaluation")
+        (const . fromString . msg $ msg_NewAssignment_PercentageEvaluation "Percentage Evaluation")
 
       [txtSubmission, zipSubmission] = [Assignment.TextSubmission, Assignment.ZipSubmission]
 
@@ -662,5 +662,5 @@ evaluationConfig n = do
   where
     valueAndName msg e = (encodeEvalType e, msg $ name e)
 
-    name (BinEval ()) = Msg_InputHandlers_BinEval "Binary"
-    name (PctEval ()) = Msg_InputHandlers_PctEval "Percentage"
+    name (BinEval ()) = msg_InputHandlers_BinEval "Binary"
+    name (PctEval ()) = msg_InputHandlers_PctEval "Percentage"

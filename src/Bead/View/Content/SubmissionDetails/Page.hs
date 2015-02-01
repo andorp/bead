@@ -92,42 +92,42 @@ submissionDetailsContent p = do
     let info = smDetails p
     let tc   = uTime p
     Bootstrap.rowColMd12 $ Bootstrap.table $ tbody $ do
-      (msg $ Msg_SubmissionDetails_Course "Course, group:")  .|. (sdGroup info)
-      (msg $ Msg_SubmissionDetails_Admins "Teacher:")        .|. (join . intersperse ", " $ sdTeacher info)
-      (msg $ Msg_SubmissionDetails_Assignment "Assignment:") .|. (Assignment.name $ sdAssignment info)
-      (msg $ Msg_SubmissionDetails_Deadline "Deadline:")     .|. (showDate . tc . Assignment.end $ sdAssignment info)
+      (msg $ msg_SubmissionDetails_Course "Course, group:")  .|. (sdGroup info)
+      (msg $ msg_SubmissionDetails_Admins "Teacher:")        .|. (join . intersperse ", " $ sdTeacher info)
+      (msg $ msg_SubmissionDetails_Assignment "Assignment:") .|. (Assignment.name $ sdAssignment info)
+      (msg $ msg_SubmissionDetails_Deadline "Deadline:")     .|. (showDate . tc . Assignment.end $ sdAssignment info)
       maybe (return ()) (uncurry (.|.)) (remainingTries msg (smLimit p))
     Bootstrap.rowColMd12 $ do
-      h2 $ fromString $ msg $ Msg_SubmissionDetails_Description "Assignment"
+      h2 $ fromString $ msg $ msg_SubmissionDetails_Description "Assignment"
       div # assignmentTextDiv $ markdownToHtml . Assignment.desc $ sdAssignment info
     Bootstrap.rowColMd12 $ do
       let downloadSubmissionButton =
             Bootstrap.buttonLink
               (routeOf $ Pages.getSubmission (smKey p) ())
-              (msg $ Msg_SubmissionDetails_Solution_Zip_Link "Download")
-      h2 $ fromString $ msg $ Msg_SubmissionDetails_Solution "Submission"
+              (msg $ msg_SubmissionDetails_Solution_Zip_Link "Download")
+      h2 $ fromString $ msg $ msg_SubmissionDetails_Solution "Submission"
       if (Assignment.isZippedSubmissions . Assignment.aspects $ sdAssignment info)
         then do
-          Bootstrap.helpBlock $ fromString . msg $ Msg_SubmissionDetails_Solution_Zip_Info $ mconcat
+          Bootstrap.helpBlock $ fromString . msg $ msg_SubmissionDetails_Solution_Zip_Info $ mconcat
             [ "The submission was uploaded as a compressed file so it could not be displayed verbatim.  "
             , "But it may be downloaded as a file by clicking on the link."
             ]
           downloadSubmissionButton
         else do
-          H.p $ fromString . msg $ Msg_SubmissionDetails_Solution_Text_Info $
+          H.p $ fromString . msg $ msg_SubmissionDetails_Solution_Text_Info $
             "The submission may be downloaded as a plain text file by clicking on the link."
           downloadSubmissionButton
           H.br
           div # submissionTextDiv $ seeMorePre msg maxLength maxLines $ sdSubmission info
     Bootstrap.rowColMd12 $ do
-      h2 $ fromString $ msg $ Msg_SubmissionDetails_Evaluation "Evaluation"
+      h2 $ fromString $ msg $ msg_SubmissionDetails_Evaluation "Evaluation"
       resolveStatus msg $ sdStatus info
-    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ Msg_Comments_Title "Comments"
+    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ msg_Comments_Title "Comments"
     postForm (routeOf $ submissionDetails (aKey p) (smKey p)) $ do
       Bootstrap.textArea (fieldName commentValueField)
-                         (fromString $ msg $ Msg_SubmissionDetails_NewComment "New comment")
+                         (fromString $ msg $ msg_SubmissionDetails_NewComment "New comment")
                          mempty
-      Bootstrap.submitButton "" (fromString $ msg $ Msg_SubmissionDetails_SubmitComment "Submit")
+      Bootstrap.submitButton "" (fromString $ msg $ msg_SubmissionDetails_SubmitComment "Submit")
     let studentComments = forStudentCFs $ submissionDetailsDescToCFs info
     when (not $ null studentComments) $ do
       Bootstrap.rowColMd12 hr
@@ -143,7 +143,7 @@ invalidSubmission = do
   msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $ p $
-      fromString $ msg $ Msg_SubmissionDetails_InvalidSubmission "This submission cannot be accessed by this user."
+      fromString $ msg $ msg_SubmissionDetails_InvalidSubmission "This submission cannot be accessed by this user."
 
 -- Renders a table row with two data cells the 
 infixl 7 .|.

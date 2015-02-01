@@ -23,10 +23,10 @@ seeMorePre i18n maxLength maxLines content = do
           let cmt = take maxLength $ content
               ml  = unlines $ take maxLines $ lines cmt
               preview = concat $ [take (length ml - 1) ml, " ..."]
-          H.span ! A.class_ (hookClass' seeMoreClass) # display False $ fromString . i18n $ Msg_SeeMore_SeeMore "See More"
-          H.span ! A.class_ (hookClass' seeLessClass) # display False $ fromString . i18n $ Msg_SeeMore_SeeLess "See Less"
+          H.span ! A.class_ (hookClass' seeMoreClass) # display False $ fromString . i18n $ msg_SeeMore_SeeMore "See More"
+          H.span ! A.class_ (hookClass' seeLessClass) # display False $ fromString . i18n $ msg_SeeMore_SeeLess "See Less"
           H.pre ! A.class_ (hookClass' moreClass) # commentTextPre $ fromString preview
-          H.a ! A.class_ (hookClass' moreButtonClass) # color "blue" $ fromString . i18n $ Msg_SeeMore_SeeMore "See More"
+          H.a ! A.class_ (hookClass' moreButtonClass) # color "blue" $ fromString . i18n $ msg_SeeMore_SeeMore "See More"
         else return ()
 
     contentPreTag =

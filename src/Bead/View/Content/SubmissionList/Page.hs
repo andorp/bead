@@ -57,16 +57,16 @@ submissionListContent p = do
   return $ do
     let info = smList p -- Submission List Info
     Bootstrap.rowColMd12 $ Bootstrap.table $ tbody $ do
-      (msg $ Msg_SubmissionList_CourseOrGroup "Course, group:") .|. (slGroup info)
-      (msg $ Msg_SubmissionList_Admin "Teacher:") .|. (join $ slTeacher info)
-      (msg $ Msg_SubmissionList_Assignment "Assignment:") .|. (Assignment.name $ slAssignment info)
-      (msg $ Msg_SubmissionList_Deadline "Deadline:") .|. (showDate . (uTime p) . Assignment.end $ slAssignment info)
+      (msg $ msg_SubmissionList_CourseOrGroup "Course, group:") .|. (slGroup info)
+      (msg $ msg_SubmissionList_Admin "Teacher:") .|. (join $ slTeacher info)
+      (msg $ msg_SubmissionList_Assignment "Assignment:") .|. (Assignment.name $ slAssignment info)
+      (msg $ msg_SubmissionList_Deadline "Deadline:") .|. (showDate . (uTime p) . Assignment.end $ slAssignment info)
       maybe (return ()) (uncurry (.|.)) (remainingTries msg (smLimit p))
-    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ Msg_SubmissionList_Description "Description"
+    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ msg_SubmissionList_Description "Description"
     H.div # assignmentTextDiv $
       (markdownToHtml . Assignment.desc . slAssignment . smList $ p)
     let submissions = slSubmissions info
-    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ Msg_SubmissionList_SubmittedSolutions "Submissions"
+    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ msg_SubmissionList_SubmittedSolutions "Submissions"
     either (userSubmissionTimes msg) (userSubmissionInfo msg) submissions
   where
     submissionDetails ak sk = Pages.submissionDetails ak sk ()
@@ -77,16 +77,16 @@ submissionListContent p = do
         (do Bootstrap.badge (resolveStatus msg status); fromString . showDate $ (uTime p) time)
 
     resolveStatus msg = fromString . submissionInfoCata
-      (msg $ Msg_SubmissionList_NotFound "Not Found")
-      (msg $ Msg_SubmissionList_NotEvaluatedYet "Not evaluated yet")
-      (bool (msg $ Msg_SubmissionList_TestsPassed "Tests are passed")
-            (msg $ Msg_SubmissionList_TestsFailed "Tests are failed"))
+      (msg $ msg_SubmissionList_NotFound "Not Found")
+      (msg $ msg_SubmissionList_NotEvaluatedYet "Not evaluated yet")
+      (bool (msg $ msg_SubmissionList_TestsPassed "Tests are passed")
+            (msg $ msg_SubmissionList_TestsFailed "Tests are failed"))
       (const (evaluationResultMsg . evResult))
       where
         evaluationResultMsg = evaluationResultCata
           (binaryCata (resultCata
-            (msg $ Msg_SubmissionList_Passed "Passed")
-            (msg $ Msg_SubmissionList_Failed "Failed")))
+            (msg $ msg_SubmissionList_Passed "Passed")
+            (msg $ msg_SubmissionList_Failed "Failed")))
           (percentageCata (fromString . scores))
 
         scores (Scores [])  = "0%"
@@ -96,7 +96,7 @@ submissionListContent p = do
     submissionTimeLine time = Bootstrap.listGroupTextItem $ showDate $ (uTime p) time
 
     userSubmissionInfo  msg submissions = do
-      Bootstrap.rowColMd12 $ H.p $ fromString $ msg $ Msg_SubmissionList_Info "Comments may be added for submissions."
+      Bootstrap.rowColMd12 $ H.p $ fromString $ msg $ msg_SubmissionList_Info "Comments may be added for submissions."
       userSubmission msg (submissionLine msg) submissions
 
     userSubmissionTimes msg = userSubmission msg submissionTimeLine
@@ -106,21 +106,21 @@ submissionListContent p = do
         then do
           Bootstrap.rowColMd12 $ Bootstrap.listGroup $ mapM_ line submissions
         else do
-          (Bootstrap.rowColMd12 $ fromString $ msg $ Msg_SubmissionList_NoSubmittedSolutions "There are no submissions.")
+          (Bootstrap.rowColMd12 $ fromString $ msg $ msg_SubmissionList_NoSubmittedSolutions "There are no submissions.")
 
 invalidAssignment :: IHtml
 invalidAssignment = do
   msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $ p $ fromString $
-      msg $ Msg_SubmissionList_NonAssociatedAssignment "This assignment cannot be accessed by this user."
+      msg $ msg_SubmissionList_NonAssociatedAssignment "This assignment cannot be accessed by this user."
 
 assignmentNotStartedYet :: IHtml
 assignmentNotStartedYet = do
   msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $ p $ fromString $
-      msg $ Msg_SubmissionList_NonReachableAssignment "This assignment cannot be accessed."
+      msg $ msg_SubmissionList_NonReachableAssignment "This assignment cannot be accessed."
 
 -- Creates a table line first element is a bold text and the second is a text
 infixl 7 .|.

@@ -185,12 +185,12 @@ evaluationCata f (Evaluation result written) = f result written
 withEvaluation e f = evaluationCata f e
 
 resultString :: EvResult -> TransMsg
-resultString (EvResult (BinEval (Binary Passed))) = TransMsg $ Msg_Domain_EvalPassed "Passed"
-resultString (EvResult (BinEval (Binary Failed))) = TransMsg $ Msg_Domain_EvalFailed "Failed"
+resultString (EvResult (BinEval (Binary Passed))) = TransMsg $ msg_Domain_EvalPassed "Passed"
+resultString (EvResult (BinEval (Binary Failed))) = TransMsg $ msg_Domain_EvalFailed "Failed"
 resultString (EvResult (PctEval p)) =
   case point p of
-    Nothing -> TransMsg $ Msg_Domain_EvalNoResultError "No evaluation result, some internal error happened!"
-    Just q  -> TransPrmMsg (Msg_Domain_EvalPercentage "%s%%") (show . round $ 100.0 * q)
+    Nothing -> TransMsg $ msg_Domain_EvalNoResultError "No evaluation result, some internal error happened!"
+    Just q  -> TransPrmMsg (msg_Domain_EvalPercentage "%s%%") (show . round $ 100.0 * q)
 
 evaluationToFeedback :: UTCTime -> User -> Evaluation -> Feedback
 evaluationToFeedback t u e = Feedback info t where

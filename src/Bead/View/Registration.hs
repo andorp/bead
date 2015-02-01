@@ -134,28 +134,28 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
         (Right username, Just email, Just fullname) -> do
             exist <- lift $ registrationStory (S.doesUserExist username)
             when (isLeft exist) . throwSError . i18n $
-              Msg_Registration_HasNoUserAccess "No access allowed to the user's data."
+              msg_Registration_HasNoUserAccess "No access allowed to the user's data."
             when (fromRight exist) . throwSError . i18n $
-              Msg_Registration_UserAlreadyExists "User already exists."
+              msg_Registration_UserAlreadyExists "User already exists."
             userRegData <- liftIO $ createUserRegData username email fullname
             result <- lift $ registrationStory (S.createUserReg userRegData)
             when (isLeft result) . throwSError . i18n $
-              Msg_Registration_RegistrationNotSaved "The registration has not been saved."
+              msg_Registration_RegistrationNotSaved "The registration has not been saved."
             lang <- lift languageFromSession
             let language = maybe (Language "en") id lang
             let key = fromRight result
             lift $
               sendEmail
                 email
-                (i18n $ Msg_Registration_EmailSubject "BE-AD: Registration")
-                (i18n $ Msg_Registration_EmailBody registrationEmailTemplate)
+                (i18n $ msg_Registration_EmailSubject "BE-AD: Registration")
+                (i18n $ msg_Registration_EmailBody registrationEmailTemplate)
                 RegTemplate {
                     regUsername = reg_username userRegData
                   , regUrl = createUserRegAddress key language userRegData
                   }
             lift $ renderBootstrapPublicPage $ publicFrame View.registrationFirstStepEmailSent
         _ -> throwSError . i18n $
-               Msg_Registration_RequestParameterIsMissing "Some request parameter is missing."
+               msg_Registration_RequestParameterIsMissing "Some request parameter is missing."
 
       where
         throwSError :: (Monad m) => String -> ErrorT String m a
@@ -184,7 +184,7 @@ registrationRequest config = method GET renderForm <|> method POST saveUserRegDa
 checkUsernamePrm = do
   username <- readParameter regUsernamePrm
   case username of
-    Nothing -> return . Left . TransMsg $ Msg_RegistrationFinalize_NoRegistrationParametersAreFound "No registration parameters found."
+    Nothing -> return . Left . TransMsg $ msg_RegistrationFinalize_NoRegistrationParametersAreFound "No registration parameters found."
     Just u -> do
       isValid <- checkUsername $ usernameCata id u
       if isValid
@@ -192,7 +192,7 @@ checkUsernamePrm = do
         else do
           config <- getConfiguration
           return . Left $ TransPrmMsg
-            (Msg_Registration_InvalidUsername "The username is not valid. Try something similar: %s")
+            (msg_Registration_InvalidUsername "The username is not valid. Try something similar: %s")
             (usernameRegExpExample $ loginConfig config)
 
 {-
@@ -220,7 +220,7 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
     case (key, token, username, language) of
       (Just k, Just t, Right u, Just l) -> return $ Right (k,t,u,l)
       (Just _, Just _, Left e , Just _) -> return $ Left e
-      _ -> return . Left . TransMsg $ Msg_RegistrationFinalize_NoRegistrationParametersAreFound "No registration parameters found."
+      _ -> return . Left . TransMsg $ msg_RegistrationFinalize_NoRegistrationParametersAreFound "No registration parameters found."
 
   renderForm = do
     values <- readRegParameters
@@ -241,11 +241,11 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
             now <- liftIO $ getCurrentTime
             case (reg_timeout userRegData < now, exist) of
               (True , _) -> errorPage
-                (Msg_Registration_Title "Registration")
-                (i18n $ Msg_RegistrationFinalize_InvalidToken "The registration token has expired, start the registration over.")
+                (msg_Registration_Title "Registration")
+                (i18n $ msg_RegistrationFinalize_InvalidToken "The registration token has expired, start the registration over.")
               (False, True) -> errorPage
-                (Msg_Registration_Title "Registration")
-                (i18n $ Msg_RegistrationFinalize_UserAlreadyExist "This user already exists.")
+                (msg_Registration_Title "Registration")
+                (i18n $ msg_RegistrationFinalize_UserAlreadyExist "This user already exists.")
               (False, False) -> do
                 timeZones <- map (\t -> (t, timeZoneName id t)) <$> foundTimeZones
                 renderBootstrapPublicPage . publicFrame $
@@ -263,14 +263,14 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
       (Right (key, _token, _username, language), Just _password, Just timezone) -> do
         result <- registrationStory (S.loadUserReg key)
         case result of
-          Left _e -> errorPage (Msg_Registration_Title "Registration") $ msg $
-            Msg_RegistrationCreateStudent_InternalError "Some internal error happened."
+          Left _e -> errorPage (msg_Registration_Title "Registration") $ msg $
+            msg_RegistrationCreateStudent_InternalError "Some internal error happened."
           Right userRegData -> do
             now <- liftIO getCurrentTime
             -- TODO: Check username and token values (are the same as in the persistence)
             case (reg_timeout userRegData < now) of
-              True -> errorPage (Msg_Registration_Title "Registration") $ msg $
-                Msg_RegistrationCreateStudent_InvalidToken "The registration token has expired, start the registration over."
+              True -> errorPage (msg_Registration_Title "Registration") $ msg $
+                msg_RegistrationCreateStudent_InvalidToken "The registration token has expired, start the registration over."
               False -> do
                 withTop auth $
                   createNewUser userRegData timezone (Language language)
@@ -319,7 +319,7 @@ createNewUser reg timezone language = runErrorT $ do
     checkFailure (Right x) = return x
 
 registrationErrorPage :: (ErrorPage e) => e -> BeadHandler' b ()
-registrationErrorPage = errorPage (Msg_Registration_Title "Registration")
+registrationErrorPage = errorPage (msg_Registration_Title "Registration")
 
 -- * Tools
 

@@ -21,8 +21,8 @@ template content t e = do
     Bootstrap.rowCol4Offset4 $ Bootstrap.pageHeader $ H.h2 $
       fromString $ msg t
     Bootstrap.rowCol4Offset4 $ do
-      H.h3 $ fromString $ msg $ Msg_ErrorPage_Header "Some error happened... :-)"
+      H.h3 $ fromString $ msg $ msg_ErrorPage_Header "Some error happened... :-)"
       H.p $ maybe mempty content e
     Bootstrap.rowCol4Offset4 $
-      Bootstrap.buttonLink "/" (msg $ Msg_ErrorPage_GoBackToLogin "Back to login")
+      Bootstrap.buttonLink "/" (msg $ msg_ErrorPage_GoBackToLogin "Back to login")
 

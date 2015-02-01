@@ -1,6 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE OverloadedStrings #-}
-module Main where
+module SnapMain (main) where
 
 import           Data.Char (toUpper)
 import qualified Data.Char as Char

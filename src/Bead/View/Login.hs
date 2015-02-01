@@ -152,8 +152,8 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           logoutTop
           commitSessionTop
           translationErrorPage
-            (Msg_Login_PageTitle "Login")
-            (Msg_Login_InternalError "Some internal error happened, please contact the administrators.")
+            (msg_Login_PageTitle "Login")
+            (msg_Login_InternalError "Some internal error happened, please contact the administrators.")
         Right (user,userState) -> do
           initSessionValues (page userState) username (u_language user)
           commitSessionTop
@@ -212,8 +212,8 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
               Auth.logout
               commitSessionTop
               translationErrorPage
-                (Msg_Login_PageTitle "Login")
-                (Msg_Login_InternalError
+                (msg_Login_PageTitle "Login")
+                (msg_Login_InternalError
                    "Some internal error happened, please contact the administrators.")
             Right (user,userState) -> do
               initSessionValues (page userState) unameFromAuth (u_language user)
@@ -235,8 +235,8 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
 
 visibleFailure :: I18N -> AuthFailure -> Maybe AuthFailure
 visibleFailure _   (AuthError e)     = Just $ AuthError e
-visibleFailure msg IncorrectPassword = Just . AuthError . msg $ Msg_Login_InvalidPasswordOrUser "Invalid user or password!"
-visibleFailure msg UserNotFound      = Just . AuthError . msg $ Msg_Login_InvalidPasswordOrUser "Invalid user or password!"
+visibleFailure msg IncorrectPassword = Just . AuthError . msg $ msg_Login_InvalidPasswordOrUser "Invalid user or password!"
+visibleFailure msg UserNotFound      = Just . AuthError . msg $ msg_Login_InvalidPasswordOrUser "Invalid user or password!"
 visibleFailure _   _ = Nothing
 
 -- * Change language in the session

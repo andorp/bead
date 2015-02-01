@@ -9,7 +9,7 @@ Author:              Andor Penzes <andor.penzes@gmail.com>
 Maintainer:          andor.penzes@gmail.com
 Stability:           Experimental
 Build-Type:          Simple
-Cabal-Version:       >= 1.2
+Cabal-Version:       >= 1.8
 
 Data-Files:
   snaplets/fay/devel.cfg,
@@ -45,7 +45,7 @@ Data-Files:
 
   cookie
 
-  lang/hu.dict
+  lang/DictionaryHu.hs
 
   bead.config
 
@@ -61,33 +61,74 @@ Flag LDAP
   Description:  Enable LDAP based authentication
   Default:      True
 
-Executable CreateBeadLanguageFile
-  Main-is: UtilsMain.hs
-  HS-Source-Dirs: src, snaplets/fay/src
-  Build-Depends:
-    containers
-
-
-Executable Bead
-  Main-is: SnapMain.hs
+Library
   HS-Source-Dirs: src, snaplets/fay/src
   GHC-Options: -threaded -with-rtsopts=-N2 -O2
+
   if flag(SQLite)
     CPP-Options: -DSQLITE
+
     Build-Depends:
       persistent-sqlite >= 1.3,
       persistent-template >= 1.3,
       resourcet >= 1.1
+
+    Exposed-Modules:
+      Bead.Persistence.SQL
+      Bead.Persistence.SQL.Assessment
+      Bead.Persistence.SQL.Assignment
+      Bead.Persistence.SQL.Class
+      Bead.Persistence.SQL.Comment
+      Bead.Persistence.SQL.Course
+      Bead.Persistence.SQL.Entities
+      Bead.Persistence.SQL.Evaluation
+      Bead.Persistence.SQL.Feedback
+      Bead.Persistence.SQL.FileSystem
+      Bead.Persistence.SQL.Group
+      Bead.Persistence.SQL.Init
+      Bead.Persistence.SQL.JSON
+      Bead.Persistence.SQL.Registration
+      Bead.Persistence.SQL.Score
+      Bead.Persistence.SQL.Submission
+      Bead.Persistence.SQL.TestCase
+      Bead.Persistence.SQL.TestData
+      Bead.Persistence.SQL.TestFeedback
+      Bead.Persistence.SQL.TestJob
+      Bead.Persistence.SQL.TestScript
+      Bead.Persistence.SQL.User
+  else
+    Exposed-modules:
+      Bead.Persistence.NoSQLDir
+      Bead.Persistence.NoSQLDirFile
+      Control.Monad.Transaction
+      Control.Monad.Transaction.IO
+      Control.Monad.Transaction.TIO
+
   if flag(Tests)
+    CPP-Options: -DTEST
     Build-Depends:
-      themis >= 0.4.1.0
+      QuickCheck, themis >= 0.4.1.0
+
   if flag(LDAP)
     CPP-Options: -DLDAPEnabled
+
     Build-Depends:
       base64-bytestring >= 1.0.0.1 && < 2,
       either >= 4.3 && < 5
+
+    Exposed-Modules:
+      Bead.Daemon.LDAP
+      Bead.Daemon.LDAP.Auth
+      Bead.Daemon.LDAP.Result
   else
     CPP-Options: -DEmailEnabled
+
+    Exposed-Modules:
+      Bead.Daemon.Email
+      Bead.View.Content.SetUserPassword.Page
+      Bead.View.EmailTemplate
+      Bead.View.ResetPassword
+
   Build-Depends:
     aeson,
     async,
@@ -104,6 +145,8 @@ Executable Bead
     fay-jquery,
     fay-text,
     filepath,
+    ghc,
+    ghc-paths,
     hastache >= 0.6,
     json >= 0.7,
     lens,
@@ -136,12 +179,116 @@ Executable Bead
     yaml >= 0.8.8.4 && < 0.9,
     xmlhtml
 
+  Exposed-Modules:
+    SnapMain
+    Bead.View.Dictionary
+    Bead.View.Translation
+
+    Paths_Bead
+    Bead.Config
+    Bead.Config.Configuration
+    Bead.Config.Parser
+    Bead.Controller.Logging
+    Bead.Controller.Pages
+    Bead.Controller.ServiceContext
+    Bead.Controller.UserStories
+    Bead.Daemon.Logout
+    Bead.Daemon.TestAgent
+    Bead.Domain.Entity.Assessment
+    Bead.Domain.Entity.Assignment
+    Bead.Domain.Entity.Comment
+    Bead.Domain.Entity.Feedback
+    Bead.Domain.Entity.TestCase
+    Bead.Domain.Entities
+    Bead.Domain.Evaluation
+    Bead.Domain.Func
+    Bead.Domain.Relationships
+    Bead.Domain.RolePermission
+    Bead.Domain.Shared.Evaluation
+    Bead.Domain.TimeZone
+    Bead.Domain.Types
+    Bead.Persistence.Guards
+    Bead.Persistence.Initialization
+    Bead.Persistence.Persist
+    Bead.Persistence.Relations
+    Bead.Shared.Command
+    Bead.View.BeadContext
+    Bead.View.BeadContextInit
+    Bead.View.Command.Fayax
+    Bead.View.Content
+    Bead.View.Content.Administration.Page
+    Bead.View.Content.Assignment.Data
+    Bead.View.Content.Assignment.Page
+    Bead.View.Content.Assignment.View
+    Bead.View.Content.CourseAdmin.Page
+    Bead.View.Content.CourseOverview.Page
+    Bead.View.Content.Evaluation.Page
+    Bead.View.Content.EvaluationTable.Page
+    Bead.View.Content.GroupRegistration.Page
+    Bead.View.Content.Home.Data
+    Bead.View.Content.Home.Page
+    Bead.View.Content.Home.View
+    Bead.View.Content.NewTestScript.Page
+    Bead.View.Content.Profile.Page
+    Bead.View.Content.Public.ErrorPage
+    Bead.View.Content.Public.Login
+    Bead.View.Content.Public.Registration
+    Bead.View.Content.Public.ResetPassword
+    Bead.View.Content.Submission.Common
+    Bead.View.Content.Submission.Page
+    Bead.View.Content.SubmissionDetails.Page
+    Bead.View.Content.SubmissionList.Page
+    Bead.View.Content.TestScript.Page
+    Bead.View.Content.UploadFile.Page
+    Bead.View.Content.UserDetails.Page
+    Bead.View.Content.UserSubmissions.Page
+    Bead.View.Content.All
+    Bead.View.Content.Bootstrap
+    Bead.View.Content.Comments
+    Bead.View.Content.GetSubmission
+    Bead.View.Content.SeeMore
+    Bead.View.Content.SubmissionTable
+    Bead.View.Content.Utils
+    Bead.View.ContentHandler
+    Bead.View.DataBridge
+    Bead.View.DataDir
+    Bead.View.DictionaryLoader
+    Bead.View.ErrorPage
+    Bead.View.Fay.Hooks
+    Bead.View.Fay.HookIds
+    Bead.View.Fay.JSON.ServerSide
+    Bead.View.I18N
+    Bead.View.LoggedInFilter
+    Bead.View.Login
+    Bead.View.Logger
+    Bead.View.Markdown
+    Bead.View.Pagelets
+    Bead.View.Registration
+    Bead.View.RequestParams
+    Bead.View.RouteOf
+    Bead.View.Routing
+    Bead.View.Session
+    Bead.View.Style
+    Bead.View.TemplateAndComponentNames
+    Bead.View.TranslationEnum
+    Bead.View.UserActions
+    Bead.View.Validators
+    Bead.Invariants
+    Snap.Snaplet.Auth.Backends.SafeJsonFile
+
+Executable Bead
+  Build-Depends:    base, Bead
+  Main-is:          Main.hs
+  HS-Source-Dirs:   main
+  Buildable:        True
+
 Executable BeadUnitTest
   if flag(Tests)
     Buildable: True
-    Build-Depends: base, directory, containers, filepath, time, parsec, mtl,
-                   transformers, HUnit, test-framework, test-framework-hunit,
-                   test-framework-quickcheck2, QuickCheck, unix, deepseq
+    Build-Depends:
+      base, Bead, bytestring, containers, directory, filepath, HUnit,
+      QuickCheck, temporary, test-framework, test-framework-hunit,
+      test-framework-quickcheck2, themis, time, transformers
   else
     Buildable: False
   GHC-Options: -fhpc -hpcdir dist/build/BeadUnitTest/Mix/
@@ -157,7 +304,7 @@ Executable BeadUnitTest
       resourcet >= 1.1
   else
     CPP-Options: -DTEST
-  HS-Source-Dirs: src, snaplets/fay/src, test
+  HS-Source-Dirs: test
   Main-is: TestMain.hs
 
 --Executable BeadEnd2EndTests

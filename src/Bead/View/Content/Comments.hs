@@ -95,8 +95,8 @@ commentPar i18n t c = Bootstrap.row $ Bootstrap.colMd12 $ H.div # (commentDiv c)
              evaluationText) -- evaluation
            p_1_2)
       where
-        testsPassed = i18n $ Msg_Comments_TestPassed "The submission has passed the tests."
-        testsFailed = i18n $ Msg_Comments_TestFailed "The submission has failed the tests."
+        testsPassed = i18n $ msg_Comments_TestPassed "The submission has passed the tests."
+        testsFailed = i18n $ msg_Comments_TestFailed "The submission has failed the tests."
 
         bool true false x = if x then true else false
 
@@ -106,12 +106,12 @@ commentPar i18n t c = Bootstrap.row $ Bootstrap.colMd12 $ H.div # (commentDiv c)
             (const $ join [comment, "\n\n", translateMessage i18n (pctResult result)])
 
         binaryResult (Binary b) =
-          TransMsg $ resultCata (Msg_Comments_BinaryResultPassed "The submission is accepted.")
-                                (Msg_Comments_BinaryResultFailed "The submission is rejected.")
+          TransMsg $ resultCata (msg_Comments_BinaryResultPassed "The submission is accepted.")
+                                (msg_Comments_BinaryResultFailed "The submission is rejected.")
                                 b
 
         pctResult p = TransPrmMsg
-          (Msg_Comments_PercentageResult "The percentage of the evaluation: %s")
+          (msg_Comments_PercentageResult "The percentage of the evaluation: %s")
           (maybe "ERROR: Invalid percentage value! Please contact with the administrations"
                  doubleToPercentageStr $ percentValue p)
           where
@@ -133,8 +133,8 @@ commentPar i18n t c = Bootstrap.row $ Bootstrap.colMd12 $ H.div # (commentDiv c)
             (\_result _comment author -> author)) -- evaluation
           p_1_2)
       where
-        adminTestScript = i18n $ Msg_Comments_AuthorTestScript_Private "Test Script (seen by only admins)"
-        testScript = i18n $ Msg_Comments_AuthorTestScript_Public "Test Script"
+        adminTestScript = i18n $ msg_Comments_AuthorTestScript_Private "Test Script (seen by only admins)"
+        testScript = i18n $ msg_Comments_AuthorTestScript_Public "Test Script"
         result = testScript
 
 
@@ -163,7 +163,7 @@ commentPostForm p ak = do
       textAreaInput (fieldName commentValueField) Nothing ! fillDiv ! A.required ""
       hiddenInput (fieldName assignmentKeyField) (paramValue ak)
     H.br
-    submitButton (fieldName commentBtn) (msg $ Msg_Comments_SubmitButton "Submit")
+    submitButton (fieldName commentBtn) (msg $ msg_Comments_SubmitButton "Submit")
 
 -- * CSS section
 

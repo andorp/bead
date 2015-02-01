@@ -40,7 +40,7 @@ msgErrorPage :: String -> BeadHandler' b ()
 msgErrorPage = defErrorPage
 
 defErrorPage :: (ErrorPage e) => e -> BeadHandler' b ()
-defErrorPage = errorPage (Msg_ErrorPage_Title "Error!")
+defErrorPage = errorPage (msg_ErrorPage_Title "Error!")
 
 -- Produces a handler that renders the error page, with the
 -- given title and message for the user

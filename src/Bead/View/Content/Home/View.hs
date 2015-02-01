@@ -34,22 +34,22 @@ homeContent d = do
   return $ do
             when (isAdmin s) $ do
               Bootstrap.row $ Bootstrap.colMd12 $ do
-                h3 . fromString . msg $ Msg_Home_AdminTasks "Administrator Menu"
+                h3 . fromString . msg $ msg_Home_AdminTasks "Administrator Menu"
                 i18n msg $ navigation [administration]
 
             -- Course Administration Menu
             when (courseAdminUser r) $ do
               Bootstrap.row $ Bootstrap.colMd12 $ do
-                h3 . fromString . msg $ Msg_Home_CourseAdminTasks "Course Administrator Menu"
+                h3 . fromString . msg $ msg_Home_CourseAdminTasks "Course Administrator Menu"
                 when (not hasCourse) $ do
-                  H.p $ fromString . msg $ Msg_Home_NoCoursesYet
+                  H.p $ fromString . msg $ msg_Home_NoCoursesYet
                     "There are no courses.  Contact the administrator to have courses assigned."
 
             -- Submission tables for course or group assignments
             when ((courseAdminUser r) || (groupAdminUser r)) $ do
               when hasGroup $ do
                 when (not . null $ concatMap submissionTableInfoAssignments $ sTables d) $ do
-                  Bootstrap.row $ Bootstrap.colMd12 $ p $ fromString . msg $ Msg_Home_SubmissionTable_Info $ concat
+                  Bootstrap.row $ Bootstrap.colMd12 $ p $ fromString . msg $ msg_Home_SubmissionTable_Info $ concat
                     [ "Assignments may be modified by clicking on their identifiers if you have rights for the modification (their names are shown in the tooltip).  "
                     , "Students may be unregistered from the courses or the groups by checking the boxes in the Remove column "
                     , "then clicking on the button."
@@ -61,8 +61,8 @@ homeContent d = do
 
               -- Course Administration links
               when hasCourse $ do
-                Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString . msg $ Msg_Home_CourseAdministration "Course Administration"
-                Bootstrap.row $ Bootstrap.colMd12 $ fromString . msg $ Msg_Home_CourseSubmissionTableList_Info $ concat
+                Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString . msg $ msg_Home_CourseAdministration "Course Administration"
+                Bootstrap.row $ Bootstrap.colMd12 $ fromString . msg $ msg_Home_CourseSubmissionTableList_Info $ concat
                   [ "Submission table for courses can be found on separate pages, please click on the "
                   , "name of a course."
                   ]
@@ -75,7 +75,7 @@ homeContent d = do
 
             -- Course Administration Button Group
             when (courseAdminUser r && hasCourse) $ do
-              Bootstrap.row $ Bootstrap.colMd12 $ p $ fromString . msg $ Msg_Home_CourseAdministration_Info $ concat
+              Bootstrap.row $ Bootstrap.colMd12 $ p $ fromString . msg $ msg_Home_CourseAdministration_Info $ concat
                 [ "New groups for courses may be created in the Course Settings menu.  Teachers may be also assigned to "
                 , "each of the groups there as well."
                 ]
@@ -90,7 +90,7 @@ homeContent d = do
 
             -- Student Menu
             when (not $ isAdmin r) $ do
-              Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString $ msg $ Msg_Home_StudentTasks "Student Menu"
+              Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString $ msg $ msg_Home_StudentTasks "Student Menu"
               i18n msg $ availableAssignments (timeConverter d) (assignments d)
               let noCourseRegistered = Map.null (assignments d)
               when noCourseRegistered $ i18n msg $ navigation [groupRegistration]
@@ -152,7 +152,7 @@ availableAssignments timeconverter studentAssignments
         $ Bootstrap.colMd12
         $ p
         $ fromString
-        $ msg $ Msg_Home_HasNoRegisteredCourses "There are no registered courses, register to some."
+        $ msg $ msg_Home_HasNoRegisteredCourses "There are no registered courses, register to some."
 
   | null (toAllActiveAssignmentList studentAssignments) = do
       msg <- getI18N
@@ -161,7 +161,7 @@ availableAssignments timeconverter studentAssignments
         $ Bootstrap.colMd12
         $ p
         $ fromString
-        $ msg $ Msg_Home_HasNoAssignments "There are no available assignments yet."
+        $ msg $ msg_Home_HasNoAssignments "There are no available assignments yet."
 
   | otherwise = do
       -- Sort course or groups by their name.
@@ -173,7 +173,7 @@ availableAssignments timeconverter studentAssignments
         Bootstrap.row
           $ Bootstrap.colMd12
           $ p
-          $ fromString . msg $ Msg_Home_Assignments_Info $ concat
+          $ fromString . msg $ msg_Home_Assignments_Info $ concat
             [ "Submissions and their evaluations may be accessed by clicking on each assignment's link. "
             , "The table shows only the last evaluation per assignment."
             ]
@@ -183,7 +183,7 @@ availableAssignments timeconverter studentAssignments
           let areIsolateds = areOpenAndIsolatedAssignments as
           let assignments = if areIsolateds then (isolatedAssignments as) else as
           let isLimited = isLimitedAssignments assignments
-          when areIsolateds $ p $ fromString . msg $ Msg_Home_ThereIsIsolatedAssignment $ concat
+          when areIsolateds $ p $ fromString . msg $ msg_Home_ThereIsIsolatedAssignment $ concat
             [ "ISOLATED MODE: There is at least one assignment which hides the normal assignments for "
             , "this course."
             ]
@@ -208,17 +208,17 @@ availableAssignments timeconverter studentAssignments
 
     headerLine msg isLimited = tr $ do
       th ""
-      th (fromString $ msg $ Msg_Home_Course "Course")
-      th (fromString $ msg $ Msg_Home_CourseAdmin "Teacher")
-      th (fromString $ msg $ Msg_Home_Assignment "Assignment")
-      when isLimited $ th (fromString $ msg $ Msg_Home_Limit "Limit")
-      th (fromString $ msg $ Msg_Home_Deadline "Deadline")
-      th (fromString $ msg $ Msg_Home_Evaluation "Evaluation")
+      th (fromString $ msg $ msg_Home_Course "Course")
+      th (fromString $ msg $ msg_Home_CourseAdmin "Teacher")
+      th (fromString $ msg $ msg_Home_Assignment "Assignment")
+      when isLimited $ th (fromString $ msg $ msg_Home_Limit "Limit")
+      th (fromString $ msg $ msg_Home_Deadline "Deadline")
+      th (fromString $ msg $ msg_Home_Evaluation "Evaluation")
 
     assignmentLine msg isLimited (k,a,s) = H.tr $ do
       case and [aActive a, noLimitIsReached a] of
-        True -> td $ Content.link (routeWithParams (Pages.submission ()) [requestParam k]) (msg $ Msg_Home_NewSolution "New submission")
-        False -> td (fromString . msg $ Msg_Home_ClosedSubmission "Closed")
+        True -> td $ Content.link (routeWithParams (Pages.submission ()) [requestParam k]) (msg $ msg_Home_NewSolution "New submission")
+        False -> td (fromString . msg $ msg_Home_ClosedSubmission "Closed")
       td (fromString . aGroup $ a)
       td (fromString . join . intersperse ", " . aTeachers $ a)
       td $ linkWithText (routeWithParams (Pages.submissionList ()) [requestParam k]) (fromString (aTitle a))
@@ -231,19 +231,19 @@ availableAssignments timeconverter studentAssignments
       let label = submissionInfoCata grayLabel grayLabel (const grayLabel)
              (\_evKey evResult -> undefined)
       H.td $ withSubmissionInfo s
-               (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_NoSubmission "No submission")
-               (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
-               (bool (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_Tests_Passed "Tests are passed")
-                     (grayLabel $ fromString $ msg $ Msg_Home_SubmissionCell_Tests_Failed "Tests are failed"))
+               (grayLabel $ fromString $ msg $ msg_Home_SubmissionCell_NoSubmission "No submission")
+               (grayLabel $ fromString $ msg $ msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
+               (bool (grayLabel $ fromString $ msg $ msg_Home_SubmissionCell_Tests_Passed "Tests are passed")
+                     (grayLabel $ fromString $ msg $ msg_Home_SubmissionCell_Tests_Failed "Tests are failed"))
                (\_key result -> evResult
-                                  (greenLabel $ fromString $ msg $ Msg_Home_SubmissionCell_Accepted "Accepted")
-                                  (redLabel   $ fromString $ msg $ Msg_Home_SubmissionCell_Rejected "Rejected")
+                                  (greenLabel $ fromString $ msg $ msg_Home_SubmissionCell_Accepted "Accepted")
+                                  (redLabel   $ fromString $ msg $ msg_Home_SubmissionCell_Rejected "Rejected")
                                   (blueLabel . fromString)
                                   result)
       where
         noLimitIsReached = submissionLimit (const True) (\n _ -> n > 0) (const False) . aLimit
         limit = fromString . submissionLimit
-          (const "") (\n _ -> (msg $ Msg_Home_Remains "Remains: ") ++ show n) (const $ msg $ Msg_Home_Reached "Reached")
+          (const "") (\n _ -> (msg $ msg_Home_Remains "Remains: ") ++ show n) (const $ msg $ msg_Home_Reached "Reached")
         evResult passed failed percentage r
           = case r of
              (EvResult (BinEval (Binary Passed))) -> passed
