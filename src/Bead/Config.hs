@@ -2,12 +2,13 @@
 module Bead.Config (
     InitTask(..)
   , Config(..)
-  , LoginCfg(..)
-  , loginCfg
+#ifdef LDAPEnabled
   , LDAPLoginConfig(..)
   , ldapLoginConfig
+#else
   , StandaloneLoginConfig(..)
   , standaloneLoginConfig
+#endif
   , defaultConfiguration
   , configCata
   , initTasks

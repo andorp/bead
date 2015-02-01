@@ -2,12 +2,13 @@
 module Bead.Config.Configuration (
     InitTask(..)
   , Config(..)
-  , LoginCfg(..)
-  , loginCfg
+#ifdef LDAPEnabled
   , LDAPLoginConfig(..)
   , ldapLoginConfig
+#else
   , StandaloneLoginConfig(..)
   , standaloneLoginConfig
+#endif
   , defaultConfiguration
   , configCata
   , Usage(..)
@@ -50,49 +51,30 @@ data Config = Config {
   , emailFromAddress :: String
     -- The default language of the login page if there is no language set in the session
   , defaultLoginLanguage :: String
+    -- The default timezone for a newly registered user
+  , defaultRegistrationTimezone :: String
     -- The directory where all the timezone informations can be found
     -- Eg: /usr/share/zoneinfo/
   , timeZoneInfoDirectory :: FilePath
     -- The maximum upload size of a file given in Kbs
   , maxUploadSizeInKb :: Int
     -- Simple login configuration
-  , loginConfig :: LoginCfg
+#ifdef LDAPEnabled
+  , loginConfig :: LDAPLoginConfig
+#else
+  , loginConfig :: StandaloneLoginConfig
+#endif
   } deriving (Eq, Show, Read)
 
-configCata fcfg f (Config useraction timeout host from loginlang tz up cfg) =
-  f useraction timeout host from loginlang tz up (fcfg cfg)
+configCata fcfg f (Config useraction timeout host from dll dtz tz up cfg) =
+  f useraction timeout host from dll dtz tz up (fcfg cfg)
 
--- Two possible login configuration one for LDAP and one for standalone login method
-data LoginCfg
-  = LDAPLC LDAPLoginConfig
-  | STDLC  StandaloneLoginConfig
-  deriving (Eq, Show, Read)
-
-loginCfg
-  ldap
-  std
-  l = case l of
-    LDAPLC x -> ldap x
-    STDLC  x -> std  x
-
--- Login configuration that is used in standalone registration and login mode
-data StandaloneLoginConfig = StandaloneLoginConfig {
-    -- The default regular expression for the user registration
-    usernameRegExp :: String
-    -- The example that satisfies the given regexp for the username. These are
-    -- rendered to the user as examples on the GUI.
-  , usernameRegExpExample :: String
-  } deriving (Eq, Show, Read)
-
-standaloneLoginConfig f (StandaloneLoginConfig reg exp) = f reg exp
-
+#ifdef LDAPEnabled
 -- Login configuration that is used in LDAP registration and login mode
 data LDAPLoginConfig = LDAPLoginConfig {
     -- File which contains a non ldap authenticated users, if there is no need to this file
     -- Nothing us used
     nonLDAPUsersFile :: Maybe FilePath
-    -- The default timezone for a newly registered LDAP user
-  , defaultRegistrationTimezone :: String
     -- The temporary directory for the ldap tickets
   , ticketTemporaryDir :: FilePath
     -- LDAP Timeout in seconds
@@ -107,8 +89,20 @@ data LDAPLoginConfig = LDAPLoginConfig {
   , userEmailKey :: String
   } deriving (Eq, Show, Read)
 
-ldapLoginConfig f (LDAPLoginConfig file tz tmpdir timeout threads uik unk uek)
-  = f file tz tmpdir timeout threads uik unk uek
+ldapLoginConfig f (LDAPLoginConfig file tmpdir timeout threads uik unk uek)
+  = f file tmpdir timeout threads uik unk uek
+#else
+-- Login configuration that is used in standalone registration and login mode
+data StandaloneLoginConfig = StandaloneLoginConfig {
+    -- The default regular expression for the user registration
+    usernameRegExp :: String
+    -- The example that satisfies the given regexp for the username. These are
+    -- rendered to the user as examples on the GUI.
+  , usernameRegExpExample :: String
+  } deriving (Eq, Show, Read)
+
+standaloneLoginConfig f (StandaloneLoginConfig reg exp) = f reg exp
+#endif
 
 -- The defualt system parameters
 defaultConfiguration = Config {
@@ -117,6 +111,7 @@ defaultConfiguration = Config {
   , emailHostname     = "http://127.0.0.1:8000"
   , emailFromAddress  = "noreply@bead.org"
   , defaultLoginLanguage = "en"
+  , defaultRegistrationTimezone = "UTC"
   , timeZoneInfoDirectory = "/usr/share/zoneinfo"
   , maxUploadSizeInKb = 128
   , loginConfig = defaultLoginConfig
@@ -124,18 +119,17 @@ defaultConfiguration = Config {
 
 defaultLoginConfig =
 #ifdef LDAPEnabled
-  LDAPLC $ LDAPLoginConfig {
+  LDAPLoginConfig {
       nonLDAPUsersFile = Nothing
-    , defaultRegistrationTimezone = "UTC"
     , ticketTemporaryDir = "/tmp/"
     , ldapTimeout = 5
     , noOfLDAPThreads = 4
-    , userIdKey = "l"
-    , userNameKey = "cn"
-    , userEmailKey = "mail"
+    , userIdKey = "uid"
+    , userNameKey = "name"
+    , userEmailKey = "email"
     }
 #else
-  STDLC $ StandaloneLoginConfig {
+  StandaloneLoginConfig {
       usernameRegExp = "^[A-Za-z0-9]{6}$"
     , usernameRegExpExample = "QUER42"
     }

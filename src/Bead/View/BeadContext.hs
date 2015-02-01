@@ -28,7 +28,9 @@ import           Bead.Config
 import           Bead.Controller.Logging
 import           Bead.Controller.ServiceContext hiding (serviceContext)
 import           Bead.Daemon.Email as EmailDaemon
+#ifdef LDAPEnabled
 import           Bead.Daemon.LDAP as LDAPDaemon
+#endif
 import           Bead.Daemon.Logout
 import           Bead.Domain.Entities
 import           Bead.Domain.TimeZone
@@ -239,6 +241,7 @@ createTimeZoneContext = makeSnapContext
   "Timezone converter"
   "A snaplet holding a reference to the time zone converter functionality"
 
+#ifdef LDAPEnabled
 -- * LDAP Context
 
 -- Contains all the secondary configuration values, that reifies
@@ -256,6 +259,7 @@ createLDAPContext :: LDAP -> SnapletInit a LDAPContext
 createLDAPContext = makeSnapContext
   "LDAP Configuration"
   "A snaplet holding a reference to the ldap configuration"
+#endif
 
 -- * Application
 
@@ -272,7 +276,9 @@ data BeadContext = BeadContext {
   , _checkUsernameContext :: Snaplet CheckUsernameContext
   , _timeZoneContext :: Snaplet TimeZoneContext
   , _debugLoggerContext :: Snaplet DebugLoggerContext
+#ifdef LDAPEnabled
   , _ldapContext :: Snaplet LDAPContext
+#endif
   }
 
 makeLenses ''BeadContext
@@ -290,6 +296,7 @@ type BeadHandler' view = Handler BeadContext view
 getConfiguration :: BeadHandler' b Config
 getConfiguration = withTop configContext $ snapContextCata id
 
+#ifdef LDAPEnabled
 -- * LDAP
 
 -- Returns True if the given user (automatically capitalized) needs to have LDAP authentication
@@ -303,6 +310,7 @@ ldapAuthenticate :: Username -> String -> BeadHandler' b LDAPResult
 ldapAuthenticate username password = withTop ldapContext . snapContextHandlerCata $ \l -> do
   resultEnvelope <- liftIO $ ldap (\_nonLDAPUsers daemon -> authenticate daemon (usernameCata id username) password) l
   liftIO resultEnvelope
+#endif
 
 -- * Timezone
 

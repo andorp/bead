@@ -24,8 +24,8 @@ saveUser = void . insert . fromDomainValue
 personalInfo :: Domain.Username -> Persist Domain.PersonalInfo
 personalInfo username = do
   user <- loadUser username
-  return $! Domain.withUser user $ \role _username _email name timezone _language ->
-    Domain.PersonalInfo (role, name, timezone)
+  return $! Domain.withUser user $ \role _username _email name timezone _language uid ->
+    Domain.PersonalInfo (role, name, timezone, uid)
 
 -- Select users who satiesfies the given predicate
 filterUsers :: (Domain.User -> Bool) -> Persist [Domain.User]
@@ -46,13 +46,14 @@ loadUser = Domain.usernameCata $ \username -> do
 updateUser :: Domain.User -> Persist ()
 updateUser user = do
   userId <- entityKey <$> (getByUsername $ Domain.u_username user)
-  update userId $ Domain.withUser user $ \role username email name timezone language ->
+  update userId $ Domain.withUser user $ \role username email name timezone language uid ->
     [ UserRole     =. (encodeRole role)
     , UserUsername =. (Domain.usernameCata Text.pack username)
     , UserEmail    =. (Domain.emailCata Text.pack email)
     , UserName     =. (Text.pack name)
     , UserTimeZone =. (encodeTimeZone timezone)
     , UserLanguage =. (Domain.languageCata Text.pack language)
+    , UserUid      =. (Domain.uid Text.pack uid)
     ]
 
 -- Checks if the user is already in the database

@@ -270,7 +270,8 @@ finalizeRegistration = method GET renderForm <|> method POST createStudent where
               True -> errorPage (Msg_Registration_Title "Registration") $ msg $
                 Msg_RegistrationCreateStudent_InvalidToken "The registration token has expired, start the registration over."
               False -> do
-                createNewUser userRegData timezone (Language language)
+                withTop auth $
+                  createNewUser userRegData timezone (Language language)
                 redirect "/"
       (Right _, _, _) -> registrationErrorPage ("Password or timezone is not defined" :: String)
 

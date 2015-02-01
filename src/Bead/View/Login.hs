@@ -19,7 +19,9 @@ import           Bead.Controller.Logging as L
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext hiding (serviceContext)
 import qualified Bead.Controller.UserStories as Story
+#ifdef LDAPEnabled
 import           Bead.Daemon.LDAP.Result
+#endif
 import           Bead.View.BeadContext
 import           Bead.View.Content hiding (BlazeTemplate, template)
 import qualified Bead.View.Content.Public.Login as View
@@ -116,11 +118,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           _ <- regStory (Story.createUser $ user Student timezone lang)
           return ()
           where
-            getTimeZone =
-              Config.loginCfg
-                (TimeZoneName . Config.defaultRegistrationTimezone) -- LDAP
-                (const $ TimeZoneName "UTC") -- STANDALONE
-                . Config.loginConfig
+            getTimeZone = TimeZoneName . Config.defaultRegistrationTimezone
 
         True -> do
           -- If the user exists update its profile and password

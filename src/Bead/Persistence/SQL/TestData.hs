@@ -26,8 +26,8 @@ ast2    = Assessment "this is an assessment 2" (percentageConfig 0.1)
 user1name = Username "user1"
 user2name = Username "user2"
 
-user1 = User Student user1name (Email "email2") "name2" (TimeZoneName "UTC") (Language "hu")
-user2  = User Student user2name (Email "email2") "name2" (TimeZoneName "UTC") (Language "es")
+user1 = User Student user1name (Email "email2") "name2" (TimeZoneName "UTC") (Language "hu") (Uid "USR01")
+user2  = User Student user2name (Email "email2") "name2" (TimeZoneName "UTC") (Language "es") (Uid "USR02")
 
 ev    = Evaluation (binaryResult Passed) "written"
 ev2   = Evaluation (percentageResult 0.01) "escrito"

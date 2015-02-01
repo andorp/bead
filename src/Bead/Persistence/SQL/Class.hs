@@ -61,14 +61,16 @@ instance DomainValue Domain.User where
     (Text.unpack $ userName ent)
     (decodeTimeZone $ userTimeZone ent)
     (Domain.Language . Text.unpack $ userLanguage ent)
+    (Domain.Uid . Text.unpack $ userUid ent)
 
-  fromDomainValue = Domain.userCata $ \role username email name timezone language -> User
+  fromDomainValue = Domain.userCata $ \role username email name timezone language uid -> User
     (encodeRole role)
     (Domain.usernameCata Text.pack username)
     (Domain.emailCata Text.pack email)
     (Text.pack name)
     (encodeTimeZone timezone)
     (Domain.languageCata Text.pack language)
+    (Domain.uid Text.pack uid)
 
 
 instance DomainKey Domain.UserRegKey where

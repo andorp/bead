@@ -19,7 +19,8 @@ import           Test.Framework.Providers.QuickCheck2
 import           Test.Themis.Test (runTest)
 import           Test.Themis.Provider.TestFramework (buildTestSet)
 
-import           Bead.Configuration (initTaskAssertions)
+import           Bead.Config (initTaskAssertions)
+import qualified Bead.Config.Parser as CP (parseTests)
 import qualified Bead.Controller.Pages as P (invariants)
 import qualified Bead.Daemon.Logout as LD (unitTests)
 import qualified Bead.Domain.Entities as E
@@ -103,3 +104,5 @@ themisTests = runTest buildTestSet $ do
   PR.persistRelationsTests
   DB.dataBridgeTests
   F.feedbackTests
+  CP.parseTests
+

@@ -108,6 +108,7 @@ User
   name     Text
   timeZone JSONText
   language Text
+  uid      Text
   UniqueUsername username
   deriving Show
 

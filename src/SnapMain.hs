@@ -18,7 +18,9 @@ import           Bead.Config
 import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
 import           Bead.Daemon.Email
+#ifdef LDAPEnabled
 import           Bead.Daemon.LDAP
+#endif
 import           Bead.Daemon.Logout
 import           Bead.Daemon.TestAgent
 import           Bead.Domain.Entities (UserRegInfo(..))
@@ -56,56 +58,60 @@ main = do
 
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
-printConfigInfo = configCata loginConfigPart $ \logfile timeout hostname fromEmail loginlang zoneInfoDir up lcfg -> do
+printConfigInfo = configCata loginConfigPart $ \logfile timeout hostname fromEmail dll dtz zoneInfoDir up lcfg -> do
   configLn $ "Log file: " ++ logfile
   configLn $ concat ["Session timeout: ", show timeout, " seconds"]
   configLn $ "Hostname included in emails: " ++ hostname
   configLn $ "FROM Address included in emails: " ++ fromEmail
-  configLn $ "Default login language: " ++ loginlang
+  configLn $ "Default login language: " ++ dll
+  configLn $ "Default time zone: " ++ dtz
   configLn $ "TimeZone informational dir: " ++ zoneInfoDir
   configLn $ concat ["Maximum size of a file to upload: ", show up, "K"]
   lcfg
   where
     configLn s = putStrLn ("CONFIG: " ++ s)
-    loginConfigPart = loginCfg
-      (ldapLoginConfig $ \file tz tmpdir timeout threads uik unk uek -> do
+    loginConfigPart =
+#ifdef LDAPEnabled
+      ldapLoginConfig $ \file tmpdir timeout threads uik unk uek -> do
          configLn $ "Non LDAP Users config file: " ++ show file
-         configLn $ "Default registration timezone: " ++ show tz
          configLn $ "Temporary directory for the LDAP tickets: " ++ show tmpdir
          configLn $ "Timeout for an LDAP login request: " ++ show timeout
          configLn $ "Number of LDAP authenticator threads: " ++ show threads
          configLn $ "LDAP key for the UserID: " ++ show uik
          configLn $ "LDAP key for the User's full name: " ++ show unk
-         configLn $ "LDAP key for the User's email: " ++ show uek)
-      (standaloneLoginConfig $ \regexp example -> do
+         configLn $ "LDAP key for the User's email: " ++ show uek
+#else
+      standaloneLoginConfig $ \regexp example -> do
          configLn $ "Username regular expression for the registration: " ++ regexp
-         configLn $ "Username example for the regular expression: " ++ example)
+         configLn $ "Username example for the regular expression: " ++ example
+#endif
 
 -- Check if the configuration is valid
 checkConfig :: Config -> IO ()
 checkConfig cfg = do
+  check (not $ null $ defaultRegistrationTimezone cfg)
+    "The default registration time zone is empty"
   check (maxUploadSizeInKb cfg > 0)
     "The maximum upload size must be non-negative!"
 
-  let loginCfgPart = loginConfig cfg
-  loginCfg
-    -- LDAP: Check if there is a given non-ldap users file exist
-    (ldapLoginConfig $ \file tz tmpdir timeout threads uik unk uek -> do
-      when (isJust file) $ checkIO (doesFileExist $ fromJust file) "The given non LDAP Users configuration file"
-      checkIO (doesDirectoryExist tmpdir) "The given LDAP ticket directory does not exist"
-      check (not $ null tz) "Default registration time zone is empty"
-      check (timeout > 0) "LDAP timeout is less or equal to zero"
-      check (threads > 0) "LDAP thread number is less or equals to zero"
-      check (not $ null uik) "LDAP UID key is empty"
-      check (not $ null unk) "LDAP User's fullname key is empty"
-      check (not $ null uek) "LDAP User's email key is empty"
-    )
-
-    -- Standalone: Check the given username example against the given username regexp, if the
-    -- example does not match with the regepx quit with an exit failure.
-    (\cfg -> check (usernameRegExpExample cfg =~ usernameRegExp cfg)
-               "Given username example does not match with the given pattern!")
-    (loginCfgPart)
+  let loginCfgPart =
+#ifdef LDAPEnabled
+        -- LDAP: Check if there is a given non-ldap users file exist
+        ldapLoginConfig $ \file tmpdir timeout threads uik unk uek -> do
+          when (isJust file) $ checkIO (doesFileExist $ fromJust file) "The given non LDAP Users configuration file"
+          checkIO (doesDirectoryExist tmpdir) "The given LDAP ticket directory does not exist"
+          check (timeout > 0) "LDAP timeout is less or equal to zero"
+          check (threads > 0) "LDAP thread number is less or equals to zero"
+          check (not $ null uik) "LDAP UID key is empty"
+          check (not $ null unk) "LDAP User's fullname key is empty"
+          check (not $ null uek) "LDAP User's email key is empty"
+#else
+        -- Standalone: Check the given username example against the given username regexp, if the
+        -- example does not match with the regepx quit with an exit failure.
+        standaloneLoginConfig $ \usernameRegExp usernameRegExpExample -> do
+          check (usernameRegExpExample =~ usernameRegExp)
+            "Given username example does not match with the given pattern!"
+#endif
 
   checkIO (doesDirectoryExist (timeZoneInfoDirectory cfg))
     "The given time-zone info directory"
@@ -214,10 +220,16 @@ startService config initTasks = do
   emailDaemon <- creating "email daemon" $
     startEmailDaemon userActionLogger
 
+#ifdef LDAPEnabled
   ldapDaemon <- creating "ldap daemon" $
-    startLDAPDaemon userActionLogger $ ldapDaemonConfig config
+    startLDAPDaemon userActionLogger $ ldapDaemonConfig $ loginConfig config
+#endif
 
+#ifdef LDAPEnabled
   let daemons = Daemons logoutDaemon emailDaemon ldapDaemon
+#else
+  let daemons = Daemons logoutDaemon emailDaemon
+#endif
 
   serveSnaplet defaultConfig (beadContextInit config initTasks context daemons tempDir)
   stopLogger userActionLogs
@@ -229,10 +241,11 @@ startService config initTasks = do
       putStrLn "DONE"
       return $! x
 
+#ifdef LDAPEnabled
     defaultLDAPConfig = LDAPDaemonConfig "" 0 0 "" "" ""
 
-    ldapDaemonConfig = loginCfg
-      (ldapLoginConfig $ \_file _tz tmpdir timeout threads uik unk uek ->
+    ldapDaemonConfig =
+      ldapLoginConfig $ \_file tmpdir timeout threads uik unk uek ->
         LDAPDaemonConfig {
           tempDir = tmpdir,
           timeOut = timeout,
@@ -240,10 +253,8 @@ startService config initTasks = do
           uidKey = uik,
           nameKey = unk,
           emailKey = uek
-        })
-      (standaloneLoginConfig (\_ _ -> defaultLDAPConfig))
-      . loginConfig
-
+        }
+#endif
 
 -- Creates a temporary directory for the bead in the system's temp dir
 createBeadTempDir :: IO FilePath
