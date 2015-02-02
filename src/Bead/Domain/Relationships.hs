@@ -406,6 +406,11 @@ newtype AssessmentKey = AssessmentKey String
 
 assessmentKey f (AssessmentKey x) = f x
 
+newtype NotificationKey = NotificationKey String
+  deriving (Eq, Ord, Show)
+
+notificationKey f (NotificationKey x) = f x
+
 -- | The scoreboard summarizes the information for a course or group related
 -- assesments and the evaluation for the assesment.
 newtype ScoreBoard = ScoreBoard (Map (AssessmentKey, Username) EvaluationKey)

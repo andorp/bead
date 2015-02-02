@@ -19,6 +19,8 @@ module Bead.Persistence.Persist (
   , administratedCourses
   , administratedGroups
   , scoresOfUser
+  , attachNotificationToUser
+  , notificationsOfUser
 
   -- Users file upload
   , copyFile  -- Copies the given file with the given filename to the users data directory
@@ -117,6 +119,15 @@ module Bead.Persistence.Persist (
   , loadFeedback
   , submissionOfFeedback
 
+  -- Notification
+  , saveCommentNotification
+  , saveFeedbackNotification
+  , saveSystemNotification
+  , loadNotification
+  , commentOfNotification
+  , feedbackOfNotification
+  , usersOfNotification
+
   -- Evaluation
   , saveSubmissionEvaluation
   , saveScoreEvaluation
@@ -156,6 +167,8 @@ import           Data.Time (UTCTime)
 
 import           Bead.Domain.Types (Erroneous)
 import           Bead.Domain.Entities
+import           Bead.Domain.Entity.Notification (Notification)
+import qualified Bead.Domain.Entity.Notification as Notif
 import           Bead.Domain.Relationships
 
 import qualified Bead.Persistence.Initialization as Init
@@ -212,6 +225,12 @@ administratedCourses = PersistImpl.administratedCourses
 -- Lists all the groups that are administrated by the user
 administratedGroups :: Username -> Persist [(GroupKey, Group)]
 administratedGroups = PersistImpl.administratedGroups
+
+attachNotificationToUser :: Username -> NotificationKey -> Persist ()
+attachNotificationToUser = error "PersistImpl.attachNotificationToUser"
+
+notificationsOfUser :: Username -> Persist [NotificationKey]
+notificationsOfUser = error "PersistImpl.notificationsOfUser"
 
 -- Lists all the scores submitted for the user
 scoresOfUser :: Username -> Persist [ScoreKey]
@@ -400,7 +419,7 @@ modifyTestScriptOfTestCase = PersistImpl.modifyTestScriptOfTestCase
 saveTestJob :: SubmissionKey -> Persist () -- Saves the test job for the test daemon
 saveTestJob = PersistImpl.saveTestJob
 
--- * Test Comments
+-- * Test Feedbacks
 
 -- | Inserts a test comment for the incoming test comment directory,
 -- this function is mainly for testing of this functionality
@@ -539,6 +558,29 @@ loadFeedback = PersistImpl.loadFeedback
 -- Returns the submission of the feedback
 submissionOfFeedback :: FeedbackKey -> Persist SubmissionKey
 submissionOfFeedback = PersistImpl.submissionOfFeedback
+
+-- * Notification
+
+saveCommentNotification :: CommentKey -> Notification -> Persist NotificationKey
+saveCommentNotification = error "PersistImpl.saveCommentNotification"
+
+saveFeedbackNotification :: FeedbackKey -> Notification -> Persist NotificationKey
+saveFeedbackNotification = error "PersistImpl.saveFeedbackNotification"
+
+saveSystemNotification :: Notification -> Persist NotificationKey
+saveSystemNotification = error "PersistImpl.saveSystemNotification"
+
+loadNotification :: NotificationKey -> Persist Notification
+loadNotification = error "PersistImpl.loadNotification"
+
+commentOfNotification :: NotificationKey -> Persist (Maybe CommentKey)
+commentOfNotification = error "PersistImpl.commentOfNotification"
+
+feedbackOfNotification :: NotificationKey -> Persist (Maybe FeedbackKey)
+feedbackOfNotification = error "PersistImpl.feedbackOfNotification"
+
+usersOfNotification :: NotificationKey -> Persist [Username]
+usersOfNotification = error "PersistImpl.usersOfNotification"
 
 -- * Evaluation
 

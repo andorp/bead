@@ -1,16 +1,17 @@
 module Test.Quick.EntityGen where
 
-import Bead.Domain.Entities
-import Bead.Domain.TimeZone (utcZoneInfo, cetZoneInfo)
-import Bead.Domain.Shared.Evaluation
+import           Bead.Domain.Entities
+import qualified Bead.Domain.Entity.Notification as Notification
+import           Bead.Domain.TimeZone (utcZoneInfo, cetZoneInfo)
+import           Bead.Domain.Shared.Evaluation
 
-import Test.Quick.EnumGen
+import           Test.Quick.EnumGen
 
-import Test.QuickCheck.Gen
-import Test.QuickCheck.Arbitrary
-import Control.Monad (join, liftM)
-import Control.Applicative ((<$>),(<*>))
-import Data.String (fromString)
+import           Test.QuickCheck.Gen
+import           Test.QuickCheck.Arbitrary
+import           Control.Monad (join, liftM)
+import           Control.Applicative ((<$>),(<*>))
+import           Data.String (fromString)
 
 import qualified Data.ByteString.Char8 as BS (pack)
 
@@ -178,8 +179,14 @@ testFeedbackInfo = oneof
   , MessageForAdmin <$> manyWords
   ]
 
+feedbacks date = Feedback <$> testFeedbackInfo <*> (return date)
+
 scores :: Gen Score
 scores = return Score
 
 assessments = Assessment <$> manyWords <*> evalConfigs
+
+notifTypes = elements [Notification.Comment, Notification.Feedback, Notification.System]
+
+notifications = Notification.Notification . fromString <$> manyWords
 

@@ -301,7 +301,42 @@ type SubmissionInfoList = [((Username,AssignmentKey),SubmissionKey)]
 infoListToSubmissionKeys :: SubmissionInfoList -> [SubmissionKey]
 infoListToSubmissionKeys = (fmap snd)
 
--- Generate and story the given number of submissions, for the randomly selected
+-- Generates and stores the given number of comments, for the randomly selected
+-- submissions. Returns all the created comment key with the associated submissionKey.
+comments :: Int -> [SubmissionKey] -> IO [(CommentKey, SubmissionKey)]
+comments n ss = do
+  list <- createListRef
+  now <- getCurrentTime
+  quick n $ do
+    sk <- pick $ elements ss
+    ck <- saveAndLoadIdenpotent "Comment" (saveComment sk) (loadComment) (Gen.comments now)
+    run $ insertListRef list (ck, sk)
+  listInRef list
+
+-- Generates and stores the given number of feedbacks, for the randomly selected
+-- submissions. Returns all the created feedback key with the associated submissionKey.
+feedbacks :: Int -> [SubmissionKey] -> IO [(FeedbackKey, SubmissionKey)]
+feedbacks n ss = do
+  list <- createListRef
+  now <- getCurrentTime
+  quick n $ do
+    sk <- pick $ elements ss
+    fk <- saveAndLoadIdenpotent "Feedback" (saveFeedback sk) (loadFeedback) (Gen.feedbacks now)
+    run $ insertListRef list (fk, sk)
+  listInRef list
+
+-- Generates and stores the given number of system notifications, for the randomly selected
+-- users. Returns all the creates feedback key with the associated username.
+systemNotifications :: Int -> [Username] -> IO [(NotificationKey, Username)]
+systemNotifications n us = do
+  list <- createListRef
+  quick n $ do
+    user <- pick $ elements us
+    nk <- saveAndLoadIdenpotent "Notification" saveSystemNotification loadNotification Gen.notifications
+    run $ insertListRef list (nk, user)
+  listInRef list
+
+-- Generate and store the given number of submissions, for the randomly selected
 -- user and assignment. Returns all the created submission keys with the associated
 -- username and assignment
 submissions :: Int -> [Username] -> [AssignmentKey] -> IO SubmissionInfoList
@@ -1244,6 +1279,71 @@ deleteIncomingFeedbackTest = do
         cks <- map fst <$> testFeedbacks
         return $ do
           assertTrue (sk `elem` cks) "Was not commented"
+
+-- All the notifications for comments returns the given comment key, and no feedback key
+saveCommentNotificationTest = do
+  reinitPersistence
+  us <- users 400
+  cs <- courses 50
+  gs <- groups 200 cs
+  as <- courseAndGroupAssignments 300 300 cs gs
+  ss <- submissions 500 us as
+  cks <- comments 1500 (map snd ss)
+  now <- getCurrentTime
+  quick 1000 $ do
+    (ck,sk) <- pick $ elements cks
+    notif <- pick $ Gen.notifications
+    nk <- runPersistCmd $ saveCommentNotification ck notif
+    (mck,mfk,users) <- runPersistCmd $ do
+      mck <- commentOfNotification nk
+      mfk <- feedbackOfNotification nk
+      users <- usersOfNotification nk
+      return (mck,mfk,users)
+    assertEquals (Just ck) mck   "Commented notification has no comment key."
+    assertEquals Nothing   mfk   "Commented notification has a notification key."
+    assertEquals []        users "Commented notification had a non-empty users list."
+
+-- All the notifications for feedback returns the given feedback key, and no comment key
+saveFeedbackNotificaitonTest = do
+  reinitPersistence
+  us <- users 400
+  cs <- courses 50
+  gs <- groups 200 cs
+  as <- courseAndGroupAssignments 300 300 cs gs
+  ss <- submissions 500 us as
+  fs <- feedbacks 1500 (map snd ss)
+  quick 1000 $ do
+    (fk,sk) <- pick $ elements fs
+    notif <- pick $ Gen.notifications
+    nk <- runPersistCmd $ saveFeedbackNotification fk notif
+    (mck,mfk,users) <- runPersistCmd $ do
+      mck <- commentOfNotification nk
+      mfk <- feedbackOfNotification nk
+      users <- usersOfNotification nk
+      return (mck,mfk,users)
+    assertEquals Nothing   mck   "Feedback notification has a comment key."
+    assertEquals (Just fk) mfk   "Feedback notification has no notification key."
+    assertEquals []        users "Feedback notification had a non-empty users list."
+
+-- All the system notification does not returns an feedback or comment key
+saveSystemNotificationTest = do
+  reinitPersistence
+  us <- users 400
+  fs <- systemNotifications 1500 us
+  quick 1000 $ do
+    user <- pick $ elements us
+    notif <- pick $ Gen.notifications
+    nk <- runPersistCmd $ do
+      saveSystemNotification notif
+      attachNotificationToUser user nk
+    (mck,mfk,users) <- runPersistCmd $ do
+      mck <- commentOfNotification nk
+      mfk <- feedbackOfNotification nk
+      users <- usersOfNotification nk
+      return (mck,mfk,users)
+    assertEquals Nothing   mck     "System notification has no comment key."
+    assertEquals Nothing   mfk     "System notification has no notification key."
+    assertTrue   (elem user users) "System notification is not assocaited with the selected user."
 
 runPersistCmd :: Persist a -> PropertyM IO a
 runPersistCmd m = do
