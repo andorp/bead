@@ -122,7 +122,9 @@ data ViewModifyPage a
   | NewTestScript a
   | ModifyTestScript TestScriptKey a
   | UploadFile a
+#ifndef LDAPEnabled
   | SetUserPassword a
+#endif
   | SubmissionDetails AssignmentKey SubmissionKey a
   | Submission a
   deriving (Eq, Ord, Show, Functor)
@@ -139,7 +141,9 @@ viewModifyPageCata
   newTestScript
   modifyTestScript
   uploadFile
+#ifndef LDAPEnabled
   setUserPassword
+#endif
   submissionDetails
   submission
   p = case p of
@@ -154,7 +158,9 @@ viewModifyPageCata
     NewTestScript a -> newTestScript a
     ModifyTestScript tk a -> modifyTestScript tk a
     UploadFile a -> uploadFile a
+#ifndef LDAPEnabled
     SetUserPassword a -> setUserPassword a
+#endif
     SubmissionDetails ak sk a -> submissionDetails ak sk a
     Submission a -> submission a
 
@@ -171,7 +177,9 @@ viewModifyPageValue = viewModifyPageCata
   id -- newTestScript
   cid -- modifyTestScript
   id -- uploadFile
+#ifndef LDAPEnabled
   id -- setUserPassword
+#endif
   c2id -- submissionDetails
   id -- submission
   where
@@ -301,7 +309,9 @@ userDetails            = ViewModify . UserDetails
 newTestScript          = ViewModify . NewTestScript
 modifyTestScript tk    = ViewModify . ModifyTestScript tk
 uploadFile             = ViewModify . UploadFile
+#ifndef LDAPEnabled
 setUserPassword        = ViewModify . SetUserPassword
+#endif
 submissionDetails ak sk = ViewModify . SubmissionDetails ak sk
 submission              = ViewModify . Submission
 
@@ -347,7 +357,9 @@ pageCata
   assignCourseAdmin
   assignGroupAdmin
   changePassword
+#ifndef LDAPEnabled
   setUserPassword
+#endif
   deleteUsersFromCourse
   deleteUsersFromGroup
   unsubscribeFromCourse
@@ -384,7 +396,9 @@ pageCata
     (Modify (AssignCourseAdmin a)) -> assignCourseAdmin a
     (Modify (AssignGroupAdmin a)) -> assignGroupAdmin a
     (Modify (ChangePassword a)) -> changePassword a
+#ifndef LDAPEnabled
     (ViewModify (SetUserPassword a)) -> setUserPassword a
+#endif
     (Modify (DeleteUsersFromCourse ck a)) -> deleteUsersFromCourse ck a
     (Modify (DeleteUsersFromGroup gk a)) -> deleteUsersFromGroup gk a
     (Modify (UnsubscribeFromCourse gk a)) -> unsubscribeFromCourse gk a
@@ -423,7 +437,9 @@ constantsP
   assignCourseAdmin_
   assignGroupAdmin_
   changePassword_
+#ifndef LDAPEnabled
   setUserPassword_
+#endif
   deleteUsersFromCourse_
   deleteUsersFromGroup_
   unsubscribeFromCourse_
@@ -460,7 +476,9 @@ constantsP
       (c $ assignCourseAdmin assignCourseAdmin_)
       (c $ assignGroupAdmin assignGroupAdmin_)
       (c $ changePassword changePassword_)
+#ifndef LDAPEnabled
       (c $ setUserPassword setUserPassword_)
+#endif
       (\ck _ -> deleteUsersFromCourse ck deleteUsersFromCourse_)
       (\gk _ -> deleteUsersFromGroup gk deleteUsersFromGroup_)
       (\gk _ -> unsubscribeFromCourse gk unsubscribeFromCourse_)
@@ -501,7 +519,9 @@ liftsP
   assignCourseAdmin_
   assignGroupAdmin_
   changePassword_
+#ifndef LDAPEnabled
   setUserPassword_
+#endif
   deleteUsersFromCourse_
   deleteUsersFromGroup_
   unsubscribeFromCourse_
@@ -538,7 +558,9 @@ liftsP
       (assignCourseAdmin . assignCourseAdmin_)
       (assignGroupAdmin . assignGroupAdmin_)
       (changePassword . changePassword_)
+#ifndef LDAPEnabled
       (setUserPassword . setUserPassword_)
+#endif
       (\ck a -> deleteUsersFromCourse ck (deleteUsersFromCourse_ ck a))
       (\gk a -> deleteUsersFromGroup gk (deleteUsersFromGroup_ gk a))
       (\gk a -> unsubscribeFromCourse gk (unsubscribeFromCourse_ gk a))
@@ -637,8 +659,10 @@ isAssignGroupAdmin _ = False
 isChangePassword (Modify (ChangePassword _)) = True
 isChangePassword _ = False
 
+#ifndef LDAPEnabled
 isSetUserPassword (ViewModify (SetUserPassword _)) = True
 isSetUserPassword _ = False
+#endif
 
 isDeleteUsersFromCourse (Modify (DeleteUsersFromCourse _ _)) = True
 isDeleteUsersFromCourse _ = False
@@ -684,7 +708,9 @@ groupAdminPages = [
   , isNewGroupAssignmentPreview
   , isModifyAssignmentPreview
   , isUserSubmissions
+#ifndef LDAPEnabled
   , isSetUserPassword
+#endif
   , isUploadFile
   ]
 
@@ -704,7 +730,9 @@ courseAdminPages = [
   , isModifyAssignmentPreview
   , isViewAssignment
   , isUserSubmissions
+#ifndef LDAPEnabled
   , isSetUserPassword
+#endif
   , isNewTestScript
   , isModifyTestScript
   , isUploadFile
@@ -801,7 +829,9 @@ parentPage = pageCata'
       home           -- newTestScript
       (const home)   -- modifyTestScript
       uploadFile     -- uploadFile
+#ifndef LDAPEnabled
       home           -- setUserPassword
+#endif
       submissionDetails -- submissionDetails
       home           -- submission
 

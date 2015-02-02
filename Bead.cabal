@@ -86,6 +86,8 @@ Executable Bead
     Build-Depends:
       base64-bytestring >= 1.0.0.1 && < 2,
       either >= 4.3 && < 5
+  else
+    CPP-Options: -DEmailEnabled
   Build-Depends:
     aeson,
     async,
@@ -143,6 +145,10 @@ Executable BeadUnitTest
   else
     Buildable: False
   GHC-Options: -fhpc -hpcdir dist/build/BeadUnitTest/Mix/
+  if flag(LDAP)
+    CPP-Options: -DLDAPEnabled
+  else
+    CPP-Options: -DEmailEnabled
   if flag(SQLite)
     CPP-Options: -DTEST -DSQLITE
     Build-Depends:

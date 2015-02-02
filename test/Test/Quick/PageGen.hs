@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 module Test.Quick.PageGen where
@@ -47,7 +48,9 @@ pageGen = oneof [
         , assignCourseAdmin ()
         , assignGroupAdmin ()
         , changePassword ()
+#ifndef LDAPEnabled
         , setUserPassword ()
+#endif
         , newTestScript ()
         ]
 

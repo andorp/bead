@@ -22,7 +22,9 @@ import           System.Directory
 
 import           Bead.Config
 import           Bead.Controller.ServiceContext as S hiding (serviceContext)
+#ifdef EmailEnabled
 import           Bead.Daemon.Email
+#endif
 #ifdef LDAPEnabled
 import           Bead.Daemon.LDAP
 #endif
@@ -56,7 +58,9 @@ type InitTasks = Maybe UserRegInfo
 -- application
 data Daemons = Daemons {
     logoutDaemon :: LogoutDaemon
+#ifdef EmailEnabled
   , emailDaemon  :: EmailDaemon
+#endif
 #ifdef LDAPEnabled
   , ldapDaemon   :: LDAPDaemon
 #endif
@@ -91,9 +95,13 @@ beadContextInit config user s daemons tempDir = makeSnaplet "bead" description d
   ds <- nestSnaplet "dictionary" dictionaryContext $
           dictionarySnaplet dictionaries (Language $ defaultLoginLanguage config)
 
+#ifdef EmailEnabled
   se <- nestSnaplet "sendemail" sendEmailContext (emailSenderSnaplet config (emailDaemon daemons))
+#endif
 
+#ifndef LDAPEnabled
   rp <- nestSnaplet "randompassword" randomPasswordContext passwordGeneratorSnaplet
+#endif
 
   fs <- nestSnaplet "fay" fayContext $ initFay
 
@@ -101,7 +109,9 @@ beadContextInit config user s daemons tempDir = makeSnaplet "bead" description d
 
   cs <- nestSnaplet "config" configContext $ configurationServiceContext config
 
+#ifndef LDAPEnabled
   un <- nestSnaplet "usernamechecker" checkUsernameContext $ regexpUsernameChecker config
+#endif
 
   timeZoneConverter <- liftIO $ createTimeZoneConverter (timeZoneInfoDirectory config)
 
@@ -123,9 +133,17 @@ beadContextInit config user s daemons tempDir = makeSnaplet "bead" description d
 
   return $
 #ifdef LDAPEnabled
-    BeadContext sm as ss ds se rp fs ts cs un tz dl ldap
+#ifdef EmailEnabled
+    BeadContext sm as ss ds se fs ts cs tz dl ldap
 #else
+    BeadContext sm as ss ds fs ts cs tz dl ldap
+#endif
+#else
+#ifdef EmailEnabled
     BeadContext sm as ss ds se rp fs ts cs un tz dl
+#else
+    BeadContext sm as ss ds rp fs ts cs un tz dl
+#endif
 #endif
   where
     description = "The BEAD website"

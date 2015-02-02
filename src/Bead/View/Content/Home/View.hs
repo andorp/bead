@@ -101,7 +101,9 @@ homeContent d = do
       evaluationTable   = Pages.evaluationTable ()
       groupRegistration = Pages.groupRegistration ()
       newTestScript     = Pages.newTestScript ()
+#ifndef LDAPEnabled
       setUserPassword   = Pages.setUserPassword ()
+#endif
       submission     = Pages.submission ()
       submissionList = Pages.submissionList ()
       uploadFile     = Pages.uploadFile ()

@@ -42,7 +42,9 @@ module Bead.View.RouteOf (
   , newCourseAssignmentPreviewPath
   , modifyAssignmentPreviewPath
   , changePasswordPath
+#ifndef LDAPEnabled
   , setUserPasswordPath
+#endif
   , deleteUsersFromCoursePath
   , deleteUsersFromGroupPath
   , unsubscribeFromCoursePath
@@ -170,8 +172,10 @@ modifyAssignmentPreviewPath = "/modify-assignment-preview"
 changePasswordPath :: RoutePath
 changePasswordPath = "/change-password"
 
+#ifndef LDAPEnabled
 setUserPasswordPath :: RoutePath
 setUserPasswordPath = "/set-user-password"
+#endif
 
 deleteUsersFromCoursePath :: RoutePath
 deleteUsersFromCoursePath = "/delete-users-from-course"
@@ -222,7 +226,9 @@ pageRoutePath = pfmap id id id id id . r where
     assignCourseAdminPath
     assignGroupAdminPath
     changePasswordPath
+#ifndef LDAPEnabled
     setUserPasswordPath
+#endif
     deleteUsersFromCoursePath
     deleteUsersFromGroupPath
     unsubscribeFromCoursePath
@@ -264,7 +270,9 @@ pageRequestParams = liftsP
   (c []) -- assignCourseAdmin
   (c []) -- assignGroupAdmin
   (c []) -- changePassword
+#ifndef LDAPEnabled
   (c []) -- setUserPassword
+#endif
   (\ck _ -> [requestParam ck]) -- deleteUsersFromCourse
   (\gk _ -> [requestParam gk]) -- deleteUsersFromGroup
   (\gk _ -> [requestParam gk]) -- unsubscribeFromCourse

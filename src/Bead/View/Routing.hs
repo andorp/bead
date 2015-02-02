@@ -37,8 +37,10 @@ import           Bead.View.Content.All
 import           Bead.View.ErrorPage
 import           Bead.View.Login as L
 import           Bead.View.LoggedInFilter
+#ifndef LDAPEnabled
 import           Bead.View.Registration
 import           Bead.View.ResetPassword
+#endif
 import           Bead.View.RouteOf
 import           Bead.View.RequestParams
 
@@ -326,7 +328,9 @@ routeToPageMap = Map.fromList [
   , (newCourseAssignmentPreviewPath , \ps -> P.newCourseAssignmentPreview <$> courseKey ps <*> unit)
   , (modifyAssignmentPreviewPath , \ps -> P.modifyAssignmentPreview <$> assignmentKey ps <*> unit)
   , (changePasswordPath      , j $ P.changePassword ())
+#ifndef LDAPEnabled
   , (setUserPasswordPath     , j $ P.setUserPassword ())
+#endif
   , (deleteUsersFromCoursePath , \ps -> P.deleteUsersFromCourse <$> courseKey ps <*> unit)
   , (deleteUsersFromGroupPath , \ps -> P.deleteUsersFromGroup <$> groupKey ps <*> unit)
   , (unsubscribeFromCoursePath , \ps -> P.unsubscribeFromCourse <$> groupKey ps <*> unit)

@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE TypeSynonymInstances #-}
 {-# LANGUAGE FlexibleInstances #-}
 module Test.Unit.Invariants (
@@ -34,13 +35,17 @@ import           Bead.Invariants
 import qualified Bead.View.Content.All as VA (invariants)
 import           Bead.View.Content.Home.Page
 import qualified Bead.View.DataBridge as DB (dataBridgeTests)
+#ifdef EmailEnabled
 import qualified Bead.View.EmailTemplate as E (unitTests)
+#endif
 import qualified Bead.View.Pagelets as VP (invariants)
 import qualified Bead.View.RouteOf as R (routeOfInvariants)
 import qualified Bead.View.Routing as R (routingInvariants)
 import qualified Bead.View.Session as VS (unitTests)
 import qualified Bead.View.TemplateAndComponentNames as TC (unitTests)
+#ifdef EmailEnabled
 import qualified Bead.View.Validators as V (assertEmailAddress)
+#endif
 import           Test.Quick.PageGen()
 import           Test.Quick.RolePermissionGen()
 
@@ -90,8 +95,10 @@ tests = [
   , unitTestGroup   "Assignment active period" A.assignmentTests
   , unitTestGroup   "Hungarian letter comparism" E.compareHunTests
   , unitTestGroup   "Template and components" TC.unitTests
+#ifdef EmailEnabled
   , ioUnitTestGroup "Email template tests" E.unitTests
   , assertionTestGroup "Email address" V.assertEmailAddress
+#endif
   , assertionTestGroup "Home page binary results" sumBinaryResultTests
   , assertionTestGroup "Home page percentage results" sumPercentageResultTests
 --  , assertionTestGroup "Home page calc results" calculateSubmissionResultTests: TODO define results

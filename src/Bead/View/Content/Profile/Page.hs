@@ -17,8 +17,7 @@ import qualified Bead.View.DataBridge as B
 import           Bead.View.Dictionary
 import           Bead.View.Session (setLanguageInSession)
 
-#ifdef LDAPEnabled
-#else
+#ifndef LDAPEnabled
 import           Bead.View.ResetPassword
 #endif
 

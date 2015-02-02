@@ -1,3 +1,3 @@
 #!/bin/sh
 
-ghci -isrc -itest -isnaplets/fay/src -DGHCI -DTEST -fwarn-unused-imports -fwarn-incomplete-patterns -fwarn-unused-matches
+ghci -isrc -itest -isnaplets/fay/src -DGHCI -DTEST -DEmailEnabled -fwarn-unused-imports -fwarn-incomplete-patterns -fwarn-unused-matches

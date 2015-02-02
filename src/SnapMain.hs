@@ -17,7 +17,9 @@ import           Text.Regex.TDFA
 import           Bead.Config
 import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
+#ifdef EmailEnabled
 import           Bead.Daemon.Email
+#endif
 #ifdef LDAPEnabled
 import           Bead.Daemon.LDAP
 #endif
@@ -217,8 +219,10 @@ startService config initTasks = do
   logoutDaemon <- creating "logout daemon" $
     startLogoutDaemon userActionLogger (sessionTimeout config) 30 {-s-} (userContainer context)
 
+#ifdef EmailEnabled
   emailDaemon <- creating "email daemon" $
     startEmailDaemon userActionLogger
+#endif
 
 #ifdef LDAPEnabled
   ldapDaemon <- creating "ldap daemon" $
@@ -226,9 +230,17 @@ startService config initTasks = do
 #endif
 
 #ifdef LDAPEnabled
+#ifdef EmailEnabled
   let daemons = Daemons logoutDaemon emailDaemon ldapDaemon
 #else
+  let daemons = Daemons logoutDaemon ldapDaemon
+#endif
+#else
+#ifdef EmailEnabled
   let daemons = Daemons logoutDaemon emailDaemon
+#else
+  let daemons = Daemons logoutDaemon
+#endif
 #endif
 
   serveSnaplet defaultConfig (beadContextInit config initTasks context daemons tempDir)
