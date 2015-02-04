@@ -19,6 +19,8 @@ module Bead.Persistence.NoSQLDir (
   , administratedCourses
   , administratedGroups
   , scoresOfUser
+  , attachNotificationToUser
+  , notificationsOfUser
 
   , copyFile
   , listFiles
@@ -98,6 +100,14 @@ module Bead.Persistence.NoSQLDir (
   , commentsOfSubmission
   , feedbacksOfSubmission
 
+  , saveCommentNotification
+  , saveFeedbackNotification
+  , saveSystemNotification
+  , loadNotification
+  , commentOfNotification
+  , feedbackOfNotification
+  , usersOfNotification
+
   , removeFromOpened
   , openedSubmissions
   , usersOpenedSubmissions
@@ -147,6 +157,7 @@ module Bead.Persistence.NoSQLDir (
 
 import Bead.Domain.Types
 import Bead.Domain.Entities
+import Bead.Domain.Entity.Notification hiding (Feedback)
 import Bead.Domain.Relationships
 import Bead.Persistence.Initialization
 import Bead.Persistence.NoSQLDirFile
@@ -341,6 +352,15 @@ administratedGroups :: Username -> Persist [(GroupKey, Group)]
 administratedGroups u = do
   let dirname = joinPath [dirName u, "groupadmin"]
   (selectValidDirsFrom dirname isGroupDir) >>= (mapM tLoadGroup)
+
+attachNotificationToUser :: Username -> NotificationKey -> Persist ()
+attachNotificationToUser u nk = do
+  link u nk "user"
+  link nk u "notification"
+
+notificationsOfUser :: Username -> Persist [NotificationKey]
+notificationsOfUser =
+  objectsIn "notification" NotificationKey isNotificationDir
 
 courseDirPath :: CourseKey -> FilePath
 courseDirPath (CourseKey c) = joinPath [courseDataDir, c]
@@ -545,6 +565,10 @@ instance ForeignKey FeedbackKey where
   referredPath (FeedbackKey s) = joinPath [feedbackDataDir, s]
   baseName     (FeedbackKey s) = s
 
+instance ForeignKey NotificationKey where
+  referredPath (NotificationKey k) = joinPath [notificationDataDir, k]
+  baseName     (NotificationKey k) = k
+
 {- * One primitve value is stored in the file with the same name as the row.
    * One combined value is stored in the given directory into many files. The name
      of the directory is the primary key for the record.
@@ -696,14 +720,53 @@ isCourseDir = isCorrectDirStructure courseDirStructure
 isUserRegDir :: FilePath -> Persist Bool
 isUserRegDir = isCorrectDirStructure userRegDirStructure
 
+
 filterCourses :: (CourseKey -> Course -> Bool) -> Persist [(CourseKey, Course)]
 filterCourses f = filterDirectory courseDataDir isCourseDir tLoadCourse (filter (uncurry f))
+
+-- * Notification
+
+isNotificationDir :: FilePath -> Persist Bool
+isNotificationDir = isCorrectDirStructure notificationDirStructure
+
+saveNotification :: Notification -> Persist NotificationKey
+saveNotification n = do
+  dirName <- createTmpDir notificationDataDir "n"
+  let notificationKey = NotificationKey . takeBaseName $ dirName
+  save dirName n
+  return notificationKey
+
+saveCommentNotification :: CommentKey -> Notification -> Persist NotificationKey
+saveCommentNotification ck n = do
+  nk <- saveNotification n
+  link ck nk "comment"
+  return nk
+
+saveFeedbackNotification :: FeedbackKey -> Notification -> Persist NotificationKey
+saveFeedbackNotification fk n = do
+  nk <- saveNotification n
+  link fk nk "feedback"
+  return nk
+
+saveSystemNotification :: Notification -> Persist NotificationKey
+saveSystemNotification = saveNotification
+
+loadNotification :: NotificationKey -> Persist Notification
+loadNotification = load . dirName
+
+commentOfNotification :: NotificationKey -> Persist (Maybe CommentKey)
+commentOfNotification = objectIn "comment" CommentKey isCommentDir
+
+feedbackOfNotification :: NotificationKey -> Persist (Maybe FeedbackKey)
+feedbackOfNotification = objectIn "feedback" FeedbackKey isFeedbackDir
+
+usersOfNotification :: NotificationKey -> Persist [Username]
+usersOfNotification = objectsIn "user" Username isUserDir
 
 -- * Submission
 
 isSubmissionDir :: FilePath -> Persist Bool
 isSubmissionDir = isCorrectDirStructure submissionDirStructure
-
 
 saveSubmission :: AssignmentKey -> Username -> Submission -> Persist SubmissionKey
 saveSubmission ak u s = do

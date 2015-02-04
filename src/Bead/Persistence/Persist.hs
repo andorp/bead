@@ -227,10 +227,10 @@ administratedGroups :: Username -> Persist [(GroupKey, Group)]
 administratedGroups = PersistImpl.administratedGroups
 
 attachNotificationToUser :: Username -> NotificationKey -> Persist ()
-attachNotificationToUser = error "PersistImpl.attachNotificationToUser"
+attachNotificationToUser = PersistImpl.attachNotificationToUser
 
 notificationsOfUser :: Username -> Persist [NotificationKey]
-notificationsOfUser = error "PersistImpl.notificationsOfUser"
+notificationsOfUser = PersistImpl.notificationsOfUser
 
 -- Lists all the scores submitted for the user
 scoresOfUser :: Username -> Persist [ScoreKey]
@@ -562,25 +562,25 @@ submissionOfFeedback = PersistImpl.submissionOfFeedback
 -- * Notification
 
 saveCommentNotification :: CommentKey -> Notification -> Persist NotificationKey
-saveCommentNotification = error "PersistImpl.saveCommentNotification"
+saveCommentNotification = PersistImpl.saveCommentNotification
 
 saveFeedbackNotification :: FeedbackKey -> Notification -> Persist NotificationKey
-saveFeedbackNotification = error "PersistImpl.saveFeedbackNotification"
+saveFeedbackNotification = PersistImpl.saveFeedbackNotification
 
 saveSystemNotification :: Notification -> Persist NotificationKey
-saveSystemNotification = error "PersistImpl.saveSystemNotification"
+saveSystemNotification = PersistImpl.saveSystemNotification
 
 loadNotification :: NotificationKey -> Persist Notification
-loadNotification = error "PersistImpl.loadNotification"
+loadNotification = PersistImpl.loadNotification
 
 commentOfNotification :: NotificationKey -> Persist (Maybe CommentKey)
-commentOfNotification = error "PersistImpl.commentOfNotification"
+commentOfNotification = PersistImpl.commentOfNotification
 
 feedbackOfNotification :: NotificationKey -> Persist (Maybe FeedbackKey)
-feedbackOfNotification = error "PersistImpl.feedbackOfNotification"
+feedbackOfNotification = PersistImpl.feedbackOfNotification
 
 usersOfNotification :: NotificationKey -> Persist [Username]
-usersOfNotification = error "PersistImpl.usersOfNotification"
+usersOfNotification = PersistImpl.usersOfNotification
 
 -- * Evaluation
 

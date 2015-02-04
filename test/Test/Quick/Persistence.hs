@@ -325,15 +325,36 @@ feedbacks n ss = do
     run $ insertListRef list (fk, sk)
   listInRef list
 
--- Generates and stores the given number of system notifications, for the randomly selected
--- users. Returns all the creates feedback key with the associated username.
-systemNotifications :: Int -> [Username] -> IO [(NotificationKey, Username)]
-systemNotifications n us = do
+-- Generates and stores the given number of system notifications.
+-- Returns all the creates notification key.
+systemNotifications :: Int -> IO [NotificationKey]
+systemNotifications n = do
   list <- createListRef
   quick n $ do
-    user <- pick $ elements us
     nk <- saveAndLoadIdenpotent "Notification" saveSystemNotification loadNotification Gen.notifications
-    run $ insertListRef list (nk, user)
+    run $ insertListRef list nk
+  listInRef list
+
+-- Generates and stores the given number of comment notifications for randomly selected comments
+-- Returns the list of the associated notification and comment keys.
+commentNotifications :: Int -> [CommentKey] -> IO [(NotificationKey, CommentKey)]
+commentNotifications n cs = do
+  list <- createListRef
+  quick n $ do
+    ck <- pick $ elements cs
+    nk <- saveAndLoadIdenpotent "Notification" (saveCommentNotification ck) loadNotification Gen.notifications
+    run $ insertListRef list (nk,ck)
+  listInRef list
+
+-- Generates and stores the given number of feedback notifications for randomly selected comments
+-- Returns the list of the associated notification and feedback keys.
+feedbackNotifications :: Int -> [FeedbackKey] -> IO [(NotificationKey, FeedbackKey)]
+feedbackNotifications n fs = do
+  list <- createListRef
+  quick n $ do
+    fk <- pick $ elements fs
+    nk <- saveAndLoadIdenpotent "Notification" (saveFeedbackNotification fk) loadNotification Gen.notifications
+    run $ insertListRef list (nk,fk)
   listInRef list
 
 -- Generate and store the given number of submissions, for the randomly selected
@@ -1304,7 +1325,7 @@ saveCommentNotificationTest = do
     assertEquals []        users "Commented notification had a non-empty users list."
 
 -- All the notifications for feedback returns the given feedback key, and no comment key
-saveFeedbackNotificaitonTest = do
+saveFeedbackNotificationTest = do
   reinitPersistence
   us <- users 400
   cs <- courses 50
@@ -1325,25 +1346,60 @@ saveFeedbackNotificaitonTest = do
     assertEquals (Just fk) mfk   "Feedback notification has no notification key."
     assertEquals []        users "Feedback notification had a non-empty users list."
 
--- All the system notification does not returns an feedback or comment key
-saveSystemNotificationTest = do
+-- All the system notification does not returns an feedback or comment key, and they are
+-- associated to the users
+attachedSystemNotificationTest = do
   reinitPersistence
   us <- users 400
-  fs <- systemNotifications 1500 us
+  ns <- systemNotifications 1500
   quick 1000 $ do
     user <- pick $ elements us
-    notif <- pick $ Gen.notifications
-    nk <- runPersistCmd $ do
-      saveSystemNotification notif
+    nk <- pick $ elements ns
+    (mck,mfk,users,nks) <- runPersistCmd $ do
       attachNotificationToUser user nk
-    (mck,mfk,users) <- runPersistCmd $ do
       mck <- commentOfNotification nk
       mfk <- feedbackOfNotification nk
       users <- usersOfNotification nk
-      return (mck,mfk,users)
+      nks   <- notificationsOfUser user
+      return (mck,mfk,users,nks)
     assertEquals Nothing   mck     "System notification has no comment key."
     assertEquals Nothing   mfk     "System notification has no notification key."
-    assertTrue   (elem user users) "System notification is not assocaited with the selected user."
+    assertTrue   (elem user users) "System notification is not associated with the selected user on the notification side."
+    assertTrue   (elem nk   nks)   "System notification is not associated with the selected user on the user side."
+
+attachedNotificationTest = do
+  reinitPersistence
+  us <- users 400
+  cs <- courses 50
+  gs <- groups 200 cs
+  as <- courseAndGroupAssignments 300 300 cs gs
+  ss <- submissions 500 us as
+  cks <- comments 200 (map snd ss)
+  fs <- feedbacks 200 (map snd ss)
+  cns <- map fst <$> commentNotifications 600 (map fst cks)
+  fns <- map fst <$> feedbackNotifications 600 (map fst fs)
+  sns <- systemNotifications 600
+  let ns = cns ++ fns ++ sns
+  let sfns = sns ++ fns
+  let scns = sns ++ cns
+  quick 1000 $ do
+    user <- pick $ elements us
+    nk   <- pick $ elements ns
+    (mck,mfk,users,nks) <- runPersistCmd $ do
+      attachNotificationToUser user nk
+      mck <- commentOfNotification nk
+      mfk <- feedbackOfNotification nk
+      users <- usersOfNotification nk
+      nks   <- notificationsOfUser user
+      return (mck,mfk,users,nks)
+    assertTrue   (elem user users) "System notification is not associated with the selected user on the notification side."
+    assertTrue   (elem nk   nks)   "System notification is not associated with the selected user on the user side."
+    case mck of
+      Nothing -> assertTrue (elem nk sfns) "A non commented notification had a comment."
+      Just ck -> assertTrue (elem nk cns) "A commented notification lost its comment key."
+    case mfk of
+      Nothing -> assertTrue (elem nk scns) ("A non feedback notification had a feedback." ++ show nk)
+      Just fk -> assertTrue (elem nk fns) "A feedback notification lost its feedback key."
 
 runPersistCmd :: Persist a -> PropertyM IO a
 runPersistCmd m = do
@@ -1421,6 +1477,10 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Assessments" $ assessmentTests
   , testCase "Unevaluated scores" $ unevaluatedScoresTests
   , testCase "Evaluated scores" $ scoreEvaluationTests
+  , testCase "Comment notifications" $ saveCommentNotificationTest
+  , testCase "Feedback notifications" $ saveFeedbackNotificationTest
+  , testCase "System notifications with attached users" $ attachedSystemNotificationTest
+  , testCase "Notifications with attached users" $ attachedNotificationTest
   , cleanUpPersistence
   ]
 

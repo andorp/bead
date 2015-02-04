@@ -8,8 +8,10 @@ import           Control.Monad (filterM, join, liftM, unless, when)
 import           Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as BS
 import           Data.Char (ord)
+import qualified Data.Text as Text (unpack)
 import           Data.Time (UTCTime)
 import           Data.List (nub)
+import           Data.String (fromString)
 import           System.Directory
 import           System.FilePath (joinPath)
 import           System.IO
@@ -20,6 +22,8 @@ import           System.Posix.Files (createSymbolicLink, removeLink, readSymboli
 import           Text.JSON.Generic
 
 import           Bead.Domain.Entities
+import           Bead.Domain.Entity.Notification (Notification(..))
+import qualified Bead.Domain.Entity.Notification as Notif
 import           Bead.Domain.Relationships
 import           Bead.Domain.Types hiding (FileName(..), fileName)
 import qualified Bead.Domain.Types as T (FileName(..), fileName)
@@ -51,6 +55,7 @@ testIncomingDir = "test-incoming"
 feedbackDir = "feedback"
 assessmentDir = "assessment"
 scoreDir = "score"
+notificationDir = "notification"
 
 courseDataDir   = joinPath [dataDir, courseDir]
 userDataDir     = joinPath [dataDir, userDir]
@@ -69,6 +74,7 @@ testIncomingDataDir = joinPath [dataDir, testIncomingDir]
 feedbackDataDir = joinPath [dataDir, feedbackDir]
 assessmentDataDir = joinPath [dataDir, assessmentDir]
 scoreDataDir = joinPath [dataDir, scoreDir]
+notificationDataDir = joinPath [dataDir, notificationDir]
 
 persistenceDirs :: [FilePath]
 persistenceDirs = [
@@ -90,6 +96,7 @@ persistenceDirs = [
   , feedbackDataDir
   , assessmentDataDir
   , scoreDataDir
+  , notificationDataDir
   ]
 
 class DirName d where
@@ -158,6 +165,9 @@ instance DirName AssessmentKey where
 
 instance DirName ScoreKey where
   dirName (ScoreKey k) = joinPath [scoreDataDir, k]
+
+instance DirName NotificationKey where
+  dirName (NotificationKey k) = joinPath [notificationDataDir, k]
 
 -- * Load and save aux functions
 
@@ -412,6 +422,11 @@ instance Save TimeZoneName where
 instance Save Uid where
   save d = fileSave d "uid" . show
 
+instance Save Notification where
+  save d = Notif.notification $ \msg -> do
+    createStructureDirs d notificationDirStructure
+    fileSave d "message" (Text.unpack msg)
+
 instance Save Assignment where
   save d = assignmentCata $ \name desc type_ start end evtype -> do
     createStructureDirs d assignmentDirStructure
@@ -542,6 +557,9 @@ instance Load TimeZoneName where
 
 instance Load Uid where
   load d = fileLoad d "uid" readMaybe
+
+instance Load Notification where
+  load d = Notification <$> (fileLoad d "message" (Just . fromString))
 
 instance Load Assignment where
   load d = assignmentAna
@@ -767,6 +785,7 @@ userDirStructure = DirStructure {
       , "submissions"
       , "datadir"
       , "score"
+      , "notification"
       ]
   }
 
@@ -914,6 +933,17 @@ scoreDirStructure = DirStructure {
       ]
   }
 
+notificationDirStructure = DirStructure {
+    files = [
+        "message"
+      ]
+  , directories = [
+        "comment",
+        "feedback",
+        "user"
+      ]
+  }
+
 -- * Encoding
 
 ordEncode :: String -> String
@@ -968,6 +998,7 @@ dirStructures = [
   , feedbackDirStructure
   , assessmentDirStructure
   , scoreDirStructure
+  , notificationDirStructure
   ]
 
 unitTests = UnitTests [
