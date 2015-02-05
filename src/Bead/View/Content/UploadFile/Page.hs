@@ -89,7 +89,7 @@ postUploadFile =
       where
         saveFile name = do
           i18n <- i18nH
-          r <- runStory $ Story.saveUsersFile filePath (UsersFile $ unpack name)
+          r <- runStory $ Story.saveUsersFile filePath (UsersPublicFile $ unpack name)
           case r of
             Left e  -> return . StoryError $ Story.translateUserError i18n e
             Right _ -> return Success
@@ -125,7 +125,7 @@ uploadFileContent pd = do
     usersFileLines = pageDataCata (\fs _ -> (mapM_ usersFileLine fs)) pd
       where
         usersFileLine (usersfile, fileInfo) = H.tr $ do
-          usersFileCata (td . fromString) usersfile
+          td . fromString $ usersFile id id usersfile
           withFileInfo fileInfo $ \size date -> do
             td . fromString $ show size
             td . fromString $ show date

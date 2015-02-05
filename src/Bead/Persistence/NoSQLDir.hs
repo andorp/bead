@@ -276,8 +276,8 @@ copyFile :: Username -> FilePath -> UsersFile -> Persist ()
 copyFile username tmpPath userfile = do
   checkIfUserDir username
   let dirname = dirName username
-      datadir = dirname </> "datadir"
-  copy tmpPath (usersFileCata (datadir </>) userfile)
+      datadir = dirname </> (usersFile (const "public-files") (const "private-files") userfile)
+  copy tmpPath (datadir </> usersFile id id userfile)
 
 -- Calculates the file modification time in UTC time from the File status
 fileModificationInUTCTime = posixSecondsToUTCTime . realToFrac . modificationTime
@@ -286,14 +286,21 @@ listFiles :: Username -> Persist [(UsersFile, FileInfo)]
 listFiles username = do
   checkIfUserDir username
   let dirname = dirName username
-      datadir = dirname </> "datadir"
-  paths <- getFilesInFolder datadir
-  forM paths $ \path -> do
+  publicPaths <- getFilesInFolder (dirname </> "public-files")
+  publicFiles <- forM publicPaths $ \path -> do
     status <- hasNoRollback $ getFileStatus path
     let info = FileInfo
                  (fileOffsetToInt $ fileSize status)
                  (fileModificationInUTCTime status)
-    return (UsersFile $ takeFileName path, info)
+    return (UsersPublicFile $ takeFileName path, info)
+  privatePaths <- getFilesInFolder (dirname </> "private-files")
+  privateFiles <- forM privatePaths $ \path -> do
+    status <- hasNoRollback $ getFileStatus path
+    let info = FileInfo
+                 (fileOffsetToInt $ fileSize status)
+                 (fileModificationInUTCTime status)
+    return (UsersPrivateFile $ takeFileName path, info)
+  return $! publicFiles ++ privateFiles
   where
     fileOffsetToInt (COff x) = fromIntegral x
 
@@ -301,15 +308,14 @@ getFile :: Username -> UsersFile -> Persist FilePath
 getFile username userfile = do
   checkIfUserDir username
   let dirname = dirName username
-      dataDir = dirname </> "datadir"
-  flip usersFileCata userfile $ \fn -> do
-    let fname = dataDir </> fn
-    exist <- hasNoRollback $ doesFileExist fname
-    unless exist . throwEx . userError $ concat [
-        "File (", fn, ") does not exist in users folder ("
-      , show username, ")"
-      ]
-    return fname
+      fname   = dirname </> (usersFile (const "public-files") (const "private-files") userfile)
+                        </> (usersFile id id userfile)
+  exist <- hasNoRollback $ doesFileExist fname
+  unless exist . throwEx . userError $ concat [
+      "File (", fname, ") does not exist in users folder ("
+    , show username, ")"
+    ]
+  return fname
 
 isThereAUser :: Username -> Persist Bool
 isThereAUser uname = hasNoRollback $ do

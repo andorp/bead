@@ -86,7 +86,7 @@ module Bead.Domain.Entities (
   , withTestCase
   , testCaseAppAna
   , UsersFile(..)
-  , usersFileCata
+  , usersFile
   , FileInfo(..)
   , fileInfoCata
   , withFileInfo
@@ -529,11 +529,18 @@ testScriptAppAna name desc notes script type_
   = TestScript <$> name <*> desc <*> notes <*> script <*> type_
 
 -- Name of the file that a user can upload
-newtype UsersFile = UsersFile String
+data UsersFile
+  = UsersPublicFile  String
+  | UsersPrivateFile String
   deriving (Data, Eq, Ord, Read, Show, Typeable)
 
 -- Template function for User's file
-usersFileCata f (UsersFile x) = f x
+usersFile
+  public
+  private
+  f = case f of
+    UsersPublicFile  x -> public x
+    UsersPrivateFile x -> private x
 
 -- File information that will be displayed on the UI
 data FileInfo = FileInfo {

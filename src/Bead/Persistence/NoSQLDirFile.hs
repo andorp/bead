@@ -783,9 +783,10 @@ userDirStructure = DirStructure {
       , "courseadmin"
       , "groupadmin"
       , "submissions"
-      , "datadir"
+      , "public-files"
       , "score"
       , "notification"
+      , "private-files"
       ]
   }
 

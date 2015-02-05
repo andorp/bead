@@ -929,10 +929,12 @@ userFileHandlingTest = do
   tmpDir <- createBeadTempDir
   us <- users 100
   fs <- uploadTempFiles tmpDir 1000
+  let userFileTypes = [UsersPublicFile, UsersPrivateFile]
   quickWithCleanUp (removeDirectoryRecursive tmpDir) 1000 $ do
     u <- pick $ elements us
     f <- pick $ elements fs
-    fn <- UsersFile <$> (pick $ vectorOf 8 $ elements ['a'..'z'])
+    fileType <- pick $ elements userFileTypes
+    fn <- fileType <$> (pick $ vectorOf 8 $ elements ['a'..'z'])
     ufs <- map fst <$> (runPersistCmd $ listFiles u)
     join $ case fn `elem` ufs of
       True  -> testOverwriteFile u f fn ufs
@@ -943,7 +945,8 @@ userFileHandlingTest = do
       ufs' <- map fst <$> listFiles u
       path <- getFile u fn
       return $ do
-        assertSetEquals (fn:ufs) ufs' "New file was not copied into the user's dir"
+        assertSetEquals (fn:ufs) ufs'
+          $ concat ["New file was not copied into the ", show u, " dir"]
         assertTrue (length path > 0) "Invalid path"
 
     testOverwriteFile u f fn ufs = runPersistCmd $ do
@@ -961,9 +964,11 @@ userOverwriteFileTest = do
   tmpDir <- createBeadTempDir
   us <- users 100
   fs <- uploadTempFiles tmpDir 1000
+  let userFileTypes = [UsersPublicFile, UsersPrivateFile]
   forM_ us $ \u -> quick 5 $ do
     f <- pick $ elements fs
-    fn <- UsersFile <$> (pick $ vectorOf 8 $ elements ['a'..'z'])
+    fileType <- pick $ elements userFileTypes
+    fn <- fileType <$> (pick $ vectorOf 8 $ elements ['a'..'z'])
     runPersistCmd $ copyFile u f fn
   quickWithCleanUp (removeDirectoryRecursive tmpDir) 1000 $ do
     u <- pick $ elements us

@@ -505,7 +505,7 @@ newAssignmentContent pd = do
                   (msg $ msg_LinkText_UploadFile "Upload File"))
                 Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
-                  keyValue = (id &&& (usersFileCata id))
+                  keyValue = (id &&& (usersFile id id))
 
               textAreaPreview f = textArea (Just f)
 
@@ -528,7 +528,7 @@ newAssignmentContent pd = do
                   (msg $ msg_LinkText_UploadFile "Upload File")
                 Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
-                  keyValue = (id &&& (usersFileCata id))
+                  keyValue = (id &&& (usersFile id id))
 
           testCaseText Nothing = Nothing
           testCaseText (Just (_,tc,_)) = withTestCaseValue (tcValue tc) Just (const Nothing)
@@ -571,7 +571,7 @@ newAssignmentContent pd = do
                 Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue l@(Left ()) = (l, msg $ msg_NewAssignment_DoNotOverwrite "No changes")
-                  keyValue r@(Right uf) = (r, usersFileCata id uf)
+                  keyValue r@(Right uf) = (r, usersFile id id uf)
 
 
           overwriteTestCaseArea fs ts tc = maybe
@@ -597,7 +597,7 @@ newAssignmentContent pd = do
                 Bootstrap.buttonGroup $ i18n msg $ linkToPageBlank uploadFile
                 where
                   keyValue l@(Left ()) = (l, msg $ msg_NewAssignment_DoNotOverwrite "No changes")
-                  keyValue r@(Right uf) = (r, usersFileCata id uf)
+                  keyValue r@(Right uf) = (r, usersFile id id uf)
 
       testScriptType' Nothing   = Nothing
       testScriptType' (Just []) = Nothing

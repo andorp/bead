@@ -201,7 +201,8 @@ saveUsersFile tempPath usersfile = logAction INFO logMessage $ do
   u <- username
   persistence $ Persist.copyFile u tempPath usersfile
   where
-    logMessage = usersFileCata (\u -> " uploads a file " ++ show u) usersfile
+    msg u = " uploads a file " ++ show u
+    logMessage = usersFile msg msg usersfile
 
 -- List all the user's file. If the user has no permission for the listing
 -- of files an error is thrown
@@ -219,7 +220,8 @@ getFilePath usersfile = logAction INFO logMessage $ do
   u <- username
   persistence $ Persist.getFile u usersfile
   where
-    logMessage = usersFileCata (\u -> " asks the file path: " ++ show u) usersfile
+    msg u = " asks the file path: " ++ show u
+    logMessage = usersFile msg msg usersfile
 
 -- Produces true if the given user is the student of the courses or groups which
 -- the actual user administrates.
@@ -578,7 +580,7 @@ testCaseModificationForAssignment u ak = tcModificationCata noModification fileO
   noModification = return ()
 
   fileOverwrite tsk uf = do
-      let usersFileName = usersFileCata id uf
+      let usersFileName = usersFile id id uf
           testCase = TestCase {
               tcName        = usersFileName
             , tcDescription = usersFileName
@@ -624,7 +626,7 @@ testCaseCreationForAssignment u ak = tcCreationCata noCreation fileCreation text
   noCreation = return ()
 
   fileCreation tsk usersfile = do
-      let usersFileName = usersFileCata id usersfile
+      let usersFileName = usersFile id id usersfile
           testCase = TestCase {
               tcName        = usersFileName
             , tcDescription = usersFileName
