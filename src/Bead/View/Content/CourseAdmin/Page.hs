@@ -130,9 +130,9 @@ courseAdminContent info = do
   where
     courses' = Prelude.map (Prelude.id *** courseName) (courses info)
     groups' = (groups info)
-    groupAdmins' = Prelude.map (u_uid &&& userLongname) (groupAdmins info)
+    groupAdmins' = Prelude.map (u_username &&& userLongname) (groupAdmins info)
 
-    userLongname u = concat [ uid Prelude.id $ u_uid u, " - ", u_name u]
+    userLongname u = concat [ usernameCata Prelude.id $ u_username u, " - ", u_name u]
 
     createGroup = Pages.createGroup ()
     assignGroupAdmin = Pages.assignGroupAdmin ()

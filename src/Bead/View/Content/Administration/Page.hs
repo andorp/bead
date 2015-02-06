@@ -106,7 +106,7 @@ administrationContent info = do
 
     userLongname u = concat [ usernameCata id $ u_username u, " - ", u_name u ]
     courses' = map (id *** courseName) $ courses info
-    courseAdmins' = map (u_uid &&& userLongname) $ courseAdmins info
+    courseAdmins' = map (u_username &&& userLongname) $ courseAdmins info
 
     createCourse      = Pages.createCourse ()
     assignCourseAdmin = Pages.assignCourseAdmin ()
