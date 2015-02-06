@@ -12,10 +12,10 @@ import Fay.Text hiding (concat)
 
 import Bead.Domain.Shared.Evaluation
 import Bead.Shared.Command
-import Bead.View.Snap.Fay.Hooks
-import Bead.View.Snap.Fay.HookIds
-import Bead.View.Snap.Fay.JSON.ClientSide
-import Bead.View.Snap.Validators
+import Bead.View.Fay.Hooks
+import Bead.View.Fay.HookIds
+import Bead.View.Fay.JSON.ClientSide
+import Bead.View.Validators
 
 main :: Fay ()
 main = addOnLoad onload

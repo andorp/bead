@@ -269,10 +269,6 @@ Library
     Bead.View.RouteOf
     Bead.View.Routing
     Bead.View.Session
-    Bead.View.Snap.Fay.Hooks
-    Bead.View.Snap.Fay.HookIds
-    Bead.View.Snap.Validators
-    Bead.View.JSON.ClientSide
     Bead.View.Style
     Bead.View.TemplateAndComponentNames
     Bead.View.TranslationEnum
