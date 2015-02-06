@@ -198,6 +198,7 @@ Library
     Bead.Domain.Entity.Assignment
     Bead.Domain.Entity.Comment
     Bead.Domain.Entity.Feedback
+    Bead.Domain.Entity.Notification
     Bead.Domain.Entity.TestCase
     Bead.Domain.Entities
     Bead.Domain.Evaluation
