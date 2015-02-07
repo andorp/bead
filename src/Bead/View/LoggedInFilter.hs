@@ -17,6 +17,7 @@ import           Text.Printf (printf)
 
 import           Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as SC hiding (serviceContext)
+import           Bead.Domain.Types (readMaybe)
 import           Bead.View.BeadContext
 import           Bead.View.Content hiding (BlazeTemplate, template)
 import           Bead.View.ContentHandler as ContentHandler

@@ -255,6 +255,7 @@ Library
     Bead.View.DataDir
     Bead.View.DictionaryLoader
     Bead.View.ErrorPage
+    Bead.View.Headers.AcceptLanguage
     Bead.View.Fay.Hooks
     Bead.View.Fay.HookIds
     Bead.View.Fay.JSON.ServerSide

@@ -38,6 +38,7 @@ import qualified Bead.View.DataBridge as DB (dataBridgeTests)
 #ifdef EmailEnabled
 import qualified Bead.View.EmailTemplate as E (unitTests)
 #endif
+import qualified Bead.View.Headers.AcceptLanguage as AL (acceptLanguageTests)
 import qualified Bead.View.Pagelets as VP (invariants)
 import qualified Bead.View.RouteOf as R (routeOfInvariants)
 import qualified Bead.View.Routing as R (routingInvariants)
@@ -112,4 +113,6 @@ themisTests = runTest buildTestSet $ do
   DB.dataBridgeTests
   F.feedbackTests
   CP.parseTests
+  AL.acceptLanguageTests
+
 

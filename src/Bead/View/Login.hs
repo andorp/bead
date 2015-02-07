@@ -26,6 +26,7 @@ import           Bead.View.BeadContext
 import           Bead.View.Content hiding (BlazeTemplate, template)
 import qualified Bead.View.Content.Public.Login as View
 import           Bead.View.ContentHandler
+import           Bead.View.Headers.AcceptLanguage
 import           Bead.View.ErrorPage
 import           Bead.View.Session
 
@@ -40,6 +41,7 @@ login authError = do
   when (isNothing mLangInSession) $ do
     defaultLang <- configuredDefaultDictionaryLanguage
     setLanguageInSession defaultLang
+    setLanguageFromAcceptLanguage
     commitSessionTop
 
   -- Render the page content
