@@ -91,9 +91,8 @@ homeContent d = do
             -- Student Menu
             when (not $ isAdmin r) $ do
               Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString $ msg $ msg_Home_StudentTasks "Student Menu"
+              i18n msg $ navigation [groupRegistration]
               i18n msg $ availableAssignments (timeConverter d) (assignments d)
-              let noCourseRegistered = Map.null (assignments d)
-              when noCourseRegistered $ i18n msg $ navigation [groupRegistration]
   where
       administration    = Pages.administration ()
       courseAdmin       = Pages.courseAdmin ()
@@ -177,7 +176,6 @@ availableAssignments timeconverter studentAssignments
             [ "Submissions and their evaluations may be accessed by clicking on each assignment's link. "
             , "The table shows only the last evaluation per assignment."
             ]
-        i18n msg $ navigation [groupRegistration]
         forM_ asl $ \(key, as) -> when (not $ null as) $ Bootstrap.rowColMd12 $ do
           h4 $ fromString key
           let areIsolateds = areOpenAndIsolatedAssignments as
