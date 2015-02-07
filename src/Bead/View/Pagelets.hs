@@ -174,12 +174,18 @@ fileInput name =
 -- set as the default value
 numberInput :: String -> Maybe Int -> Maybe Int -> Maybe Int -> Html
 numberInput name min_ max_ val_ = do
-  let val x = maybe (! (A.value x)) (\y -> (! (A.value . fromString $ show y))) val_
-  let mn = maybe id (\m -> let m' = fromString $ show m
-                           in (! (A.min m')) . (val m')) min_
-  let mx = maybe id (\m -> let m' = fromString $ show m
-                           in (! (A.max m')) . (val m')) max_
-  mn $ mx $ H.input ! A.type_ "number" ! A.name (fromString name)
+  let val x = maybe (! (A.value x)) (\y -> (! (A.value . fromString $ show y))) actValue
+  let mn = maybe id (\m -> (! (A.min $ fromString $ show m))) min_
+  let mx = maybe id (\m -> (! (A.max $ fromString $ show m))) max_
+  val "" $ mn $ mx $ H.input ! A.type_ "number" ! A.name (fromString name)
+  where
+    actValue = case (min_, max_, val_) of
+      (Just min, Just max, Just val) -> Just $ if and [min <= val, val <= max] then val else min
+      (Just min, Nothing, Just val)  -> Just $ if min < val then val else min
+      (Nothing, Just max, Just val)  -> Just $ if val < max then val else max
+      (Just min, Nothing, Nothing)   -> Just $ min
+      (Nothing, Just max, Nothing)   -> Just $ max
+      _                              -> Nothing
 
 submitButton :: String -> String -> Html
 submitButton i t = H.input ! A.id (fromString i) ! A.type_ "submit" ! A.value (fromString t)

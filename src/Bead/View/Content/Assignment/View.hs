@@ -178,7 +178,7 @@ newAssignmentContent pd = do
                                     (msg $ msg_NewAssignment_NoOfTries "No of tries")
 
                       Bootstrap.row $ Bootstrap.colMd6 $ Bootstrap.formGroup $
-                            editable $ numberInput assignmentNoOfTries (Just 1) Nothing noOfTries ! Bootstrap.formControl
+                            editable $ numberInput assignmentNoOfTries (Just 1) (Just 1000) noOfTries ! Bootstrap.formControl
 
                       Bootstrap.helpBlock $ msg $ msg_NewAssignment_Info_NoOfTries $
                                "Limitation the number of the submissions (per student) for the assignment."
