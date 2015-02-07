@@ -61,6 +61,10 @@ isFailure = not . isSuccess
 postUploadFile :: POSTContentHandler
 postUploadFile =
   join $ lift $ do
+    cfg <- getConfiguration
+    let sizeLimit = (fromIntegral $ maxUploadSizeInKb cfg) * 1024
+    let perPartUploadPolicy = const $ allowWithMaximumSize sizeLimit
+    let uploadPolicy = setMaximumFormInputSize sizeLimit defaultUploadPolicy
     tmpDir <- getTempDirectory
     handleFileUploads tmpDir uploadPolicy perPartUploadPolicy $ \parts -> do
       case parts of
@@ -77,9 +81,6 @@ postUploadFile =
                   then (msg_UploadFile_Successful "File upload was sucessful.")
                   else (msg_UploadFile_ErrorInManyUploads "An error occured uploading one or more files.")
   where
-    size128Kb = 128 * 1024
-    perPartUploadPolicy = const $ allowWithMaximumSize size128Kb
-    uploadPolicy = setMaximumFormInputSize size128Kb defaultUploadPolicy
 
     handlePart (_partInfo, Left exception) = return . PolicyFailure . T.unpack $ policyViolationExceptionReason exception
     handlePart (partInfo, Right filePath) =
