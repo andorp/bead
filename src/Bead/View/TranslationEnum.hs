@@ -21,6 +21,7 @@ translationList =
   , msg_Login_InternalError ()
   , msg_Login_SelectLanguage ()
   , msg_Login_InvalidPasswordOrUser ()
+  , msg_Login_UsernameHint ()
 
   , msg_Routing_InvalidRoute ()
   , msg_Routing_SessionTimedOut ()

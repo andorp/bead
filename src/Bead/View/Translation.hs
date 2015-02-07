@@ -23,6 +23,7 @@ msg_Login_Forgotten_Password    = t 0x00010006
 msg_Login_InternalError         = t 0x00010007
 msg_Login_SelectLanguage        = t 0x00010008
 msg_Login_InvalidPasswordOrUser = t 0x00010009
+msg_Login_UsernameHint          = t 0x0001000A
 
 msg_Routing_InvalidRoute    = t 0x00020000
 msg_Routing_SessionTimedOut = t 0x00020001

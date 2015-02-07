@@ -9,7 +9,7 @@ dict = DictionaryFile {
   langName = "Magyar",
   entries =
     [ msg_Login_PageTitle <| "Bejelentkezés"
-    , msg_Login_Username <| "Neptun:"
+    , msg_Login_Username <| "Felhasználónév:"
     , msg_Login_Password <| "Jelszó:"
     , msg_Login_Submit <| "Bejelentkezés"
     , msg_Login_Title <| "Bejelentkezés"
@@ -18,6 +18,7 @@ dict = DictionaryFile {
     , msg_Login_InternalError <| "Belső hiba történt, jelezzük az üzemeltetőknek!"
     , msg_Login_SelectLanguage <| "Nyelvek"
     , msg_Login_InvalidPasswordOrUser <| "Ismeretlen felhasználó vagy jelszó!"
+    , msg_Login_UsernameHint <| "A weboldalt az Active Directory címtárban regisztrált felhasználók tudják használni."
     , msg_Routing_InvalidRoute <| "Érvénytelen útvonal"
     , msg_Routing_SessionTimedOut <| "Lejárt a munkamenet"
     , msg_ErrorPage_Title <| "Error"

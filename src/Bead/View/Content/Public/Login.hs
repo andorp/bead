@@ -38,6 +38,12 @@ login err langInfos = do
         for langInfos $ \(language,info) -> do
           link (queryString changeLanguagePath [requestParam language])
                (dictionaryInfoCata (\_icon -> fromString) info)
+#ifdef LDAPEnabled
+    Bootstrap.rowCol4Offset4 $ do
+      hr
+      p $ fromString $
+        msg $ msg_Login_UsernameHint "The web site can only be used with an Active Directory account."
+#endif
   where
     login = Pages.login ()
     for = flip Prelude.map
