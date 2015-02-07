@@ -143,14 +143,16 @@ newAssignmentContent pd = do
                                         then Just (Assignment.getNoOfTries aas)
                                         else Nothing
                           editable x = if ed then x else (x ! A.readonly "")
+                          readOnly = not ed
                           assignmentAspect = fromString $ fieldName assignmentAspectField
                           assignmentPwd    = fromString $ fieldName assignmentPwdField
                           assignmentNoOfTries = fromString $ fieldName assignmentNoOfTriesField
 
 
                       bootstrapCheckbox $
-                              editable $ checkBox' (fieldName assignmentAspectField)
+                              checkBoxRO (fieldName assignmentAspectField)
                                 (Assignment.isBallotBox aas)
+                                readOnly
                                 Assignment.BallotBox (msg $ msg_NewAssignment_BallotBox "Ballot Box")
 
                       Bootstrap.helpBlock $ msg $ msg_NewAssignment_Info_BallotBox $ concat
@@ -159,8 +161,9 @@ newAssignmentContent pd = do
                                 ]
 
                       bootstrapCheckbox $
-                            editable $ checkBox' (fieldName assignmentAspectField)
+                            checkBoxRO (fieldName assignmentAspectField)
                               (Assignment.isIsolated aas)
+                              readOnly
                               Assignment.Isolated
                               (msg $ msg_NewAssignment_Isolated "Isolated")
 
@@ -172,8 +175,9 @@ newAssignmentContent pd = do
 
                       Bootstrap.row $ Bootstrap.colMd6 $ do
                           bootstrapCheckbox $ do
-                                  editable $ checkBox' (fieldName assignmentAspectField)
+                                  checkBoxRO (fieldName assignmentAspectField)
                                     (Assignment.isNoOfTries aas)
+                                    readOnly
                                     (Assignment.NoOfTries 0)
                                     (msg $ msg_NewAssignment_NoOfTries "No of tries")
 
@@ -184,8 +188,9 @@ newAssignmentContent pd = do
                                "Limitation the number of the submissions (per student) for the assignment."
 
                       bootstrapCheckbox $
-                            editable $ checkBox' (fieldName assignmentAspectField)
+                            checkBoxRO (fieldName assignmentAspectField)
                               (Assignment.isPasswordProtected aas)
+                              readOnly
                               (Assignment.Password "")
                               (msg $ msg_NewAssignment_PasswordProtected "Password-protected")
 

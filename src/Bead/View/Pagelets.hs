@@ -209,6 +209,13 @@ checkBox' name checked value text = do
   checkBox name (encodeToFay' "checkBox" value) checked
   fromString text
 
+checkBoxRO :: (Show a, Data a) => String -> Bool -> Bool -> a -> String -> Html
+checkBoxRO name checked readonly value text = do
+  checkBox name (encodeToFay' "checkBox" value) checked
+    |> if readonly then (! A.disabled "") else id
+  fromString text
+
+
 withId :: (Html -> Html) -> String -> (Html -> Html)
 withId f i = (f ! A.id (fromString i))
 
