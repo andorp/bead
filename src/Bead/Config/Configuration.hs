@@ -45,10 +45,12 @@ data Config = Config {
     -- Session time out on the client side, the lifetime of a valid
     -- value stored in cookies. Measured in seconds, nonnegative value
   , sessionTimeout :: Second
+#ifdef EmailEnabled
     -- The hostname of the server, this hostname is placed in the registration emails
   , emailHostname :: Hostname
     -- The value for from field for every email sent by the system
   , emailFromAddress :: String
+#endif
     -- The default language of the login page if there is no language set in the session
   , defaultLoginLanguage :: String
     -- The default timezone for a newly registered user
@@ -66,8 +68,13 @@ data Config = Config {
 #endif
   } deriving (Eq, Show, Read)
 
+#ifdef EmailEnabled
 configCata fcfg f (Config useraction timeout host from dll dtz tz up cfg) =
   f useraction timeout host from dll dtz tz up (fcfg cfg)
+#else
+configCata fcfg f (Config useraction timeout dll dtz tz up cfg) =
+  f useraction timeout dll dtz tz up (fcfg cfg)
+#endif
 
 #ifdef LDAPEnabled
 -- Login configuration that is used in LDAP registration and login mode
@@ -108,8 +115,10 @@ standaloneLoginConfig f (StandaloneLoginConfig reg exp) = f reg exp
 defaultConfiguration = Config {
     userActionLogFile = joinPath ["log", "useractions.log"]
   , sessionTimeout    = 1200
+#ifdef EmailEnabled
   , emailHostname     = "http://127.0.0.1:8000"
   , emailFromAddress  = "noreply@bead.org"
+#endif
   , defaultLoginLanguage = "en"
   , defaultRegistrationTimezone = "UTC"
   , timeZoneInfoDirectory = "/usr/share/zoneinfo"
