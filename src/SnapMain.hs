@@ -60,11 +60,17 @@ main = do
 
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
+#ifdef EmailEnabled
 printConfigInfo = configCata loginConfigPart $ \logfile timeout hostname fromEmail dll dtz zoneInfoDir up lcfg -> do
+#else
+printConfigInfo = configCata loginConfigPart $ \logfile timeout dll dtz zoneInfoDir up lcfg -> do
+#endif
   configLn $ "Log file: " ++ logfile
   configLn $ concat ["Session timeout: ", show timeout, " seconds"]
+#ifdef EmailEnabled
   configLn $ "Hostname included in emails: " ++ hostname
   configLn $ "FROM Address included in emails: " ++ fromEmail
+#endif
   configLn $ "Default login language: " ++ dll
   configLn $ "Default time zone: " ++ dtz
   configLn $ "TimeZone informational dir: " ++ zoneInfoDir
