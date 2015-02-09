@@ -23,8 +23,8 @@ validate f v onValid onFail
 
 isUsername :: FieldValidator
 isUsername = FieldValidator {
-    validator = all isAlphaNum
-  , message   = "NEPTUN-kódot kell megadni"
+    validator = not . null
+  , message   = "Nem üres nevet kell megadni!"
   }
 
 isPassword :: FieldValidator
