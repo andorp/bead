@@ -246,11 +246,7 @@ customUsernamePrm field = Parameter {
          else Nothing
 
 transformUsername :: String -> Username
-#ifdef LDAPEnabled
-transformUsername = Username
-#else
 transformUsername = Username . map toUpper
-#endif
 
 usernamePrm :: Parameter Username
 usernamePrm = customUsernamePrm (fieldName usernameField)
