@@ -106,8 +106,9 @@ copyUsersFile :: (MonadIO io) => Username -> FilePath -> UsersFile -> io ()
 copyUsersFile username tmpPath userfile = liftIO $ do
   createUserFileDir username
   let dirname = dirName username
-      dir = dirname </> "datadir"
-  Dir.copyFile tmpPath (usersFileCata (dir </>) userfile)
+      publicDir  = dirname </> "public-files"
+      privateDir = dirname </> "private-files"
+  Dir.copyFile tmpPath $ usersFile (publicDir </>) (privateDir </>) userfile
 
 -- Calculates the file modification time in UTC time from the File status
 fileModificationInUTCTime = posixSecondsToUTCTime . realToFrac . modificationTime
@@ -116,30 +117,37 @@ listFiles :: (MonadIO io) => Username -> io [(UsersFile, FileInfo)]
 listFiles username = liftIO $ do
   createUserFileDir username
   let dirname = dirName username
-      dir = dirname </> "datadir"
-  paths <- getFilesInFolder dir
-  forM paths $ \path -> do
-    status <- getFileStatus path
-    let info = FileInfo
-                 (fileOffsetToInt $ fileSize status)
-                 (fileModificationInUTCTime status)
-    return (UsersFile $ takeFileName path, info)
+  privateFiles <- f (dirname </> "private-files") UsersPrivateFile
+  publicFiles  <- f (dirname </> "public-files") UsersPublicFile
+  return $ privateFiles ++ publicFiles
   where
+    f dir typ = do
+      paths <- getFilesInFolder dir
+      forM paths $ \path -> do
+        status <- getFileStatus path
+        let info = FileInfo
+                   (fileOffsetToInt $ fileSize status)
+                   (fileModificationInUTCTime status)
+        return (typ $ takeFileName path, info)
+
     fileOffsetToInt (COff x) = fromIntegral x
 
 getFile :: (MonadIO io) => Username -> UsersFile -> io FilePath
 getFile username userfile = liftIO $ do
   createUserFileDir username
   let dirname = dirName username
-      dir = dirname </> "datadir"
-  flip usersFileCata userfile $ \fn -> do
-    let fname = dir </> fn
-    exists <- doesFileExist fname
-    unless exists $ error $ concat [
-        "File (", fn, ") does not exist in users folder ("
-      , show username, ")"
-      ]
-    return fname
+      publicDir  = dirname </> "public-files"
+      privateDir = dirname </> "private-files"
+  usersFile (f publicDir) (f privateDir) userfile
+  where
+    f dir fn = do
+      let fname = dir </> fn
+      exists <- doesFileExist fname
+      unless exists $ error $ concat [
+          "File (", fn, ") does not exist in users folder ("
+        , show username, ")"
+        ]
+      return fname
 
 -- Collects the test script, test case and the submission and copies them to the
 -- the directory named after the submission key placed in the test-outgoing directory
