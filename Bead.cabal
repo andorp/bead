@@ -87,6 +87,7 @@ Library
       Bead.Persistence.SQL.Group
       Bead.Persistence.SQL.Init
       Bead.Persistence.SQL.JSON
+      Bead.Persistence.SQL.Notification
       Bead.Persistence.SQL.Registration
       Bead.Persistence.SQL.Score
       Bead.Persistence.SQL.Submission
