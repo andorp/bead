@@ -13,7 +13,7 @@ import           Data.Time (UTCTime)
 import           Data.List (nub)
 import           Data.String (fromString)
 import           System.Directory
-import           System.FilePath (joinPath)
+import           System.FilePath (joinPath, (<.>))
 import           System.IO
 import           System.IO.Temp (createTempDirectory)
 import           System.IO.Unsafe
@@ -328,6 +328,13 @@ fileDelete d f = stepM action reverseBefore reverseAfter >> return () where
 createDir :: FilePath -> TIO ()
 createDir d = step (createDirectory d) (removeDirectory d)
 
+createDirLocked :: FilePath -> (FilePath -> TIO ()) -> TIO ()
+createDirLocked d m = do
+  let d' = d <.> "locked"
+  createDir d'
+  m d'
+  renameDir d' d
+
 createDirIfMissing :: FilePath -> TIO ()
 createDirIfMissing d = step (createDirectoryIfMissing True d) (removeDirectory d)
 
@@ -361,6 +368,9 @@ removeSymLink link = do
         (return ())
         (\f -> createSymbolicLinkSafely f link >> return ())
   return ()
+
+renameDir :: FilePath -> FilePath -> TIO ()
+renameDir d d' = step (renameDirectory d d') (renameDirectory d' d)
 
 removeDir :: FilePath -> TIO ()
 removeDir d = step (removeDirectory d) (createDirectory d)

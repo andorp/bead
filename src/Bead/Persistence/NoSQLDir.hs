@@ -175,7 +175,7 @@ import System.Posix.Files (getFileStatus, fileExist, fileSize, modificationTime)
 import Data.Function (on)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
-import Data.List (sortBy)
+import Data.List (sortBy, isSuffixOf)
 
 #ifdef TEST
 import Test.Themis.Test (Test)
@@ -1115,10 +1115,10 @@ saveTestJob sk = do
           tjPath = referredPath tjk
       exist <- hasNoRollback $ doesDirectoryExist tjPath
       when exist . throwEx . userError $ concat ["Test job directory already exist:", show tjk]
-      createDir tjPath
-      copy submissionFile (tjPath </> "submission")
-      copy testscriptFile (tjPath </> "script")
-      copy testcaseFile   (tjPath </> "tests")
+      createDirLocked tjPath $ \p -> do
+        copy submissionFile (p </> "submission")
+        copy testscriptFile (p </> "script")
+        copy testcaseFile   (p </> "tests")
 
 insertTestFeedback :: SubmissionKey -> FeedbackInfo -> Persist ()
 insertTestFeedback sk info = do
@@ -1134,8 +1134,11 @@ insertTestFeedback sk info = do
 -- Test Feedbacks are stored in the persistence layer, in the test-incomming directory
 -- each one in a file, named after an existing submission in the system
 testFeedbacks :: Persist [(SubmissionKey, Feedback)]
-testFeedbacks = getSubDirectories testIncomingDataDir >>= createFeedbacks
+testFeedbacks = createFeedbacks =<< processables
   where
+    processables = filter (not . (`isSuffixOf` ".locked")) <$>
+      getSubDirectories testIncomingDataDir
+
     createFeedbacks = fmap join . mapM createFeedback
 
     createFeedback path = do

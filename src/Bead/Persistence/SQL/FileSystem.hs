@@ -7,6 +7,7 @@ import           Control.Monad.IO.Class
 
 import           Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as BS
+import           Data.List (isSuffixOf)
 import           Data.Maybe
 import           Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import           System.Directory
@@ -96,6 +97,13 @@ removeFS = liftIO $ removeDirectoryRecursive datadir
 isSetUpFS :: (MonadIO io) => io Bool
 isSetUpFS = liftIO . fmap and $ mapM doesDirectoryExist fsDirs
 
+createDirectoryLocked :: FilePath -> (FilePath -> IO ()) -> IO ()
+createDirectoryLocked d m = do
+  let d' = d <.> "locked"
+  createDirectory d'
+  m d'
+  renameDirectory d' d
+
 createUserFileDir :: (MonadIO io) => Username -> io ()
 createUserFileDir u = liftIO $ do
   let dir = dirName u </> "datadir"
@@ -158,12 +166,12 @@ saveTestJob sk submission testScript testCase = liftIO $ do
       tjPath = dirName tjk
   exists <- doesDirectoryExist tjPath
   when exists $ error $ concat ["Test job directory already exist:", show tjk]
-  createDirectory tjPath
-  fileSave (tjPath </> "script") (tsScript testScript)
-  -- Save Simple or Zipped Submission
-  withSubmissionValue (solution submission) (flip fileSave) (flip fileSaveBS) (tjPath </> "submission")
-  -- Save Simple or Zipped Test Case
-  withTestCaseValue (tcValue testCase) (flip fileSave) (flip fileSaveBS) (tjPath </> "tests")
+  createDirectoryLocked tjPath $ \p -> do
+    fileSave (p </> "script") (tsScript testScript)
+    -- Save Simple or Zipped Submission
+    withSubmissionValue (solution submission) (flip fileSave) (flip fileSaveBS) (p </> "submission")
+    -- Save Simple or Zipped Test Case
+    withTestCaseValue (tcValue testCase) (flip fileSave) (flip fileSaveBS) (p </> "tests")
 
 -- Insert the feedback info for the file system part of the database. This method is
 -- used by the tests only, and serves as a model for interfacing with the outside world.
@@ -181,8 +189,11 @@ insertTestFeedback sk info = liftIO $ do
 -- Test Feedbacks are stored in the persistence layer, in the test-incomming directory
 -- each one in a file, named after an existing submission in the system
 testFeedbacks :: (MonadIO io) => io [(SubmissionKey, Feedback)]
-testFeedbacks = liftIO (getSubDirectories testIncomingDataDir >>= createFeedbacks)
+testFeedbacks = liftIO (createFeedbacks =<< processables)
   where
+    processables = filter (not . (`isSuffixOf` ".locked")) <$>
+      getSubDirectories testIncomingDataDir
+
     createFeedbacks = fmap join . mapM createFeedback
 
     createFeedback path = do
