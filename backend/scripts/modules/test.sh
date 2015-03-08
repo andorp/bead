@@ -16,19 +16,19 @@ JOB_ID="$2"
 test -z "${JAILNAME}" && usage
 test -z "${JOB_ID}"   && usage
 
-SCRIPT_PATH=`realpath $0`
-SCRIPT_PREFIX=`dirname ${SCRIPT_PATH}`
+SCRIPT_PATH=$(realpath $0)
+SCRIPT_PREFIX=$(dirname ${SCRIPT_PATH})
 
 . ${SCRIPT_PREFIX}/common.sh
 
-_INPUT="${SCRIPT_PREFIX}/../jobs/${JAILNAME}/incoming/${JOB_ID}"
+_INPUT="${BEAD_HOME}/jobs/${JAILNAME}/incoming/${JOB_ID}"
 
 if [ ! -d "${_INPUT}" ]; then
     msg "Job ${JOB_ID} cannot be found."
     exit 1
 fi
 
-JAIL_PATH="${SCRIPT_PREFIX}/../jails/${JAILNAME}"
+JAIL_PATH="${BEAD_HOME}/jails/${JAILNAME}"
 
 if [ ! -d "${JAIL_PATH}" ]; then
     msg "Jail ${JAILNAME} cannot be found."
@@ -40,13 +40,14 @@ INPUT="${_INPUT}${PENDING}"
 # grab job
 mv ${_INPUT} ${INPUT}
 
-OUTPUT_DIR="${SCRIPT_PREFIX}/../jobs/${JAILNAME}/outgoing/${JOB_ID}"
-OUTPUT="${OUTPUT_DIR}/private"
-MESSAGE="${OUTPUT_DIR}/public"
-RESULT="${OUTPUT_DIR}/result"
+OUTPUT_DIR="${BEAD_HOME}/jobs/${JAILNAME}/outgoing/${JOB_ID}"
+OUTPUT_DIR_TMP="${OUTPUT_DIR}${LOCKED}"
+OUTPUT="${OUTPUT_DIR_TMP}/private"
+MESSAGE="${OUTPUT_DIR_TMP}/public"
+RESULT="${OUTPUT_DIR_TMP}/result"
 TEMPLATES="${SCRIPT_PREFIX}/../templates"
-BUILD_PATH="/bead/build"
-SANDBOX_PATH="/bead/run"
+BUILD_PATH="${BEAD_HOME}/build"
+SANDBOX_PATH="${BEAD_HOME}/run"
 
 . ${INPUT}/script
 
@@ -57,7 +58,7 @@ publish() {
     src=$1
     tgt=$2
 
-    if [ -s ${src} ]; then
+    if [ -s ${src} ] && [ -d $(dirname ${tgt}) ]; then
         mv ${src} ${tgt}
         chmod g+w,o+w ${tgt}
     fi
@@ -79,15 +80,16 @@ test_build() {
     cp ${INPUT}/submission ${INPUT}/tests ${INPUT}/script ${TEMPLATES}/build.sh ${JAIL_PATH}${BUILD_PATH}
     chown -R nobody:nogroup ${JAIL_PATH}${BUILD_PATH}
     chown -R nobody:nogroup ${JAIL_PATH}${SANDBOX_PATH}
-    chroot -u nobody -g nogroup ${JAIL_PATH} ${BUILD_PATH}/build.sh ${SANDBOX_PATH} > ${build_log} 2>&1
+    chroot -u nobody -g nogroup ${JAIL_PATH} ${BUILD_PATH}/build.sh ${SANDBOX_PATH} ${BUILD_PATH} > ${build_log} 2>&1
     build_result="$?"
-    mkdir -p ${OUTPUT_DIR}
-    chmod g+w,o+w ${OUTPUT_DIR}
+    mkdir -p ${OUTPUT_DIR_TMP}
+    chmod g+w,o+w ${OUTPUT_DIR_TMP}
     if [ "${build_result}" -ne "0" ]; then
         publish ${build_log} ${OUTPUT}
         publish ${build_msg} ${MESSAGE}
         echo "False" > ${build_rst}
         publish ${build_rst} ${RESULT}
+        mv ${OUTPUT_DIR_TMP} ${OUTPUT_DIR}
         rm -rf ${JAIL_PATH}${SANDBOX_PATH}
         result=1
     else
@@ -111,7 +113,7 @@ test_run() {
     cp ${INPUT}/script ${INPUT}/tests ${TEMPLATES}/run.sh ${JAIL_PATH}${SANDBOX_PATH}
     cd ${JAIL_PATH}${SANDBOX_PATH}
     chown -R nobody:nogroup ${JAIL_PATH}${SANDBOX_PATH}
-    chroot -u nobody -g nogroup ${JAIL_PATH} ${SANDBOX_PATH}/run.sh > ${run_log} 2>&1
+    chroot -u nobody -g nogroup ${JAIL_PATH} ${SANDBOX_PATH}/run.sh ${SANDBOX_PATH} > ${run_log} 2>&1
     run_result="$?"
 
     if [ "${run_result}" -ne "0" ]; then echo "False" > ${run_rst}
@@ -120,6 +122,7 @@ test_run() {
     publish ${run_log} ${OUTPUT}
     publish ${run_msg} ${MESSAGE}
     publish ${run_rst} ${RESULT}
+    mv ${OUTPUT_DIR_TMP} ${OUTPUT_DIR}
     rm -rf ${JAIL_PATH}${SANDBOX_PATH}
     return ${run_result}
 }
@@ -127,7 +130,7 @@ test_run() {
 msg_n "[${JOB_ID}] Building ($$)..."
 
 # Now you have ${WATCHDOG_TIMEOUT} seconds to run (at maximum).
-/bin/sh ${SCRIPT_PREFIX}/watchdog.sh $$ ${OUTPUT} &
+/bin/sh ${SCRIPT_PREFIX}/watchdog.sh $$ ${OUTPUT_DIR} ${OUTPUT} ${MESSAGE} ${RESULT} ${JAIL_PATH}${BUILD_PATH} ${JAIL_PATH}${SANDBOX_PATH} &
 
 test_build
 build_result="$?"

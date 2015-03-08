@@ -14,8 +14,8 @@ Commands:
 
 [ $# -lt 1 ] && usage
 
-SCRIPT_PATH=`realpath $0`
-SCRIPT_PREFIX=`dirname ${SCRIPT_PATH}`
+SCRIPT_PATH=$(realpath $0)
+SCRIPT_PREFIX=$(dirname ${SCRIPT_PATH})
 SCRIPT_MODULES="${SCRIPT_PREFIX}/modules"
 
 CMD=$1

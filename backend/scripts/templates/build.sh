@@ -12,12 +12,13 @@ say() {
 
 export PATH=$PATH:/usr/local/bin
 SANDBOX_PATH="$1"
-ulimit -t 5
-cd /bead/build
+BUILD_PATH="$2"
+ulimit -t 10
+cd ${BUILD_PATH}
 . ./script
 build
 __BUILD_RESULT=$?
 if [ "${__MESSAGE}" != "" ]; then
-    echo "${__MESSAGE}" > .message
+    echo "${__MESSAGE}" > ${BUILD_PATH}/.message
 fi
 exit ${__BUILD_RESULT}

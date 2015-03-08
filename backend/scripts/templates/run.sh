@@ -7,12 +7,14 @@ say() {
 }
 
 export PATH=$PATH:/usr/local/bin
+SANDBOX_PATH="$1"
 ulimit -t 5
-cd /bead/run
+cd ${SANDBOX_PATH}
 . ./script
 run
 __RUN_RESULT=$?
 if [ "${__MESSAGE}" != "" ]; then
-    echo "${__MESSAGE}" > .message
+    echo "${__MESSAGE}" > ${SANDBOX_PATH}/.message
 fi
+pkill -9 -U 65534
 exit ${__RUN_RESULT}

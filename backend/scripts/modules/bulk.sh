@@ -13,19 +13,19 @@ JAILNAME="$1"
 
 test -z "${JAILNAME}" && usage
 
-SCRIPT_PATH=`realpath $0`
-SCRIPT_PREFIX=`dirname ${SCRIPT_PATH}`
+SCRIPT_PATH=$(realpath $0)
+SCRIPT_PREFIX=$(dirname ${SCRIPT_PATH})
 
 . ${SCRIPT_PREFIX}/common.sh
 
-INCOMING_DIR="${SCRIPT_PREFIX}/../jobs/${JAILNAME}/incoming"
+INCOMING_DIR="${BEAD_HOME}/jobs/${JAILNAME}/incoming"
 
 if [ ! -d "${INCOMING_DIR}" ]; then
     msg "The ${INCOMING_DIR} cannot be found."
     exit 1
 fi
 
-JAIL_PATH="${SCRIPT_PREFIX}/../jails/${JAILNAME}"
+JAIL_PATH="${BEAD_HOME}/jails/${JAILNAME}"
 
 if [ ! -d "${JAIL_PATH}" ]; then
     msg "Jail ${JAILNAME} cannot be found."
@@ -38,10 +38,10 @@ main_loop() {
     local id
 
     while [ "${LOOP}" -ne "0" ]; do
-        id=$(ls ${INCOMING_DIR} | fgrep -v ${PENDING} | head -1)
+        id=$(ls ${INCOMING_DIR} | fgrep -v ${PENDING} | fgrep -v ${LOCKED} | head -1)
         if [ "${id}" = "" ]; then
-            msg_verbose "No job found, sleeping for 2 seconds."
-            sleep 2
+            msg_verbose "No job found, sleeping for ${SLEEP_TIME} seconds."
+            sleep ${SLEEP_TIME}
         else
             msg "Found job ${id}, evaluating."
             /bin/sh ${SCRIPT_PREFIX}/test.sh ${JAILNAME} ${id}
