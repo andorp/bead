@@ -91,8 +91,9 @@ if ! check_files; then
   return 1
 fi
 
-echo "[INFO] build directory = ${BUILD_PATH}"
-echo "[INFO] sandbox (run) directory = ${SANDBOX_PATH}"
+rm -rf ${BUILD_MESSAGE} ${BUILD_RESULT}
+rm -rf ${RUN_MESSAGE} ${RUN_RESULT}
+
 echo -n "==> Reading the script..."
 . ./script
 echo "OK"
@@ -101,14 +102,17 @@ echo -n "==> Building the solution..."
 
 if test_build; then
     echo "OK"
+    rm -rf ${BUILD_PATH}
     echo -n "==> Running the built submission..."
     if test_run; then
         echo "OK"
+        rm -rf ${SANDBOX_PATH}
     else
-        echo "FAILED (see ${RUN_MESSAGE} for details)"
+        echo "FAILED (see ${RUN_MESSAGE} and the contents of ${SANDBOX_PATH} for details)"
     fi
 else
-    echo "FAILED (see ${BUILD_MESSAGE} for details)"
+    rm -rf ${SANDBOX_PATH}
+    echo "FAILED (see ${BUILD_MESSAGE} and the contents of ${BUILD_PATH} for details)"
 fi
 
 cd ${__PWD}
