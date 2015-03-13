@@ -105,10 +105,11 @@ createDirectoryLocked d m = do
   renameDirectory d' d
 
 createUserFileDir :: (MonadIO io) => Username -> io ()
-createUserFileDir u = liftIO $ do
-  let dir = dirName u </> "datadir"
-  exists <- doesDirectoryExist dir
-  unless exists $ createDirectoryIfMissing True dir
+createUserFileDir u = liftIO $
+  forM_ ["private-files", "public-files" ] $ \d -> do
+    let dir = dirName u </> d
+    exists <- doesDirectoryExist dir
+    unless exists $ createDirectoryIfMissing True dir
 
 copyUsersFile :: (MonadIO io) => Username -> FilePath -> UsersFile -> io ()
 copyUsersFile username tmpPath userfile = liftIO $ do
