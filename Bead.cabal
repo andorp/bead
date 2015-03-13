@@ -97,13 +97,13 @@ Library
       Bead.Persistence.SQL.TestJob
       Bead.Persistence.SQL.TestScript
       Bead.Persistence.SQL.User
-  else
-    Exposed-modules:
-      Bead.Persistence.NoSQLDir
-      Bead.Persistence.NoSQLDirFile
-      Control.Monad.Transaction
-      Control.Monad.Transaction.IO
-      Control.Monad.Transaction.TIO
+
+  Exposed-modules:
+    Bead.Persistence.NoSQLDir
+    Bead.Persistence.NoSQLDirFile
+    Control.Monad.Transaction
+    Control.Monad.Transaction.IO
+    Control.Monad.Transaction.TIO
 
   if flag(Tests)
     CPP-Options: -DTEST
