@@ -81,6 +81,7 @@ module Bead.Persistence.Persist (
 
   -- Test Feedback
   , insertTestFeedback
+  , finalizeTestFeedback
   , testFeedbacks
   , deleteTestFeedbacks -- Deletes the test daemon's feedbacks from the test-incomming
 
@@ -421,10 +422,17 @@ saveTestJob = PersistImpl.saveTestJob
 
 -- * Test Feedbacks
 
--- | Inserts a test comment for the incoming test comment directory,
--- this function is mainly for testing of this functionality
+-- | Inserts a test feedback for the incoming test comment directory,
+-- this function is mainly for testing of this functionality.
+-- It creates a test feedback in a locked state. Use finalizeTestFeedback
+-- to unlock it.
 insertTestFeedback :: SubmissionKey -> FeedbackInfo -> Persist ()
 insertTestFeedback = PersistImpl.insertTestFeedback
+
+-- | Unlocks the test feedback, this functionality is mainly
+-- for supporting testing.
+finalizeTestFeedback :: SubmissionKey -> Persist ()
+finalizeTestFeedback = PersistImpl.finalizeTestFeedback
 
 -- | List the feedbacks that the test daemon left in the test-incomming,
 -- comments for the groups admin, and comments for the student, and

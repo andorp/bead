@@ -8,6 +8,9 @@ import qualified Bead.Persistence.SQL.FileSystem as FS
 insertTestFeedback :: Domain.SubmissionKey -> Domain.FeedbackInfo -> Persist ()
 insertTestFeedback = FS.insertTestFeedback
 
+finalizeTestFeedback :: Domain.SubmissionKey -> Persist ()
+finalizeTestFeedback = FS.finalizeTestFeedback
+
 testFeedbacks :: Persist [(Domain.SubmissionKey, Domain.Feedback)]
 testFeedbacks = FS.testFeedbacks
 

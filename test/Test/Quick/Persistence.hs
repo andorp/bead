@@ -1042,6 +1042,55 @@ testJobCreationTest = do
         assertTests
         assertSubmissions
 
+insertAndFinalizeTestFeedback sk feedback = do
+  insertTestFeedback sk feedback
+  finalizeTestFeedback sk
+
+finalizeFeedbacksTest = do
+  reinitPersistence
+  us <- users 100
+  cs <- courses 10
+  gs <- groups 50 cs
+  as <- courseAndGroupAssignments 200 200 cs gs
+  ss <- submissions 1500 us as
+  lockedFeedbackList <- createListRef
+  finalizedFeedbackList <- createListRef
+  quick 1000 $ do
+    ((_u,_ak),sk) <- pick $ elements ss
+    locked    <- run $ listInRef lockedFeedbackList
+    finalized <- run $ listInRef finalizedFeedbackList
+    case (sk `elem` locked, sk `elem` finalized) of
+      (False, False) -> checkIfCanBeAttached sk lockedFeedbackList
+      (False, True)  -> checkIfThereIsAFeedback sk
+      (True, False)  -> checkIfCanBeFinalized sk finalizedFeedbackList
+      (True, True)   -> checkIfThereIsAFeedback sk
+
+  where
+    checkIfThereIsAFeedback sk =
+      join $ runPersistCmd $ do
+        cks <- map fst <$> testFeedbacks
+        return $ do
+          assertTrue (sk `elem` cks) "Test Feedback is not inserted."
+
+    checkIfCanBeAttached sk feedbackList = do
+      run $ insertListRef feedbackList sk
+      feedback <- pick $ Gen.testFeedbackInfo
+      join $ runPersistCmd $ do
+        insertTestFeedback sk feedback
+        cks <- map fst <$> testFeedbacks
+        return $ do
+          assertFalse (sk `elem` cks)
+            "Test Locked Feedback occurs in the feedback list."
+
+    checkIfCanBeFinalized sk feedbackList = do
+      run $ insertListRef feedbackList sk
+      join $ runPersistCmd $ do
+        finalizeTestFeedback sk
+        cks <- map fst <$> testFeedbacks
+        return $ do
+          assertTrue (sk `elem` cks)
+            "Test Finalized Feedback does not occur in the feedback list."
+
 incomingFeedbacksTest = do
   reinitPersistence
   us <- users 400
@@ -1049,28 +1098,28 @@ incomingFeedbacksTest = do
   gs <- groups 200 cs
   as <- courseAndGroupAssignments 200 200 cs gs
   ss <- submissions 1500 us as
-  commented <- createListRef
+  feedbackList <- createListRef
   quick 1000 $ do
     ((_u,_ak),sk) <- pick $ elements ss
-    cks <- run $ listInRef commented
+    cks <- run $ listInRef feedbackList
     case sk `elem` cks of
       True  -> checkIfThereIsAFeedback sk
-      False -> checkIfCanBeCommented sk commented
+      False -> checkIfCanBeCommented sk feedbackList
   where
     checkIfThereIsAFeedback sk =
       join $ runPersistCmd $ do
         cks <- map fst <$> testFeedbacks
         return $ do
-          assertTrue (sk `elem` cks) "Was not commented"
+          assertTrue (sk `elem` cks) "Test Feedback is not inserted"
 
-    checkIfCanBeCommented sk commented = do
-      run $ insertListRef commented sk
+    checkIfCanBeCommented sk feedbackList = do
+      run $ insertListRef feedbackList sk
       feedback <- pick $ Gen.testFeedbackInfo
       join $ runPersistCmd $ do
-        insertTestFeedback sk feedback
+        insertAndFinalizeTestFeedback sk feedback
         cks <- map fst <$> testFeedbacks
         return $ do
-          assertTrue (sk `elem` cks) "Was not commented"
+          assertTrue (sk `elem` cks) "Test Feedback is not inserted"
 
 unevaluatedScoresTests = do
   reinitPersistence
@@ -1296,15 +1345,15 @@ deleteIncomingFeedbackTest = do
         deleteTestFeedbacks sk
         cks <- map fst <$> testFeedbacks
         return $ do
-          assertFalse (sk `elem` cks) ("Comment was not deleted: " ++ show sk)
+          assertFalse (sk `elem` cks) ("Feedback was not deleted: " ++ show sk)
 
     checkIfCanBeCommented sk = do
       feedback <- pick $ Gen.testFeedbackInfo
       join $ runPersistCmd $ do
-        insertTestFeedback sk feedback
+        insertAndFinalizeTestFeedback sk feedback
         cks <- map fst <$> testFeedbacks
         return $ do
-          assertTrue (sk `elem` cks) "Was not commented"
+          assertTrue (sk `elem` cks) "There was no feedback"
 
 -- All the notifications for comments returns the given comment key, and no feedback key
 saveCommentNotificationTest = do
@@ -1477,6 +1526,7 @@ complexTests = testGroup "Persistence Layer Complex tests" [
   , testCase "Overwrite user's data file" $ userOverwriteFileTest
   , testCase "Test Job cration" $ testJobCreationTest
   , testCase "Incoming feedbacks" $ incomingFeedbacksTest
+  , testCase "Locked feedback tests" $ finalizeFeedbacksTest
   , testCase "Delete incoming feedbacks" $ deleteIncomingFeedbackTest
   , testCase "Open submissions list" $ openSubmissionsTest
   , testCase "Assessments" $ assessmentTests

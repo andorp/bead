@@ -177,7 +177,7 @@ saveTestJob sk submission testScript testCase = liftIO $ do
 -- used by the tests only, and serves as a model for interfacing with the outside world.
 insertTestFeedback :: (MonadIO io) => SubmissionKey -> FeedbackInfo -> io ()
 insertTestFeedback sk info = liftIO $ do
-  let sDir = submissionKeyMap (testIncomingDataDir </>) sk
+  let sDir = submissionKeyMap (testIncomingDataDir </>) sk <.> "locked"
   createDirectoryIfMissing True sDir
   let student comment = fileSave (sDir </> "public") comment
       admin   comment = fileSave (sDir </> "private") comment
@@ -185,6 +185,11 @@ insertTestFeedback sk info = liftIO $ do
   feedbackInfo result student admin evaluated info
   where
     evaluated _ _ = error "insertTestComment: Evaluation should not be inserted by test."
+
+finalizeTestFeedback :: (MonadIO io) => SubmissionKey -> io ()
+finalizeTestFeedback sk = liftIO $ do
+  let sDir = submissionKeyMap (testIncomingDataDir </>) sk
+  renameDirectory (sDir <.> "locked") sDir
 
 -- Test Feedbacks are stored in the persistence layer, in the test-incomming directory
 -- each one in a file, named after an existing submission in the system

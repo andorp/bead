@@ -71,6 +71,7 @@ module Bead.Persistence.NoSQLDir (
   , saveTestJob
 
   , insertTestFeedback
+  , finalizeTestFeedback
   , testFeedbacks
   , deleteTestFeedbacks
 
@@ -1122,7 +1123,7 @@ saveTestJob sk = do
 
 insertTestFeedback :: SubmissionKey -> FeedbackInfo -> Persist ()
 insertTestFeedback sk info = do
-  let sDir = submissionKeyMap (testIncomingDataDir </>) sk
+  let sDir = submissionKeyMap (testIncomingDataDir </>) sk <.> "locked"
   hasNoRollback $ createDirectoryIfMissing True sDir
   let student comment = fileSave sDir "public" comment
       admin   comment = fileSave sDir "private" comment
@@ -1130,6 +1131,11 @@ insertTestFeedback sk info = do
   feedbackInfo result student admin evaluated info
   where
     evaluated _ _ = error "insertTestComment: Evaluation should not be inserted by test."
+
+finalizeTestFeedback :: SubmissionKey -> Persist ()
+finalizeTestFeedback sk = do
+  let sDir = submissionKeyMap (testIncomingDataDir </>) sk
+  renameDir (sDir <.> "locked") sDir
 
 -- Test Feedbacks are stored in the persistence layer, in the test-incomming directory
 -- each one in a file, named after an existing submission in the system
