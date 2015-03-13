@@ -51,7 +51,31 @@ SANDBOX_PATH="${BEAD_HOME}/run"
 
 . ${INPUT}/script
 
-publish() {
+check_encoding() {
+    local f
+    f=$1
+
+    [ ! -s $f ] && return 0
+
+    case $(file -b $f) in
+      *ASCII\ text*) return 0;;
+      *UTF-8\ Unicode\ text*) return 0;;
+      *) return 1;;
+    esac
+}
+
+blame_encoding() {
+    local f
+    f=$1
+
+    cat > $f <<EOF
+Unfortunately, the contents of this comment cannot be displayed as it contains
+some non-Unicode (UTF-8) characters or it is not a plain ASCII text.  Please
+remove those characters from the output of the program that generated it.
+EOF
+}
+
+force_publish() {
     local src
     local tgt
 
@@ -62,6 +86,10 @@ publish() {
         mv ${src} ${tgt}
         chmod g+w,o+w ${tgt}
     fi
+}
+
+publish() {
+    check_encoding $1 && force_publish $1 $2 || blame_encoding $2
 }
 
 test_build() {
@@ -88,7 +116,7 @@ test_build() {
         publish ${build_log} ${OUTPUT}
         publish ${build_msg} ${MESSAGE}
         echo "False" > ${build_rst}
-        publish ${build_rst} ${RESULT}
+        force_publish ${build_rst} ${RESULT}
         mv ${OUTPUT_DIR_TMP} ${OUTPUT_DIR}
         rm -rf ${JAIL_PATH}${SANDBOX_PATH}
         result=1
@@ -121,7 +149,7 @@ test_run() {
 
     publish ${run_log} ${OUTPUT}
     publish ${run_msg} ${MESSAGE}
-    publish ${run_rst} ${RESULT}
+    force_publish ${run_rst} ${RESULT}
     mv ${OUTPUT_DIR_TMP} ${OUTPUT_DIR}
     rm -rf ${JAIL_PATH}${SANDBOX_PATH}
     return ${run_result}
