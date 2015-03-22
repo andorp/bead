@@ -94,9 +94,9 @@ profileContent ts user ls = do
 
     profileFields msg = do
 #ifdef LDAPEnabled
-      Bootstrap.labeledText (msg $ msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
-      Bootstrap.labeledText (msg $ msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
-      Bootstrap.labeledText (msg $ msg_Profile_FullName "Full name: ") fullName
+      Bootstrap.readOnlyTextInputWithDefault "" (msg $ msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
+      Bootstrap.readOnlyTextInputWithDefault "" (msg $ msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
+      Bootstrap.readOnlyTextInputWithDefault "" (msg $ msg_Profile_FullName "Full name: ") fullName
       hiddenInput regFullNameField (u_name user)
       Bootstrap.selection userLanguageField (== u_language user) languages
       Bootstrap.selection userTimeZoneField (== u_timezone user) timeZones

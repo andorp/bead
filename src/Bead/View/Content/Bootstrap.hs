@@ -267,6 +267,11 @@ textInputWithDefault paramName labelText value =
     labelFor paramName labelText
     textInputFieldWithDefault paramName value
 
+readOnlyTextInputWithDefault paramName labelText value =
+  formGroup $ do
+    labelFor paramName labelText
+    (textInputFieldWithDefault paramName value) ! A.readonly ""
+
 -- | Creates a label for the given id and given text
 labelFor name text =
   H.label ! for (fromString name) $ (fromString text)
