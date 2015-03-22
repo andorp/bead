@@ -80,12 +80,12 @@ abstractEvaluationPostHandler
 abstractEvaluationPostHandler getEvKeyParameter evCommand = do
   sk <- getParameter submissionKeyPrm
   commentText <- getParameter evaluationValuePrm
-  commentOrResult <- getJSONParam (fieldName evaluationResultField) "Nem található értékelés!"
+  commentOrResult <- getJSONParam (fieldName evaluationResultField) "There can be no evaluation found."
   withEvalOrComment commentOrResult
     (do (mrole,mname) <- (getRole &&& getName) <$> userState
         let uname = fromMaybe "???" mname
         case mrole of
-          Nothing -> return $ LogMessage "A felhasználó nincs bejelentkezve" -- Impossible
+          Nothing -> return $ LogMessage "The user is not logged in" -- Impossible
           Just role -> do
             now <- liftIO $ getCurrentTime
             return $ SubmissionComment sk Comment {
@@ -144,7 +144,7 @@ inputEvalResult (EvConfig (PctEval _cfg)) =
     (fieldName evaluationResultField)
     (fromString . errorOnNothing . encodeToFay $ percentageResult 0.0)
 
-errorOnNothing = maybe (error "Hiba a bemenet kódolásában!") Prelude.id
+errorOnNothing = maybe (error "Invalid input encoding.") Prelude.id
 
 -- * View
 

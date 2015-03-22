@@ -139,5 +139,5 @@ courseAdminContent info = do
     assignGroupAdmin = Pages.assignGroupAdmin ()
 
 getGroup = Group
-  <$> getParameter (stringParameter (fieldName groupNameField) "Csoport neve")
-  <*> getParameter (stringParameter (fieldName groupDescField) "Csoport leírása")
+  <$> getParameter (stringParameter (fieldName groupNameField) "Group name")
+  <*> getParameter (stringParameter (fieldName groupDescField) "Group description")

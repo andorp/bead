@@ -155,7 +155,7 @@ createCourse :: ModifyHandler
 createCourse = ModifyHandler $ UA.CreateCourse <$> getCourse
 
 getCourse = Course
-  <$> getParameter (stringParameter (fieldName courseNameField) "Tárgy neve")
-  <*> getParameter (stringParameter (fieldName courseDescField) "Tárgy leírása")
-  <*> getParameter (jsonParameter (fieldName testScriptTypeField) "Script típusa")
+  <$> getParameter (stringParameter (fieldName courseNameField) "Course name")
+  <*> getParameter (stringParameter (fieldName courseDescField) "Course description")
+  <*> getParameter (jsonParameter (fieldName testScriptTypeField) "Script type")
 

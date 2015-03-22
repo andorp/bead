@@ -67,8 +67,8 @@ stringParameter fieldName paramName = Parameter {
     encode = id
   , decode = Just . id
   , name = fieldName
-  , decodeError = \m -> printf "%s nem dekódolható: %s!" paramName m
-  , notFound    = printf "%s nem található!" paramName
+  , decodeError = \m -> printf "%s could not be decoded: %s." paramName m
+  , notFound    = printf "%s could not be found." paramName
   }
 
 evaluationValuePrm :: Parameter String
@@ -79,8 +79,8 @@ customGroupKeyPrm field = Parameter {
     encode = groupKeyMap id
   , decode = Just . GroupKey
   , name   = field
-  , decodeError = \m -> printf "Érvénytelen csoportazonosító: %s!" m
-  , notFound    = "A csoportazonosító nem található!"
+  , decodeError = \m -> printf "Invalid group key: %s." m
+  , notFound    = "The given group key could not be found."
   }
 
 -- Represents the GroupKey parameter
@@ -88,19 +88,19 @@ groupKeyPrm :: Parameter GroupKey
 groupKeyPrm = customGroupKeyPrm (fieldName groupKeyName)
 
 jsonGroupKeyPrm :: String -> Parameter GroupKey
-jsonGroupKeyPrm field = jsonParameter field "csoportazonosító"
+jsonGroupKeyPrm field = jsonParameter field "group key"
 
 customCourseKeyPrm :: String -> Parameter CourseKey
 customCourseKeyPrm field = Parameter {
     encode = courseKeyMap id
   , decode = Just . CourseKey
   , name   = field
-  , decodeError = \m -> printf "Érvénytelen tárgyazonosító: %s!" m
-  , notFound    = "A tárgyazonosító nem található!"
+  , decodeError = \m -> printf "Invalid course key: %s." m
+  , notFound    = "The given course key could not be found."
   }
 
 jsonCourseKeyPrm :: String -> Parameter CourseKey
-jsonCourseKeyPrm field = jsonParameter field "tárgyazonosító"
+jsonCourseKeyPrm field = jsonParameter field "course key"
 
 -- Represents the CourseKey parameter
 courseKeyPrm :: Parameter CourseKey
@@ -112,8 +112,8 @@ assignmentKeyPrm = Parameter {
     encode = assignmentKeyMap id
   , decode = Just . AssignmentKey
   , name   = fieldName assignmentKeyField
-  , decodeError = \m -> printf "Érvénytelen feladatazonosító: %s!" m
-  , notFound    = "A feladatazonosító nem található!"
+  , decodeError = \m -> printf "Invalid assignment key: %s." m
+  , notFound    = "The given assignment key could not be found."
   }
 
 -- Represents the SubmissionKey parameter
@@ -122,8 +122,8 @@ submissionKeyPrm = Parameter {
     encode = submissionKeyMap id
   , decode = Just . SubmissionKey
   , name   = fieldName submissionKeyField
-  , decodeError = \m -> printf "Érvénytelen megoldásazonosító: %s!" m
-  , notFound    = "A megoldásazonosító nem található!"
+  , decodeError = \m -> printf "Invalid submission key: %s." m
+  , notFound    = "The given submission key could not be found."
   }
 
 -- Represents the TestScriptKey parameter
@@ -132,8 +132,8 @@ testScriptKeyPrm = Parameter {
     encode = testScriptKeyCata id
   , decode = Just . TestScriptKey
   , name = fieldName testScriptKeyField
-  , decodeError = \m -> printf "Érvénytelen teszt szkript azonosító: %s!" m
-  , notFound = "A teszt szkript azonosító nem található"
+  , decodeError = \m -> printf "Invalid test script key: %s." m
+  , notFound = "The given test script key could not be found."
   }
 
 -- Represents the SubmissionKey parameter
@@ -142,8 +142,8 @@ evaluationKeyPrm = Parameter {
     encode = evaluationKeyMap id
   , decode = Just . EvaluationKey
   , name   = fieldName evaluationKeyField
-  , decodeError = \m -> printf "Érvénytelen értékelésazonosító: %s!" m
-  , notFound    = "Az értékelésazonosító nem található!"
+  , decodeError = \m -> printf "Invalid evaluation key: %s." m
+  , notFound    = "The given evaluation key could not be found."
   }
 
 -- JSON encodeable parameter, used in POST request parameters only
@@ -152,8 +152,8 @@ jsonParameter field name = Parameter {
     encode = \v -> fromMaybe (error $ concat [name, " jsonParameter: encodeToFay ",show v]) $ encodeToFay v
   , decode = decodeFromFay
   , name = field
-  , decodeError = \v -> printf "Hibás json érték: (%s, %s)!" name v
-  , notFound    = printf "%s nem található!" name
+  , decodeError = \v -> printf "Invalid JSON value: (%s, %s)" name v
+  , notFound    = printf "%s could not be found." name
   }
 
 evalConfigPrm :: EvaluationHook -> Parameter EvConfig
@@ -161,8 +161,8 @@ evalConfigPrm hook = Parameter {
     encode = fromMaybe "evalConfigPrm: encodeToFay has failed" . encodeToFay
   , decode = readEvalConfig
   , name   = evHiddenValueId hook
-  , decodeError = \m -> printf "Hibás értékelési fajta: %s!" m
-  , notFound    = "Nem található az értékelés fajtája!"
+  , decodeError = \m -> printf "Invalid evaluation type: %s" m
+  , notFound    = "The given evaluation type could not be found."
   }
   where
     readEvalConfig :: String -> Maybe EvConfig
@@ -217,14 +217,14 @@ evalConfigPrmTest = group "evalConfigPrm" $ do
 #endif
 
 rolePrm :: Parameter Role
-rolePrm = jsonParameter (fieldName userRoleField) "Szerepkör"
+rolePrm = jsonParameter (fieldName userRoleField) "Role"
 
 uidPrm :: Parameter Uid
 uidPrm = jsonParameter (fieldName userUidField) "User ID"
 
 jsonUsernamePrm :: String -> Parameter Username
 jsonUsernamePrm field =
-  let prm = jsonParameter field "Felhasználónév"
+  let prm = jsonParameter field "Username"
   in prm { decode = decode prm >=> decodeUsr }
   where
     decodeUsr = usernameCata $ \xs ->
@@ -238,7 +238,7 @@ customUsernamePrm field = Parameter {
   , decode = decodeUsr
   , name = field
   , decodeError = \m -> printf "%s: %s" (message isUsername) m
-  , notFound    = "A felhasználónév nem található!"
+  , notFound    = "The username could not be found."
   } where
     decodeUsr xs =
       if (validator isUsername xs)
@@ -259,8 +259,8 @@ emailPrm field = validateBy isEmailAddress $ Parameter {
     encode = emailFold id
   , decode = parseEmail
   , name = field
-  , decodeError = \m -> printf "Hibás email cím: %s!" m
-  , notFound    = "Az email cím nem található!"
+  , decodeError = \m -> printf "Invalid email address: %s" m
+  , notFound    = "The email address could not be found."
   }
 
 userEmailPrm :: Parameter Email
@@ -279,49 +279,49 @@ passwordPrm fieldName paramName = Parameter {
   }
 
 regPasswordPrm :: Parameter String
-regPasswordPrm = validateBy isPassword $ passwordPrm (fieldName loginPassword) "Jelszó"
+regPasswordPrm = validateBy isPassword $ passwordPrm (fieldName loginPassword) "Password"
 
 regPasswordAgainPrm :: Parameter String
-regPasswordAgainPrm = validateBy isPassword $ passwordPrm (fieldName regPasswordAgain) "Jelszó (ismét)"
+regPasswordAgainPrm = validateBy isPassword $ passwordPrm (fieldName regPasswordAgain) "Password (again)"
 
 loginPasswordPrm :: Parameter String
-loginPasswordPrm = validateBy isPassword $ passwordPrm (fieldName loginPassword) "Bejelentkezési jelszó"
+loginPasswordPrm = validateBy isPassword $ passwordPrm (fieldName loginPassword) "Login password"
 
 oldPasswordPrm :: Parameter String
-oldPasswordPrm = validateBy isPassword $ passwordPrm (fieldName oldPasswordField) "Régi jelszó"
+oldPasswordPrm = validateBy isPassword $ passwordPrm (fieldName oldPasswordField) "Old password"
 
 newPasswordPrm :: Parameter String
-newPasswordPrm = validateBy isPassword $ passwordPrm (fieldName newPasswordField) "Új jelszó"
+newPasswordPrm = validateBy isPassword $ passwordPrm (fieldName newPasswordField) "New password"
 
 newPasswordAgainPrm :: Parameter String
-newPasswordAgainPrm = validateBy isPassword $ passwordPrm (fieldName newPasswordAgainField) "Új jelszó (ismét)"
+newPasswordAgainPrm = validateBy isPassword $ passwordPrm (fieldName newPasswordAgainField) "New password (again)"
 
 studentNewPwdPrm :: Parameter String
-studentNewPwdPrm = validateBy isPassword $ passwordPrm (fieldName studentNewPwdField) "Jelszó"
+studentNewPwdPrm = validateBy isPassword $ passwordPrm (fieldName studentNewPwdField) "Password"
 
 studentNewPwdAgainPrm :: Parameter String
-studentNewPwdAgainPrm = validateBy isPassword $ passwordPrm (fieldName studentNewPwdAgainField) "Jelszó (ismét)"
+studentNewPwdAgainPrm = validateBy isPassword $ passwordPrm (fieldName studentNewPwdAgainField) "Password (again)"
 
 regUsernamePrm :: Parameter Username
 regUsernamePrm = validateBy isUsername $ customUsernamePrm (fieldName loginUsername)
 
 regFullNamePrm :: Parameter String
-regFullNamePrm = stringParameter (fieldName regFullName) "Teljes név"
+regFullNamePrm = stringParameter (fieldName regFullName) "Full name"
 
 regUserRegKeyPrm :: Parameter UserRegKey
 regUserRegKeyPrm = Parameter {
     encode = userRegKeyFold id
   , decode = Just . UserRegKey
   , name = (fieldName regUserRegKey)
-  , decodeError = \m -> printf "A felhasználó regisztrációs kulcsának értéke hibás: %s!" m
-  , notFound    = "Nincs ilyen regisztrációs kulcs a felhasználóhoz!"
+  , decodeError = \m -> printf "Invalid registration key for this user: %s" m
+  , notFound    = "There are no such registration key for this user."
   }
 
 regTokenPrm :: Parameter String
-regTokenPrm = stringParameter (fieldName regToken) "Regisztrációs token"
+regTokenPrm = stringParameter (fieldName regToken) "Registration token"
 
 regLanguagePrm :: Parameter String
-regLanguagePrm = stringParameter (fieldName regLanguage) "Regisztrációs nyelv"
+regLanguagePrm = stringParameter (fieldName regLanguage) "Registration language"
 
 -- Creates a new parameter where the the decode function first
 -- validates a parameter with the given validator
@@ -341,8 +341,8 @@ readablePrm field name = Parameter {
     encode = show
   , decode = readMaybe
   , name = field
-  , decodeError = \v -> printf "Hibás read érték: (%s, %s)!" name v
-  , notFound    = printf "%s nem található!" name
+  , decodeError = \v -> printf "Invalid read value: (%s, %s)" name v
+  , notFound    = printf "%s could not be found." name
   }
 
 localTimeParam :: String -> String -> Parameter LocalTime
@@ -350,21 +350,21 @@ localTimeParam field name = Parameter {
     encode = show
   , decode = readMaybe
   , name = field
-  , decodeError = \v -> printf "Hibás idő érték: (%s, %s)!" name v
-  , notFound    = printf "%s nem található!" name
+  , decodeError = \v -> printf "Invalid time value: (%s, %s)" name v
+  , notFound    = printf "%s could not be found." name
   }
 
 assignmentStartPrm :: Parameter LocalTime
-assignmentStartPrm = localTimeParam (fieldName assignmentStartField) "Beküldés kezdete"
+assignmentStartPrm = localTimeParam (fieldName assignmentStartField) "Assignment start"
 
 assignmentEndPrm :: Parameter LocalTime
-assignmentEndPrm = localTimeParam (fieldName assignmentEndField) "Beküldés vége"
+assignmentEndPrm = localTimeParam (fieldName assignmentEndField) "Assignment end"
 
 userTimeZonePrm :: Parameter TimeZoneName
-userTimeZonePrm = jsonParameter (fieldName userTimeZoneField) "Időzóna"
+userTimeZonePrm = jsonParameter (fieldName userTimeZoneField) "Time zone"
 
 regTimeZonePrm :: Parameter TimeZoneName
-regTimeZonePrm = jsonParameter (fieldName regTimeZoneField) "Időzóna"
+regTimeZonePrm = jsonParameter (fieldName regTimeZoneField) "Time zone"
 
 languagePrm :: String -> Parameter Language
 languagePrm field = Parameter {

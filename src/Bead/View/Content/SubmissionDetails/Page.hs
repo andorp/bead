@@ -63,7 +63,7 @@ submissionDetailsPostHandler :: POSTContentHandler
 submissionDetailsPostHandler = do
   ak <- getParameter assignmentKeyPrm
   sk <- getParameter submissionKeyPrm
-  c  <- getParameter (stringParameter (fieldName commentValueField) "Hozzászólás")
+  c  <- getParameter (stringParameter (fieldName commentValueField) "Comment")
   now <- liftIO $ getCurrentTime
   mname <- getName <$> userState
   let uname = case mname of

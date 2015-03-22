@@ -41,7 +41,7 @@ userDataChange = do
     <$> getRole
     <*> getUsername
     <*> getParameter userEmailPrm
-    <*> getParameter (stringParameter (fieldName userFamilyNameField) "Teljes név")
+    <*> getParameter (stringParameter (fieldName userFamilyNameField) "Full name")
     <*> getParameter userTimeZonePrm
     <*> getParameter userLanguagePrm
     <*> getParameter uidPrm

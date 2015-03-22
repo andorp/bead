@@ -48,7 +48,7 @@ bootStrapDocument body' = do
   return $ do
     H.head $ do
         H.meta ! A.charset "utf-8"
-        H.title "BE-AD beadandókezelő"
+        H.title "BE-AD Assignment Management System"
         H.link ! A.rel "shortcut icon" ! A.href "icon.ico"
         H.meta ! A.name "viewport" ! A.content "width=device-width, initial-scale=1.0"
         H.meta ! A.name "description" ! A.content ""

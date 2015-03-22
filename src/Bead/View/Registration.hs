@@ -55,9 +55,9 @@ createUser persist usersdb user password = do
   save mgr authUser
   createdUser <- lookupByLogin mgr (T.pack name)
   case createdUser of
-    Nothing -> error "Nem jött létre felhasználó!"
+    Nothing -> error "There was no user created"
     Just u' -> case passwordFromAuthUser u' of
-      Nothing  -> error "Nem lett jelszó megadva!"
+      Nothing  -> error "There was no password given"
       Just _pwd -> Persist.runPersist persist $ Persist.saveUser user
   return ()
 

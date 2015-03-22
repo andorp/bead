@@ -24,25 +24,25 @@ validate f v onValid onFail
 isUsername :: FieldValidator
 isUsername = FieldValidator {
     validator = not . null
-  , message   = "Nem üres nevet kell megadni!"
+  , message   = "Usernames cannot be empty."
   }
 
 isPassword :: FieldValidator
 isPassword = FieldValidator {
     validator = (>=4) . length
-  , message   = "4 karakternél hosszabbnak kell lennie!"
+  , message   = "Passwords must be at least 4 characters long."
   }
 
 isEmailAddress :: FieldValidator
 isEmailAddress = FieldValidator {
     validator = emailAddress
-  , message   = "Nem fogadható el email címnek!"
+  , message   = "Invalid email address."
   }
 
 isDateTime :: FieldValidator
 isDateTime = FieldValidator {
     validator = dateTime
-  , message   = "Hibás dátum vagy idő!"
+  , message   = "Invalid date or time."
   }
 
 isDigit :: Char -> Bool

@@ -220,9 +220,9 @@ getAssignment = do
   converter <- userTimeZoneToUTCTimeConverter
   startDate <- converter <$> getParameter assignmentStartPrm
   endDate   <- converter <$> getParameter assignmentEndPrm
-  when (endDate < startDate) . throwError $ strMsg "A feladat kezdetének dátuma később van mint a feladat vége"
-  pwd <- getParameter (stringParameter (fieldName assignmentPwdField) "Jelszó")
-  noOfTries <- getParameter (stringParameter (fieldName assignmentNoOfTriesField) "Próbálkozások száma")
+  when (endDate < startDate) . throwError $ strMsg "The assignment starts later than it ends"
+  pwd <- getParameter (stringParameter (fieldName assignmentPwdField) "Password")
+  noOfTries <- getParameter (stringParameter (fieldName assignmentNoOfTriesField) "Number of tries")
   asp <- Assignment.aspectsFromList <$> getJSONParameters (fieldName assignmentAspectField) "Aspect parameter"
   stype <- getJSONParam (fieldName assignmentSubmissionTypeField) "Submission type"
   let asp1 = if stype == Assignment.TextSubmission
@@ -235,8 +235,8 @@ getAssignment = do
                then Assignment.setNoOfTries (read noOfTries) asp2
                else asp2
   Assignment.assignmentAna
-    (getParameter (stringParameter (fieldName assignmentNameField) "Név"))
-    (getParameter (stringParameter (fieldName assignmentDescField) "Leírás"))
+    (getParameter (stringParameter (fieldName assignmentNameField) "Name"))
+    (getParameter (stringParameter (fieldName assignmentDescField) "Description"))
     (return asp3)
     (return startDate)
     (return endDate)

@@ -100,7 +100,7 @@ submissionPostHandler = do
   where
     newSubmission ak as up =
       if (not $ Assignment.isZippedSubmissions as)
-        then submit $ SimpleSubmission <$> getParameter (stringParameter (fieldName submissionTextField) "Megoldás szövege")
+        then submit $ SimpleSubmission <$> getParameter (stringParameter (fieldName submissionTextField) "Submission text")
         else
           case uploadedFile of
             Just (File name contents) ->
