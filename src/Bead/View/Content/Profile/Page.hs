@@ -5,6 +5,7 @@ module Bead.View.Content.Profile.Page (
   , changePassword
   ) where
 
+import           Control.Monad.Trans.Class
 import           Control.Arrow ((&&&))
 import           Data.String
 

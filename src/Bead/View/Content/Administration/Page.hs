@@ -8,6 +8,7 @@ module Bead.View.Content.Administration.Page (
 import           Prelude
 
 import           Control.Arrow ((***), (&&&))
+import           Control.Monad
 import           Data.Function (on)
 import           Data.List
 import           Data.String (fromString)

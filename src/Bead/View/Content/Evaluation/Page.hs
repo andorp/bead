@@ -4,6 +4,8 @@ module Bead.View.Content.Evaluation.Page (
   , modifyEvaluation
   ) where
 
+import           Control.Monad.IO.Class
+import           Control.Monad
 import           Control.Arrow ((&&&))
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid

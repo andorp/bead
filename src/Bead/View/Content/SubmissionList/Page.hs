@@ -3,6 +3,9 @@ module Bead.View.Content.SubmissionList.Page (
     submissionList
   ) where
 
+import           Control.Monad
+import           Control.Monad.Trans.Class
+import           Control.Monad.IO.Class
 import           Data.String (fromString)
 import           Data.Time
 

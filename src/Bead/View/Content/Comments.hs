@@ -12,6 +12,7 @@ module Bead.View.Content.Comments (
 
 import           Data.List (sortBy)
 import           Data.String
+import           Control.Monad
 
 import           Text.Blaze.Html5 (Html, (!))
 import qualified Text.Blaze.Html5 as H

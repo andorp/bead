@@ -4,6 +4,9 @@
 module Bead.View.BeadContext where
 
 import           Prelude hiding (log)
+import           Control.Applicative
+import           Control.Monad.IO.Class
+import           Control.Monad.State
 
 import           Control.Lens.TH
 import qualified Data.ByteString.Lazy.Char8 as BL

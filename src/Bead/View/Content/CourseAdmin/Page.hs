@@ -5,6 +5,7 @@ module Bead.View.Content.CourseAdmin.Page (
   , assignGroupAdmin
   ) where
 
+import           Control.Monad
 import           Control.Arrow ((***), (&&&))
 import           Data.Function (on)
 import           Data.List (intersperse, sortBy)

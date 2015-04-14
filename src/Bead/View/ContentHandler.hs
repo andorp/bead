@@ -40,6 +40,7 @@ module Bead.View.ContentHandler (
   , module Control.Monad.Error
   ) where
 
+import           Control.Applicative
 import           Control.Monad.Error
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.UTF8  as BU
