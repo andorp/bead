@@ -11,6 +11,7 @@ module Bead.View.Content.Home.Page (
 #endif
   ) where
 
+import           Control.Monad.IO.Class
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
 import           Data.Time

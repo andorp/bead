@@ -5,6 +5,8 @@ module Bead.View.Content.SubmissionDetails.Page (
 
 import           Prelude hiding (div)
 
+import           Control.Monad
+import           Control.Monad.IO.Class
 import           Data.List (intersperse)
 import           Data.Monoid
 import           Data.Time (getCurrentTime)

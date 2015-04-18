@@ -3,6 +3,7 @@ module Bead.View.Content.EvaluationTable.Page (
     evaluationTable
   ) where
 
+import           Control.Monad
 import           Data.Function (on)
 import           Data.List (sortBy)
 import           Data.Maybe (fromMaybe)

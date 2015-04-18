@@ -5,6 +5,7 @@ module Bead.View.Content.Public.Login (
   ) where
 
 import           Data.String (fromString)
+import           Control.Monad
 
 import           Snap.Snaplet.Auth
 import           Text.Blaze.Html5

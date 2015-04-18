@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module SnapMain (main) where
 
+import           Control.Monad
 import           Data.Char (toUpper)
 import qualified Data.Char as Char
 import           Data.Maybe

@@ -4,6 +4,7 @@ module Bead.View.Content.UserDetails.Page (
     userDetails
   ) where
 
+import           Control.Monad.Trans.Class
 import           Control.Arrow ((&&&))
 import qualified Data.Map as Map
 import           Data.Maybe

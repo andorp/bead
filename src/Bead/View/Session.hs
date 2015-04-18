@@ -5,6 +5,8 @@ module Bead.View.Session where
 import           Data.ByteString.Char8 hiding (index, length)
 import qualified Data.Text as T
 import qualified Data.List as L
+import           Control.Applicative
+import           Control.Monad
 
 import           Bead.Domain.Entities as E
 import           Bead.View.BeadContext

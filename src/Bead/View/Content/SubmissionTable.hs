@@ -10,6 +10,7 @@ module Bead.View.Content.SubmissionTable (
   , resultCell
   ) where
 
+import           Control.Monad
 import           Data.Char (isAlphaNum)
 import           Data.Function
 import           Data.List

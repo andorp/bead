@@ -4,6 +4,7 @@ module Bead.View.Content.GroupRegistration.Page (
   , unsubscribeFromCourse
   ) where
 
+import           Control.Monad
 import           Control.Arrow ((***))
 import           Data.List (intersperse)
 import           Data.String (fromString)

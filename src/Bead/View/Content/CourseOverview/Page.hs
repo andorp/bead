@@ -3,6 +3,7 @@ module Bead.View.Content.CourseOverview.Page (
     courseOverview
   ) where
 
+import           Control.Monad.IO.Class
 import           Data.String (fromString)
 import           Data.Time (UTCTime, getCurrentTime)
 

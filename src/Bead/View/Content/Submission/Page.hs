@@ -4,6 +4,9 @@ module Bead.View.Content.Submission.Page (
   , resolveStatus
   ) where
 
+import           Control.Monad
+import           Control.Monad.IO.Class
+import           Control.Monad.Trans.Class
 import qualified Data.ByteString.Char8 as B
 import           Data.List (intersperse, partition)
 import           Data.Maybe (listToMaybe)
