@@ -49,7 +49,7 @@ readConfiguration path = do
         Left err -> do
           putStrLn "Configuration is not parseable"
           putStrLn "!!! DEFAULT CONFIGURATION IS USED !!!"
-	  putStrLn $ "Reason: " ++ err
+          putStrLn $ "Reason: " ++ err
           return defaultConfiguration
         Right c -> return c
 
