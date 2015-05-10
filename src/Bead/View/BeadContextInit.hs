@@ -6,6 +6,7 @@ module Bead.View.BeadContextInit (
   , beadConfigFileName
   , InitTasks
   , Daemons(..)
+  , usersJson
   ) where
 
 import           Control.Applicative
@@ -69,8 +70,8 @@ data Daemons = Daemons {
 #endif
   }
 
-beadContextInit :: Config -> InitTasks -> ServiceContext -> Daemons -> FilePath -> SnapletInit BeadContext BeadContext
-beadContextInit config user s daemons tempDir = makeSnaplet "bead" description dataDir $ do
+beadContextInit :: Config -> ServiceContext -> Daemons -> FilePath -> SnapletInit BeadContext BeadContext
+beadContextInit config s daemons tempDir = makeSnaplet "bead" description dataDir $ do
   copyDataContext
 
   let dictionaryDir = "lang"
@@ -81,11 +82,6 @@ beadContextInit config user s daemons tempDir = makeSnaplet "bead" description d
 
   -- TODO: Use a start logger
   liftIO $ putStrLn $ "Found dictionaries: " ++ (show $ Map.keys dictionaries)
-
-  case user of
-    Nothing -> return ()
-    Just userRegInfo ->
-      liftIO $ createAdminUser (persistInterpreter s) usersJson userRegInfo
 
   sm <- nestSnaplet "session" sessionManager $
           initCookieSessionManager "cookie" "session" (Just (sessionTimeout config))

@@ -3,17 +3,13 @@
 module SnapMain (main) where
 
 import           Control.Monad
-import           Data.Char (toUpper)
-import qualified Data.Char as Char
 import           Data.Maybe
 
 import           Snap hiding (Config(..))
 import           System.Directory
-import           System.Environment (getArgs)
 import           System.Exit (exitFailure)
-import           System.IO (hFlush, hSetEcho, stdout, stdin)
+import           System.IO (hSetEcho, stdin)
 import           System.IO.Temp (createTempDirectory)
-import           Text.Regex.TDFA
 
 import           Bead.Config
 import qualified Bead.Controller.Logging as L
@@ -26,13 +22,10 @@ import           Bead.Daemon.LDAP
 #endif
 import           Bead.Daemon.Logout
 import           Bead.Daemon.TestAgent
-import           Bead.Domain.Entities (UserRegInfo(..))
-import           Bead.Domain.TimeZone (utcZoneInfo)
 import           Bead.Persistence.Initialization
 import qualified Bead.Persistence.Persist as Persist (Config, defaultConfig, createPersistInit, createPersistInterpreter)
 import           Bead.View.BeadContextInit
 import           Bead.View.Logger
-import           Bead.View.Validators hiding (toLower)
 
 
 -- Creates a service context that includes the given logger
@@ -52,12 +45,10 @@ createContext logger cfg = do
 main :: IO ()
 main = do
   hSetEcho stdin True
-  args <- getArgs
   config <- readConfiguration beadConfigFileName
   printConfigInfo config
   checkConfig config
-  newAdminUser <- either (const $ return Nothing) (interpretTasks config) (initTasks args)
-  startService config newAdminUser
+  startService config
 
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
@@ -138,82 +129,8 @@ checkConfig cfg = do
 
     configCheck s = putStrLn $ "CONFIG CHECK: " ++ s
 
-interpretTasks :: Config -> [InitTask] -> IO InitTasks
-interpretTasks cfg tasks = case elem CreateAdmin tasks of
-  False -> return Nothing
-  True  -> fmap Just (readAdminUser cfg)
-
--- Read user information from stdin, validates the username, the passwords and email fields
-readAdminUser :: Config -> IO UserRegInfo
-readAdminUser cfg = do
-  putStrLn "Creating admin user, all characters are converted to lower case."
-  putStrLn "Username must be in the defined format, which is given in the config."
-  usr <- readUsername
-  email <- readEmail
-  fullName <- readFullname
-  pwd      <- readPassword "Password: "
-  pwdAgain <- readPassword "Password Again: "
-  hSetEcho stdin True
-  case pwd == pwdAgain of
-    -- All the validators are passed, the registration can be done
-    True  -> return (UserRegInfo (usr, pwd, email, fullName, utcZoneInfo))
-    False -> do
-      putStrLn "Passwords do not match!"
-      readAdminUser cfg
-  where
-    putStrFlush msg = putStr msg >> hFlush stdout
-
-    readFullname = do
-      putStrFlush "Full name: "
-      getLine
-
-    readPassword msg = do
-      putStrFlush msg
-      hSetEcho stdin False
-      pwd <- getLine
-      putStrLn ""
-      hSetEcho stdin True
-      validate
-        isPassword
-        pwd
-        (return pwd)
-        (\msg' -> do putStrLn msg'
-                     readPassword msg)
-
-    readEmail = do
-      putStrFlush "Email address: "
-      email <- getLine
-      validate
-        isEmailAddress
-        email
-        (return email) -- Valid email
-        (\msg -> do putStrLn msg
-                    readEmail)
-
-    readUsername = do
-      putStrFlush "Admin User: "
-      usr <- fmap (map toUpper) getLine
-      validate
-        isUsername
-        usr
-        -- Valid username
-        (if (isValidUsername usr)
-           then return usr
-           else do putStrLn "Username does not match the given regexp!"
-                   readUsername)
-        -- Invalid username
-        (\msg -> do putStrLn msg
-                    readUsername)
-      where
-        isValidUsername usr =
-#ifdef LDAPEnabled
-          and [length usr > 0, all Char.isAlphaNum usr]
-#else
-          usr =~ (usernameRegExp $ loginConfig cfg)
-#endif
-
-startService :: Config -> InitTasks -> IO ()
-startService config initTasks = do
+startService :: Config -> IO ()
+startService config = do
   userActionLogs <- creating "logger" $ createSnapLogger . userActionLogFile $ config
   let userActionLogger = snapLogger userActionLogs
 
@@ -250,7 +167,7 @@ startService config initTasks = do
 #endif
 #endif
 
-  serveSnaplet defaultConfig (beadContextInit config initTasks context daemons tempDir)
+  serveSnaplet defaultConfig (beadContextInit config context daemons tempDir)
   stopLogger userActionLogs
   removeDirectoryRecursive tempDir
   where
