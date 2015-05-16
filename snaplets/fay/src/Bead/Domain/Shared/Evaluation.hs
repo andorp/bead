@@ -7,7 +7,7 @@ import Data.Data
 {- Shared data structures between Client and Server -}
 
 data Result = Passed | Failed
-  deriving (Eq, Show, Read, Data, Typeable)
+  deriving (Eq, Show, Read, Ord, Data, Typeable)
 
 resultCata passed failed r = case r of
   Passed -> passed
@@ -17,7 +17,7 @@ resultCata passed failed r = case r of
 data EvaluationData b p
   = BinEval b
   | PctEval p
-  deriving (Eq, Show, Read, Data, Typeable)
+  deriving (Eq, Show, Read, Ord, Data, Typeable)
 
 evaluationDataMap :: (b -> a) -> (p -> a) -> EvaluationData b p -> a
 evaluationDataMap f _ (BinEval x) = f x
@@ -49,21 +49,21 @@ data PctConfig = PctConfig { pLimit :: Double }
   deriving (Eq, Show, Read, Data, Typeable)
 
 data Scores a = Scores { unScores :: [a] }
-  deriving (Eq, Show, Read, Data, Typeable)
+  deriving (Eq, Show, Read, Ord, Data, Typeable)
 
 data Binary = Binary Result
-  deriving (Eq, Show, Read, Data, Typeable)
+  deriving (Eq, Show, Read, Ord, Data, Typeable)
 
 binaryCata f (Binary x) = f x
 
 data Percentage = Percentage (Scores Double)
-  deriving (Eq, Show, Read, Data, Typeable)
+  deriving (Eq, Show, Read, Ord, Data, Typeable)
 
 percentageCata f (Percentage x) = f x
 
 data EvResult = EvResult {
     evResult :: EvaluationData Binary Percentage
-  } deriving (Eq, Show, Read, Data, Typeable)
+  } deriving (Eq, Show, Read, Ord, Data, Typeable)
 
 evResultCata
   binary

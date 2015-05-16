@@ -411,10 +411,10 @@ calculateResultTests = do
     [ ( "Empty list", [], Nothing, "")
 
     , ( "One binary submission", [Submission_Result undefined (binaryResult Passed)]
-      , Just Passed, "")
+      , Nothing, "")
 
     , ( "One percentage submission", [Submission_Result undefined (percentageResult 0.1)]
-      , Just Passed, "")
+      , Nothing, "")
     ]
 
 #endif
