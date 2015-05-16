@@ -142,6 +142,7 @@ Library
     deepseq,
     directory,
     hashable,
+    haskell-src-exts == 1.15.0.1,
     fay,
     fay-jquery,
     fay-text,
@@ -166,7 +167,7 @@ Library
     snap-core,
     snap-server,
     snap-blaze,
-    snaplet-fay,
+    snaplet-fay == 0.3.3.7,
     stm,
     syb,
     temporary,
@@ -285,20 +286,18 @@ Executable Bead
   HS-Source-Dirs:   main
   Buildable:        True
 
-Executable BeadUnitTest
-  if flag(Tests)
-    Buildable: True
-    Build-Depends:
-      base, Bead, bytestring, containers, directory, filepath, HUnit,
-      QuickCheck, temporary, test-framework, test-framework-hunit,
-      test-framework-quickcheck2, themis, time, transformers
-  else
-    Buildable: False
+test-suite BeadUnitTest
+  Type:
+    exitcode-stdio-1.0
+  Build-Depends:
+    base, Bead, bytestring, containers, directory, filepath, HUnit,
+    QuickCheck, temporary, test-framework, test-framework-hunit,
+    test-framework-quickcheck2, themis, time, transformers
   GHC-Options: -fhpc -hpcdir dist/build/BeadUnitTest/Mix/
   if flag(LDAP)
-    CPP-Options: -DLDAPEnabled
+    CPP-Options: -DLDAPEnabled -DTEST
   else
-    CPP-Options: -DEmailEnabled
+    CPP-Options: -DEmailEnabled -DTEST
   if flag(SQLite)
     CPP-Options: -DTEST -DSQLITE
     Build-Depends:
