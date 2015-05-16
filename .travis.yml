@@ -4,7 +4,7 @@ env:
 before_install:
   - travis_retry sudo add-apt-repository -y ppa:hvr/ghc
   - travis_retry sudo apt-get update
-  - travis_retry sudo apt-get install cabal-install-$CABALVER ghc-$GHCVER cpphs # see note about happy/alex
+  - travis_retry sudo apt-get install cabal-install-$CABALVER ghc-$GHCVER cpphs
   - export PATH=/opt/ghc/$GHCVER/bin:/opt/cabal/$CABALVER/bin:$PATH
   - |
      if [ $GHCVER = "head" ] || [ ${GHCVER%.*} = "7.8" ] || [ ${GHCVER%.*} = "7.10" ]; then
@@ -86,18 +86,16 @@ install:
                   timezone-series-0.1.4
                   timezone-olson-0.1.6
                   --force-reinstalls
+
+script:
   - cabal install QuickCheck-2.6
                   test-framework
                   test-framework-hunit
                   test-framework-quickcheck2
-                  --only-dependencies
+  - cabal install monad-logger-0.3.13.1
   - |
      git clone https://github.com/andorp/themis
      cd themis && cabal configure && cabal install && cd ..
-
-script:
-  - if [ -f configure.ac ]; then autoreconf -i; fi
-  - cabal configure --enable-tests --enable-benchmarks -v2
-  - cabal install
+  - cabal configure -v2 -f Tests
   - cabal test
 
