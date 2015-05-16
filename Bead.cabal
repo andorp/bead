@@ -293,7 +293,6 @@ test-suite BeadUnitTest
     base, Bead, bytestring, containers, directory, filepath, HUnit,
     QuickCheck, temporary, test-framework, test-framework-hunit,
     test-framework-quickcheck2, themis, time, transformers
-  GHC-Options: -fhpc -hpcdir dist/build/BeadUnitTest/Mix/
   if flag(LDAP)
     CPP-Options: -DLDAPEnabled -DTEST
   else
