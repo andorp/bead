@@ -5,7 +5,7 @@ import qualified Bead.Domain.Entity.Notification as Notification
 import           Bead.Domain.TimeZone (utcZoneInfo, cetZoneInfo)
 import           Bead.Domain.Shared.Evaluation
 
-import           Test.Quick.EnumGen
+import           Test.Tasty.Arbitrary
 
 import           Test.QuickCheck.Gen
 import           Test.QuickCheck.Arbitrary
@@ -166,7 +166,7 @@ testScripts = testScriptAppAna
   manyWords -- desc
   manyWords -- notes
   manyWords -- script
-  enumGenerator -- type
+  enumGen   -- type
 
 testCases = oneof [
     TestCase <$> word <*> manyWords <*> (SimpleTestCase <$> manyWords) <*> manyWords

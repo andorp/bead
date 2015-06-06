@@ -7,7 +7,6 @@ module Bead.View.Content.Home.Page (
 #ifdef TEST
   , sumBinaryResultTests
   , sumPercentageResultTests
-  , calculateSubmissionResultTests
 #endif
   ) where
 
@@ -28,7 +27,7 @@ import qualified Bead.View.UserActions as UA
 import           Bead.View.Content.SubmissionTable as ST
 
 #ifdef TEST
-import           Bead.Invariants
+import           Test.Tasty.TestSet
 #endif
 
 import           Bead.View.Content.Home.Data
@@ -177,44 +176,28 @@ binPassed = Submission_Result undefined (binaryResult Passed)
 binFailed = Submission_Result undefined (binaryResult Failed)
 pctResult = Submission_Result undefined (percentageResult 0.1)
 
-sumBinaryResultTests = [
-    Assertion "Empty list" (sumBinaryResult trans []) (Right Failed)
-  , Assertion "Homogenous passed list" (sumBinaryResult trans [binPassed, binPassed]) (Right Passed)
-  , Assertion "Homogenous failed list" (sumBinaryResult trans [binPassed, binFailed]) (Right Failed)
-  , Assertion "Inhomogenous list" (sumBinaryResult trans [binPassed, binFailed, pctResult, binPassed])
-              (Left "Not a binary evaluation")
-  ]
+sumBinaryResultTests = eqPartitions sumBinaryResult'
+  [ Partition "Empty list" (trans, []) (Right Failed) ""
+  , Partition "Homogenous passed list" (trans, [binPassed, binPassed]) (Right Passed) ""
+  , Partition "Homogenous failed list" (trans, [binPassed, binFailed]) (Right Failed) ""
+  , Partition "Inhomogenous list" (trans, [binPassed, binFailed, pctResult, binPassed])
+              (Left "Not a binary evaluation") ""
+  ] where sumBinaryResult' = uncurry sumBinaryResult
 
 cfg30 = PctConfig 0.3 -- At least 30% is needed to pass
 cfg40 = PctConfig 0.4 -- At least 40% is needed to pass
 pct x = Submission_Result undefined (percentageResult x)
 
-sumPercentageResultTests = [
-    Assertion "Empty list"     (sumPercentageResult trans cfg30 []) (Right Failed)
-  , Assertion "30% and passed" (sumPercentageResult trans cfg30 [pct 0.3]) (Right Passed)
-  , Assertion "40% and failed" (sumPercentageResult trans cfg40 [pct 0.3]) (Right Failed)
-  , Assertion "60/200 and passed" (sumPercentageResult trans cfg30 [pct 0.1, pct 0.5]) (Right Passed)
-  , Assertion "50/200 and failed" (sumPercentageResult trans cfg30 [pct 0, pct 0.5]) (Right Failed)
-  , Assertion "Inhomogenous list" (sumPercentageResult trans cfg30 [pct 0, binPassed])
-                                  (Left "Not a percentage evaluation")
-  ]
+sumPercentageResultTests = eqPartitions sumPercentageResult'
+  [ Partition "Empty list"     (trans, cfg30, []) (Right Failed) ""
+  , Partition "30% and passed" (trans, cfg30, [pct 0.3]) (Right Passed) ""
+  , Partition "40% and failed" (trans, cfg40, [pct 0.3]) (Right Failed) ""
+  , Partition "60/200 and passed" (trans, cfg30, [pct 0.1, pct 0.5]) (Right Passed) ""
+  , Partition "50/200 and failed" (trans, cfg30, [pct 0, pct 0.5]) (Right Failed) ""
+  , Partition "Inhomogenous list" (trans, cfg30, [pct 0, binPassed])
+                                  (Left "Not a percentage evaluation") ""
+  ] where sumPercentageResult' (trans, cfg, lst) = sumPercentageResult trans cfg lst
 
 binConfig = BinEval ()
 pctConfig = PctEval cfg30
-
-calculateSubmissionResultTests = [
-{-
-    Assertion "Binary config, failed"
-              (calculateSubmissionResult trans [binPassed, binFailed] binConfig) (Right Failed)
-  , Assertion "Percentage config, failed"
-              (calculateSubmissionResult trans [pct 0.3, pct 0.1] pctConfig) (Right Failed)
-  , Assertion "Binary config, wrong list"
-              (calculateSubmissionResult trans [binPassed, binFailed] pctConfig)
-              (Left "Not a percentage evaluation")
-  , Assertion "Percentage config, wrong list"
-              (calculateSubmissionResult trans [pct 0.3, pct 0.1] binConfig)
-              (Left "Not a binary evaluation")
--}
-  ]
 #endif
-

@@ -24,7 +24,7 @@ import           Database.Persist.TH
 import qualified Bead.Domain.Entities as Domain
 
 #ifdef TEST
-import           Test.Themis.Keyword.Encaps
+import           Test.Tasty.Encaps
 #endif
 
 -- String represents a JSON value

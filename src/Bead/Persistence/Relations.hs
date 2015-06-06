@@ -57,10 +57,9 @@ import           Bead.View.Translation
 #ifdef TEST
 import           Bead.Persistence.Initialization
 
-import qualified Test.Themis.Keyword.Encaps as Keyword (step, key)
-import           Test.Themis.Keyword.Encaps hiding (step, key)
-import           Test.Themis.Test
-import           Test.Themis.Test.Asserts hiding (assertEquals)
+import qualified Test.Tasty.Encaps as Keyword (step, key)
+import           Test.Tasty.Encaps hiding (step, key)
+import           Test.Tasty.TestSet hiding (assertEquals)
 #endif
 
 -- * Combined Persistence Tasks
@@ -405,18 +404,12 @@ calculateResult :: [SubmissionInfo] -> Maybe Result
 calculateResult _ = Nothing
 
 #ifdef TEST
-
 calculateResultTests = do
   eqPartitions calculateResult
-    [ ( "Empty list", [], Nothing, "")
-
-    , ( "One binary submission", [Submission_Result undefined (binaryResult Passed)]
-      , Nothing, "")
-
-    , ( "One percentage submission", [Submission_Result undefined (percentageResult 0.1)]
-      , Nothing, "")
+    [ Partition "Empty list" [] Nothing ""
+    , Partition "One binary submission" [Submission_Result undefined (binaryResult Passed)] Nothing ""
+    , Partition "One percentage submission" [Submission_Result undefined (percentageResult 0.1)] Nothing ""
     ]
-
 #endif
 
 mkCourseSubmissionTableInfo

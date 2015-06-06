@@ -1,10 +1,13 @@
-module Test.Unit.Persistence.TestNoSQLDir where
+module Test.Unit.Persistence.TestNoSQLDir (
+    noSqlDirTests
+  ) where
 
 -- Test imports
 
-import Test.HUnit
-import Test.Framework (testGroup)
-import Test.Framework.Providers.HUnit
+import Test.HUnit hiding (test)
+import Test.Tasty (testGroup)
+import Test.Tasty.HUnit (testCase)
+import Test.Tasty.TestSet
 
 -- Bead imports
 
@@ -24,16 +27,15 @@ import Data.Time.Clock
 import System.Directory
 import System.FilePath
 
-tests = testGroup "Persistence tests" [
-    test_initialize_persistence
-  , test_create_load_exercise
-  , test_create_user
-  , test_create_group_user
-  , testUserRegSaveAndLoad
-  , testOpenSubmissions
-  , test_feedbacks
-  , clean_up
-  ]
+noSqlDirTests = group "Persistence tests" $ do
+  test test_initialize_persistence
+  test test_create_load_exercise
+  test test_create_user
+  test test_create_group_user
+  test testUserRegSaveAndLoad
+  test testOpenSubmissions
+  test test_feedbacks
+  test clean_up
 
 -- Normal assignment is represented as empty aspects set
 normal = emptyAspects
@@ -162,7 +164,7 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
     createGroupAdmin admin gk1
     cak <- saveCourseAssignment ck cAssignment
     gak1 <- saveGroupAssignment gk1 gAssignment1
-    gak2 <- saveGroupAssignment gk2 gAssignment2
+    _ <- saveGroupAssignment gk2 gAssignment2
     sk1 <- saveSubmission cak myStudent sbsm
     sk2 <- saveSubmission gak1 myStudent sbsm
     sk3 <- saveSubmission cak otherStudent sbsm

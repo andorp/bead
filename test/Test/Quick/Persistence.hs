@@ -33,9 +33,10 @@ import Bead.Domain.Relationships
 import Bead.Domain.Shared.Evaluation
 import Test.QuickCheck
 import Test.QuickCheck.Monadic
-import Test.Framework (testGroup)
-import Test.Framework.Providers.HUnit
-import Test.Framework.Providers.QuickCheck2
+import Test.Tasty
+import Test.Tasty.HUnit (testCase)
+import Test.Tasty.TestSet (add, group, test)
+import Test.Tasty.QuickCheck (testProperty)
 
 {- Mass test of the persistence layer -}
 
@@ -1477,67 +1478,67 @@ startDate = read "2013-03-01 12:00:00"
 endDate :: UTCTime
 endDate = read "2013-03-30 12:00:00"
 
-tests = testGroup "Persistence Layer QuickCheck properties" [
-    initPersistenceLayer
-  , testProperty "Assignment Save and Load" $ monadicIO assignmentSaveAndLoad
-  , testProperty "Course Save and Load" $ monadicIO courseSaveAndLoad
-  , testProperty "Group Save and Load" $ monadicIO groupSaveAndLoad
-  , testProperty "Course Assignment Save and Load" $ monadicIO courseAssignmentSaveAndLoad
-  , testProperty "Group Assignment Save and Load" $ monadicIO groupAssignmentSaveAndLoad
-  , testProperty "User Save and Load" $ monadicIO (pick Gen.users >>= userSaveAndLoad)
-  , testProperty "Multiple groups for course" $ monadicIO multipleGroupsForCourse
-  , testProperty "Submission Save and Load" $ monadicIO saveAndLoadSubmission
-  , testProperty "Assignment and user of submission" $ monadicIO assignmentAndUserOfSubmission
-  , testProperty "Comment save and load" $ monadicIO saveAndLoadComment -- }
-  , testProperty "Evaluation save and load" $ monadicIO evaluationGroupSaveAndLoad
-  , cleanUpPersistence
-  ]
 
-massTests = testGroup "Persistence Layer Mass tests" [
-    initPersistenceLayer
-  , massTest
-  , cleanUpPersistence
-  ]
+tests = group "Persistence Layer QuickCheck properties" $ do
+  add initPersistenceLayer
+  add $ testProperty "Assignment Save and Load" $ monadicIO assignmentSaveAndLoad
+  add $ testProperty "Course Save and Load" $ monadicIO courseSaveAndLoad
+  add $ testProperty "Group Save and Load" $ monadicIO groupSaveAndLoad
+  add $ testProperty "Course Assignment Save and Load" $ monadicIO courseAssignmentSaveAndLoad
+  add $ testProperty "Group Assignment Save and Load" $ monadicIO groupAssignmentSaveAndLoad
+  add $ testProperty "User Save and Load" $ monadicIO (pick Gen.users >>= userSaveAndLoad)
+  add $ testProperty "Multiple groups for course" $ monadicIO multipleGroupsForCourse
+  add $ testProperty "Submission Save and Load" $ monadicIO saveAndLoadSubmission
+  add $ testProperty "Assignment and user of submission" $ monadicIO assignmentAndUserOfSubmission
+  add $ testProperty "Comment save and load" $ monadicIO saveAndLoadComment
+  add $ testProperty "Evaluation save and load" $ monadicIO evaluationGroupSaveAndLoad
+  add cleanUpPersistence
 
-complexTests = testGroup "Persistence Layer Complex tests" [
-    initPersistenceLayer
-  , testCase "User assignment tests" $ userAssignmentKeyTests
-  , testCase "Every assignment has a group or a course" $ courseOrGroupAssignmentTest
-  , testCase "Group description can be created from any group" $ groupDescriptionTest
-  , testCase "Every submission has some kind of description" $ submissionDescTest
-  , testCase "Every assignment course must have a name and admins" $ courseNameAndAdminsTest
-  , testCase "Every assignment and an associated user has a submission list" $ submissionListDescTest
-  , testCase "Allways the last evaluation is valid for the submission" $ lastEvaluationTest
-  , testCase "Every submission has a description" $ submissionDetailsDescTest
-  , testCase "Submission tables" $ submissionTablesTest
-  , testCase "The user can have submissions and information" $ userSubmissionDescTest
-  , testCase "All the saved courses must have a key" $ courseKeysTest
-  , testCase "All the saved assignments must have a key" $ assignmentKeyTest
-  , testCase "All the saved submissions must have a key" $ filterSubmissionsTest
-  , testCase "Users must be able to change password and reamain loginable" $ updatePwdTest
-  , testCase "Modified assignments must be untouched after loading them" $ modifyAssignmentsTest
-  , testCase "Modified evaluations must be untouched after loading them" $ modifyEvaluationTest
-  , testCase "Delete user form course" $ deleteUsersFromCourseTest
-  , testCase "Delete user from courses not belong to" $ deleteUsersFromCourseNegativeTest
-  , testCase "User unsubscribes from a course" $ unsubscribeFromSubscribedGroupsTest
-  , testCase "Save, load and modify test scripts" $ saveLoadAndModifyTestScriptsTest
-  , testCase "Save, load and modify test cases" $ saveLoadAndModifyTestCasesTest
-  , testCase "Copy, list, and get user's data file path" $ userFileHandlingTest
-  , testCase "Overwrite user's data file" $ userOverwriteFileTest
-  , testCase "Test Job cration" $ testJobCreationTest
-  , testCase "Incoming feedbacks" $ incomingFeedbacksTest
-  , testCase "Locked feedback tests" $ finalizeFeedbacksTest
-  , testCase "Delete incoming feedbacks" $ deleteIncomingFeedbackTest
-  , testCase "Open submissions list" $ openSubmissionsTest
-  , testCase "Assessments" $ assessmentTests
-  , testCase "Unevaluated scores" $ unevaluatedScoresTests
-  , testCase "Evaluated scores" $ scoreEvaluationTests
-  , testCase "Comment notifications" $ saveCommentNotificationTest
-  , testCase "Feedback notifications" $ saveFeedbackNotificationTest
-  , testCase "System notifications with attached users" $ attachedSystemNotificationTest
-  , testCase "Notifications with attached users" $ attachedNotificationTest
-  , cleanUpPersistence
-  ]
+
+massTests = group "Persistence Layer Mass tests" $ do
+  test initPersistenceLayer
+  test massTest
+  test cleanUpPersistence
+
+
+complexTests = group "Persistence Layer Complex tests" $ do
+  test initPersistenceLayer
+  add $ testCase "User assignment tests" userAssignmentKeyTests
+  add $ testCase "Every assignment has a group or a course" courseOrGroupAssignmentTest
+  add $ testCase "Group description can be created from any group" groupDescriptionTest
+  add $ testCase "Every submission has some kind of description" submissionDescTest
+  add $ testCase "Every assignment course must have a name and admins" courseNameAndAdminsTest
+  add $ testCase "Every assignment and an associated user has a submission list" submissionListDescTest
+  add $ testCase "Allways the last evaluation is valid for the submission" lastEvaluationTest
+  add $ testCase "Every submission has a description" submissionDetailsDescTest
+  add $ testCase "Submission tables" submissionTablesTest
+  add $ testCase "The user can have submissions and information" userSubmissionDescTest
+  add $ testCase "All the saved courses must have a key" courseKeysTest
+  add $ testCase "All the saved assignments must have a key" assignmentKeyTest
+  add $ testCase "All the saved submissions must have a key" filterSubmissionsTest
+  add $ testCase "Users must be able to change password and reamain loginable" updatePwdTest
+  add $ testCase "Modified assignments must be untouched after loading them" modifyAssignmentsTest
+  add $ testCase "Modified evaluations must be untouched after loading them" modifyEvaluationTest
+  add $ testCase "Delete user form course" deleteUsersFromCourseTest
+  add $ testCase "Delete user from courses not belong to" deleteUsersFromCourseNegativeTest
+  add $ testCase "User unsubscribes from a course" unsubscribeFromSubscribedGroupsTest
+  add $ testCase "Save, load and modify test scripts" saveLoadAndModifyTestScriptsTest
+  add $ testCase "Save, load and modify test cases" saveLoadAndModifyTestCasesTest
+  add $ testCase "Copy, list, and get user's data file path" userFileHandlingTest
+  add $ testCase "Overwrite user's data file" userOverwriteFileTest
+  add $ testCase "Test Job cration" testJobCreationTest
+  add $ testCase "Incoming feedbacks" incomingFeedbacksTest
+  add $ testCase "Locked feedback tests" finalizeFeedbacksTest
+  add $ testCase "Delete incoming feedbacks" deleteIncomingFeedbackTest
+  add $ testCase "Open submissions list" openSubmissionsTest
+  add $ testCase "Assessments" assessmentTests
+  add $ testCase "Unevaluated scores" unevaluatedScoresTests
+  add $ testCase "Evaluated scores" scoreEvaluationTests
+  add $ testCase "Comment notifications" saveCommentNotificationTest
+  add $ testCase "Feedback notifications" saveFeedbackNotificationTest
+  add $ testCase "System notifications with attached users" attachedSystemNotificationTest
+  add $ testCase "Notifications with attached users" attachedNotificationTest
+  add $ cleanUpPersistence
 
 monadicProperty gen prop = monadicIO (forAllM gen prop)
 

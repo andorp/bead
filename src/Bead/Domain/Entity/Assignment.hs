@@ -38,7 +38,6 @@ module Bead.Domain.Entity.Assignment (
   , isActive
 
 #ifdef TEST
-  , assignmentTests
   , asgTests
 #endif
   ) where
@@ -54,10 +53,10 @@ import           Data.Time (UTCTime(..))
 import           Bead.Domain.Shared.Evaluation
 
 #ifdef TEST
-import           Test.Themis.Test hiding (testCaseCata)
-import           Test.Themis.Test.Asserts
-import           Test.Themis.Test.Arbitrary
-import           Test.Themis.Test.RandomData
+import           Test.Tasty.Arbitrary
+import           Test.Tasty.RandomData
+import           Test.Tasty.TestSet
+import           Test.QuickCheck.Gen
 import           Bead.Invariants (UnitTests(..))
 #endif
 
@@ -173,16 +172,11 @@ isNoOfTriesAspect = aspect False (const False) False False (const True)
 
 #ifdef TEST
 assignmentAspectPredTests = group "assignmentAspectPred" $ do
-  test "Password aspect predicate" $
-    Equals True (isPasswordAspect (Password "pwd")) "Password aspect is not recognized"
-  test "Ballow box aspect predicate" $
-    Equals True (isBallotBoxAspect BallotBox) "Ballot box aspect is not recognized"
-  test "Zipped submissions aspect predicate" $
-    Equals True (isZippedSubmissionsAspect ZippedSubmissions) "Zipped submissions aspect is not recognized"
-  test "Isolated assignment" $
-    Equals True (isIsolatedAspect Isolated) "Isolated aspect is not recognized"
-  test "No of tries" $
-    Equals True (isNoOfTriesAspect (NoOfTries 4)) "No of tries is not recognized"
+  assertEquals "Password aspect predicate" True (isPasswordAspect (Password "pwd")) "Password aspect is not recognized"
+  assertEquals "Ballow box aspect predicate" True (isBallotBoxAspect BallotBox) "Ballot box aspect is not recognized"
+  assertEquals "Zipped submissions aspect predicate" True (isZippedSubmissionsAspect ZippedSubmissions) "Zipped submissions aspect is not recognized"
+  assertEquals "Isolated assignment" True (isIsolatedAspect Isolated) "Isolated aspect is not recognized"
+  assertEquals "No of tries" True (isNoOfTriesAspect (NoOfTries 4)) "No of tries is not recognized"
 #endif
 
 -- Returns True if the aspect set contains a password protected value
@@ -191,26 +185,19 @@ isPasswordProtected = fromAspects (not . Set.null . Set.filter isPasswordAspect)
 
 #ifdef TEST
 isPasswordProtectedTests = group "isPasswordProtected" $ do
-  test "Empty aspect set"
-       (Equals False (isPasswordProtected emptyAspects)
-               "Empty set should not contain password")
-  test "Non password aspects"
-       (Equals False (isPasswordProtected (fromList [BallotBox]))
-               "Ballot box set should not contain password")
-  test "Password aspect"
-       (Equals True (isPasswordProtected (fromList [Password ""]))
-               "Password aspect should be found")
-  test "Password aspect within more aspects"
-       (Equals True (isPasswordProtected (fromList [Password "", BallotBox, ZippedSubmissions, Isolated]))
-               "Password aspect should be found")
-  test "Password protected positive random tests (password is given)"
-       (Property isPasswordProtected
+  assertEquals "Empty aspect set" False (isPasswordProtected emptyAspects) "Empty set should not contain password"
+  assertEquals "Non password aspects" False (isPasswordProtected (fromList [BallotBox])) "Ballot box set should not contain password"
+  assertEquals "Password aspect" True (isPasswordProtected (fromList [Password ""])) "Password aspect should be found"
+  assertEquals "Password aspect within more aspects" True (isPasswordProtected (fromList [Password "", BallotBox, ZippedSubmissions, Isolated]))
+               "Password aspect should be found"
+  assertProperty "Password protected positive random tests (password is given)"
+                 isPasswordProtected
                  ((createAspects . (Password "a":)) <$> listOf positive)
-                 "Password protected is not recognized")
-  test "Password protected positive random tests (password is not given)"
-       (Property (not . isPasswordProtected)
+                 "Password protected is not recognized"
+  assertProperty "Password protected positive random tests (password is not given)"
+                 (not . isPasswordProtected)
                  ((createAspects . (filter (not . isPasswordAspect))) <$> listOf positive)
-                 "Non password protected is recognized")
+                 "Non password protected is recognized"
 #endif
 
 -- Returns True if the aspect set contains a ballot box value
@@ -219,18 +206,11 @@ isBallotBox = fromAspects (not . Set.null . Set.filter isBallotBoxAspect)
 
 #ifdef TEST
 isBallotBoxTests = group "isBallotBox" $ do
-  test "Empty aspect set"
-       (Equals False (isBallotBox emptyAspects)
-               "Empty set should not contain ballot box")
-  test "Non password aspects"
-       (Equals True (isBallotBox (fromList [BallotBox]))
-               "Ballot box should be found")
-  test "Password aspect"
-       (Equals False (isBallotBox (fromList [Password ""]))
-               "Password aspect should be rejected")
-  test "Password aspect within more aspects"
-       (Equals True (isBallotBox (fromList [Password "", BallotBox, ZippedSubmissions, Isolated]))
-               "BallotBox aspect should be found")
+  assertEquals "Empty aspect set" False (isBallotBox emptyAspects) "Empty set should not contain ballot box"
+  assertEquals "Non password aspects" True (isBallotBox (fromList [BallotBox])) "Ballot box should be found"
+  assertEquals "Password aspect" False (isBallotBox (fromList [Password ""])) "Password aspect should be rejected"
+  assertEquals "Password aspect within more aspects" True (isBallotBox (fromList [Password "", BallotBox, ZippedSubmissions, Isolated]))
+               "BallotBox aspect should be found"
 #endif
 
 -- Returns True if the aspect set contains a "zipped submissions" value
@@ -250,23 +230,18 @@ clearZippedSubmissions x@(Aspects as)
 #ifdef TEST
 isZippedSubmissionsTests = group "isZippedSubmissions" $
   eqPartitions isZippedSubmissions
-    [ ( "Empty aspect set", emptyAspects, False, "Empty set should not contain zipped submissions")
-
-    , ( "Setting zipped submissions aspect"
-           , setZippedSubmissions emptyAspects
-           , True, "Zipped submissions aspect should be set")
-
-    , ( "Clearing zipped submissions aspect"
-           , clearZippedSubmissions $ fromList [ZippedSubmissions]
-           , False, "Zipped submissions aspect should be cleared")
-
-    , ( "Non password aspects", fromList [ZippedSubmissions], True, "Zipped submissions should be found")
-
-    , ( "Password aspect", fromList [Password ""], False, "Password aspect should be rejected")
-
-    , ( "Password aspect within more aspects"
-           , fromList [Password "", BallotBox, ZippedSubmissions]
-           , True, "Zipped submissions aspect should be found")
+    [ Partition "Empty aspect set" emptyAspects False "Empty set should not contain zipped submissions"
+    , Partition "Setting zipped submissions aspect"
+                (setZippedSubmissions emptyAspects)
+                True "Zipped submissions aspect should be set"
+    , Partition "Clearing zipped submissions aspect"
+                (clearZippedSubmissions $ fromList [ZippedSubmissions])
+                False "Zipped submissions aspect should be cleared"
+    , Partition "Non password aspects" (fromList [ZippedSubmissions]) True "Zipped submissions should be found"
+    , Partition "Password aspect" (fromList [Password ""]) False "Password aspect should be rejected"
+    , Partition "Password aspect within more aspects"
+                (fromList [Password "", BallotBox, ZippedSubmissions])
+                True "Zipped submissions aspect should be found"
     ]
 #endif
 
@@ -281,9 +256,9 @@ aspectsToSubmissionType x = if isZippedSubmissions x then ZipSubmission else Tex
 #ifdef TEST
 aspectsToSubmissionTypeTests = group "aspectsToSubmissionType" $
   eqPartitions aspectsToSubmissionType
-    [ ("Zipped Submission", fromList [ZippedSubmissions], ZipSubmission, "Zipped submission should be found")
-    , ("Emtpy aspect set", emptyAspects, TextSubmission, "Empty set should not contain zipped submissions")
-    , ( "Password aspect", fromList [Password ""], TextSubmission, "Password aspect should be rejected")
+    [ Partition "Zipped Submission" (fromList [ZippedSubmissions]) ZipSubmission "Zipped submission should be found"
+    , Partition "Emtpy aspect set" emptyAspects TextSubmission "Empty set should not contain zipped submissions"
+    , Partition "Password aspect" (fromList [Password ""]) TextSubmission "Password aspect should be rejected"
     ]
 #endif
 
@@ -310,18 +285,18 @@ setPassword pwd = fromAspects updateOrSetPassword where
 
 #ifdef TEST
 assignmentAspectsSetPasswordTests = group "setPassword" $ do
-  test "Empty set" $ Equals
-    (fromList [Password "password"])
-    (setPassword "password" emptyAspects)
-    "Password does not set in an empty aspect set."
-  test "Replace only password" $ Equals
-    (fromList [Password "new"])
-    (setPassword "new" (fromList [Password "old"]))
-    "Password is not replaced in a password empty set"
-  test "Replace the password in a multiple set" $ Equals
-    (fromList [ZippedSubmissions, BallotBox, Password "new", Isolated])
-    (setPassword "new" (fromList [ZippedSubmissions, BallotBox, Password "old", Isolated]))
-    "Password is not replaced in a non empty set"
+  assertEquals "Empty set"
+               (fromList [Password "password"])
+               (setPassword "password" emptyAspects)
+               "Password does not set in an empty aspect set."
+  assertEquals "Replace only password"
+               (fromList [Password "new"])
+               (setPassword "new" (fromList [Password "old"]))
+               "Password is not replaced in a password empty set"
+  assertEquals "Replace the password in a multiple set"
+               (fromList [ZippedSubmissions, BallotBox, Password "new", Isolated])
+               (setPassword "new" (fromList [ZippedSubmissions, BallotBox, Password "old", Isolated]))
+               "Password is not replaced in a non empty set"
 #endif
 
 -- Returns True if the no of submissions flag is active
@@ -356,18 +331,20 @@ clearNoOfTries = fromAspects clear where
 
 #ifdef TEST
 noOfTriesTests = do
-  test "noOfTries positive tests (no of tries is given)" $
-    Property isNoOfTries (createAspects . ((NoOfTries 1):) <$> listOf positive)
-             "No of tries is not recognized"
-  test "noOfTries positive tests (no of tries is not given)" $
-    Property (not . isNoOfTries) (createAspects . (filter (not . isNoOfTriesAspect)) <$> listOf positive)
-             "No of tries is recognized"
-  test "noOfTests: get (set n aspects) == n" $
-    Property id
-      (do a <- createAspects <$> listOf positive
-          n <- interval 1 100
-          return $ getNoOfTries (setNoOfTries n a) == n)
-      "Set/Get property is broken"
+  assertProperty "noOfTries positive tests (no of tries is given)"
+                 isNoOfTries
+                 (createAspects . ((NoOfTries 1):) <$> listOf positive)
+                 "No of tries is not recognized"
+  assertProperty "noOfTries positive tests (no of tries is not given)"
+                 (not . isNoOfTries)
+                 (createAspects . (filter (not . isNoOfTriesAspect)) <$> listOf positive)
+                 "No of tries is recognized"
+  assertProperty "noOfTests: get (set n aspects) == n"
+                 id
+                 (do a <- createAspects <$> listOf positive
+                     n <- interval 1 100
+                     return $ getNoOfTries (setNoOfTries n a) == n)
+                 "Set/Get property is broken"
 #endif
 
 -- | Assignment for the student
@@ -428,12 +405,13 @@ assignmentTests =
       before  = read "2010-09-10 12:00:00 UTC"
       between = read "2010-10-20 12:00:00 UTC"
       after   = read "2010-12-10 12:00:00 UTC"
-  in UnitTests [
-    ("Time before active period", isFalse $ isActive a before)
-  , ("Time in active period"    , isTrue  $ isActive a between)
-  , ("Time after active period" , isFalse $ isActive a after)
+  in eqPartitions isActive' [
+    Partition "Time before active period" (a, before)  False ""
+  , Partition "Time in active period"     (a, between) True  ""
+  , Partition "Time after active period"  (a, after)   False ""
   ]
   where
+    isActive' = uncurry isActive
     isFalse = not
     isTrue  = id
 
@@ -445,4 +423,5 @@ asgTests = group "Bead.Domain.Entity.Assignment" $ do
   assignmentAspectPredTests
   assignmentAspectsSetPasswordTests
   noOfTriesTests
+  assignmentTests
 #endif

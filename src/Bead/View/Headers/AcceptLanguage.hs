@@ -20,8 +20,7 @@ import           Bead.View.Content hiding (BlazeTemplate, template)
 import           Bead.View.Session (setLanguageInSession)
 
 #ifdef TEST
-import           Test.Themis.Test
-import           Test.Themis.Test.Asserts
+import           Test.Tasty.TestSet
 #endif
 
 setLanguageFromAcceptLanguage :: BeadHandler' b ()
@@ -78,25 +77,18 @@ acceptLanguageToLanguage = acceptLanguage
 acceptLanguageTests = group "accpetLanguage" $ do
   group "parse" $ do
     eqPartitions parseAcceptLangValue
-      [ ( "accept language parse empty string",
-          "", Nothing, "Empty string is parsed" )
-      , ( "simple accept language",
-          "en-US", Just $ AL_Simple "en-US",
-          "Simple language parameter is not parsed correctly" )
-      , ( "simple accept language",
-          "en;q=0.5", Just $ AL_Quality "en" 0.5,
-          "Simple language parameter is not parsed correctly" )
-      , ( "noise for accept langauge",
-          "qns;sdjfkj", Nothing, "Noise is parsed" )
+      [ Partition "accept language parse empty string" "" Nothing "Empty string is parsed"
+      , Partition "simple accept language" "en-US" (Just $ AL_Simple "en-US") "Simple language parameter is not parsed correctly"
+      , Partition "simple accept language" "en;q=0.5" (Just $ AL_Quality "en" 0.5) "Simple language parameter is not parsed correctly"
+      , Partition "noise for accept langauge" "qns;sdjfkj" Nothing "Noise is parsed"
       ]
-    test "accept language line" $
-       Equals [AL_Simple "en-US", AL_Quality "en" 0.5]
-              (parseAcceptLanguageLine "en-US , en;q=0.5")
-              "Parse line missed some of the arguments"
+    assertEquals
+      "accept language line"
+      [AL_Simple "en-US", AL_Quality "en" 0.5]
+      (parseAcceptLanguageLine "en-US , en;q=0.5")
+      "Parse line missed some of the arguments"
   group "accept language to language" $ eqPartitions acceptLanguageToLanguage
-    [ ( "Simple with localization",
-        AL_Simple "en-US", Language "en", "Drop localization has failed" )
-    , ( "Quality with localization",
-        AL_Quality "en-US" 0.5, Language "en", "Drop localization has failed" )
+    [ Partition "Simple with localization" (AL_Simple "en-US") (Language "en") "Drop localization has failed"
+    , Partition "Quality with localization" (AL_Quality "en-US" 0.5) (Language "en") "Drop localization has failed"
     ]
 #endif

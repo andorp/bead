@@ -93,9 +93,8 @@ script:
                   test-framework-hunit
                   test-framework-quickcheck2
   - cabal install monad-logger-0.3.13.1
-  - |
-     git clone https://github.com/andorp/themis
-     cd themis && cabal configure && cabal install && cd ..
+  - cabal install tasty-0.10.1.1
+                  tasty-hunit-0.9.2
+                  tasty-quickcheck-0.8.3.2
   - cabal configure -v2 -f Tests
   - cabal test
-

@@ -3,52 +3,47 @@
 {-# LANGUAGE FlexibleInstances #-}
 module Test.Unit.Invariants (
     tests
+  , tastyTests
   ) where
 
--- * Bead imports
+import           Control.Monad (join)
 
-import Control.Monad (join)
-
--- * Test Framework imports
-
-import           Test.HUnit hiding (Test(..), Assertion (..))
-import           Test.QuickCheck.Arbitrary
-import           Test.QuickCheck.Monadic
 import           Test.Framework (Test(..), testGroup)
 import           Test.Framework.Providers.HUnit
 import           Test.Framework.Providers.QuickCheck2
-import           Test.Themis.Test (runTest)
-import           Test.Themis.Provider.TestFramework (buildTestSet)
+import           Test.HUnit hiding (Test(..), Assertion (..))
+import           Test.Tasty.TestSet (group)
+import           Test.QuickCheck.Arbitrary
+import           Test.QuickCheck.Monadic
 
 import           Bead.Config (initTaskAssertions)
 import qualified Bead.Config.Parser as CP (parseTests)
-import qualified Bead.Controller.Pages as P (invariants)
-import qualified Bead.Daemon.Logout as LD (unitTests)
+import qualified Bead.Controller.Pages as P (pageDescTest)
+import qualified Bead.Daemon.Logout as LD (logoutQueueTests)
 import qualified Bead.Domain.Entities as E
 import qualified Bead.Domain.Entity.Assignment as A
 import qualified Bead.Domain.Entity.Feedback as F
-import qualified Bead.Domain.RolePermission as RP (invariants)
-import qualified Bead.Persistence.NoSQLDirFile as L (unitTests)
+import           Bead.Domain.Relationships (relationshipTests)
+import qualified Bead.Domain.RolePermission as RP (permissionTest)
+import qualified Bead.Persistence.NoSQLDirFile as L (noSqlDirTests)
 import qualified Bead.Persistence.Persist as P (persistTests)
 import qualified Bead.Persistence.Relations as PR (persistRelationsTests)
 import           Bead.Invariants
-import qualified Bead.View.Content.All as VA (invariants)
+import qualified Bead.View.Content.All as CA (pageContentTest)
 import           Bead.View.Content.Home.Page
 import qualified Bead.View.DataBridge as DB (dataBridgeTests)
 #ifdef EmailEnabled
 import qualified Bead.View.EmailTemplate as E (unitTests)
 #endif
 import qualified Bead.View.Headers.AcceptLanguage as AL (acceptLanguageTests)
-import qualified Bead.View.Pagelets as VP (invariants)
-import qualified Bead.View.RouteOf as R (routeOfInvariants)
-import qualified Bead.View.Routing as R (routingInvariants)
-import qualified Bead.View.Session as VS (unitTests)
-import qualified Bead.View.TemplateAndComponentNames as TC (unitTests)
+import qualified Bead.View.Pagelets as VP (linkTextTest)
+import qualified Bead.View.RouteOf as R (routeOfTest)
+import qualified Bead.View.Routing as R (routingTest)
+import qualified Bead.View.Session as VS (uniqueSessionKeysTest)
+import qualified Bead.View.TemplateAndComponentNames as TC (fieldNameTest)
 #ifdef EmailEnabled
 import qualified Bead.View.Validators as V (assertEmailAddress)
 #endif
-import           Test.Quick.PageGen()
-import           Test.Quick.RolePermissionGen()
 
 
 unitTestGroup :: String -> UnitTests -> Test
@@ -83,36 +78,32 @@ assertionTestGroup name as = testGroup name
 -- * Unit tests
 
 tests = [
-    invariantsGroup "Route Of" R.routeOfInvariants
-  , invariantsGroup "Rounting" R.routingInvariants
-  , invariantsGroup "Page invariants" P.invariants
-  , unitTestGroup   "Logout daemon" LD.unitTests
-  , invariantsGroup "Role permission invariants" RP.invariants
-  , invariantsGroup "Content handler definitions" VA.invariants
-  , unitTestGroup   "NoSQL untilities" L.unitTests
-  , invariantsGroup "Pages need to have link text" VP.invariants
-  , unitTestGroup   "Page Session Keys" VS.unitTests
-  , invariantsGroup "Role invariants" E.roleInvariants
-  , unitTestGroup   "Assignment active period" A.assignmentTests
-  , unitTestGroup   "Hungarian letter comparism" E.compareHunTests
-  , unitTestGroup   "Template and components" TC.unitTests
 #ifdef EmailEnabled
-  , ioUnitTestGroup "Email template tests" E.unitTests
+    ioUnitTestGroup "Email template tests" E.unitTests
   , assertionTestGroup "Email address" V.assertEmailAddress
 #endif
-  , assertionTestGroup "Home page binary results" sumBinaryResultTests
-  , assertionTestGroup "Home page percentage results" sumPercentageResultTests
---  , assertionTestGroup "Home page calc results" calculateSubmissionResultTests: TODO define results
-  , assertionTestGroup "Command line and configuration" initTaskAssertions
-  ] ++ themisTests
+ ]
 
-themisTests = runTest buildTestSet $ do
-  A.asgTests
+tastyTests = do
+  group "Page description" P.pageDescTest
+  group "Route of" R.routeOfTest
+  group "Routing" R.routingTest
+  group "Page content handler " CA.pageContentTest
+  group "Link text" VP.linkTextTest
+  group "Logout daemon" LD.logoutQueueTests
+  group "Permissions" RP.permissionTest
+  group "NoSQLDir" L.noSqlDirTests
+  group "Field name" TC.fieldNameTest
+  group "Entity" E.entityTests
+  relationshipTests
+  group "Unique session keys" VS.uniqueSessionKeysTest
+  group "Assignment" A.asgTests
+  group "Homepage binary results" sumBinaryResultTests
+  group "Homepage percentage results" sumPercentageResultTests
+  group "Command line and configuration" initTaskAssertions
   P.persistTests
   PR.persistRelationsTests
   DB.dataBridgeTests
   F.feedbackTests
   CP.parseTests
   AL.acceptLanguageTests
-
-

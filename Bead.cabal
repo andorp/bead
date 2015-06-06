@@ -108,7 +108,10 @@ Library
   if flag(Tests)
     CPP-Options: -DTEST
     Build-Depends:
-      QuickCheck, themis >= 0.4.1.0
+      QuickCheck,
+      tasty >=0.10 && <0.11,
+      tasty-hunit >=0.9 && <0.10,
+      tasty-quickcheck >=0.8 && <0.9
 
   if flag(LDAP)
     CPP-Options: -DLDAPEnabled
@@ -179,6 +182,10 @@ Library
     utf8-string,
     unix,
     yaml >= 0.8.8.4 && < 0.9,
+    tasty >=0.10 && <0.11,
+    tasty-hunit >=0.9 && <0.10,
+    tasty-quickcheck >=0.8 && <0.9,
+    QuickCheck,
     xmlhtml
 
   Exposed-Modules:
@@ -280,6 +287,11 @@ Library
     Bead.View.Validators
     Bead.Invariants
     Snap.Snaplet.Auth.Backends.SafeJsonFile
+    Test.Tasty.Arbitrary
+    Test.Tasty.Encaps
+    Test.Tasty.Keyword
+    Test.Tasty.RandomData
+    Test.Tasty.TestSet
 
 Executable Bead
   Build-Depends:    base, Bead
@@ -294,15 +306,13 @@ Executable BeadAdmin
   Buildable:        True
 
 test-suite BeadUnitTest
-  type: exitcode-stdio-1.0
-  if flag(Tests)
-    Buildable: True
-    Build-Depends:
-      base, Bead, bytestring, containers, directory, filepath, HUnit,
-      QuickCheck, temporary, test-framework, test-framework-hunit,
-      test-framework-quickcheck2, themis, time, transformers
-  else
-    Buildable: False
+  Type:
+    exitcode-stdio-1.0
+  Build-Depends:
+    base, Bead, bytestring, containers, directory, filepath, HUnit,
+    QuickCheck, tasty, tasty-hunit, tasty-quickcheck,
+    temporary, test-framework, test-framework-hunit,
+    test-framework-quickcheck2, time, transformers
   if flag(LDAP)
     CPP-Options: -DLDAPEnabled -DTEST
   else

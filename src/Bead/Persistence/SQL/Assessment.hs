@@ -22,8 +22,8 @@ import           Bead.Persistence.SQL.Group
 
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Themis.Test (ioTest, shrink)
-import           Test.Themis.Keyword.Encaps
+import           Test.Tasty.TestSet (ioTest, shrink)
+import           Test.Tasty.Encaps
 #endif
 
 -- * Assessment

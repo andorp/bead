@@ -31,7 +31,7 @@ import           Bead.View.TemplateAndComponentNames
 import           Bead.View.Translation
 import qualified Bead.View.Content.Bootstrap as Bootstrap
 #ifdef TEST
-import           Bead.Invariants (Invariants(..))
+import           Test.Tasty.TestSet
 #endif
 
 -- * Definitions
@@ -557,10 +557,13 @@ verticalRadioButtons name values = mapM_ button values
 
 -- * Invariants
 
-invariants :: Invariants P.PageDesc
-invariants = Invariants [
-    ("Page link text must be defined: ", \p -> length (linkText' p) > 0)
-  ] where
+linkTextTest =
+  assertProperty
+    "Page link is atotal function"
+    (\p -> length (linkText' p) > 0)
+    P.pageGen
+    "Page link text should be defined"
+  where
       linkText' :: P.Page a b c d e -> String
       linkText' = trans . linkText
 

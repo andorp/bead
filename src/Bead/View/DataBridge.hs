@@ -22,10 +22,9 @@ import Bead.View.RequestParams
 #ifdef TEST
 import Control.Applicative ((<$>))
 
+import Test.Tasty.TestSet
 import Test.QuickCheck.Arbitrary
 import Test.QuickCheck.Gen
-import Test.Themis.Test
-import Test.Themis.Test.Asserts
 #endif
 
 {-
@@ -194,9 +193,8 @@ evalConfigPrmTest = group "evalConfigPrm" $ do
     "Percentage value is miscalculated"
 
   eqPartitions (decode param)
-    [ ("Binary", encode param binaryConfig, Just binaryConfig, "Parsing failed")
-    , ("Percenteage", encode param (percentageConfig 0.96)
-      , Just (percentageConfig 0.96), "Parsing failed")
+    [ Partition "Binary" (encode param binaryConfig) (Just binaryConfig) "Parsing failed"
+    , Partition "Percenteage" (encode param (percentageConfig 0.96)) (Just (percentageConfig 0.96)) "Parsing failed"
     ]
   where
     -- The percentage calculation is interested only in 3 decimal digits

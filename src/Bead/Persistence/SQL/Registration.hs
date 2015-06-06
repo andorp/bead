@@ -11,8 +11,8 @@ import           Bead.Persistence.SQL.Entities
 #ifdef TEST
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Themis.Test (ioTest)
-import           Test.Themis.Keyword.Encaps
+import           Test.Tasty.TestSet (ioTest)
+import           Test.Tasty.Encaps
 #endif
 
 -- * Registration

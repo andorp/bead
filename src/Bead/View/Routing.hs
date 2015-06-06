@@ -5,7 +5,7 @@ module Bead.View.Routing (
     routes
   , pages
 #ifdef TEST
-  , routingInvariants
+  , routingTest
 #endif
   ) where
 
@@ -45,7 +45,7 @@ import           Bead.View.RouteOf
 import           Bead.View.RequestParams
 
 #ifdef TEST
-import           Bead.Invariants (Invariants(..))
+import           Test.Tasty.TestSet
 #endif
 
 {-
@@ -365,11 +365,14 @@ requestToParams = foldl insert Map.empty
     insert m (ReqParam (name, value)) =
       Map.insert (fromString name) [(fromString value)] m
 
-routingInvariants = Invariants [
-    ("For each page must be requestToPage must be defined",
-     \p -> let rp = P.pageValue $ pageRoutePath p
+routingTest =
+  assertProperty
+    "requestToPage is totally defined"
+    (\p -> let rp = P.pageValue $ pageRoutePath p
                ps = requestToParams . P.pageValue $ pageRequestParams p
            in requestToPage rp ps == Just p)
-  ]
+    P.pageGen
+    "For each page must be requestToPage must be defined"
+
 
 #endif

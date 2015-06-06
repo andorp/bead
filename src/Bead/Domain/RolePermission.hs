@@ -2,13 +2,15 @@
 module Bead.Domain.RolePermission (
     permission
 #ifdef TEST
-  , invariants
+  , permissionTest
 #endif
   ) where
 
 import Bead.Domain.Entities hiding (roles, groupAdmin)
 #ifdef TEST
-import Bead.Invariants (Invariants(..))
+import Control.Applicative
+import Test.Tasty.Arbitrary
+import Test.Tasty.TestSet
 #endif
 
 permission :: Role -> Permission -> PermissionObject -> Bool
@@ -57,7 +59,13 @@ admin P_Delete o = elem o [P_Course, P_CourseAdmin, P_GroupAdmin]
 
 -- * Invariants
 
-invariants = Invariants [
-    ("Permission relation is totally defined",\(r,p,o) -> length (show (permission r p o)) > 0)
-  ]
+permissionTest =
+  assertProperty
+    "Permission is a total function"
+    (\(r,p,o) -> length (show (permission r p o)) > 0)
+    (triplet <$> enumGen <*> enumGen <*> enumGen)
+    "Permission relation is totally defined"
+  where
+    triplet a b c = (a,b,c)
+
 #endif

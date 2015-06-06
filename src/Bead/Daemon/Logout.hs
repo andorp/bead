@@ -3,7 +3,7 @@ module Bead.Daemon.Logout (
     startLogoutDaemon
   , LogoutDaemon(..)
 #ifdef TEST
-  , unitTests
+  , logoutQueueTests
 #endif
   ) where
 
@@ -35,7 +35,7 @@ import           Bead.Controller.ServiceContext
 #ifdef TEST
 import           Control.Monad.State
 import qualified Data.Set as Set
-import           Bead.Invariants
+import           Test.Tasty.TestSet
 #endif
 
 -- * User Queue
@@ -175,59 +175,69 @@ user1 = 1
 user2 = 2
 dt10  = 10
 
-runTest s = evalState s emptyQueueInt
+simulate s = evalState s emptyQueueInt
+simulate2 = snd . simulate
 
 step = modify
 info = gets
 
-unitTests = UnitTests [
-    ("Empty queue logout", (usersLogout (utcTimer 0) emptyQueueInt) == (emptyQueueInt, []))
-  , ("New user",
-       (runTest $ do
-          step $ updateTimeout user1 (utcTimer 0) dt10
-          info $ isUserInQueue user1) == True)
-  , ("Non existing user",
-       (runTest $ do
-          step $ updateTimeout user1 (utcTimer 0) dt10
-          info $ isUserInQueue user2) == False)
-  , ("User does not time out",
-       (snd . runTest $ do
-          step $ updateTimeout user1 (utcTimer 0) dt10
-          info $ usersLogout (utcTimer 10)) == [])
-  , ("User times out",
-       (snd . runTest $ do
-          step $ updateTimeout user1 (utcTimer 0) dt10
-          info $ usersLogout (utcTimer 11)) == [user1])
-  , ("One user times out",
-       (snd . runTest $ do
-          step $ updateTimeout user1 (utcTimer 0) dt10
-          step $ updateTimeout user2 (utcTimer 1) dt10
-          info $ usersLogout (utcTimer 11)) == [user1])
-  , ("One user times out",
-       (snd . runTest $ do
-          step $ updateTimeout user1 (utcTimer 0) dt10
-          step $ updateTimeout user2 (utcTimer 1) dt10
-          info $ usersLogout (utcTimer 11)) == [user1])
-  , ("Two users time out",
-      (Set.fromList . snd . runTest $ do
-          step $ updateTimeout user1 (utcTimer 0) dt10
-          step $ updateTimeout user2 (utcTimer 1) dt10
-          info $ usersLogout (utcTimer 20)) == Set.fromList [user1, user2])
-  , ("Non logged in user logs out",
-      (snd . runTest $ do
-         step $ removeUser user1
-         info $ usersLogout (utcTimer 20)) == [])
-  , ("Logged in user logs out",
-      (snd . runTest $ do
-         step $ updateTimeout user1 (utcTimer 0) dt10
-         step $ removeUser user1
-         info $ usersLogout (utcTimer 20)) == [])
-  , ("One user logs out",
-      (snd . runTest $ do
-         step $ updateTimeout user1 (utcTimer 0) dt10
-         step $ updateTimeout user2 (utcTimer 0) dt10
-         step $ removeUser user2
-         info $ usersLogout (utcTimer 20)) == [user1])
-  ]
+logoutQueueTests = do
+  assertEquals "Empty queue logout" (emptyQueueInt, []) (usersLogout (utcTimer 0) emptyQueueInt) "Some user is logged out from empty queue"
+  assertEquals "New user" True
+    (simulate $ do
+       step $ updateTimeout user1 (utcTimer 0) dt10
+       info $ isUserInQueue user1)
+    "New user is not placed in the queue"
+  assertEquals "Non existing user" False
+    (simulate $ do
+       step $ updateTimeout user1 (utcTimer 0) dt10
+       info $ isUserInQueue user2)
+    "User is not deleted from the queue"
+  assertEquals "User does not time out" []
+    (simulate2 $ do
+       step $ updateTimeout user1 (utcTimer 0) dt10
+       info $ usersLogout (utcTimer 10))
+    "User is deleted before time out"
+  assertEquals "User times out" [user1]
+     (simulate2 $ do
+        step $ updateTimeout user1 (utcTimer 0) dt10
+        info $ usersLogout (utcTimer 11))
+     "User is not deleted after time out"
+  assertEquals "One user times out" [user1]
+     (simulate2 $ do
+        step $ updateTimeout user1 (utcTimer 0) dt10
+        step $ updateTimeout user2 (utcTimer 1) dt10
+        info $ usersLogout (utcTimer 11))
+     "More than one user is deleted from the queue"
+  assertEquals "One user times out" [user1]
+     (simulate2 $ do
+        step $ updateTimeout user1 (utcTimer 0) dt10
+        step $ updateTimeout user2 (utcTimer 1) dt10
+        info $ usersLogout (utcTimer 11))
+    "More than one user is deleted from the queue"
+  assertEquals "Two users time out" (Set.fromList [user1, user2])
+    (Set.fromList . simulate2 $ do
+       step $ updateTimeout user1 (utcTimer 0) dt10
+       step $ updateTimeout user2 (utcTimer 1) dt10
+       info $ usersLogout (utcTimer 20))
+    "Two users are not deleted from the queue"
+  assertEquals "Non logged in user logs out" []
+    (simulate2 $ do
+       step $ removeUser user1
+       info $ usersLogout (utcTimer 20))
+    "Non logged is user is logged out"
+  assertEquals "Logged in user logs out" []
+    (simulate2 $ do
+       step $ updateTimeout user1 (utcTimer 0) dt10
+       step $ removeUser user1
+       info $ usersLogout (utcTimer 20))
+    "User is not removed from the queue"
+  assertEquals "One user logs out" [user1]
+    (simulate2 $ do
+       step $ updateTimeout user1 (utcTimer 0) dt10
+       step $ updateTimeout user2 (utcTimer 0) dt10
+       step $ removeUser user2
+       info $ usersLogout (utcTimer 20))
+    "More than one users are logged out"
 
 #endif
