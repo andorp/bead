@@ -39,7 +39,7 @@ data FeedbackInfo
   | Evaluated { evalResult :: EvResult, evalComment :: String, evalAuthor :: String }
     -- ^ Stores the evaluation result at a time, to be able to show later on, if the
     -- evaluation changes over time.
-  deriving (Data, Eq, Ord, Read, Show, Typeable)
+  deriving (Data, Eq, Read, Show, Typeable)
 
 feedbackInfo
   result

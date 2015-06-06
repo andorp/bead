@@ -20,7 +20,6 @@ import Bead.Persistence.Relations
 
 import Control.Monad (join, when)
 import Data.Maybe
-import Data.Set as Set (fromList)
 import Data.Time.Clock
 import System.Directory
 import System.FilePath
@@ -63,15 +62,13 @@ test_feedbacks = testCase "Create and delete test feedbacks" $ do
   writeFile (sdir </> "public")  publicMsg
   writeFile (sdir </> "result")  result
   -- When
-  rs <- liftE interp $ testFeedbacks
+  rs <- fmap (map (\(sk, f) -> (sk, info f))) $ liftE interp $ testFeedbacks
   -- Then
-  assertEqual "Wrong values"
-    (Set.fromList
-      [ (skey', MessageForAdmin privateMsg)
-      , (skey', MessageForStudent publicMsg)
-      , (skey', TestResult True)
-      ])
-    (Set.fromList $ map (\(sk,f) -> (sk, info f)) rs)
+  assertBool "Wrong values" $ and $ map (`elem` rs)
+    [ (skey', MessageForAdmin privateMsg)
+    , (skey', MessageForStudent publicMsg)
+    , (skey', TestResult True)
+    ]
 
 test_create_load_exercise = testCase "Create and load exercise" $ do
   interp <- createPersistInterpreter defaultConfig
