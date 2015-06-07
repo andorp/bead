@@ -67,7 +67,7 @@ install:
                   digest-0.0.1.2
                   zip-archive-0.2.3.7
                   pandoc-1.12.3.3
-                  pqueue-1.2.1
+  - cabal install pqueue-1.2.1
                   regex-tdfa-1.2.0
                   unix-compat-0.4.1.4
                   directory-tree-0.12.0
