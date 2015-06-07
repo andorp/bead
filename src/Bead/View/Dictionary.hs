@@ -59,11 +59,16 @@ dictionariesCata f dictionaries = f dictionaries
 -- value for that key
 type Entry = Translation String
 
-data DictionaryFile = DictionaryFile {
+data DictionaryFile
+  = DictionaryFile {
     iconFile :: String -- Icon file path within the static folder
   , langCode :: String -- The name of the language for a dictionary
   , langName :: String -- The displayable name of the language for a dictioanry
   , entries  :: [Entry] -- The entry list for a dictionary
+  }
+  | DictionaryPatchFile {
+    parent   :: DictionaryFile  -- The dictionary to be patched
+  , entries  :: [Entry]         -- List of entries
   } deriving (Show, Read, Typeable)
 
 dictionaryFileCata f (DictionaryFile iconFile langCode langName entries) =
