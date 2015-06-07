@@ -303,7 +303,6 @@ test-suite BeadUnitTest
       test-framework-quickcheck2, themis, time, transformers
   else
     Buildable: False
-  GHC-Options: -fhpc -hpcdir dist/build/BeadUnitTest/Mix/
   if flag(LDAP)
     CPP-Options: -DLDAPEnabled -DTEST
   else
