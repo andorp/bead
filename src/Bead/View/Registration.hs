@@ -2,6 +2,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Registration (
     createAdminUser
+  , createStudentUser
+  , doesUserExist
+  , changeUserPassword
 #ifndef LDAPEnabled
   , registrationRequest
   , finalizeRegistration
@@ -15,7 +18,7 @@ This module represents the registration pages. The registration process has two 
 -}
 
 import qualified Data.ByteString.Char8 as B
-import           Data.Maybe (fromJust, isNothing)
+import           Data.Maybe (fromJust, isJust, isNothing)
 import           Data.String (fromString)
 import           Data.Time hiding (TimeZone, timeZoneName)
 import qualified Data.Text as T
@@ -61,11 +64,31 @@ createUser persist usersdb user password = do
       Just _pwd -> Persist.runPersist persist $ Persist.saveUser user
   return ()
 
-createAdminUser :: Persist.Interpreter -> FilePath -> UserRegInfo -> IO ()
-createAdminUser persist usersdb = userRegInfoCata $
+-- Checks if the user exists in the Snap Auth module
+doesUserExist :: String -> FilePath -> IO Bool
+doesUserExist username userdb = do
+  mgr <- mkJsonAuthMgr userdb
+  lg <- lookupByLogin mgr (T.pack username)
+  return $ isJust lg
+
+changeUserPassword :: FilePath -> Username -> Bead.View.Content.Password -> IO ()
+changeUserPassword userdb username password = do
+  let name = usernameCata id username
+  mgr <- mkJsonAuthMgr userdb
+  pwd <- encryptPassword . ClearText . fromString $ password
+  authUser <- lookupByLogin mgr (T.pack name)
+  case authUser of
+    Nothing -> print "No user is found"
+    Just authUser1 -> do
+      let authUser2 = authUser1 { userPassword = Just pwd }
+      save mgr authUser2
+      return ()
+
+createUserWithRole :: Bead.View.Content.Role -> Persist.Interpreter -> FilePath -> UserRegInfo -> IO ()
+createUserWithRole role persist usersdb = userRegInfoCata $
   \name password email fullName timeZone ->
     let usr = User {
-        u_role = Admin
+        u_role = role
       , u_username = Username name
       , u_email = Email email
       , u_name = fullName
@@ -74,6 +97,9 @@ createAdminUser persist usersdb = userRegInfoCata $
       , u_uid = Uid name
       }
     in createUser persist usersdb usr password
+
+createAdminUser   = createUserWithRole Admin
+createStudentUser = createUserWithRole Student
 
 -- * User registration handler
 

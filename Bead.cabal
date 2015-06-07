@@ -182,6 +182,7 @@ Library
     xmlhtml
 
   Exposed-Modules:
+    AdminMain
     SnapMain
     Bead.View.Dictionary
     Bead.View.Translation
@@ -286,13 +287,23 @@ Executable Bead
   HS-Source-Dirs:   main
   Buildable:        True
 
+Executable BeadAdmin
+  Build-Depends:    base, Bead
+  Main-is:          Admin.hs
+  HS-Source-Dirs:   main
+  Buildable:        True
+
 test-suite BeadUnitTest
-  Type:
-    exitcode-stdio-1.0
-  Build-Depends:
-    base, Bead, bytestring, containers, directory, filepath, HUnit,
-    QuickCheck, temporary, test-framework, test-framework-hunit,
-    test-framework-quickcheck2, themis, time, transformers
+  type: exitcode-stdio-1.0
+  if flag(Tests)
+    Buildable: True
+    Build-Depends:
+      base, Bead, bytestring, containers, directory, filepath, HUnit,
+      QuickCheck, temporary, test-framework, test-framework-hunit,
+      test-framework-quickcheck2, themis, time, transformers
+  else
+    Buildable: False
+  GHC-Options: -fhpc -hpcdir dist/build/BeadUnitTest/Mix/
   if flag(LDAP)
     CPP-Options: -DLDAPEnabled -DTEST
   else
