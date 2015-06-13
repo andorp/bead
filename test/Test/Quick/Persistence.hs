@@ -1585,3 +1585,8 @@ whenM :: (Monad m) => m Bool -> m () -> m ()
 whenM m a = do
   x <- m
   when x a
+
+runPersistTestSet t = do
+  test initPersistenceLayer
+  test t
+  test cleanUpPersistence

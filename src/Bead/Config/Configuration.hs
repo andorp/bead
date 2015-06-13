@@ -22,10 +22,6 @@ import System.Directory (doesFileExist)
 
 import Bead.Domain.Types (readMaybe)
 
-#ifdef TEST
-import Bead.Invariants
-#endif
-
 -- Represents initalizer tasks to do before launch the service
 data InitTask = CreateAdmin
   deriving (Show, Eq)

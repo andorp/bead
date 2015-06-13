@@ -285,7 +285,6 @@ Library
     Bead.View.TranslationEnum
     Bead.View.UserActions
     Bead.View.Validators
-    Bead.Invariants
     Snap.Snaplet.Auth.Backends.SafeJsonFile
     Test.Tasty.Arbitrary
     Test.Tasty.Encaps

@@ -57,7 +57,6 @@ import           Test.Tasty.Arbitrary
 import           Test.Tasty.RandomData
 import           Test.Tasty.TestSet
 import           Test.QuickCheck.Gen
-import           Bead.Invariants (UnitTests(..))
 #endif
 
 -- Assignment aspect is a property of an assignment which
