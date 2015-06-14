@@ -1,4 +1,6 @@
-module Test.Quick.Persistence where
+module Test.Property.Persistence (
+    tests
+  ) where
 
 import Control.Applicative ((<$>), (<*>))
 import Control.Monad
@@ -24,7 +26,7 @@ import Bead.Persistence.Relations
 import Bead.Persistence.NoSQLDir (referredPath)
 import Bead.Persistence.NoSQLDirFile
 
-import qualified Test.Quick.EntityGen as Gen
+import qualified Test.Property.EntityGen as Gen
 
 import Bead.Domain.Entities
 import qualified Bead.Domain.Entity.Assignment as Assignment
@@ -465,7 +467,7 @@ courseAndGroupAssessments cn gn cs gs = do
 -- The user can subscribe to groups and course, and it is necessary to him to
 -- see the assignment of the groups and courses, and only the assignment of the
 -- courses that the user registered, others no
-userAssignmentKeyTests = do
+userAssignmentKeyTests = test $ testCase "User assignment tests" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 300 cs
@@ -496,7 +498,7 @@ userAssignmentKeyTests = do
     toList = nub . join . map (Set.toList . snd) . Map.toList
 
 -- Every assignment has a group or a course
-courseOrGroupAssignmentTest = do
+courseOrGroupAssignmentTest = test $ testCase "Course or group assignment tests" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 300 cs
@@ -513,7 +515,7 @@ courseOrGroupAssignmentTest = do
       k
 
 -- Group description can be created from any group
-groupDescriptionTest = do
+groupDescriptionTest = test $ testCase "Group description tests" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 300 cs
@@ -533,7 +535,7 @@ groupDescriptionTest = do
     assertTrue (length (gAdmins desc) == length admins) "Group admin numbers was different"
 
 -- Every submission has some kind of description
-submissionDescTest = do
+submissionDescTest = test $ testCase "Every submission has some kind of description" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 300 cs
@@ -553,7 +555,7 @@ submissionDescTest = do
 -- Every assignment must have a course name and the
 -- dedicated users must be returned as admins
 -- for the given course
-courseNameAndAdminsTest = do
+courseNameAndAdminsTest = test $ testCase "Every assignment has to have a name and admin" $ do
   reinitPersistence
   cs <- courses 100
   us <- users 150
@@ -575,7 +577,7 @@ courseNameAndAdminsTest = do
 -- Every assignment and an associated user has a submission list,
 -- which contains information about the submissions posted to the given assignment
 -- by the user
-submissionListDescTest = do
+submissionListDescTest = test $ testCase "Every assignment and an associated user has a submission list" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 200 cs
@@ -591,7 +593,7 @@ submissionListDescTest = do
     assertEmpty (slTeacher desc) "There was teachers to the group"
 
 -- Allways the last evaluation is valid for the submission.
-lastEvaluationTest = do
+lastEvaluationTest = test $ testCase "Allways the last evaluation is valid for the submission" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 200 cs
@@ -621,7 +623,7 @@ createGroupAdmins n us gs = quick n $ do
   runPersistCmd $ createGroupAdmin u g
 
 -- Every submission has a description, this description must be loaded
-submissionDetailsDescTest = do
+submissionDetailsDescTest = test $ testCase "Every submission has a description" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 200 cs
@@ -643,7 +645,7 @@ submissionDetailsDescTest = do
 -- If the user administrates courses or groups, submission information about the
 -- submission of the group or course attendees. The number of the tables are same as
 -- the number of the groups and courses administrated by this user
-submissionTablesTest = do
+submissionTablesTest = test $ testCase "Submission tables" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 200 cs
@@ -671,7 +673,7 @@ submissionTablesTest = do
 
 -- The user can have submissions for the given assignment, and information can be
 -- calculated about these submissions
-userSubmissionDescTest = do
+userSubmissionDescTest = test $ testCase "The user can have submissions and information" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 250 cs
@@ -694,7 +696,7 @@ userSubmissionDescTest = do
 
 -- All the saved course must have a key and these
 -- course keys must be listed
-courseKeysTest = do
+courseKeysTest = test $ testCase "All the saved courses must have a key" $ do
   reinitPersistence
   savedKeys  <- Set.fromList <$> courses 100
   loadedKeys <- Set.fromList <$> (runPersistIOCmd $ courseKeys)
@@ -705,7 +707,7 @@ courseKeysTest = do
   assertTrue (Set.isSubsetOf savedKeys2 loadedKeys2) "New course keys were not in the loaded set"
 
 -- All the saved assignment must have a key and these keys must be listed
-assignmentKeyTest = do
+assignmentKeyTest = test $ testCase "All the saved assignments must have a key" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 300 cs
@@ -718,7 +720,7 @@ assignmentKeyTest = do
   assertTrue (Set.isSubsetOf saved2 loaded2) "New assignment keys were not in the loaded set"
 
 -- All the saved submissions must have a key and these keys must be listed
-filterSubmissionsTest = do
+filterSubmissionsTest = test $ testCase "All the saved submissions must have a key" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 300 cs
@@ -732,27 +734,8 @@ filterSubmissionsTest = do
   assertTrue (Set.isSubsetOf loaded loaded2) "Not all submission keys were in the loaded set"
   assertTrue (Set.isSubsetOf saved2 loaded2) "New submission keys were not in the loaded set"
 
-
--- Users must be able to change password and reamain loginable
--- TODO: Investigate
-updatePwdTest = do
-  let pwd = "password"
-  quick 1000 $ do
-    u <- pick Gen.users
-    let username = u_username u
-    exist <- runPersistCmd $ doesUserExist username
-    pre (not exist)
-    runPersistCmd $ saveUser u
---    loginable <- runPersistCmd $ canUserLogin username pwd
---    assertTrue loginable "User is not loginable"
-    p <- pick Gen.passwords
---    runPersistCmd $ updatePwd username
---    loginable <- runPersistCmd $ canUserLogin username p
---    assertTrue loginable "User is not loginable #2"
-    return ()
-
 -- Modified assignments must be untouched after loading them
-modifyAssignmentsTest = do
+modifyAssignmentsTest = test $ testCase "Modified assignments must be untouched after loading them" $ do
   cs <- courses 100
   gs <- groups 150 cs
   as <- courseAndGroupAssignments 200 200 cs gs
@@ -765,7 +748,7 @@ modifyAssignmentsTest = do
     assertEquals a a1 "Modified and loaded assignments were differents"
 
 -- Modified evaluations must be untouched after loading them
-modifyEvaluationTest = do
+modifyEvaluationTest = test $ testCase "Modified evaluations must be untouched after loading them" $ do
   cs <- courses 100
   gs <- groups 300 cs
   as <- courseAndGroupAssignments 200 200 cs gs
@@ -800,7 +783,7 @@ subscribeUsers n us gs =
       subscribe u c g
 
 -- Test if the users make unsubscribe from the courses by the admin
-deleteUsersFromCourseTest = do
+deleteUsersFromCourseTest = test $ testCase "Delete user form course" $ do
   cs <- courses 50
   gs <- groups 250 cs
   us <- users 200
@@ -835,7 +818,7 @@ deleteUsersFromCourseTest = do
       assertEquals ((length cs') - 1) (length ucs) "No only one courses was deleted"
       assertEquals (cs' \\ [c]) ucs "No the right course was deleted"
 
-deleteUsersFromCourseNegativeTest = do
+deleteUsersFromCourseNegativeTest = test $ testCase "Delete user from courses not belong to" $ do
   cs <- courses 50
   gs <- groups 250 cs
   us <- users 200
@@ -849,7 +832,7 @@ deleteUsersFromCourseNegativeTest = do
     ucs' <- runPersistCmd $ userCourses u
     assertEquals ucs ucs' "User's course list has changed"
 
-unsubscribeFromSubscribedGroupsTest = do
+unsubscribeFromSubscribedGroupsTest = test $ testCase "User unsubscribes from a course" $ do
   cs <- courses 50
   gs <- groups 250 cs
   us <- users 200
@@ -886,7 +869,7 @@ unsubscribeFromSubscribedGroupsTest = do
           assertSetEquals (ugsb) (ugsa) "User is unsubscribed from course #2"
           assertSetEquals (unregsgb) (unregsga) "User is in the course unsubscribed list"
 
-saveLoadAndModifyTestScriptsTest = do
+saveLoadAndModifyTestScriptsTest = test $ testCase "Save, load and modify test scripts" $ do
   reinitPersistence
   cs <- courses 200
   tss <- testScripts 1000 cs
@@ -902,7 +885,7 @@ saveLoadAndModifyTestScriptsTest = do
         assertEquals nts nts' "Modifing the test script failed"
         assertTrue (elem ts ctss) "Test Script is not in it's course"
 
-saveLoadAndModifyTestCasesTest = do
+saveLoadAndModifyTestCasesTest = test $ testCase "Save, load and modify test cases" $ do
   reinitPersistence
   cs <- courses 100
   gs <- groups 200 cs
@@ -925,7 +908,7 @@ createBeadTempDir = do
   createTempDirectory tmp "bead."
 
 
-userFileHandlingTest = do
+userFileHandlingTest = test $ testCase "Copy, list, and get user's data file path" $ do
   reinitPersistence
   tmpDir <- createBeadTempDir
   us <- users 100
@@ -960,7 +943,7 @@ userFileHandlingTest = do
         assertEquals path path' "The overwritted file path's has changed"
         assertEquals content content' "The file content was not overwritted"
 
-userOverwriteFileTest = do
+userOverwriteFileTest = test $ testCase "Overwrite user's data file" $ do
   reinitPersistence
   tmpDir <- createBeadTempDir
   us <- users 100
@@ -988,7 +971,7 @@ userOverwriteFileTest = do
         assertEquals path path' "The user's file path was changed"
         assertEquals content content' "The user's file content is not copied correctly"
 
-testJobCreationTest = do
+testJobCreationTest = test $ testCase "Test Job cration" $ do
   reinitPersistence
   us <- users 400
   cs <- courses 50
@@ -1047,7 +1030,7 @@ insertAndFinalizeTestFeedback sk feedback = do
   insertTestFeedback sk feedback
   finalizeTestFeedback sk
 
-finalizeFeedbacksTest = do
+finalizeFeedbacksTest = test $ testCase "Locked feedback tests" $ do
   reinitPersistence
   us <- users 100
   cs <- courses 10
@@ -1092,7 +1075,7 @@ finalizeFeedbacksTest = do
           assertTrue (sk `elem` cks)
             "Test Finalized Feedback does not occur in the feedback list."
 
-incomingFeedbacksTest = do
+incomingFeedbacksTest = test $ testCase "Incoming feedbacks" $ do
   reinitPersistence
   us <- users 400
   cs <- courses 50
@@ -1122,7 +1105,7 @@ incomingFeedbacksTest = do
         return $ do
           assertTrue (sk `elem` cks) "Test Feedback is not inserted"
 
-unevaluatedScoresTests = do
+unevaluatedScoresTests = test $ testCase "Unevaluated scores" $ do
   reinitPersistence
   us <- users 50
   cs <- courses 100
@@ -1147,7 +1130,7 @@ unevaluatedScoresTests = do
     e <- runPersistCmd $ evaluationOfScore s
     assertEquals Nothing e "Unevaluated score has an evaluation"
 
-scoreEvaluationTests = do
+scoreEvaluationTests = test $ testCase "Evaluated scores" $ do
   reinitPersistence
   us <- users 50
   cs <- courses 100
@@ -1184,7 +1167,7 @@ scoreEvaluationTests = do
       a <- loadAssessment ak
       return $! evaluationCfg a
 
-assessmentTests = do
+assessmentTests = test $ testCase "Assessment tests" $ do
   let groupOrCourseOf a = runPersistCmd $ do
         c <- courseOfAssessment a
         g <- groupOfAssessment a
@@ -1228,7 +1211,7 @@ assessmentTests = do
     (c',g') <- groupOrCourseOf a
     assertEquals (c,g) (c',g') "The course or group of the assessment has changed after modification."
 
-openSubmissionsTest = do
+openSubmissionsTest = test $ testCase "Open submissions list" $ do
   reinitPersistence
   us <- users 50
   as <- admins 10
@@ -1327,7 +1310,7 @@ openSubmissionsTest = do
               , show a, " ", show ck, " student ", show u, " submission ", show sk
               ]
 
-deleteIncomingFeedbackTest = do
+deleteIncomingFeedbackTest = test $ testCase "Delete incoming feedbacks" $ do
   reinitPersistence
   us <- users 400
   cs <- courses 50
@@ -1357,7 +1340,7 @@ deleteIncomingFeedbackTest = do
           assertTrue (sk `elem` cks) "There was no feedback"
 
 -- All the notifications for comments returns the given comment key, and no feedback key
-saveCommentNotificationTest = do
+saveCommentNotificationTest = test $ testCase "Comment notifications" $ do
   reinitPersistence
   us <- users 400
   cs <- courses 50
@@ -1380,7 +1363,7 @@ saveCommentNotificationTest = do
     assertEquals []        users "Commented notification had a non-empty users list."
 
 -- All the notifications for feedback returns the given feedback key, and no comment key
-saveFeedbackNotificationTest = do
+saveFeedbackNotificationTest = test $ testCase "Feedback notifications" $ do
   reinitPersistence
   us <- users 400
   cs <- courses 50
@@ -1403,7 +1386,7 @@ saveFeedbackNotificationTest = do
 
 -- All the system notification does not returns an feedback or comment key, and they are
 -- associated to the users
-attachedSystemNotificationTest = do
+attachedSystemNotificationTest = test $ testCase "System notifications with attached users" $ do
   reinitPersistence
   us <- users 400
   ns <- systemNotifications 1500
@@ -1422,7 +1405,7 @@ attachedSystemNotificationTest = do
     assertTrue   (elem user users) "System notification is not associated with the selected user on the notification side."
     assertTrue   (elem nk   nks)   "System notification is not associated with the selected user on the user side."
 
-attachedNotificationTest = do
+attachedNotificationTest = test $ testCase "Notifications with attached users" $ do
   reinitPersistence
   us <- users 400
   cs <- courses 50
@@ -1479,7 +1462,13 @@ endDate :: UTCTime
 endDate = read "2013-03-30 12:00:00"
 
 
-tests = group "Persistence Layer QuickCheck properties" $ do
+tests = do
+  propertyTests
+  massTests
+  complexTests
+
+
+propertyTests = group "Persistence Layer QuickCheck properties" $ do
   add initPersistenceLayer
   add $ testProperty "Assignment Save and Load" $ monadicIO assignmentSaveAndLoad
   add $ testProperty "Course Save and Load" $ monadicIO courseSaveAndLoad
@@ -1503,42 +1492,41 @@ massTests = group "Persistence Layer Mass tests" $ do
 
 complexTests = group "Persistence Layer Complex tests" $ do
   test initPersistenceLayer
-  add $ testCase "User assignment tests" userAssignmentKeyTests
-  add $ testCase "Every assignment has a group or a course" courseOrGroupAssignmentTest
-  add $ testCase "Group description can be created from any group" groupDescriptionTest
-  add $ testCase "Every submission has some kind of description" submissionDescTest
-  add $ testCase "Every assignment course must have a name and admins" courseNameAndAdminsTest
-  add $ testCase "Every assignment and an associated user has a submission list" submissionListDescTest
-  add $ testCase "Allways the last evaluation is valid for the submission" lastEvaluationTest
-  add $ testCase "Every submission has a description" submissionDetailsDescTest
-  add $ testCase "Submission tables" submissionTablesTest
-  add $ testCase "The user can have submissions and information" userSubmissionDescTest
-  add $ testCase "All the saved courses must have a key" courseKeysTest
-  add $ testCase "All the saved assignments must have a key" assignmentKeyTest
-  add $ testCase "All the saved submissions must have a key" filterSubmissionsTest
-  add $ testCase "Users must be able to change password and reamain loginable" updatePwdTest
-  add $ testCase "Modified assignments must be untouched after loading them" modifyAssignmentsTest
-  add $ testCase "Modified evaluations must be untouched after loading them" modifyEvaluationTest
-  add $ testCase "Delete user form course" deleteUsersFromCourseTest
-  add $ testCase "Delete user from courses not belong to" deleteUsersFromCourseNegativeTest
-  add $ testCase "User unsubscribes from a course" unsubscribeFromSubscribedGroupsTest
-  add $ testCase "Save, load and modify test scripts" saveLoadAndModifyTestScriptsTest
-  add $ testCase "Save, load and modify test cases" saveLoadAndModifyTestCasesTest
-  add $ testCase "Copy, list, and get user's data file path" userFileHandlingTest
-  add $ testCase "Overwrite user's data file" userOverwriteFileTest
-  add $ testCase "Test Job cration" testJobCreationTest
-  add $ testCase "Incoming feedbacks" incomingFeedbacksTest
-  add $ testCase "Locked feedback tests" finalizeFeedbacksTest
-  add $ testCase "Delete incoming feedbacks" deleteIncomingFeedbackTest
-  add $ testCase "Open submissions list" openSubmissionsTest
-  add $ testCase "Assessments" assessmentTests
-  add $ testCase "Unevaluated scores" unevaluatedScoresTests
-  add $ testCase "Evaluated scores" scoreEvaluationTests
-  add $ testCase "Comment notifications" saveCommentNotificationTest
-  add $ testCase "Feedback notifications" saveFeedbackNotificationTest
-  add $ testCase "System notifications with attached users" attachedSystemNotificationTest
-  add $ testCase "Notifications with attached users" attachedNotificationTest
-  add $ cleanUpPersistence
+  userAssignmentKeyTests
+  courseOrGroupAssignmentTest
+  groupDescriptionTest
+  submissionDescTest
+  courseNameAndAdminsTest
+  submissionListDescTest
+  lastEvaluationTest
+  submissionDetailsDescTest
+  submissionTablesTest
+  userSubmissionDescTest
+  courseKeysTest
+  assignmentKeyTest
+  filterSubmissionsTest
+  modifyAssignmentsTest
+  modifyEvaluationTest
+  deleteUsersFromCourseTest
+  deleteUsersFromCourseNegativeTest
+  unsubscribeFromSubscribedGroupsTest
+  saveLoadAndModifyTestScriptsTest
+  saveLoadAndModifyTestCasesTest
+  userFileHandlingTest
+  userOverwriteFileTest
+  testJobCreationTest
+  incomingFeedbacksTest
+  finalizeFeedbacksTest
+  deleteIncomingFeedbackTest
+  openSubmissionsTest
+  assessmentTests
+  unevaluatedScoresTests
+  scoreEvaluationTests
+  saveCommentNotificationTest
+  saveFeedbackNotificationTest
+  attachedSystemNotificationTest
+  attachedNotificationTest
+  test cleanUpPersistence
 
 monadicProperty gen prop = monadicIO (forAllM gen prop)
 

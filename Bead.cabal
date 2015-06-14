@@ -302,9 +302,12 @@ Executable BeadAdmin
   Build-Depends:    base, Bead
   Main-is:          Admin.hs
   HS-Source-Dirs:   main
-  Buildable:        True
+  if flag(Tests)
+    Buildable:      False
+  else
+    Buildable:      True
 
-test-suite BeadUnitTest
+test-suite BeadTest
   Type:
     exitcode-stdio-1.0
   Build-Depends:

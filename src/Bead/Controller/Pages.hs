@@ -848,8 +848,6 @@ parentPage = pageCata'
 
 #ifdef TEST
 
--- * Invariants
-
 pageDescTest = assertProperty
   "Total page union: Regular, Admin and NonMenu"
   (isPage ((join [ regularPages, groupAdminPages, courseAdminPages

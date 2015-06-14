@@ -1,11 +1,10 @@
-module Test.Unit.Persistence.TestNoSQLDir (
-    noSqlDirTests
+module Test.Unit.Persistence (
+    tests
   ) where
 
 -- Test imports
 
 import Test.HUnit hiding (test)
-import Test.Tasty (testGroup)
 import Test.Tasty.HUnit (testCase)
 import Test.Tasty.TestSet
 
@@ -27,7 +26,7 @@ import Data.Time.Clock
 import System.Directory
 import System.FilePath
 
-noSqlDirTests = group "Persistence tests" $ do
+tests = group "Persistence tests" $ do
   test test_initialize_persistence
   test test_create_load_exercise
   test test_create_user

@@ -3,14 +3,14 @@ module Main where
 import Test.Tasty
 import Test.Tasty.TestSet
 
-import qualified Test.Unit.Persistence.TestNoSQLDir
-import qualified Test.Unit.Invariants
-import qualified Test.UserStories.TestStories
-import qualified Test.Quick.Persistence
+import qualified Test.Unit.Module
+import qualified Test.Unit.Persistence
+import qualified Test.Unit.UserStory
+import qualified Test.Property.Persistence
 
 main = do
   Test.Tasty.defaultMain $ buildTestTree "" $ do
-    Test.Unit.Invariants.tests
-    Test.Unit.Persistence.TestNoSQLDir.noSqlDirTests
-    Test.UserStories.TestStories.userStoryTests
-    Test.Quick.Persistence.complexTests
+    Test.Unit.Module.tests
+    Test.Unit.Persistence.tests
+    Test.Unit.UserStory.tests
+    Test.Property.Persistence.tests

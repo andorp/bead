@@ -36,7 +36,6 @@ import           Test.Tasty.TestSet
 
 type DirPath = FilePath
 
--- * Type classes
 
 dataDir = "data"
 userDir = "user"
@@ -98,6 +97,8 @@ persistenceDirs = [
   , scoreDataDir
   , notificationDataDir
   ]
+
+-- * Type classes
 
 class DirName d where
   dirName :: d -> DirPath
@@ -983,8 +984,6 @@ maybeDecodeJSON s = unsafePerformIO $
       nothing _ = return Nothing
 
 #ifdef TEST
-
--- * Invariants
 
 isValidDirStructure :: DirStructure -> Bool
 isValidDirStructure s =

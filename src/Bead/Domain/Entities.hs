@@ -624,8 +624,6 @@ statusMessage
 
 #ifdef TEST
 
--- * Invariants
-
 entityTests = do
   compareHunTests
   roleTest

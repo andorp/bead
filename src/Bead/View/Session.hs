@@ -185,8 +185,6 @@ setInSessionTop k v = withTop sessionManager $ setInSession k v
 
 #ifdef TEST
 
--- * Invariants
-
 sessionKeys = [
     pageSessionKey
   , usernameSessionKey

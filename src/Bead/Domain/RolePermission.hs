@@ -57,8 +57,6 @@ admin P_Delete o = elem o [P_Course, P_CourseAdmin, P_GroupAdmin]
 
 #ifdef TEST
 
--- * Invariants
-
 permissionTest =
   assertProperty
     "Permission is a total function"

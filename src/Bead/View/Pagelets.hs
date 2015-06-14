@@ -555,8 +555,6 @@ verticalRadioButtons name values = mapM_ button values
 
 #ifdef TEST
 
--- * Invariants
-
 linkTextTest =
   assertProperty
     "Page link is atotal function"
