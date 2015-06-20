@@ -5,6 +5,7 @@ import qualified Data.Text as Text
 import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
+import qualified Bead.Domain.Entity.Notification as Domain hiding (NotifType(..))
 import qualified Bead.Domain.Relationships as Domain
 import           Bead.Persistence.SQL.Entities
 import           Bead.Persistence.SQL.JSON
@@ -301,3 +302,13 @@ instance DomainValue Domain.Score where
   type EntityValue Domain.Score = ScoreGeneric
   fromDomainValue _s = Score "score"
   toDomainValue _ent = Domain.Score
+
+instance DomainKey Domain.NotificationKey where
+  type EntityForKey Domain.NotificationKey = NotificationGeneric
+  fromDomainKey = domainKeyToEntityKey $ \(Domain.NotificationKey k) -> k
+  toDomainKey   = entityToDomainKey Domain.NotificationKey "entityToNotificationKey"
+
+instance DomainValue Domain.Notification where
+  type EntityValue Domain.Notification = NotificationGeneric
+  fromDomainValue = Domain.notification Notification
+  toDomainValue ent = Domain.Notification (notificationMessage ent)

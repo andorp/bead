@@ -75,6 +75,10 @@ Group
   description Text
   deriving Show
 
+Notification
+  message     Text
+  deriving Show
+
 Score
   score JSONText
   deriving Show
@@ -296,6 +300,21 @@ ScoreOfEvaluation
   evaluation EvaluationId
   UniqueScoreOfEvaluationPair score evaluation
   UniqueScoreOfEvaluation evaluation
+
+CommentNotification
+  comment      CommentId
+  notification NotificationId
+  UniqueCommentNotification comment notification
+
+FeedbackNotification
+  feedback     FeedbackId
+  notification NotificationId
+  UniqueFeedbackNotification feedback notification
+
+UserNotification
+  user         UserId
+  notification NotificationId
+  UniqueUserNotification user notification
 
 |]
 
