@@ -160,7 +160,7 @@ Library
     MonadCatchIO-transformers,
     monad-logger >= 0.3,
     old-locale,
-    pandoc,
+    pandoc >= 1.12 && < 1.13,
     pqueue >= 1.2.0 && < 2.0,
     mtl,
     process >= 1.2.0 && < 2.0,
