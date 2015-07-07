@@ -100,7 +100,7 @@ script:
                   tasty-hunit-0.9.2
                   tasty-quickcheck-0.8.3.2
   - cabal configure -v2 -f Tests
-  - cabal test
+  - cabal test --log=/dev/stdout
   - cabal clean
   - cabal configure -v2 -f "Tests SQLite LDAP"
-  - cabal test
+  - cabal test --log=/dev/stdout
