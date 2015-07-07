@@ -88,11 +88,11 @@ instance RandomData Aspect where
   positive = oneof
     [ elements [BallotBox, ZippedSubmissions, Isolated]
     , Password <$> listOf1 alphaNum
-    , NoOfTries <$> interval 1 100
+    , NoOfTries <$> choose (1, 100)
     ]
   negative = oneof
     [ return (Password "")
-    , NoOfTries <$> interval (-2) 0
+    , NoOfTries <$> choose ((-2), 0)
     ]
 
 instance Arbitrary Aspect where
@@ -341,7 +341,7 @@ noOfTriesTests = do
   assertProperty "noOfTests: get (set n aspects) == n"
                  id
                  (do a <- createAspects <$> listOf positive
-                     n <- interval 1 100
+                     n <- choose (1,100)
                      return $ getNoOfTries (setNoOfTries n a) == n)
                  "Set/Get property is broken"
 #endif
@@ -387,7 +387,7 @@ instance Arbitrary Assignment where
     <*> arbitrary
     <*> (pure (read "2014-12-12 18:56:29.363547 UTC"))
     <*> (pure (read "2015-12-12 18:56:29.363547 UTC"))
-    <*> (percentageConfig <$> interval 0.0 1.0)
+    <*> (percentageConfig <$> choose (0.0, 1.0))
 #endif
 
 #ifdef TEST

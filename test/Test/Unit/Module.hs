@@ -1,6 +1,4 @@
 {-# LANGUAGE CPP #-}
---{-# LANGUAGE TypeSynonymInstances #-}
---{-# LANGUAGE FlexibleInstances #-}
 module Test.Unit.Module (
     tests
   ) where

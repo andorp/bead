@@ -557,7 +557,7 @@ verticalRadioButtons name values = mapM_ button values
 
 linkTextTest =
   assertProperty
-    "Page link is atotal function"
+    "Page link is a total function"
     (\p -> length (linkText' p) > 0)
     P.pageGen
     "Page link text should be defined"

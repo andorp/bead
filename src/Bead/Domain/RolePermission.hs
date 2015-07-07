@@ -61,9 +61,7 @@ permissionTest =
   assertProperty
     "Permission is a total function"
     (\(r,p,o) -> length (show (permission r p o)) > 0)
-    (triplet <$> enumGen <*> enumGen <*> enumGen)
-    "Permission relation is totally defined"
-  where
-    triplet a b c = (a,b,c)
+    ((,,) <$> enumGen <*> enumGen <*> enumGen)
+    "Permission relation is not totally defined"
 
 #endif
