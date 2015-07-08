@@ -16,7 +16,7 @@ import           Snap.Snaplet.Auth as A
 import           Snap.Snaplet.Session
 
 #ifdef TEST
-import           Bead.Invariants (UnitTests(..))
+import           Test.Tasty.TestSet
 #endif
 
 -- * Session Management
@@ -185,8 +185,6 @@ setInSessionTop k v = withTop sessionManager $ setInSession k v
 
 #ifdef TEST
 
--- * Invariants
-
 sessionKeys = [
     pageSessionKey
   , usernameSessionKey
@@ -194,9 +192,11 @@ sessionKeys = [
   , sessionVersionKey
   ]
 
-unitTests :: UnitTests
-unitTests = UnitTests [
-    ("Each session key must be different", (length (L.nub sessionKeys) == (length sessionKeys)))
-  ]
+uniqueSessionKeysTest =
+  assertEquals
+    "Unique Session Keys"
+    (length (L.nub sessionKeys))
+    (length sessionKeys)
+    "Each session key must be different" 
 
 #endif

@@ -10,18 +10,18 @@ module Bead.View.EmailTemplate
   , registration
   , forgottenPassword
 #ifdef TEST
-  , unitTests
+  , runEmailTemplateTests
 #endif
   ) where
 
 import Data.Data
-import Data.ByteString.Lazy.Char8 hiding (readFile)
 import qualified Data.Text.Lazy as DTL
 import Text.Hastache
 import Text.Hastache.Context
 
 #ifdef TEST
-import Bead.Invariants (UnitTestsM(..))
+import Test.Tasty.TestSet
+import Test.Tasty.HUnit as HUnit
 #endif
 
 
@@ -78,13 +78,12 @@ forgottenPassword = fileTemplate
 
 #ifdef TEST
 
-unitTests = UnitTestsM [
-    ("Registration template",
-        do found <- runEmailTemplate (emailTemplate "n {{regUsername}} u {{regUrl}}") (RegTemplate "n" "u")
-           return (found == "n n u u"))
-  , ("Forgotten password template",
-        do found <- runEmailTemplate (emailTemplate "n {{fpUsername}} p {{fpNewPassword}}") (ForgottenPassword "n" "p")
-           return (found == "n n p p"))
-  ]
+runEmailTemplateTests = group "runEmailTemplate" $ do
+  add $ HUnit.testCase "Registration template" $ do
+    found <- runEmailTemplate (emailTemplate "n {{regUsername}} u {{regUrl}}") (RegTemplate "n" "u")
+    HUnit.assertEqual "Registration template" "n n u u" found
+  add $ HUnit.testCase "Forgotten password" $ do
+    found <- runEmailTemplate (emailTemplate "n {{fpUsername}} p {{fpNewPassword}}") (ForgottenPassword "n" "p")
+    HUnit.assertEqual "Forgotten password template" "n n p p" found
 
 #endif

@@ -28,7 +28,7 @@ import Bead.Config.Configuration
 import Bead.Config.Parser
 
 #ifdef TEST
-import Bead.Invariants
+import Test.Tasty.TestSet
 #endif
 
 -- Represents the hostname (and/or port) of the bead server
@@ -63,11 +63,13 @@ initTasks arguments = case filter ((/='-') . head) arguments of
   _         -> Left $ Usage (\p -> join [p, " [OPTION...] [admin]"])
 
 #ifdef TEST
-initTaskAssertions = [
-    Assertion "Empty config list"   (initTasks [])     (Right [])
-  , Assertion "Create admin option" (initTasks ["admin"]) (Right [CreateAdmin])
-  , AssertPredicate "Two options"             (initTasks ["admin","b"]) isLeft
-  ] where
+initTaskAssertions = do
+  eqPartitions initTasks
+    [ Partition "Empty config list"   []     (Right []) ""
+    , Partition "Create admin option" ["admin"] (Right [CreateAdmin]) ""
+    ]
+  assertSatisfy "Two options" isLeft (initTasks ["admin","b"]) ""
+  where
       isLeft (Left _) = True
       isLeft _        = False
 #endif

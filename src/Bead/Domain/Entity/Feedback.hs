@@ -21,8 +21,7 @@ import           Bead.Domain.Func
 import           Bead.Domain.Shared.Evaluation
 
 #ifdef TEST
-import           Test.Themis.Test
-import           Test.Themis.Test.Asserts
+import           Test.Tasty.TestSet
 #endif
 
 
@@ -73,11 +72,11 @@ isTestedFeedback = feedback
 isTestedFeedbackTests = group "isTestedFeedback" $ do
   let date = read "2014-08-10 17:15:19.707507 UTC"
   eqPartitions isTestedFeedback
-    [ ("Result: True"     , Feedback (TestResult True) date, True, "Does not recognized.")
-    , ("Result: False"    , Feedback (TestResult False) date, True, "Does not recognized.")
-    , ("MessageForStudent", Feedback (MessageForStudent "s") date, False, "Does recognized.")
-    , ("MessageForAdmin"  , Feedback (MessageForAdmin "a") date, False, "Does recognized.")
-    , ("Evaluated"        , Feedback (Evaluated undefined "a" "b") date, False, "Does recognized.")
+    [ Partition "Result: True"      (Feedback (TestResult True) date) True "Does not recognized."
+    , Partition "Result: False"     (Feedback (TestResult False) date) True "Does not recognized."
+    , Partition "MessageForStudent" (Feedback (MessageForStudent "s") date) False "Does recognized."
+    , Partition "MessageForAdmin"   (Feedback (MessageForAdmin "a") date) False "Does recognized."
+    , Partition "Evaluated"         (Feedback (Evaluated undefined "a" "b") date) False "Does recognized."
     ]
 #endif
 
@@ -91,11 +90,11 @@ feedbackTestResult = feedback
 feedbackTestResultTests = group "feedbackTestResult" $ do
   let date = read "2014-08-10 17:15:19.707507 UTC"
   eqPartitions feedbackTestResult
-    [ ("Result: True"     , Feedback (TestResult True) date, Just True, "Does not recognized.")
-    , ("Result: False"    , Feedback (TestResult False) date, Just False, "Does not recognized.")
-    , ("MessageForStudent", Feedback (MessageForStudent "s") date, Nothing, "Does recognized.")
-    , ("MessageForAdmin"  , Feedback (MessageForAdmin "a") date, Nothing, "Does recognized.")
-    , ("Evaluated"        , Feedback (Evaluated undefined "a" "b") date, Nothing, "Does recognized.")
+    [ Partition "Result: True"      (Feedback (TestResult True) date) (Just True) "Does not recognized."
+    , Partition "Result: False"     (Feedback (TestResult False) date) (Just False) "Does not recognized."
+    , Partition "MessageForStudent" (Feedback (MessageForStudent "s") date) Nothing "Does recognized."
+    , Partition "MessageForAdmin"   (Feedback (MessageForAdmin "a") date) Nothing "Does recognized."
+    , Partition "Evaluated"         (Feedback (Evaluated undefined "a" "b") date) Nothing "Does recognized."
     ]
 
 #endif

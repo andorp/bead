@@ -127,6 +127,14 @@ listFiles = FS.listFiles
 getFile :: Domain.Username -> Domain.UsersFile -> Persist FilePath
 getFile = FS.getFile
 
+-- Select all the existing usernames for the given user id list
+usernames :: [UserId] -> Persist [Domain.Username]
+usernames userIds = catMaybes <$> (mapM toUsername userIds)
+  where
+    toUsername e = do
+      mUser <- get e
+      return $! (Domain.Username . Text.unpack . userUsername <$> mUser)
+
 -- TODO: Write user unit tests
 
 

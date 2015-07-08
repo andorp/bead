@@ -180,7 +180,7 @@ import qualified Bead.Persistence.NoSQLDir as PersistImpl
 #endif
 
 #ifdef TEST
-import           Test.Themis.Test (Test)
+import           Test.Tasty.TestSet (TestSet)
 #endif
 
 type Persist a = PersistImpl.Persist a
@@ -702,7 +702,7 @@ runPersist = PersistImpl.runInterpreter
 
 #ifdef TEST
 
-persistTests :: Test ()
+persistTests :: TestSet ()
 persistTests = PersistImpl.tests
 
 #endif

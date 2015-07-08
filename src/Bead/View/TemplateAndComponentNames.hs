@@ -13,7 +13,7 @@ import           Bead.View.Fay.HookIds
 import qualified Bead.Controller.Pages as P
 
 #ifdef TEST
-import           Bead.Invariants (UnitTests(..))
+import           Test.Tasty.TestSet
 #endif
 
 -- * Type safe declarations
@@ -438,9 +438,11 @@ classList = map className [
 
 names = fieldList ++ classList
 
-unitTests = UnitTests [
-    ( "Field names must be unique"
-      , ((Set.size . Set.fromList $ names) == (length names)) )
-  ]
+fieldNameTest =
+  assertEquals
+    "Field names"
+    (Set.size . Set.fromList $ names)
+    (length names)
+    "Field names must be unique"
 
 #endif

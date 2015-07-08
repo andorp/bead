@@ -52,7 +52,7 @@ module Bead.View.RouteOf (
   , getSubmissionPath
   , pageRequestParams
 #ifdef TEST
-  , routeOfInvariants
+  , routeOfTest
 #endif
   ) where
 
@@ -66,7 +66,8 @@ import           Bead.Controller.Pages
 import           Bead.View.RequestParams
 
 #ifdef TEST
-import           Bead.Invariants (Invariants(..))
+import           Test.Tasty.TestSet
+import           Test.QuickCheck.Arbitrary
 #endif
 
 
@@ -302,11 +303,13 @@ requestRoute route rs = fromString . join $
 
 #ifdef TEST
 
--- * Invariants
-
-routeOfInvariants = Invariants [
-    ("RouteOf strings must not be empty", \p -> Char8.length (routeOf' p) > 0)
-  ] where
+routeOfTest =
+  assertProperty
+    "Non-empty RouteOr path values"
+    (\p -> Char8.length (routeOf' p) > 0)
+    pageGen
+    "RouteOf strings must not be empty"
+  where
     routeOf' :: PageDesc -> ByteString
     routeOf' = routeOf
 

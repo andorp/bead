@@ -3,7 +3,7 @@
 module Bead.View.Content.All (
     pageContent
 #ifdef TEST
-  , invariants
+  , pageContentTest
 #endif
   ) where
 
@@ -32,7 +32,7 @@ import Bead.View.Content.UploadFile.Page
 import Bead.View.Content.GetSubmission
 
 #ifdef TEST
-import Bead.Invariants (Invariants(..))
+import Test.Tasty.TestSet
 #endif
 
 pageContent :: Pages.Page a b c d e -> PageHandler
@@ -82,10 +82,13 @@ pageContent = Pages.constantsP
 
 #ifdef TEST
 
-invariants :: Invariants Pages.PageDesc
-invariants = Invariants [
-    ("Content handler must be defined ", Pages.pageKindCata view userView viewModify modify data_ . pageContent)
-  ] where
+pageContentTest =
+  assertProperty
+    "Content handler is a total function"
+    (Pages.pageKindCata view userView viewModify modify data_ . pageContent)
+    Pages.pageGen
+    "Content handler must be defined"
+  where
       view !_x = True
       userView !_x = True
       viewModify !_x = True

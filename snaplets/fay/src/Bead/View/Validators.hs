@@ -5,7 +5,7 @@ import Prelude
 
 #ifndef FAY
 import Data.List (find)
-import Bead.Invariants (Assertion(..))
+import Test.Tasty.TestSet
 #endif
 
 {- This module is compiled with Fay and Haskell -}
@@ -95,13 +95,13 @@ dateTime s = case s of
   _ -> False
 
 #ifndef FAY
-assertEmailAddress = [
-    Assertion "Empty"     (emailAddress "") False
-  , Assertion "One char"  (emailAddress "q") False
-  , Assertion "One char"  (emailAddress "1") False
-  , Assertion "Only user" (emailAddress "q.dfs") False
-  , Assertion "Valid"     (emailAddress "q.fd@gma.il.com") True
-  , Assertion "Valid 2"   (emailAddress "1adf@ga.com") True
-  , Assertion "Invalid"   (emailAddress "1adf@ga.com.") False
+emailAddressTests = group "emailAddress" $ eqPartitions emailAddress [
+    Partition "Empty"     ""  False "Empty string was recognized"
+  , Partition "One char"  "q" False "One character was recognized"
+  , Partition "One char"  "1" False "One character was recognizes"
+  , Partition "Only user" "q.dfs" False "Only user part is recognized"
+  , Partition "Valid"     "q.fd@gma.il.com" True "Valid email is not recognized"
+  , Partition "Valid 2"   "1adf@ga.com"  True "Valid email is not recognized"
+  , Partition "Invalid"   "1adf@ga.com." False "Invalid email is recognized"
   ]
 #endif

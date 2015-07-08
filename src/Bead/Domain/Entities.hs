@@ -104,8 +104,7 @@ module Bead.Domain.Entities (
   , module Bead.Domain.Entity.TestCase
 
 #ifdef TEST
-  , compareHunTests
-  , roleInvariants
+  , entityTests
 #endif
   ) where
 
@@ -126,7 +125,8 @@ import           Bead.Domain.Evaluation
 import           Bead.View.Translation
 
 #ifdef TEST
-import           Bead.Invariants (Invariants(..), UnitTests(..))
+import           Test.Tasty.Arbitrary
+import           Test.Tasty.TestSet
 #endif
 
 data SubmissionValue
@@ -624,27 +624,30 @@ statusMessage
 
 #ifdef TEST
 
--- * Invariants
+entityTests = do
+  compareHunTests
+  roleTest
 
-compareHunTests = UnitTests [
-    ("Small normal letters a-a", EQ == compareHun 'a' 'a')
-  , ("Small normal letters d-z", LT == compareHun 'd' 'z')
-  , ("Small normal letters z-a", GT == compareHun 'z' 'a')
-  , ("Capital normal letters A-A", EQ == compareHun 'A' 'A')
-  , ("Capital normal letters D-Z", LT == compareHun 'D' 'Z')
-  , ("Capital normal letters Z-A", GT == compareHun 'Z' 'A')
-  , ("Small accented letters á-á", EQ == compareHun 'á' 'á')
-  , ("Small accented letters é-ú", LT == compareHun 'é' 'ú')
-  , ("Small accented letters ű-á", GT == compareHun 'ű' 'á')
-  , ("Capital accented letters Á-Á", EQ == compareHun 'á' 'á')
-  , ("Capital accented letters É-Ú", LT == compareHun 'É' 'Ú')
-  , ("Capital accented letters Ű-Á", GT == compareHun 'Ű' 'Á')
-  ]
+compareHunTests = group "compareHun" $ eqPartitions compareHun'
+  [ Partition "Small normal letters a-a" ('a', 'a') EQ ""
+  , Partition "Small normal letters d-z" ('d', 'z') LT ""
+  , Partition "Small normal letters z-a" ('z', 'a') GT ""
+  , Partition "Capital normal letters A-A" ('A', 'A') EQ ""
+  , Partition "Capital normal letters D-Z" ('D', 'Z') LT ""
+  , Partition "Capital normal letters Z-A" ('Z', 'A') GT ""
+  , Partition "Small accented letters á-á" ('á', 'á') EQ ""
+  , Partition "Small accented letters é-ú" ('é', 'ú') LT ""
+  , Partition "Small accented letters ű-á" ('ű', 'á') GT ""
+  , Partition "Capital accented letters Á-Á" ('á', 'á') EQ ""
+  , Partition "Capital accented letters É-Ú" ('É', 'Ú') LT ""
+  , Partition "Capital accented letters Ű-Á" ('Ű', 'Á') GT ""
+  ] where compareHun' = uncurry compareHun
 
-roleInvariants = Invariants [
-    ( "printRole roles must generate string parseable by parseRole",
-      \r -> ((Just r) ==) . parseRole . printRole $ r
-    )
-  ]
+roleTest =
+  assertProperty
+    "parse and print role are inverse functions"
+    (\r -> ((Just r) ==) . parseRole . printRole $ r)
+    enumGen
+    "printRole roles must generate string parseable by parseRole"
 
 #endif

@@ -5,7 +5,7 @@ module Bead.Domain.Relationships where
 
 import Data.Data
 import Data.Function (on)
-import Data.List as List
+import Data.List as List hiding (group)
 import Data.Map (Map)
 import Data.Time (UTCTime(..))
 
@@ -13,8 +13,8 @@ import Bead.Domain.Entities
 import Bead.Domain.Evaluation
 
 #ifdef TEST
-import Test.Themis.Test
-import Test.Themis.Test.Arbitrary
+import Test.Tasty.Arbitrary
+import Test.Tasty.TestSet
 #endif
 
 -- * Relations
@@ -50,22 +50,25 @@ calcSubLimit assignment noOfSubmissions = noOfTries unlimited limited $ aspects 
       in if rest > 0 then (remaining rest) else reached
 
 #ifdef TEST
-calcSubLimitTests = do
-  test "No no of tries given" $
-    Property (==unlimited)
+calcSubLimitTests = group "calcSubLimit" $ do
+  assertProperty
+      "No no of tries given"
+      (==unlimited)
       (do asg <- fmap clear arbitrary
           sbm <- choose (-100, 100)
           return $ calcSubLimit asg sbm)
       "No of tries is recognized"
-  test "No of tries is given and exceeds the limit" $
-    Property (==reached)
+  assertProperty
+      "No of tries is given and exceeds the limit"
+      (==reached)
       (do lmt <- choose (1,100)
           asg <- fmap (set lmt) arbitrary
           sbm <- choose (lmt,lmt + 100)
           return $ calcSubLimit asg sbm)
       "Limit is not reached"
-  test "Submissions are not reached the limit" $
-    Property (\(lmt,sbm,sbl) -> remaining (lmt - sbm) == sbl)
+  assertProperty
+      "Submissions are not reached the limit"
+      (\(lmt,sbm,sbl) -> remaining (lmt - sbm) == sbl)
       (do lmt <- choose (1,100)
           asg <- fmap (set lmt) arbitrary
           sbm <- choose (0,lmt-1)
@@ -417,6 +420,6 @@ newtype ScoreBoard = ScoreBoard (Map (AssessmentKey, Username) EvaluationKey)
   deriving (Eq, Show)
 
 #ifdef TEST
-relationShipTests = do
+relationshipTests = group "Bead.Domain.Relationships" $ do
   calcSubLimitTests
 #endif

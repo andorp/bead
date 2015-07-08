@@ -17,8 +17,8 @@ import           Bead.Persistence.SQL.User
 
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Themis.Test (ioTest)
-import           Test.Themis.Keyword.Encaps
+import           Test.Tasty.TestSet (ioTest)
+import           Test.Tasty.Encaps
 #endif
 
 -- * Course Persistence
@@ -92,14 +92,6 @@ courseAdmins key = do
   let courseKey = fromDomainKey key
   userIds <- map (adminsOfCourseAdmin . entityVal) <$> selectList [AdminsOfCourseCourse ==. courseKey] []
   usernames userIds
-
--- Select all the existing usernames for the given user id list
-usernames :: [UserId] -> Persist [Domain.Username]
-usernames userIds = catMaybes <$> (mapM toUsername userIds)
-  where
-    toUsername e = do
-      mUser <- get e
-      return $! (Domain.Username . Text.unpack . userUsername <$> mUser)
 
 #ifdef TEST
 

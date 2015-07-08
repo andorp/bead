@@ -11,8 +11,7 @@ import Data.Yaml
 import Bead.Config.Configuration
 
 #ifdef TEST
-import Test.Themis.Test
-import Test.Themis.Test.Asserts
+import Test.Tasty.TestSet
 #endif
 
 -- * JSON instances

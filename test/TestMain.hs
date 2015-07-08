@@ -1,34 +1,16 @@
 module Main where
 
-import Control.Monad (join)
+import Test.Tasty
+import Test.Tasty.TestSet
 
-import Test.Framework (defaultMain)
+import qualified Test.Unit.Module
+import qualified Test.Unit.Persistence
+import qualified Test.Unit.UserStory
+import qualified Test.Property.Persistence
 
-
--- Test cases
-
-import qualified Test.Unit.Persistence.TestNoSQLDir
-import qualified Test.Unit.Invariants
-import qualified Test.UserStories.TestStories
-import qualified Test.Quick.Persistence
-
-tests args =
-  join [
-      (ifPresent "unit" Test.Unit.Invariants.tests)
-    , (ifPresent "persist-unit"
-         [ Test.UserStories.TestStories.tests
-         , Test.Unit.Persistence.TestNoSQLDir.tests
-         ])
-    , (ifPresent "persist-quick"
-         [ Test.Quick.Persistence.tests
-         , Test.Quick.Persistence.massTests
-         , Test.Quick.Persistence.complexTests
-         ])
-    ]
-  where
-    ifPresent a xs =
-      if (elem a args)
-        then xs
-        else []
-
-main = defaultMain (tests ["unit", "persist-unit", "persist-quick"])
+main = do
+  Test.Tasty.defaultMain $ buildTestTree "" $ do
+    Test.Unit.Module.tests
+    Test.Unit.Persistence.tests
+    Test.Unit.UserStory.tests
+    Test.Property.Persistence.tests

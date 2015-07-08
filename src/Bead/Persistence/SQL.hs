@@ -43,11 +43,10 @@ import Bead.Persistence.SQL.TestScript
 import Bead.Persistence.SQL.User
 
 #ifdef TEST
-import Test.Themis.Test (Test)
+import Test.Tasty.TestSet (TestSet)
 #endif
 
 #ifdef TEST
-tests :: Test ()
 tests = do
   courseAdminTests
   groupTests

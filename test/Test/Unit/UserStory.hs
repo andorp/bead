@@ -1,4 +1,4 @@
-module Test.UserStories.TestStories (
+module Test.Unit.UserStory (
     tests
   ) where
 
@@ -21,9 +21,9 @@ import qualified Bead.Persistence.Initialization as PersistInit
 import           Bead.Persistence.Persist
 import           Bead.View.Translation (trans)
 
-import           Test.HUnit hiding (Test(..))
-import           Test.Framework (testGroup)
-import           Test.Framework.Providers.HUnit
+import           Test.HUnit hiding (Test(..), test)
+import           Test.Tasty.HUnit (testCase)
+import           Test.Tasty.TestSet
 
 errorLogger = Logger {
     log = \e msg -> case e of
@@ -106,15 +106,14 @@ assertUserState state usr = do
 
 -- * Tests
 
-tests = testGroup "User Stories" [
-    initPersist
-  , register
-  , loginAndLogout
-  , courseTest
-  , courseAndGroupAssignmentTest
-  , saveAndLoadUserReg
-  , cleanUpPersist
-  ]
+tests = group "User Stories" $ do
+  test initPersist
+  test register
+  test loginAndLogout
+  test courseTest
+  test courseAndGroupAssignmentTest
+  test saveAndLoadUserReg
+  test cleanUpPersist
 
 initPersist = testCase "Initalizing persistence layer" $ do
   init <- createPersistInit defaultConfig

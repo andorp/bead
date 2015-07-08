@@ -179,7 +179,7 @@ import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.List (sortBy, isSuffixOf)
 
 #ifdef TEST
-import Test.Themis.Test (Test)
+import Test.Tasty.TestSet (TestSet)
 #endif
 
 type Persist a = TIO a
@@ -1314,6 +1314,6 @@ encodePwd :: String -> String
 encodePwd = ordEncode
 
 #ifdef TEST
-tests :: Test ()
+tests :: TestSet ()
 tests = return ()
 #endif

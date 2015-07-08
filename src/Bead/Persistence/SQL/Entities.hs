@@ -24,7 +24,7 @@ import           Database.Persist.TH
 import qualified Bead.Domain.Entities as Domain
 
 #ifdef TEST
-import           Test.Themis.Keyword.Encaps
+import           Test.Tasty.Encaps
 #endif
 
 -- String represents a JSON value
@@ -73,6 +73,10 @@ Feedback
 Group
   name        Text
   description Text
+  deriving Show
+
+Notification
+  message     Text
   deriving Show
 
 Score
@@ -296,6 +300,21 @@ ScoreOfEvaluation
   evaluation EvaluationId
   UniqueScoreOfEvaluationPair score evaluation
   UniqueScoreOfEvaluation evaluation
+
+CommentNotification
+  comment      CommentId
+  notification NotificationId
+  UniqueCommentNotification comment notification
+
+FeedbackNotification
+  feedback     FeedbackId
+  notification NotificationId
+  UniqueFeedbackNotification feedback notification
+
+UserNotification
+  user         UserId
+  notification NotificationId
+  UniqueUserNotification user notification
 
 |]
 

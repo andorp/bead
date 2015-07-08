@@ -31,12 +31,11 @@ import           Control.Monad.Transaction.TIO
 
 
 #ifdef TEST
-import           Bead.Invariants (UnitTests(..), InvariantsM2(..))
+import           Test.Tasty.TestSet
 #endif
 
 type DirPath = FilePath
 
--- * Type classes
 
 dataDir = "data"
 userDir = "user"
@@ -98,6 +97,8 @@ persistenceDirs = [
   , scoreDataDir
   , notificationDataDir
   ]
+
+-- * Type classes
 
 class DirName d where
   dirName :: d -> DirPath
@@ -984,8 +985,6 @@ maybeDecodeJSON s = unsafePerformIO $
 
 #ifdef TEST
 
--- * Invariants
-
 isValidDirStructure :: DirStructure -> Bool
 isValidDirStructure s =
   let names = join [files s, directories s]
@@ -1012,31 +1011,10 @@ dirStructures = [
   , notificationDirStructure
   ]
 
-unitTests = UnitTests [
-    ("Dir structures must has different and not empty names", and . map isValidDirStructure $ dirStructures)
-  ]
+noSqlDirTests =
+  assertEquals
+    "Different dir structure names"
+    True (and . map isValidDirStructure $ dirStructures)
+    "Dir structures must has different and not empty names"
 
-invariants :: (Eq a, Load a, Save a) => InvariantsM2 IO T.FileName a
-invariants = InvariantsM2 [
-    ("Load and save must be transparent", \f x -> (runBoolTransaction (loadAndSave f x)))
-  ] where
-      runBoolTransaction :: TIO Bool -> IO Bool
-      runBoolTransaction t = do
-        b <- atomically t
-        return $ case b of
-          Left _   -> False
-          Right b' -> b'
-
-      loadAndSave :: (Eq a, Load a, Save a) => T.FileName -> a -> TIO Bool
-      loadAndSave d x = do
-        let d' = T.fileName d
-        save d' x
-        y <- load d'
-        hasNoRollback $ removeDirectory d'
-        return (x==y)
-
-{- TODO:
-  * All save instances must save the directory structure correctly
-  * All save and load instances must be identical relation
--}
 #endif
