@@ -153,6 +153,7 @@ Library
     ghc,
     ghc-paths,
     hastache >= 0.6,
+    HUnit >=1.2 && <1.3,
     json >= 0.7,
     lens,
     mime-mail,
