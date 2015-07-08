@@ -21,8 +21,7 @@ import           Bead.Persistence.SQL.User
 
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Tasty.TestSet (ioTest, shrink)
-import           Test.Tasty.Encaps
+import           Test.Tasty.TestSet (ioTest, shrink, equals)
 #endif
 
 -- * Comment
@@ -56,34 +55,34 @@ submissionOfFeedback key = do
 feedbackTests = do
   shrink "Feedback end-to-end story."
     (do ioTest "Feedback end-to-end test" $ runSql $ do
-          dbStep $ initDB
-          c  <- dbStep $ saveCourse course
-          ca <- dbStep $ saveCourseAssignment c asg
-          dbStep $ saveUser user1
-          s  <- dbStep $ saveSubmission ca user1name sbm
-          fs <- dbStep $ feedbacksOfSubmission s
-          assertEquals
+          initDB
+          c  <- saveCourse course
+          ca <- saveCourseAssignment c asg
+          saveUser user1
+          s  <- saveSubmission ca user1name sbm
+          fs <- feedbacksOfSubmission s
+          equals
             (Set.fromList [])
             (Set.fromList fs)
             "Feedbacks were for an empty submission."
 
-          let saveFb s f = do fm <- dbStep $ saveFeedback s f
-                              f' <- dbStep $ loadFeedback fm
-                              assertEquals f f' "The feedback was not saved and loaded correctly"
+          let saveFb s f = do fm <- saveFeedback s f
+                              f' <- loadFeedback fm
+                              equals f f' "The feedback was not saved and loaded correctly"
                               return fm
 
           fm <- saveFb s fbTestResult
-          fs <- dbStep $ feedbacksOfSubmission s
-          assertEquals
+          fs <- feedbacksOfSubmission s
+          equals
             (Set.fromList [fm])
             (Set.fromList fs)
             "Saved feedback was not found for the submission."
-          fc <- dbStep $ submissionOfFeedback fm
-          assertEquals s fc "The submission of the feedback was wrong"
+          fc <- submissionOfFeedback fm
+          equals s fc "The submission of the feedback was wrong"
 
           fm2 <- saveFb s fbMsgStudent
-          fs <- dbStep $ feedbacksOfSubmission s
-          assertEquals
+          fs <- feedbacksOfSubmission s
+          equals
             (Set.fromList [fm,fm2])
             (Set.fromList fs)
             "Feedbacks of the submission were wrong."

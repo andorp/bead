@@ -57,9 +57,7 @@ import           Bead.View.Translation
 #ifdef TEST
 import           Bead.Persistence.Initialization
 
-import qualified Test.Tasty.Encaps as Keyword (step, key)
-import           Test.Tasty.Encaps hiding (step, key)
-import           Test.Tasty.TestSet hiding (assertEquals)
+import           Test.Tasty.TestSet
 #endif
 
 -- * Combined Persistence Tasks
@@ -111,19 +109,19 @@ userAssignmentKeysTest = do
     init <- createPersistInit defaultConfig
     interp <- createPersistInterpreter defaultConfig
     initPersist init
-    result <- runPersist interp . runKeyword encapsContext $ do
-      dbStep $ saveUser user1
-      c <- dbStep $ saveCourse course
-      g <- dbStep $ saveGroup c group
-      a1 <- dbStep $ saveCourseAssignment c asg
-      a2 <- dbStep $ saveCourseAssignment c asg
-      a3 <- dbStep $ saveGroupAssignment g asg
-      a4 <- dbStep $ saveGroupAssignment g asg
-      keys <- dbStep $ userAssignmentKeys user1name
-      assertEquals Map.empty keys "The unsubscribed user has some assignment keys"
-      dbStep $ subscribe user1name c g
-      keyMap <- dbStep $ userAssignmentKeys user1name
-      assertEquals
+    result <- runPersist interp $ do
+      saveUser user1
+      c <- saveCourse course
+      g <- saveGroup c group
+      a1 <- saveCourseAssignment c asg
+      a2 <- saveCourseAssignment c asg
+      a3 <- saveGroupAssignment g asg
+      a4 <- saveGroupAssignment g asg
+      keys <- userAssignmentKeys user1name
+      equals Map.empty keys "The unsubscribed user has some assignment keys"
+      subscribe user1name c g
+      keyMap <- userAssignmentKeys user1name
+      equals
         (Map.fromList [ (c,Set.fromList [a1,a2,a3,a4])])
         keyMap
         "The assignment of the users was different than the sum of the course and group assignment"
@@ -562,8 +560,6 @@ submissionLimitOfAssignment username key =
   calcSubLimit <$> (loadAssignment key) <*> (length <$> userSubmissions username key)
 
 #ifdef TEST
-
-dbStep = Keyword.step . Keyword.key
 
 persistRelationsTests = do
   userAssignmentKeysTest

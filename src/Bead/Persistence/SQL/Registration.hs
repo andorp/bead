@@ -11,8 +11,7 @@ import           Bead.Persistence.SQL.Entities
 #ifdef TEST
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Tasty.TestSet (ioTest)
-import           Test.Tasty.Encaps
+import           Test.Tasty.TestSet (ioTest, equals)
 #endif
 
 -- * Registration
@@ -37,10 +36,10 @@ loadUserReg key = do
 
 userRegistrationTests = do
   ioTest "Save and load user registration" $ runSql $ do
-    dbStep initDB
-    k <- dbStep $ saveUserReg reg
-    reg' <- dbStep $ loadUserReg k
-    assertEquals reg reg' "User registration was saved and load incorrectly."
+    initDB
+    k <- saveUserReg reg
+    reg' <- loadUserReg k
+    equals reg reg' "User registration was saved and load incorrectly."
 
 #endif
 

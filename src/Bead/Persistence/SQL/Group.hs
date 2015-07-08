@@ -21,8 +21,7 @@ import           Bead.Persistence.SQL.User
 
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Tasty.TestSet (ioTest)
-import           Test.Tasty.Encaps
+import           Test.Tasty.TestSet (ioTest, equals)
 #endif
 
 -- * Group Persistence
@@ -96,64 +95,64 @@ unsubscribe username courseDomKey groupDomKey = withUser username (return ()) $ 
 
 groupTests = do
   ioTest "Create and load group" $ runSql $ do
-    dbStep $ initDB
-    c <- dbStep $ saveCourse course
-    g <- dbStep $ saveGroup  c group
-    group' <- dbStep $ loadGroup g
-    assertEquals group group' "Group was saved and load incorrectly"
+    initDB
+    c <- saveCourse course
+    g <- saveGroup  c group
+    group' <- loadGroup g
+    equals group group' "Group was saved and load incorrectly"
 
   ioTest "Course key of group was saved correctly" $ runSql $ do
-    dbStep $ initDB
-    c <- dbStep $ saveCourse course
-    g <- dbStep $ saveGroup  c group
-    c' <- dbStep $ courseOfGroup g
-    assertEquals c c' "Course key was not loaded correctly"
+    initDB
+    c <- saveCourse course
+    g <- saveGroup  c group
+    c' <- courseOfGroup g
+    equals c c' "Course key was not loaded correctly"
 
   ioTest "Check group subscription" $ runSql $ do
-    dbStep $ initDB
-    dbStep $ saveUser user1
-    c <- dbStep $ saveCourse course
-    g <- dbStep $ saveGroup  c group
+    initDB
+    saveUser user1
+    c <- saveCourse course
+    g <- saveGroup  c group
 
-    ingr <- dbStep $ isUserInGroup user1name g
-    assertEquals False ingr "User was in the group"
+    ingr <- isUserInGroup user1name g
+    equals False ingr "User was in the group"
 
-    dbStep $ subscribe user1name c g
-    ingr <- dbStep $ isUserInGroup user1name g
-    assertEquals True ingr "User was not in the subscribed group"
+    subscribe user1name c g
+    ingr <- isUserInGroup user1name g
+    equals True ingr "User was not in the subscribed group"
 
   ioTest "Check creating group admins" $ runSql $ do
-    dbStep $ initDB
-    dbStep $ saveUser user1
-    dbStep $ saveUser user2
-    c <- dbStep $ saveCourse course
-    g <- dbStep $ saveGroup c group
-    ags <- dbStep $ administratedGroups user1name
-    assertEquals [] (map fst ags) "There was group administrated with the user"
-    admins <- dbInfo $ groupAdmins g
-    assertEquals [] admins "There were group admins, without creation"
-    dbStep $ createGroupAdmin user1name g
-    admins <- dbInfo $ groupAdmins g
-    assertEquals [user1name] admins "The first admin was not assigned to the group"
-    ags <- dbStep $ administratedGroups user1name
-    assertEquals [g] (map fst ags) "There was no group administrated with the user"
-    dbStep $ createGroupAdmin user2name g
-    admins <- dbInfo $ groupAdmins g
-    assertEquals
+    initDB
+    saveUser user1
+    saveUser user2
+    c <- saveCourse course
+    g <- saveGroup c group
+    ags <- administratedGroups user1name
+    equals [] (map fst ags) "There was group administrated with the user"
+    admins <- groupAdmins g
+    equals [] admins "There were group admins, without creation"
+    createGroupAdmin user1name g
+    admins <- groupAdmins g
+    equals [user1name] admins "The first admin was not assigned to the group"
+    ags <- administratedGroups user1name
+    equals [g] (map fst ags) "There was no group administrated with the user"
+    createGroupAdmin user2name g
+    admins <- groupAdmins g
+    equals
       (Set.fromList [user1name, user2name])
       (Set.fromList admins)
       "The admins were different to the group"
 
   ioTest "Check the user subscription and unsubscription from the course" $ runSql $ do
-    dbStep $ initDB
-    dbStep $ saveUser user1
-    dbStep $ saveUser user2
-    c <- dbStep $ saveCourse course
-    g <- dbStep $ saveGroup c group
-    dbStep $ subscribe user1name c g
-    dbStep $ unsubscribe user1name c g
-    us <- dbInfo $ unsubscribedFromGroup g
-    assertEquals [user1name] us "User was not unsubscribed from the group"
+    initDB
+    saveUser user1
+    saveUser user2
+    c <- saveCourse course
+    g <- saveGroup c group
+    subscribe user1name c g
+    unsubscribe user1name c g
+    us <- unsubscribedFromGroup g
+    equals [user1name] us "User was not unsubscribed from the group"
 
 #endif
 

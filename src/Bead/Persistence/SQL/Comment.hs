@@ -22,8 +22,7 @@ import           Bead.Persistence.SQL.User
 
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Tasty.TestSet (ioTest, shrink)
-import           Test.Tasty.Encaps
+import           Test.Tasty.TestSet (ioTest, shrink, equals)
 #endif
 
 -- * Comment
@@ -57,29 +56,29 @@ submissionOfComment key = do
 commentTests = do
   shrink "Comment end-to-end story."
     (do ioTest "Comment end-to-end test" $ runSql $ do
-          dbStep $ initDB
-          c  <- dbStep $ saveCourse course
-          ca <- dbStep $ saveCourseAssignment c asg
-          dbStep $ saveUser user1
-          s  <- dbStep $ saveSubmission ca user1name sbm
-          cs <- dbStep $ commentsOfSubmission s
-          assertEquals
+          initDB
+          c  <- saveCourse course
+          ca <- saveCourseAssignment c asg
+          saveUser user1
+          s  <- saveSubmission ca user1name sbm
+          cs <- commentsOfSubmission s
+          equals
             (Set.fromList [])
             (Set.fromList cs)
             "Comments were for an empty submission."
-          cm <- dbStep $ saveComment s cmt
-          cs <- dbStep $ commentsOfSubmission s
-          assertEquals
+          cm <- saveComment s cmt
+          cs <- commentsOfSubmission s
+          equals
             (Set.fromList [cm])
             (Set.fromList cs)
             "Saved comment was not found for the submission."
-          cmt' <- dbStep $ loadComment cm
-          assertEquals cmt cmt' "The comment was not saved and loaded correctly"
-          sc <- dbStep $ submissionOfComment cm
-          assertEquals s sc "The submission of the comment was wrong"
-          cm2 <- dbStep $ saveComment s cmt
-          cs <- dbStep $ commentsOfSubmission s
-          assertEquals
+          cmt' <- loadComment cm
+          equals cmt cmt' "The comment was not saved and loaded correctly"
+          sc <- submissionOfComment cm
+          equals s sc "The submission of the comment was wrong"
+          cm2 <- saveComment s cmt
+          cs <- commentsOfSubmission s
+          equals
             (Set.fromList [cm,cm2])
             (Set.fromList cs)
             "Comments of the submission were wrong."
