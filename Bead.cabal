@@ -287,8 +287,6 @@ Library
     Bead.View.Validators
     Snap.Snaplet.Auth.Backends.SafeJsonFile
     Test.Tasty.Arbitrary
-    Test.Tasty.Encaps
-    Test.Tasty.Keyword
     Test.Tasty.RandomData
     Test.Tasty.TestSet
 
