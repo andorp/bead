@@ -25,8 +25,7 @@ import           Bead.Persistence.SQL.User
 
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Tasty.TestSet (ioTest, shrink)
-import           Test.Tasty.Encaps
+import           Test.Tasty.TestSet (ioTest, shrink, equals)
 #endif
 
 -- * Submission
@@ -165,76 +164,76 @@ usersOpenedSubmissions key username =
 submissionTests = do
   shrink "Submission end-to-end story."
     (do ioTest "Submission end-to-end test case" $ runSql $ do
-          dbStep initDB
-          c  <- dbStep $ saveCourse course
-          ca <- dbStep $ saveCourseAssignment c asg
-          dbStep $ saveUser user1
-          ls0 <- dbStep $ lastSubmission ca user1name
-          assertEquals Nothing ls0 "Some submission is returned"
-          s  <- dbStep $ saveSubmission ca user1name sbm
-          os <- dbStep $ openedSubmissions
-          assertEquals [s] os "The opened submission returned wrong set"
-          sbm' <- dbStep $ loadSubmission s
-          assertEquals sbm sbm' "Saved and loaded submission were different."
-          ca' <- dbStep $ assignmentOfSubmission s
-          assertEquals ca ca' "Wrong assignment key was returned for the submission"
-          uname' <- dbStep $ usernameOfSubmission s
-          assertEquals user1name uname' "Wrong username was returned for the submission"
-          ls <- dbStep $ lastSubmission ca user1name
-          assertEquals (Just s) ls "Wrong last submission was returned"
-          s2 <- dbStep $ saveSubmission ca user1name sbm2
-          ls <- dbStep $ lastSubmission ca user1name
-          assertEquals (Just s2) ls "Wrong last submission after a resubmission"
-          os <- dbStep $ openedSubmissions
-          assertEquals
+          initDB
+          c  <- saveCourse course
+          ca <- saveCourseAssignment c asg
+          saveUser user1
+          ls0 <- lastSubmission ca user1name
+          equals Nothing ls0 "Some submission is returned"
+          s  <- saveSubmission ca user1name sbm
+          os <- openedSubmissions
+          equals [s] os "The opened submission returned wrong set"
+          sbm' <- loadSubmission s
+          equals sbm sbm' "Saved and loaded submission were different."
+          ca' <- assignmentOfSubmission s
+          equals ca ca' "Wrong assignment key was returned for the submission"
+          uname' <- usernameOfSubmission s
+          equals user1name uname' "Wrong username was returned for the submission"
+          ls <- lastSubmission ca user1name
+          equals (Just s) ls "Wrong last submission was returned"
+          s2 <- saveSubmission ca user1name sbm2
+          ls <- lastSubmission ca user1name
+          equals (Just s2) ls "Wrong last submission after a resubmission"
+          os <- openedSubmissions
+          equals
             (Set.fromList [s,s2])
             (Set.fromList os)
             "The opened submission returned wrong set after the second submission"
-          dbStep $ saveUser user2
-          s3 <- dbStep $ saveSubmission ca user2name sbm
-          os2 <- dbStep $ openedSubmissions
-          assertEquals
+          saveUser user2
+          s3 <- saveSubmission ca user2name sbm
+          os2 <- openedSubmissions
+          equals
             (Set.fromList [s,s2,s3])
             (Set.fromList os2)
             "The opened submission returned wrong set after the second user's submission"
-          os4 <- dbStep $ usersOpenedSubmissions ca user1name
-          assertEquals
+          os4 <- usersOpenedSubmissions ca user1name
+          equals
             (Set.fromList [s,s2])
             (Set.fromList os4)
             "The users submission set was not calculated correctly #1"
-          os5 <- dbStep $ usersOpenedSubmissions ca user2name
-          assertEquals
+          os5 <- usersOpenedSubmissions ca user2name
+          equals
             (Set.fromList [s3])
             (Set.fromList os5)
             "The users submission set was not calculated correctly #2"
-          us1 <- dbStep $ userSubmissions user1name ca
-          assertEquals
+          us1 <- userSubmissions user1name ca
+          equals
             (Set.fromList [s,s2])
             (Set.fromList us1)
             "Submissions for user1 and course assignment were wrong"
-          us2 <- dbStep $ userSubmissions user2name ca
-          assertEquals
+          us2 <- userSubmissions user2name ca
+          equals
             (Set.fromList [s3])
             (Set.fromList us2)
             "Submissions for user2 and course assignment were wrong"
-          ca2 <- dbStep $ saveCourseAssignment c asg
-          us3 <- dbStep $ userSubmissions user1name ca2
-          assertEquals [] us3 "Submissions found for user assignment pair that does not have any"
-          dbStep $ removeFromOpened ca user1name s
-          os6 <- dbStep $ openedSubmissions
-          assertEquals
+          ca2 <- saveCourseAssignment c asg
+          us3 <- userSubmissions user1name ca2
+          equals [] us3 "Submissions found for user assignment pair that does not have any"
+          removeFromOpened ca user1name s
+          os6 <- openedSubmissions
+          equals
             (Set.fromList [s2,s3])
             (Set.fromList os6)
             "The opened submission returned wrong set after removing one opened submissions for user1"
           return ())
     (do ioTest "Save and load submission" $ runSql $ do
-          dbStep initDB
-          c  <- dbStep $ saveCourse course
-          ca <- dbStep $ saveCourseAssignment c asg
-          dbStep $ saveUser user1
-          s  <- dbStep $ saveSubmission ca user1name sbm
-          sbm' <- dbStep $ loadSubmission s
-          assertEquals sbm sbm' "Saved and loaded submission were different.")
+          initDB
+          c  <- saveCourse course
+          ca <- saveCourseAssignment c asg
+          saveUser user1
+          s  <- saveSubmission ca user1name sbm
+          sbm' <- loadSubmission s
+          equals sbm sbm' "Saved and loaded submission were different.")
   return ()
 
 #endif

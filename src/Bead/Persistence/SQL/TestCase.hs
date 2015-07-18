@@ -23,8 +23,7 @@ import           Bead.Persistence.SQL.TestScript
 
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Tasty.TestSet (ioTest, shrink)
-import           Test.Tasty.Encaps
+import           Test.Tasty.TestSet (ioTest, shrink, equals)
 #endif
 
 -- * Test Cases
@@ -109,27 +108,27 @@ modifyTestScriptOfTestCase caseKey scriptKey = void $ do
 testCaseTests = do
   shrink "Test Case end-to-end story."
     (do ioTest "Test Case end-to-end case" $ runSql $ do
-          dbStep initDB
-          c  <- dbStep $ saveCourse course
-          ts <- dbStep $ saveTestScript c script
-          a  <- dbStep $ saveCourseAssignment c asg
-          tc <- dbStep $ saveTestCase ts a case1
-          case1' <- dbStep $ loadTestCase tc
-          assertEquals case1 case1' "Saved and load test cases were different"
-          a' <- dbStep $ assignmentOfTestCase tc
-          assertEquals a a' "Assignment of the test case was wrong"
-          ts' <- dbStep $ testScriptOfTestCase tc
-          assertEquals ts ts' "Test script of the test case was wrong"
-          dbStep $ modifyTestCase tc case2
-          case2' <- dbStep $ loadTestCase tc
-          assertEquals case2 case2' "Test case was not modified correctly"
-          ts2 <- dbStep $ saveTestScript c script2
-          dbStep $ modifyTestScriptOfTestCase tc ts2
-          ts3 <- dbStep $ testScriptOfTestCase tc
-          assertEquals ts2 ts3 "Test script of the test case did not get modified"
-          dbStep $ removeTestCaseAssignment tc a
-          tc2 <- dbStep $ testCaseOfAssignment a
-          assertEquals Nothing tc2 "Test case of the assignment was wrong"
+          initDB
+          c  <- saveCourse course
+          ts <- saveTestScript c script
+          a  <- saveCourseAssignment c asg
+          tc <- saveTestCase ts a case1
+          case1' <- loadTestCase tc
+          equals case1 case1' "Saved and load test cases were different"
+          a' <- assignmentOfTestCase tc
+          equals a a' "Assignment of the test case was wrong"
+          ts' <- testScriptOfTestCase tc
+          equals ts ts' "Test script of the test case was wrong"
+          modifyTestCase tc case2
+          case2' <- loadTestCase tc
+          equals case2 case2' "Test case was not modified correctly"
+          ts2 <- saveTestScript c script2
+          modifyTestScriptOfTestCase tc ts2
+          ts3 <- testScriptOfTestCase tc
+          equals ts2 ts3 "Test script of the test case did not get modified"
+          removeTestCaseAssignment tc a
+          tc2 <- testCaseOfAssignment a
+          equals Nothing tc2 "Test case of the assignment was wrong"
 
           return ())
     (do return ()) -- TODO

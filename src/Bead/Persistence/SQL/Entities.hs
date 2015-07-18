@@ -23,9 +23,9 @@ import           Database.Persist.TH
 
 import qualified Bead.Domain.Entities as Domain
 
-#ifdef TEST
-import           Test.Tasty.Encaps
-#endif
+-- #ifdef TEST
+-- import           Test.Tasty.TestSet (equals)
+-- #endif
 
 -- String represents a JSON value
 type JSONText = String
@@ -349,16 +349,10 @@ withUser username nothing just =
 
 -- * Test helpers
 
-runSql :: Keyword (EncapsKeyword Persist) a -> IO (Either IOError a)
-runSql = runSqlite ":memory:" . runKeyword encapsContext
+runSql :: Persist a -> IO a
+runSql = runSqlite ":memory:"
 
 initDB :: Persist ()
 initDB = void $ runMigrationSilent migrateAll
-
-dbStep :: Persist a -> Keyword (EncapsKeyword Persist) a
-dbStep = step . key
-
-dbInfo :: Persist a -> Keyword (EncapsKeyword Persist) a
-dbInfo = info . key
 
 #endif

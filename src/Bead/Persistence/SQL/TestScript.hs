@@ -16,8 +16,7 @@ import           Bead.Persistence.SQL.Course
 
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Tasty.TestSet (ioTest, shrink)
-import           Test.Tasty.Encaps
+import           Test.Tasty.TestSet (ioTest, shrink, equals)
 #endif
 
 -- * Test Scripts
@@ -64,37 +63,37 @@ modifyTestScript key script = do
 testScriptTests = do
   shrink "Test Script end-to-end story."
     (do ioTest "Test Script end-to-end test" $ runSql $ do
-          dbStep initDB
-          c <- dbStep $ saveCourse course
-          t <- dbStep $ saveTestScript c script
-          script' <- dbStep $ loadTestScript t
-          assertEquals script script' "The scripts were differents."
-          c' <- dbStep $ courseOfTestScript t
-          assertEquals c c' "The course keys were differents."
-          dbStep $ modifyTestScript t script2
-          script2' <- dbStep $ loadTestScript t
-          assertEquals script2 script2' "The script was not modified."
+          initDB
+          c <- saveCourse course
+          t <- saveTestScript c script
+          script' <- loadTestScript t
+          equals script script' "The scripts were differents."
+          c' <- courseOfTestScript t
+          equals c c' "The course keys were differents."
+          modifyTestScript t script2
+          script2' <- loadTestScript t
+          equals script2 script2' "The script was not modified."
     )
 
     (do ioTest "Save and load test script" $ runSql $ do
-          dbStep initDB
-          c <- dbStep $ saveCourse course
-          t <- dbStep $ saveTestScript c script
-          script' <- dbStep $ loadTestScript t
-          assertEquals script script' "The scripts were differents."
+          initDB
+          c <- saveCourse course
+          t <- saveTestScript c script
+          script' <- loadTestScript t
+          equals script script' "The scripts were differents."
         ioTest "Course of the test script" $ runSql $ do
-          dbStep initDB
-          c <- dbStep $ saveCourse course
-          t <- dbStep $ saveTestScript c script
-          c' <- dbStep $ courseOfTestScript t
-          assertEquals c c' "The course keys were differents."
+          initDB
+          c <- saveCourse course
+          t <- saveTestScript c script
+          c' <- courseOfTestScript t
+          equals c c' "The course keys were differents."
         ioTest "Modify the test script" $ runSql $ do
-          dbStep initDB
-          c <- dbStep $ saveCourse course
-          t <- dbStep $ saveTestScript c script
-          dbStep $ modifyTestScript t script2
-          script2' <- dbStep $ loadTestScript t
-          assertEquals script2 script2' "The script was not modified."
+          initDB
+          c <- saveCourse course
+          t <- saveTestScript c script
+          modifyTestScript t script2
+          script2' <- loadTestScript t
+          equals script2 script2' "The script was not modified."
     )
 
 #endif

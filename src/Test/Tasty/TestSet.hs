@@ -11,16 +11,20 @@ module Test.Tasty.TestSet (
   , assertProperty
   , assertSatisfy
   , ioTest
+  , equals
+  , satisfies
   , Partition(..)
   , eqPartitions
   ) where
 
 import           Control.Applicative
 import           Control.Monad.Identity
+import           Control.Monad.IO.Class (MonadIO(..), liftIO)
 import           Control.Monad.Error.Class
 import           Control.Monad.State.Class
 import qualified Control.Monad.Trans.State as CMS
 
+import qualified Test.HUnit as HUnit (assertEqual)
 import           Test.Tasty
 import qualified Test.Tasty.HUnit as HU
 import qualified Test.Tasty.QuickCheck as QC
@@ -58,8 +62,16 @@ assertSatisfy name predicate value msg = add (HU.testCase name (HU.assertBool ms
 assertProperty :: (Show a) => TestName -> (a -> Bool) -> QC.Gen a -> Message -> TestSet ()
 assertProperty name predicate generator _msg = add (QC.testProperty name (QC.forAll generator predicate))
 
-ioTest :: (Error e) => TestName -> IO (Either e a) -> TestSet ()
+-- IO related test suite
+
+ioTest :: TestName -> IO a -> TestSet ()
 ioTest name computation = add (HU.testCase name (void computation))
+
+equals :: (Eq a, Show a, MonadIO io) => a -> a -> Message -> io ()
+equals expected found msg = liftIO $ HUnit.assertEqual msg expected found
+
+satisfies :: (MonadIO io) => a -> (a -> Bool) -> Message -> io ()
+satisfies x p msg = liftIO $ HUnit.assertEqual msg True (p x)
 
 data Partition a b = Partition TestName a b Message
 

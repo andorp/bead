@@ -25,8 +25,7 @@ import           Bead.Persistence.SQL.Group
 
 import           Bead.Persistence.SQL.TestData
 
-import           Test.Tasty.TestSet (ioTest, shrink)
-import           Test.Tasty.Encaps
+import           Test.Tasty.TestSet (ioTest, shrink, equals)
 #endif
 
 -- * Assignment
@@ -160,112 +159,112 @@ testCaseOfAssignment key = do
 assignmentTests = do
   shrink "Assignment end-to-end story"
     (do ioTest "Assignment end-to-end test" $ runSql $ do
-          dbStep initDB
-          c  <- dbStep $ saveCourse course
-          g  <- dbStep $ saveGroup c group
-          ca <- dbStep $ saveCourseAssignment c asg
-          ga <- dbStep $ saveGroupAssignment g asg
+          initDB
+          c  <- saveCourse course
+          g  <- saveGroup c group
+          ca <- saveCourseAssignment c asg
+          ga <- saveGroupAssignment g asg
 
-          casg' <- dbStep $ loadAssignment ca
-          assertEquals asg casg' "The saved and loaded course assignment were different."
-          cca <- dbStep $ courseOfAssignment ca
-          assertEquals (Just c) cca "The course assignment has no appropiate course"
-          cga <- dbStep $ groupOfAssignment ca
-          assertEquals Nothing cga "The course assignment had a group"
-          t1 <- dbStep $ assignmentCreatedTime ca
-          dbStep $ modifyAssignment ca asg2
-          t2 <- dbStep $ assignmentCreatedTime ca
-          casg2 <- dbStep $ loadAssignment ca
-          assertEquals asg2 casg2 "The course assignment modification has failed"
-          assertEquals t1 t2 "The creation time of the course assignment has changed"
+          casg' <- loadAssignment ca
+          equals asg casg' "The saved and loaded course assignment were different."
+          cca <- courseOfAssignment ca
+          equals (Just c) cca "The course assignment has no appropiate course"
+          cga <- groupOfAssignment ca
+          equals Nothing cga "The course assignment had a group"
+          t1 <- assignmentCreatedTime ca
+          modifyAssignment ca asg2
+          t2 <- assignmentCreatedTime ca
+          casg2 <- loadAssignment ca
+          equals asg2 casg2 "The course assignment modification has failed"
+          equals t1 t2 "The creation time of the course assignment has changed"
 
-          gasg' <- dbStep $ loadAssignment ga
-          assertEquals asg gasg' "The saved and loaded group assignment were different."
-          cga <- dbStep $ courseOfAssignment ga
-          assertEquals Nothing cga "The group assignment had course"
-          gga <- dbStep $ groupOfAssignment ga
-          assertEquals (Just g) gga "The group assignment had no group"
-          t1 <- dbStep $ assignmentCreatedTime ga
-          dbStep $ modifyAssignment ga asg2
-          t2 <- dbStep $ assignmentCreatedTime ga
-          gasg2 <- dbStep $ loadAssignment ga
-          assertEquals asg2 gasg2 "The course assignment modification has failed"
-          assertEquals t1 t2 "The creation time of the group assignment has changed"
+          gasg' <- loadAssignment ga
+          equals asg gasg' "The saved and loaded group assignment were different."
+          cga <- courseOfAssignment ga
+          equals Nothing cga "The group assignment had course"
+          gga <- groupOfAssignment ga
+          equals (Just g) gga "The group assignment had no group"
+          t1 <- assignmentCreatedTime ga
+          modifyAssignment ga asg2
+          t2 <- assignmentCreatedTime ga
+          gasg2 <- loadAssignment ga
+          equals asg2 gasg2 "The course assignment modification has failed"
+          equals t1 t2 "The creation time of the group assignment has changed"
     )
     (do ioTest "Save and load course assignment" $ runSql $ do
-          dbStep initDB
-          c  <- dbStep $ saveCourse course
-          ca <- dbStep $ saveCourseAssignment c asg
-          casg' <- dbStep $ loadAssignment ca
-          assertEquals asg casg' "The saved and loaded course assignment were different."
-          cca <- dbStep $ courseOfAssignment ca
-          assertEquals (Just c) cca "The course assignment has no appropiate course"
-          cga <- dbStep $ groupOfAssignment ca
-          assertEquals Nothing cga "The course assignment had a group"
+          initDB
+          c  <- saveCourse course
+          ca <- saveCourseAssignment c asg
+          casg' <- loadAssignment ca
+          equals asg casg' "The saved and loaded course assignment were different."
+          cca <- courseOfAssignment ca
+          equals (Just c) cca "The course assignment has no appropiate course"
+          cga <- groupOfAssignment ca
+          equals Nothing cga "The course assignment had a group"
         ioTest "Save and load group assignment" $ runSql $ do
-          dbStep initDB
-          c  <- dbStep $ saveCourse course
-          g  <- dbStep $ saveGroup c group
-          ga <- dbStep $ saveGroupAssignment g asg
-          gasg' <- dbStep $ loadAssignment ga
-          assertEquals asg gasg' "The saved and loaded group assignment were different."
-          cca <- dbStep $ courseOfAssignment ga
-          assertEquals Nothing cca "The group assignment had a course"
-          cga <- dbStep $ groupOfAssignment ga
-          assertEquals (Just g) cga "The group assignment had no appropiate group"
+          initDB
+          c  <- saveCourse course
+          g  <- saveGroup c group
+          ga <- saveGroupAssignment g asg
+          gasg' <- loadAssignment ga
+          equals asg gasg' "The saved and loaded group assignment were different."
+          cca <- courseOfAssignment ga
+          equals Nothing cca "The group assignment had a course"
+          cga <- groupOfAssignment ga
+          equals (Just g) cga "The group assignment had no appropiate group"
         ioTest "Modify course assignment" $ runSql $ do
-          dbStep initDB
-          c  <- dbStep $ saveCourse course
-          ca <- dbStep $ saveCourseAssignment c asg
-          t1 <- dbStep $ assignmentCreatedTime ca
-          dbStep $ modifyAssignment ca asg2
-          t2 <- dbStep $ assignmentCreatedTime ca
-          asg' <- dbStep $ loadAssignment ca
-          assertEquals asg2 asg' "The modification of the course assignment has failed"
-          assertEquals t1 t2 "The creation time of the course assignment has changed"
+          initDB
+          c  <- saveCourse course
+          ca <- saveCourseAssignment c asg
+          t1 <- assignmentCreatedTime ca
+          modifyAssignment ca asg2
+          t2 <- assignmentCreatedTime ca
+          asg' <- loadAssignment ca
+          equals asg2 asg' "The modification of the course assignment has failed"
+          equals t1 t2 "The creation time of the course assignment has changed"
         ioTest "Modify group assignment" $ runSql $ do
-          dbStep initDB
-          c  <- dbStep $ saveCourse course
-          g  <- dbStep $ saveGroup c group
-          ga <- dbStep $ saveGroupAssignment g asg
-          t1 <- dbStep $ assignmentCreatedTime ga
-          dbStep $ modifyAssignment ga asg2
-          t2 <- dbStep $ assignmentCreatedTime ga
-          asg' <- dbStep $ loadAssignment ga
-          assertEquals asg2 asg' "The modification of the group assignment has failed"
-          assertEquals t1 t2 "The creation time of the group assignment has changed"
+          initDB
+          c  <- saveCourse course
+          g  <- saveGroup c group
+          ga <- saveGroupAssignment g asg
+          t1 <- assignmentCreatedTime ga
+          modifyAssignment ga asg2
+          t2 <- assignmentCreatedTime ga
+          asg' <- loadAssignment ga
+          equals asg2 asg' "The modification of the group assignment has failed"
+          equals t1 t2 "The creation time of the group assignment has changed"
     )
 
   ioTest "List course assignments" $ runSql $ do
-    dbStep initDB
-    c  <- dbStep $ saveCourse course
-    as <- dbStep $ courseAssignments c
-    assertEquals [] as "The course had some assignment after the creation"
-    a1 <- dbStep $ saveCourseAssignment c asg
-    as <- dbStep $ courseAssignments c
-    assertEquals
+    initDB
+    c  <- saveCourse course
+    as <- courseAssignments c
+    equals [] as "The course had some assignment after the creation"
+    a1 <- saveCourseAssignment c asg
+    as <- courseAssignments c
+    equals
       (Set.fromList [a1])
       (Set.fromList as) "The course had different assignment set"
-    a2 <- dbStep $ saveCourseAssignment c asg
-    as <- dbStep $ courseAssignments c
-    assertEquals
+    a2 <- saveCourseAssignment c asg
+    as <- courseAssignments c
+    equals
       (Set.fromList [a1,a2])
       (Set.fromList as) "The course had different assignment set"
 
   ioTest "List group assignments" $ runSql $ do
-    dbStep initDB
-    c  <- dbStep $ saveCourse course
-    g  <- dbStep $ saveGroup c group
-    as <- dbStep $ groupAssignments g
-    assertEquals [] as "The group had some assignment after the creation"
-    a1 <- dbStep $ saveGroupAssignment g asg
-    as <- dbStep $ groupAssignments g
-    assertEquals
+    initDB
+    c  <- saveCourse course
+    g  <- saveGroup c group
+    as <- groupAssignments g
+    equals [] as "The group had some assignment after the creation"
+    a1 <- saveGroupAssignment g asg
+    as <- groupAssignments g
+    equals
       (Set.fromList [a1])
       (Set.fromList as) "The group had different assignment set"
-    a2 <- dbStep $ saveGroupAssignment g asg
-    as <- dbStep $ groupAssignments g
-    assertEquals
+    a2 <- saveGroupAssignment g asg
+    as <- groupAssignments g
+    equals
       (Set.fromList [a1,a2])
       (Set.fromList as) "The group had different assignment set"
 
