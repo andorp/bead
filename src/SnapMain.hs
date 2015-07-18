@@ -3,7 +3,6 @@
 module SnapMain (main) where
 
 import           Control.Monad
-import           Data.Maybe
 
 import           Snap hiding (Config(..))
 import           System.Directory
@@ -18,7 +17,10 @@ import           Bead.Controller.ServiceContext as S
 import           Bead.Daemon.Email
 #endif
 #ifdef LDAPEnabled
+import           Data.Maybe
 import           Bead.Daemon.LDAP
+#else
+import           Text.Regex.TDFA
 #endif
 import           Bead.Daemon.Logout
 import           Bead.Daemon.TestAgent
