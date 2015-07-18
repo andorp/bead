@@ -191,7 +191,6 @@ submissionContent p = do
         H.p $ fromString . msg $ msg_Submission_Info_Password
           "This assignment can only accept submissions by providing the password."
         Bootstrap.passwordInput (fieldName submissionPwdField) (msg $ msg_Submission_Password "Password for the assignment:")
-        Bootstrap.passwordInput (fieldName submissionPwdAgainField) (msg $ msg_Submission_PasswordAgain "Password again:")
 
 -- Creates a table line first element is a bold text and the second is a HTML snippet
 infixl 7 .|.

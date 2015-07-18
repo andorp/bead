@@ -76,7 +76,6 @@ submissionTextField = SubmissionField "submission-text"
 submissionFileField = SubmissionField "submission-file"
 submissionKeyField  = SubmissionField "submission-key"
 submissionPwdField  = SubmissionField "submission-pwd"
-submissionPwdAgainField = SubmissionField "submission-pwda"
 
 data FormId = FormId { rFormId :: String }
 

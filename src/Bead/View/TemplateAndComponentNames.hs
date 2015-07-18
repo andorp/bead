@@ -411,7 +411,7 @@ fieldList = map fieldName $ join [
   , SFN delUserFromCourseField, SFN delUserFromGroupField, SFN unsubscribeFromCourseSubmitBtn
   , SFN fileUploadField, SFN fileUploadSubmit, SFN usersFileTableName
   , SFN assignmentTestScriptField, SFN assignmentUsersFileField, SFN assignmentPwdField
-  , SFN submissionPwdAgainField, SFN assignmentSubmissionTypeField, SFN assignmentNoOfTriesField
+  , SFN assignmentSubmissionTypeField, SFN assignmentNoOfTriesField
 
   , SFN testScriptNameField, SFN testScriptTypeField, SFN testScriptDescField
   , SFN testScriptNotesField, SFN testScriptScriptField, SFN testScriptSaveButton
