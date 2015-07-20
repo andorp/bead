@@ -104,9 +104,10 @@ install:
                    tasty-quickcheck-0.8.3
   - $CABAL install --max-backjumps=-1 --reorder-goals --dependencies-only --enable-tests --force-reinstalls
 
+cache:
+  directories:
+    - $HOME/.cabal
+
 script:
-  - $CABAL configure -v2 -f Tests
-  - $CABAL test --log=/dev/stdout --show-details=streaming
-  - $CABAL clean
-  - $CABAL configure -v2 -f "Tests SQLite LDAP"
+  - $CABAL configure -v2 -f "Tests LDAP"
   - $CABAL test --log=/dev/stdout --show-details=streaming
