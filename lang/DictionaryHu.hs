@@ -131,7 +131,6 @@ dict = DictionaryFile {
     , msg_Submission_InvalidPassword <| "Hibás jelszó, a megoldást nem rögzítette a rendszer!"
     , msg_Submission_NonUsersAssignment <| "A feladathoz nincs jogosultágod!"
     , msg_Submission_Password <| "A feladat jelszava:"
-    , msg_Submission_PasswordAgain <| "A feladat jelszava újra:"
     , msg_Submission_Info_Password <| "Ezt a feladatot csak a jelszó megadásával lehet beküldeni."
     , msg_Submission_Info_File <| "Válasszuk ki a beadni kívánt, .zip kiterjesztésű állományt!  A maximális méret kilobyte-ban: "
     , msg_Submission_File_NoFileReceived <| "Nem érkezett állomány!"

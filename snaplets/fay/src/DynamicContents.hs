@@ -30,7 +30,6 @@ onload = do
   connectStartEndHours startDateTimeHook endDateTimeHook
   hookAssignmentForm (hookId assignmentForm) startDateTimeHook endDateTimeHook
   hookRegistrationForm
-  hookSamePasswords (rFormId submissionForm) (sfFieldName submissionPwdField) (sfFieldName submissionPwdAgainField)
   hookSamePasswords (rFormId regFinalForm) (lcFieldName loginPassword) (lcFieldName regPasswordAgain)
   hookPasswordField (rFormId regFinalForm) (lcFieldName loginPassword)
   hookPasswordField (rFormId changePwdForm) (cpf oldPasswordField)
