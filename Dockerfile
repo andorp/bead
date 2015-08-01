@@ -24,7 +24,7 @@ RUN mkdir /development && \
     mkdir /development/bead && \
     mkdir /bead-server
 
-# Copy source code, compile and finally remove it
+# Copy cabal file and install dependencies
 COPY "./Bead.cabal" "/development/cabal-file/Bead.cabal"
 RUN apt-get install -y zlib1g-dev libncurses5-dev && \
     cd development/cabal-file && \
