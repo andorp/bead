@@ -301,7 +301,7 @@ instance DomainKey Domain.ScoreKey where
 instance DomainValue Domain.Score where
   type EntityValue Domain.Score = ScoreGeneric
   fromDomainValue _s = Score "score"
-  toDomainValue _ent = Domain.Score
+  toDomainValue _ent = Domain.Score ()
 
 instance DomainKey Domain.NotificationKey where
   type EntityForKey Domain.NotificationKey = NotificationGeneric

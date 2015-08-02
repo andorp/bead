@@ -9,9 +9,12 @@ import Data.Data
 data Result = Passed | Failed
   deriving (Eq, Show, Read, Data, Typeable)
 
-resultCata passed failed r = case r of
-  Passed -> passed
-  Failed -> failed
+resultCata
+  passed
+  failed
+  r = case r of
+    Passed -> passed
+    Failed -> failed
 
 -- Represents the evaluation type for an assignment
 data EvaluationData b p
@@ -50,6 +53,9 @@ data PctConfig = PctConfig { pLimit :: Double }
 
 data Scores a = Scores { unScores :: [a] }
   deriving (Eq, Show, Read, Data, Typeable)
+
+mkScores :: a -> Scores a
+mkScores = Scores . (:[])
 
 data Binary = Binary Result
   deriving (Eq, Show, Read, Data, Typeable)

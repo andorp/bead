@@ -180,7 +180,7 @@ testFeedbackInfo = oneof
 feedbacks date = Feedback <$> testFeedbackInfo <*> (return date)
 
 scores :: Gen Score
-scores = return Score
+scores = arbitrary
 
 assessments = Assessment <$> manyWords <*> evalConfigs
 
