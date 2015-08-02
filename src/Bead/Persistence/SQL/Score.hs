@@ -116,6 +116,7 @@ scoreTests = do
           -- When
           e  <- saveScoreEvaluation s ev
           es <- evaluationOfScore s
+          -- Then
           equals (Just e) es "An evaluated score does not have some evaluation."
 
     ) (return ())

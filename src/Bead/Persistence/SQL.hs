@@ -43,11 +43,14 @@ import Bead.Persistence.SQL.TestScript
 import Bead.Persistence.SQL.User
 
 #ifdef TEST
+import Bead.Persistence.SQL.JSON (persistJSONConvertTests)
+
 import Test.Tasty.TestSet (TestSet)
 #endif
 
 #ifdef TEST
 tests = do
+  persistJSONConvertTests
   courseAdminTests
   groupTests
   testScriptTests

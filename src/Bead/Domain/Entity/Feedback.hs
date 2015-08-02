@@ -21,7 +21,8 @@ import           Bead.Domain.Func
 import           Bead.Domain.Shared.Evaluation
 
 #ifdef TEST
-import           Test.Tasty.TestSet
+import           Test.Tasty.Arbitrary
+import           Test.Tasty.TestSet hiding (shrink)
 #endif
 
 
@@ -51,6 +52,25 @@ feedbackInfo
       MessageForStudent studentComment -> student studentComment
       MessageForAdmin adminComment -> admin adminComment
       Evaluated evalResult evalComment evalAuthor -> evaluated evalResult evalComment evalAuthor
+
+#ifdef TEST
+instance Arbitrary FeedbackInfo where
+  arbitrary = oneof [
+      TestResult <$> arbitrary
+    , MessageForStudent <$> arbitrary
+    , MessageForAdmin <$> arbitrary
+    , Evaluated <$> arbitrary <*> arbitrary <*> arbitrary
+    ]
+  shrink = feedbackInfo
+    (fmap TestResult . shrink)
+    (fmap MessageForStudent . shrink)
+    (fmap MessageForAdmin . shrink)
+    (\evalResult evalComment evalAuthor -> do
+      result <- shrink evalResult
+      comment <- shrink evalComment
+      author <- shrink evalAuthor
+      return $ Evaluated result comment author)
+#endif
 
 -- | Feedback consist of a piece of information and a date when the information
 -- is posted intot the system.

@@ -126,7 +126,7 @@ import           Bead.View.Translation
 
 #ifdef TEST
 import           Test.Tasty.Arbitrary
-import           Test.Tasty.TestSet
+import           Test.Tasty.TestSet hiding (shrink)
 #endif
 
 data SubmissionValue
@@ -264,6 +264,16 @@ roleCata
     GroupAdmin  -> groupAdmin
     CourseAdmin -> courseAdmin
     Admin       -> admin
+
+#ifdef TEST
+instance Arbitrary Role where
+  arbitrary = elements roles
+  shrink = roleCata
+    [GroupAdmin, CourseAdmin, Admin]
+    [CourseAdmin, Admin]
+    [Admin]
+    []
+#endif
 
 roles = [Student, GroupAdmin, CourseAdmin, Admin]
 
@@ -404,6 +414,12 @@ newtype TimeZoneName = TimeZoneName { unTzn :: String }
 
 timeZoneName f (TimeZoneName z) = f z
 
+#ifdef TEST
+instance Arbitrary TimeZoneName where
+  arbitrary = TimeZoneName <$> arbitrary
+  shrink = fmap TimeZoneName . timeZoneName shrink
+#endif
+
 showDate :: LocalTime -> String
 showDate = formatTime defaultTimeLocale "%F, %T"
 
@@ -499,6 +515,14 @@ testScriptTypeCata
     TestScriptSimple -> simple
     TestScriptZipped -> zipped
 
+#ifdef TEST
+instance Arbitrary TestScriptType where
+  arbitrary = elements [TestScriptSimple, TestScriptZipped]
+  shrink = testScriptTypeCata
+    [TestScriptZipped]
+    []
+#endif
+
 -- Test Script defines a scripts that can be integrated with the
 -- testing framework for the given course.
 data TestScript = TestScript {
@@ -557,8 +581,14 @@ withFileInfo (FileInfo size date) f = f size date
 -- Applicative functor based FileInfo construction
 fileInfoAppAna size date = FileInfo <$> size <*> date
 
-data Score = Score
+data Score = Score ()
   deriving (Data, Eq, Ord, Read, Show, Typeable)
+
+#ifdef TEST
+instance Arbitrary Score where
+  arbitrary = return (Score ())
+  shrink _ = []
+#endif
 
 -- * PermObjs instance
 
