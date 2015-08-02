@@ -1,17 +1,34 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 module Bead.Domain.Shared.Evaluation where
 
 import Prelude
 import Data.Data
 
+#ifdef TEST
+import Control.Applicative
+import Test.Tasty.Arbitrary
+import Test.Tasty.TestSet hiding (shrink)
+#endif
+
 {- Shared data structures between Client and Server -}
 
 data Result = Passed | Failed
   deriving (Eq, Show, Read, Data, Typeable)
 
-resultCata passed failed r = case r of
-  Passed -> passed
-  Failed -> failed
+resultCata
+  passed
+  failed
+  r = case r of
+    Passed -> passed
+    Failed -> failed
+
+#ifdef TEST
+instance Arbitrary Result where
+  arbitrary = elements   [Passed, Failed]
+  shrink    = resultCata [Failed] []
+#endif
+
 
 -- Represents the evaluation type for an assignment
 data EvaluationData b p
@@ -51,15 +68,30 @@ data PctConfig = PctConfig { pLimit :: Double }
 data Scores a = Scores { unScores :: [a] }
   deriving (Eq, Show, Read, Data, Typeable)
 
+mkScores :: a -> Scores a
+mkScores = Scores . (:[])
+
 data Binary = Binary Result
   deriving (Eq, Show, Read, Data, Typeable)
 
 binaryCata f (Binary x) = f x
 
+#ifdef TEST
+instance Arbitrary Binary where
+  arbitrary = Binary <$> arbitrary
+  shrink = fmap Binary . binaryCata shrink
+#endif
+
 data Percentage = Percentage (Scores Double)
   deriving (Eq, Show, Read, Data, Typeable)
 
 percentageCata f (Percentage x) = f x
+
+#ifdef TEST
+instance Arbitrary Percentage where
+  arbitrary = Percentage . mkScores <$> arbitrary
+  shrink = percentageCata (fmap (Percentage . Scores) . shrink . unScores)
+#endif
 
 data EvResult = EvResult {
     evResult :: EvaluationData Binary Percentage
@@ -74,6 +106,17 @@ evResultCata
 
 withEvResult result binary percentage
   = evResultCata binary percentage result
+
+#ifdef TEST
+instance Arbitrary EvResult where
+  arbitrary = EvResult <$> oneof [
+      BinEval <$> arbitrary
+    , PctEval <$> arbitrary
+    ]
+  shrink = fmap EvResult . evResultCata
+    (fmap BinEval . shrink)
+    (fmap PctEval . shrink)
+#endif
 
 percentageResult :: Double -> EvResult
 percentageResult d = EvResult (PctEval (Percentage (Scores { unScores = [ d ]})))
@@ -95,6 +138,18 @@ evConfigCata
   e = case e of
     (EvConfig (BinEval ())) -> binary
     (EvConfig (PctEval p))  -> percentage p
+
+#ifdef TEST
+instance Arbitrary EvConfig where
+  arbitrary = EvConfig <$> oneof [
+      BinEval <$> arbitrary
+    , PctEval <$> arbitrary
+    ]
+  shrink = fmap EvConfig . evConfigCata
+    []
+    (fmap PctEval . shrink)
+#endif
+
 
 withEvConfig e b p = evConfigCata b p e
 

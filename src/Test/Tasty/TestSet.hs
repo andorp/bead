@@ -1,6 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 module Test.Tasty.TestSet (
     TestSet
+  , TestName
   , buildTestTree
   , runTestSet
   , group

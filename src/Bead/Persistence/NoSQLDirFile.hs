@@ -674,7 +674,7 @@ instance Load Assessment where
     <*> fileLoad d "cfg"  maybeDecodeJSON
 
 instance Load Score where
-  load _d = return Score
+  load _d = return (Score ())
 
 -- * Update instances
 
