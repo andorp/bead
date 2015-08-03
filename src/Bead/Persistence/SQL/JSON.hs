@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Bead.Persistence.SQL.JSON where
 
 import           Text.JSON.Generic
@@ -5,6 +6,11 @@ import           Text.JSON.Generic
 import qualified Bead.Domain.Entities as Domain
 import qualified Bead.Domain.Shared.Evaluation as Domain
 import           Bead.Persistence.SQL.Entities (JSONText)
+
+#ifdef TEST
+import           Test.Tasty.Arbitrary
+import           Test.Tasty.TestSet
+#endif
 
 -- * JSON encoding, decoding
 
@@ -61,3 +67,25 @@ encodeScore = encodeJSON
 
 decodeScore :: JSONText -> Domain.Score
 decodeScore = decodeJSON
+
+#ifdef TEST
+persistJSONConvertTests = group "Persistence JSON converters" $ do
+  isInverse "Score" encodeScore decodeScore
+  isInverse "Role" encodeRole decodeRole
+  isInverse "TimeZone" encodeTimeZone decodeTimeZone
+  isInverse "EvalConfig" encodeEvalConfig decodeEvalConfig
+  isInverse "TestScriptType" encodeTestScriptType decodeTestScriptType
+  isInverse "AssignmentType" encodeAssignmentType decodeAssignmentType
+  isInverse "EvaluationResult" encodeEvaluationResult decodeEvaluationResult
+  isInverse "CommentType" encodeCommentType decodeCommentType
+  isInverse "FeedbackInfo " encodeFeedbackInfo decodeFeedbackInfo
+  where
+    isInverse :: (Arbitrary a, Eq a, Show a)
+              => TestName -> (a -> b) -> (b -> a) -> TestSet ()
+    isInverse name encode decode =
+      assertProperty
+        name
+        (\x -> x == (decode $ encode x))
+        arbitrary
+        (concat ["Encode decode of ", name, " is not idempotent"])
+#endif

@@ -1,9 +1,14 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 module Bead.Domain.Entity.Comment where
 
 import           Control.Applicative
 import           Data.Data
 import           Data.Time (UTCTime)
+
+#ifdef TEST
+import           Test.Tasty.Arbitrary
+#endif
 
 
 -- Comment type basically indicates that who left the comment,
@@ -25,6 +30,16 @@ commentTypeCata
     CT_GroupAdmin  -> groupAdmin
     CT_CourseAdmin -> courseAdmin
     CT_Admin       -> admin
+
+#ifdef TEST
+instance Arbitrary CommentType where
+  arbitrary = elements [CT_Student, CT_GroupAdmin, CT_CourseAdmin, CT_Admin]
+  shrink = commentTypeCata
+    [CT_GroupAdmin, CT_CourseAdmin, CT_Admin]
+    [CT_CourseAdmin, CT_Admin]
+    [CT_Admin]
+    []
+#endif
 
 -- | Comment on the text of exercise, on the evaluation
 data Comment = Comment {

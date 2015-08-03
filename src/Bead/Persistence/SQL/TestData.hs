@@ -34,7 +34,7 @@ ev2   = Evaluation (percentageResult 0.01) "escrito"
 
 cmt   = Comment "comment" "User" time CT_Student
 
-scr   = Score
+scr   = Score ()
 
 reg = UserRegistration "username" "email" "name" "token" time
 
