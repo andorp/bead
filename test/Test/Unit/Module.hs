@@ -18,6 +18,7 @@ import Bead.Persistence.Relations (persistRelationsTests)
 import Bead.View.Content.All (pageContentTest)
 import Bead.View.Content.Home.Page (sumBinaryResultTests, sumPercentageResultTests)
 import Bead.View.DataBridge (dataBridgeTests)
+import Bead.View.DictionaryLoader (patchDictionariesTests)
 #ifdef EmailEnabled
 import Bead.View.EmailTemplate (runEmailTemplateTests)
 #endif
@@ -58,3 +59,4 @@ tests = do
   group "Feedback" feedbackTests
   group "Parse" parseTests
   group "Accept language" acceptLanguageTests
+  group "Patch dictionaries" patchDictionariesTests
