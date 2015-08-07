@@ -74,15 +74,6 @@ beadContextInit :: Config -> ServiceContext -> Daemons -> FilePath -> SnapletIni
 beadContextInit config s daemons tempDir = makeSnaplet "bead" description dataDir $ do
   copyDataContext
 
-  let dictionaryDir = "lang"
-  dExist <- liftIO $ doesDirectoryExist dictionaryDir
-  dictionaries <- case dExist of
-    True -> liftIO $ loadDictionaries dictionaryDir
-    False -> return Map.empty
-
-  -- TODO: Use a start logger
-  liftIO $ putStrLn $ "Found dictionaries: " ++ (show $ Map.keys dictionaries)
-
   sm <- nestSnaplet "session" sessionManager $
           initCookieSessionManager "cookie" "session" (Just (sessionTimeout config))
 
@@ -91,7 +82,19 @@ beadContextInit config s daemons tempDir = makeSnaplet "bead" description dataDi
 
   ss <- nestSnaplet "context" serviceContext $ contextSnaplet s (logoutDaemon daemons)
 
-  ds <- nestSnaplet "dictionary" dictionaryContext $
+  let dictionaryDir = "lang"
+  dExist <- liftIO $ doesDirectoryExist dictionaryDir
+  dictResult <- case dExist of
+    True -> liftIO $ loadDictionaries dictionaryDir
+    False -> return $ Right $ Map.empty
+
+  liftIO $ putStrLn "Searching for dictionaries..."
+  ds <- case dictResult of
+    Left err -> error $ "ERROR: Conflicts while processing dictionaries:\n\n" ++ err
+    Right dictionaries -> do
+      -- TODO: Use a start logger
+      liftIO $ putStrLn $ "Found dictionaries: " ++ (show $ Map.keys dictionaries)
+      nestSnaplet "dictionary" dictionaryContext $
           dictionarySnaplet dictionaries (Language $ defaultLoginLanguage config)
 
 #ifdef EmailEnabled

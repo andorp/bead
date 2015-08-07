@@ -172,6 +172,7 @@ Library
     snaplet-fay == 0.3.3.7,
     stm == 2.4.4,
     syb == 0.4.4,
+    template-haskell,
     temporary == 1.2.0.3,
     text == 1.1.0.0,
     time == 1.4.2,
@@ -281,7 +282,10 @@ Library
     Bead.View.Session
     Bead.View.Style
     Bead.View.TemplateAndComponentNames
-    Bead.View.TranslationEnum
+    Bead.View.Translation.Base
+    Bead.View.Translation.Entries
+    Bead.View.Translation.Enum
+    Bead.View.Translation.I18N
     Bead.View.UserActions
     Bead.View.Validators
     Snap.Snaplet.Auth.Backends.SafeJsonFile
