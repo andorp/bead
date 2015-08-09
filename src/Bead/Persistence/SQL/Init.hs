@@ -2,10 +2,12 @@
 {-# LANGUAGE RankNTypes #-}
 module Bead.Persistence.SQL.Init where
 
+import           Control.Applicative ((<$>))
 import           Control.Exception
+import           Data.List (inits)
 import           Data.Text (Text)
 import qualified Data.Text as Text
-import           System.Directory (removeFile)
+import           System.Directory (getDirectoryContents, removeFile)
 
 import           Database.Persist.Sqlite
 
@@ -17,51 +19,61 @@ import qualified Bead.Persistence.SQL.FileSystem as FS
 -- * Persistence initialization
 
 data Config = Config {
-    sqliteDatabase :: Text
+    sqliteDatabase      :: Text
+  , sqliteWriteAheadLog :: Bool
   } deriving (Show, Read)
+
+type ConfigAlgebra c = (Text -> Bool -> c)
+
+configAlgebra :: ConfigAlgebra c -> Config -> c
+configAlgebra f (Config db wal) = f db wal
+
+connectionString :: Config -> Text
+connectionString = configAlgebra $ \db wal ->
+  Text.concat [if wal then "WAL=on" else "WAL=off", " ", db]
 
 parseConfig :: String -> Config
 parseConfig = read
 
-defaultConfig = Config "bead.db"
+defaultConfig = Config "bead.db" False
 
 createPersistInit :: Config -> IO PersistInit
 createPersistInit cfg = do
   let database = sqliteDatabase cfg
-      select = runSqlite database $ do
+      conn = connectionString cfg
+      select = runSqlite conn $ do
         createTables <- getMigration migrateAll
         fsSetUp <- FS.isSetUpFS
         return (and [null createTables, fsSetUp])
       initDatabase = do
-        runSqlite database (void $ runMigrationSilent migrateAll)
+        runSqlite conn (void $ runMigrationSilent migrateAll)
         FS.initFS
       dropDatabase = do
-        removeFile (Text.unpack database)
+        dbfiles <- filter (isInfixOf (Text.unpack database)) <$> getDirectoryContents "."
+        mapM_ removeFile dbfiles
         FS.removeFS
   return $! PersistInit {
       isSetUp = select  -- Try to migrate the database allways
     , initPersist = initDatabase
     , tearDown = dropDatabase
     }
+  where
+    isInfixOf :: (Eq a) => [a] -> [a] -> Bool
+    isInfixOf pattern = or . map (pattern ==) . inits
 
 newtype Interpreter
   = Interpreter { unInt :: forall a . Persist a -> IO (Either [Char] a) }
 
 createPersistInterpreter :: Config -> IO Interpreter
 createPersistInterpreter cfg = do
-  let database = sqliteDatabase cfg
+  let conn = connectionString cfg
       run command = do
-        result <- trySomeEx $ runCmd database command
-        return $ case result of
-          Left ex -> Left $ show ex
-          Right x -> Right x
-  return (Interpreter (runCmd (sqliteDatabase cfg)))
+        result <- trySomeEx $ runSqlite conn command
+        return $! either (Left . show) Right result
+  return $! Interpreter run
   where
     trySomeEx :: IO a -> IO (Either SomeException a)
     trySomeEx = try
-
-    runCmd :: Text -> Persist a -> IO (Either String a)
-    runCmd db = fmap Right . runSqlite db
 
 runInterpreter :: Interpreter -> Persist a -> IO (Erroneous a)
 runInterpreter (Interpreter run) = run

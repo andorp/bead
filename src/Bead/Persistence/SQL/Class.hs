@@ -1,7 +1,10 @@
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TypeFamilies #-}
 module Bead.Persistence.SQL.Class where
 
 import qualified Data.Text as Text
+import           Database.Persist.Class
+import           Database.Persist.Sql hiding (update, updateField)
 import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
@@ -15,45 +18,52 @@ import           Bead.Persistence.SQL.JSON
 -- | Represents conversational functions between a domain
 -- key and an entity key
 class DomainKey k where
-  type EntityForKey k :: * -> *
-  toDomainKey   :: KeyBackend backend entity -> k
-  fromDomainKey :: k -> KeyBackend backend entity
+  type EntityForKey k :: *
+  toDomainKey   :: (EntityForKey k ~ record, PersistEntity record) => Key record -> k
+  fromDomainKey :: (EntityForKey k ~ record, PersistEntity record) => k -> Key record
 
 -- | Creates a key value from the entity key supposing that the entity key
 -- is an integer
-entityToDomainKey domainKey name = persistInt . unKey where
-  persistInt (PersistInt64 k) = domainKey $ show k
+entityToDomainKey :: (DomainKey k, PersistEntity record, record ~ EntityForKey k)
+                  => (String -> k) -> String -> Key record -> k
+entityToDomainKey domainKey name key = persistInt $ keyToValues key where
+  persistInt [(PersistInt64 k)] = domainKey $ show k
   persistInt k = persistError name $ concat ["invalid entity key ", show k]
 
-domainKeyToEntityKey fromDomain key = Key . PersistInt64 . read $ fromDomain key
+domainKeyToEntityKey :: (DomainKey k, PersistEntity record, record ~ EntityForKey k)
+                     => (k -> String) -> k -> Key record
+domainKeyToEntityKey fromDomain key = check . keyFromValues . list . PersistInt64 . read $ fromDomain key
+  where
+    check = either (persistError "Invalid key" . show) id
+    list x = [x]
 
 -- | Converts a domain key to an entity key
-toEntityKey :: (DomainKey k, entity ~ EntityForKey k) => k -> KeyBackend backend (entity backend)
+toEntityKey :: (PersistEntity record, DomainKey k, record ~ EntityForKey k) => k -> Key record
 toEntityKey = fromDomainKey
 
 -- | Converts an entity key to a domain key
-fromEntityKey :: (DomainKey k, entity ~ EntityForKey k) => KeyBackend backend (entity backend) -> k
+fromEntityKey :: (PersistEntity record, DomainKey k, record ~ EntityForKey k) => Key record -> k
 fromEntityKey = toDomainKey
 
 -- | Rerpesnts conversional functions between a domain
 -- value and persistent value
 class DomainValue v where
-  type EntityValue v :: * -> *
-  toDomainValue      :: (EntityValue v) backend -> v
-  fromDomainValue    :: v -> (EntityValue v) backend
+  type EntityValue v :: *
+  toDomainValue      :: (EntityValue v) -> v
+  fromDomainValue    :: v -> (EntityValue v)
 
 -- | Converts an entity value to a domain value
-fromEntityValue :: (DomainValue v, e ~ EntityValue v) => e backend -> v
+fromEntityValue :: (DomainValue v, record ~ EntityValue v) => EntityValue v -> v
 fromEntityValue = toDomainValue
 
 -- | Converts a domain value to an entity value
-toEntityValue :: (DomainValue v, e ~ EntityValue v) => v -> e backend
+toEntityValue :: (DomainValue v, record ~ EntityValue v) => v -> EntityValue v
 toEntityValue = fromDomainValue
 
 -- * Instances
 
 instance DomainValue Domain.User where
-  type EntityValue Domain.User = UserGeneric
+  type EntityValue Domain.User = User
 
   toDomainValue ent = Domain.User
     (decodeRole $ userRole ent)
@@ -75,13 +85,12 @@ instance DomainValue Domain.User where
 
 
 instance DomainKey Domain.UserRegKey where
-  type EntityForKey Domain.UserRegKey = UserRegistrationGeneric
+  type EntityForKey Domain.UserRegKey = UserRegistration
   fromDomainKey = domainKeyToEntityKey $ \(Domain.UserRegKey k) -> k
   toDomainKey   = entityToDomainKey Domain.UserRegKey "entityKeyToUserRegKey"
 
-
 instance DomainValue Domain.UserRegistration where
-  type EntityValue Domain.UserRegistration = UserRegistrationGeneric
+  type EntityValue Domain.UserRegistration = UserRegistration
 
   fromDomainValue = Domain.userRegistration $ \username email name token timeout -> UserRegistration
     (Text.pack username)
@@ -99,12 +108,12 @@ instance DomainValue Domain.UserRegistration where
 
 
 instance DomainKey Domain.CourseKey where
-  type EntityForKey Domain.CourseKey = CourseGeneric
+  type EntityForKey Domain.CourseKey = Course
   fromDomainKey = domainKeyToEntityKey $ \(Domain.CourseKey k) -> k
   toDomainKey   = entityToDomainKey Domain.CourseKey "entityKeyToCourseKey"
 
 instance DomainValue Domain.Course where
-  type EntityValue Domain.Course = CourseGeneric
+  type EntityValue Domain.Course = Course
 
   toDomainValue ent = Domain.Course
     (Text.unpack $ courseName ent)
@@ -118,12 +127,12 @@ instance DomainValue Domain.Course where
                 testScriptType
 
 instance DomainKey Domain.GroupKey where
-  type EntityForKey Domain.GroupKey = GroupGeneric
+  type EntityForKey Domain.GroupKey = Group
   fromDomainKey = domainKeyToEntityKey $ \(Domain.GroupKey k) -> k
   toDomainKey   = entityToDomainKey Domain.GroupKey "entityKeyToGroupKey"
 
 instance DomainValue Domain.Group where
-  type EntityValue Domain.Group = GroupGeneric
+  type EntityValue Domain.Group = Group
 
   toDomainValue ent = Domain.Group
     (Text.unpack $ groupName ent)
@@ -135,12 +144,12 @@ instance DomainValue Domain.Group where
                   (Text.pack description)
 
 instance DomainKey Domain.TestScriptKey where
-  type EntityForKey Domain.TestScriptKey = TestScriptGeneric
+  type EntityForKey Domain.TestScriptKey = TestScript
   fromDomainKey = domainKeyToEntityKey $ \(Domain.TestScriptKey k) -> k
   toDomainKey   = entityToDomainKey Domain.TestScriptKey "entityKeyToTestScriptKey"
 
 instance DomainValue Domain.TestScript where
-  type EntityValue Domain.TestScript = TestScriptGeneric
+  type EntityValue Domain.TestScript = TestScript
 
   toDomainValue ent = Domain.TestScript
     (Text.unpack $ testScriptName ent)
@@ -159,12 +168,12 @@ instance DomainValue Domain.TestScript where
 
 
 instance DomainKey Domain.TestCaseKey where
-  type EntityForKey Domain.TestCaseKey = TestCaseGeneric
+  type EntityForKey Domain.TestCaseKey = TestCase
   fromDomainKey = domainKeyToEntityKey $ \(Domain.TestCaseKey k) -> k
   toDomainKey   = entityToDomainKey Domain.TestCaseKey "entityKeyToTestCaseKey"
 
 instance DomainValue Domain.TestCase where
-  type EntityValue Domain.TestCase = TestCaseGeneric
+  type EntityValue Domain.TestCase = TestCase
 
   toDomainValue ent = Domain.TestCase
     (Text.unpack $ testCaseName ent)
@@ -192,18 +201,18 @@ fstNothing f s = (Just $ f s, Nothing)
 nothingSnd f s = (Nothing, Just $ f s)
 
 instance DomainKey Domain.AssignmentKey where
-  type EntityForKey Domain.AssignmentKey = AssignmentGeneric
+  type EntityForKey Domain.AssignmentKey = Assignment
   fromDomainKey = domainKeyToEntityKey $ \(Domain.AssignmentKey k) -> k
   toDomainKey   = entityToDomainKey Domain.AssignmentKey "entityKeyToAssignmentKey"
 
 
 instance DomainKey Domain.SubmissionKey where
-  type EntityForKey Domain.SubmissionKey = SubmissionGeneric
+  type EntityForKey Domain.SubmissionKey = Submission
   fromDomainKey = domainKeyToEntityKey $ \(Domain.SubmissionKey k) -> k
   toDomainKey   = entityToDomainKey Domain.SubmissionKey "entityKeyToSubmissionKey"
 
 instance DomainValue Domain.Submission where
-  type EntityValue Domain.Submission = SubmissionGeneric
+  type EntityValue Domain.Submission = Submission
 
   fromDomainValue = Domain.submissionCata $ \submission postDate ->
     let (simple, zipped) = Domain.submissionValue
@@ -224,12 +233,12 @@ instance DomainValue Domain.Submission where
       (submissionPostDate ent)
 
 instance DomainKey Domain.EvaluationKey where
-  type EntityForKey Domain.EvaluationKey = EvaluationGeneric
+  type EntityForKey Domain.EvaluationKey = Evaluation
   fromDomainKey = domainKeyToEntityKey $ \(Domain.EvaluationKey k) -> k
   toDomainKey   = entityToDomainKey Domain.EvaluationKey "entityKeyToEvaluationKey"
 
 instance DomainValue Domain.Evaluation where
-  type EntityValue Domain.Evaluation = EvaluationGeneric
+  type EntityValue Domain.Evaluation = Evaluation
 
   fromDomainValue = Domain.evaluationCata $ \result written ->
     Evaluation (encodeEvaluationResult result)
@@ -241,12 +250,12 @@ instance DomainValue Domain.Evaluation where
       (Text.unpack $ evaluationWritten ent)
 
 instance DomainKey Domain.CommentKey where
-  type EntityForKey Domain.CommentKey = CommentGeneric
+  type EntityForKey Domain.CommentKey = Comment
   fromDomainKey = domainKeyToEntityKey $ \(Domain.CommentKey k) -> k
   toDomainKey   = entityToDomainKey Domain.CommentKey "entityKeyToCommentKey"
 
 instance DomainValue Domain.Comment where
-  type EntityValue Domain.Comment = CommentGeneric
+  type EntityValue Domain.Comment = Comment
 
   fromDomainValue = Domain.commentCata $ \cmt author date type_ ->
     Comment (Text.pack cmt)
@@ -262,12 +271,12 @@ instance DomainValue Domain.Comment where
       (decodeCommentType $ commentType ent)
 
 instance DomainKey Domain.FeedbackKey where
-  type EntityForKey Domain.FeedbackKey = FeedbackGeneric
+  type EntityForKey Domain.FeedbackKey = Feedback
   fromDomainKey = domainKeyToEntityKey $ \(Domain.FeedbackKey k) -> k
   toDomainKey   = entityToDomainKey Domain.FeedbackKey "entityToFeedbackKey"
 
 instance DomainValue Domain.Feedback where
-  type EntityValue Domain.Feedback = FeedbackGeneric
+  type EntityValue Domain.Feedback = Feedback
 
   fromDomainValue = Domain.feedback encodeFeedbackInfo Feedback
 
@@ -277,12 +286,12 @@ instance DomainValue Domain.Feedback where
       (feedbackDate ent)
 
 instance DomainKey Domain.AssessmentKey where
-  type EntityForKey Domain.AssessmentKey = AssessmentGeneric
+  type EntityForKey Domain.AssessmentKey = Assessment
   fromDomainKey = domainKeyToEntityKey $ \(Domain.AssessmentKey k) -> k
   toDomainKey   = entityToDomainKey Domain.AssessmentKey "entityToAssessmentKey"
 
 instance DomainValue Domain.Assessment where
-  type EntityValue Domain.Assessment = AssessmentGeneric
+  type EntityValue Domain.Assessment = Assessment
 
   fromDomainValue = Domain.assessment $
     \desc cfg -> Assessment
@@ -294,21 +303,21 @@ instance DomainValue Domain.Assessment where
     (decodeEvalConfig $ assessmentEvalConfig ent)
 
 instance DomainKey Domain.ScoreKey where
-  type EntityForKey Domain.ScoreKey = ScoreGeneric
+  type EntityForKey Domain.ScoreKey = Score
   fromDomainKey = domainKeyToEntityKey $ \(Domain.ScoreKey k) -> k
   toDomainKey   = entityToDomainKey Domain.ScoreKey "entityToScoreKey"
 
 instance DomainValue Domain.Score where
-  type EntityValue Domain.Score = ScoreGeneric
+  type EntityValue Domain.Score = Score
   fromDomainValue _s = Score "score"
   toDomainValue _ent = Domain.Score ()
 
 instance DomainKey Domain.NotificationKey where
-  type EntityForKey Domain.NotificationKey = NotificationGeneric
+  type EntityForKey Domain.NotificationKey = Notification
   fromDomainKey = domainKeyToEntityKey $ \(Domain.NotificationKey k) -> k
   toDomainKey   = entityToDomainKey Domain.NotificationKey "entityToNotificationKey"
 
 instance DomainValue Domain.Notification where
-  type EntityValue Domain.Notification = NotificationGeneric
+  type EntityValue Domain.Notification = Notification
   fromDomainValue = Domain.notification Notification
   toDomainValue ent = Domain.Notification (notificationMessage ent)
