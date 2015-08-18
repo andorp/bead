@@ -11,10 +11,10 @@ import qualified Bead.Domain.Entities as Domain
 import qualified Bead.Domain.Relationships as Domain
 import           Bead.Persistence.SQL.Class
 import           Bead.Persistence.SQL.Entities
+import           Bead.Persistence.SQL.User
 
 #ifdef TEST
 import           Control.Monad.IO.Class (liftIO)
-import           Bead.Persistence.SQL.User
 
 import           Bead.Persistence.SQL.TestData
 
