@@ -79,7 +79,6 @@ runCommands progName args = case getOpt RequireOrder options args of
 runCommand :: Command -> CLI ()
 runCommand cmd = do
   persist <- getPersist
-  config  <- getConfig
 
   let createAdmin = do
         lift $ putStrLn "Creating Admin ..."
@@ -127,10 +126,11 @@ createPersist cfg = do
 readUserRegInfo :: CLI UserRegInfo
 readUserRegInfo = do
   persist <- getPersist
+  config <- getConfig
   join $ lift $ do
     putStrLn "Creating admin user, all characters are converted to lower case."
     putStrLn "Username must be in the defined format, which is given in the config."
-    usr <- readUsername
+    usr <- readUsername config
     exists <- Persist.runPersist persist $ Persist.doesUserExist (Username usr)
     case exists of
       (Left err) -> return $ do
@@ -173,22 +173,22 @@ readUserRegInfo = do
           (\msg -> do putStrLn msg
                       readEmail)
 
-      readUsername = do
+      readUsername cfg = do
         putStrFlush "User: "
         usr <- fmap convertUsername getLine
         validate
           isUsername
           usr
           -- Valid username
-          (if (isValidUsername usr)
+          (if (isValidUsername cfg usr)
              then return usr
              else do putStrLn "Username does not match the given regexp!"
-                     readUsername)
+                     readUsername cfg)
           -- Invalid username
           (\msg -> do putStrLn msg
-                      readUsername)
+                      readUsername cfg)
         where
-          isValidUsername usr =
+          isValidUsername cfg usr =
 #ifdef LDAPEnabled
             and [length usr > 0, all Char.isAlphaNum usr]
 #else
