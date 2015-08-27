@@ -2,9 +2,9 @@
 module Bead.Config.Configuration (
     InitTask(..)
   , Config(..)
-#ifdef LDAPEnabled
-  , LDAPLoginConfig(..)
-  , ldapLoginConfig
+#ifdef SSO
+  , SSOLoginConfig(..)
+  , sSOLoginConfig
 #else
   , StandaloneLoginConfig(..)
   , standaloneLoginConfig
@@ -60,8 +60,8 @@ data Config = Config {
     -- The maximum upload size of a file given in Kbs
   , maxUploadSizeInKb :: Int
     -- Simple login configuration
-#ifdef LDAPEnabled
-  , loginConfig :: LDAPLoginConfig
+#ifdef SSO
+  , loginConfig :: SSOLoginConfig
 #else
   , loginConfig :: StandaloneLoginConfig
 #endif
@@ -93,28 +93,28 @@ data FilePersistConfig = FilePersistConfig
   deriving (Eq, Read, Show)
 #endif
 
-#ifdef LDAPEnabled
--- Login configuration that is used in LDAP registration and login mode
-data LDAPLoginConfig = LDAPLoginConfig {
-    -- File which contains a non ldap authenticated users, if there is no need to this file
-    -- Nothing us used
-    nonLDAPUsersFile :: Maybe FilePath
-    -- The temporary directory for the ldap tickets
-  , ticketTemporaryDir :: FilePath
-    -- LDAP Timeout in seconds
-  , ldapTimeout :: Int
-    -- The number of threads for LDAP login
-  , noOfLDAPThreads :: Int
-    -- LDAP Key for the UserID
-  , userIdKey :: String
-    -- LDAP Key for the user's full name
-  , userNameKey :: String
-    -- LDAP Key for the user's email address
-  , userEmailKey :: String
+#ifdef SSO
+-- Login configuration that is used in single sign-on (SSO)
+data SSOLoginConfig = SSOLoginConfig {
+    -- Query timeout (in seconds)
+    sSOTimeout       :: Int
+    -- Number of query threads
+  , sSOThreads       :: Int
+    -- A format string that tells how to query LDAP attributes
+    -- on the given system
+  , sSOQueryCommand  :: String
+    -- Key for UserID in LDAP
+  , sSOUserIdKey     :: String
+    -- Key for the user's full name in LDAP
+  , sSOUserNameKey   :: String
+    -- Key for the user's email address in LDAP
+  , sSOUserEmailKey  :: String
+    -- Enable login through a direct link, without SSO
+  , sSODeveloperMode :: Bool
   } deriving (Eq, Show, Read)
 
-ldapLoginConfig f (LDAPLoginConfig file tmpdir timeout threads uik unk uek)
-  = f file tmpdir timeout threads uik unk uek
+sSOLoginConfig f (SSOLoginConfig timeout threads cmd uik unk uek dev)
+  = f timeout threads cmd uik unk uek dev
 #else
 -- Login configuration that is used in standalone registration and login mode
 data StandaloneLoginConfig = StandaloneLoginConfig {
@@ -145,15 +145,15 @@ defaultConfiguration = Config {
   }
 
 defaultLoginConfig =
-#ifdef LDAPEnabled
-  LDAPLoginConfig {
-      nonLDAPUsersFile = Nothing
-    , ticketTemporaryDir = "/tmp/"
-    , ldapTimeout = 5
-    , noOfLDAPThreads = 4
-    , userIdKey = "uid"
-    , userNameKey = "name"
-    , userEmailKey = "email"
+#ifdef SSO
+  SSOLoginConfig {
+      sSOTimeout = 5
+    , sSOThreads = 4
+    , sSOQueryCommand = "ldapsearch"
+    , sSOUserIdKey = "uid"
+    , sSOUserNameKey = "name"
+    , sSOUserEmailKey = "email"
+    , sSODeveloperMode = False
     }
 #else
   StandaloneLoginConfig {

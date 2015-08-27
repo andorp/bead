@@ -10,7 +10,9 @@ module Bead.Persistence.SQL (
   , module Bead.Persistence.SQL.Group
   , module Bead.Persistence.SQL.MySQL
   , module Bead.Persistence.SQL.Notification
+#ifndef SSO
   , module Bead.Persistence.SQL.Registration
+#endif
   , module Bead.Persistence.SQL.Score
   , module Bead.Persistence.SQL.Submission
   , module Bead.Persistence.SQL.TestCase
@@ -33,7 +35,9 @@ import Bead.Persistence.SQL.Feedback
 import Bead.Persistence.SQL.Group
 import Bead.Persistence.SQL.MySQL
 import Bead.Persistence.SQL.Notification
+#ifndef SSO
 import Bead.Persistence.SQL.Registration
+#endif
 import Bead.Persistence.SQL.Score
 import Bead.Persistence.SQL.Submission
 import Bead.Persistence.SQL.TestCase
@@ -61,6 +65,8 @@ tests = do
   evaluationTests
   commentTests
   feedbackTests
+#ifndef SSO
   userRegistrationTests
+#endif
   scoreTests
 #endif

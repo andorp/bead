@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Test.Unit.UserStory (
     tests
   ) where
@@ -112,7 +113,9 @@ tests = group "User Stories" $ do
   test loginAndLogout
   test courseTest
   test courseAndGroupAssignmentTest
+#ifndef SSO
   test saveAndLoadUserReg
+#endif
   test cleanUpPersist
 
 initPersist = testCase "Initalizing persistence layer" $ do
@@ -123,6 +126,7 @@ initPersist = testCase "Initalizing persistence layer" $ do
   setUp <- PersistInit.isSetUp init
   assertBool "Setting up persistence was failed" setUp
 
+#ifndef SSO
 saveAndLoadUserReg = testCase "Save and load user reg data" $ do
   c <- context
   let now = utcTimeConstant
@@ -130,6 +134,7 @@ saveAndLoadUserReg = testCase "Save and load user reg data" $ do
   (key,Registration) <- runStory c Registration $ U.createUserReg u
   (u', Registration)  <- runStory c Registration $ U.loadUserReg key
   assertBool "Saved and load user registration differs" (u' == u)
+#endif
 
 cleanUpPersist = testCase "Cleaning up persistence" $ do
   init <- createPersistInit defaultConfig

@@ -189,7 +189,7 @@ readUserRegInfo = do
                       readUsername cfg)
         where
           isValidUsername cfg usr =
-#ifdef LDAPEnabled
+#ifdef SSO
             and [length usr > 0, all Char.isAlphaNum usr]
 #else
             usr =~ (usernameRegExp $ loginConfig cfg)

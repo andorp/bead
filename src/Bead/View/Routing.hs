@@ -30,6 +30,7 @@ import qualified Bead.Controller.Pages as P
 import qualified Bead.Controller.UserStories as S
 import           Bead.Domain.Entities as E
 import           Bead.View.BeadContext
+import           Bead.View.Common
 import qualified Bead.View.Command.Fayax as Command
 import           Bead.View.Content hiding (BlazeTemplate, template, void)
 import           Bead.View.ContentHandler as ContentHandler hiding (void)
@@ -38,7 +39,9 @@ import           Bead.View.ErrorPage
 import           Bead.View.Login as L
 import           Bead.View.LoggedInFilter
 import           Bead.View.Markdown
-#ifndef LDAPEnabled
+import           Bead.View.Pagelets
+import qualified Bead.View.Content.Public.Index as I
+#ifndef SSO
 import           Bead.View.Registration
 import           Bead.View.ResetPassword
 #endif
@@ -59,22 +62,22 @@ is selected of the path is known otherwise an error page is rendered.
 routes :: Config -> [(ByteString, BeadHandler ())]
 routes config = join
   [ -- Add login handlers
-    [ ("/",         index)
-    , ("/logout",   logoutAndResetRoute)
-    , ("/change-language", changeLanguage)
+    [ (indexPath,          index)
+    , (logoutPath,         logoutAndResetRoute)
+    , (changeLanguagePath, changeLanguage)
     ]
   , registrationRoutes config
   , [ ("/fay", with fayContext fayServe)
     , Command.routeHandler Command.ping
-    , ("/upload", fileUpload)
+    , (uploadFilePath,     fileUpload)
     ]
   , [ (markdownPath, serveMarkdown) ]
     -- Add static handlers
-  , [ ("",          serveDirectory "static") ]
+  , [ (staticPath,         serveDirectory "static") ]
   ]
 
 registrationRoutes :: Config -> [(ByteString, BeadHandler ())]
-#ifdef LDAPEnabled
+#ifdef SSO
 registrationRoutes _ = []
 #else
 registrationRoutes config = [
@@ -101,10 +104,18 @@ pages = do
 -- * Handlers
 
 index :: BeadHandler ()
+#ifdef SSO
+index =
+  ifTop $ requireUser auth
+            (setDefaultLanguage >>=
+              renderBootstrapPublicPage . publicFrame . I.index)
+            (redirect (routeOf $ P.home ()))
+#else
 index =
   ifTop $ requireUser auth
             (with auth $ login Nothing)
             (redirect (routeOf $ P.home ()))
+#endif
 
 -- Redirects to the parent page of the given page
 redirectToParentPage :: P.PageDesc -> ContentHandler ()
@@ -186,7 +197,7 @@ runUserViewPOSTHandler onError userViewHandler
 logoutAndResetRoute :: BeadHandler ()
 logoutAndResetRoute = do
   ContentHandler.logout
-  redirect "/"
+  redirect indexPath
 
 logoutAndErrorPage :: String -> BeadHandler ()
 logoutAndErrorPage msg = do
@@ -330,7 +341,7 @@ routeToPageMap = Map.fromList [
   , (newCourseAssignmentPreviewPath , \ps -> P.newCourseAssignmentPreview <$> courseKey ps <*> unit)
   , (modifyAssignmentPreviewPath , \ps -> P.modifyAssignmentPreview <$> assignmentKey ps <*> unit)
   , (changePasswordPath      , j $ P.changePassword ())
-#ifndef LDAPEnabled
+#ifndef SSO
   , (setUserPasswordPath     , j $ P.setUserPassword ())
 #endif
   , (deleteUsersFromCoursePath , \ps -> P.deleteUsersFromCourse <$> courseKey ps <*> unit)

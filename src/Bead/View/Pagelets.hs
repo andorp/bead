@@ -384,7 +384,7 @@ linkText = P.pageCata
   (c $ msg_LinkText_AssignCourseAdmin "Assign Course Admin")
   (c $ msg_LinkText_AssignGroupAdmin "Assign Teacher")
   (c $ msg_LinkText_ChangePassword "Change Password")
-#ifndef LDAPEnabled
+#ifndef SSO
   (c $ msg_LinkText_SetUserPassword "Set Student Password")
 #endif
   (c2 $ msg_LinkText_DeleteUsersFromCourse "Remove Students")
@@ -466,7 +466,9 @@ bootStrapHeader s secs = do
                         li $ minSecCountdown "hdctd" "--:--" secs
                         li $ H.a userId
                         li $ (I18N.i18n msg $ linkToPage profile)
+#ifndef SSO
                         li $ (I18N.i18n msg $ linkToPage logout)
+#endif
   where
     logout = P.logout ()
     profile = P.profile ()

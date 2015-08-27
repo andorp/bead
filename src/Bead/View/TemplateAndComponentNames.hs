@@ -172,7 +172,7 @@ menuId = P.pageCata
   (c "link-assign-course-admin")
   (c "link-assign-group-admin")
   (c "link-change-password")
-#ifndef LDAPEnabled
+#ifndef SSO
   (c "link-set-user-password")
 #endif
   (c2 "link-delete-users-from-course")

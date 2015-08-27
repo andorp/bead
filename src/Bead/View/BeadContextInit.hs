@@ -29,7 +29,7 @@ import           Bead.Controller.ServiceContext as S hiding (serviceContext)
 #ifdef EmailEnabled
 import           Bead.Daemon.Email
 #endif
-#ifdef LDAPEnabled
+#ifdef SSO
 import           Bead.Daemon.LDAP
 #endif
 import           Bead.Daemon.Logout
@@ -65,7 +65,7 @@ data Daemons = Daemons {
 #ifdef EmailEnabled
   , emailDaemon  :: EmailDaemon
 #endif
-#ifdef LDAPEnabled
+#ifdef SSO
   , ldapDaemon   :: LDAPDaemon
 #endif
   }
@@ -101,9 +101,7 @@ beadContextInit config s daemons tempDir = makeSnaplet "bead" description dataDi
   se <- nestSnaplet "sendemail" sendEmailContext (emailSenderSnaplet config (emailDaemon daemons))
 #endif
 
-#ifndef LDAPEnabled
   rp <- nestSnaplet "randompassword" randomPasswordContext passwordGeneratorSnaplet
-#endif
 
   fs <- nestSnaplet "fay" fayContext $ initFay
 
@@ -111,7 +109,7 @@ beadContextInit config s daemons tempDir = makeSnaplet "bead" description dataDi
 
   cs <- nestSnaplet "config" configContext $ configurationServiceContext config
 
-#ifndef LDAPEnabled
+#ifndef SSO
   un <- nestSnaplet "usernamechecker" checkUsernameContext $ regexpUsernameChecker config
 #endif
 
@@ -121,12 +119,10 @@ beadContextInit config s daemons tempDir = makeSnaplet "bead" description dataDi
 
   dl <- nestSnaplet "debuglogger" debugLoggerContext $ createDebugLogger
 
-#ifdef LDAPEnabled
+#ifdef SSO
   ldap <- do
-    nonLDAPUsers <- liftIO $
-      loadNonLDAPUsers (nonLDAPUsersFile $ loginConfig config)
     nestSnaplet "ldap-config" ldapContext $
-      createLDAPContext (LDAP nonLDAPUsers $ ldapDaemon daemons)
+      createLDAPContext (LDAP $ ldapDaemon daemons)
 #endif
 
   addRoutes (routes config)
@@ -134,11 +130,11 @@ beadContextInit config s daemons tempDir = makeSnaplet "bead" description dataDi
   wrapSite (<|> pages)
 
   return $
-#ifdef LDAPEnabled
+#ifdef SSO
 #ifdef EmailEnabled
-    BeadContext sm as ss ds se fs ts cs tz dl ldap
+    BeadContext sm as ss ds se rp fs ts cs tz dl ldap
 #else
-    BeadContext sm as ss ds fs ts cs tz dl ldap
+    BeadContext sm as ss ds rp fs ts cs tz dl ldap
 #endif
 #else
 #ifdef EmailEnabled
@@ -186,13 +182,3 @@ copyFiles skips src dst = do
               return $ dstDate < srcDate
             else return True
           when doCopy $ copyFile srcPath dstPath
-
--- Creates an LDAP config if the users file is given, otherwise
--- creates an empty config.
-loadNonLDAPUsers :: Maybe FilePath -> IO (Set.Set Username)
-loadNonLDAPUsers Nothing = return $ Set.empty
-loadNonLDAPUsers (Just fp) = do
-  users <- fmap (Set.fromList . map username . lines) $ readFile fp
-  return $! users
-  where
-    username = Username . map toUpper
