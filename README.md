@@ -10,3 +10,11 @@ Configuration
 -------------
 
 The file format for configuration is YAML.
+
+Documentation
+-------------
+
+All the documentation can be found in the `doc` directory, although it is not
+well-developed at the moment. We have just stepped into the phase of the
+project where real documentation is started to be crucial.
+

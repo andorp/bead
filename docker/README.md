@@ -16,11 +16,13 @@ Follow those steps below the steps to quickly reach a state where you can develo
     Let's call it *source*.
  1. Create a directory where the bead will place its data and database (e.g /home/developer/bead-server)
     Let's call it *server*.
- 1. ./docker/run.sh /home/developer/bead-source /home/developer/bead-server
+ 1. `./docker/run.sh /home/developer/bead-source /home/developer/bead-server`
     It will download the image from the docker hub and attach the *source* to /development/bead and
     the *server* to /bead-server. For precise information check out the *Dockerfile*.
     The result of this step, you will get a *docker console* within the docker image.
- 1. With your local machine and docker on it, you can start the development process.
+ 1. With your local machine and docker on it.
+ 1. In the Docker container, run /development/init/dev-env-setup.sh at every startup.
+ 1. Everything is set up, the development may now be started.
 
 ### Changes in bead dependencies
 
@@ -31,5 +33,5 @@ hub repository. We rebuild the latest image if the cabal file changes in the rep
 ## Building docker image
 
 The docker image is created from Dockerfile placed in the root directory if the project,
-from where the ./docker/build-docker.sh should be started. After the build the local
+from where the `./docker/build-docker.sh` should be started. After the build the local
 docker daemon should have an andorp/bead image.

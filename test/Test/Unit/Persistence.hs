@@ -73,12 +73,12 @@ test_feedbacks = testCase "Create and delete test feedbacks" $ do
 
 test_create_load_exercise = testCase "Create and load exercise" $ do
   interp <- createPersistInterpreter defaultConfig
-  str <- getCurrentTime
-  end <- getCurrentTime
+  let str = utcTimeConstant
+  let end = utcTimeConstant
   let a = Assignment "Title" "This is an exercise" normal str end binaryConfig
   k <- liftE interp $ saveAssignment a
   a' <- liftE interp $ loadAssignment k
-  assertBool "The saved assignment differs from the read one." (a' == a)
+  assertBool (concat ["The saved assignment differs from the read one. ", show a, show a']) (a' == a)
 
 test_create_user = testCase "Create user" $ do
   interp <- createPersistInterpreter defaultConfig
@@ -104,16 +104,16 @@ test_create_user = testCase "Create user" $ do
 
 testUserRegSaveAndLoad = testCase "Save and Load User regisistration" $ do
   interp <- createPersistInterpreter defaultConfig
-  now <- getCurrentTime
+  let now = utcTimeConstant
   let u = UserRegistration "username" "e@e.com" "Family name" "token" now
   key <- liftE interp $ saveUserReg u
   u'  <- liftE interp $ loadUserReg key
-  assertBool "Loaded user registration info differs from saved" (u == u')
+  assertBool (concat ["Loaded user registration info differs from saved ", show u, " ", show u']) (u == u')
 
 testOpenSubmissions = testCase "Users separated correctly in open submission tables" $ do
   interp <- createPersistInterpreter defaultConfig
-  str <- getCurrentTime
-  end <- getCurrentTime
+  let str = utcTimeConstant
+  let end = utcTimeConstant
   reinitpersistence
   let myStudent = Username "mystudent"
       myStudentUser = User {
@@ -217,8 +217,8 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
   liftE interp $ createGroupAdmin admin gk
   gs <- liftE interp $ administratedGroups admin
   assertBool "Group is not found in administrated groups" (elem gk (map fst gs))
-  str <- getCurrentTime
-  end <- getCurrentTime
+  let str = utcTimeConstant
+  let end = utcTimeConstant
   let gAssignment = Assignment "GroupAssignment" "Assignment" normal str end binaryConfig
       cAssignment = Assignment "CourseAssignment" "Assignment" ballot str end (percentageConfig 0.1)
   cak <- liftE interp $ saveCourseAssignment ck cAssignment
@@ -276,11 +276,11 @@ test_create_group_user = testCase "Create Course and Group with a user" $ do
 testComment :: SubmissionKey -> IO ()
 testComment sk = do
   interp <- createPersistInterpreter defaultConfig
-  now <- getCurrentTime
+  let now = utcTimeConstant
   let comment = Comment "comment" "author" now CT_Student
   key <- liftE interp $ saveComment sk comment
   c2  <- liftE interp $ loadComment key
-  assertBool "Loaded comment was different" (comment == c2)
+  assertBool (concat ["Loaded comment was different ", show comment, " ", show c2]) (comment == c2)
   sk2 <- liftE interp $ submissionOfComment key
   assertBool "Submission key was different" (sk == sk2)
 
@@ -315,3 +315,6 @@ liftE interp m = do
   case x of
     Left e -> error e
     Right y -> return y
+
+utcTimeConstant :: UTCTime
+utcTimeConstant = read "2015-08-27 17:08:58 UTC"

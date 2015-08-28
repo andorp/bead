@@ -1,7 +1,7 @@
 {-# LANGUAGE CPP #-}
 module Bead.Persistence.SQL.Registration where
 
-import           Database.Persist.Sqlite
+import           Database.Persist.Sql
 
 import qualified Bead.Domain.Entities as Domain
 import qualified Bead.Domain.Relationships as Domain

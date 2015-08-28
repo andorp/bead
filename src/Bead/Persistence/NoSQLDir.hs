@@ -4,6 +4,7 @@ module Bead.Persistence.NoSQLDir (
     Persist
   , Config
   , defaultConfig
+  , configToPersistConfig
   , Interpreter
   , runPersist
   , runInterpreter
@@ -190,6 +191,8 @@ reason (Right x) = Right x
 
 -- No configuration is necessary
 data Config = Config
+
+configToPersistConfig = const Config
 
 -- | Creates a persist initialization structure.
 createPersistInit :: Config -> IO PersistInit

@@ -29,6 +29,11 @@ instance FromJSON Config where
     <*> v.: "timezone-info-directory"
     <*> v.: "max-upload-size"
     <*> v.: "login-config"
+#ifdef MYSQL
+    <*> v.: "mysql-config"
+#else
+    <*> pure FilePersistConfig
+#endif
   parseJSON _ = error "Config is not parsed"
 
 #ifdef LDAPEnabled
@@ -48,6 +53,17 @@ instance FromJSON StandaloneLoginConfig where
     <$> v .: "username-regexp"
     <*> v .: "username-regexp-example"
   parseJSON _ = error "Standalone login config is not parsed"
+#endif
+
+#ifdef MYSQL
+instance FromJSON MySQLConfig where
+  parseJSON (Object v) = MySQLConfig
+    <$> v.: "database"
+    <*> v.: "hostname"
+    <*> v.: "port"
+    <*> v.: "username"
+    <*> v.: "password"
+  parseJSON _ = error "MySQL config is not parsed"
 #endif
 
 parseYamlConfig :: String -> Either String Config
@@ -91,7 +107,7 @@ parseTests = group "parserTests" $ do
     "Standalone config is not parsed correctly"
 #endif
 
-  let configStr cfg = unlines [
+  let configStr loginCfg persistCfg = unlines [
           "user-actions-log: 'actions'",
           "session-timeout: 10",
 #ifdef EmailEnabled
@@ -103,10 +119,15 @@ parseTests = group "parserTests" $ do
           "timezone-info-directory: '/opt/some'",
           "max-upload-size: 150",
           "login-config:",
-          cfg
+          loginCfg,
+#ifdef MYSQL
+          "mysql-config:",
+          persistCfg,
+#endif
+          ""
         ]
 
-  let config lcf = Config {
+  let config lcf pcfg = Config {
          userActionLogFile = "actions"
        , sessionTimeout = 10
 #ifdef EmailEnabled
@@ -118,24 +139,51 @@ parseTests = group "parserTests" $ do
        , timeZoneInfoDirectory = "/opt/some"
        , maxUploadSizeInKb = 150
        , loginConfig = lcf
+       , persistConfig = pcfg
        }
+
+  let persistConfig =
+#ifdef MYSQL
+       MySQLConfig {
+           mySQLDbName = "bead-test-db"
+         , mySQLHost = "mysql.server.com"
+         , mySQLPort = 3308
+         , mySQLUser = "bead"
+         , mySQLPass = "secret"
+         }
+#else
+       FilePersistConfig
+#endif
+
+  let persistConfigStr =
+#ifdef MYSQL
+        unlines [
+          "    database: bead-test-db",
+          "    hostname: mysql.server.com",
+          "    port: 3308",
+          "    username: bead",
+          "    password: secret"
+        ]
+#else
+        ""
+#endif
 
 #ifdef LDAPEnabled
   assertEquals "Config with LDAP #1"
-    (Right . config $ ldapConfig1)
-    (parseYamlConfig . fromString . configStr $ unlines [
+    (Right $ config ldapConfig1 persistConfig)
+    (parseYamlConfig . fromString $ configStr (unlines [
         "  ticket-temporary-dir: '/tmp/'",
         "  login-time-out-in-sec: 5",
         "  no-of-login-threads: 4",
         "  uid-key: 'uid'",
         "  name-key: 'name'",
         "  email-key: 'email'"
-      ])
+      ]) persistConfigStr)
     "Config with LDAP is not parsed correctly"
 
   assertEquals "Config with LDAP #2"
-    (Right . config $ ldapConfig2)
-    (parseYamlConfig . fromString . configStr $ unlines [
+    (Right $ config ldapConfig2 persistConfig)
+    (parseYamlConfig . fromString $ configStr (unlines [
         "  non-ldap-user-file: 'users.file'",
         "  ticket-temporary-dir: '/tmp/'",
         "  login-time-out-in-sec: 5",
@@ -143,15 +191,17 @@ parseTests = group "parserTests" $ do
         "  uid-key: 'uid'",
         "  name-key: 'name'",
         "  email-key: 'email'"
-      ])
+      ]) persistConfigStr)
     "Config with LDAP is not parsed correctly"
 #else
   assertEquals "Config with standalone"
-    (Right . config $ standaloneConfig1)
-    (parseYamlConfig . fromString . configStr $ unlines [
+    (Right $ config standaloneConfig1 persistConfig)
+    (parseYamlConfig . fromString $ configStr
+      (unlines [
         "  username-regexp: 'REGEXP'",
-        "  username-regexp-example: 'REGEXP-EXAMPLE'"
-      ])
+        "  username-regexp-example: 'REGEXP-EXAMPLE'"])
+      persistConfigStr)
     "Config with standalone is not parsed correctly"
 #endif
+
 #endif

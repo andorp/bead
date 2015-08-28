@@ -162,7 +162,7 @@ success n = stdArgs { maxSuccess = n, chatty = False }
 
 massTest = testCase "Mass Test" massPersistenceTest
 
-massTest2 = testCase "Mass Test Parallel" $ do
+massTestParallel = testCase "Mass Test Parallel" $ do
   forkIO massPersistenceTest
   massPersistenceTest
 
@@ -309,7 +309,7 @@ infoListToSubmissionKeys = (fmap snd)
 comments :: Int -> [SubmissionKey] -> IO [(CommentKey, SubmissionKey)]
 comments n ss = do
   list <- createListRef
-  now <- getCurrentTime
+  let now = utcTimeConstant
   quick n $ do
     sk <- pick $ elements ss
     ck <- saveAndLoadIdenpotent "Comment" (saveComment sk) (loadComment) (Gen.comments now)
@@ -321,7 +321,7 @@ comments n ss = do
 feedbacks :: Int -> [SubmissionKey] -> IO [(FeedbackKey, SubmissionKey)]
 feedbacks n ss = do
   list <- createListRef
-  now <- getCurrentTime
+  let now = utcTimeConstant
   quick n $ do
     sk <- pick $ elements ss
     fk <- saveAndLoadIdenpotent "Feedback" (saveFeedback sk) (loadFeedback) (Gen.feedbacks now)
@@ -1348,7 +1348,7 @@ saveCommentNotificationTest = test $ testCase "Comment notifications" $ do
   as <- courseAndGroupAssignments 300 300 cs gs
   ss <- submissions 500 us as
   cks <- comments 1500 (map snd ss)
-  now <- getCurrentTime
+  let now = utcTimeConstant
   quick 1000 $ do
     (ck,sk) <- pick $ elements cks
     notif <- pick $ Gen.notifications
@@ -1487,6 +1487,7 @@ propertyTests = group "Persistence Layer QuickCheck properties" $ do
 massTests = group "Persistence Layer Mass tests" $ do
   test initPersistenceLayer
   test massTest
+  test massTestParallel
   test cleanUpPersistence
 
 
@@ -1578,3 +1579,8 @@ runPersistTestSet t = do
   test initPersistenceLayer
   test t
   test cleanUpPersistence
+
+-- * Helpers
+
+utcTimeConstant :: UTCTime
+utcTimeConstant = read "2015-08-27 17:08:58 UTC"

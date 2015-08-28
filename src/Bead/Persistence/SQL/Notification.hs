@@ -1,7 +1,7 @@
 module Bead.Persistence.SQL.Notification where
 
 import Control.Applicative ((<$>))
-import Database.Persist.Sqlite
+import Database.Persist.Sql
 import Data.Maybe (listToMaybe)
 
 import qualified Bead.Domain.Entities as Domain (Username)
