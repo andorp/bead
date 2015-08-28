@@ -26,6 +26,7 @@ module Bead.View.RouteOf (
   , newTestScriptPath
   , modifyTestScriptPath
   , uploadFilePath
+  , markdownPath
   , submissionDetailsPath
   , administrationPath
   , groupRegistrationPath
@@ -124,6 +125,9 @@ modifyTestScriptPath = "/modify-test-script"
 
 uploadFilePath :: RoutePath
 uploadFilePath = "/upload-file"
+
+markdownPath :: RoutePath
+markdownPath = "/markdown"
 
 submissionDetailsPath :: RoutePath
 submissionDetailsPath = "/submission-details"

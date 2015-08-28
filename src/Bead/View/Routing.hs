@@ -37,6 +37,7 @@ import           Bead.View.Content.All
 import           Bead.View.ErrorPage
 import           Bead.View.Login as L
 import           Bead.View.LoggedInFilter
+import           Bead.View.Markdown
 #ifndef LDAPEnabled
 import           Bead.View.Registration
 import           Bead.View.ResetPassword
@@ -67,6 +68,7 @@ routes config = join
     , Command.routeHandler Command.ping
     , ("/upload", fileUpload)
     ]
+  , [ (markdownPath, serveMarkdown) ]
     -- Add static handlers
   , [ ("",          serveDirectory "static") ]
   ]
