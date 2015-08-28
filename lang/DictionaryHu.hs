@@ -442,5 +442,6 @@ dict = DictionaryFile {
     , msg_Domain_EvalPercentage <| "%s%%"
     , msg_SeeMore_SeeMore <| "Kinyit"
     , msg_SeeMore_SeeLess <| "Becsuk"
+    , msg_Markdown_NotFound <| "Sajnos a kért oldal nem található!"
     ]
 }
