@@ -21,6 +21,7 @@ import           Text.Blaze.Html5.Attributes hiding (id, span)
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext as ServiceContext (UserState(..))
 import           Bead.Domain.Entities as Entity (statusMessage, usernameCata, uid)
+import           Bead.Shared.Command
 import           Bead.View.Fay.Hooks
 import           Bead.View.Fay.JSON.ServerSide
 import qualified Bead.View.I18N as I18N
@@ -487,6 +488,29 @@ bootStrapStatus = maybe noMessage message . status
         Bootstrap.footer
           $ Bootstrap.container $ Bootstrap.rowColMd12 $ Bootstrap.buttonGroupJustified $ labelMessage
         Bootstrap.fadeOutFooter 30
+
+-- * Fayax
+
+-- HTML pagelets for the forms, these forms needs to be hooked at the Fay side as well
+-- Input forms for the fayax commands
+fayaxCommandForm :: FayaxCommand a -> String -> Html
+fayaxCommandForm f formId = do
+  fayaxForm (fromString formId) (fayaxCmdValue $ fayaxRoute f) $ H.div $ H.p $ do
+    H.input ! A.type_ "hidden" ! A.name "instance" ! A.value (fayaxInstance f)
+    (fayaxInputs f)
+    submitButton (fayaxCmdValue $ fayaxSubmitId f) (fayaxSubmitText f)
+  where
+    fayaxInstance = fayaxCmdValue . fayaxCmdConsts
+      "Ping"
+      "Refresh"
+
+    fayaxSubmitText = fayaxCmdValue . fayaxCmdConsts
+      "Ping"
+      "Refresh"
+
+    fayaxInputs = fayaxCmdValue . fayaxCmdConsts
+      (H.input ! A.type_ "text" ! A.name "pingmessage" ! A.value "") -- should be the same as defined in the Ping type
+      (return ())
 
 -- * Picklist
 

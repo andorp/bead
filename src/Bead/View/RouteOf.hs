@@ -52,6 +52,7 @@ module Bead.View.RouteOf (
   , pageRoutePath
   , getSubmissionPath
   , pageRequestParams
+  , fayaxRoute
 #ifdef TEST
   , routeOfTest
 #endif
@@ -63,6 +64,7 @@ import qualified Data.ByteString.Char8 as Char8
 import           Data.List (intersperse)
 import           Data.String
 
+import           Bead.Shared.Command
 import           Bead.Controller.Pages
 import           Bead.View.RequestParams
 
@@ -304,6 +306,14 @@ routeWithParams p rs = fromString . join $
 requestRoute :: (IsString s) => String -> [ReqParam] -> s
 requestRoute route rs = fromString . join $
   [route, "?"] ++ (intersperse "&" (map queryStringParam rs))
+
+-- * Fayax
+
+-- Route constants for the fayax commands
+fayaxRoute :: (IsString string) => FayaxCommand a -> FayaxCommand string
+fayaxRoute = fmap fromString . fayaxCmdConsts
+  "/fay/ping"
+  "/fay/refresh"
 
 #ifdef TEST
 

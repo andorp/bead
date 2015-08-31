@@ -1,6 +1,6 @@
-{-# LANGUAGE OverloadedStrings  #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE Arrows #-}
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Routing (
     routes
   , pages
@@ -45,6 +45,10 @@ import           Bead.View.ResetPassword
 import           Bead.View.RouteOf
 import           Bead.View.RequestParams
 
+import           Bead.Shared.Command
+import           Bead.View.Command.All
+import           Bead.View.Command.Fayax
+
 #ifdef TEST
 import           Test.Tasty.TestSet
 #endif
@@ -65,7 +69,8 @@ routes config = join
     ]
   , registrationRoutes config
   , [ ("/fay", with fayContext fayServe)
-    , Command.routeHandler Command.ping
+    , fayaxRouteHandler ping
+    , fayaxRouteHandler refresh
     , ("/upload", fileUpload)
     ]
   , [ (markdownPath, serveMarkdown) ]
@@ -247,10 +252,10 @@ handlePage page = P.pageKindCata view userView viewModify modify data_ page wher
       ]
     lift $ (logoutAndResetRoute' "Routing.notAllowedPage")
 
-  logoutAndResetRoute' name = do
+  logoutAndResetRoute' _name = do
     logoutAndResetRoute
 
-  logoutAndErrorPage' name msg = do
+  logoutAndErrorPage' _name msg = do
     logoutAndErrorPage msg
 
 
@@ -358,6 +363,31 @@ routeToPageMap = Map.fromList [
 
 void :: Monad m => m a -> m ()
 void m = m >> return ()
+
+-- * Fayax
+
+fayaxRouteHandler :: FayaxCommand a -> (ByteString, BeadHandler ())
+fayaxRouteHandler f = (fayaxCmdValue $ fayaxRoute f, fayaxCmdValue $ fayaxHandler f)
+
+-- Abstract request handler, for the type instanciation
+fayaxRequest :: (Command c) => c -> BeadHandler (Answer c)
+fayaxRequest = fayaxLoginFilter fayaxInteract
+
+-- Associates a fayax command with a handler
+fayaxHandler
+  :: FayaxCommand a
+  -> FayaxCommand (BeadHandler ())
+fayaxHandler = fayaxCmdConsts
+  (fayax pingc)
+  (fayax refreshc)
+  where
+    pingc :: Ping -> BeadHandler Pong
+    pingc = fayaxRequest
+
+    refreshc :: Refresh -> BeadHandler RefreshReply
+    refreshc = fayaxRequest
+
+-- * Tests
 
 #ifdef TEST
 

@@ -4,6 +4,7 @@
 module Bead.View.LoggedInFilter (
     userIsLoggedInFilter
   , HandlerResult(..)
+  , fayaxLoginFilter
   ) where
 
 import qualified Control.Exception as CE
@@ -106,3 +107,22 @@ data HandlerResult a
   | HFailure
   deriving (Eq)
 
+-- * Fayax
+
+-- Combines a given Fay ajax handler with the logged in filter,
+-- which checks if the user is logged in. The result of the combination
+-- is a filter which throws an exception if the user is not logged in, thus
+-- it is not allowed to run ajax request without any authentication.
+-- The exception is supposed to be catched by the snap at a certain point, when the
+-- final message is generated with the "User is not logged in." message
+fayaxLoginFilter
+  :: (Data f1, Read f1, Show f2)
+  => (f1 -> BeadHandler (HandlerResult f2))
+  -> (f1 -> BeadHandler f2)
+fayaxLoginFilter handler x = do
+  result <- userIsLoggedInFilter (handler x) outside onError
+  return $ fromMaybe resultError result
+    where
+      outside = return ()
+      onError = const $ return ()
+      resultError = error "User is not logged in."
