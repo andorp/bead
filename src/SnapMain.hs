@@ -25,7 +25,7 @@ import           Text.Regex.TDFA
 import           Bead.Daemon.Logout
 import           Bead.Daemon.TestAgent
 import           Bead.Persistence.Initialization
-import qualified Bead.Persistence.Persist as Persist (Config, defaultConfig, createPersistInit, createPersistInterpreter)
+import qualified Bead.Persistence.Persist as Persist (Config(..), configToPersistConfig, createPersistInit, createPersistInterpreter)
 import           Bead.View.BeadContextInit
 import           Bead.View.Logger
 
@@ -55,9 +55,9 @@ main = do
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
 #ifdef EmailEnabled
-printConfigInfo = configCata loginConfigPart $ \logfile timeout hostname fromEmail dll dtz zoneInfoDir up lcfg -> do
+printConfigInfo = configCata loginConfigPart $ \logfile timeout hostname fromEmail dll dtz zoneInfoDir up lcfg _pcfg -> do
 #else
-printConfigInfo = configCata loginConfigPart $ \logfile timeout dll dtz zoneInfoDir up lcfg -> do
+printConfigInfo = configCata loginConfigPart $ \logfile timeout dll dtz zoneInfoDir up lcfg _pcfg -> do
 #endif
   configLn $ "Log file: " ++ logfile
   configLn $ concat ["Session timeout: ", show timeout, " seconds"]
@@ -136,7 +136,7 @@ startService config = do
   userActionLogs <- creating "logger" $ createSnapLogger . userActionLogFile $ config
   let userActionLogger = snapLogger userActionLogs
 
-  context <- creating "service context" $ createContext userActionLogger Persist.defaultConfig
+  context <- creating "service context" $ createContext userActionLogger (Persist.configToPersistConfig config)
 
   tempDir <- creating "temporary directory" createBeadTempDir
 

@@ -3,7 +3,7 @@ module Bead.Persistence.SQL.Feedback where
 
 import           Data.Maybe
 
-import           Database.Persist.Sqlite
+import           Database.Persist.Sql
 
 import qualified Bead.Domain.Entities as Domain
 import qualified Bead.Domain.Relationships as Domain

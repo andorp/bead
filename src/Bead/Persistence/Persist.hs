@@ -3,6 +3,7 @@ module Bead.Persistence.Persist (
     Persist
   , Config(..)
   , defaultConfig
+  , configToPersistConfig
   , Interpreter
   , createPersistInit
   , createPersistInterpreter
@@ -166,6 +167,7 @@ module Bead.Persistence.Persist (
 
 import           Data.Time (UTCTime)
 
+import qualified Bead.Config as Config
 import           Bead.Domain.Types (Erroneous)
 import           Bead.Domain.Entities
 import           Bead.Domain.Entity.Notification (Notification)
@@ -173,7 +175,7 @@ import qualified Bead.Domain.Entity.Notification as Notif
 import           Bead.Domain.Relationships
 
 import qualified Bead.Persistence.Initialization as Init
-#ifdef SQLITE
+#ifdef MYSQL
 import qualified Bead.Persistence.SQL as PersistImpl
 #else
 import qualified Bead.Persistence.NoSQLDir as PersistImpl
@@ -185,6 +187,10 @@ import           Test.Tasty.TestSet (TestSet)
 
 type Persist a = PersistImpl.Persist a
 type Config = PersistImpl.Config
+
+-- Converts Bead config into persists config
+configToPersistConfig :: Config.Config -> Config
+configToPersistConfig = PersistImpl.configToPersistConfig
 
 -- Save the current user
 saveUser :: User -> Persist ()

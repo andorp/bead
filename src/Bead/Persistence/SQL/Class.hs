@@ -5,7 +5,6 @@ module Bead.Persistence.SQL.Class where
 import qualified Data.Text as Text
 import           Database.Persist.Class
 import           Database.Persist.Sql hiding (update, updateField)
-import           Database.Persist.Sqlite
 
 import qualified Bead.Domain.Entities as Domain
 import qualified Bead.Domain.Entity.Notification as Domain hiding (NotifType(..))

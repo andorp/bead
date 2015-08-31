@@ -13,9 +13,12 @@ module Bead.Config.Configuration (
   , configCata
   , Usage(..)
   , substProgName
+#ifdef MYSQL
+  , MySQLConfig(..)
+#else
+  , FilePersistConfig(..)
+#endif
   ) where
-
-import Control.Monad (join)
 
 import System.FilePath (joinPath)
 import System.Directory (doesFileExist)
@@ -62,14 +65,32 @@ data Config = Config {
 #else
   , loginConfig :: StandaloneLoginConfig
 #endif
+#ifdef MYSQL
+  , persistConfig :: MySQLConfig
+#else
+  , persistConfig :: FilePersistConfig
+#endif
   } deriving (Eq, Show, Read)
 
 #ifdef EmailEnabled
-configCata fcfg f (Config useraction timeout host from dll dtz tz up cfg) =
-  f useraction timeout host from dll dtz tz up (fcfg cfg)
+configCata fcfg f (Config useraction timeout host from dll dtz tz up cfg pcfg) =
+  f useraction timeout host from dll dtz tz up (fcfg cfg) pcfg
 #else
-configCata fcfg f (Config useraction timeout dll dtz tz up cfg) =
-  f useraction timeout dll dtz tz up (fcfg cfg)
+configCata fcfg f (Config useraction timeout dll dtz tz up cfg pcfg) =
+  f useraction timeout dll dtz tz up (fcfg cfg) pcfg
+#endif
+
+#ifdef MYSQL
+data MySQLConfig = MySQLConfig {
+    mySQLDbName :: String
+  , mySQLHost   :: String
+  , mySQLPort   :: Int
+  , mySQLUser   :: String
+  , mySQLPass   :: String
+  } deriving (Eq, Read, Show)
+#else
+data FilePersistConfig = FilePersistConfig
+  deriving (Eq, Read, Show)
 #endif
 
 #ifdef LDAPEnabled
@@ -120,6 +141,7 @@ defaultConfiguration = Config {
   , timeZoneInfoDirectory = "/usr/share/zoneinfo"
   , maxUploadSizeInKb = 128
   , loginConfig = defaultLoginConfig
+  , persistConfig = defaultPersistConfig
   }
 
 defaultLoginConfig =
@@ -140,6 +162,17 @@ defaultLoginConfig =
     }
 #endif
 
+#ifdef MYSQL
+defaultPersistConfig = MySQLConfig {
+    mySQLDbName = "bead"
+  , mySQLHost   = "localhost"
+  , mySQLPort   = 3306
+  , mySQLUser   = "root"
+  , mySQLPass   = "password"
+  }
+#else
+defaultPersistConfig = FilePersistConfig
+#endif
 
 readConfiguration :: FilePath -> IO Config
 readConfiguration path = do

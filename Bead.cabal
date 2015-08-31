@@ -53,8 +53,8 @@ Flag Tests
   Description:  Enable testing
   Default:      False
 
-Flag SQLite
-  Description:  Enable SQLite persistent layer
+Flag MySQL
+  Description:  Enable MySQL persistent layer
   Default:      False
 
 Flag LDAP
@@ -65,11 +65,12 @@ Library
   HS-Source-Dirs: src, snaplets/fay/src
   GHC-Options: -threaded -with-rtsopts=-N2 -O2
 
-  if flag(SQLite)
-    CPP-Options: -DSQLITE
+  if flag(MySQL)
+    CPP-Options: -DMYSQL
 
     Build-Depends:
       persistent-sqlite >= 2.2 && < 2.3,
+      persistent-mysql >= 2.2 && < 2.3,
       persistent-template >= 2.1 && < 2.2,
       resourcet >= 1.1
 
@@ -85,7 +86,7 @@ Library
       Bead.Persistence.SQL.Feedback
       Bead.Persistence.SQL.FileSystem
       Bead.Persistence.SQL.Group
-      Bead.Persistence.SQL.Init
+      Bead.Persistence.SQL.MySQL
       Bead.Persistence.SQL.JSON
       Bead.Persistence.SQL.Notification
       Bead.Persistence.SQL.Registration
@@ -160,6 +161,7 @@ Library
     pandoc >= 1.12 && < 1.14,
     persistent >= 2.2 && < 2.3,
     persistent-sqlite >= 2.2 && < 2.3,
+    persistent-mysql >= 2.2 && < 2.3,
     persistent-template >= 2.1 && < 2.2,
     pqueue >= 1.2.0 && < 2.0,
     mtl >= 2.0 && < 2.4,
@@ -331,10 +333,11 @@ test-suite BeadTest
     CPP-Options: -DLDAPEnabled -DTEST
   else
     CPP-Options: -DEmailEnabled -DTEST
-  if flag(SQLite)
-    CPP-Options: -DTEST -DSQLITE
+  if flag(MySQL)
+    CPP-Options: -DTEST -DMYSQL
     Build-Depends:
-      persistent-sqlite >= 1.3,
+      persistent-sqlite >= 2.2 && < 2.3,
+      persistent-mysql >= 2.2 && < 2.3,
       persistent-template >= 1.3,
       resourcet >= 1.1
   else

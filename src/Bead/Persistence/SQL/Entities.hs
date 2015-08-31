@@ -19,14 +19,14 @@ import           Data.Text (Text)
 import qualified Data.Text as Text
 import           Data.Time hiding (TimeZone)
 
-import           Database.Persist.Sqlite
+import           Database.Persist.Sql
 import           Database.Persist.TH
 
 import qualified Bead.Domain.Entities as Domain
 
--- #ifdef TEST
--- import           Test.Tasty.TestSet (equals)
--- #endif
+#ifdef TEST
+import           Database.Persist.Sqlite
+#endif
 
 -- String represents a JSON value
 type JSONText = String

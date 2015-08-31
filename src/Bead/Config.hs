@@ -18,6 +18,7 @@ module Bead.Config (
 #ifdef TEST
   , initTaskAssertions
 #endif
+  , module Bead.Config.Configuration
   ) where
 
 import Control.Monad (join)

@@ -125,7 +125,7 @@ initPersist = testCase "Initalizing persistence layer" $ do
 
 saveAndLoadUserReg = testCase "Save and load user reg data" $ do
   c <- context
-  now <- getCurrentTime
+  let now = utcTimeConstant
   let u = UserRegistration "username" "e@e.com" "Family Name" "token" now
   (key,Registration) <- runStory c Registration $ U.createUserReg u
   (u', Registration)  <- runStory c Registration $ U.loadUserReg key
@@ -220,3 +220,6 @@ courseAndGroupAssignmentTest = testCase "Course and group assignments" $ do
 
 fst3 :: (a,b,c) -> a
 fst3 (a,_,_) = a
+
+utcTimeConstant :: UTCTime
+utcTimeConstant = read "2015-08-27 17:08:58 UTC"
