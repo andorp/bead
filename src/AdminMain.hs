@@ -54,7 +54,7 @@ main = do
   config <- readConfiguration beadConfigFileName
   args <- getArgs
   name <- getProgName
-  persist <- createPersist Persist.defaultConfig
+  persist <- createPersist $ Persist.configToPersistConfig config
   runCLI (config, persist) $ runCommands name args
 
 options :: [OptDescr Command]
