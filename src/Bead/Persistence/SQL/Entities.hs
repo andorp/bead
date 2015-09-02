@@ -346,6 +346,9 @@ getByUsername username =
 withUser username nothing just =
   getBy (UniqueUsername $ Domain.usernameCata Text.pack username) >>= maybe nothing just
 
+userKey username =
+  fmap (fmap entityKey) $ getBy (UniqueUsername $ Domain.usernameCata Text.pack username)
+
 #ifdef TEST
 
 -- * Test helpers

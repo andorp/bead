@@ -129,16 +129,18 @@ submissionDescPermissions = ObjectPermissions [
   ]
 
 -- Sets of the submission which are not evaluated yet.
-data OpenedSubmissions = OpenedSubmissions {
-    osAdminedCourse :: [(SubmissionKey, SubmissionDesc)]
+data OpenedSubmissionsS a = OpenedSubmissions {
+    osAdminedCourse :: [(SubmissionKey, a)]
     -- ^ Submissions by the users which are in the set of the users which attends on a course
     -- which is related to the user's registered group, and attends one of the user's group
-  , osAdminedGroup  :: [(SubmissionKey, SubmissionDesc)]
+  , osAdminedGroup  :: [(SubmissionKey, a)]
     -- ^ Submissions by the users which are in the set of the users which attends on the user's groups
-  , osRelatedCourse :: [(SubmissionKey, SubmissionDesc)]
+  , osRelatedCourse :: [(SubmissionKey, a)]
     -- ^ Submissions by the users which are in the set of the users which attends on a course
     -- which is related to the user's registered group, and does not attend one of the user's group
   }
+
+type OpenedSubmissions = OpenedSubmissionsS SubmissionDesc
 
 openedSubmissionsCata f (OpenedSubmissions admincourse admingroup relatedcourse)
   = f admincourse admingroup relatedcourse
