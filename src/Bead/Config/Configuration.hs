@@ -82,11 +82,12 @@ configCata fcfg f (Config useraction timeout dll dtz tz up cfg pcfg) =
 
 #ifdef MYSQL
 data MySQLConfig = MySQLConfig {
-    mySQLDbName :: String
-  , mySQLHost   :: String
-  , mySQLPort   :: Int
-  , mySQLUser   :: String
-  , mySQLPass   :: String
+    mySQLDbName   :: String
+  , mySQLHost     :: String
+  , mySQLPort     :: Int
+  , mySQLUser     :: String
+  , mySQLPass     :: String
+  , mySQLPoolSize :: Int
   } deriving (Eq, Read, Show)
 #else
 data FilePersistConfig = FilePersistConfig
@@ -164,11 +165,12 @@ defaultLoginConfig =
 
 #ifdef MYSQL
 defaultPersistConfig = MySQLConfig {
-    mySQLDbName = "bead"
-  , mySQLHost   = "localhost"
-  , mySQLPort   = 3306
-  , mySQLUser   = "root"
-  , mySQLPass   = "password"
+    mySQLDbName   = "bead"
+  , mySQLHost     = "localhost"
+  , mySQLPort     = 3306
+  , mySQLUser     = "root"
+  , mySQLPass     = "password"
+  , mySQLPoolSize = 30
   }
 #else
 defaultPersistConfig = FilePersistConfig

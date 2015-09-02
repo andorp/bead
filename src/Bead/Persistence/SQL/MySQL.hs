@@ -53,23 +53,29 @@ configToConnectInfo c = defaultConnectInfo {
   , connectDatabase = dbName c
   }
 
-runMySql connectInfo query = runResourceT . runNoLoggingT . withMySQLConn connectInfo $ runSqlConn query
+runMySql pool query = runResourceT . runNoLoggingT $ runSqlPool query pool
+
+runMySqlConn conn query = runResourceT . runNoLoggingT . withMySQLConn conn $ runSqlConn query
 
 createPersistInit :: Config -> IO PersistInit
 createPersistInit config = do
   let conn = configToConnectInfo config
-  let select = runMySql conn $ do
+  let dbname = dbName config
+  let useDatabase = rawExecute (fromString $ ("USE " ++ dbname)) []
+  let select = runMySqlConn conn $ do
+        useDatabase
         createTables <- getMigration migrateAll
         fsSetUp <- FS.isSetUpFS
         return (and [null createTables, fsSetUp])
   let initDatabase = do
-        runMySql conn . void $ runMigrationSilent migrateAll
+        runMySqlConn conn . void $ do
+          useDatabase
+          runMigrationSilent migrateAll
         FS.initFS
   let dropDatabase = do
-        runMySql conn $ do
-          let name = dbName config
-          rawExecute (fromString $ ("DROP DATABASE " ++ name)) []
-          rawExecute (fromString $ ("CREATE DATABASE " ++ name)) []
+        runMySqlConn conn $ do
+          rawExecute (fromString $ ("DROP DATABASE " ++ dbname)) []
+          rawExecute (fromString $ ("CREATE DATABASE " ++ dbname)) []
         FS.removeFS
   return $! PersistInit {
       isSetUp = select
@@ -83,8 +89,9 @@ newtype Interpreter
 createPersistInterpreter :: Config -> IO Interpreter
 createPersistInterpreter config = do
   let connectInfo = configToConnectInfo config
+  pool <- runResourceT . runNoLoggingT $ createMySQLPool connectInfo 100
   let run query = do
-        result <- trySomeEx $ runMySql connectInfo query
+        result <- trySomeEx $ runMySql pool query
         return $! either (Left . show) Right result
   return $! Interpreter run
   where
