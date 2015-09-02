@@ -21,7 +21,6 @@ module Test.Tasty.TestSet (
 import           Control.Applicative
 import           Control.Monad.Identity
 import           Control.Monad.IO.Class (MonadIO(..), liftIO)
-import           Control.Monad.Error.Class
 import           Control.Monad.State.Class
 import qualified Control.Monad.Trans.State as CMS
 

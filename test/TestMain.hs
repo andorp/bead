@@ -14,3 +14,8 @@ main = do
     Test.Unit.Persistence.tests
     Test.Unit.UserStory.tests
     Test.Property.Persistence.tests
+
+{-
+main = do
+  Test.Property.Persistence.createTestData 1
+-}
