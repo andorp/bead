@@ -4,18 +4,18 @@ import Bead.Domain.Entities
 
 data LDAPResult
   = LDAPError String
-  | LDAPInvalidAuth
+  | LDAPInvalidUser
   | LDAPAttrMapError
   | LDAPUser (Uid, Email, String)
   deriving (Eq, Show)
 
 ldapResult
   ldapError
-  ldapInvalidAuth
+  ldapInvalidUser
   ldapAttrMapError
   ldapUser
   l = case l of
     LDAPError msg -> ldapError msg
-    LDAPInvalidAuth -> ldapInvalidAuth
+    LDAPInvalidUser -> ldapInvalidUser
     LDAPAttrMapError -> ldapAttrMapError
     LDAPUser user -> ldapUser user

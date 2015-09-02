@@ -7,9 +7,11 @@ module Bead.View.Login (
   ) where
 
 import           Data.ByteString.Char8 hiding (index, putStrLn)
+import           Data.Char
 import           Data.Maybe
 import qualified Data.Text as Text
 import           Prelude as P
+import           Text.Printf
 
 import           Snap.Snaplet.Auth as Auth
 import           Snap.Snaplet.Session
@@ -19,10 +21,11 @@ import           Bead.Controller.Logging as L
 import qualified Bead.Controller.Pages as P
 import           Bead.Controller.ServiceContext hiding (serviceContext)
 import qualified Bead.Controller.UserStories as Story
-#ifdef LDAPEnabled
+#ifdef SSO
 import           Bead.Daemon.LDAP.Result
 #endif
 import           Bead.View.BeadContext
+import           Bead.View.Common
 import           Bead.View.Content hiding (BlazeTemplate, template)
 import qualified Bead.View.Content.Public.Login as View
 import           Bead.View.ContentHandler
@@ -34,43 +37,49 @@ import           Bead.View.Session
 -- * Login and Logout handlers
 
 login :: Maybe AuthFailure -> BeadHandler' b ()
+#ifdef SSO
 login authError = do
-  -- Set the default language in session if no information is found
-  languages <- dcGetDictionaryInfos
-  mLangInSession <- languageFromSession
-  when (isNothing mLangInSession) $ do
-    defaultLang <- configuredDefaultDictionaryLanguage
-    setLanguageInSession defaultLang
-    setLanguageFromAcceptLanguage
-    commitSessionTop
-
-  -- Render the page content
+  renderBootstrapPublicPage . publicFrame $ do
+    msg <- getI18N
+    View.login (authError >>= visibleFailure msg)
+#else
+login authError = do
+  languages <- setDefaultLanguage
   renderBootstrapPublicPage . publicFrame $ do
     msg <- getI18N
     View.login (authError >>= visibleFailure msg) languages
+#endif
 
 loginSubmit :: BeadHandler' b ()
-#ifdef LDAPEnabled
+#ifdef SSO
 loginSubmit = withTop auth $ handleError $ runErrorT $ do
-  username <- getParameter loginUsernamePrm
-  pwd      <- getParameter loginPasswordPrm
-  needsLDAPAuth <- lift $ isLDAPUser username
-  case needsLDAPAuth of
-    False -> do
-      beadLogin username pwd
-    True -> do
-      lResult <- lift $ ldapAuthenticate username pwd
-      ldapResult
-        (ldapError username pwd)
-        (ldapInvalidUser username)
-        (ldapAttrMapError username pwd)
-        (ldapUser username pwd)
-        lResult
+  cfg <- lift getConfiguration
+  username <-
+    if (Config.sSODeveloperMode $ Config.loginConfig cfg)
+      then getParameter loginUsernamePrm
+      else do
+        headers <- getHeaders "X-Forwarded-User" <$> getRequest
+        case headers of
+          Just [hs] -> return (Username $ toUpper <$> unpack hs)
+          other     -> do
+            lift $ logMessage ERROR $ join ["[FORWARDED USER] Forwarded user is not unique, but: ", reason]
+            i18n <- lift i18nH
+            throwError . strMsg $ i18n $ msg_Login_Error_NoUser "User is unknown"
+            where
+              reason = maybe "nothing found" show other
+
+  lResult <- lift $ ldapQuery username
+  ldapResult
+    (ldapError username)
+    (ldapInvalidUser username)
+    (ldapAttrMapError username)
+    (ldapUser username)
+    lResult
   where
     -- Looks up the user in the auth module and throws an error it the user is not found
-    lookupUser username = do
+    lookupUser username errorMsg = do
       authUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameCata Text.pack username)
-      when (isNothing authUser) . throwError . strMsg $ "User was not created in the Snap Auth module"
+      when (isNothing authUser) . throwError . strMsg $ errorMsg
       return $ fromJust authUser
 
     -- Saves the user to the user database
@@ -82,22 +91,22 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
     regStory story = checkFailure =<< (lift $ registrationStory story)
 
     -- Falls back to local credentials
-    ldapError username pwd msg = do
-      lift $ logMessage ERROR $ join ["LDAP ERROR fall back to normal login for ", usernameCata id username, " reason: ", msg]
-      beadLogin username pwd
+    ldapError username msg = do
+      lift $ logMessage ERROR $ join ["[LDAP] Query failed, falling back to normal login for ", usernameCata id username, ", reason: ", msg]
+      beadLogin username
 
     ldapInvalidUser username = lift $ do
-      logMessage ERROR $ join ["LDAP ERROR invalid user: ", usernameCata id username]
+      logMessage ERROR $ join ["[LDAP] Invalid user: ", usernameCata id username]
       login . Just $ IncorrectPassword
 
     -- Logs error and authenticates with the fallback
-    ldapAttrMapError username pwd = do
-      lift $ logMessage ERROR $ join ["LDAP ATTR MAPPING ERROR fall back to normal login for ", usernameCata id username]
-      beadLogin username pwd
+    ldapAttrMapError username = do
+      lift $ logMessage ERROR $ join ["[LDAP] Attributes cannot be mapped, falling back to normal login for ", usernameCata id username]
+      beadLogin username
 
-    ldapUser ldapUsername pwd (uid,email,name) = do
+    ldapUser ldapUsername (uid,email,name) = do
       -- Check if the user exist
-      let packedPwd = pack pwd
+      packedPwd <- pack <$> lift getRandomPassword
       let username = ldapUsername
       let user role timezone lang = User role ldapUsername email name timezone lang uid
       exist <- regStory (Story.doesUserExist username)
@@ -111,8 +120,11 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
             Left err -> throwError . strMsg $ show err
             Right _auth -> return ()
           -- Check if the Snap Auth registration went fine
-          snapAuthUser <- lookupUser username
-          when (isNothing . passwordFromAuthUser $ snapAuthUser) . throwError . strMsg $ "Snap Auth: no password is created"
+          i18n <- lift i18nH
+          snapAuthUser <- lookupUser username $
+            printf (i18n $ msg_Login_Error_NoSnapCache "User %s could not be cached by Snap")
+                   (usernameCata id username)
+          when (isNothing . passwordFromAuthUser $ snapAuthUser) . throwError . strMsg $ "No password is created in the Snap Auth module"
           let snapAuthPwd = fromJust . passwordFromAuthUser $ snapAuthUser
           -- Creates the user in the persistence layer
           timezone <- fmap getTimeZone $ lift getConfiguration
@@ -124,23 +136,29 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
 
         True -> do
           -- If the user exists update its profile and password
-          authUser <- lookupUser username
+          i18n <- lift i18nH
+          authUser <- lookupUser username $
+            printf (i18n $ msg_Login_Error_NoSnapUpdate "User %s could not be updated by Snap")
+            (usernameCata id username)
           authUser <- lift $ liftIO $ Auth.setPassword authUser packedPwd
           saveUser authUser
           beadUser <- regStory (Story.loadUser username)
           _ <- regStory $ Story.updateUser $ user (u_role beadUser) (u_timezone beadUser) (u_language beadUser)
           return ()
 
-      beadLogin username pwd
+      beadLogin username
 
     -- Tries to make log in the user with the given password in the snap auth module and in the service context
-    beadLogin username pwd = do
+    beadLogin username = do
       -- Force login on the user
-      result <- lift $ loginByUsername (usernameCata Text.pack username) (ClearText $ pack pwd) False
+      i18n <- lift i18nH
+      authUser <- lookupUser username $
+        printf (i18n $ msg_Login_Error_NoLDAPAttributes "Could not get LDAP attributes for user %s")
+        (usernameCata id username)
+      result <- lift $ forceLogin authUser
       case result of
         Left fail -> throwError . strMsg $ join [usernameCata id username, ": ", show fail]
-        Right _   -> return ()
-      i18n    <- lift $ i18nH
+        _         -> return ()
       context <- lift $ getServiceContext
       token   <- lift $ sessionToken
       result  <- liftIO $ Story.runUserStory context i18n UserNotLoggedIn $ do
@@ -171,7 +189,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
     -- a false incorrect login is rendered.
     handleError m =
       m >>= (either (\msg -> do logMessage ERROR $ join ["Error during login: ", contentErrorMsg msg]
-                                login $ Just IncorrectPassword)
+                                login $ Just $ AuthError $ contentErrorMsg msg)
                     (const $ return ()))
 
     contentErrorMsg = contentError "Unknown" id
@@ -183,6 +201,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
         setUsernameInSession username
         logMessage DEBUG $ "Username is set in session to: " ++ show username
         logMessage DEBUG $ "User's actual page is set in session to: " ++ show page
+
 #else
 loginSubmit = withTop auth $ handleError $ runErrorT $ do
   user <- getParameter loginUsernamePrm

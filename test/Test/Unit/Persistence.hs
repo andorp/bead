@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 module Test.Unit.Persistence (
     tests
   ) where
@@ -31,7 +32,9 @@ tests = group "Persistence tests" $ do
   test test_create_load_exercise
   test test_create_user
   test test_create_group_user
+#ifndef SSO
   test testUserRegSaveAndLoad
+#endif
   test testOpenSubmissions
   test test_feedbacks
   test clean_up
@@ -102,6 +105,7 @@ test_create_user = testCase "Create user" $ do
   user3 <- liftE interp $ loadUser uname
   assertBool "Updating and loading user has failed" (user3 == user2)
 
+#ifndef SSO
 testUserRegSaveAndLoad = testCase "Save and Load User regisistration" $ do
   interp <- createPersistInterpreter defaultConfig
   let now = utcTimeConstant
@@ -109,6 +113,7 @@ testUserRegSaveAndLoad = testCase "Save and Load User regisistration" $ do
   key <- liftE interp $ saveUserReg u
   u'  <- liftE interp $ loadUserReg key
   assertBool (concat ["Loaded user registration info differs from saved ", show u, " ", show u']) (u == u')
+#endif
 
 testOpenSubmissions = testCase "Users separated correctly in open submission tables" $ do
   interp <- createPersistInterpreter defaultConfig

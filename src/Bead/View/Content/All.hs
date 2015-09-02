@@ -24,7 +24,7 @@ import Bead.View.Content.SubmissionDetails.Page
 import Bead.View.Content.GroupRegistration.Page
 import Bead.View.Content.UserDetails.Page
 import Bead.View.Content.UserSubmissions.Page
-#ifndef LDAPEnabled
+#ifndef SSO
 import Bead.View.Content.SetUserPassword.Page
 #endif
 import Bead.View.Content.NewTestScript.Page
@@ -68,7 +68,7 @@ pageContent = Pages.constantsP
   assignCourseAdmin
   assignGroupAdmin
   changePassword
-#ifndef LDAPEnabled
+#ifndef SSO
   setUserPassword
 #endif
   deleteUsersFromCourse

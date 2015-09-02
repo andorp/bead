@@ -5,7 +5,7 @@ module Bead.View.Registration (
   , createStudentUser
   , doesUserExist
   , changeUserPassword
-#ifndef LDAPEnabled
+#ifndef SSO
   , registrationRequest
   , finalizeRegistration
 #endif
@@ -116,7 +116,7 @@ readParameter param = do
   reqParam <- getParam . B.pack . DataBridge.name $ param
   return (reqParam >>= decode param . T.unpack . decodeUtf8)
 
-#ifndef LDAPEnabled
+#ifndef SSO
 {-
 User registration request
 - On GET request it renders the HTML registration form with

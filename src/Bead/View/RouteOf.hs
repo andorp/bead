@@ -9,6 +9,7 @@ module Bead.View.RouteOf (
   , requestRoute
   , queryString -- Creates a well-formed query string from base path and parameters
   , RoutePath
+  , indexPath
   , loginPath
   , changeLanguagePath
   , logoutPath
@@ -43,7 +44,7 @@ module Bead.View.RouteOf (
   , newCourseAssignmentPreviewPath
   , modifyAssignmentPreviewPath
   , changePasswordPath
-#ifndef LDAPEnabled
+#ifndef SSO
   , setUserPasswordPath
 #endif
   , deleteUsersFromCoursePath
@@ -51,6 +52,7 @@ module Bead.View.RouteOf (
   , unsubscribeFromCoursePath
   , pageRoutePath
   , getSubmissionPath
+  , staticPath
   , pageRequestParams
 #ifdef TEST
   , routeOfTest
@@ -74,6 +76,9 @@ import           Test.QuickCheck.Arbitrary
 
 -- Route Path represents the route in the HTTP request
 type RoutePath = ByteString
+
+indexPath :: RoutePath
+indexPath = "/"
 
 loginPath :: RoutePath
 loginPath = "/login"
@@ -177,7 +182,7 @@ modifyAssignmentPreviewPath = "/modify-assignment-preview"
 changePasswordPath :: RoutePath
 changePasswordPath = "/change-password"
 
-#ifndef LDAPEnabled
+#ifndef SSO
 setUserPasswordPath :: RoutePath
 setUserPasswordPath = "/set-user-password"
 #endif
@@ -193,6 +198,9 @@ unsubscribeFromCoursePath = "/unsubscribe-from-course"
 
 getSubmissionPath :: RoutePath
 getSubmissionPath = "/get-submission"
+
+staticPath :: RoutePath
+staticPath = ""
 
 type PageRoutePath = Page RoutePath RoutePath RoutePath RoutePath RoutePath
 
@@ -231,7 +239,7 @@ pageRoutePath = pfmap id id id id id . r where
     assignCourseAdminPath
     assignGroupAdminPath
     changePasswordPath
-#ifndef LDAPEnabled
+#ifndef SSO
     setUserPasswordPath
 #endif
     deleteUsersFromCoursePath
@@ -275,7 +283,7 @@ pageRequestParams = liftsP
   (c []) -- assignCourseAdmin
   (c []) -- assignGroupAdmin
   (c []) -- changePassword
-#ifndef LDAPEnabled
+#ifndef SSO
   (c []) -- setUserPassword
 #endif
   (\ck _ -> [requestParam ck]) -- deleteUsersFromCourse

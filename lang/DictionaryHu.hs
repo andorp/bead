@@ -8,7 +8,10 @@ dict = DictionaryFile {
   langCode = "hu",
   langName = "Magyar",
   entries =
-    [ msg_Login_PageTitle <| "Bejelentkezés"
+    [ msg_Index_Header <| "Köszöntjük!"
+    , msg_Index_Body <| "Az oldalt az intézményhez tartozó Active Directory címtárban regisztrált felhasználók tudják használni.\n\nAmennyiben rendelkezünk ilyen hozzáféréssel, a belépéshez kattintsunk a **Tovább** gombra!\n\n*Megjegyzés:* A biztonságos bejelentkezéshez javasolt az [IWA](https://en.wikipedia.org/wiki/Integrated_Windows_Authentication) használata azokban a böngészőkben, ahol ez elérhető."
+    , msg_Index_Proceed <| "Tovább"
+    , msg_Login_PageTitle <| "Bejelentkezés"
     , msg_Login_Username <| "Felhasználónév:"
     , msg_Login_Password <| "Jelszó:"
     , msg_Login_Submit <| "Bejelentkezés"
@@ -18,7 +21,13 @@ dict = DictionaryFile {
     , msg_Login_InternalError <| "Belső hiba történt, jelezzük az üzemeltetőknek!"
     , msg_Login_SelectLanguage <| "Nyelvek"
     , msg_Login_InvalidPasswordOrUser <| "Ismeretlen felhasználó vagy jelszó!"
-    , msg_Login_UsernameHint <| "A weboldalt az Active Directory címtárban regisztrált felhasználók tudják használni."
+    , msg_Login_On_SSO <| "Ezt az oldalt single sign-on módban nem lenne szabad elérni.  Jelezzük az üzemeltetőknek!"
+    , msg_Login_Error <| "Sajnos hiba történt a bejelentkezés során: "
+    , msg_Login_TryAgain <| "Próbáljuk újra!"
+    , msg_Login_Error_NoUser <| "Ismeretlen felhasználó"
+    , msg_Login_Error_NoSnapCache <| "A Snap nem tudta elmenteni a felhasználó (%s) adatait"
+    , msg_Login_Error_NoSnapUpdate <| "A Snap nem tudta frissíteni a felhasználó (%s) adatait"
+    , msg_Login_Error_NoLDAPAttributes <| "A felhasználó (%s) adatai nem kérdezhetőek le az LDAP adatbázisból"
     , msg_Routing_InvalidRoute <| "Érvénytelen útvonal"
     , msg_Routing_SessionTimedOut <| "Lejárt a munkamenet"
     , msg_ErrorPage_Title <| "Error"
