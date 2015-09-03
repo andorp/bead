@@ -7,6 +7,7 @@ module Bead.View.Markdown (
 
 import           Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as BS
+import           Data.Either
 import           Data.String
 import           Data.String.Utils (replace)
 import           System.Directory
@@ -27,7 +28,7 @@ import           Bead.View.Translation
 -- Produces an HTML value from the given markdown formatted strings what
 -- comes from a text area field, crlf endings must be replaced with lf in the string
 markdownToHtml :: String -> Html
-markdownToHtml = writeHtml def' . readMarkdown def . replaceCrlf
+markdownToHtml = either (fromString . show) (writeHtml def') . readMarkdown def . replaceCrlf
   where def' = def { writerHTMLMathMethod = MathML Nothing }
 
 replaceCrlf :: String -> String
