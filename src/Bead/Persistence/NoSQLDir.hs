@@ -27,8 +27,10 @@ module Bead.Persistence.NoSQLDir (
   , listFiles
   , getFile
 
+#ifndef SSO
   , saveUserReg
   , loadUserReg
+#endif
 
   , saveCourse
   , courseKeys
@@ -244,6 +246,7 @@ nTearDown = do
   exists <- doesDirectoryExist dataDir
   when exists $ removeDirectoryRecursive dataDir
 
+#ifndef SSO
 saveUserReg :: UserRegistration -> Persist UserRegKey
 saveUserReg u = do
   dirName <- createTmpDir userRegDataDir "ur"
@@ -257,6 +260,7 @@ loadUserReg u = do
   isU <- isUserRegDir p
   unless isU . throwEx . userError . join $ [userRegKeyFold id u, " user registration does not exist."]
   liftM snd $ tLoadUserReg p
+#endif
 
 saveUser :: User -> Persist ()
 saveUser usr = do
@@ -380,8 +384,10 @@ courseDirPath (CourseKey c) = joinPath [courseDataDir, c]
 groupDirPath :: GroupKey -> FilePath
 groupDirPath (GroupKey g) = joinPath [groupDataDir, g]
 
+#ifndef SSO
 userRegDirPath :: UserRegKey -> FilePath
 userRegDirPath = userRegKeyFold $ \u -> joinPath [userRegDataDir, u]
+#endif
 
 loadCourse :: CourseKey -> Persist Course
 loadCourse c = do
@@ -395,8 +401,10 @@ loadCourse c = do
 tLoadCourse :: FilePath -> Persist (CourseKey, Course)
 tLoadCourse = tLoadPersistenceObject CourseKey
 
+#ifndef SSO
 tLoadUserReg :: FilePath -> Persist (UserRegKey, UserRegistration)
 tLoadUserReg = tLoadPersistenceObject UserRegKey
+#endif
 
 groupKeysOfCourse :: CourseKey -> Persist [GroupKey]
 groupKeysOfCourse c = do
@@ -729,9 +737,10 @@ courseKeys =
 isCourseDir :: FilePath -> Persist Bool
 isCourseDir = isCorrectDirStructure courseDirStructure
 
+#ifndef SSO
 isUserRegDir :: FilePath -> Persist Bool
 isUserRegDir = isCorrectDirStructure userRegDirStructure
-
+#endif
 
 filterCourses :: (CourseKey -> Course -> Bool) -> Persist [(CourseKey, Course)]
 filterCourses f = filterDirectory courseDataDir isCourseDir tLoadCourse (filter (uncurry f))

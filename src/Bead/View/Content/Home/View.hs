@@ -100,7 +100,7 @@ homeContent d = do
       evaluationTable   = Pages.evaluationTable ()
       groupRegistration = Pages.groupRegistration ()
       newTestScript     = Pages.newTestScript ()
-#ifndef LDAPEnabled
+#ifndef SSO
       setUserPassword   = Pages.setUserPassword ()
 #endif
       submission     = Pages.submission ()
@@ -110,10 +110,10 @@ homeContent d = do
       courseAdminUser = (==E.CourseAdmin)
       groupAdminUser  = (==E.GroupAdmin)
 
-      -- With LDAP authentication there passwords can not be set.
-#ifdef LDAPEnabled
-      courseAdminButtons = [courseAdmin, newTestScript, evaluationTable, uploadFile ]
-      groupAdminButtons = [evaluationTable, uploadFile ]
+      -- With single sign-on, passwords cannot be set.
+#ifdef SSO
+      courseAdminButtons = [ courseAdmin, newTestScript, evaluationTable, uploadFile ]
+      groupAdminButtons = [ evaluationTable, uploadFile ]
 #else
       courseAdminButtons = [courseAdmin, newTestScript, evaluationTable, setUserPassword, uploadFile ]
       groupAdminButtons = [evaluationTable, setUserPassword, uploadFile ]

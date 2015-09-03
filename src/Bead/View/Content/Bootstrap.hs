@@ -117,20 +117,23 @@ buttonGroup = H.div ! class_ "btn-group"
 -- | Creates a button link with custom button attribute, a route to point
 -- a title and a text to show
 customButtonLink custom ref ttl text =
-  a ! class_ (fromString ("btn " <> custom))
+  a ! class_ (fromString ("btn " <> (unwords custom)))
     ! customAttribute "role" "button"
     ! A.title (fromString ttl)
     ! href (fromString ref)
     $ (fromString text)
 
 -- | Creates a button styled link
-buttonLink ref text = customButtonLink "btn-default" ref "" text
+buttonLink ref text = customButtonLink ["btn-default"] ref "" text
+
+-- | Creates a block button styled link
+blockButtonLink ref text = customButtonLink ["btn-default", "btn-block"] ref "" text
 
 -- | Warning button with a given text
-warningButtonLink ref text = customButtonLink "btn-warning" ref "" text
+warningButtonLink ref text = customButtonLink ["btn-warning"] ref "" text
 
 -- | Danger button with a given text
-dangerButtonLink ref text = customButtonLink "btn-danger" ref "" text
+dangerButtonLink ref text = customButtonLink ["btn-danger"] ref "" text
 
 -- | Creates a date time picker using a third party library and turns on if the on switch
 -- is set to True

@@ -180,14 +180,14 @@ submissionTablePart tableId now ctx s = do
       -- If the assignment is active we render with active assignment button style,
       -- if not active the closed button style
       H.td $ Bootstrap.customButtonLink
-        (if (isActiveAssignment ak) then active else passive)
+        [if (isActiveAssignment ak) then active else passive]
         (routeOf $ Pages.modifyAssignment ak ())
         (assignmentName ak)
         (concat [pfx, show i])
 
     viewAssignmentLink _buttonStyle@(active, passive) ck pfx (i,ak) =
       H.td $ Bootstrap.customButtonLink
-        (if (isActiveAssignment ak) then active else passive)
+        [if (isActiveAssignment ak) then active else passive]
         (viewOrModifyAssignmentLink ck ak)
         (assignmentName ak)
         (concat [pfx, show i])

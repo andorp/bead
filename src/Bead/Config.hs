@@ -2,9 +2,9 @@
 module Bead.Config (
     InitTask(..)
   , Config(..)
-#ifdef LDAPEnabled
-  , LDAPLoginConfig(..)
-  , ldapLoginConfig
+#ifdef SSO
+  , SSOLoginConfig(..)
+  , sSOLoginConfig
 #else
   , StandaloneLoginConfig(..)
   , standaloneLoginConfig

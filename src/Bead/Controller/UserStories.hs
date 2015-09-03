@@ -1,5 +1,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 module Bead.Controller.UserStories where
 
 import           Bead.Domain.Entities hiding (name, uid)
@@ -258,6 +259,7 @@ create descriptor object saver = do
   logMessage INFO $ descriptor object value
   return value
 
+#ifndef SSO
 createUserReg :: UserRegistration -> UserStory UserRegKey
 createUserReg u = logAction INFO "Creates user registration" $ do
   create descriptor u Persist.saveUserReg
@@ -268,6 +270,7 @@ loadUserReg :: UserRegKey -> UserStory UserRegistration
 loadUserReg k = logAction INFO "Loading user registration" $ do
   authorize P_Open P_UserReg
   persistence $ Persist.loadUserReg k
+#endif
 
 -- | Creates a new course
 createCourse :: Course -> UserStory CourseKey

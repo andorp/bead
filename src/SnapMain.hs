@@ -16,7 +16,7 @@ import           Bead.Controller.ServiceContext as S
 #ifdef EmailEnabled
 import           Bead.Daemon.Email
 #endif
-#ifdef LDAPEnabled
+#ifdef SSO
 import           Data.Maybe
 import           Bead.Daemon.LDAP
 #else
@@ -73,12 +73,11 @@ printConfigInfo = configCata loginConfigPart $ \logfile timeout dll dtz zoneInfo
   where
     configLn s = putStrLn ("CONFIG: " ++ s)
     loginConfigPart =
-#ifdef LDAPEnabled
-      ldapLoginConfig $ \file tmpdir timeout threads uik unk uek -> do
-         configLn $ "Non LDAP Users config file: " ++ show file
-         configLn $ "Temporary directory for the LDAP tickets: " ++ show tmpdir
-         configLn $ "Timeout for an LDAP login request: " ++ show timeout
-         configLn $ "Number of LDAP authenticator threads: " ++ show threads
+#ifdef SSO
+      sSOLoginConfig $ \timeout threads cmd uik unk uek _dev -> do
+         configLn $ "Timeout for LDAP queries: " ++ show timeout
+         configLn $ "Number of LDAP query threads: " ++ show threads
+         configLn $ "LDAP query command: " ++ show cmd
          configLn $ "LDAP key for the UserID: " ++ show uik
          configLn $ "LDAP key for the User's full name: " ++ show unk
          configLn $ "LDAP key for the User's email: " ++ show uek
@@ -97,13 +96,11 @@ checkConfig cfg = do
     "The maximum upload size must be non-negative!"
 
   let loginCfgPart =
-#ifdef LDAPEnabled
-        -- LDAP: Check if there is a given non-ldap users file exist
-        ldapLoginConfig $ \file tmpdir timeout threads uik unk uek -> do
-          when (isJust file) $ checkIO (doesFileExist $ fromJust file) "The given non LDAP Users configuration file"
-          checkIO (doesDirectoryExist tmpdir) "The given LDAP ticket directory does not exist"
-          check (timeout > 0) "LDAP timeout is less or equal to zero"
-          check (threads > 0) "LDAP thread number is less or equals to zero"
+#ifdef SSO
+        sSOLoginConfig $ \timeout threads cmd uik unk uek _dev -> do
+          check (timeout > 0) "LDAP query timeout is less or equal to zero"
+          check (threads > 0) "LDAP query thread number is less or equals to zero"
+          check (not $ null cmd) "LDAP query command is empty"
           check (not $ null uik) "LDAP UID key is empty"
           check (not $ null unk) "LDAP User's fullname key is empty"
           check (not $ null uek) "LDAP User's email key is empty"
@@ -150,12 +147,12 @@ startService config = do
     startEmailDaemon userActionLogger
 #endif
 
-#ifdef LDAPEnabled
+#ifdef SSO
   ldapDaemon <- creating "ldap daemon" $
     startLDAPDaemon userActionLogger $ ldapDaemonConfig $ loginConfig config
 #endif
 
-#ifdef LDAPEnabled
+#ifdef SSO
 #ifdef EmailEnabled
   let daemons = Daemons logoutDaemon emailDaemon ldapDaemon
 #else
@@ -179,15 +176,15 @@ startService config = do
       putStrLn "DONE"
       return $! x
 
-#ifdef LDAPEnabled
-    defaultLDAPConfig = LDAPDaemonConfig "" 0 0 "" "" ""
+#ifdef SSO
+    defaultLDAPConfig = LDAPDaemonConfig 0 0 "" "" "" ""
 
     ldapDaemonConfig =
-      ldapLoginConfig $ \_file tmpdir timeout threads uik unk uek ->
+      sSOLoginConfig $ \timeout threads cmd uik unk uek _dev ->
         LDAPDaemonConfig {
-          tempDir = tmpdir,
-          timeOut = timeout,
-          noOfWorkers = threads,
+          timeout = timeout,
+          workers = threads,
+          command = cmd,
           uidKey = uik,
           nameKey = unk,
           emailKey = uek

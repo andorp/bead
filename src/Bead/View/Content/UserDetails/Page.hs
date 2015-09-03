@@ -58,7 +58,7 @@ userDetailForm timeZones user dictionaries = do
     Bootstrap.turnSelectionsOn
   where
     userDetailsFields msg = do
-#ifdef LDAPEnabled
+#ifdef SSO
       Bootstrap.selection (fieldName userRoleField) (== u_role user) (roles msg)
       emailCata (Bootstrap.labeledText (msg $ msg_Input_User_Email "Email") . fromString) (u_email user)
       hiddenInput (fieldName userEmailField) (emailCata id $ u_email user)

@@ -28,9 +28,11 @@ module Bead.Persistence.Persist (
   , listFiles -- List all the user's files
   , getFile   -- Get the current path for the user's file
 
+#ifndef SSO
   -- Registration
   , saveUserReg
   , loadUserReg
+#endif
 
   -- Course
   , saveCourse
@@ -256,6 +258,7 @@ listFiles = PersistImpl.listFiles
 getFile :: Username -> UsersFile -> Persist FilePath -- Get the current path for the user's file
 getFile = PersistImpl.getFile
 
+#ifndef SSO
 -- * Registration
 
 -- Save the user registration information which is created at the time, when the
@@ -266,6 +269,7 @@ saveUserReg = PersistImpl.saveUserReg
 -- Loads the user registration
 loadUserReg :: UserRegKey -> Persist UserRegistration
 loadUserReg = PersistImpl.loadUserReg
+#endif
 
 -- * Course Persistence
 

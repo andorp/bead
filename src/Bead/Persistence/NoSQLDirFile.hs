@@ -46,7 +46,9 @@ submissionDir = "submission"
 evaluationDir = "evaluation"
 commentDir    = "comment"
 openSubmissionDir = "open-submission"
+#ifndef SSO
 userRegDir = "user-registration"
+#endif
 testScriptDir = "test-script"
 testCaseDir = "test-case"
 testOutgoingDir = "test-outgoing"
@@ -65,7 +67,9 @@ evaluationDataDir = joinPath [dataDir, evaluationDir]
 commentDataDir    = joinPath [dataDir, commentDir]
 openSubmissionDataDir = joinPath [dataDir, openSubmissionDir]
 openSubmissionAllDataDir = joinPath [openSubmissionDataDir, "all"]
+#ifndef SSO
 userRegDataDir = joinPath [dataDir, userRegDir]
+#endif
 testScriptDataDir = joinPath [dataDir, testScriptDir]
 testCaseDataDir = joinPath [dataDir, testCaseDir]
 testOutgoingDataDir = joinPath [dataDir, testOutgoingDir]
@@ -87,7 +91,9 @@ persistenceDirs = [
   , commentDataDir
   , openSubmissionDataDir
   , openSubmissionAllDataDir
+#ifndef SSO
   , userRegDataDir
+#endif
   , testScriptDataDir
   , testCaseDataDir
   , testOutgoingDataDir
@@ -501,9 +507,11 @@ instance Save User where
     save d language
     save d uid
 
+#ifndef SSO
 instance Save UserRegistration where
   save d u = do createStructureDirs d userRegDirStructure
                 fileSave d "userreg" (show u)
+#endif
 
 instance Save TestScript where
   save d = testScriptCata show $ \name desc notes script type_ -> do
@@ -641,8 +649,10 @@ instance Load User where
       , u_uid = uid
       }
 
+#ifndef SSO
 instance Load UserRegistration where
   load d = fileLoad d "userreg" readMaybe
+#endif
 
 instance Load TestScript where
   load d = testScriptAppAna
@@ -903,10 +913,12 @@ commentDirStructure = DirStructure {
   , directories = ["submission"]
   }
 
+#ifndef SSO
 userRegDirStructure = DirStructure {
     files = ["userreg"]
   , directories = []
   }
+#endif
 
 testJobDirStructure = DirStructure {
     files = [
@@ -1001,7 +1013,9 @@ dirStructures = [
   , assignmentDirStructure
   , evaluationDirStructure
   , commentDirStructure
+#ifndef SSO
   , userRegDirStructure
+#endif
   , testScriptDirStructure
   , testCaseDirStructure
   , testJobDirStructure

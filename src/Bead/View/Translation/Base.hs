@@ -34,7 +34,11 @@ generateTranslationEnumList labels = return $
   ListE [ AppE (VarE $ mkName n) (TupE []) | n <- labels ]
 
 labels =
- [ "msg_Login_PageTitle"
+ [ "msg_Index_Header"
+ , "msg_Index_Body"
+ , "msg_Index_Proceed"
+
+ , "msg_Login_PageTitle"
  , "msg_Login_Username"
  , "msg_Login_Password"
  , "msg_Login_Submit"
@@ -44,7 +48,13 @@ labels =
  , "msg_Login_InternalError"
  , "msg_Login_SelectLanguage"
  , "msg_Login_InvalidPasswordOrUser"
- , "msg_Login_UsernameHint"
+ , "msg_Login_On_SSO"
+ , "msg_Login_Error"
+ , "msg_Login_TryAgain"
+ , "msg_Login_Error_NoUser"
+ , "msg_Login_Error_NoSnapCache"
+ , "msg_Login_Error_NoSnapUpdate"
+ , "msg_Login_Error_NoLDAPAttributes"
 
  , "msg_Routing_InvalidRoute"
  , "msg_Routing_SessionTimedOut"

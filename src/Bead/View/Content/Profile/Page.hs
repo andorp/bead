@@ -18,7 +18,7 @@ import qualified Bead.View.DataBridge as B
 import           Bead.View.Dictionary
 import           Bead.View.Session (setLanguageInSession)
 
-#ifndef LDAPEnabled
+#ifndef SSO
 import           Bead.View.ResetPassword
 #endif
 
@@ -42,9 +42,9 @@ changeUserDetails = do
   where
     setLanguage = lift . setLanguageInSession
 
-#ifdef LDAPEnabled
+#ifdef SSO
 changePassword = ModifyHandler $ do
-  return $ LogMessage "LDAP authentication can not change password from Profile page."
+  return $ LogMessage "With single sign-on, one cannot change password from the Profile page."
 #else
 changePassword = ModifyHandler $ do
   oldPwd <- getParameter oldPasswordPrm
@@ -72,14 +72,14 @@ profileContent ts user ls = do
     fullName          = fromString $ u_name user
 
     userDetailsCol =
-#ifdef LDAPEnabled
+#ifdef SSO
       Bootstrap.colMd12
 #else
       Bootstrap.colMd6
 #endif
 
     passwordSection msg = do
-#ifdef LDAPEnabled
+#ifdef SSO
       return ()
 #else
       let oldPasswordField = fromString $ B.name oldPasswordPrm
@@ -93,7 +93,7 @@ profileContent ts user ls = do
 #endif
 
     profileFields msg = do
-#ifdef LDAPEnabled
+#ifdef SSO
       Bootstrap.readOnlyTextInputWithDefault "" (msg $ msg_Profile_User "Username: ") (usernameCata fromString $ u_username user)
       Bootstrap.readOnlyTextInputWithDefault "" (msg $ msg_Profile_Email "Email: ") (emailCata fromString $ u_email user)
       Bootstrap.readOnlyTextInputWithDefault "" (msg $ msg_Profile_FullName "Full name: ") fullName

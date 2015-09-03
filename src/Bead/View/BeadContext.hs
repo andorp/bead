@@ -33,7 +33,7 @@ import           Bead.Controller.ServiceContext hiding (serviceContext)
 #ifdef EmailEnabled
 import           Bead.Daemon.Email as EmailDaemon
 #endif
-#ifdef LDAPEnabled
+#ifdef SSO
 import           Bead.Daemon.LDAP as LDAPDaemon
 #endif
 import           Bead.Daemon.Logout
@@ -172,7 +172,7 @@ regexpUsernameChecker cfg = makeSnaplet
   Nothing $ liftIO $ checkUsername
     where
       checkUsername = do
-#ifdef LDAPEnabled
+#ifdef SSO
         ref <- newIORef (\username -> return $ and [all isAlphaNum username, length username > 0])
         return $! SnapContext ref
 #else
@@ -184,7 +184,6 @@ regexpUsernameChecker cfg = makeSnaplet
             check usr ptn = usr =~ ptn
 #endif
 
-#ifndef LDAPEnabled
 -- * Password generation
 
 -- PasswordGeneratorContext is a reference to the password generator computation,
@@ -227,7 +226,7 @@ createPasswordGenerator = do
 
     digit :: Int -> Char
     digit n = ['0'..'9'] !! (mod n 10)
-#endif
+
 
 -- | Represents an application context that has a debugging
 -- log capacibility
@@ -252,23 +251,20 @@ createTimeZoneContext = makeSnapContext
   "Timezone converter"
   "A snaplet holding a reference to the time zone converter functionality"
 
-#ifdef LDAPEnabled
+#ifdef SSO
 -- * LDAP Context
 
--- Contains all the secondary configuration values, that reifies
--- how the LDAP authentication should work.
-data LDAP = LDAP {
-    nonLDAPUsers :: Set Username -- ^ Usernames which do not need LDAP authentication
-  , ldapDaemon   :: LDAPDaemon   -- ^ Authenticates the LDAP users
+newtype LDAP = LDAP {
+    ldapDaemon :: LDAPDaemon  -- ^ Queries LDAP users
   }
 
-ldap f (LDAP x y) = f x y
+ldap f (LDAP x) = f x
 
 type LDAPContext = SnapContext LDAP
 
 createLDAPContext :: LDAP -> SnapletInit a LDAPContext
 createLDAPContext = makeSnapContext
-  "LDAP Configuration"
+  "LDAP configuration"
   "A snaplet holding a reference to the ldap configuration"
 #endif
 
@@ -282,18 +278,16 @@ data BeadContext = BeadContext {
 #ifdef EmailEnabled
   , _sendEmailContext   :: Snaplet SendEmailContext
 #endif
-#ifndef LDAPEnabled
   , _randomPasswordContext :: Snaplet PasswordGeneratorContext
-#endif
   , _fayContext     :: Snaplet Fay
   , _tempDirContext :: Snaplet TempDirectoryContext
   , _configContext  :: Snaplet ConfigServiceContext
-#ifndef LDAPEnabled
+#ifndef SSO
   , _checkUsernameContext :: Snaplet CheckUsernameContext
 #endif
   , _timeZoneContext :: Snaplet TimeZoneContext
   , _debugLoggerContext :: Snaplet DebugLoggerContext
-#ifdef LDAPEnabled
+#ifdef SSO
   , _ldapContext :: Snaplet LDAPContext
 #endif
   }
@@ -313,19 +307,13 @@ type BeadHandler' view = Handler BeadContext view
 getConfiguration :: BeadHandler' b Config
 getConfiguration = withTop configContext $ snapContextCata id
 
-#ifdef LDAPEnabled
+#ifdef SSO
 -- * LDAP
 
--- Returns True if the given user (automatically capitalized) needs to have LDAP authentication
-isLDAPUser :: Username -> BeadHandler' b Bool
-isLDAPUser username = withTop ldapContext $ snapContextCata (ldap (\nonLDAPUsers _daemon -> not $ Set.member username' nonLDAPUsers))
-  where
-    username' = usernameCata (Username . map toUpper) username
-
--- Authenticates the user with the given password and returns an LDAPResult for further processing
-ldapAuthenticate :: Username -> String -> BeadHandler' b LDAPResult
-ldapAuthenticate username password = withTop ldapContext . snapContextHandlerCata $ \l -> do
-  resultEnvelope <- liftIO $ ldap (\_nonLDAPUsers daemon -> authenticate daemon (usernameCata id username) password) l
+-- Queries the given user and returns an LDAPResult for further processing
+ldapQuery :: Username -> BeadHandler' b LDAPResult
+ldapQuery username = withTop ldapContext . snapContextHandlerCata $ \l -> do
+  resultEnvelope <- liftIO $ ldap (\daemon -> query daemon (usernameCata id username)) l
   liftIO resultEnvelope
 #endif
 
@@ -372,15 +360,15 @@ sendEmail address sub body value = withTop sendEmailContext . snapContextHandler
 getTempDirectory :: BeadHandler' b FilePath
 getTempDirectory = withTop tempDirContext $ snapContextCata id
 
-#ifndef LDAPEnabled
+#ifndef SSO
 -- Returns True, if the username pass the check otherwise False
 checkUsername :: String -> BeadHandler' b Bool
 checkUsername usr = withTop checkUsernameContext . snapContextHandlerCata $ \f -> liftIO (f usr)
+#endif
 
 -- Generates a new password string
 getRandomPassword :: BeadHandler' b String
 getRandomPassword = withTop randomPasswordContext $ snapContextHandlerCata liftIO
-#endif
 
 -- | Log the message to the debug stream
 debugMessage :: String -> BeadHandler' a ()
