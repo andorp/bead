@@ -27,7 +27,6 @@ module Bead.View.ContentHandler (
   , userTimeZoneToLocalTimeConverter
   , userTimeZoneToUTCTimeConverter
   , foundTimeZones
-  , fileUpload
   , logout
   , ContentHandler
   , ContentError
@@ -331,29 +330,6 @@ registrationStory s = getServiceContext >>=
   \context -> do i18n <- i18nH; liftIO $ (forgetUserState <$> S.runUserStory context i18n Registration s)
   where
     forgetUserState = either Left (Right . fst)
-
--- TODO: set temporary directory
--- Handels file uploads and throw an error, to render the error page later
-fileUpload :: BeadHandler' b ()
-fileUpload = do
-  tmpDir <- getTempDirectory
-  config <- getConfiguration
-  let size = fromIntegral $ maxUploadSizeInKb config
-  handleFileUploads
-    tmpDir
-    (uploadPolicy size)
-    (perpartUploadPolicy size) handlers
-  where
-    uploadPolicy size = setMaximumFormInputSize (size * 1024) defaultUploadPolicy
-    perpartUploadPolicy size = const $ allowWithMaximumSize (size * 1024)
-    handlers ps = do
-      liftIO $ print ps
-      mapM_ handlerPartInfo ps
-      where
-        handlerPartInfo (partInfo, uploaded) =
-          case uploaded of
-            Left exception -> liftIO . putStrLn $ "Exception: " ++ show exception
-            Right _file -> liftIO . B.putStrLn . maybe (fromString "Nothing") id $ partFileName partInfo
 
 -- | Runs a user story for authenticated user and saves the new user state
 --   into the service context

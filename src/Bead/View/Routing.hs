@@ -69,7 +69,6 @@ routes config = join
   , registrationRoutes config
   , [ ("/fay", with fayContext fayServe)
     , Command.routeHandler Command.ping
-    , (uploadFilePath,     fileUpload)
     ]
   , [ (markdownPath, serveMarkdown) ]
     -- Add static handlers
