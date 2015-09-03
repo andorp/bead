@@ -114,6 +114,7 @@ module Bead.Persistence.NoSQLDir (
 
   , removeFromOpened
   , openedSubmissions
+  , openedSubmissionSubset
   , usersOpenedSubmissions
 
   , saveSubmissionEvaluation
@@ -177,6 +178,7 @@ import System.Directory hiding (copyFile)
 import System.Posix.Types (COff(..))
 import System.Posix.Files (getFileStatus, fileExist, fileSize, modificationTime)
 import Data.Function (on)
+import Data.Set (Set)
 import Data.Time (UTCTime, getCurrentTime)
 import Data.Time.Clock.POSIX (posixSecondsToUTCTime)
 import Data.List (sortBy, isSuffixOf)
@@ -901,6 +903,9 @@ safeFilterDirectory dir isValid loader f = do
 
 openedSubmissions :: Persist [SubmissionKey]
 openedSubmissions = filterDirectory openSubmissionAllDataDir isSubmissionDir tLoadSubmission (map fst)
+
+openedSubmissionSubset :: Set AssignmentKey -> Set Username -> Persist [SubmissionKey]
+openedSubmissionSubset = error "NoSQLDir.openedSubmissionSubset is undefined"
 
 userDirPath :: Username -> FilePath
 userDirPath (Username u) = joinPath [userDataDir, u]

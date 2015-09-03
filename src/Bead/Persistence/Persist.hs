@@ -116,6 +116,7 @@ module Bead.Persistence.Persist (
 
   , removeFromOpened
   , openedSubmissions
+  , openedSubmissionSubset
   , usersOpenedSubmissions
 
   -- Feedback
@@ -168,6 +169,7 @@ module Bead.Persistence.Persist (
   ) where
 
 import           Data.Time (UTCTime)
+import           Data.Set (Set)
 
 import qualified Bead.Config as Config
 import           Bead.Domain.Types (Erroneous)
@@ -558,6 +560,10 @@ removeFromOpened = PersistImpl.removeFromOpened
 -- Returns all the opened submissions
 openedSubmissions :: Persist [SubmissionKey]
 openedSubmissions = PersistImpl.openedSubmissions
+
+-- Returns the opened submissions that are associated with the given assignments or users
+openedSubmissionSubset :: Set AssignmentKey -> Set Username -> Persist [SubmissionKey]
+openedSubmissionSubset = PersistImpl.openedSubmissionSubset
 
 -- Calculates all the opened submisison for a given user and a given assignment
 usersOpenedSubmissions :: AssignmentKey -> Username -> Persist [SubmissionKey]

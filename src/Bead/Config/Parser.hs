@@ -4,7 +4,7 @@ module Bead.Config.Parser where
 
 import Control.Applicative
 
-import Data.ByteString.Char8 (ByteString, pack)
+import Data.ByteString.Char8 (pack)
 import Data.Maybe
 import Data.String
 import Data.Yaml
@@ -67,6 +67,7 @@ instance FromJSON MySQLConfig where
     <*> v.: "port"
     <*> v.: "username"
     <*> v.: "password"
+    <*> v.: "pool-size"
   parseJSON _ = error "MySQL config is not parsed"
 #endif
 
@@ -146,11 +147,12 @@ parseTests = group "parserTests" $ do
   let persistConfig =
 #ifdef MYSQL
        MySQLConfig {
-           mySQLDbName = "bead-test-db"
-         , mySQLHost = "mysql.server.com"
-         , mySQLPort = 3308
-         , mySQLUser = "bead"
-         , mySQLPass = "secret"
+           mySQLDbName   = "bead-test-db"
+         , mySQLHost     = "mysql.server.com"
+         , mySQLPort     = 3308
+         , mySQLUser     = "bead"
+         , mySQLPass     = "secret"
+         , mySQLPoolSize = 30
          }
 #else
        FilePersistConfig
@@ -163,7 +165,8 @@ parseTests = group "parserTests" $ do
           "    hostname: mysql.server.com",
           "    port: 3308",
           "    username: bead",
-          "    password: secret"
+          "    password: secret",
+          "    pool-size: 30"
         ]
 #else
         ""

@@ -229,32 +229,51 @@ openedSubmissionInfo u = do
   acs <- map fst <$> administratedCourses u
   ags <- map fst <$> administratedGroups  u
   agcs <- (\\ acs) <$> mapM courseOfGroup ags
-  isCourseAsg <- (flip elem . concat) <$> mapM courseAssignments acs
-  isGroupAsg  <- (flip elem . concat) <$> mapM groupAssignments  ags
-  isRelatedCourseAsg <- (flip elem . concat) <$> mapM courseAssignments agcs
+  courseAsgs <- concat <$> mapM courseAssignments acs
+  groupAsgs <- concat <$> mapM groupAssignments  ags
+  let isCourseAsg = flip elem courseAsgs
+  let isGroupAsg  = flip elem groupAsgs
+  relatedCourseAsgs <- concat <$> mapM courseAssignments agcs
+  let isRelatedCourseAsg = flip elem relatedCourseAsgs
   courseUser  <- (Set.fromList . concat) <$> mapM subscribedToCourse acs
-  isGroupUser <- (flip Set.member . Set.fromList . concat) <$> mapM subscribedToGroup ags
-  isRelatedCourseUser <- (flip Set.member . flip Set.difference courseUser . Set.fromList . concat)
-                            <$> mapM subscribedToCourse agcs
+  subscribedToGroupAgs <- (Set.fromList . concat) <$> mapM subscribedToGroup ags
+  let isGroupUser = flip Set.member subscribedToGroupAgs
+  subscribedToCourseAgcs <- (flip Set.difference courseUser . Set.fromList . concat) <$> mapM subscribedToCourse agcs
+  let isRelatedCourseUser = flip Set.member subscribedToCourseAgcs
   let isCourseUser = flip Set.member courseUser
-  nonEvalSubs  <- openedSubmissions -- Non Evaluated Submissions
-  submissionDescs <- mapM (withKey submissionDesc) nonEvalSubs
-  let filterSubmissions os s@(_sk,sd) =
+   -- Non Evaluated Submissions
+  nonEvalSubs <- openedSubmissionSubset
+                   (Set.fromList $ concat [courseAsgs, groupAsgs, relatedCourseAsgs]) -- Assignments
+                   (foldr1 Set.union [subscribedToGroupAgs, subscribedToCourseAgcs, courseUser]) -- Users
+  assignmentAndUsers <- mapM assignmentAndUserOfSubmission nonEvalSubs
+  let filterSubmissions os (sk, ak, student) =
+        let sku = (sk, ()) in
         let separate ak student
-              | (isRelatedCourseAsg ak && isGroupUser student)  = os { osAdminedCourse = s:osAdminedCourse os }
-              | (isCourseAsg ak && isGroupUser student)  = os { osAdminedCourse = s:osAdminedCourse os }
-              | (isGroupAsg ak && isGroupUser student)   = os { osAdminedGroup  = s:osAdminedGroup os  }
-              | (isRelatedCourseAsg ak && isRelatedCourseUser student) = os { osRelatedCourse = s:osRelatedCourse os }
-              | (isCourseAsg ak && isRelatedCourseUser student) = os { osRelatedCourse = s:osRelatedCourse os }
-              | (isCourseAsg ak && isCourseUser student) = os { osRelatedCourse = s:osRelatedCourse os }
+              | (isRelatedCourseAsg ak && isGroupUser student)  = os { osAdminedCourse = sku:osAdminedCourse os }
+              | (isCourseAsg ak && isGroupUser student)  = os { osAdminedCourse = sku:osAdminedCourse os }
+              | (isGroupAsg ak && isGroupUser student)   = os { osAdminedGroup  = sku:osAdminedGroup os  }
+              | (isRelatedCourseAsg ak && isRelatedCourseUser student) = os { osRelatedCourse = sku:osRelatedCourse os }
+              | (isCourseAsg ak && isRelatedCourseUser student) = os { osRelatedCourse = sku:osRelatedCourse os }
+              | (isCourseAsg ak && isCourseUser student) = os { osRelatedCourse = sku:osRelatedCourse os }
               | otherwise = os
-        in separate (eAssignmentKey sd) (eUsername sd)
-  return $ foldl filterSubmissions empty submissionDescs
+        in separate ak student
+
+  let OpenedSubmissions adminedCourse adminedGroup relatedCourse
+        = foldl filterSubmissions empty assignmentAndUsers
+
+  OpenedSubmissions
+    <$> mapM (submissionKeyAndDesc . fst) adminedCourse
+    <*> mapM (submissionKeyAndDesc . fst) adminedGroup
+    <*> mapM (submissionKeyAndDesc . fst) relatedCourse
     where
       empty = OpenedSubmissions [] [] []
-      withKey m k = do
-        x <- m k
-        return (k,x)
+
+      submissionKeyAndDesc sk =
+        (,) <$> pure sk <*> submissionDesc sk
+
+      assignmentAndUserOfSubmission sk =
+        (,,) <$> pure sk <*> assignmentOfSubmission sk <*> usernameOfSubmission sk
+
 
 courseNameAndAdmins :: AssignmentKey -> Persist (CourseName, [UsersFullname])
 courseNameAndAdmins ak = do

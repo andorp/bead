@@ -1,5 +1,6 @@
 module Test.Property.Persistence (
     tests
+  , createTestData
   ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -37,8 +38,10 @@ import Test.QuickCheck
 import Test.QuickCheck.Monadic
 import Test.Tasty
 import Test.Tasty.HUnit (testCase)
-import Test.Tasty.TestSet (add, group, test)
+import Test.Tasty.TestSet (add, group, test, ioTest)
 import Test.Tasty.QuickCheck (testProperty)
+
+import System.IO.Unsafe
 
 {- Mass test of the persistence layer -}
 
@@ -451,6 +454,10 @@ check cleanup m = do
 reinitPersistence = do
   init <- createPersistInit defaultConfig
   tearDown init
+  initPersist init
+
+initPersistence = do
+  init <- createPersistInit defaultConfig
   initPersist init
 
 courseAndGroupAssignments cn gn cs gs = do
@@ -1439,9 +1446,23 @@ attachedNotificationTest = test $ testCase "Notifications with attached users" $
       Nothing -> assertTrue (elem nk scns) ("A non feedback notification had a feedback." ++ show nk)
       Just fk -> assertTrue (elem nk fns) "A feedback notification lost its feedback key."
 
+-- * Run persistent command
+
+-- TODO: FIX this dirty hack to instatiate only once the persistent layer
+persistRef :: IORef Interpreter
+persistRef = unsafePerformIO $ newIORef undefined
+
+createInterpreter :: IO ()
+createInterpreter = do
+  interp <- createPersistInterpreter defaultConfig
+  writeIORef persistRef interp
+
+getPersistInterpreter :: IO Interpreter
+getPersistInterpreter = readIORef persistRef
+
 runPersistCmd :: Persist a -> PropertyM IO a
 runPersistCmd m = do
-  interp <- run $ createPersistInterpreter defaultConfig
+  interp <- run getPersistInterpreter
   x <- run $ runPersist interp m
   case x of
     Left msg -> fail msg >> return undefined
@@ -1449,7 +1470,7 @@ runPersistCmd m = do
 
 runPersistIOCmd :: Persist a -> IO a
 runPersistIOCmd m = do
-  interp <- createPersistInterpreter defaultConfig
+  interp <- getPersistInterpreter
   x <- runPersist interp m
   case x of
     Left msg -> fail msg >> return undefined
@@ -1463,6 +1484,7 @@ endDate = read "2013-03-30 12:00:00"
 
 
 tests = do
+  ioTest "Init persist interpreter" createInterpreter
   propertyTests
   massTests
   complexTests
@@ -1584,3 +1606,65 @@ runPersistTestSet t = do
 
 utcTimeConstant :: UTCTime
 utcTimeConstant = read "2015-08-27 17:08:58 UTC"
+
+-- * Consistent data generation
+
+createTestData n = do
+  createInterpreter
+  let noOfUsers = 1100
+  let noOfCourses = 14 * n
+  let noOfGroups = 6 * noOfCourses
+  print "Init persistence ..."
+  initPersistence
+  print "Creating users ..."
+  us <- users (1100 * n)
+  print "Creating courses ..."
+  cs <- courses (14 * n)
+  print "Creating groups ..."
+  gs <- groups noOfGroups cs
+
+  print "Subscribing users to groups ..."
+  quick (4 * noOfUsers) $ do
+    gk <- pick $ elements gs
+    ck <- runPersistCmd $ courseOfGroup gk
+    u  <- pick $ elements us
+    runPersistCmd $ subscribe u ck gk
+
+  as <- courseAndGroupAssignments (8 * noOfCourses) (8 * noOfGroups) cs gs
+  let noOfSubmissions = 15000 * n
+  print "Creating subscriptions ..."
+  quick noOfSubmissions $ do
+    u <- pick $ elements us
+    aks <- runPersistCmd $ userAssignmentKeyList u
+    when (not $ null aks) $ do
+      ak <- pick $ elements aks
+      s  <- pick $ Gen.submissions startDate
+      sk <- runPersistCmd $ saveSubmission ak u s
+      return ()
+
+  print "Creating comments ..."
+  quick (3 * noOfSubmissions) $ do
+    u <- pick $ elements us
+    aks <- runPersistCmd $ userAssignmentKeyList u
+    when (not $ null aks) $ do
+      ak <- pick $ elements aks
+      sks <- runPersistCmd $ userSubmissions u ak
+      when (not $ null sks) $ do
+        sk <- pick $ elements sks
+        c  <- pick $ Gen.comments startDate
+        ck <- runPersistCmd $ saveComment sk c
+        return ()
+
+  print "Creating evaluations ..."
+  quick (4 * noOfSubmissions) $ do
+    u <- pick $ elements us
+    aks <- runPersistCmd $ userAssignmentKeyList u
+    when (not $ null aks) $ do
+      ak <- pick $ elements aks
+      sks <- runPersistCmd $ userSubmissions u ak
+      when (not $ null sks) $ do
+        sk <- pick $ elements sks
+        cfg <- evaluationConfigForSubmission sk
+        e <- pick $ Gen.evaluations cfg
+        runPersistCmd $ saveSubmissionEvaluation sk e
+        return ()

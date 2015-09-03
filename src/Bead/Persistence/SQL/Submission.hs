@@ -5,6 +5,8 @@ import           Control.Applicative
 import           Data.Function (on)
 import           Data.Maybe
 import           Data.List (maximumBy)
+import           Data.Set (Set)
+import qualified Data.Set as Set
 import qualified Data.Text as Text
 
 import           Database.Persist.Sql
@@ -146,6 +148,16 @@ openedSubmissions = do
   where
     selectOpenedSubmissions :: Persist [Entity OpenedSubmission]
     selectOpenedSubmissions = selectList [] []
+
+-- Returns the opened submissions that are associated with the given assignments or users
+openedSubmissionSubset :: Set Domain.AssignmentKey -> Set Domain.Username -> Persist [Domain.SubmissionKey]
+openedSubmissionSubset assignemts users = do
+  userKeys <- catMaybes <$> mapM userKey (Set.toList users)
+  openeds <- selectList
+    ([ OpenedSubmissionAssignment <-. (map toEntityKey $ Set.toList assignemts) ]
+      ||. [ OpenedSubmissionUser <-. userKeys ])
+    []
+  return $! map (toDomainKey . openedSubmissionSubmission . entityVal) openeds
 
 -- Calculates all the opened submisison for a given user and a given assignment
 usersOpenedSubmissions :: Domain.AssignmentKey -> Domain.Username -> Persist [Domain.SubmissionKey]
