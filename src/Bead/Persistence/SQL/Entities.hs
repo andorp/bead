@@ -86,7 +86,7 @@ Score
 
 Submission
   simple   Text       Maybe
-  zipped   ByteString Maybe
+  zipped   ByteString Maybe sqltype=longblob
   postDate UTCTime
   deriving Show
 
@@ -94,7 +94,7 @@ TestCase
   name         Text
   description  Text
   simpleValue  Text       Maybe
-  zippedValue  ByteString Maybe
+  zippedValue  ByteString Maybe sqltype=longblob
   info         Text
   deriving Show
 
