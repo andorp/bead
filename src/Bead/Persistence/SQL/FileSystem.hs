@@ -55,6 +55,14 @@ fileLoad fname = liftIO $ do
   s `deepseq` hClose h
   return s
 
+fileLoadBS :: (MonadIO io) => FilePath -> io ByteString
+fileLoadBS fname = liftIO $ do
+  h <- openFile fname ReadMode
+  hSetEncoding h utf8
+  s <- BS.hGetContents h
+  s `deepseq` hClose h
+  return s
+
 fileSave :: (MonadIO io) => FilePath -> String -> io ()
 fileSave fname s = liftIO $ do
   handler <- openFile fname WriteMode

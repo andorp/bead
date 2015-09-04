@@ -90,9 +90,9 @@ copyTestCaseFile :: Domain.TestCaseKey -> Domain.Username -> Domain.UsersFile ->
 copyTestCaseFile tcKey username userfile =
   withUser username (persistError "copyTestCaseFile" $ "User is not found:" ++ show username)
   (\_userEnt -> void $ do
-      content <- FS.getFile username userfile >>= FS.fileLoad
+      content <- FS.getFile username userfile >>= FS.fileLoadBS
       update (toEntityKey tcKey)
-        [ TestCaseZippedValue =. (Just $ BS.pack content)
+        [ TestCaseZippedValue =. (Just content)
         , TestCaseSimpleValue =. Nothing
         ])
 
