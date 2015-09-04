@@ -82,14 +82,14 @@ connectStartEndHours start end = void $ do
         checkStart e = void $ do
           (sd,sh,sm,ed,eh,em) <- times
           when (sd == ed) $ do
-            when (less eh sh) $ setVal eh startHour
-            when (eh == sh && less em sm) $ setVal em startMin
+            when (less eh sh) $ void $ setVal eh startHour
+            when (eh == sh && less em sm) $ void $ setVal em startMin
 
         checkEnd e = void $ do
           (sd,sh,sm,ed,eh,em) <- times
           when (sd == ed) $ do
-            when (less eh sh) $ setVal sh endHour
-            when (eh == sh && less em sm) $ setVal sm endMin
+            when (less eh sh) $ void $ setVal sh endHour
+            when (eh == sh && less em sm) $ void $ setVal sm endMin
 
     spinStop   checkStart startHour
     spinStop   checkStart startMin
@@ -214,8 +214,8 @@ numberField i min max = do
     case (unpack val) of
       [] -> void $ setVal (fromString "0") t
       v  -> do let x = parseInt v
-               when (x <  min) $ setVal (fromString . show $ min) t
-               when (x >= max) $ setVal (fromString . show $ max) t
+               when (x <  min) $ void $ setVal (fromString . show $ min) t
+               when (x >= max) $ void $ setVal (fromString . show $ max) t
 
 makeMessage removable msg = select . fromString $ (
   "<br class=\"" ++ removable ++ "\"><snap style=\"font-size: smaller;color: red\" class=\"" ++
@@ -252,7 +252,7 @@ hookAssignmentForm formId startHook endHook = void $ do
           start <- validateField isDateTime start startErrMsgPos removeable
           end   <- validateField isDateTime end   endErrMsgPos   removeable
           return (start && end)
-    onSubmit validateForm form
+    void $ onSubmit validateForm form
   where
     removeable = "datetimeerror"
 
