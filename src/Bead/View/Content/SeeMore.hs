@@ -8,28 +8,58 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 
 import           Bead.View.Content
+import qualified Bead.View.Content.Bootstrap as Bootstrap
 
-seeMorePre :: I18N -> Int -> Int -> String -> Html
-seeMorePre i18n maxLength maxLines content = do
-  previewWithMoreButton
-  contentPreTag $ fromString content
+seeMoreSubmission :: String -> I18N -> Int -> Int -> String -> Html
+seeMoreSubmission id_ i18n maxLength maxLines content = do
+  Bootstrap.panelGroup ! Bootstrap.role "tablist" ! Bootstrap.areaMultiselectable "true" $ do
+    let headingId = "heading" ++ id_
+    let collapseClass = if collapsed then "panel-collapse collapse"
+                                     else "panel-collapse collapse in"
+    let headerText = if collapsed then msg_Submission_Large_Submission "The submission is too long, click here to show"
+                                  else msg_Submission_Collapse_Submission "Collapse submission text"
+    H.div ! A.class_ "panel panel-default" $ do
+      H.div ! A.class_ "panel-heading" ! Bootstrap.role "tab" ! A.id (fromString headingId) $ do
+        H.h4 ! A.class_ "panel-title" $
+          H.a ! Bootstrap.dataToggle "collapse" ! A.href (fromString $ '#':id_)
+              ! Bootstrap.ariaExpanded "true" ! Bootstrap.ariaControls (fromString id_)
+              $ fromString . i18n $ headerText
+      H.div ! A.id (fromString id_) ! A.class_ (fromString collapseClass)
+            ! Bootstrap.role "tabpanel" ! Bootstrap.ariaLabelledBy (fromString headingId) $
+        H.div ! A.class_ "panel-body" $
+          H.div # assignmentTextDiv $
+            H.pre # assignmentTextPre $ fromString content
   where
-    hookClass' = fromString . hookClass
+    cmt = take maxLength $ content
+    ml  = unlines $ take maxLines $ lines cmt
     isLargeContent = length content > maxLength
+    collapsed = isLargeContent
 
-    previewWithMoreButton =
-      if isLargeContent
-        then do
-          let cmt = take maxLength $ content
-              ml  = unlines $ take maxLines $ lines cmt
-              preview = concat $ [take (length ml - 1) ml, " ..."]
-          H.span ! A.class_ (hookClass' seeMoreClass) # display False $ fromString . i18n $ msg_SeeMore_SeeMore "See More"
-          H.span ! A.class_ (hookClass' seeLessClass) # display False $ fromString . i18n $ msg_SeeMore_SeeLess "See Less"
-          H.pre ! A.class_ (hookClass' moreClass) # commentTextPre $ fromString preview
-          H.a ! A.class_ (hookClass' moreButtonClass) # color "blue" $ fromString . i18n $ msg_SeeMore_SeeMore "See More"
-        else return ()
 
-    contentPreTag =
-      if isLargeContent
-        then H.pre ! A.class_ (hookClass' moreClass) # (commentTextPre <> display False)
-        else H.pre # commentTextPre
+seeMoreComment :: String -> I18N -> Int -> Int -> (String, Maybe Bootstrap.Alert) -> String -> Html
+seeMoreComment id_ i18n maxLength maxLines (badgeText, alert) content =
+  let headingId = "heading" ++ id_
+      collapseClass = if collapsed then "panel-collapse collapse"
+                                   else "panel-collapse collapse in"
+  in
+  H.div ! A.class_ "panel panel-default" $ do
+    H.div ! A.class_ "panel-heading" ! Bootstrap.role "tab" ! A.id (fromString headingId) $ do
+      H.p $ Bootstrap.badge badgeText
+      H.pre # commentTextPre $ fromString preview
+      when isLargeContent $ do
+        H.a ! Bootstrap.dataToggle "collapse" ! A.href (fromString $ '#':id_)
+            ! Bootstrap.ariaExpanded "true" ! Bootstrap.ariaControls (fromString id_)
+            $ fromString . i18n $ msg_SeeMore_SeeMore "See More"
+    when isLargeContent $
+      H.div ! A.id (fromString id_) ! A.class_ (fromString collapseClass)
+            ! Bootstrap.role "tabpanel" ! Bootstrap.ariaLabelledBy (fromString headingId) $
+        H.div ! A.class_ "panel-body" $
+          H.pre # commentTextPre $ fromString content
+  where
+    badge = maybe Bootstrap.badge Bootstrap.badgeAlert alert
+    cmt = take maxLength $ content
+    ml  = unlines $ take maxLines $ lines cmt
+    preview = if isLargeContent then concat $ [take (length ml - 1) ml, " ..."]
+                                else content
+    isLargeContent = length content > maxLength
+    collapsed = isLargeContent

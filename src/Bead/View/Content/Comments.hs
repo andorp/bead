@@ -73,17 +73,18 @@ forStudentCFs = filter forStudent where
            (const3 True)) -- evaluated
          p_1_2)
 
-commentsDiv :: UserTimeConverter -> [CommentOrFeedback] -> IHtml
-commentsDiv t cs = do
+commentsDiv :: String -> UserTimeConverter -> [CommentOrFeedback] -> IHtml
+commentsDiv id_ t cs = do
   msg <- getI18N
-  return $ H.div ! A.id "comments" $ do
-    mapM_ (commentPar msg t) $ sortDecreasingTime cs
+  return $ Bootstrap.panelGroup ! Bootstrap.role "tablist" ! Bootstrap.areaMultiselectable "true" $ do
+    mapM_ (commentPar msg id_ t) $ zip [1..] (sortDecreasingTime cs)
 
-commentPar :: I18N -> UserTimeConverter -> CommentOrFeedback -> Html
-commentPar i18n t c = Bootstrap.row $ Bootstrap.colMd12 $ H.div # (commentDiv c) $ do
-  H.p # textAlign "left" $
-    fromString $ (showDate . t . commentOrFeedbackTime $ c) ++ ", " ++ (commentAuthor $ c)
-  seeMorePre i18n maxLength maxLines (commentText c)
+commentPar :: I18N -> String -> UserTimeConverter -> (Int, CommentOrFeedback) -> Html
+commentPar i18n id_ t (n, c) = do
+  let comment = commentText c
+  let badge = concat [showDate . t $ commentOrFeedbackTime c, " ", commentAuthor c]
+  let commentId = fromString $ id_ ++ show n
+  seeMoreComment commentId i18n maxLength maxLines (badge, style) (commentText c)
   where
     commentText =
       commentOrFeedback
@@ -139,16 +140,17 @@ commentPar i18n t c = Bootstrap.row $ Bootstrap.colMd12 $ H.div # (commentDiv c)
         result = testScript
 
 
-    commentDiv =
+    style =
       commentOrFeedback
-        (commentCata (const4 commentTextDiv))
+        (commentCata (const4 Nothing))
         (feedback
           (feedbackInfo
-            (const commentTextDiv) -- result
-            (const commentTextDiv) -- student
-            (const messageCommentTextDiv) -- admin
-            (const3 messageCommentTextDiv)) -- evaluation
+            (const Nothing) -- result
+            (const Nothing) -- student
+            (const $ Just Bootstrap.Warning) -- admin
+            (const3 $ Just Bootstrap.Warning)) -- evaluation
           p_1_2)
+        c
 
     maxLength = 100
     maxLines = 5

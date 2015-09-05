@@ -185,6 +185,8 @@ labels =
  , "msg_Submission_File_InternalError"
  , "msg_Submission_Remaining"
  , "msg_Submission_NoTriesLeft"
+ , "msg_Submission_Large_Submission"
+ , "msg_Submission_Collapse_Submission"
 
  , "msg_Comments_Title"
  , "msg_Comments_SubmitButton"

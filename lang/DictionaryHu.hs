@@ -187,6 +187,8 @@ dict = DictionaryFile {
     , msg_SubmissionDetails_NewComment <| "Új hozzászólás"
     , msg_SubmissionDetails_SubmitComment <| "Beküld"
     , msg_SubmissionDetails_InvalidSubmission <| "Ez a megoldás nem érhető el ezzel a felhasználóval!"
+    , msg_Submission_Large_Submission <| "A megoldás túl nagy, megtekinthető erre a linkre kattintva."
+    , msg_Submission_Collapse_Submission <| "A beadott feladat elrejtése"
     , msg_Registration_Title <| "Regisztráció"
     , msg_Registration_Username <| "Neptun:"
     , msg_Registration_Email <| "Email cím:"

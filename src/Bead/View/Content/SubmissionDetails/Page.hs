@@ -120,7 +120,7 @@ submissionDetailsContent p = do
             "The submission may be downloaded as a plain text file by clicking on the link."
           downloadSubmissionButton
           H.br
-          div # submissionTextDiv $ seeMorePre msg maxLength maxLines $ sdSubmission info
+          div # submissionTextDiv $ seeMoreSubmission "submission-details-" msg maxLength maxLines $ sdSubmission info
     Bootstrap.rowColMd12 $ do
       h2 $ fromString $ msg $ msg_SubmissionDetails_Evaluation "Evaluation"
       resolveStatus msg $ sdStatus info
@@ -133,12 +133,12 @@ submissionDetailsContent p = do
     let studentComments = forStudentCFs $ submissionDetailsDescToCFs info
     when (not $ null studentComments) $ do
       Bootstrap.rowColMd12 hr
-      i18n msg $ commentsDiv tc studentComments
+      i18n msg $ commentsDiv "submission-details-comments-" tc studentComments
 
   where
     submissionDetails ak sk = Pages.submissionDetails ak sk ()
-    maxLength = 100
-    maxLines  = 5
+    maxLength = 2048
+    maxLines  = 100
 
 invalidSubmission :: IHtml
 invalidSubmission = do
