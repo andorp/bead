@@ -80,7 +80,18 @@ abstractEvaluationPostHandler
 abstractEvaluationPostHandler getEvKeyParameter evCommand = do
   sk <- getParameter submissionKeyPrm
   commentText <- getParameter evaluationValuePrm
-  commentOrResult <- getJSONParam (fieldName evaluationResultField) "There can be no evaluation found."
+  config <- getParameter $ evalConfigParameter (fieldName evaluationConfigField)
+  commentOrResult <-
+    evConfigCata
+      (getJSONParam (fieldName evaluationResultField) "There can be no evaluation found.")
+      (\_ -> do
+        percentage  <- getParameter $ evaluationPercentagePrm (fieldName evaluationPercentageField)
+        commentOnly <- getParameter $ evaluationCommentOnlyPrm (fieldName evaluationCommentOnlyField)
+        return $
+          if commentOnly
+            then EvCmtComment
+            else EvCmtResult $ percentageResult (fromIntegral percentage / 100))
+      config
   withEvalOrComment commentOrResult
     (do (mrole,mname) <- (getRole &&& getName) <$> userState
         let uname = fromMaybe "???" mname
@@ -128,23 +139,31 @@ modifyEvaluationPost = abstractEvaluationPostHandler (getParameter evaluationKey
 
 inputEvalResult :: EvConfig -> IHtml
 
-inputEvalResult (EvConfig (BinEval _cfg)) = do
+inputEvalResult ev@(EvConfig (BinEval _cfg)) = do
   msg <- getI18N
-  return $ Bootstrap.radioButtonGroup (fieldName evaluationResultField) $
-    [ (True,  encodeToFay' "inputEvalResult" EvCmtComment,  msg $ msg_Evaluation_New_Comment "New Comment")
-    , (False, encodeToFay' "inputEvalResult" $ binary Passed, msg $ msg_Evaluation_Accepted "Accepted")
-    , (False, encodeToFay' "inputEvalResult" $ binary Failed, msg $ msg_Evaluation_Rejected "Rejected")
-    ]
+  return $ do
+    hiddenInput (fieldName evaluationConfigField) (fromString $ show ev)
+    Bootstrap.radioButtonGroup (fieldName evaluationResultField) $
+      [ (True,  encodeToFay' "inputEvalResult" EvCmtComment   , msg $ msg_Evaluation_New_Comment "New Comment")
+      , (False, encodeToFay' "inputEvalResult" $ binary Passed, msg $ msg_Evaluation_Accepted "Accepted")
+      , (False, encodeToFay' "inputEvalResult" $ binary Failed, msg $ msg_Evaluation_Rejected "Rejected")
+      ]
   where
     binary = EvCmtResult . binaryResult
 
 -- When the page is dynamic the percentage spinner is hooked on the field
-inputEvalResult (EvConfig (PctEval _cfg)) =
-  return $ hiddenInput
-    (fieldName evaluationResultField)
-    (fromString . errorOnNothing . encodeToFay $ percentageResult 0.0)
-
-errorOnNothing = maybe (error "Invalid input encoding.") Prelude.id
+inputEvalResult ev@(EvConfig (PctEval _cfg)) = do
+  msg <- getI18N
+  return $ do
+    hiddenInput (fieldName evaluationConfigField) (encodeToFay' "inputEvalType" ev)
+    Bootstrap.colMd4 $
+      Bootstrap.radioButtonGroup (fieldName evaluationCommentOnlyField) $
+        [ (True,  show True,  msg $ msg_Evaluation_New_Comment "New Comment")
+        , (False, show False, msg $ msg_Evaluation_Percentage "Percentage: ")
+        ]
+    Bootstrap.colMd4 $
+      H.input ! A.name (fieldName evaluationPercentageField) ! A.type_ "number"
+        ! A.min (fromString $ show 0) ! A.max (fromString $ show 100)
 
 -- * View
 

@@ -11,7 +11,6 @@ import           Data.Monoid
 import           Data.String (IsString(..), fromString)
 import qualified Data.Time as Time
 
-import           Fay.Convert
 import qualified Text.Blaze.Html5.Attributes as A (id)
 import           Text.Blaze.Html5.Attributes as A hiding (id)
 import           Text.Blaze.Html5 as H hiding (map)
@@ -37,20 +36,26 @@ newAssignmentContent pd = do
   -- Renders a evaluation selection or hides it if there is a submission already for the assignment,
   -- and renders an explanation.
   evalConfig <- do
-    let cfg = evaluationConfig (evSelectionId hook)
+    let evaluationTypeSelection = return $ do
+          Bootstrap.selectionWithLabel
+            (evHiddenValueId hook)
+            (msg $ msg_NewAssignment_EvaluationType "Evaluation Type")
+            (== currentEvaluationType)
+            [ (binaryConfig, fromString . msg $ msg_NewAssignment_BinEval "Binary")
+            , (percentageConfig 0.0, fromString . msg $ msg_NewAssignment_PctEval "Percentage")
+            ]
     let hiddencfg asg = return $ do
           let e = Assignment.evType asg
           showEvaluationType msg e
           fromString . msg $ msg_NewAssignment_EvalTypeWarn "The evaluation type can not be modified, there is a submission for the assignment."
-          hiddenInput (evSelectionId hook) (toFayJSON e)
     pageDataCata
-      (const5 cfg)
-      (const5 cfg)
-      (\_tz _key asg _ts _fs _tc ev -> if ev then cfg else hiddencfg asg)
-      (const5 cfg)
-      (const7 cfg)
-      (const7 cfg)
-      (\_tz _key asg _ts _fs _tc _tm ev -> if ev then cfg else hiddencfg asg)
+      (const5 evaluationTypeSelection)
+      (const5 evaluationTypeSelection)
+      (\_tz _key asg _ts _fs _tc ev -> if ev then evaluationTypeSelection else hiddencfg asg)
+      (const5 evaluationTypeSelection)
+      (const7 evaluationTypeSelection)
+      (const7 evaluationTypeSelection)
+      (\_tz _key asg _ts _fs _tc _tm ev -> if ev then evaluationTypeSelection else hiddencfg asg)
       pd
 
   return $ do
@@ -283,9 +288,6 @@ newAssignmentContent pd = do
                 Bootstrap.formGroup $ do
                   let previewAndCommitForm cfg = do
                         evalSelectionDiv hook
-                        hiddenInputWithId (evHiddenValueId hook) (toFayJSON cfg)
-                        H.label $ fromString $ msg $ msg_NewAssignment_EvaluationType "Evaluation Type"
-                        H.br
                         evalConfig
 
                   pageDataCata
@@ -321,6 +323,7 @@ newAssignmentContent pd = do
 
     where
       aas = fromAssignment Assignment.aspects Assignment.emptyAspects pd
+      currentEvaluationType = fromAssignment Assignment.evType binaryConfig pd
 
       editOrReadOnly = pageDataCata
         (const5 id)
@@ -383,17 +386,19 @@ newAssignmentContent pd = do
                 , (zipSubmission, fromString . msg $ msg_NewAssignment_ZipSubmission "Zip file")
                 ]
 
-        let submissionTypeText =
-              Assignment.submissionType
-                (fromString . msg $ msg_NewAssignment_TextSubmission "Text")
-                (fromString . msg $ msg_NewAssignment_ZipSubmission "Zip file")
-                  . Assignment.aspectsToSubmissionType . Assignment.aspects
+        let showSubmissionType s =
+              Bootstrap.readOnlyTextInputWithDefault ""
+                (msg $ msg_NewAssignment_SubmissionType "Submission Type")
+                (Assignment.submissionType
+                  (fromString . msg $ msg_NewAssignment_TextSubmission "Text")
+                  (fromString . msg $ msg_NewAssignment_ZipSubmission "Zip file")
+                  (Assignment.aspectsToSubmissionType $ Assignment.aspects s))
 
         pageDataCata
           (const5 submissionTypeSelection)
           (const5 submissionTypeSelection)
           (const7 submissionTypeSelection)
-          (\_timezone _key asg _tsInfo _testcase -> submissionTypeText asg)
+          (\_timezone _key asg _tsInfo _testcase -> showSubmissionType asg)
           (const7 submissionTypeSelection)
           (const7 submissionTypeSelection)
           (const8 submissionTypeSelection)
@@ -630,14 +635,12 @@ newAssignmentContent pd = do
         (\_tz _t (key,_group)  _tsType _fs _a _tc -> newGroupAssignment key)
         (\_tz k _a _fs _ts _tc _tm _ev -> modifyAssignment k)
 
-
-      -- Converts a given value to a string that represents a JSON acceptable string
-      -- for the Fay client side
-      toFayJSON = BsLazy.unpack . Aeson.encode . showToFay
-
-      showEvaluationType msg = H.div . H.pre . evConfigCata
-        (fromString . msg $ msg_NewAssignment_BinaryEvaluation "Binary Evaluation")
-        (const . fromString . msg $ msg_NewAssignment_PercentageEvaluation "Percentage Evaluation")
+      showEvaluationType msg e =
+        Bootstrap.readOnlyTextInputWithDefault ""
+          (msg $ msg_NewAssignment_EvaluationType "Evaluation Type")
+          (evConfigCata
+            (fromString . msg $ msg_NewAssignment_BinaryEvaluation "Binary Evaluation")
+            (const . fromString . msg $ msg_NewAssignment_PercentageEvaluation "Percent") e)
 
       [txtSubmission, zipSubmission] = [Assignment.TextSubmission, Assignment.ZipSubmission]
 
@@ -659,13 +662,3 @@ newAssignmentContent pd = do
 
       -- Boostrap
       bootstrapCheckbox tag = H.div ! A.class_ "checkbox" $ H.label $ tag
-
-evaluationConfig :: String -> IHtml
-evaluationConfig n = do
-  msg <- getI18N
-  return $ selection n $ map (valueAndName msg) evaluationTypes
-  where
-    valueAndName msg e = (encodeEvalType e, msg $ name e)
-
-    name (BinEval ()) = msg_InputHandlers_BinEval "Binary"
-    name (PctEval ()) = msg_InputHandlers_PctEval "Percentage"
