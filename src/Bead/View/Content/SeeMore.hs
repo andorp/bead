@@ -44,7 +44,7 @@ seeMoreComment id_ i18n maxLength maxLines (badgeText, alert) content =
   in
   H.div ! A.class_ "panel panel-default" $ do
     H.div ! A.class_ "panel-heading" ! Bootstrap.role "tab" ! A.id (fromString headingId) $ do
-      H.p $ Bootstrap.badge badgeText
+      H.p $ badge badgeText
       H.pre # commentTextPre $ fromString preview
       when isLargeContent $ do
         H.a ! Bootstrap.dataToggle "collapse" ! A.href (fromString $ '#':id_)
