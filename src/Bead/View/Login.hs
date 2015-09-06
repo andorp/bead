@@ -8,6 +8,7 @@ module Bead.View.Login (
 
 import           Data.ByteString.Char8 hiding (index, putStrLn)
 import           Data.Char
+import           Data.Either (isLeft)
 import           Data.Maybe
 import qualified Data.Text as Text
 import           Prelude as P
@@ -76,9 +77,13 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
     (ldapUser username)
     lResult
   where
+    -- Looks up the user in the auth module
+    lookupUserInAuth username =
+      lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameCata Text.pack username)
+
     -- Looks up the user in the auth module and throws an error it the user is not found
     lookupUser username errorMsg = do
-      authUser <- lift $ withBackend $ \r -> liftIO $ lookupByLogin r (usernameCata Text.pack username)
+      authUser <- lookupUserInAuth username
       when (isNothing authUser) . throwError . strMsg $ errorMsg
       return $ fromJust authUser
 
@@ -108,33 +113,28 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
       -- Check if the user exist
       packedPwd <- pack <$> lift getRandomPassword
       let username = ldapUsername
+      let usernameStr = usernameCata id username
       let user role timezone lang = User role ldapUsername email name timezone lang uid
-      exist <- regStory (Story.doesUserExist username)
-      case exist of
-        False -> do
-          lift $ logMessage INFO $ join [usernameCata id ldapUsername, " registers."]
+      existInDB <- regStory (Story.doesUserExist username)
+      snapAuthUser <- lookupUserInAuth username
+      case (existInDB, snapAuthUser) of
+        (False, Nothing) -> void $ do
           -- If the user does not exist, create a user with the given profile related informations
           -- Registers the user in the Snap authentication module
-          result <- lift $ createUser (usernameCata Text.pack ldapUsername) packedPwd
-          case result of
-            Left err -> throwError . strMsg $ show err
-            Right _auth -> return ()
-          -- Check if the Snap Auth registration went fine
-          i18n <- lift i18nH
-          snapAuthUser <- lookupUser username $
-            printf (i18n $ msg_Login_Error_NoSnapCache "User %s could not be cached by Snap")
-                   (usernameCata id username)
-          when (isNothing . passwordFromAuthUser $ snapAuthUser) . throwError . strMsg $ "No password is created in the Snap Auth module"
-          let snapAuthPwd = fromJust . passwordFromAuthUser $ snapAuthUser
-          -- Creates the user in the persistence layer
-          timezone <- fmap getTimeZone $ lift getConfiguration
-          lang <- fmap (fromMaybe (Language "en")) $ lift languageFromSession
-          _ <- regStory (Story.createUser $ user Student timezone lang)
-          return ()
-          where
-            getTimeZone = TimeZoneName . Config.defaultRegistrationTimezone
+          lift $ logMessage INFO $ join [usernameStr, " has no registration in DB neither in Auth. Registration started."]
+          createUserInAuth ldapUsername packedPwd
+          createUserInPersist user
 
-        True -> do
+        (False, Just authUser) -> void $ do
+          lift $ logMessage INFO $ join [usernameStr, " has no registration in DB."]
+          createUserInPersist user
+
+        (True, Nothing) -> void $ do
+          lift $ logMessage INFO $ join [usernameStr, " has no registration in Auth."]
+          createUserInAuth username packedPwd
+
+        (True, Just authUser) -> void $ do
+          lift $ logMessage INFO $ join [usernameStr, " has registration in Auth and DB."]
           -- If the user exists update its profile and password
           i18n <- lift i18nH
           authUser <- lookupUser username $
@@ -143,8 +143,7 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           authUser <- lift $ liftIO $ Auth.setPassword authUser packedPwd
           saveUser authUser
           beadUser <- regStory (Story.loadUser username)
-          _ <- regStory $ Story.updateUser $ user (u_role beadUser) (u_timezone beadUser) (u_language beadUser)
-          return ()
+          regStory $ Story.updateUser $ user (u_role beadUser) (u_timezone beadUser) (u_language beadUser)
 
       beadLogin username
 
@@ -178,6 +177,31 @@ loginSubmit = withTop auth $ handleError $ runErrorT $ do
           initSessionValues (page userState) username (u_language user)
           commitSessionTop
           redirect "/"
+
+    -- Creates user in persistent with the default timezone and language
+    -- from the session
+    createUserInPersist user = do
+      timezone <- fmap getTimeZone $ lift getConfiguration
+      lang <- fmap (fromMaybe (Language "en")) $ lift languageFromSession
+      let userToCreate = user Student timezone lang
+      regStory (Story.createUser $ user Student timezone lang)
+      let usernameStr = usernameCata id $ u_username userToCreate
+      lift $ logMessage INFO $ join [usernameStr, " is registered in persistent."]
+      where
+        getTimeZone = TimeZoneName . Config.defaultRegistrationTimezone
+
+    -- Create user in Snap auth, checks if the password was
+    -- set correctly
+    createUserInAuth username pwd = do
+      result <- lift $ createUser (usernameCata Text.pack username) pwd
+      when (isLeft result) . throwError . strMsg . show $ fromLeft result
+      i18n <- lift i18nH
+      snapAuthUser <- lookupUser username $
+        printf (i18n $ msg_Login_Error_NoSnapCache "User %s could not be cached by Snap")
+               (usernameCata id username)
+      when (isNothing . passwordFromAuthUser $ snapAuthUser) . throwError . strMsg $ "No password is created in the Snap Auth module"
+      let usernameStr = usernameCata id username
+      lift $ logMessage INFO $ join [usernameStr, " is registered in Auth."]
 
     -- Checks if the result of a story is failure, in the case of failure
     -- it throws an exception, otherwise lift's the result into the monadic
@@ -272,3 +296,6 @@ changeLanguage = method GET setLanguage <|> method POST (redirect "/") where
                 commitSessionTop)
       elang
     redirect "/"
+
+fromLeft :: Either a b -> a
+fromLeft (Left x) = x
