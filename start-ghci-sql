@@ -1,4 +1,0 @@
-#!/bin/sh
-
-ghci -isrc -itest -isnaplets/fay/src -DGHCI -DEmailEnabled -DTEST -DMYSQL -fwarn-unused-imports -fwarn-incomplete-patterns -fwarn-unused-matches -package ghc -package ghc-paths
-

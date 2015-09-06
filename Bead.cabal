@@ -55,7 +55,7 @@ Flag Tests
 
 Flag MySQL
   Description:  Enable MySQL persistent layer
-  Default:      False
+  Default:      True
 
 Flag SSO
   Description:  Enable authentication with Single Sign-On
