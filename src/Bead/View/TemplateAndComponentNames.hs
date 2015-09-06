@@ -240,9 +240,15 @@ data EvaluationField
   = EvaluationValueField { evFieldName :: String }
   | EvaluationStateField { evFieldName :: String }
   | EvaluationKeyField   { evFieldName :: String }
+  | EvaluationConfigField { evFieldName :: String }
+  | EvaluationPercentageField { evFieldName :: String }
+  | EvaluationCommentOnlyField { evFieldName :: String }
 
 evaluationValueField = EvaluationValueField "evaluation"
 evaluationKeyField   = EvaluationKeyField "evaluation-key"
+evaluationConfigField = EvaluationConfigField "evaluation-config"
+evaluationPercentageField = EvaluationPercentageField "evaluation-percentage"
+evaluationCommentOnlyField = EvaluationCommentOnlyField "evaluation-comment-only"
 
 instance SnapFieldName EvaluationField where
   fieldName = fromString . evFieldName

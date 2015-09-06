@@ -61,6 +61,12 @@ requestParameter p x = parameterFold createValue p
   where
     createValue encode _ name _ _ = ReqParam (name, encode x)
 
+mapParameter :: (b -> a) -> (a -> b) -> Parameter a -> Parameter b
+mapParameter f g param = param {
+    encode = encode param . f
+  , decode = fmap g . decode param
+  }
+
 stringParameter :: String -> String -> Parameter String
 stringParameter fieldName paramName = Parameter {
     encode = id
@@ -156,10 +162,13 @@ jsonParameter field name = Parameter {
   }
 
 evalConfigPrm :: EvaluationHook -> Parameter EvConfig
-evalConfigPrm hook = Parameter {
+evalConfigPrm = evalConfigParameter . evHiddenValueId
+
+evalConfigParameter :: String -> Parameter EvConfig
+evalConfigParameter field = Parameter {
     encode = fromMaybe "evalConfigPrm: encodeToFay has failed" . encodeToFay
   , decode = readEvalConfig
-  , name   = evHiddenValueId hook
+  , name   = field
   , decodeError = \m -> printf "Invalid evaluation type: %s" m
   , notFound    = "The given evaluation type could not be found."
   }
@@ -176,6 +185,13 @@ evalConfigPrm hook = Parameter {
            | 0 > x || x > 1 = error $ "Invalid percentage value:" ++ show x
            | otherwise = x
 
+evaluationPercentagePrm :: String -> Parameter Int
+evaluationPercentagePrm field =
+  mapParameter show read $ stringParameter field "Evaluation percentage"
+
+evaluationCommentOnlyPrm :: String -> Parameter Bool
+evaluationCommentOnlyPrm field =
+  mapParameter show read $ stringParameter field "Evaluation comment only"
 
 #ifdef TEST
 

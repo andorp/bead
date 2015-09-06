@@ -350,6 +350,9 @@ colMd size offset =
 -- | Creates a bootstrap 12 column
 colMd12 = H.div ! class_ "col-md-12"
 
+-- | Creates a bootstrap 4 width column
+colMd4 = H.div ! class_ "col-md-4"
+
 -- | Creates a bootstrap 6 width column
 colMd6 = H.div ! class_ "col-md-6"
 
