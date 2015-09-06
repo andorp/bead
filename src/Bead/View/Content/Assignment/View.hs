@@ -48,6 +48,7 @@ newAssignmentContent pd = do
           let e = Assignment.evType asg
           showEvaluationType msg e
           fromString . msg $ msg_NewAssignment_EvalTypeWarn "The evaluation type can not be modified, there is a submission for the assignment."
+          hiddenInput (evHiddenValueId hook) (encodeToFay' "selection" e)
     pageDataCata
       (const5 evaluationTypeSelection)
       (const5 evaluationTypeSelection)

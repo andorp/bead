@@ -142,7 +142,7 @@ inputEvalResult :: EvConfig -> IHtml
 inputEvalResult ev@(EvConfig (BinEval _cfg)) = do
   msg <- getI18N
   return $ do
-    hiddenInput (fieldName evaluationConfigField) (fromString $ show ev)
+    hiddenInput (fieldName evaluationConfigField) (encodeToFay' "inputEvalType" ev)
     Bootstrap.radioButtonGroup (fieldName evaluationResultField) $
       [ (True,  encodeToFay' "inputEvalResult" EvCmtComment   , msg $ msg_Evaluation_New_Comment "New Comment")
       , (False, encodeToFay' "inputEvalResult" $ binary Passed, msg $ msg_Evaluation_Accepted "Accepted")

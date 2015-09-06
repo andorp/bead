@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Content.SeeMore where
 
+import           Control.Monad (when)
 import           Data.String
 
 import           Text.Blaze.Html5 (Html, (!))
