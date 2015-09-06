@@ -13,9 +13,8 @@ RUN apt-get update && \
     add-apt-repository -y ppa:hvr/ghc && \
     apt-get update && \
     apt-get install -y cabal-install-1.18 ghc-7.8.3 cpphs && \
-    apt-get install -y libpcre3 libpcre3-dev && \
-    apt-get install -y libmysqlclient-dev && \
-    apt-get install -y mysql-server && \
+    apt-get install -y libpcre3 libpcre3-dev mysql-server \
+                       libmysqlclient-dev screen && \
     service mysql start && \
     mysqladmin -u root password password
 ENV PATH /opt/ghc/7.8.3/bin:/opt/cabal/1.18/bin:$PATH
