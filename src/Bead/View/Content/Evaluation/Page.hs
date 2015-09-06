@@ -201,7 +201,7 @@ evaluationContent pd = do
             "The submission may be downloaded as a plain text file by clicking on the link."
           downloadSubmissionButton
           H.br
-          H.div # submissionTextDiv $ seeMorePre msg maxLength maxLines (eSolution sd)
+          H.div # submissionTextDiv $ seeMoreSubmission "submission-text-" msg maxLength maxLines (eSolution sd)
 
     Bootstrap.row $ Bootstrap.colMd12 $
       postForm (routeOf . evPage $ maybeEvalKey) $ do
@@ -218,8 +218,7 @@ evaluationContent pd = do
       Bootstrap.row $ Bootstrap.colMd12 $
         H.h2 (fromString . msg $ msg_Comments_Title "Comments")
       -- Renders the comment area where the user can place a comment
-      Bootstrap.row $ Bootstrap.colMd12 $ hr
-      i18n msg $ commentsDiv tc comments
+      i18n msg $ commentsDiv "evaluation-comments-" tc comments
 
   where
     evaluationDiv = withEvaluationData
@@ -233,6 +232,6 @@ evaluationContent pd = do
     evPage (Just ek) = Pages.modifyEvaluation submissionKey ek ()
     evPage Nothing   = Pages.evaluation submissionKey ()
 
-    maxLength = 100
-    maxLines  = 5
+    maxLength = 2048
+    maxLines  = 100
 

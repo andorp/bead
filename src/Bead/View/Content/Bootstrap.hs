@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Content.Bootstrap where
 
@@ -104,6 +105,11 @@ listGroupTextItem text = H.a ! href "#" ! class_ "list-group-item" $ fromString 
 
 -- | Creates a badge that can be displayed in the list group
 badge text = H.span ! class_ "badge" $ fromString text
+
+-- | Creates a badge with alert coloring
+badgeAlert alert text = H.span ! class_ (fromString $ "badge alert-" ++ a) $ fromString text where
+  a = alertAlgebra "success" "info" "warning" "danger" alert
+
 
 -- | Creates a caret sign
 caret = H.span ! class_ "caret" $ mempty
@@ -359,6 +365,22 @@ pageHeader = H.div ! class_ "page-header"
 -- | Creates a bootstrap table
 table = H.table ! class_ "table table-bordered table-condensed table-hover table-striped"
 
+-- Alerts
+
+data Alert = Success | Info | Warning | Danger
+  deriving (Eq, Show)
+
+alertAlgebra
+  success
+  info
+  warning
+  danger
+  = \case
+    Success -> success
+    Info    -> info
+    Warning -> warning
+    Danger  -> danger
+
 -- HTML helpers
 
 optionTag :: String -> String -> Bool -> Html
@@ -398,21 +420,6 @@ selectionOptionalPart name attrs def = foldl (!) (selectOptionalTag name) attrs 
 panelGroup =
   H.div ! A.class_ "panel-group" ! role "tablist"
 
--- | Creates a paned with a given id, a header text, and a body
-panel collapsed id_ header_ body_ =
-  let headingId = "heading" ++ id_
-      collapseClass = if collapsed then "panel-collapse collapse in"
-                                   else "panel-collapse collapse"
-  in
-  H.div ! A.class_ "panel panel-default" $ do
-    H.div ! A.class_ "panel-heading" ! role "tab" ! A.id (fromString headingId) $
-      H.h4 ! A.class_ "panel-title" $
-        H.a ! dataToggle "collapse" ! A.href (fromString $ '#':id_)
-            ! ariaExpanded "true" ! ariaControls (fromString id_) $ fromString header_
-    H.div ! A.id (fromString id_) ! A.class_ (fromString collapseClass)
-          ! role "tabpanel" ! ariaLabelledBy (fromString headingId) $
-      H.div ! A.class_ "panel-body" $ body_
-
 -- Attributes
 
 ariaExpanded = customAttribute "aria-expanded"
@@ -427,9 +434,13 @@ dataToggle = customAttribute "data-toggle"
 
 dataPlacement = customAttribute "data-placement"
 
+dataParend = customAttribute "data-parent"
+
 formControl = class_ "form-control"
 
 role = customAttribute "role"
+
+areaMultiselectable = customAttribute "aria-multiselectable"
 
 -- | Adds a tooltip to a given HTML tag
 tooltip = dataToggle "tooltip"
