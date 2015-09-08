@@ -16,6 +16,9 @@ module Bead.View.Dictionary (
   , dictionaryFileToInfo -- Reads out the icon file name
   , idDictionary
   , (<|)
+  , defaultLanguage
+  , defaultDictionary
+  , defaultDictionaryInfo
   ) where
 
 -- Haskell imports
@@ -76,6 +79,20 @@ dictionaryFileCata f (DictionaryFile iconFile langCode langName entries) =
 
 (<|) :: (String -> Translation String) -> String -> Translation String
 (<|) = ($)
+
+defaultLanguage = "en"
+
+defaultDictionaryInfo = DictionaryInfo {
+    icon         = "en.ico"
+  , languageName = "English"
+  }
+
+defaultDictionary = DictionaryFile {
+    iconFile = icon defaultDictionaryInfo
+  , langCode = defaultLanguage
+  , langName = languageName defaultDictionaryInfo
+  , entries  = []
+  }
 
 -- Creates a new dictionary from the entries of the dictionary file,
 -- if no translation key is found in the entries, the original value

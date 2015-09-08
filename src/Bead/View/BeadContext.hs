@@ -97,7 +97,8 @@ dictionarySnaplet d l = makeSnapContext
   ((addDefault d), l)
   where
     -- The source code contains english comments by default
-    addDefault = Map.insert (Language "en") (idDictionary, DictionaryInfo "en.ico" "English")
+    addDefault = Map.insertWith (\_new old -> old) (Language defaultLanguage)
+      (idDictionary, defaultDictionaryInfo)
 
 -- A dictionary infos is a list that contains the language of and information
 -- about the dictionaries contained by the DictionarySnaplet
