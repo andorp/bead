@@ -38,8 +38,13 @@ import           Test.Tasty.TestSet
 -- preceded by some sanity checks.
 patchDictionaries :: [(FilePath, DictionaryFile)] -> Either String Dictionaries
 patchDictionaries dfs =
-  let dfiles = [ (path, d) | (path, d@(DictionaryFile {})) <- dfs ] in
-  let pfiles = [ (path, p) | (path, p@(DictionaryPatchFile {})) <- dfs ] in
+  -- Pull the default dictionary in if it is tried to be patched.
+  let defDict = ("default", defaultDictionary) in
+  let defLang = lang defaultDictionary in
+  let dfs' | defLang `elem` ((lang . snd) <$> dfs) = defDict : dfs
+           | otherwise                             = dfs in
+  let dfiles = [ (path, d) | (path, d@(DictionaryFile {})) <- dfs' ] in
+  let pfiles = [ (path, p) | (path, p@(DictionaryPatchFile {})) <- dfs' ] in
   let repeatedLangs = repeated [ (path, langCode d) | (path, d) <- dfiles ] in
   let allEntries = concat [ map (\e -> (path, lang p, e)) (entries p) | (path, p) <- pfiles ] in
   let overlappingPatches = overlapping allEntries in
@@ -97,7 +102,7 @@ patchDictionaries dfs =
                 (\d -> foldr patch d patches)  >>>
                 Map.toList >>> map T
 
-              patch p = Map.adjust (const $ trans p) (tid p)
+              patch p = Map.insert (tid p) (trans p)
 
 -- Reads up all the dictionary files from a given directory and passes them for
 -- patching the dictionaries (if needed).
