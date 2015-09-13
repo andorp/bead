@@ -35,7 +35,7 @@ COPY "./docker/container-script/dev-env-setup.sh" "/development/init/dev-env-set
 RUN apt-get install -y zlib1g-dev libncurses5-dev && \
     cd development/init && \
     cabal update && \
-    cabal install -j2 --only-dependencies
+    cabal install -j1 --only-dependencies --reorder-goals
 
 # Directory for sources
 VOLUME "/development/bead"
