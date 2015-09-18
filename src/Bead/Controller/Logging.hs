@@ -16,3 +16,7 @@ mockLogger = Logger {
     log = \_ msg -> putStrLn msg
   }
 
+-- | Logger that does not log anything
+nullLogger = Logger {
+    log = \_ _ -> return ()
+  }
