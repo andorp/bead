@@ -6,3 +6,6 @@ cabal-dev
 *.chs.h
 .virthualenv
 Test.tix
+.cabal-sandbox*
+cabal.sandbox*
+TAGS
