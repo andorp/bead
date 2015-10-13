@@ -88,7 +88,7 @@ data AssignmentDesc = AssignmentDesc {
   , aTeachers :: [String]
   -- DeadLine for the assignment in UTC
   , aEndDate  :: UTCTime
-  } deriving (Eq, Ord)
+  } deriving (Eq, Ord, Show)
 
 assignmentDescPermissions = ObjectPermissions [
     (P_Open, P_Assignment), (P_Open, P_Course)
@@ -219,7 +219,7 @@ data SubmissionInfo
     -- the tests.
   | Submission_Result EvaluationKey EvResult
     -- ^ There is at least submission with the evaluation.
-  deriving (Show)
+  deriving (Eq, Show)
 
 submissionInfoCata
   notFound

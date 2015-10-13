@@ -26,84 +26,8 @@ import           Test.HUnit hiding (Test(..), test)
 import           Test.Tasty.HUnit (testCase)
 import           Test.Tasty.TestSet
 
-errorLogger = Logger {
-    log = \e msg -> case e of
-      ERROR -> error msg
-      _     -> return ()
-  }
+import           Test.Model.UserStory
 
-context :: IO ServiceContext
-context = do
-  container <- ioUserContainer
-  interp <- createPersistInterpreter defaultConfig
-  serviceContext container errorLogger interp
-
-adminUserState = UserState {
-    user = Username "admin"
-  , page = P.home ()
-  , name = "Admin"
-  , role = E.Admin
-  , token = "token"
-  , timezone = utcZoneInfo
-  , status = Nothing
-  , uid = Uid "admin"
-  }
-
-student = User {
-    u_role = E.Student
-  , u_username = (Username "student")
-  , u_email = Email "student@university.com"
-  , u_name = "Stu Dent"
-  , u_timezone = utcZoneInfo
-  , u_language = Language "hu"
-  , u_uid = Uid "student"
-  }
-
-student2 = User {
-    u_role = E.Student
-  , u_username = (Username "student2")
-  , u_email = Email "student@university.com"
-  , u_name = "Stu Dent"
-  , u_timezone = utcZoneInfo
-  , u_language = Language "hu"
-  , u_uid = Uid "student"
-  }
-
-
-adminUser = User {
-    u_role = E.Admin
-  , u_username = (Username "admin")
-  , u_email = Email "admin@university.com"
-  , u_name = "Admin"
-  , u_timezone = utcZoneInfo
-  , u_language = Language "hu"
-  , u_uid = Uid "admin"
-  }
-
-groupAdminUser = User {
-    u_role = E.GroupAdmin
-  , u_username = Username "groupadmin"
-  , u_email = Email "groupadmin@university.com"
-  , u_name = "Group Admin"
-  , u_timezone = utcZoneInfo
-  , u_language = Language "hu"
-  , u_uid = Uid "groupadmin"
-  }
-
--- * Test Tooles
-
-runStory c u s = do
-  e <- runUserStory c trans u s
-  case e of
-    Left ue -> error $ show ue
-    Right a -> return a
-
-assertUserState :: UserState -> User -> IO ()
-assertUserState UserNotLoggedIn _ = error "User is not logged in"
-assertUserState state usr = do
-  assertBool "Invalid user is logged in" $ (user state) == (u_username usr)
-  assertBool "Invalid person name: "     $ (name state) == (u_name usr)
-  assertBool "Invalid role was loaded"   $ (role state) == (u_role usr)
 
 -- * Tests
 
@@ -118,13 +42,11 @@ tests = group "User Stories" $ do
 #endif
   test cleanUpPersist
 
-initPersist = testCase "Initalizing persistence layer" $ do
-  init <- createPersistInit defaultConfig
-  setUp <- PersistInit.isSetUp init
-  when setUp $ PersistInit.tearDown init
-  PersistInit.initPersist init
-  setUp <- PersistInit.isSetUp init
-  assertBool "Setting up persistence was failed" setUp
+initPersist = testCase "Initalizing persistence layer" $
+  Test.Model.UserStory.initPersistent
+
+cleanUpPersist = testCase "Cleaning up persistence" $
+  Test.Model.UserStory.cleanUpPersistent
 
 #ifndef SSO
 saveAndLoadUserReg = testCase "Save and load user reg data" $ do
@@ -135,10 +57,6 @@ saveAndLoadUserReg = testCase "Save and load user reg data" $ do
   (u', Registration)  <- runStory c Registration $ U.loadUserReg key
   assertBool "Saved and load user registration differs" (u' == u)
 #endif
-
-cleanUpPersist = testCase "Cleaning up persistence" $ do
-  init <- createPersistInit defaultConfig
-  PersistInit.tearDown init
 
 register = testCase "User registration" $ do
   c <- context
