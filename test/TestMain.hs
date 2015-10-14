@@ -7,12 +7,14 @@ import qualified Test.Unit.Module
 import qualified Test.Unit.Persistence
 import qualified Test.Unit.UserStory
 import qualified Test.Property.Persistence
+import qualified Test.Regression.UserStory
 
 main = do
   Test.Tasty.defaultMain $ buildTestTree "" $ do
     Test.Unit.Module.tests
     Test.Unit.Persistence.tests
     Test.Unit.UserStory.tests
+    Test.Regression.UserStory.tests
     Test.Property.Persistence.tests
 
 {-
