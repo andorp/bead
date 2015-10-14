@@ -19,7 +19,7 @@ tests = do
   test $ submissionTestInfoChanges
   test $ testCase "Clean up persistent" $ Test.Model.UserStory.cleanUpPersistent
 
-submissionTestInfoChanges = testCase "Submission test information is not changed" $ do
+submissionTestInfoChanges = testCase "Submission test information changes correctly" $ do
   now <- getCurrentTime
   let end = addUTCTime 3600 now
   let c1  = E.Course "FP" "FP-DESC" TestScriptSimple

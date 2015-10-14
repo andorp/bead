@@ -492,8 +492,11 @@ submissionInfo sk = do
       return . maybe
         Submission_Unevaluated
         Submission_Tested
-          $ feedbackTestResult =<< find isTestedFeedback fs
+          $ feedbackTestResult =<< lastTestAgentFeedback fs
     Just ek -> (Submission_Result ek . evaluationResult) <$> loadEvaluation ek
+  where
+    lastTestAgentFeedback = find isTestedFeedback . reverse . sortBy createdDate
+    createdDate = compare `on` postDate
 
 -- Produces information of the last submission for the given user and assignment
 userLastSubmissionInfo :: Username -> AssignmentKey -> Persist SubmissionInfo
