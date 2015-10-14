@@ -1100,7 +1100,7 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
               logMessage INFO . violation $ printf "The user tries to comment on a submission (%s) that not belongs to him" (show sk)
               errorPage . userError $ msg_UserStoryError_NonCommentableSubmission "The submission is not commentable"
 
--- #ifdef TEST
+#ifdef TEST
 -- Insert test feedback with the TestAgent only for testing purposes.
 insertTestFeedback :: SubmissionKey -> FeedbackInfo -> UserStory ()
 insertTestFeedback sk fb = do
@@ -1108,7 +1108,7 @@ insertTestFeedback sk fb = do
   persistence $ do
     Persist.insertTestFeedback sk fb
     Persist.finalizeTestFeedback sk
--- #endif
+#endif
 
 -- Test agent user story, that reads out all the feedbacks that the test daemon left
 -- and saves them
