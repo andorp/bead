@@ -112,17 +112,19 @@ userStory username story = do
   (_, _) <- lift $ runStory c state2 logout
   return value
 
--- Runs a UserStory computation in the given context with admin user
-adminStory story = do
+runStoryWithState state story = do
   c <- ask
-  (value, _) <- lift $ runStory c adminUserState story
+  (value, _) <- lift $ runStory c state story
   return value
 
+-- Runs a UserStory computation in the given context with admin user
+adminStory = runStoryWithState adminUserState
+
 -- Runs a UserStory computation in the given context with TestAgent user
-testAgentStory story = do
-  c <- ask
-  (value, _) <- lift $ runStory c TestAgent story
-  return value
+testAgentStory = runStoryWithState TestAgent
+
+-- Runs a UserStory computation in the given context with Registration user
+registrationStory = runStoryWithState Registration
 
 assertUserState :: UserState -> User -> IO ()
 assertUserState UserNotLoggedIn _ = error "User is not logged in"
