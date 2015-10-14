@@ -14,7 +14,7 @@ import           Test.Tasty.TestSet
 
 import           Test.Model.UserStory
 
-tests = do
+tests = group "User Story regressions" $ do
   test $ testCase "Init persistent" $ Test.Model.UserStory.initPersistent
   test $ submissionTestInfoChanges
   test $ testCase "Clean up persistent" $ Test.Model.UserStory.cleanUpPersistent
