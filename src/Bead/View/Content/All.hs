@@ -30,6 +30,7 @@ import Bead.View.Content.SetUserPassword.Page
 import Bead.View.Content.NewTestScript.Page
 import Bead.View.Content.UploadFile.Page
 import Bead.View.Content.GetSubmission
+import Bead.View.Content.Assessment.Page
 
 #ifdef TEST
 import Test.Tasty.TestSet
@@ -75,6 +76,11 @@ pageContent = Pages.constantsP
   deleteUsersFromGroup
   unsubscribeFromCourse
   getSubmission
+  newGroupAssessment
+  newCourseAssessment
+  fillGroupAssessmentPreview
+  fillCourseAssessmentPreview
+  viewAssessment
   where
     -- Returns an empty handler that computes an empty I18N Html monadic value
     nullViewHandler = ViewHandler (return (return (return ())))

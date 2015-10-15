@@ -347,6 +347,11 @@ routeToPageMap = Map.fromList [
   , (deleteUsersFromGroupPath , \ps -> P.deleteUsersFromGroup <$> groupKey ps <*> unit)
   , (unsubscribeFromCoursePath , \ps -> P.unsubscribeFromCourse <$> groupKey ps <*> unit)
   , (getSubmissionPath, \ps -> P.getSubmission <$> submissionKey ps <*> unit)
+  , (newGroupAssessmentPath, \ps -> P.newGroupAssessment <$> groupKey ps <*> unit)
+  , (newCourseAssessmentPath, \ps -> P.newCourseAssessment <$> courseKey ps <*> unit)
+  , (fillGroupAssessmentPreviewPath, \ps -> P.fillGroupAssessmentPreview <$> groupKey ps <*> unit)
+  , (fillCourseAssessmentPreviewPath, \ps -> P.fillCourseAssessmentPreview <$> courseKey ps <*> unit)
+  , (viewAssessmentPath, \ps -> P.viewAssessment <$> assessmentKey ps <*> unit)
   ] where
       j = const . Just
       unit = return ()
@@ -357,6 +362,7 @@ routeToPageMap = Map.fromList [
       submissionKey = fmap (SubmissionKey . unpack) . value submissionKeyParamName
       evaluationKey = fmap (EvaluationKey . unpack) . value evaluationKeyParamName
       testScriptKey = fmap (TestScriptKey . unpack) . value testScriptKeyParamName
+      assessmentKey = fmap (AssessmentKey . unpack) . value assessmentKeyParamName
 
       -- Returns Just x if only one x corresponds to the key in the request params
       -- otherwise Nothing

@@ -27,6 +27,7 @@ data ViewPage a
   | UserSubmissions a
   | Administration a
   | CourseAdmin a
+  | ViewAssessment AssessmentKey a
   deriving (Eq, Ord, Show, Functor)
 
 viewPageCata
@@ -40,6 +41,7 @@ viewPageCata
   userSubmissions
   administration
   courseAdmin
+  viewAssessment
   p = case p of
     Login a -> login a
     Logout a -> logout a
@@ -51,6 +53,7 @@ viewPageCata
     UserSubmissions a -> userSubmissions a
     Administration a -> administration a
     CourseAdmin a -> courseAdmin a
+    ViewAssessment ak a -> viewAssessment ak a
 
 viewPageValue :: ViewPage a -> a
 viewPageValue = viewPageCata
@@ -64,6 +67,7 @@ viewPageValue = viewPageCata
   id -- userSubmissions
   id -- administration
   id -- courseAdmin
+  cid -- viewAssessment
   where
     cid = const id
 
@@ -89,22 +93,30 @@ data UserViewPage a
   = NewGroupAssignmentPreview GroupKey a
   | NewCourseAssignmentPreview CourseKey a
   | ModifyAssignmentPreview AssignmentKey a
+  | FillGroupAssessmentPreview GroupKey a
+  | FillCourseAssessmentPreview CourseKey a
   deriving (Eq, Ord, Show, Functor)
 
 userViewPageCata
   newGroupAssignmentPreview
   newCourseAssignmentPreview
   modifyAssignmentPreview
+  fillGroupAssessmentPreview
+  fillCourseAssessmentPreview
   p = case p of
     NewGroupAssignmentPreview gk a -> newGroupAssignmentPreview gk a
     NewCourseAssignmentPreview ck a -> newCourseAssignmentPreview ck a
     ModifyAssignmentPreview ak a -> modifyAssignmentPreview ak a
+    FillGroupAssessmentPreview gk a -> fillGroupAssessmentPreview gk a
+    FillCourseAssessmentPreview ck a -> fillCourseAssessmentPreview ck a
 
 userViewPageValue :: UserViewPage a -> a
 userViewPageValue = userViewPageCata
   cid -- newGroupAssignmentPreview
   cid -- newCourseAssignmentPreview
   cid -- modifyAssignmentPreview
+  cid -- fillGroupAssessmentPreview
+  cid -- fillCourseAssessmentPreview
   where
     cid = const id
 
@@ -128,6 +140,8 @@ data ViewModifyPage a
 #endif
   | SubmissionDetails AssignmentKey SubmissionKey a
   | Submission a
+  | NewGroupAssessment GroupKey a
+  | NewCourseAssessment CourseKey a
   deriving (Eq, Ord, Show, Functor)
 
 viewModifyPageCata
@@ -147,6 +161,8 @@ viewModifyPageCata
 #endif
   submissionDetails
   submission
+  newGroupAssessment
+  newCourseAssessment
   p = case p of
     Profile a -> profile a
     Evaluation sk a -> evaluation sk a
@@ -164,6 +180,8 @@ viewModifyPageCata
 #endif
     SubmissionDetails ak sk a -> submissionDetails ak sk a
     Submission a -> submission a
+    NewGroupAssessment gk a -> newGroupAssessment gk a
+    NewCourseAssessment ck a -> newCourseAssessment ck a
 
 viewModifyPageValue :: ViewModifyPage a -> a
 viewModifyPageValue = viewModifyPageCata
@@ -183,6 +201,8 @@ viewModifyPageValue = viewModifyPageCata
 #endif
   c2id -- submissionDetails
   id -- submission
+  cid -- newGroupAssessment
+  cid -- newCourseAssessment
   where
     cid = const id
     c2id = const . cid
@@ -293,11 +313,15 @@ submissionList          = View . SubmissionList
 userSubmissions         = View . UserSubmissions
 administration          = View . Administration
 courseAdmin             = View . CourseAdmin
+viewAssessment ak       = View . ViewAssessment ak
+
 getSubmission sk        = Data . GetSubmission sk
 
 newGroupAssignmentPreview gk  = UserView . NewGroupAssignmentPreview gk
 newCourseAssignmentPreview ck = UserView . NewCourseAssignmentPreview ck
 modifyAssignmentPreview ak    = UserView . ModifyAssignmentPreview ak
+fillCourseAssessmentPreview ck = UserView . FillCourseAssessmentPreview ck
+fillGroupAssessmentPreview gk  = UserView . FillGroupAssessmentPreview gk
 
 profile                = ViewModify . Profile
 evaluation sk          = ViewModify . Evaluation sk
@@ -315,6 +339,8 @@ setUserPassword        = ViewModify . SetUserPassword
 #endif
 submissionDetails ak sk = ViewModify . SubmissionDetails ak sk
 submission              = ViewModify . Submission
+newCourseAssessment ck  = ViewModify . NewCourseAssessment ck
+newGroupAssessment gk   = ViewModify . NewGroupAssessment gk
 
 createCourse      = Modify . CreateCourse
 createGroup       = Modify . CreateGroup
@@ -365,6 +391,11 @@ pageCata
   deleteUsersFromGroup
   unsubscribeFromCourse
   getSubmission
+  newGroupAssessment
+  newCourseAssessment
+  fillGroupAssessmentPreview
+  fillCourseAssessmentPreview
+  viewAssessment
   p = case p of
     (View (Login a)) -> login a
     (View (Logout a)) -> logout a
@@ -404,6 +435,11 @@ pageCata
     (Modify (DeleteUsersFromGroup gk a)) -> deleteUsersFromGroup gk a
     (Modify (UnsubscribeFromCourse gk a)) -> unsubscribeFromCourse gk a
     (Data (GetSubmission sk a)) -> getSubmission sk a
+    (ViewModify (NewGroupAssessment gk a)) -> newGroupAssessment gk a
+    (ViewModify (NewCourseAssessment ck a)) -> newCourseAssessment ck a
+    (UserView (FillGroupAssessmentPreview gk a)) -> fillGroupAssessmentPreview gk a
+    (UserView (FillCourseAssessmentPreview ck a)) -> fillCourseAssessmentPreview ck a
+    (View (ViewAssessment ak a)) -> viewAssessment ak a
 
 -- Constants that attached each of the page constructor
 constantsP
@@ -445,6 +481,11 @@ constantsP
   deleteUsersFromGroup_
   unsubscribeFromCourse_
   getSubmission_
+  newGroupAssessment_
+  newCourseAssessment_
+  fillGroupAssessmentPreview_
+  fillCourseAssessmentPreview_
+  viewAssessment_
   = pageCata
       (c $ login login_)
       (c $ logout logout_)
@@ -484,6 +525,11 @@ constantsP
       (\gk _ -> deleteUsersFromGroup gk deleteUsersFromGroup_)
       (\gk _ -> unsubscribeFromCourse gk unsubscribeFromCourse_)
       (\sk _ -> getSubmission sk getSubmission_)
+      (\gk _ -> newGroupAssessment gk newGroupAssessment_)
+      (\ck _ -> newCourseAssessment ck newCourseAssessment_)
+      (\gk _ -> fillGroupAssessmentPreview gk fillGroupAssessmentPreview_)
+      (\ck _ -> fillCourseAssessmentPreview ck fillCourseAssessmentPreview_)
+      (\ak _ -> viewAssessment ak viewAssessment_)
   where
     c = const
 
@@ -527,6 +573,11 @@ liftsP
   deleteUsersFromGroup_
   unsubscribeFromCourse_
   getSubmission_
+  newGroupAssessment_
+  newCourseAssessment_
+  fillGroupAssessmentPreview_
+  fillCourseAssessmentPreview_
+  viewAssessment_
   = pageCata
       (login . login_)
       (logout . logout_)
@@ -566,6 +617,11 @@ liftsP
       (\gk a -> deleteUsersFromGroup gk (deleteUsersFromGroup_ gk a))
       (\gk a -> unsubscribeFromCourse gk (unsubscribeFromCourse_ gk a))
       (\sk a -> getSubmission sk (getSubmission_ sk a))
+      (\gk a -> newGroupAssessment gk (newGroupAssessment_ gk a))
+      (\ck a -> newCourseAssessment ck (newCourseAssessment_ ck a))
+      (\gk a -> fillGroupAssessmentPreview gk (fillGroupAssessmentPreview_ gk a))
+      (\ck a -> fillCourseAssessmentPreview ck (fillCourseAssessmentPreview_ ck a))
+      (\ak a -> viewAssessment ak (viewAssessment_ ak a))
 
 isLogin (View (Login _)) = True
 isLogin _ = False
@@ -677,6 +733,21 @@ isUnsubscribeFromCourse _ = False
 isGetSubmission (Data (GetSubmission _ _)) = True
 isGetSubmission _ = False
 
+isNewGroupAssessment (ViewModify (NewGroupAssessment _ _)) = True
+isNewGroupAssessment _ = False
+
+isNewCourseAssessment (ViewModify (NewCourseAssessment _ _)) = True
+isNewCourseAssessment _ = False
+
+isFillGroupAssessmentPreview (UserView (FillGroupAssessmentPreview _ _)) = True
+isFillGroupAssessmentPreview _ = False
+
+isFillCourseAssessmentPreview (UserView (FillCourseAssessmentPreview _ _)) = True
+isFillCourseAssessmentPreview _ = False
+
+isViewAssessment (View (ViewAssessment _ _)) = True
+isViewAssessment _ = False
+
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
 isPage :: [Page a b c d e -> Bool] -> Page a b c d e -> Bool
@@ -713,6 +784,9 @@ groupAdminPages = [
   , isSetUserPassword
 #endif
   , isUploadFile
+  , isNewGroupAssessment
+  , isFillGroupAssessmentPreview
+  , isViewAssessment
   ]
 
 courseAdminPages = [
@@ -737,6 +811,8 @@ courseAdminPages = [
   , isNewTestScript
   , isModifyTestScript
   , isUploadFile
+  , isNewCourseAssessment
+  , isFillCourseAssessmentPreview
   ]
 
 adminPages = [
@@ -835,6 +911,8 @@ parentPage = pageCata'
 #endif
       submissionDetails -- submissionDetails
       home           -- submission
+      (const home)   -- newGroupAssessment
+      (const home)   -- newCourseAssessment
 
     modifyParent = Just . modifyPageCata
       administration -- createCourse
@@ -842,9 +920,9 @@ parentPage = pageCata'
       administration -- assignCourseAdmin
       courseAdmin    -- assignGroupAdmin
       profile        -- changePassword
-      (const home)     -- deleteUsersFromCourse
-      (const home)     -- deleteUsersFromGroup
-      (const home)     -- unsubscribeFromCourse
+      (const home)   -- deleteUsersFromCourse
+      (const home)   -- deleteUsersFromGroup
+      (const home)   -- unsubscribeFromCourse
 
 #ifdef TEST
 
@@ -872,6 +950,7 @@ pageGen = oneof [
       courseKey     = CourseKey . showInt     <$> choose (1,5000)
       groupKey      = GroupKey . showInt      <$> choose (1,5000)
       testScriptKey = TestScriptKey . showInt <$> choose (1,5000)
+      assessmentKey = AssessmentKey . showInt <$> choose (1,5000)
 
       nonParametricPages = elements [
           login ()
@@ -915,6 +994,11 @@ pageGen = oneof [
         , newGroupAssignmentPreview <$> groupKey <*> unit
         , modifyAssignmentPreview <$> assignmentKey <*> unit
         , getSubmission <$> submissionKey <*> unit
+        , newGroupAssessment <$> groupKey <*> unit
+        , newCourseAssessment <$> courseKey <*> unit
+        , fillGroupAssessmentPreview <$> groupKey <*> unit
+        , fillCourseAssessmentPreview <$> courseKey <*> unit
+        , viewAssessment <$> assessmentKey <*> unit
         ]
 
       unit = return ()
