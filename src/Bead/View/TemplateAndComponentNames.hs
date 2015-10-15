@@ -179,6 +179,11 @@ menuId = P.pageCata
   (c2 "link-delete-users-from-group")
   (c2 "link-unsubscribe-from-course")
   (c2 "link-get-submission")
+  (c2 "link-new-group-assessment")
+  (c2 "link-new-course-assessment")
+  (c2 "link-fill-group-assessment-preview")
+  (c2 "link-fill-course-assessment-preview")
+  (c2 "link-view-asssessment")
     where
       c = const
       c2 = c . const
@@ -204,6 +209,13 @@ assignmentNoOfTriesField = AssignmentField "asg-no-of-tries"
 
 instance SnapFieldName AssignmentField where
   fieldName = fromString . aFieldName
+
+newtype AssessmentField = AssessmentField { assessFieldName :: String }
+
+assessmentKeyField = AssessmentField "assess-key"
+
+instance SnapFieldName AssessmentField where
+  fieldName = fromString . assessFieldName
 
 data AssignCourseAdminField
   = SelectedCourse { acFieldName :: String }
@@ -413,6 +425,7 @@ fieldList = map fieldName $ join [
   , SFN fileUploadField, SFN fileUploadSubmit, SFN usersFileTableName
   , SFN assignmentTestScriptField, SFN assignmentUsersFileField, SFN assignmentPwdField
   , SFN assignmentSubmissionTypeField, SFN assignmentNoOfTriesField
+  , SFN assessmentKeyField
 
   , SFN evaluationValueField, SFN evaluationKeyField, SFN evaluationConfigField
   , SFN evaluationPercentageField, SFN evaluationCommentOnlyField, SFN evaluationFreeFormField

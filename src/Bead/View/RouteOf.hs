@@ -52,6 +52,11 @@ module Bead.View.RouteOf (
   , unsubscribeFromCoursePath
   , pageRoutePath
   , getSubmissionPath
+  , newGroupAssessmentPath
+  , newCourseAssessmentPath
+  , fillGroupAssessmentPreviewPath
+  , fillCourseAssessmentPreviewPath
+  , viewAssessmentPath
   , staticPath
   , pageRequestParams
 #ifdef TEST
@@ -199,6 +204,21 @@ unsubscribeFromCoursePath = "/unsubscribe-from-course"
 getSubmissionPath :: RoutePath
 getSubmissionPath = "/get-submission"
 
+newGroupAssessmentPath :: RoutePath
+newGroupAssessmentPath = "/new-group-assessment"
+
+newCourseAssessmentPath :: RoutePath
+newCourseAssessmentPath = "/new-course-assessment"
+
+fillGroupAssessmentPreviewPath :: RoutePath
+fillGroupAssessmentPreviewPath = "/fill-group-assessment-preview"
+
+fillCourseAssessmentPreviewPath :: RoutePath
+fillCourseAssessmentPreviewPath = "/fill-course-assessment-preview"
+
+viewAssessmentPath :: RoutePath
+viewAssessmentPath = "/view-assessment"
+
 staticPath :: RoutePath
 staticPath = ""
 
@@ -246,6 +266,11 @@ pageRoutePath = pfmap id id id id id . r where
     deleteUsersFromGroupPath
     unsubscribeFromCoursePath
     getSubmissionPath
+    newGroupAssessmentPath
+    newCourseAssessmentPath
+    fillGroupAssessmentPreviewPath
+    fillCourseAssessmentPreviewPath
+    viewAssessmentPath
 
 type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam] [ReqParam]
 
@@ -290,6 +315,11 @@ pageRequestParams = liftsP
   (\gk _ -> [requestParam gk]) -- deleteUsersFromGroup
   (\gk _ -> [requestParam gk]) -- unsubscribeFromCourse
   (\sk _ -> [requestParam sk]) -- getSubmission
+  (\gk _ -> [requestParam gk]) -- newGroupAssessment
+  (\ck _ -> [requestParam ck]) -- newCourseAssessment
+  (\gk _ -> [requestParam gk]) -- fillGroupAssessmentPreview
+  (\ck _ -> [requestParam ck]) -- fillCourseAssessmentPreview
+  (\ak _ -> [requestParam ak]) -- viewAssessment  
     where
       c = const
 

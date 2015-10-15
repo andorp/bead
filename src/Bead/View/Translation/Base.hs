@@ -516,6 +516,11 @@ labels =
  , "msg_LinkText_DeleteUsersFromGroup"
  , "msg_LinkText_UnsubscribeFromCourse"
  , "msg_LinkText_GetSubmission"
+ , "msg_LinkText_NewGroupAssessment"
+ , "msg_LinkText_NewCourseAssessment"
+ , "msg_LinkText_GroupAssessmentPreview"
+ , "msg_LinkText_CourseAssessmentPreview"
+ , "msg_LinkText_ViewAssessment"
 
  , "msg_TestScriptTypeSimple"
  , "msg_TestScriptTypeZipped"
