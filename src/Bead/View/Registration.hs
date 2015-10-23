@@ -86,7 +86,7 @@ changeUserPassword userdb username password = do
 
 createUserWithRole :: Bead.View.Content.Role -> Persist.Interpreter -> FilePath -> UserRegInfo -> IO ()
 createUserWithRole role persist usersdb = userRegInfoCata $
-  \name password email fullName timeZone ->
+  \name uid password email fullName timeZone ->
     let usr = User {
         u_role = role
       , u_username = Username name
@@ -94,7 +94,7 @@ createUserWithRole role persist usersdb = userRegInfoCata $
       , u_name = fullName
       , u_timezone = timeZone
       , u_language = Language "hu" -- TODO: I18N
-      , u_uid = Uid name
+      , u_uid = Uid uid
       }
     in createUser persist usersdb usr password
 
