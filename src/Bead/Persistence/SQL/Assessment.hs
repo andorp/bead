@@ -6,6 +6,7 @@ import           Data.Maybe
 import qualified Data.Text as Text
 
 import           Database.Persist.Sql
+import           Text.JSON.Generic (encodeJSON)
 
 import qualified Bead.Domain.Entities          as Domain
 import qualified Bead.Domain.Relationships     as Domain
@@ -50,8 +51,8 @@ loadAssessment key = do
 modifyAssessment :: Domain.AssessmentKey -> Domain.Assessment -> Persist ()
 modifyAssessment key assessment = do
   update (toEntityKey key) $ Domain.withAssessment assessment
-    $ \desc cfg ->
-        [ AssessmentDescription =. Text.pack desc
+    $ \title desc cfg ->
+        [ AssessmentDescription =. (Text.pack . encodeJSON $ (title,desc))
         , AssessmentEvalConfig  =. encodeEvalConfig cfg
         ]
 
