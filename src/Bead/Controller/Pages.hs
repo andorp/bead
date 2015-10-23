@@ -812,7 +812,9 @@ courseAdminPages = [
   , isModifyTestScript
   , isUploadFile
   , isNewCourseAssessment
+  , isNewGroupAssessment
   , isFillCourseAssessmentPreview
+  , isFillGroupAssessmentPreview
   ]
 
 adminPages = [

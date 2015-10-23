@@ -5,6 +5,7 @@ module Bead.Persistence.SQL.Class where
 import qualified Data.Text as Text
 import           Database.Persist.Class
 import           Database.Persist.Sql hiding (update, updateField)
+import           Text.JSON.Generic (encodeJSON,decodeJSON)
 
 import qualified Bead.Domain.Entities as Domain
 import qualified Bead.Domain.Entity.Notification as Domain hiding (NotifType(..))
@@ -293,13 +294,14 @@ instance DomainValue Domain.Assessment where
   type EntityValue Domain.Assessment = Assessment
 
   fromDomainValue = Domain.assessment $
-    \desc cfg -> Assessment
-      (Text.pack desc)
+    \title desc cfg -> Assessment
+      (Text.pack $ encodeJSON (title,desc))
       (encodeEvalConfig cfg)
 
-  toDomainValue ent = Domain.Assessment
-    (Text.unpack $ assessmentDescription ent)
-    (decodeEvalConfig $ assessmentEvalConfig ent)
+  toDomainValue ent = Domain.Assessment title description evalConfig
+      where 
+        (title,description) = decodeJSON . Text.unpack $ assessmentDescription ent
+        evalConfig = decodeEvalConfig $ assessmentEvalConfig ent
 
 instance DomainKey Domain.ScoreKey where
   type EntityForKey Domain.ScoreKey = Score

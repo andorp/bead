@@ -719,6 +719,20 @@ loadAssignment k = logAction INFO ("loads assignment " ++ show k) $ do
   authorize P_Open P_Assignment
   persistence $ Persist.loadAssignment k
 
+createGroupAssessment :: GroupKey -> Assessment -> UserStory AssessmentKey
+createGroupAssessment gk a = logAction INFO ("creates assessment for group " ++ show gk) $ do
+  authorize P_Open P_Group
+  authorize P_Create P_Assessment
+  isAdministratedGroup gk
+  persistence (Persist.saveGroupAssessment gk a)
+
+createCourseAssessment :: CourseKey -> Assessment -> UserStory AssessmentKey
+createCourseAssessment ck a = logAction INFO ("creates assessment for course " ++ show ck) $ do
+  authorize P_Open P_Course
+  authorize P_Create P_Assessment
+  isAdministratedCourse ck
+  persistence (Persist.saveCourseAssessment ck a)
+
 -- Puts the given status message to the actual user state
 putStatusMessage :: Translation String -> UserStory ()
 putStatusMessage = changeUserState . setStatus . SmNormal

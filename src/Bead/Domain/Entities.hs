@@ -344,6 +344,7 @@ canDelete = flip elem [P_Delete]
 -- | Permissions are allowed on the following objects
 data PermissionObject
   = P_Assignment
+  | P_Assessment
   | P_UserReg
   | P_Submission
   | P_Evaluation

@@ -38,6 +38,10 @@ data UserAction
   | CreateCourseAssignment CourseKey Assignment TCCreation
   | ModifyAssignment AssignmentKey Assignment TCModification
 
+  -- Assessment
+  | CreateGroupAssessment GroupKey Assessment
+  | CreateCourseAssessment CourseKey Assessment
+  
   -- Submission
   | NewSubmission AssignmentKey Submission
 
@@ -71,6 +75,8 @@ userStoryFor (CreateGroupAdmin u g)   = Story.createGroupAdmin u g
 userStoryFor (SubscribeToGroup g)    = Story.subscribeToGroup g
 userStoryFor (CreateGroupAssignment gk a tc)  = Story.createGroupAssignment gk a tc >> return ()
 userStoryFor (CreateCourseAssignment ck a tc) = Story.createCourseAssignment ck a tc >> return ()
+userStoryFor (CreateGroupAssessment gk a) = Story.createGroupAssessment gk a >> return ()
+userStoryFor (CreateCourseAssessment ck a) = Story.createCourseAssessment ck a >> return ()
 userStoryFor (ModifyAssignment ak a tm) = Story.modifyAssignment ak a tm
 userStoryFor (NewSubmission ak s)    = Story.submitSolution ak s >> return ()
 userStoryFor (NewEvaluation sk e)    = Story.newEvaluation sk e

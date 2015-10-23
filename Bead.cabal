@@ -299,6 +299,7 @@ Library
     Bead.View.Common
     Bead.View.Content
     Bead.View.Content.Administration.Page
+    Bead.View.Content.Assessment.Page
     Bead.View.Content.Assignment.Data
     Bead.View.Content.Assignment.Page
     Bead.View.Content.Assignment.View
