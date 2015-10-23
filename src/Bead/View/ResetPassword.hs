@@ -8,7 +8,10 @@ module Bead.View.ResetPassword (
   , loadAuthUser
   ) where
 
+import           Control.Monad
+import           Control.Monad.Trans.Class
 import           Control.Monad.Trans.Error
+import           Control.Monad.IO.Class
 import qualified Data.ByteString.Char8 as B
 import           Data.Maybe
 import           Data.String
