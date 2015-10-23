@@ -70,7 +70,7 @@ Library
 
     Build-Depends:
       persistent-sqlite >= 2.2 && < 2.3,
-      persistent-mysql >= 2.4 && < 2.5,
+      persistent-mysql >= 2.3 && < 2.4,
       persistent-template >= 2.1 && < 2.2,
       resourcet
 
