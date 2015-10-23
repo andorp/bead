@@ -6,6 +6,7 @@ import           Control.Monad.Trans (lift)
 import           Control.Monad.Trans.Reader
 import           Data.Char (toUpper)
 import qualified Data.Char as Char
+import qualified Data.Map as Map
 import           Data.Maybe
 
 import           System.Console.GetOpt
@@ -17,6 +18,9 @@ import           System.IO.Temp (createTempDirectory)
 import           Text.Regex.TDFA
 
 import           Bead.Config hiding (CreateAdmin)
+#ifdef SSO
+import           Bead.Daemon.LDAP.Query
+#endif
 import           Bead.Domain.Entities
 import           Bead.Domain.TimeZone (utcZoneInfo)
 import qualified Bead.Persistence.Persist as Persist
@@ -29,16 +33,25 @@ data Command
   = CreateAdmin
   | CreateStudent
   | ChangePassword String
+#ifdef SSO
+  | ImportUser String
+#endif
   deriving (Eq, Show)
 
 command
   createAdmin
   createStudent
   changePassword
+#ifdef SSO
+  importUser
+#endif
   c = case c of
     CreateAdmin    -> createAdmin
     CreateStudent  -> createStudent
     ChangePassword username -> changePassword username
+#ifdef SSO
+    ImportUser username -> importUser username
+#endif
 
 type CLI a = ReaderT (Config, Persist.Interpreter) IO a
 
@@ -62,6 +75,9 @@ options = [
     Option ['a'] ["admin"]   (NoArg CreateAdmin)   "Create admin user."
   , Option ['s'] ["student"] (NoArg CreateStudent) "Create student user."
   , Option ['p'] ["password"] (ReqArg (ChangePassword . convertUsername) "USERNAME") "Change password for a user"
+#ifdef SSO
+  , Option ['i'] ["import"] (ReqArg (ImportUser . convertUsername) "USERNAME") "Import user from LDAP"
+#endif
   ]
 
 -- Parse the arguments and run the commands for the given arguments
@@ -79,6 +95,7 @@ runCommands progName args = case getOpt RequireOrder options args of
 runCommand :: Command -> CLI ()
 runCommand cmd = do
   persist <- getPersist
+  cfg <- getConfig
 
   let createAdmin = do
         lift $ putStrLn "Creating Admin ..."
@@ -110,7 +127,34 @@ runCommand cmd = do
                True -> do
                  Registration.changeUserPassword usersJson (Username username) pwd
 
+#ifdef SSO
+      importUser username = do
+        putStrLn $ concat ["Importing ", username, " from LDAP..."]
+        let loginCfg = loginConfig cfg
+        let settings = QuerySettings
+                         { queryTimeout = sSOTimeout loginCfg
+                         , queryCommand = sSOQueryCommand loginCfg
+                         }
+        let attributes = map ($ loginCfg) [sSOUserIdKey, sSOUserNameKey, sSOUserEmailKey]
+        query settings username attributes >>= queryResult
+          (\attrs -> do
+             let attrMap = Map.fromList attrs
+             case (map (flip Map.lookup attrMap) attributes) of
+               [Just uid, Just fullName, Just email] -> do
+                 let regInfo = UserRegInfo (username, uid, "password", email, fullName,
+                                 TimeZoneName $ defaultRegistrationTimezone cfg)
+                 Registration.createStudentUser persist usersJson regInfo
+                 putStrLn "DONE"
+               _ -> putStrLn "ERROR: Failed to map LDAP attributes to user details.")
+          (putStrLn "ERROR: LDAP query could not run as it was invalid.")
+          (\msg -> putStrLn $ concat ["ERROR: ", msg])
+#endif
+
+#ifdef SSO
+  command createAdmin createStudent (lift . changePassword) (lift . importUser) cmd
+#else
   command createAdmin createStudent (lift . changePassword) cmd
+#endif
 
 -- Create the persistent context for user creation
 createPersist :: Persist.Config -> IO Persist.Interpreter
@@ -144,6 +188,7 @@ readUserRegInfo = do
       (Right False) -> do
         email <- readEmail
         fullName <- readFullname
+        uid      <- readUid
         pwd      <- readPassword "Password: "
         pwdAgain <- readPassword "Password Again: "
         hSetEcho stdin True
@@ -151,7 +196,7 @@ readUserRegInfo = do
           -- All the validators are passed, the registration can be done
           True  -> return $ do
             cfg <- getConfig
-            return $ UserRegInfo (usr, pwd, email, fullName,
+            return $ UserRegInfo (usr, uid, pwd, email, fullName,
               TimeZoneName $ defaultRegistrationTimezone cfg)
           False -> return $ do
             lift $ putStrLn "Passwords do not match!"
@@ -172,6 +217,10 @@ readUserRegInfo = do
           (return email) -- Valid email
           (\msg -> do putStrLn msg
                       readEmail)
+
+      readUid = do
+        putStrFlush "User ID: "
+        getLine
 
       readUsername cfg = do
         putStrFlush "User: "
