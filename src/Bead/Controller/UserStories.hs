@@ -1,6 +1,6 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP #-}
 module Bead.Controller.UserStories where
 
 import           Bead.Domain.Entities hiding (name, uid)
@@ -838,7 +838,7 @@ loadUserData uname t p = do
 userState :: UserStory UserState
 userState = CMS.get
 
-submitSolution :: AssignmentKey -> Submission -> UserStory ()
+submitSolution :: AssignmentKey -> Submission -> UserStory SubmissionKey
 submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show ak) $ do
   authorize P_Open   P_Assignment
   authorize P_Create P_Submission
@@ -849,7 +849,7 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
       then do removeUserOpenedSubmissions u ak
               sk <- Persist.saveSubmission ak u s
               Persist.saveTestJob sk
-              return (return ())
+              return (return sk)
       else return $ do
              logMessage INFO . violation $
                printf "The user tries to submit a solution for an assignment which not belongs to him: (%s)" (assignmentKeyMap id ak)
@@ -1099,6 +1099,16 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
       else return $ do
               logMessage INFO . violation $ printf "The user tries to comment on a submission (%s) that not belongs to him" (show sk)
               errorPage . userError $ msg_UserStoryError_NonCommentableSubmission "The submission is not commentable"
+
+#ifdef TEST
+-- Insert test feedback with the TestAgent only for testing purposes.
+insertTestFeedback :: SubmissionKey -> FeedbackInfo -> UserStory ()
+insertTestFeedback sk fb = do
+  authorize P_Create P_Feedback
+  persistence $ do
+    Persist.insertTestFeedback sk fb
+    Persist.finalizeTestFeedback sk
+#endif
 
 -- Test agent user story, that reads out all the feedbacks that the test daemon left
 -- and saves them
