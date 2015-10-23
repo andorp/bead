@@ -424,11 +424,11 @@ showDate :: LocalTime -> String
 showDate = formatTime defaultTimeLocale "%F, %T"
 
 -- UserRegInfo is a User Registration Info that consists of
--- a Username, a Password, an Email Address, a Full Name, and a time zone
-newtype UserRegInfo = UserRegInfo (String, String, String, String, TimeZoneName)
+-- a Username, a User ID, a Password, an Email Address, a Full Name, and a time zone
+newtype UserRegInfo = UserRegInfo (String, String, String, String, String, TimeZoneName)
 
-userRegInfoCata f (UserRegInfo (username, password, email, fullName, timeZoneName))
-  = f username password email fullName timeZoneName
+userRegInfoCata f (UserRegInfo (username, uid, password, email, fullName, timeZoneName))
+  = f username uid password email fullName timeZoneName
 
 -- The language what the dictionary represents.
 newtype Language = Language String
