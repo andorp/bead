@@ -40,7 +40,7 @@ Assessment
 
 Assignment
   name        Text
-  description Text
+  description Text sqltype="longtext character set utf8"
   type        JSONText
   start       UTCTime
   end         UTCTime
@@ -49,7 +49,7 @@ Assignment
   deriving Show
 
 Comment
-  text   Text
+  text   Text sqltype="longtext character set utf8"
   author Text
   date   UTCTime
   type   JSONText
@@ -62,12 +62,12 @@ Course
   deriving Show
 
 Evaluation
-  result  JSONText
-  written Text
+  result  JSONText sqltype="longtext character set utf8"
+  written Text     sqltype="longtext character set utf8"
   deriving Show
 
 Feedback
-  info JSONText
+  info JSONText sqltype="longtext character set utf8"
   date UTCTime
   deriving Show
 
@@ -77,7 +77,7 @@ Group
   deriving Show
 
 Notification
-  message     Text
+  message     Text sqltype="longtext character set utf8"
   deriving Show
 
 Score
@@ -85,7 +85,7 @@ Score
   deriving Show
 
 Submission
-  simple   Text       Maybe
+  simple   Text       Maybe sqltype="longtext character set utf8"
   zipped   ByteString Maybe sqltype=longblob
   postDate UTCTime
   deriving Show
@@ -93,7 +93,7 @@ Submission
 TestCase
   name         Text
   description  Text
-  simpleValue  Text       Maybe
+  simpleValue  Text       Maybe sqltype="longtext character set utf8"
   zippedValue  ByteString Maybe sqltype=longblob
   info         Text
   deriving Show
@@ -101,8 +101,8 @@ TestCase
 TestScript
   name        Text
   description Text
-  notes       Text
-  script      Text
+  notes       Text sqltype="longtext character set utf8"
+  script      Text sqltype="longtext character set utf8"
   testScriptType JSONText
   deriving Show
 
