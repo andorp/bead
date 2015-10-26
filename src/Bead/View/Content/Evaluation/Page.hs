@@ -9,6 +9,7 @@ import           Control.Monad
 import           Control.Arrow ((&&&))
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid
+import           Text.Printf
 import           Data.String (fromString)
 import           Data.Time (getCurrentTime)
 
@@ -20,6 +21,7 @@ import           Bead.View.Content as C
 import           Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.View.Content.Comments
 import           Bead.View.Content.SeeMore
+import           Bead.View.Content.VisualConstants
 
 import           Text.Blaze.Html5 as H
 import           Text.Blaze.Html5.Attributes as A
@@ -69,6 +71,9 @@ modifyEvaluationPage = do
   }
   return $ evaluationContent pageData
 
+evalConfigParam = evalConfigParameter (fieldName evaluationConfigField)
+freeFormEvaluationParam = stringParameter (fieldName evaluationFreeFormField) "Free format evaluation"
+
 -- Reads the evaluation result, from the parameters and determine if the content
 -- of the text area would be a comment of the textual evaluation of the given submission.
 -- The result of the computation is a UserActon which is a CreateComment or
@@ -80,20 +85,28 @@ abstractEvaluationPostHandler
 abstractEvaluationPostHandler getEvKeyParameter evCommand = do
   sk <- getParameter submissionKeyPrm
   commentText <- getParameter evaluationValuePrm
-  config <- getParameter $ evalConfigParameter (fieldName evaluationConfigField)
+  config <- getParameter evalConfigParam
   commentOrResult <-
     evConfigCata
-      (getJSONParam (fieldName evaluationResultField) "There can be no evaluation found.")
+      (getJSONParam (fieldName evaluationResultField) "No evaluation can be found.")
       (\_ -> do
-        percentage  <- getParameter $ evaluationPercentagePrm (fieldName evaluationPercentageField)
-        commentOnly <- getParameter $ evaluationCommentOnlyPrm (fieldName evaluationCommentOnlyField)
+        percentage  <- getParameter evaluationPercentagePrm
+        commentOnly <- getParameter evaluationCommentOnlyPrm
         return $
           if commentOnly
             then EvCmtComment
             else EvCmtResult $ percentageResult (fromIntegral percentage / 100))
+      (do freeForm <- getParameter freeFormEvaluationParam
+          return $ if (null freeForm)
+            then EvCmtComment
+            else EvCmtResult $ freeFormResult freeForm)
       config
   withEvalOrComment commentOrResult
-    (do (mrole,mname) <- (getRole &&& getName) <$> userState
+    (case null commentText of
+      True -> return $
+        ErrorMessage (msg_Evaluation_EmptyCommentAndFreeFormResult "Neither comment nor evaluation was given!")
+      False -> do
+        (mrole,mname) <- (getRole &&& getName) <$> userState
         let uname = fromMaybe "???" mname
         case mrole of
           Nothing -> return $ LogMessage "The user is not logged in" -- Impossible
@@ -106,12 +119,12 @@ abstractEvaluationPostHandler getEvKeyParameter evCommand = do
              , commentType = roleToCommentType role
              })
     (\result -> do
-        key <- getEvKeyParameter
-        let e = C.Evaluation {
-            evaluationResult = result
-          , writtenEvaluation = commentText
-          }
-        return $ evCommand key e)
+      key <- getEvKeyParameter
+      let e = C.Evaluation {
+          evaluationResult = result
+        , writtenEvaluation = commentText
+        }
+      return $ evCommand key e)
   where
     roleToCommentType = roleCata
       CT_Student
@@ -137,33 +150,41 @@ evaluationPostHandler = abstractEvaluationPostHandler (getParameter submissionKe
 modifyEvaluationPost :: POSTContentHandler
 modifyEvaluationPost = abstractEvaluationPostHandler (getParameter evaluationKeyPrm) ModifyEvaluation
 
-inputEvalResult :: EvConfig -> IHtml
-
-inputEvalResult ev@(EvConfig (BinEval _cfg)) = do
-  msg <- getI18N
-  return $ do
-    hiddenInput (fieldName evaluationConfigField) (encodeToFay' "inputEvalType" ev)
-    Bootstrap.radioButtonGroup (fieldName evaluationResultField) $
-      [ (True,  encodeToFay' "inputEvalResult" EvCmtComment   , msg $ msg_Evaluation_New_Comment "New Comment")
-      , (False, encodeToFay' "inputEvalResult" $ binary Passed, msg $ msg_Evaluation_Accepted "Accepted")
-      , (False, encodeToFay' "inputEvalResult" $ binary Failed, msg $ msg_Evaluation_Rejected "Rejected")
-      ]
+evaluationFrame :: EvConfig -> I18N -> Html -> Html
+evaluationFrame evConfig msg content = do
+  hiddenInput (fieldName evalConfigParam) (encodeToFay' "inputEvalType" evConfig)
+  withEvConfig evConfig
+    (do content
+        Bootstrap.formGroup $ evaluationDiv $
+          Bootstrap.radioButtonGroup (fieldName evaluationResultField) $
+            [ (True,  encodeToFay' "inputEvalResult" EvCmtComment   , msg $ msg_Evaluation_New_Comment "New Comment")
+            , (False, encodeToFay' "inputEvalResult" $ binary Passed, msg $ msg_Evaluation_Accepted "Accepted")
+            , (False, encodeToFay' "inputEvalResult" $ binary Failed, msg $ msg_Evaluation_Rejected "Rejected")
+            ])
+    -- When the page is dynamic the percentage spinner is hooked on the field
+    (\_ ->
+      do content
+         Bootstrap.formGroup . evaluationDiv $ do
+           Bootstrap.colMd4 $
+             Bootstrap.radioButtonGroup (fieldName evaluationCommentOnlyPrm) $
+               [ (True,  show True,  msg $ msg_Evaluation_New_Comment "New Comment")
+               , (False, show False, msg $ msg_Evaluation_Percentage "Percentage: ")
+               ]
+           Bootstrap.colMd4 $
+             H.input ! A.name (fieldName evaluationPercentagePrm) ! A.type_ "number"
+                     ! A.min (fromString $ show 0) ! A.max (fromString $ show 100))
+    (do Bootstrap.optionalTextInput (fieldName freeFormEvaluationParam) (msg $ msg_Evaluation_FreeFormEvaluation "Evaluation") ""
+        H.p . fromString $ printf (msg $ msg_Evaluation_FreeForm_Information $ unwords
+          [ "Note that this text will be used everywhere as the evaluation itself.  Hence it is recommended to keep"
+          , "the length of the text under size %d, otherwise it may not be directly shown." ]) displayableFreeFormResultLength
+        content)
   where
     binary = EvCmtResult . binaryResult
-
--- When the page is dynamic the percentage spinner is hooked on the field
-inputEvalResult ev@(EvConfig (PctEval _cfg)) = do
-  msg <- getI18N
-  return $ do
-    hiddenInput (fieldName evaluationConfigField) (encodeToFay' "inputEvalType" ev)
-    Bootstrap.colMd4 $
-      Bootstrap.radioButtonGroup (fieldName evaluationCommentOnlyField) $
-        [ (True,  show True,  msg $ msg_Evaluation_New_Comment "New Comment")
-        , (False, show False, msg $ msg_Evaluation_Percentage "Percentage: ")
-        ]
-    Bootstrap.colMd4 $
-      H.input ! A.name (fieldName evaluationPercentageField) ! A.type_ "number"
-        ! A.min (fromString $ show 0) ! A.max (fromString $ show 100)
+    evaluationDiv = withEvConfig
+      evConfig
+      (H.div)
+      (const $ H.div ! A.id (fieldName evaluationPercentageDiv))
+      (H.div)
 
 -- * View
 
@@ -172,6 +193,10 @@ evaluationContent pd = do
   let sd = sbmDesc pd
       tc = userTime pd
   msg <- getI18N
+  let freeFormCommentTitle = evConfigCata
+        (return ())
+        (const $ return ())
+        (Bootstrap.labelFor (fieldName evaluationValueField) (msg $ msg_Evaluation_FreeFormComment "Comment"))
   return $ do
     Bootstrap.row $ Bootstrap.colMd12 $
       H.p $ fromString . msg $ msg_Evaluation_Info $ concat
@@ -224,10 +249,12 @@ evaluationContent pd = do
 
     Bootstrap.row $ Bootstrap.colMd12 $
       postForm (routeOf . evPage $ maybeEvalKey) $ do
-        Bootstrap.optionalTextArea (fieldName evaluationValueField) "" $ mempty
-        hiddenInput (fieldName assignmentKeyField) (paramValue $ eAssignmentKey sd)
-        hiddenInput (fieldName evCommentOnlyText) (msg $ msg_Evaluation_New_Comment "New Comment")
-        Bootstrap.formGroup . evaluationDiv . i18n msg . inputEvalResult . Assignment.evType $ eAssignment sd
+        let evType = Assignment.evType $ eAssignment sd
+        evaluationFrame evType msg $ do
+          freeFormCommentTitle evType
+          Bootstrap.optionalTextArea (fieldName evaluationValueField) "" $ mempty
+          hiddenInput (fieldName assignmentKeyField) (paramValue $ eAssignmentKey sd)
+          hiddenInput (fieldName evCommentOnlyText) (msg $ msg_Evaluation_New_Comment "New Comment")
         Bootstrap.submitButton
           (fieldName saveEvalBtn) (fromString . msg $ msg_Evaluation_SaveButton "Submit")
 
@@ -238,13 +265,7 @@ evaluationContent pd = do
         H.h2 (fromString . msg $ msg_Comments_Title "Comments")
       -- Renders the comment area where the user can place a comment
       i18n msg $ commentsDiv "evaluation-comments-" tc comments
-
   where
-    evaluationDiv = withEvaluationData
-      (evConfig . Assignment.evType . eAssignment $ sbmDesc pd)
-      (const H.div)
-      (const $ H.div ! A.id (fieldName evaluationPercentageDiv))
-
     submissionKey = sbmSubmissionKey pd
     maybeEvalKey  = sbmEvaluationKey pd
 
@@ -253,4 +274,3 @@ evaluationContent pd = do
 
     maxLength = 2048
     maxLines  = 100
-

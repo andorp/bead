@@ -106,6 +106,7 @@ commentPar i18n id_ t (n, c) = do
           withEvResult result
             (\b -> join [comment, "\n\n", translateMessage i18n (binaryResult b)])
             (const $ join [comment, "\n\n", translateMessage i18n (pctResult result)])
+            (\(FreeForm msg) -> join [comment, "\n\n", msg])
 
         binaryResult (Binary b) =
           TransMsg $ resultCata (msg_Comments_BinaryResultPassed "The submission is accepted.")

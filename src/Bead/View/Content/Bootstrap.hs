@@ -270,6 +270,16 @@ textInput paramName labelText placeholderText =
             ! A.id (fromString paramName)
             ! A.placeholder (fromString placeholderText)
 
+-- | Creates an optional text input with the given name as id, a given label and a placeholder text
+optionalTextInput paramName labelText placeholderText =
+  formGroup $ do
+    labelFor paramName labelText
+    H.input ! formControl
+            ! type_ "text"
+            ! A.name (fromString paramName)
+            ! A.id (fromString paramName)
+            ! A.placeholder (fromString placeholderText)
+
 -- | Creates a text input with the given name as id, a given label and a default value
 textInputWithDefault paramName labelText value =
   formGroup $ do

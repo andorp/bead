@@ -31,6 +31,7 @@ import           Bead.Controller.UserStories (UserStory)
 import qualified Bead.Controller.UserStories as S
 import           Bead.View.Content
 import qualified Bead.View.Content.Bootstrap as Bootstrap
+import           Bead.View.Content.VisualConstants
 import qualified Bead.View.DataBridge as Param
 
 import           Text.Blaze.Html5 ((!))
@@ -267,7 +268,6 @@ submissionTablePart tableId now ctx s = do
             (encode delUserFromGroupPrm $ ud_username u)
             False ! A.onclick (fromString (onClick ++ "(this)"))
 
-
 resultCell contentWrapper notFound unevaluated tested passed failed s =
   H.td $ contentWrapper (sc s)
   where
@@ -277,12 +277,18 @@ resultCell contentWrapper notFound unevaluated tested passed failed s =
            tested
            (\_key result -> val result) -- evaluated
 
-    val (EvResult (BinEval (Binary Passed))) = passed
-    val (EvResult (BinEval (Binary Failed))) = failed
-    val (EvResult (PctEval (Percentage (Scores [p])))) = H.span ! A.class_ "label label-primary" $ fromString $ percent p
-    val (EvResult (PctEval (Percentage _))) = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
+    val = evResultCata
+            (binaryCata (resultCata passed failed))
+            percentage
+            (freeForm $ \msg ->
+              let cell = if length msg < displayableFreeFormResultLength then msg else "..." in
+              H.span ! A.class_ "label label-primary"
+                     ! A.title (fromString msg) $ (fromString cell))
+          where
+            percent x = join [show . round $ (100 * x), "%"]
 
-    percent x = join [show . round $ (100 * x), "%"]
+            percentage (Percentage (Scores [p])) = H.span ! A.class_ "label label-primary" $ fromString $ percent p
+            percentage _ = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
 courseTestScriptTable :: CourseTestScriptInfos -> SubmissionTableInfo -> IHtml
 courseTestScriptTable cti = submissionTableInfoCata course group where

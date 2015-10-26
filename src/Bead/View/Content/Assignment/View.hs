@@ -43,6 +43,7 @@ newAssignmentContent pd = do
             (== currentEvaluationType)
             [ (binaryConfig, fromString . msg $ msg_NewAssignment_BinEval "Binary")
             , (percentageConfig 0.0, fromString . msg $ msg_NewAssignment_PctEval "Percentage")
+            , (freeFormConfig, fromString . msg $ msg_NewAssignment_FftEval "Free from textual")
             ]
     let hiddencfg asg = return $ do
           let e = Assignment.evType asg
@@ -641,7 +642,9 @@ newAssignmentContent pd = do
           (msg $ msg_NewAssignment_EvaluationType "Evaluation Type")
           (evConfigCata
             (fromString . msg $ msg_NewAssignment_BinaryEvaluation "Binary Evaluation")
-            (const . fromString . msg $ msg_NewAssignment_PercentageEvaluation "Percent") e)
+            (const . fromString . msg $ msg_NewAssignment_PercentageEvaluation "Percent")
+            (fromString . msg $ msg_NewAssignment_FreeFormEvaluation "Free Form Evaluation")
+            e)
 
       [txtSubmission, zipSubmission] = [Assignment.TextSubmission, Assignment.ZipSubmission]
 

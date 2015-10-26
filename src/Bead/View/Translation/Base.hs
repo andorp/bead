@@ -141,6 +141,7 @@ labels =
  , "msg_NewAssignment_EvaluationType"
  , "msg_NewAssignment_BinEval"
  , "msg_NewAssignment_PctEval"
+ , "msg_NewAssignment_FftEval"
  , "msg_NewAssignment_BinaryEvaluation"
  , "msg_NewAssignment_PercentageEvaluation"
  , "msg_NewAssignment_SubmissionType"
@@ -151,6 +152,7 @@ labels =
  , "msg_NewAssignment_Info_Isolated"
  , "msg_NewAssignment_Info_NoOfTries"
  , "msg_NewAssignment_NoOfTries"
+ , "msg_NewAssignment_FreeFormEvaluation"
 
  , "msg_GroupRegistration_RegisteredCourses"
  , "msg_GroupRegistration_SelectGroup"
@@ -217,6 +219,10 @@ labels =
  , "msg_Evaluation_Info"
  , "msg_Evaluation_Username"
  , "msg_Evaluation_SubmissionDate"
+ , "msg_Evaluation_FreeFormEvaluation"
+ , "msg_Evaluation_FreeFormComment"
+ , "msg_Evaluation_EmptyCommentAndFreeFormResult"
+ , "msg_Evaluation_FreeForm_Information"
 
  , "msg_SubmissionDetails_Course"
  , "msg_SubmissionDetails_Admins"
@@ -289,6 +295,7 @@ labels =
  , "msg_UserSubmissions_SubmittedSolutions"
  , "msg_UserSubmissions_SubmissionDate"
  , "msg_UserSubmissions_Evaluation"
+ , "msg_UserSubmissions_FreeForm"
 
  , "msg_UserSubmissions_Accepted"
  , "msg_UserSubmissions_Rejected"
@@ -377,6 +384,7 @@ labels =
  , "msg_Home_SubmissionCell_Rejected"
  , "msg_Home_SubmissionCell_Tests_Failed"
  , "msg_Home_SubmissionCell_Tests_Passed"
+ , "msg_Home_SubmissionCell_FreeFormEvaluated"
  , "msg_Home_SubmissionTable_NoCoursesOrStudents"
  , "msg_Home_Remains"
  , "msg_Home_Reached"
@@ -515,6 +523,7 @@ labels =
  , "msg_Domain_EvalFailed"
  , "msg_Domain_EvalNoResultError"
  , "msg_Domain_EvalPercentage"
+ , "msg_Domain_FreeForm"
 
  , "msg_SeeMore_SeeMore"
  , "msg_SeeMore_SeeLess"

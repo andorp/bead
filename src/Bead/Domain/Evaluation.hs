@@ -77,21 +77,29 @@ instance Arbitrary Percentage where
   arbitrary = Percentage . mkScores <$> arbitrary
   shrink = percentageCata (fmap (Percentage . Scores) . shrink . unScores)
 
+instance Arbitrary FreeForm where
+  arbitrary = FreeForm <$> arbitrary
+  shrink (FreeForm xs) = map FreeForm (shrink xs)
+
 instance Arbitrary EvResult where
   arbitrary = EvResult <$> oneof [
       BinEval <$> arbitrary
     , PctEval <$> arbitrary
+    , FreeEval <$> arbitrary
     ]
   shrink = fmap EvResult . evResultCata
     (fmap BinEval . shrink)
     (fmap PctEval . shrink)
+    (fmap FreeEval . shrink)
 
 instance Arbitrary EvConfig where
   arbitrary = EvConfig <$> oneof [
       BinEval <$> arbitrary
     , PctEval <$> arbitrary
+    , FreeEval <$> arbitrary
     ]
   shrink = fmap EvConfig . evConfigCata
     []
     (fmap PctEval . shrink)
+    []
 #endif
