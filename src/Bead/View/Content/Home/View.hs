@@ -6,19 +6,19 @@ import           Control.Monad.Identity
 import           Data.Function (on)
 import           Data.List (find, intersperse, sortBy)
 import qualified Data.Map as Map
-import           Data.Maybe (isNothing, isJust)
-import qualified Data.Set as Set
+import           Data.Maybe (isJust)
 import           Data.String (fromString)
 
 import           Text.Blaze.Html5 hiding (map, id)
 import qualified Text.Blaze.Html5 as H
-import           Text.Blaze.Html5.Attributes hiding (id)
+import           Text.Blaze.Html5.Attributes as A hiding (id)
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Domain.Entities as E (Role(..))
 import           Bead.Domain.Evaluation
 import           Bead.View.Content as Content hiding (userState, table)
 import           Bead.View.Content.SubmissionTable as ST
+import           Bead.View.Content.VisualConstants
 
 import qualified Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.View.Content.Home.Data
@@ -194,7 +194,7 @@ availableAssignments timeconverter studentAssignments
   where
     isLimitedAssignments = isJust . find limited
 
-    limited = submissionLimit (const False) (\_ _ -> True) (const True) . (\(a,ad,si) -> aLimit ad)
+    limited = submissionLimit (const False) (\_ _ -> True) (const True) . (\(_a,ad,_si) -> aLimit ad)
 
     isOpenAndIsolated a = and [aIsolated a, aActive a]
 
@@ -225,9 +225,7 @@ availableAssignments timeconverter studentAssignments
       let grayLabel  tag = H.span ! class_ "label label-default" $ tag
       let greenLabel tag = H.span ! class_ "label label-success" $ tag
       let redLabel   tag = H.span ! class_ "label label-danger"  $ tag
-      let blueLabel  tag = H.span ! class_ "label label-primary" $ tag
-      let label = submissionInfoCata grayLabel grayLabel (const grayLabel)
-             (\_evKey evResult -> undefined)
+      let blueLabel  tooltip tag = H.span ! class_ "label label-primary" ! A.title (fromString tooltip) $ tag
       H.td $ withSubmissionInfo s
                (grayLabel $ fromString $ msg $ msg_Home_SubmissionCell_NoSubmission "No submission")
                (grayLabel $ fromString $ msg $ msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
@@ -236,17 +234,23 @@ availableAssignments timeconverter studentAssignments
                (\_key result -> evResult
                                   (greenLabel $ fromString $ msg $ msg_Home_SubmissionCell_Accepted "Accepted")
                                   (redLabel   $ fromString $ msg $ msg_Home_SubmissionCell_Rejected "Rejected")
-                                  (blueLabel . fromString)
+                                  (blueLabel "" . fromString)
+                                  (\resultText -> let cell = if length resultText < displayableFreeFormResultLength
+                                                        then resultText
+                                                        else msg $ msg_Home_SubmissionCell_FreeFormEvaluated "Evaluated"
+                                                  in blueLabel resultText $ fromString cell)
                                   result)
       where
         noLimitIsReached = submissionLimit (const True) (\n _ -> n > 0) (const False) . aLimit
         limit = fromString . submissionLimit
           (const "") (\n _ -> (msg $ msg_Home_Remains "Remains: ") ++ show n) (const $ msg $ msg_Home_Reached "Reached")
-        evResult passed failed percentage r
-          = case r of
-             (EvResult (BinEval (Binary Passed))) -> passed
-             (EvResult (BinEval (Binary Failed))) -> failed
-             (EvResult (PctEval (Percentage (Scores [p])))) -> percentage $ percent p
-             (EvResult (PctEval (Percentage _))) -> error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
-            where percent x = join [show . round $ (100 * x), "%"]
+        evResult passed failed percentage freeFormMsg =
+          evResultCata
+            (binaryCata (resultCata passed failed))
+            score
+            (freeForm freeFormMsg)
+          where
+            percent x = join [show . round $ (100 * x), "%"]
+            score (Percentage (Scores [p])) = percentage $ percent p
+            score _                         = error "SubmissionTable.coloredSubmissionCell percentage is not defined"

@@ -16,7 +16,6 @@ import Bead.Persistence.NoSQLDirFile (noSqlDirTests)
 import Bead.Persistence.Persist (persistTests)
 import Bead.Persistence.Relations (persistRelationsTests)
 import Bead.View.Content.All (pageContentTest)
-import Bead.View.Content.Home.Page (sumBinaryResultTests, sumPercentageResultTests)
 import Bead.View.DataBridge (dataBridgeTests)
 import Bead.View.DictionaryLoader (patchDictionariesTests)
 #ifdef EmailEnabled
@@ -46,8 +45,6 @@ tests = do
   group "Relationships" relationshipTests
   group "Unique session keys" uniqueSessionKeysTest
   group "Assignment" asgTests
-  group "Homepage binary results" sumBinaryResultTests
-  group "Homepage percentage results" sumPercentageResultTests
   group "Command line and configuration" initTaskAssertions
   group "Persist" persistTests
 #ifdef EmailEnabled

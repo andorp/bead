@@ -158,6 +158,7 @@ evaluationResults =
   evConfigCata
     (binaryResult <$> elements [Passed, Failed])
     (const (percentageResult <$> percentage))
+    arbitrary
 
 testScripts = testScriptAppAna
   word      -- words
