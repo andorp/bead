@@ -30,6 +30,55 @@ msg_debug() {
     msg "DEBUG: $1" >&2
 }
 
+check_encoding() {
+    local f
+    local g
+    local r
+
+    f=$1
+
+    [ ! -s $f ] && return 0
+
+    g=$(mktemp)
+    (echo "This is a workaround for file(1), you should not see it."; cat $f) > $g
+    case $(file -b $g) in
+      *ASCII\ text*) r=0;;
+      *UTF-8\ Unicode\ text*) r=0;;
+      *) r=1;;
+    esac
+    rm -f $g
+    return $r
+}
+
+blame_encoding() {
+    local f
+    f=$1
+
+    cat > $f <<EOF
+Unfortunately, the contents of this comment cannot be displayed as it contains
+some non-Unicode (UTF-8) characters or it is not a plain ASCII text.  Please
+remove those characters from the output of the program that generated it.
+EOF
+}
+
+force_publish() {
+    local src
+    local tgt
+
+    src=$1
+    tgt=$2
+
+    if [ -s ${src} ] && [ -d $(dirname ${tgt}) ]; then
+        mv ${src} ${tgt}
+        chown nobody:nogroup ${tgt}
+        chmod g+w,o+w ${tgt}
+    fi
+}
+
+publish() {
+    check_encoding $1 && force_publish $1 $2 || blame_encoding $2
+}
+
 msg_debug "Checking for ${BEAD_CONF}..."
 
 if [ -f ${BEAD_CONF} ]; then

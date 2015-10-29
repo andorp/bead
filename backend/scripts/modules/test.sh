@@ -51,47 +51,6 @@ SANDBOX_PATH="${BEAD_HOME}/run"
 
 . ${INPUT}/script
 
-check_encoding() {
-    local f
-    f=$1
-
-    [ ! -s $f ] && return 0
-
-    case $(file -b $f) in
-      *ASCII\ text*) return 0;;
-      *UTF-8\ Unicode\ text*) return 0;;
-      *) return 1;;
-    esac
-}
-
-blame_encoding() {
-    local f
-    f=$1
-
-    cat > $f <<EOF
-Unfortunately, the contents of this comment cannot be displayed as it contains
-some non-Unicode (UTF-8) characters or it is not a plain ASCII text.  Please
-remove those characters from the output of the program that generated it.
-EOF
-}
-
-force_publish() {
-    local src
-    local tgt
-
-    src=$1
-    tgt=$2
-
-    if [ -s ${src} ] && [ -d $(dirname ${tgt}) ]; then
-        mv ${src} ${tgt}
-        chmod g+w,o+w ${tgt}
-    fi
-}
-
-publish() {
-    check_encoding $1 && force_publish $1 $2 || blame_encoding $2
-}
-
 test_build() {
     local build_result
     local result
