@@ -20,6 +20,7 @@ import           Bead.Persistence.SQL.Entities
 import           Bead.Persistence.SQL.Assessment
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Evaluation
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.User
 
 import           Bead.Persistence.SQL.TestData
@@ -87,37 +88,37 @@ scoresOfUser user = do
 
 #ifdef TEST
 scoreTests = do
-  shrink "Score end-to-end story"
-    (do ioTest "Score end-to-end test" $ runSql $ do
-          -- Given
-          initDB
-          saveUser user1
-          c  <- saveCourse course
-          ca <- saveCourseAssessment c ast
+  ioTest "Score end-to-end test" $ runSql $ do
+    -- Given
+    saveUser user1
+    c  <- saveCourse course
+    ca <- saveCourseAssessment c ast
+    scs <- scoresOfUser user1name
+    equals [] scs "There were scores registered for unscored user."
 
-          scs <- scoresOfUser user1name
-          equals [] scs "There were scores registered for unscored user."
+    -- When
+    s  <- saveScore user1name ca scr
 
-          -- When
-          s  <- saveScore user1name ca scr
-          -- Then
-          sa <- assessmentOfScore s
-          equals ca sa "The assessment of the score was different."
-          -- Then
-          us <- usernameOfScore s
-          equals user1name us "The username of the score was different."
-          -- Then
-          es <- evaluationOfScore s
-          equals Nothing es "A non evaluated score has some evaluation."
-          -- Then
-          scs <- scoresOfUser user1name
-          equals [s] scs "There wasn't score for the scored user."
+    -- Then
+    sa <- assessmentOfScore s
+    equals ca sa "The assessment of the score was different."
 
-          -- When
-          e  <- saveScoreEvaluation s ev
-          es <- evaluationOfScore s
-          -- Then
-          equals (Just e) es "An evaluated score does not have some evaluation."
+    -- Then
+    us <- usernameOfScore s
+    equals user1name us "The username of the score was different."
 
-    ) (return ())
+    -- Then
+    es <- evaluationOfScore s
+    equals Nothing es "A non evaluated score has some evaluation."
+
+    -- Then
+    scs <- scoresOfUser user1name
+    equals [s] scs "There wasn't score for the scored user."
+
+    -- When
+    e  <- saveScoreEvaluation s ev
+    es <- evaluationOfScore s
+
+    -- Then
+    equals (Just e) es "An evaluated score does not have some evaluation."
 #endif

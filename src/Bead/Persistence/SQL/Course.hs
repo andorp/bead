@@ -16,6 +16,7 @@ import           Bead.Persistence.SQL.User
 #ifdef TEST
 import           Control.Monad.IO.Class (liftIO)
 
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.TestData
 
 import           Test.Tasty.TestSet (ioTest, equals, satisfies)
@@ -98,7 +99,6 @@ courseAdmins key = do
 
 courseAdminTests = do
   ioTest "Create Course Admin for the course" $ runSql $ do
-    initDB
     saveUser user1
     c <- saveCourse course
     acs <- administratedCourses user1name
@@ -111,13 +111,11 @@ courseAdminTests = do
     equals [c] (map fst acs) "The administrated course list was wrong."
 
   ioTest "No Course Admin for the course" $ runSql $ do
-    initDB
     c <- saveCourse course
     us <- courseAdmins c
     equals [] us "Some admin was found for the course."
 
   ioTest "Same user is created as admin twice" $ runSql $ do
-    initDB
     saveUser user1
     c <- saveCourse course
     let u1 = Domain.u_username user1
@@ -127,7 +125,6 @@ courseAdminTests = do
     equals [u1] us "Admins of course were different."
 
   ioTest "Two different users administrates the same course" $ runSql $ do
-    initDB
     saveUser user1
     saveUser user2
     c <- saveCourse course

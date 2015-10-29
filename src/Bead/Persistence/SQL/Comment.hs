@@ -18,8 +18,8 @@ import           Data.String (fromString)
 import           Bead.Persistence.SQL.Assignment
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Submission
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.User
-
 import           Bead.Persistence.SQL.TestData
 
 import           Test.Tasty.TestSet (ioTest, shrink, equals)
@@ -54,36 +54,32 @@ submissionOfComment key = do
 
 #ifdef TEST
 commentTests = do
-  shrink "Comment end-to-end story."
-    (do ioTest "Comment end-to-end test" $ runSql $ do
-          initDB
-          c  <- saveCourse course
-          ca <- saveCourseAssignment c asg
-          saveUser user1
-          s  <- saveSubmission ca user1name sbm
-          cs <- commentsOfSubmission s
-          equals
-            (Set.fromList [])
-            (Set.fromList cs)
-            "Comments were for an empty submission."
-          cm <- saveComment s cmt
-          cs <- commentsOfSubmission s
-          equals
-            (Set.fromList [cm])
-            (Set.fromList cs)
-            "Saved comment was not found for the submission."
-          cmt' <- loadComment cm
-          equals cmt cmt' "The comment was not saved and loaded correctly"
-          sc <- submissionOfComment cm
-          equals s sc "The submission of the comment was wrong"
-          cm2 <- saveComment s cmt
-          cs <- commentsOfSubmission s
-          equals
-            (Set.fromList [cm,cm2])
-            (Set.fromList cs)
-            "Comments of the submission were wrong."
-        return ())
-    (do return ())
-  return ()
+  ioTest "Comment end-to-end test" $ runSql $ do
+    c  <- saveCourse course
+    ca <- saveCourseAssignment c asg
+    saveUser user1
+    s  <- saveSubmission ca user1name sbm
+    cs <- commentsOfSubmission s
+    equals
+      (Set.fromList [])
+      (Set.fromList cs)
+      "Comments were for an empty submission."
+    cm <- saveComment s cmt
+    cs <- commentsOfSubmission s
+    equals
+      (Set.fromList [cm])
+      (Set.fromList cs)
+      "Saved comment was not found for the submission."
+    cmt' <- loadComment cm
+    equals cmt cmt' "The comment was not saved and loaded correctly"
+    sc <- submissionOfComment cm
+    equals s sc "The submission of the comment was wrong"
+    cm2 <- saveComment s cmt
+    cs <- commentsOfSubmission s
+    equals
+      (Set.fromList [cm,cm2])
+      (Set.fromList cs)
+      "Comments of the submission were wrong."
+
 #endif
 

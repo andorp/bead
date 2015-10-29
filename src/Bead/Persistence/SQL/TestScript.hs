@@ -13,7 +13,7 @@ import           Bead.Persistence.SQL.JSON
 
 #ifdef TEST
 import           Bead.Persistence.SQL.Course
-
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.TestData
 
 import           Test.Tasty.TestSet (ioTest, shrink, equals)
@@ -63,7 +63,6 @@ modifyTestScript key script = do
 testScriptTests = do
   shrink "Test Script end-to-end story."
     (do ioTest "Test Script end-to-end test" $ runSql $ do
-          initDB
           c <- saveCourse course
           t <- saveTestScript c script
           script' <- loadTestScript t
@@ -76,19 +75,16 @@ testScriptTests = do
     )
 
     (do ioTest "Save and load test script" $ runSql $ do
-          initDB
           c <- saveCourse course
           t <- saveTestScript c script
           script' <- loadTestScript t
           equals script script' "The scripts were differents."
         ioTest "Course of the test script" $ runSql $ do
-          initDB
           c <- saveCourse course
           t <- saveTestScript c script
           c' <- courseOfTestScript t
           equals c c' "The course keys were differents."
         ioTest "Modify the test script" $ runSql $ do
-          initDB
           c <- saveCourse course
           t <- saveTestScript c script
           modifyTestScript t script2

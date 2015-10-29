@@ -69,7 +69,6 @@ Library
     CPP-Options: -DMYSQL
 
     Build-Depends:
-      persistent-sqlite >= 2.2 && < 2.3,
       persistent-mysql >= 2.3 && < 2.4,
       persistent-template >= 2.1 && < 2.2,
       resourcet
@@ -87,6 +86,7 @@ Library
       Bead.Persistence.SQL.FileSystem
       Bead.Persistence.SQL.Group
       Bead.Persistence.SQL.MySQL
+      Bead.Persistence.SQL.MySQLTestRunner
       Bead.Persistence.SQL.JSON
       Bead.Persistence.SQL.Notification
       Bead.Persistence.SQL.Registration
@@ -161,7 +161,6 @@ Library
     old-locale == 1.0.0.6,
     pandoc >=1.14 && <1.16,
     persistent >=2.2 && <2.3,
-    persistent-sqlite >=2.2 && <2.3,
     persistent-mysql >=2.3 && <2.4,
     persistent-template >=2.1 && <2.2,
     pqueue >=1.2.0 && <2.0,
@@ -339,7 +338,6 @@ test-suite BeadTest
   if flag(MySQL)
     CPP-Options: -DTEST -DMYSQL
     Build-Depends:
-      persistent-sqlite >=2.2 && <2.3,
       persistent-mysql >=2.3 && <2.4,
       persistent-template >=2.1 && <2.2,
       resourcet

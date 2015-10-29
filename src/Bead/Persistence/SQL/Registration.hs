@@ -9,6 +9,7 @@ import           Bead.Persistence.SQL.Class
 import           Bead.Persistence.SQL.Entities
 
 #ifdef TEST
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.TestData
 
 import           Test.Tasty.TestSet (ioTest, equals)
@@ -36,7 +37,6 @@ loadUserReg key = do
 
 userRegistrationTests = do
   ioTest "Save and load user registration" $ runSql $ do
-    initDB
     k <- saveUserReg reg
     reg' <- loadUserReg k
     equals reg reg' "User registration was saved and load incorrectly."
