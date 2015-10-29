@@ -32,15 +32,22 @@ msg_debug() {
 
 check_encoding() {
     local f
+    local g
+    local r
+
     f=$1
 
     [ ! -s $f ] && return 0
 
-    case $(file -b $f) in
-      *ASCII\ text*) return 0;;
-      *UTF-8\ Unicode\ text*) return 0;;
-      *) return 1;;
+    g=$(mktemp)
+    (echo "This is a workaround for file(1), you should not see it."; cat $f) > $g
+    case $(file -b $g) in
+      *ASCII\ text*) r=0;;
+      *UTF-8\ Unicode\ text*) r=0;;
+      *) r=1;;
     esac
+    rm -f $g
+    return $r
 }
 
 blame_encoding() {
