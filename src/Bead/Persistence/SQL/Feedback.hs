@@ -17,6 +17,7 @@ import qualified Data.Set as Set
 import           Bead.Persistence.SQL.Assignment
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Submission
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.User
 
 import           Bead.Persistence.SQL.TestData
@@ -53,45 +54,40 @@ submissionOfFeedback key = do
 
 #ifdef TEST
 feedbackTests = do
-  shrink "Feedback end-to-end story."
-    (do ioTest "Feedback end-to-end test" $ runSql $ do
-          initDB
-          c  <- saveCourse course
-          ca <- saveCourseAssignment c asg
-          saveUser user1
-          s  <- saveSubmission ca user1name sbm
-          fs <- feedbacksOfSubmission s
-          equals
-            (Set.fromList [])
-            (Set.fromList fs)
-            "Feedbacks were for an empty submission."
+  ioTest "Feedback end-to-end test" $ runSql $ do
+    c  <- saveCourse course
+    ca <- saveCourseAssignment c asg
+    saveUser user1
+    s  <- saveSubmission ca user1name sbm
+    fs <- feedbacksOfSubmission s
+    equals
+      (Set.fromList [])
+      (Set.fromList fs)
+      "Feedbacks were for an empty submission."
 
-          let saveFb s f = do fm <- saveFeedback s f
-                              f' <- loadFeedback fm
-                              equals f f' "The feedback was not saved and loaded correctly"
-                              return fm
+    let saveFb s f = do fm <- saveFeedback s f
+                        f' <- loadFeedback fm
+                        equals f f' "The feedback was not saved and loaded correctly"
+                        return fm
 
-          fm <- saveFb s fbTestResult
-          fs <- feedbacksOfSubmission s
-          equals
-            (Set.fromList [fm])
-            (Set.fromList fs)
-            "Saved feedback was not found for the submission."
-          fc <- submissionOfFeedback fm
-          equals s fc "The submission of the feedback was wrong"
+    fm <- saveFb s fbTestResult
+    fs <- feedbacksOfSubmission s
+    equals
+      (Set.fromList [fm])
+      (Set.fromList fs)
+      "Saved feedback was not found for the submission."
+    fc <- submissionOfFeedback fm
+    equals s fc "The submission of the feedback was wrong"
 
-          fm2 <- saveFb s fbMsgStudent
-          fs <- feedbacksOfSubmission s
-          equals
-            (Set.fromList [fm,fm2])
-            (Set.fromList fs)
-            "Feedbacks of the submission were wrong."
+    fm2 <- saveFb s fbMsgStudent
+    fs <- feedbacksOfSubmission s
+    equals
+      (Set.fromList [fm,fm2])
+      (Set.fromList fs)
+      "Feedbacks of the submission were wrong."
 
-          saveFb s fbMsgForAdmin
-          saveFb s fbEvaluated
+    saveFb s fbMsgForAdmin
+    saveFb s fbEvaluated
 
-        return ())
-    (do return ())
-  return ()
 #endif
 

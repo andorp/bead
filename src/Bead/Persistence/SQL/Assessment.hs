@@ -19,7 +19,7 @@ import qualified Data.Set as Set
 
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Group
-
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.TestData
 
 import           Test.Tasty.TestSet (ioTest, shrink, equals)
@@ -89,37 +89,33 @@ assessmentsOfGroup key = do
 #ifdef TEST
 
 assessmentTests = do
-  shrink "Assessment end-to-end story"
-    (do ioTest "Assessment end-to-end test" $ runSql $ do
-          initDB
-          c  <- saveCourse course
-          g  <- saveGroup c group
-          ca <- saveCourseAssessment c ast
-          ga <- saveGroupAssessment g ast
+  ioTest "Assessment end-to-end test" $ runSql $ do
+    c  <- saveCourse course
+    g  <- saveGroup c group
+    ca <- saveCourseAssessment c ast
+    ga <- saveGroupAssessment g ast
 
-          cast' <- loadAssessment ca
-          equals ast cast' "The saved and loaded course assessnment were different."
-          cca <- courseOfAssessment ca
-          equals (Just c) cca "The course assessment has no appropiate course"
-          cga <- groupOfAssessment ca
-          equals Nothing cga "The course assessment had a group"
-          modifyAssessment ca ast2
-          cast2 <- loadAssessment ca
-          equals ast2 cast2 "The course assessment modification has failed"
+    cast' <- loadAssessment ca
+    equals ast cast' "The saved and loaded course assessnment were different."
+    cca <- courseOfAssessment ca
+    equals (Just c) cca "The course assessment has no appropiate course"
+    cga <- groupOfAssessment ca
+    equals Nothing cga "The course assessment had a group"
+    modifyAssessment ca ast2
+    cast2 <- loadAssessment ca
+    equals ast2 cast2 "The course assessment modification has failed"
 
-          gast' <- loadAssessment ga
-          equals ast gast' "The saved and loaded group assessnment were different."
-          cga <- courseOfAssessment ga
-          equals Nothing cga "The group assessment had course"
-          gga <- groupOfAssessment ga
-          equals (Just g) gga "The group assessment had no group"
-          modifyAssessment ga ast2
-          gast2 <- loadAssessment ga
-          equals ast2 gast2 "The course assessment modification has failed"
-    ) (return ())
+    gast' <- loadAssessment ga
+    equals ast gast' "The saved and loaded group assessnment were different."
+    cga <- courseOfAssessment ga
+    equals Nothing cga "The group assessment had course"
+    gga <- groupOfAssessment ga
+    equals (Just g) gga "The group assessment had no group"
+    modifyAssessment ga ast2
+    gast2 <- loadAssessment ga
+    equals ast2 gast2 "The course assessment modification has failed"
 
   ioTest "List course assessments" $ runSql $ do
-    initDB
     c  <- saveCourse course
     as <- assessmentsOfCourse c
     equals [] as "The course had some assessment after the creation"
@@ -135,7 +131,6 @@ assessmentTests = do
       (Set.fromList as) "The course had different assessment set"
 
   ioTest "List group assessments" $ runSql $ do
-    initDB
     c  <- saveCourse course
     g  <- saveGroup c group
     as <- assessmentsOfGroup g

@@ -18,7 +18,7 @@ import qualified Data.Set as Set
 
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.User
-
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.TestData
 
 import           Test.Tasty.TestSet (ioTest, equals)
@@ -95,21 +95,18 @@ unsubscribe username courseDomKey groupDomKey = withUser username (return ()) $ 
 
 groupTests = do
   ioTest "Create and load group" $ runSql $ do
-    initDB
     c <- saveCourse course
     g <- saveGroup  c group
     group' <- loadGroup g
     equals group group' "Group was saved and load incorrectly"
 
   ioTest "Course key of group was saved correctly" $ runSql $ do
-    initDB
     c <- saveCourse course
     g <- saveGroup  c group
     c' <- courseOfGroup g
     equals c c' "Course key was not loaded correctly"
 
   ioTest "Check group subscription" $ runSql $ do
-    initDB
     saveUser user1
     c <- saveCourse course
     g <- saveGroup  c group
@@ -122,7 +119,6 @@ groupTests = do
     equals True ingr "User was not in the subscribed group"
 
   ioTest "Check creating group admins" $ runSql $ do
-    initDB
     saveUser user1
     saveUser user2
     c <- saveCourse course
@@ -144,7 +140,6 @@ groupTests = do
       "The admins were different to the group"
 
   ioTest "Check the user subscription and unsubscription from the course" $ runSql $ do
-    initDB
     saveUser user1
     saveUser user2
     c <- saveCourse course

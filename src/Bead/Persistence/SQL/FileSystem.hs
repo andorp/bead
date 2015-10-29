@@ -100,7 +100,9 @@ initFS = liftIO $ mapM_ createDirWhenDoesNotExist fsDirs
       unless existDir . createDirectory $ d
 
 removeFS :: (MonadIO io) => io ()
-removeFS = liftIO $ removeDirectoryRecursive datadir
+removeFS = liftIO $ do
+  exists <- doesDirectoryExist datadir
+  when exists $ removeDirectoryRecursive datadir
 
 isSetUpFS :: (MonadIO io) => io Bool
 isSetUpFS = liftIO . fmap and $ mapM doesDirectoryExist fsDirs

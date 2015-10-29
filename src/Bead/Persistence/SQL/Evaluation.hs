@@ -18,6 +18,7 @@ import           Bead.Persistence.SQL.JSON
 import           Bead.Persistence.SQL.Assignment
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Submission
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.User
 
 import           Bead.Persistence.SQL.TestData
@@ -77,26 +78,22 @@ scoreOfEvaluation key = do
 #ifdef TEST
 
 evaluationTests = do
-  shrink "Evaluation end-to-end story"
-    (do ioTest "Evaluation end-to-end story" $ runSql $ do
-          initDB
-          c  <- saveCourse course
-          ca <- saveCourseAssignment c asg
-          saveUser user1
-          s  <- saveSubmission ca user1name sbm
-          se1 <- evaluationOfSubmission s
-          equals Nothing se1 "Found some evaluation for a non evaluated submission."
-          e  <- saveSubmissionEvaluation s ev
-          ev' <- loadEvaluation e
-          equals ev ev' "Saved and load evaluation are differents."
-          s2 <- submissionOfEvaluation e
-          equals (Just s) s2 "Submission of the evaluation is not calculated correctly."
-          se2 <- evaluationOfSubmission s
-          equals (Just e) se2 "Found some evaluation for a non evaluated submission."
-          modifyEvaluation e ev2
-          ev2' <- loadEvaluation e
-          equals ev2 ev2' "The modified evaluation was not read out correctly.")
-    (return ()) -- TODO: Shrinked tests
-  return ()
+  ioTest "Evaluation end-to-end story" $ runSql $ do
+    c  <- saveCourse course
+    ca <- saveCourseAssignment c asg
+    saveUser user1
+    s  <- saveSubmission ca user1name sbm
+    se1 <- evaluationOfSubmission s
+    equals Nothing se1 "Found some evaluation for a non evaluated submission."
+    e  <- saveSubmissionEvaluation s ev
+    ev' <- loadEvaluation e
+    equals ev ev' "Saved and load evaluation are differents."
+    s2 <- submissionOfEvaluation e
+    equals (Just s) s2 "Submission of the evaluation is not calculated correctly."
+    se2 <- evaluationOfSubmission s
+    equals (Just e) se2 "Found some evaluation for a non evaluated submission."
+    modifyEvaluation e ev2
+    ev2' <- loadEvaluation e
+    equals ev2 ev2' "The modified evaluation was not read out correctly."
 
 #endif

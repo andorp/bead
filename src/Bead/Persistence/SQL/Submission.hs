@@ -24,7 +24,7 @@ import           Data.String (fromString)
 import           Bead.Persistence.SQL.Assignment
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.User
-
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.TestData
 
 import           Test.Tasty.TestSet (ioTest, shrink, equals)
@@ -176,7 +176,6 @@ usersOpenedSubmissions key username =
 submissionTests = do
   shrink "Submission end-to-end story."
     (do ioTest "Submission end-to-end test case" $ runSql $ do
-          initDB
           c  <- saveCourse course
           ca <- saveCourseAssignment c asg
           saveUser user1
@@ -239,13 +238,11 @@ submissionTests = do
             "The opened submission returned wrong set after removing one opened submissions for user1"
           return ())
     (do ioTest "Save and load submission" $ runSql $ do
-          initDB
           c  <- saveCourse course
           ca <- saveCourseAssignment c asg
           saveUser user1
           s  <- saveSubmission ca user1name sbm
           sbm' <- loadSubmission s
           equals sbm sbm' "Saved and loaded submission were different.")
-  return ()
 
 #endif

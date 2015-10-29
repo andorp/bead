@@ -140,7 +140,7 @@ testOpenSubmissions = testCase "Users separated correctly in open submission tab
         , u_language = Language "hu"
         , u_uid = usernameCata Uid otherStudent
         }
-      admin = Username "admin"
+      admin = Username "admin2"
       adminUser = User {
           u_role = Admin
         , u_username = admin
