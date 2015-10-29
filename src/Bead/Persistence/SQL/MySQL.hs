@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE Rank2Types #-}
 module Bead.Persistence.SQL.MySQL where
 
@@ -64,7 +65,8 @@ createPersistInit config = do
   let useDatabase = rawExecute (fromString $ ("USE " ++ dbname)) []
   let select = runMySqlConn conn $ do
         useDatabase
-        createTables <- getMigration migrateAll
+        createTables <- fmap (filter (not . isExceptionalMigration))
+                             (getMigration migrateAll)
         fsSetUp <- FS.isSetUpFS
         return (and [null createTables, fsSetUp])
   let initDatabase = do
@@ -101,3 +103,21 @@ createPersistInterpreter config = do
 runInterpreter :: Interpreter -> Persist a -> IO (Erroneous a)
 runInterpreter (Interpreter run) = run
 
+-- * Migration fix
+
+isExceptionalMigration cmd = elem cmd migrationCommandExceptions
+
+-- If a field is created with longtext utf8 modifier, the persist migrates
+-- with alter table, it is probably an issue.
+migrationCommandExceptions =
+  [ "ALTER TABLE `assignment` CHANGE `description` `description` longtext character set utf8 NOT NULL"
+  , "ALTER TABLE `comment` CHANGE `text` `text` longtext character set utf8 NOT NULL"
+  , "ALTER TABLE `evaluation` CHANGE `result` `result` longtext character set utf8 NOT NULL"
+  , "ALTER TABLE `evaluation` CHANGE `written` `written` longtext character set utf8 NOT NULL"
+  , "ALTER TABLE `feedback` CHANGE `info` `info` longtext character set utf8 NOT NULL"
+  , "ALTER TABLE `notification` CHANGE `message` `message` longtext character set utf8 NOT NULL"
+  , "ALTER TABLE `submission` CHANGE `simple` `simple` longtext character set utf8 NULL"
+  , "ALTER TABLE `test_case` CHANGE `simple_value` `simple_value` longtext character set utf8 NULL"
+  , "ALTER TABLE `test_script` CHANGE `notes` `notes` longtext character set utf8 NOT NULL"
+  , "ALTER TABLE `test_script` CHANGE `script` `script` longtext character set utf8 NOT NULL"
+  ]
