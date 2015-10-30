@@ -29,7 +29,7 @@ import           Bead.View.Translation
 -- comes from a text area field, crlf endings must be replaced with lf in the string
 markdownToHtml :: String -> Html
 markdownToHtml = either (fromString . show) (writeHtml def') . readMarkdown def . replaceCrlf
-  where def' = def { writerHTMLMathMethod = MathML Nothing }
+  where def' = def { writerHTMLMathMethod = KaTeX "/katex/katex.min.js" "/katex/katex.min.css" }
 
 replaceCrlf :: String -> String
 replaceCrlf = replace "\r\n" "\n"
