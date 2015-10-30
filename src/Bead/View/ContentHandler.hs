@@ -185,7 +185,7 @@ renderBootstrapPage :: IHtml -> ContentHandler ()
 renderBootstrapPage page = do
   state <- userState
   secs <- fmap sessionTimeout $ lift getConfiguration
-  i18nE >>= blaze . (runBootstrapPage (bootstrapUserFrame state page secs))
+  i18nE >>= blaze . (runBootstrapPage state (bootstrapUserFrame state page secs))
 
 -- Renders the public page selecting the I18N translation based on the
 -- language stored in the session, if there is no such value, the
@@ -205,7 +205,7 @@ renderBootstrapPublicPage p = do
   language <- languageFromSession
   t <- maybe (return Nothing) getDictionary language
   let translator = maybe trans unDictionary t
-  blaze (runBootstrapPage p translator)
+  blaze (runBootstrapPage UserNotLoggedIn p translator)
 
 withUserState :: (UserState -> ContentHandler c) -> ContentHandler c
 withUserState = (userState >>=)
