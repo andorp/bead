@@ -46,7 +46,9 @@ bootStrapDocument :: IHtml -> IHtml
 bootStrapDocument body' = do
   body <- body'
   return $ do
-    H.head $ do
+    docType
+    H.html $ do
+      H.head $ do
         H.meta ! A.charset "utf-8"
         H.title "BE-AD Assignment Management System"
         H.link ! A.rel "shortcut icon" ! A.href "icon.ico"
@@ -65,6 +67,15 @@ bootStrapDocument body' = do
         css "/bootstrap-datetimepicker.min.css"
         js "/bootstrap-datetimepicker.min.js"
         js "/fay/DynamicContents.js"
+        css "/katex/katex.min.css"
+        js  "/katex/katex.min.js"
+        H.script $ fromString $ unwords
+          [ "window.onload = function(){ var mathElements = document.getElementsByClassName(\"math\");"
+          , "for (var i=0; i < mathElements.length; i++) {"
+          , "var texText = mathElements[i].firstChild;"
+          , "katex.render(texText.data, mathElements[i]);"
+          , "}}"
+          ]
     H.body $ body
 
 runBootstrapPage :: IHtml -> I18N -> Html
