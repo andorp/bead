@@ -74,13 +74,15 @@ submissionTable userTime submissions = do
       (msg $ msg_UserSubmissions_NotFound "Not found")
       (msg $ msg_UserSubmissions_NonEvaluated "Not evaluated")
       (msg . bool (msg_UserSubmissions_Tests_Passed "Tests are passed") (msg_UserSubmissions_Tests_Failed "Tests are failed"))
-      (const (evaluationDataMap bin pct . evResult))
+      (const (evaluationDataMap bin pct free . evResult))
       where
         bin (Binary b) = msg $ resultCata (msg_UserSubmissions_Accepted "Accepted")
                                           (msg_UserSubmissions_Rejected "Rejected")
                                           b
         pct (Percentage (Scores [x])) = fromString $ printf "%3.0f%%" (100 * x)
         pct (Percentage _) = fromString "Error: ???%"
+
+        free (FreeForm _) = msg $ msg_UserSubmissions_FreeForm "Evaluated"
 
 infixl 7 .|.
 title .|. value = tr $ do

@@ -162,14 +162,16 @@ type UsersFullname = String
 evaluationResultCata
   binary
   percentage
+  freeForm
   e = case e of
     BinEval b -> binary b
     PctEval p -> percentage p
+    FreeEval f -> freeForm f
 
-allBinaryEval :: [EvaluationData b p] -> Maybe [b]
+allBinaryEval :: [EvaluationData b p f] -> Maybe [b]
 allBinaryEval = sequence . map binaryEval
 
-allPercentEval :: [EvaluationData b p] -> Maybe [p]
+allPercentEval :: [EvaluationData b p f] -> Maybe [p]
 allPercentEval = sequence . map percentEval
 
 -- | Evaluation of a submission
@@ -185,12 +187,14 @@ evaluationCata f (Evaluation result written) = f result written
 withEvaluation e f = evaluationCata f e
 
 resultString :: EvResult -> TransMsg
-resultString (EvResult (BinEval (Binary Passed))) = TransMsg $ msg_Domain_EvalPassed "Passed"
-resultString (EvResult (BinEval (Binary Failed))) = TransMsg $ msg_Domain_EvalFailed "Failed"
-resultString (EvResult (PctEval p)) =
-  case point p of
+resultString = evResultCata
+  (binaryCata (resultCata
+    (TransMsg $ msg_Domain_EvalPassed "Passed")
+    (TransMsg $ msg_Domain_EvalFailed "Failed")))
+  (\p -> case point p of
     Nothing -> TransMsg $ msg_Domain_EvalNoResultError "No evaluation result, some internal error happened!"
-    Just q  -> TransPrmMsg (msg_Domain_EvalPercentage "%s%%") (show . round $ 100.0 * q)
+    Just q  -> TransPrmMsg (msg_Domain_EvalPercentage "%s%%") (show . round $ 100.0 * q))
+  (freeForm (TransPrmMsg (msg_Domain_FreeForm "Evaluation: %s")))
 
 evaluationToFeedback :: UTCTime -> User -> Evaluation -> Feedback
 evaluationToFeedback t u e = Feedback info t where
@@ -633,7 +637,7 @@ instance CompareHun Username where
   compareHun (Username u) (Username u') = compareHun u u'
 
 instance CompareHun UserDesc where
-  compareHun (UserDesc username fullname uid) (UserDesc username' fullname' uid') =
+  compareHun (UserDesc username fullname _uid) (UserDesc username' fullname' _uid') =
     case compareHun fullname fullname' of
       EQ -> compareHun username username'
       other -> other

@@ -236,19 +236,14 @@ instance SnapFieldName GroupRegistrationField where
 instance SnapFieldName SubmissionField where
   fieldName = fromString . sfFieldName
 
-data EvaluationField
-  = EvaluationValueField { evFieldName :: String }
-  | EvaluationStateField { evFieldName :: String }
-  | EvaluationKeyField   { evFieldName :: String }
-  | EvaluationConfigField { evFieldName :: String }
-  | EvaluationPercentageField { evFieldName :: String }
-  | EvaluationCommentOnlyField { evFieldName :: String }
+newtype EvaluationField = EvaluationField { evFieldName :: String }
 
-evaluationValueField = EvaluationValueField "evaluation"
-evaluationKeyField   = EvaluationKeyField "evaluation-key"
-evaluationConfigField = EvaluationConfigField "evaluation-config"
-evaluationPercentageField = EvaluationPercentageField "evaluation-percentage"
-evaluationCommentOnlyField = EvaluationCommentOnlyField "evaluation-comment-only"
+evaluationValueField = EvaluationField "evaluation"
+evaluationKeyField   = EvaluationField "evaluation-key"
+evaluationConfigField = EvaluationField "evaluation-config"
+evaluationPercentageField = EvaluationField "evaluation-percentage"
+evaluationCommentOnlyField = EvaluationField "evaluation-comment-only"
+evaluationFreeFormField = EvaluationField "evaluation-freeformat-text"
 
 instance SnapFieldName EvaluationField where
   fieldName = fromString . evFieldName
@@ -399,9 +394,9 @@ fieldList = map fieldName $ join [
   , SFN groupKeyName,   SFN groupCodeField,  SFN groupNameField,         SFN groupDescField
   , SFN usernameField,  SFN courseKeyInfo,   SFN userEmailField,         SFN userFamilyNameField, SFN userUidField
   , SFN userRoleField,  SFN loginSubmitBtn,  SFN assignmentDescField,    SFN assignmentTCsField
-  , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField, SFN evaluationValueField
+  , SFN selectedCourse, SFN selectedCourseAdmin,       SFN groupRegistrationField
   , SFN assignmentAspectField, SFN assignmentStartField, SFN assignmentEndField,     SFN evaluationResultField
-  , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField,     SFN evaluationKeyField
+  , SFN assignmentKeyField, SFN assignmentEvField,     SFN submissionKeyField
   , SFN commentKeyField,SFN commentValueField, SFN regSubmitBtn, SFN regGroupSubmitBtn, SFN createGroupBtn
   , SFN assignGroupAdminBtn, SFN createCourseBtn, SFN assignBtn, SFN selectBtn, SFN saveEvalBtn
   , SFN saveSubmitBtn, SFN submitSolutionBtn, SFN commentBtn, SFN saveChangesBtn
@@ -418,6 +413,9 @@ fieldList = map fieldName $ join [
   , SFN fileUploadField, SFN fileUploadSubmit, SFN usersFileTableName
   , SFN assignmentTestScriptField, SFN assignmentUsersFileField, SFN assignmentPwdField
   , SFN assignmentSubmissionTypeField, SFN assignmentNoOfTriesField
+
+  , SFN evaluationValueField, SFN evaluationKeyField, SFN evaluationConfigField
+  , SFN evaluationPercentageField, SFN evaluationCommentOnlyField, SFN evaluationFreeFormField
 
   , SFN testScriptNameField, SFN testScriptTypeField, SFN testScriptDescField
   , SFN testScriptNotesField, SFN testScriptScriptField, SFN testScriptSaveButton

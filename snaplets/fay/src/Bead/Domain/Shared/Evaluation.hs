@@ -17,35 +17,45 @@ resultCata
     Failed -> failed
 
 -- Represents the evaluation type for an assignment
-data EvaluationData b p
+data EvaluationData b p f
   = BinEval b
   | PctEval p
+  | FreeEval f
   deriving (Eq, Show, Read, Data, Typeable)
 
-evaluationDataMap :: (b -> a) -> (p -> a) -> EvaluationData b p -> a
-evaluationDataMap f _ (BinEval x) = f x
-evaluationDataMap _ f (PctEval x) = f x
+evaluationDataMap
+  binEval
+  pctEval
+  freeEval
+  e = case e of
+    BinEval b -> binEval b
+    PctEval p -> pctEval p
+    FreeEval f -> freeEval f
 
-withEvaluationData d f g = evaluationDataMap f g d
+withEvaluationData d binEval pctEval freeEval
+  = evaluationDataMap binEval pctEval freeEval d
 
-evaluationTypes :: [EvaluationData () ()]
-evaluationTypes = [BinEval (), PctEval ()]
+evaluationTypes :: [EvaluationData () () ()]
+evaluationTypes = [BinEval (), PctEval (), FreeEval ()]
 
-binaryEval :: EvaluationData b p -> Maybe b
+binaryEval :: EvaluationData b p f -> Maybe b
 binaryEval (BinEval b) = Just b
 binaryEval _           = Nothing
 
-percentEval :: EvaluationData b p -> Maybe p
+percentEval :: EvaluationData b p f -> Maybe p
 percentEval (PctEval p) = Just p
 percentEval _           = Nothing
 
-encodeEvalType :: EvaluationData a b -> String
-encodeEvalType (BinEval _) = "BinEval"
-encodeEvalType (PctEval _) = "PctEval"
+encodeEvalType :: EvaluationData b p f -> String
+encodeEvalType = evaluationDataMap
+  (const "BinEval")
+  (const "PctEval")
+  (const "FreeEval")
 
-decodeEvalType :: String -> EvaluationData () ()
+decodeEvalType :: String -> EvaluationData () () ()
 decodeEvalType "\"BinEval\"" = BinEval ()
 decodeEvalType "\"PctEval\"" = PctEval ()
+decodeEvalType "\"FreeEval\"" = FreeEval ()
 decodeEvalType s = error $ "decodeEvalType: '" ++ s ++ "'"
 
 data PctConfig = PctConfig { pLimit :: Double }
@@ -67,19 +77,29 @@ data Percentage = Percentage (Scores Double)
 
 percentageCata f (Percentage x) = f x
 
+data FreeForm = FreeForm String
+  deriving (Eq, Show, Read, Data, Typeable)
+
+freeForm
+  free
+  x = case x of
+    FreeForm f -> free f
+
 data EvResult = EvResult {
-    evResult :: EvaluationData Binary Percentage
+    evResult :: EvaluationData Binary Percentage FreeForm
   } deriving (Eq, Show, Read, Data, Typeable)
 
 evResultCata
   binary
   percentage
+  freeForm
   e = case e of
     (EvResult (BinEval b)) -> binary b
     (EvResult (PctEval p)) -> percentage p
+    (EvResult (FreeEval f)) -> freeForm f
 
-withEvResult result binary percentage
-  = evResultCata binary percentage result
+withEvResult result binary percentage freeForm
+  = evResultCata binary percentage freeForm result
 
 percentageResult :: Double -> EvResult
 percentageResult d = EvResult (PctEval (Percentage (Scores { unScores = [ d ]})))
@@ -91,24 +111,33 @@ percentValue _ = Nothing
 binaryResult :: Result -> EvResult
 binaryResult r = EvResult (BinEval (Binary r))
 
+freeFormResult :: String -> EvResult
+freeFormResult = EvResult . FreeEval . FreeForm
+
 data EvConfig = EvConfig {
-    evConfig :: EvaluationData () Double
+    evConfig :: EvaluationData () Double ()
   } deriving (Eq, Show, Read, Data, Typeable)
 
 evConfigCata
   binary
   percentage
+  freeForm
   e = case e of
     (EvConfig (BinEval ())) -> binary
     (EvConfig (PctEval p))  -> percentage p
+    (EvConfig (FreeEval ())) -> freeForm
 
-withEvConfig e b p = evConfigCata b p e
+withEvConfig e binary percentage freeForm
+  = evConfigCata binary percentage freeForm e
 
 percentageConfig :: Double -> EvConfig
 percentageConfig = EvConfig . PctEval
 
 binaryConfig :: EvConfig
 binaryConfig = EvConfig (BinEval ())
+
+freeFormConfig :: EvConfig
+freeFormConfig = EvConfig (FreeEval ())
 
 -- Command that can send from the evaluation page to the
 -- server. It consists of a comment value, come from the

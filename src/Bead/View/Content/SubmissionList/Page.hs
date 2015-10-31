@@ -91,6 +91,7 @@ submissionListContent p = do
             (msg $ msg_SubmissionList_Passed "Passed")
             (msg $ msg_SubmissionList_Failed "Failed")))
           (percentageCata (fromString . scores))
+          (freeForm fromString)
 
         scores (Scores [])  = "0%"
         scores (Scores [p]) = concat [show . round $ 100 * p, "%"]

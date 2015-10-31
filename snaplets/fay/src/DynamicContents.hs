@@ -341,9 +341,12 @@ hookEvaluationTypeForm hook = do
         (EvConfig (BinEval _)) -> do
            setEvaluationConfig binaryConfig
            setSelectionValue selection "\"BinEval\""
-        (EvConfig (PctEval p)) -> do
+        (EvConfig (PctEval _)) -> do
            setEvaluationConfig (percentageConfig 0.0)
            setSelectionValue selection "\"PctEval\""
+        (EvConfig (FreeEval _)) -> do
+          setEvaluationConfig freeFormConfig
+          setSelectionValue selection "\"FreeEval\""
 
     changeFormContent :: JQuery -> Event -> Fay ()
     changeFormContent form e = void $ do
@@ -354,6 +357,8 @@ hookEvaluationTypeForm hook = do
           setEvaluationConfig binaryConfig
         (PctEval _) -> do
           setEvaluationConfig (percentageConfig 0.0)
+        (FreeEval _) -> do
+          setEvaluationConfig freeFormConfig
 
     setEvaluationConfig :: EvConfig -> Fay ()
     setEvaluationConfig c =

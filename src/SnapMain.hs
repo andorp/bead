@@ -17,7 +17,6 @@ import           Bead.Controller.ServiceContext as S
 import           Bead.Daemon.Email
 #endif
 #ifdef SSO
-import           Data.Maybe
 import           Bead.Daemon.LDAP
 #else
 import           Text.Regex.TDFA

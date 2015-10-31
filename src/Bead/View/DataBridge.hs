@@ -4,6 +4,7 @@ module Bead.View.DataBridge where
 import Control.Monad ((>=>), join)
 import Data.Char (toUpper)
 import Data.Maybe (fromMaybe)
+import Data.String (fromString)
 import Data.Time (LocalTime(..))
 import Text.Printf (printf)
 
@@ -53,6 +54,9 @@ parameterFold
   -> b
 parameterFold f (Parameter encode decode name decodeError notFound) =
   f encode decode name decodeError notFound
+
+instance SnapFieldName (Parameter a) where
+  fieldName = fromString . name
 
 -- Creates a request parameter value encoding the given value with the
 -- given parameter
@@ -178,20 +182,26 @@ evalConfigParameter field = Parameter {
     readEvalConfig xs = fmap convert $ decodeFromFay xs
       where
         convert :: EvConfig -> EvConfig
-        convert = evaluationDataMap (const binaryConfig) (percentageConfig . guardPercentage) . evConfig
+        convert = evaluationDataMap
+          (const binaryConfig)
+          (percentageConfig . guardPercentage)
+          (const freeFormConfig)
+          . evConfig
 
         guardPercentage :: Double -> Double
         guardPercentage x
            | 0 > x || x > 1 = error $ "Invalid percentage value:" ++ show x
            | otherwise = x
 
-evaluationPercentagePrm :: String -> Parameter Int
-evaluationPercentagePrm field =
-  mapParameter show read $ stringParameter field "Evaluation percentage"
+evaluationPercentagePrm :: Parameter Int
+evaluationPercentagePrm
+  = mapParameter show read
+    $ stringParameter (fieldName evaluationPercentageField) "Evaluation percentage"
 
-evaluationCommentOnlyPrm :: String -> Parameter Bool
-evaluationCommentOnlyPrm field =
-  mapParameter show read $ stringParameter field "Evaluation comment only"
+evaluationCommentOnlyPrm :: Parameter Bool
+evaluationCommentOnlyPrm
+  = mapParameter show read
+    $ stringParameter (fieldName evaluationCommentOnlyField) "Evaluation comment only"
 
 #ifdef TEST
 
@@ -211,6 +221,7 @@ evalConfigPrmTest = group "evalConfigPrm" $ do
   eqPartitions (decode param)
     [ Partition "Binary" (encode param binaryConfig) (Just binaryConfig) "Parsing failed"
     , Partition "Percenteage" (encode param (percentageConfig 0.96)) (Just (percentageConfig 0.96)) "Parsing failed"
+    , Partition "FreeForm" (encode param freeFormConfig) (Just freeFormConfig) "Parsing failed"
     ]
   where
     -- The percentage calculation is interested only in 3 decimal digits
@@ -223,8 +234,9 @@ evalConfigPrmTest = group "evalConfigPrm" $ do
     pctEpsilon :: EvConfig -> EvConfig -> Bool
     pctEpsilon c1 c2 =
       withEvConfig c1
-        (withEvConfig c2 True (const False))
-        (\p1 -> withEvConfig c2 False (\p2 -> abs (p1 - p2) < epsilon))
+        (withEvConfig c2 True (const False) False)
+        (\p1 -> withEvConfig c2 False (\p2 -> abs (p1 - p2) < epsilon) False)
+        (withEvConfig c2 False (const False) True)
       where
         epsilon = 0.0001
 
