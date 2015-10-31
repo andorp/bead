@@ -22,7 +22,7 @@ import qualified Data.Set as Set
 
 import           Bead.Persistence.SQL.Course
 import           Bead.Persistence.SQL.Group
-
+import           Bead.Persistence.SQL.MySQLTestRunner
 import           Bead.Persistence.SQL.TestData
 
 import           Test.Tasty.TestSet (ioTest, shrink, equals)
@@ -159,7 +159,6 @@ testCaseOfAssignment key = do
 assignmentTests = do
   shrink "Assignment end-to-end story"
     (do ioTest "Assignment end-to-end test" $ runSql $ do
-          initDB
           c  <- saveCourse course
           g  <- saveGroup c group
           ca <- saveCourseAssignment c asg
@@ -192,7 +191,6 @@ assignmentTests = do
           equals t1 t2 "The creation time of the group assignment has changed"
     )
     (do ioTest "Save and load course assignment" $ runSql $ do
-          initDB
           c  <- saveCourse course
           ca <- saveCourseAssignment c asg
           casg' <- loadAssignment ca
@@ -202,7 +200,6 @@ assignmentTests = do
           cga <- groupOfAssignment ca
           equals Nothing cga "The course assignment had a group"
         ioTest "Save and load group assignment" $ runSql $ do
-          initDB
           c  <- saveCourse course
           g  <- saveGroup c group
           ga <- saveGroupAssignment g asg
@@ -213,7 +210,6 @@ assignmentTests = do
           cga <- groupOfAssignment ga
           equals (Just g) cga "The group assignment had no appropiate group"
         ioTest "Modify course assignment" $ runSql $ do
-          initDB
           c  <- saveCourse course
           ca <- saveCourseAssignment c asg
           t1 <- assignmentCreatedTime ca
@@ -223,7 +219,6 @@ assignmentTests = do
           equals asg2 asg' "The modification of the course assignment has failed"
           equals t1 t2 "The creation time of the course assignment has changed"
         ioTest "Modify group assignment" $ runSql $ do
-          initDB
           c  <- saveCourse course
           g  <- saveGroup c group
           ga <- saveGroupAssignment g asg
@@ -236,7 +231,6 @@ assignmentTests = do
     )
 
   ioTest "List course assignments" $ runSql $ do
-    initDB
     c  <- saveCourse course
     as <- courseAssignments c
     equals [] as "The course had some assignment after the creation"
@@ -252,7 +246,6 @@ assignmentTests = do
       (Set.fromList as) "The course had different assignment set"
 
   ioTest "List group assignments" $ runSql $ do
-    initDB
     c  <- saveCourse course
     g  <- saveGroup c group
     as <- groupAssignments g

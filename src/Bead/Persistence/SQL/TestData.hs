@@ -9,7 +9,7 @@ course  = Course "name" "desc" TestScriptSimple
 
 group   = Group "name" "desc"
 
-time    = read "2014-06-09 12:55:27.959203 UTC"
+time    = read "2014-06-09 12:55:27 UTC"
 
 sbm     = Submission (SimpleSubmission "submission") time
 sbm2    = Submission (ZippedSubmission "submission2") time

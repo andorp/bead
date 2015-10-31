@@ -1,4 +1,3 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
@@ -23,10 +22,6 @@ import           Database.Persist.Sql
 import           Database.Persist.TH
 
 import qualified Bead.Domain.Entities as Domain
-
-#ifdef TEST
-import           Database.Persist.Sqlite
-#endif
 
 -- String represents a JSON value
 type JSONText = String
@@ -348,15 +343,3 @@ withUser username nothing just =
 
 userKey username =
   fmap (fmap entityKey) $ getBy (UniqueUsername $ Domain.usernameCata Text.pack username)
-
-#ifdef TEST
-
--- * Test helpers
-
-runSql :: Persist a -> IO a
-runSql = runSqlite ":memory:"
-
-initDB :: Persist ()
-initDB = void $ runMigrationSilent migrateAll
-
-#endif
