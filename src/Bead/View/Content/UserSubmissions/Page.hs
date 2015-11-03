@@ -13,6 +13,7 @@ import qualified Bead.Controller.UserStories as Story
 import           Bead.Domain.Shared.Evaluation
 import           Bead.View.Content
 import qualified Bead.View.Content.Bootstrap as Bootstrap
+import           Bead.View.Content.VisualConstants
 
 import           Text.Blaze.Html5 as H
 import           Text.Printf (printf)
@@ -82,7 +83,9 @@ submissionTable userTime submissions = do
         pct (Percentage (Scores [x])) = fromString $ printf "%3.0f%%" (100 * x)
         pct (Percentage _) = fromString "Error: ???%"
 
-        free (FreeForm _) = msg $ msg_UserSubmissions_FreeForm "Evaluated"
+        free (FreeForm resultText)
+          | length resultText < displayableFreeFormResultLength = resultText
+          | otherwise = msg $ msg_UserSubmissions_FreeForm "Evaluated"
 
 infixl 7 .|.
 title .|. value = tr $ do
