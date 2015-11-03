@@ -71,7 +71,7 @@ force_publish() {
     if [ -s ${src} ] && [ -d $(dirname ${tgt}) ]; then
         mv ${src} ${tgt}
         chown nobody:nogroup ${tgt}
-        chmod g+w,o+w ${tgt}
+        chmod g+rw,o+rw ${tgt}
     fi
 }
 
