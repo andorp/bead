@@ -29,94 +29,94 @@ type JSONText = String
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 
 Assessment
-  description Text
-  evalConfig  JSONText
+  description Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  evalConfig  JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 Assignment
-  name        Text
-  description Text sqltype="longtext character set utf8"
-  type        JSONText
+  name        Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  description Text sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
+  type        JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   start       UTCTime
   end         UTCTime
   created     UTCTime
-  evalConfig  JSONText
+  evalConfig  JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 Comment
-  text   Text sqltype="longtext character set utf8"
-  author Text
+  text   Text sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
+  author Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   date   UTCTime
-  type   JSONText
+  type   JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 Course
-  name        Text
-  description Text
-  testScriptType JSONText
+  name        Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  description Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  testScriptType JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 Evaluation
-  result  JSONText sqltype="longtext character set utf8"
-  written Text     sqltype="longtext character set utf8"
+  result  JSONText sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
+  written Text     sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 Feedback
-  info JSONText sqltype="longtext character set utf8"
+  info JSONText sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
   date UTCTime
   deriving Show
 
 Group
-  name        Text
-  description Text
+  name        Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  description Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 Notification
-  message     Text sqltype="longtext character set utf8"
+  message     Text sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 Score
-  score JSONText
+  score JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 Submission
-  simple   Text       Maybe sqltype="longtext character set utf8"
+  simple   Text       Maybe sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
   zipped   ByteString Maybe sqltype=longblob
   postDate UTCTime
   deriving Show
 
 TestCase
-  name         Text
-  description  Text
-  simpleValue  Text       Maybe sqltype="longtext character set utf8"
+  name         Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  description  Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  simpleValue  Text       Maybe sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
   zippedValue  ByteString Maybe sqltype=longblob
-  info         Text
+  info         Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 TestScript
-  name        Text
-  description Text
-  notes       Text sqltype="longtext character set utf8"
-  script      Text sqltype="longtext character set utf8"
-  testScriptType JSONText
+  name        Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  description Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  notes       Text sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
+  script      Text sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
+  testScriptType JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 User
-  role     JSONText
+  role     JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   username Text
-  email    Text
-  name     Text
-  timeZone JSONText
-  language Text
+  email    Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  name     Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  timeZone JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  language Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   uid      Text
   UniqueUsername username
   deriving Show
 
 UserRegistration
-  username Text
-  email    Text
-  name     Text
-  token    Text
+  username Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  email    Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  name     Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  token    Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   timeout  UTCTime
   deriving Show
 
