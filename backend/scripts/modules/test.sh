@@ -117,7 +117,7 @@ test_run() {
 msg_n "[${JOB_ID}] Building ($$)..."
 
 # Now you have ${WATCHDOG_TIMEOUT} seconds to run (at maximum).
-/bin/sh ${SCRIPT_PREFIX}/watchdog.sh $$ ${OUTPUT_DIR} ${OUTPUT} ${MESSAGE} ${RESULT} ${JAIL_PATH}${BUILD_PATH} ${JAIL_PATH}${SANDBOX_PATH} &
+/bin/sh ${SCRIPT_PREFIX}/watchdog.sh $$ ${OUTPUT_DIR} ${OUTPUT} ${MESSAGE} ${RESULT} ${JAIL_PATH}${BUILD_PATH} ${JAIL_PATH}${SANDBOX_PATH} ${WATCHDOG_TIMEOUT} &
 
 test_build
 build_result="$?"

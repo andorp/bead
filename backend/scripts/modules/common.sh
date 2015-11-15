@@ -89,7 +89,7 @@ else
 fi
 
 # Some reasonable default
-: ${WATCHDOG_TIMEOUT:=60}
+: ${WATCHDOG_TIMEOUT:=15}
 : ${SLEEP_TIME:=5}
 : ${BEAD_HOME:=/usr/home/bead}
 

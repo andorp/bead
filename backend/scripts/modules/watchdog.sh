@@ -12,13 +12,14 @@ MESSAGE="$4"
 RESULT="$5"
 BUILDBOX="$6"
 SANDBOX="$7"
+TIMEOUT="$8"
 OUTPUT_DIR_TMP=$(dirname ${OUTPUT})
 
 test -z "$PID" && exit 1
 test -z "$OUTPUT_DIR" && exit 1
 test -z "$OUTPUT" && exit 1
 
-sleep ${WATCHDOG_TIMEOUT}
+sleep ${TIMEOUT}
 
 if kill -9 $PID > /dev/null 2>&1; then
     if ! pkill -9 -U 65534; then
