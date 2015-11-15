@@ -26,6 +26,7 @@ if kill -9 $PID > /dev/null 2>&1; then
     else
         msg "[watchdog] Had to kill nobody's all processes."
         mkdir -p ${OUTPUT_DIR_TMP}
+        chmod g+rw,o+rw ${OUTPUT_DIR_TMP}
         watchdog_output=$(mktemp)
         watchdog_message=$(mktemp)
         watchdog_result=$(mktemp)
