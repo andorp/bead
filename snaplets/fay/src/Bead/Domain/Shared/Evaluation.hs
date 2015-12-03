@@ -67,6 +67,13 @@ data Scores a = Scores { unScores :: [a] }
 mkScores :: a -> Scores a
 mkScores = Scores . (:[])
 
+scoresCata
+  score
+  scores
+  s = case s of
+    Scores [x] -> score x
+    Scores xs  -> scores xs
+
 data Binary = Binary Result
   deriving (Eq, Show, Read, Data, Typeable)
 

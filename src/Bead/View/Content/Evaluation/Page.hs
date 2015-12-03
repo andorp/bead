@@ -17,11 +17,11 @@ import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (submissionDescription)
 import           Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
+import           Bead.Domain.Relationships.SubmissionInfo
 import           Bead.View.Content as C
 import           Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.View.Content.Comments
 import           Bead.View.Content.SeeMore
-import           Bead.View.Content.VisualConstants
 
 import           Text.Blaze.Html5 as H
 import           Text.Blaze.Html5.Attributes as A

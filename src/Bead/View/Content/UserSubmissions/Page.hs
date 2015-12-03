@@ -10,10 +10,10 @@ import           Data.Time (UTCTime)
 
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
+import           Bead.Domain.Relationships.SubmissionInfo
 import           Bead.Domain.Shared.Evaluation
-import           Bead.View.Content
+import           Bead.View.Content hiding (submissionInfo)
 import qualified Bead.View.Content.Bootstrap as Bootstrap
-import           Bead.View.Content.VisualConstants
 
 import           Text.Blaze.Html5 as H
 import           Text.Printf (printf)
@@ -65,27 +65,23 @@ submissionTable userTime submissions = do
       let (link, date) = linkAndDate si sk t
       in Bootstrap.listGroupLinkItem
            link
-           (do Bootstrap.badge (submissionInfo msg si); fromString date)
+           (do Bootstrap.badge (submissionInfoText msg si); fromString date)
 
     linkAndDate si sk t = case siEvaluationKey si of
       Nothing -> ( (routeOf (Pages.evaluation sk ())), (fromString . showDate $ userTime t) )
       Just ek -> ( (routeOf (Pages.modifyEvaluation sk ek ())) , (showDate $ userTime t) )
 
-    submissionInfo msg = fromString . submissionInfoCata
+    submissionInfoText msg = fromString . submissionInfo
       (msg $ msg_UserSubmissions_NotFound "Not found")
       (msg $ msg_UserSubmissions_NonEvaluated "Not evaluated")
-      (msg . bool (msg_UserSubmissions_Tests_Passed "Tests are passed") (msg_UserSubmissions_Tests_Failed "Tests are failed"))
-      (const (evaluationDataMap bin pct free . evResult))
-      where
-        bin (Binary b) = msg $ resultCata (msg_UserSubmissions_Accepted "Accepted")
-                                          (msg_UserSubmissions_Rejected "Rejected")
-                                          b
-        pct (Percentage (Scores [x])) = fromString $ printf "%3.0f%%" (100 * x)
-        pct (Percentage _) = fromString "Error: ???%"
-
-        free (FreeForm resultText)
-          | length resultText < displayableFreeFormResultLength = resultText
-          | otherwise = msg $ msg_UserSubmissions_FreeForm "Evaluated"
+      (msg . bool (msg_UserSubmissions_Tests_Passed "Tests are passed")
+                  (msg_UserSubmissions_Tests_Failed "Tests are failed"))
+      (msg $ msg_UserSubmissions_Accepted "Accepted")
+      (msg $ msg_UserSubmissions_Rejected "Rejected")
+      (\x -> fromString $ printf "%3.0f%%" (100 * x))
+      (const $ fromString "Error: ???%")
+      (\label freeFormEval -> fromString freeFormEval)
+      (msg $ msg_UserSubmissions_FreeForm "Evaluated")
 
 infixl 7 .|.
 title .|. value = tr $ do

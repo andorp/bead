@@ -291,6 +291,21 @@ readOnlyTextInputWithDefault paramName labelText value =
     labelFor paramName labelText
     (textInputFieldWithDefault paramName value) ! A.readonly ""
 
+-- | Creates a colored label element with the given color, title and text
+label clr title text =
+  H.span ! A.class_ (fromString labelColor)
+         ! A.title (fromString title)
+         $ fromString text
+  where
+    labelColor = "label label-" ++ color
+      "default"
+      "primary"
+      "success"
+      "info"
+      "warning"
+      "danger"
+      clr
+
 -- | Creates a label for the given id and given text
 labelFor name text =
   H.label ! for (fromString name) $ (fromString text)
@@ -393,6 +408,31 @@ alertAlgebra
     Info    -> info
     Warning -> warning
     Danger  -> danger
+
+-- Colors
+
+data Color
+  = Gray
+  | Blue
+  | Green
+  | LightBlue
+  | Orange
+  | Red
+
+color
+  gray
+  blue
+  green
+  lightBlue
+  orange
+  red
+  c = case c of
+    Gray -> gray
+    Blue -> blue
+    Green -> green
+    LightBlue -> lightBlue
+    Orange -> orange
+    Red -> red
 
 -- HTML helpers
 

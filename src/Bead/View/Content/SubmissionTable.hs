@@ -7,7 +7,6 @@ module Bead.View.Content.SubmissionTable (
   , submissionTable
   , submissionTableContext
   , sortUserLines
-  , resultCell
   ) where
 
 import           Control.Monad
@@ -26,12 +25,12 @@ import qualified Bead.Domain.Entities as E
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.Domain.Evaluation
 import           Bead.Domain.Relationships
+import           Bead.Domain.Relationships.SubmissionInfo
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Controller.UserStories (UserStory)
 import qualified Bead.Controller.UserStories as S
 import           Bead.View.Content
 import qualified Bead.View.Content.Bootstrap as Bootstrap
-import           Bead.View.Content.VisualConstants
 import qualified Bead.View.DataBridge as Param
 
 import           Text.Blaze.Html5 ((!))
@@ -227,22 +226,27 @@ submissionTablePart tableId now ctx s = do
           Just si -> submissionCell msg u (ak,si)
 
     submissionCell msg u (ak,si) =
-      resultCell
-        (linkWithHtml (routeWithParams (Pages.userSubmissions ()) [requestParam u, requestParam ak]))
-        mempty -- not found
-        (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: xx-large"
-             ! tooltip (msg_Home_SubmissionCell_NonEvaluated "Non evaluated") $ mempty) -- non-evaluated
-        (bool (H.i ! A.class_ "glyphicon glyphicon-ok-circle" ! A.style "color:#AAAAAA; font-size: xx-large"
-                   ! tooltip (msg_Home_SubmissionCell_Tests_Passed "Tests are passed") $ mempty)  -- tested accepted
-              (H.i ! A.class_ "glyphicon glyphicon-remove-circle" ! A.style "color:#AAAAAA; font-size: xx-large"
-                   ! tooltip (msg_Home_SubmissionCell_Tests_Failed "Tests are failed") $ mempty)) -- tested rejected
-        (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: xx-large"
-             ! tooltip (msg_Home_SubmissionCell_Accepted "Accepted") $ mempty) -- accepted
-        (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: xx-large"
-             ! tooltip (msg_Home_SubmissionCell_Rejected "Rejected") $ mempty) -- rejected
-        si -- of percent
+      H.td $ linkWithHtml (routeWithParams (Pages.userSubmissions ()) [requestParam u, requestParam ak]) $
+        submissionInfo
+          mempty -- not found
+          (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: xx-large"
+               ! tooltip (msg_Home_SubmissionCell_NonEvaluated "Non evaluated") $ mempty) -- non-evaluated
+          (bool (H.i ! A.class_ "glyphicon glyphicon-ok-circle" ! A.style "color:#AAAAAA; font-size: xx-large"
+                     ! tooltip (msg_Home_SubmissionCell_Tests_Passed "Tests are passed") $ mempty)  -- tested accepted
+                (H.i ! A.class_ "glyphicon glyphicon-remove-circle" ! A.style "color:#AAAAAA; font-size: xx-large"
+                     ! tooltip (msg_Home_SubmissionCell_Tests_Failed "Tests are failed") $ mempty)) -- tested rejected
+          (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: xx-large"
+               ! tooltip (msg_Home_SubmissionCell_Accepted "Accepted") $ mempty) -- accepted
+          (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: xx-large"
+               ! tooltip (msg_Home_SubmissionCell_Rejected "Rejected") $ mempty) -- rejected
+          (\p -> H.span ! A.class_ "label label-primary" $ fromString $ "blah")--percent p) -- percentage
+          (const mempty) -- percentageError
+          (Bootstrap.label Bootstrap.Blue) -- free format label
+          "..." -- Free format placeholder
+          si -- of percent
       where
         tooltip m = A.title (fromString $ msg m)
+        percent x = join [show . round $ (100 * x), "%"]
 
     deleteHeaderCell msg = submissionTableInfoCata deleteForCourseButton deleteForGroupButton s where
         deleteForCourseButton _n _us _as _uls _ans _ck =
@@ -267,28 +271,6 @@ submissionTablePart tableId now ctx s = do
             (Param.name delUserFromGroupPrm)
             (encode delUserFromGroupPrm $ ud_username u)
             False ! A.onclick (fromString (onClick ++ "(this)"))
-
-resultCell contentWrapper notFound unevaluated tested passed failed s =
-  H.td $ contentWrapper (sc s)
-  where
-    sc = submissionInfoCata
-           notFound
-           unevaluated
-           tested
-           (\_key result -> val result) -- evaluated
-
-    val = evResultCata
-            (binaryCata (resultCata passed failed))
-            percentage
-            (freeForm $ \msg ->
-              let cell = if length msg < displayableFreeFormResultLength then msg else "..." in
-              H.span ! A.class_ "label label-primary"
-                     ! A.title (fromString msg) $ (fromString cell))
-          where
-            percent x = join [show . round $ (100 * x), "%"]
-
-            percentage (Percentage (Scores [p])) = H.span ! A.class_ "label label-primary" $ fromString $ percent p
-            percentage _ = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
 courseTestScriptTable :: CourseTestScriptInfos -> SubmissionTableInfo -> IHtml
 courseTestScriptTable cti = submissionTableInfoCata course group where

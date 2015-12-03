@@ -284,6 +284,7 @@ Library
     Bead.Domain.Evaluation
     Bead.Domain.Func
     Bead.Domain.Relationships
+    Bead.Domain.Relationships.SubmissionInfo
     Bead.Domain.RolePermission
     Bead.Domain.Shared.Evaluation
     Bead.Domain.TimeZone
@@ -332,7 +333,6 @@ Library
     Bead.View.Content.SeeMore
     Bead.View.Content.SubmissionTable
     Bead.View.Content.Utils
-    Bead.View.Content.VisualConstants
     Bead.View.ContentHandler
     Bead.View.DataBridge
     Bead.View.DataDir
