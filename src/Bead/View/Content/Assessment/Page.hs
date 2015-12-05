@@ -25,11 +25,13 @@ fillGroupAssessmentPreview = UserViewHandler fillGroupAssessmentPreviewPage
 fillCourseAssessmentPreview = UserViewHandler fillCourseAssessmentPreviewPage
 viewAssessment = ViewHandler viewAssessmentPage
 
-data PageDataNew  = PD_NewCourseAssessment CourseKey | PD_NewGroupAssessment GroupKey
-data PageDataFill = PD_FillCourseAssessment CourseKey String String | PD_FillGroupAssessment GroupKey String String
+data PageDataNew  = PD_NewCourseAssessment CourseKey |
+                    PD_NewGroupAssessment  GroupKey
+data PageDataFill = PD_FillCourseAssessment CourseKey String String |
+                    PD_FillGroupAssessment  GroupKey  String String
 
 newGroupAssessmentPage :: GETContentHandler
-newGroupAssessmentPage = do 
+newGroupAssessmentPage = do
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
   return $ newAssessmentTemplate $ PD_NewGroupAssessment gk
 
@@ -81,8 +83,11 @@ fillAssessmentTemplate pdata = do
         Bootstrap.textInputWithDefault "n2" "Description" description
         Bootstrap.row $ do
              let formAction page = onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
-             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction $ fill) "Import"
-             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction $ assessment) "Commit"
+                 downloadCsvButton = Bootstrap.blockButtonLink
+                   (routeOf getCsv)
+                   "Get CSV"
+             Bootstrap.colMd6 $ downloadCsvButton
+             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction $ assessment) "Import"
 
   where
     (title,description) = case pdata of
@@ -91,9 +96,9 @@ fillAssessmentTemplate pdata = do
     assessment = case pdata of
                    PD_FillCourseAssessment ck _title _description -> Pages.newCourseAssessment ck ()
                    PD_FillGroupAssessment gk _title _description -> Pages.newGroupAssessment gk ()
-    fill = case pdata of
-             PD_FillCourseAssessment ck _title _description -> Pages.fillCourseAssessmentPreview ck ()
-             PD_FillGroupAssessment gk _title _description -> Pages.fillGroupAssessmentPreview gk ()
+    getCsv = case pdata of
+             PD_FillCourseAssessment ck _title _description -> Pages.getCourseCsv ck ()
+             PD_FillGroupAssessment gk _title _description -> Pages.getGroupCsv gk ()
 
 viewAssessmentPage :: GETContentHandler
 viewAssessmentPage = error "viewAssessmentPage is undefined"

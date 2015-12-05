@@ -347,6 +347,8 @@ routeToPageMap = Map.fromList [
   , (deleteUsersFromGroupPath , \ps -> P.deleteUsersFromGroup <$> groupKey ps <*> unit)
   , (unsubscribeFromCoursePath , \ps -> P.unsubscribeFromCourse <$> groupKey ps <*> unit)
   , (getSubmissionPath, \ps -> P.getSubmission <$> submissionKey ps <*> unit)
+  , (getCourseCsvPath, \ps -> P.getCourseCsv <$> courseKey ps <*> unit)
+  , (getGroupCsvPath, \ps -> P.getGroupCsv <$> groupKey ps <*> unit)
   , (newGroupAssessmentPath, \ps -> P.newGroupAssessment <$> groupKey ps <*> unit)
   , (newCourseAssessmentPath, \ps -> P.newCourseAssessment <$> courseKey ps <*> unit)
   , (fillGroupAssessmentPreviewPath, \ps -> P.fillGroupAssessmentPreview <$> groupKey ps <*> unit)

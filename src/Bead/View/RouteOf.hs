@@ -52,6 +52,8 @@ module Bead.View.RouteOf (
   , unsubscribeFromCoursePath
   , pageRoutePath
   , getSubmissionPath
+  , getCourseCsvPath
+  , getGroupCsvPath
   , newGroupAssessmentPath
   , newCourseAssessmentPath
   , fillGroupAssessmentPreviewPath
@@ -204,6 +206,12 @@ unsubscribeFromCoursePath = "/unsubscribe-from-course"
 getSubmissionPath :: RoutePath
 getSubmissionPath = "/get-submission"
 
+getCourseCsvPath :: RoutePath
+getCourseCsvPath = "/get-course-csv"
+
+getGroupCsvPath :: RoutePath
+getGroupCsvPath = "/get-group-csv"
+
 newGroupAssessmentPath :: RoutePath
 newGroupAssessmentPath = "/new-group-assessment"
 
@@ -266,6 +274,8 @@ pageRoutePath = pfmap id id id id id . r where
     deleteUsersFromGroupPath
     unsubscribeFromCoursePath
     getSubmissionPath
+    getCourseCsvPath
+    getGroupCsvPath
     newGroupAssessmentPath
     newCourseAssessmentPath
     fillGroupAssessmentPreviewPath
@@ -315,6 +325,8 @@ pageRequestParams = liftsP
   (\gk _ -> [requestParam gk]) -- deleteUsersFromGroup
   (\gk _ -> [requestParam gk]) -- unsubscribeFromCourse
   (\sk _ -> [requestParam sk]) -- getSubmission
+  (\ck _ -> [requestParam ck]) -- getCourseCsv
+  (\gk _ -> [requestParam gk]) -- getGroupCsv
   (\gk _ -> [requestParam gk]) -- newGroupAssessment
   (\ck _ -> [requestParam ck]) -- newCourseAssessment
   (\gk _ -> [requestParam gk]) -- fillGroupAssessmentPreview

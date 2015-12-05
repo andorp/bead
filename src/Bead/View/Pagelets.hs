@@ -413,6 +413,8 @@ linkText = P.pageCata
   (c2 $ msg_LinkText_DeleteUsersFromGroup "Remove Students")
   (c2 $ msg_LinkText_UnsubscribeFromCourse "Unregister")
   (c2 $ msg_LinkText_GetSubmission "Download Submission")
+  (c2 $ msg_LinkText_GetCourseCsv "Download Course Csv")
+  (c2 $ msg_LinkText_GetGroupCsv "Download Group Csv")
   (c2 $ msg_LinkText_NewGroupAssessment "New Group Assessment")
   (c2 $ msg_LinkText_NewCourseAssessment "New Course Assessment")
   (c2 $ msg_LinkText_GroupAssessmentPreview "New Group Assessment")

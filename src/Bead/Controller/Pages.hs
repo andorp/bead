@@ -75,16 +75,24 @@ viewPageValue = viewPageCata
 -- and all the data will be rendered in the response
 data DataPage a
   = GetSubmission SubmissionKey a
+  | GetCourseCsv CourseKey a
+  | GetGroupCsv GroupKey a
   deriving (Eq, Ord, Show, Functor)
 
 dataPageCata
   getSubmission
+  getCourseCsv
+  getGroupCsv
   p = case p of
     GetSubmission sk a -> getSubmission sk a
+    GetCourseCsv ck a -> getCourseCsv ck a
+    GetGroupCsv gk a -> getGroupCsv gk a
 
 dataPageValue :: DataPage a -> a
 dataPageValue = dataPageCata
   (const id) -- getSubmission
+  (const id)
+  (const id)
 
 -- User View pages are rendered using the data stored in the
 -- persistence and some temporary data given by the user. Mainly
@@ -316,6 +324,8 @@ courseAdmin             = View . CourseAdmin
 viewAssessment ak       = View . ViewAssessment ak
 
 getSubmission sk        = Data . GetSubmission sk
+getCourseCsv ck         = Data . GetCourseCsv ck
+getGroupCsv gk          = Data . GetGroupCsv gk
 
 newGroupAssignmentPreview gk  = UserView . NewGroupAssignmentPreview gk
 newCourseAssignmentPreview ck = UserView . NewCourseAssignmentPreview ck
@@ -391,6 +401,8 @@ pageCata
   deleteUsersFromGroup
   unsubscribeFromCourse
   getSubmission
+  getCourseCsv
+  getGroupCsv
   newGroupAssessment
   newCourseAssessment
   fillGroupAssessmentPreview
@@ -435,6 +447,8 @@ pageCata
     (Modify (DeleteUsersFromGroup gk a)) -> deleteUsersFromGroup gk a
     (Modify (UnsubscribeFromCourse gk a)) -> unsubscribeFromCourse gk a
     (Data (GetSubmission sk a)) -> getSubmission sk a
+    (Data (GetCourseCsv ck a)) -> getCourseCsv ck a
+    (Data (GetGroupCsv gk a)) -> getGroupCsv gk a
     (ViewModify (NewGroupAssessment gk a)) -> newGroupAssessment gk a
     (ViewModify (NewCourseAssessment ck a)) -> newCourseAssessment ck a
     (UserView (FillGroupAssessmentPreview gk a)) -> fillGroupAssessmentPreview gk a
@@ -481,6 +495,8 @@ constantsP
   deleteUsersFromGroup_
   unsubscribeFromCourse_
   getSubmission_
+  getCourseCsv_
+  getGroupCsv_
   newGroupAssessment_
   newCourseAssessment_
   fillGroupAssessmentPreview_
@@ -525,6 +541,8 @@ constantsP
       (\gk _ -> deleteUsersFromGroup gk deleteUsersFromGroup_)
       (\gk _ -> unsubscribeFromCourse gk unsubscribeFromCourse_)
       (\sk _ -> getSubmission sk getSubmission_)
+      (\ck _ -> getCourseCsv ck getCourseCsv_)
+      (\gk _ -> getGroupCsv gk getGroupCsv_)
       (\gk _ -> newGroupAssessment gk newGroupAssessment_)
       (\ck _ -> newCourseAssessment ck newCourseAssessment_)
       (\gk _ -> fillGroupAssessmentPreview gk fillGroupAssessmentPreview_)
@@ -573,6 +591,8 @@ liftsP
   deleteUsersFromGroup_
   unsubscribeFromCourse_
   getSubmission_
+  getCourseCsv_
+  getGroupCsv_
   newGroupAssessment_
   newCourseAssessment_
   fillGroupAssessmentPreview_
@@ -617,6 +637,8 @@ liftsP
       (\gk a -> deleteUsersFromGroup gk (deleteUsersFromGroup_ gk a))
       (\gk a -> unsubscribeFromCourse gk (unsubscribeFromCourse_ gk a))
       (\sk a -> getSubmission sk (getSubmission_ sk a))
+      (\ck a -> getCourseCsv ck (getCourseCsv_ ck a))
+      (\gk a -> getGroupCsv gk (getGroupCsv_ gk a))
       (\gk a -> newGroupAssessment gk (newGroupAssessment_ gk a))
       (\ck a -> newCourseAssessment ck (newCourseAssessment_ ck a))
       (\gk a -> fillGroupAssessmentPreview gk (fillGroupAssessmentPreview_ gk a))
@@ -733,6 +755,12 @@ isUnsubscribeFromCourse _ = False
 isGetSubmission (Data (GetSubmission _ _)) = True
 isGetSubmission _ = False
 
+isGetCourseCsv (Data (GetCourseCsv _ _)) = True
+isGetCourseCsv _ = False
+
+isGetGroupCsv (Data (GetGroupCsv _ _)) = True
+isGetGroupCsv _ = False
+
 isNewGroupAssessment (ViewModify (NewGroupAssessment _ _)) = True
 isNewGroupAssessment _ = False
 
@@ -787,6 +815,7 @@ groupAdminPages = [
   , isNewGroupAssessment
   , isFillGroupAssessmentPreview
   , isViewAssessment
+  , isGetGroupCsv
   ]
 
 courseAdminPages = [
@@ -815,6 +844,8 @@ courseAdminPages = [
   , isNewGroupAssessment
   , isFillCourseAssessmentPreview
   , isFillGroupAssessmentPreview
+  , isGetCourseCsv
+  , isGetGroupCsv
   ]
 
 adminPages = [
@@ -996,6 +1027,8 @@ pageGen = oneof [
         , newGroupAssignmentPreview <$> groupKey <*> unit
         , modifyAssignmentPreview <$> assignmentKey <*> unit
         , getSubmission <$> submissionKey <*> unit
+        , getCourseCsv <$> courseKey <*> unit
+        , getGroupCsv <$> groupKey <*> unit
         , newGroupAssessment <$> groupKey <*> unit
         , newCourseAssessment <$> courseKey <*> unit
         , fillGroupAssessmentPreview <$> groupKey <*> unit

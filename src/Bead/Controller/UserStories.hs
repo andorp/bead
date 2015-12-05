@@ -535,6 +535,21 @@ isUserInCourse ck = logAction INFO ("checks if user is in the course " ++ show c
   state <- userState
   persistence $ Persist.isUserInCourse (user state) ck
 
+-- | Lists all users subscribed for the given course
+subscribedToCourse :: CourseKey -> UserStory [Username]
+subscribedToCourse ck = logAction INFO ("lists all users in course " ++ show ck) $ do
+  authorize P_Open P_Course
+  isAdministratedCourse ck
+  persistence $ Persist.subscribedToCourse ck
+
+-- | Lists all users subscribed for the given group
+subscribedToGroup :: GroupKey -> UserStory [Username]
+subscribedToGroup gk = logAction INFO ("lists all users in group " ++ show gk) $ do
+  authorize P_Open P_Group
+  isAdministratedGroup gk
+  persistence $ Persist.subscribedToGroup gk
+                       
+
 -- | Regsiter the user in the group, if the user does not submitted
 -- any solutions for the other groups of the actual course, otherwise
 -- puts a message on the UI, indicating that the course change is

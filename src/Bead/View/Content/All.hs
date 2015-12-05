@@ -30,6 +30,8 @@ import Bead.View.Content.SetUserPassword.Page
 import Bead.View.Content.NewTestScript.Page
 import Bead.View.Content.UploadFile.Page
 import Bead.View.Content.GetSubmission
+import Bead.View.Content.GetCourseCsv
+import Bead.View.Content.GetGroupCsv
 import Bead.View.Content.Assessment.Page
 
 #ifdef TEST
@@ -76,6 +78,8 @@ pageContent = Pages.constantsP
   deleteUsersFromGroup
   unsubscribeFromCourse
   getSubmission
+  getCourseCsv
+  getGroupCsv
   newGroupAssessment
   newCourseAssessment
   fillGroupAssessmentPreview

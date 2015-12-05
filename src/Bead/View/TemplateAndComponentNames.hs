@@ -179,6 +179,8 @@ menuId = P.pageCata
   (c2 "link-delete-users-from-group")
   (c2 "link-unsubscribe-from-course")
   (c2 "link-get-submission")
+  (c2 "link-get-course-csv")
+  (c2 "link-get-group-csv")
   (c2 "link-new-group-assessment")
   (c2 "link-new-course-assessment")
   (c2 "link-fill-group-assessment-preview")

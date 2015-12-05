@@ -330,6 +330,8 @@ Library
     Bead.View.Content.Bootstrap
     Bead.View.Content.Comments
     Bead.View.Content.GetSubmission
+    Bead.View.Content.GetCourseCsv
+    Bead.View.Content.GetGroupCsv
     Bead.View.Content.SeeMore
     Bead.View.Content.SubmissionTable
     Bead.View.Content.Utils
