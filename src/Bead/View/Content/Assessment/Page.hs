@@ -2,8 +2,10 @@
 module Bead.View.Content.Assessment.Page (
     newGroupAssessment
   , newCourseAssessment
-  , fillGroupAssessmentPreview
-  , fillCourseAssessmentPreview
+  , fillNewGroupAssessment
+  , fillNewGroupAssessmentPreview
+  , fillNewCourseAssessment
+  , fillNewCourseAssessmentPreview
   , viewAssessment
   ) where
 
@@ -21,14 +23,18 @@ import           Text.Blaze.Html5.Attributes as A
 
 newGroupAssessment = ViewModifyHandler newGroupAssessmentPage postNewGroupAssessment
 newCourseAssessment = ViewModifyHandler newCourseAssessmentPage postNewCourseAssessment
-fillGroupAssessmentPreview = UserViewHandler fillGroupAssessmentPreviewPage
-fillCourseAssessmentPreview = UserViewHandler fillCourseAssessmentPreviewPage
+fillNewGroupAssessment = UserViewHandler fillNewGroupAssessmentPage
+fillNewGroupAssessmentPreview = UserViewHandler fillNewGroupAssessmentPreviewPage
+fillNewCourseAssessment = UserViewHandler fillNewCourseAssessmentPage
+fillNewCourseAssessmentPreview = UserViewHandler fillNewCourseAssessmentPreviewPage
 viewAssessment = ViewHandler viewAssessmentPage
 
-data PageDataNew  = PD_NewCourseAssessment CourseKey |
-                    PD_NewGroupAssessment  GroupKey
-data PageDataFill = PD_FillCourseAssessment CourseKey String String |
-                    PD_FillGroupAssessment  GroupKey  String String
+data PageDataNew  = PD_NewCourseAssessment CourseKey
+                  | PD_NewGroupAssessment  GroupKey
+data PageDataFill = PD_FillCourseAssessment CourseKey String String
+                  | PD_FillGroupAssessment  GroupKey  String String 
+                  | PD_PreviewCourseAssessment CourseKey String String
+                  | PD_PreviewGroupAssessment GroupKey String String
 
 newGroupAssessmentPage :: GETContentHandler
 newGroupAssessmentPage = do
@@ -56,8 +62,8 @@ postNewCourseAssessment = do
   let a = Assessment title description binaryConfig
   return $ CreateCourseAssessment ck a
 
-fillGroupAssessmentPreviewPage :: ViewPOSTContentHandler
-fillGroupAssessmentPreviewPage = do
+fillNewGroupAssessmentPage :: ViewPOSTContentHandler
+fillNewGroupAssessmentPage = do
   title <- getParameter titleParam
   description <- getParameter descriptionParam
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
@@ -66,12 +72,18 @@ fillGroupAssessmentPreviewPage = do
 titleParam = stringParameter "n1" "Title"
 descriptionParam = stringParameter "n2" "Description"
 
-fillCourseAssessmentPreviewPage :: ViewPOSTContentHandler
-fillCourseAssessmentPreviewPage = do
+fillNewCourseAssessmentPage :: ViewPOSTContentHandler
+fillNewCourseAssessmentPage = do
   title <- getParameter titleParam
   description <- getParameter descriptionParam
   ck <- getParameter $ customCourseKeyPrm courseKeyParamName
   return $ fillAssessmentTemplate $ PD_FillCourseAssessment ck title description
+
+fillNewGroupAssessmentPreviewPage :: ViewPOSTContentHandler
+fillNewGroupAssessmentPreviewPage = error "fillNewGroupAssessmentPreviewPage is undefined"
+
+fillNewCourseAssessmentPreviewPage :: ViewPOSTContentHandler
+fillNewCourseAssessmentPreviewPage = error "fillNewCourseAssessmentPreviewPage is undefined"
 
 fillAssessmentTemplate :: PageDataFill -> IHtml
 fillAssessmentTemplate pdata = do
@@ -81,21 +93,22 @@ fillAssessmentTemplate pdata = do
       postForm (routeOf assessment) $ do
         Bootstrap.textInputWithDefault "n1" "Title" title
         Bootstrap.textInputWithDefault "n2" "Description" description
+        fileInput ("as")
         Bootstrap.row $ do
              let formAction page = onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
                  downloadCsvButton = Bootstrap.blockButtonLink
                    (routeOf getCsv)
                    "Get CSV"
              Bootstrap.colMd6 $ downloadCsvButton
-             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction $ assessment) "Import"
+             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction $ assessment) "Preview"
 
   where
     (title,description) = case pdata of
                             PD_FillCourseAssessment _ck title description -> (title,description)
                             PD_FillGroupAssessment _gk title description -> (title,description)
     assessment = case pdata of
-                   PD_FillCourseAssessment ck _title _description -> Pages.newCourseAssessment ck ()
-                   PD_FillGroupAssessment gk _title _description -> Pages.newGroupAssessment gk ()
+                   PD_FillCourseAssessment ck _title _description -> Pages.fillNewCourseAssessmentPreview ck ()
+                   PD_FillGroupAssessment gk _title _description -> Pages.fillNewGroupAssessmentPreview gk ()
     getCsv = case pdata of
              PD_FillCourseAssessment ck _title _description -> Pages.getCourseCsv ck ()
              PD_FillGroupAssessment gk _title _description -> Pages.getGroupCsv gk ()
@@ -121,6 +134,6 @@ newAssessmentTemplate pdata = do
                    PD_NewCourseAssessment ck -> Pages.newCourseAssessment ck ()
                    PD_NewGroupAssessment gk  -> Pages.newGroupAssessment gk ()
     fill = case pdata of
-             PD_NewCourseAssessment ck -> Pages.fillCourseAssessmentPreview ck ()
-             PD_NewGroupAssessment gk  -> Pages.fillGroupAssessmentPreview gk ()
+             PD_NewCourseAssessment ck -> Pages.fillNewCourseAssessment ck ()
+             PD_NewGroupAssessment gk  -> Pages.fillNewGroupAssessment gk ()
 

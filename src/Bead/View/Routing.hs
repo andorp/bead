@@ -351,8 +351,10 @@ routeToPageMap = Map.fromList [
   , (getGroupCsvPath, \ps -> P.getGroupCsv <$> groupKey ps <*> unit)
   , (newGroupAssessmentPath, \ps -> P.newGroupAssessment <$> groupKey ps <*> unit)
   , (newCourseAssessmentPath, \ps -> P.newCourseAssessment <$> courseKey ps <*> unit)
-  , (fillGroupAssessmentPreviewPath, \ps -> P.fillGroupAssessmentPreview <$> groupKey ps <*> unit)
-  , (fillCourseAssessmentPreviewPath, \ps -> P.fillCourseAssessmentPreview <$> courseKey ps <*> unit)
+  , (fillNewGroupAssessmentPath, \ps -> P.fillNewGroupAssessment <$> groupKey ps <*> unit)
+  , (fillNewGroupAssessmentPreviewPath, \ps -> P.fillNewGroupAssessmentPreview <$> groupKey ps <*> unit)
+  , (fillNewCourseAssessmentPath, \ps -> P.fillNewCourseAssessment <$> courseKey ps <*> unit)
+  , (fillNewCourseAssessmentPreviewPath, \ps -> P.fillNewCourseAssessmentPreview <$> courseKey ps <*> unit)
   , (viewAssessmentPath, \ps -> P.viewAssessment <$> assessmentKey ps <*> unit)
   ] where
       j = const . Just

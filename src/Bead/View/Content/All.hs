@@ -82,8 +82,10 @@ pageContent = Pages.constantsP
   getGroupCsv
   newGroupAssessment
   newCourseAssessment
-  fillGroupAssessmentPreview
-  fillCourseAssessmentPreview
+  fillNewGroupAssessment
+  fillNewGroupAssessmentPreview
+  fillNewCourseAssessment
+  fillNewCourseAssessmentPreview
   viewAssessment
   where
     -- Returns an empty handler that computes an empty I18N Html monadic value

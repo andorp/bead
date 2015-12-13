@@ -56,8 +56,10 @@ module Bead.View.RouteOf (
   , getGroupCsvPath
   , newGroupAssessmentPath
   , newCourseAssessmentPath
-  , fillGroupAssessmentPreviewPath
-  , fillCourseAssessmentPreviewPath
+  , fillNewGroupAssessmentPath
+  , fillNewGroupAssessmentPreviewPath
+  , fillNewCourseAssessmentPath
+  , fillNewCourseAssessmentPreviewPath
   , viewAssessmentPath
   , staticPath
   , pageRequestParams
@@ -218,11 +220,16 @@ newGroupAssessmentPath = "/new-group-assessment"
 newCourseAssessmentPath :: RoutePath
 newCourseAssessmentPath = "/new-course-assessment"
 
-fillGroupAssessmentPreviewPath :: RoutePath
-fillGroupAssessmentPreviewPath = "/fill-group-assessment-preview"
+fillNewGroupAssessmentPath :: RoutePath
+fillNewGroupAssessmentPath = "/fill-new-group-assessment"
 
-fillCourseAssessmentPreviewPath :: RoutePath
-fillCourseAssessmentPreviewPath = "/fill-course-assessment-preview"
+fillNewGroupAssessmentPreviewPath :: RoutePath
+fillNewGroupAssessmentPreviewPath = "/fill-new-group-assessment-preview"
+fillNewCourseAssessmentPath :: RoutePath
+fillNewCourseAssessmentPath = "/fill-new-course-assessment"
+
+fillNewCourseAssessmentPreviewPath :: RoutePath
+fillNewCourseAssessmentPreviewPath = "/fill-new-course-assessment-preview"
 
 viewAssessmentPath :: RoutePath
 viewAssessmentPath = "/view-assessment"
@@ -278,8 +285,10 @@ pageRoutePath = pfmap id id id id id . r where
     getGroupCsvPath
     newGroupAssessmentPath
     newCourseAssessmentPath
-    fillGroupAssessmentPreviewPath
-    fillCourseAssessmentPreviewPath
+    fillNewGroupAssessmentPath
+    fillNewGroupAssessmentPreviewPath
+    fillNewCourseAssessmentPath
+    fillNewCourseAssessmentPreviewPath
     viewAssessmentPath
 
 type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam] [ReqParam]
@@ -329,8 +338,10 @@ pageRequestParams = liftsP
   (\gk _ -> [requestParam gk]) -- getGroupCsv
   (\gk _ -> [requestParam gk]) -- newGroupAssessment
   (\ck _ -> [requestParam ck]) -- newCourseAssessment
-  (\gk _ -> [requestParam gk]) -- fillGroupAssessmentPreview
-  (\ck _ -> [requestParam ck]) -- fillCourseAssessmentPreview
+  (\gk _ -> [requestParam gk]) -- fillNewGroupAssessment
+  (\gk _ -> [requestParam gk]) -- fillNewGroupAssessmentPreview
+  (\ck _ -> [requestParam ck]) -- fillNewCourseAssessment
+  (\ck _ -> [requestParam ck]) -- fillNewCourseAssessmentPreview
   (\ak _ -> [requestParam ak]) -- viewAssessment  
     where
       c = const

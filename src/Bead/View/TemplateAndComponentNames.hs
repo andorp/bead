@@ -183,7 +183,9 @@ menuId = P.pageCata
   (c2 "link-get-group-csv")
   (c2 "link-new-group-assessment")
   (c2 "link-new-course-assessment")
+  (c2 "link-fill-group-assessment")
   (c2 "link-fill-group-assessment-preview")
+  (c2 "link-fill-course-assessment")
   (c2 "link-fill-course-assessment-preview")
   (c2 "link-view-asssessment")
     where
