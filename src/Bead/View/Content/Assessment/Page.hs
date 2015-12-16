@@ -156,16 +156,9 @@ fillAssessmentTemplate pdata = do
       postForm (routeOf preview) ! A.enctype "multipart/form-data" $ do
         Bootstrap.textInputWithDefault "n1" "Title" title
         Bootstrap.textInputWithDefault "n2" "Description" description
-        fileInput ("as")
+        Bootstrap.formGroup $ fileInput "csv"
         Bootstrap.row $ do
-             let formAction page = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
-                 downloadCsvButton = Bootstrap.blockButtonLink
-                                     (routeOf getCsv)
-                                     "Get CSV"
-                 commitButton = Bootstrap.submitButtonWithAttr
-                                (formAction preview)
-                                "Commit"
-             Bootstrap.colMd4 $ Bootstrap.submitButtonWithAttr (formAction preview) "Preview"
+             Bootstrap.colMd4 previewButton 
              Bootstrap.colMd4 downloadCsvButton
              Bootstrap.colMd4 commitButton
         let csvTable _ _ _ csv usernames = Bootstrap.table (previewTable csv usernames)
@@ -178,34 +171,16 @@ fillAssessmentTemplate pdata = do
           pdata
 
   where
-    previewTable :: B.ByteString -> [Username] -> H.Html
-    previewTable csv usernames = do
-      header
-      tableData csv usernames
-    header = H.tr $ H.th "Username" >> H.th "Score"
-             
-    tableData :: B.ByteString -> [Username] -> H.Html
-    tableData csv usernames = mapM_ (tableRow (fromBytestring csv)) usernames
-
-    tableRow scores username =
-        H.tr $ do
-          H.td (H.string $ usernameCata id username)
-          H.td $ case M.lookup username scores of
-                   Just score -> H.string score
-                   Nothing    -> warning
-        where
-          warning = H.i ! A.class_ "glyphicon glyphicon-warning-sign" ! A.style "color:#AAAAAA; font-size: xx-large" $ mempty
-
-    fromBytestring :: B.ByteString -> M.Map Username String
-    fromBytestring bs = case B.lines bs of
-                          _:ls@(_:_) -> foldr f M.empty ls
-                          _ -> M.empty
-        where f line m = let (username,score) = B.break (== ',') line
-                             username' = Username . B.unpack $ username
-                         in
-                         if (not ((B.null score) || (score == ",")))
-                         then M.insert username' (B.unpack . B.tail $ score) m
-                         else m
+    formAction page = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
+    previewButton = Bootstrap.submitButtonWithAttr
+                    (formAction preview)
+                    "Preview"
+    downloadCsvButton = Bootstrap.blockButtonLink
+                        (routeOf getCsv)
+                        "Get CSV"
+    commitButton = Bootstrap.submitButtonWithAttr
+                   (formAction preview)
+                   "Commit"
 
     (title,description) = fillDataCata
                             (\_ title description -> (title,description))
@@ -226,6 +201,37 @@ fillAssessmentTemplate pdata = do
                (\ck _ _ _ _ -> Pages.getCourseCsv ck ())
                (\gk _ _ _ _ -> Pages.getGroupCsv gk ())
                pdata
+
+previewTable :: B.ByteString -> [Username] -> H.Html
+previewTable csv usernames = do
+  header
+  tableData csv usernames
+    where 
+      header = H.tr $ H.th "Username" >> H.th "Score"
+             
+      tableData :: B.ByteString -> [Username] -> H.Html
+      tableData csv usernames = mapM_ (tableRow (fromBytestring csv)) usernames
+
+      tableRow scores username =
+          H.tr $ do
+            H.td (H.string $ usernameCata id username)
+            H.td $ case M.lookup username scores of
+                     Just score -> H.string score
+                     Nothing    -> warning
+              where
+                warning = H.i ! A.class_ "glyphicon glyphicon-warning-sign" ! A.style "color:#AAAAAA; font-size: xx-large" $ mempty
+
+      fromBytestring :: B.ByteString -> M.Map Username String
+      fromBytestring bs = case B.lines bs of
+                            _:ls@(_:_) -> foldr f M.empty ls
+                            _ -> M.empty
+          where f line m = let (username,score) = B.break (== ',') line
+                               username' = Username . B.unpack $ username
+                           in
+                             if (not ((B.null score) || (score == ",")))
+                             then M.insert username' (B.unpack . B.tail $ score) m
+                             else m
+
 
 viewAssessmentPage :: GETContentHandler
 viewAssessmentPage = error "viewAssessmentPage is undefined"
@@ -250,4 +256,5 @@ newAssessmentTemplate pdata = do
     fill = case pdata of
              PD_NewCourseAssessment ck -> Pages.fillNewCourseAssessment ck ()
              PD_NewGroupAssessment gk  -> Pages.fillNewGroupAssessment gk ()
+
 
