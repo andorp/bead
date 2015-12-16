@@ -160,10 +160,14 @@ fillAssessmentTemplate pdata = do
         Bootstrap.row $ do
              let formAction page = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
                  downloadCsvButton = Bootstrap.blockButtonLink
-                   (routeOf getCsv)
-                   "Get CSV"
-             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction preview) "Preview"
-             Bootstrap.colMd6 downloadCsvButton
+                                     (routeOf getCsv)
+                                     "Get CSV"
+                 commitButton = Bootstrap.submitButtonWithAttr
+                                (formAction preview)
+                                "Commit"
+             Bootstrap.colMd4 $ Bootstrap.submitButtonWithAttr (formAction preview) "Preview"
+             Bootstrap.colMd4 downloadCsvButton
+             Bootstrap.colMd4 commitButton
         let csvTable _ _ _ csv usernames = Bootstrap.table (previewTable csv usernames)
             noPreview = return ()
         fillDataCata
