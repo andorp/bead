@@ -162,8 +162,8 @@ fillAssessmentTemplate pdata = do
                  downloadCsvButton = Bootstrap.blockButtonLink
                    (routeOf getCsv)
                    "Get CSV"
-             Bootstrap.colMd6 $ downloadCsvButton
              Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction preview) "Preview"
+             Bootstrap.colMd6 downloadCsvButton
         let csvTable _ _ _ csv usernames = Bootstrap.table (previewTable csv usernames)
             noPreview = return ()
         fillDataCata
