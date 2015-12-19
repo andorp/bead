@@ -8,6 +8,7 @@ import           Control.Monad.Trans.Class
 import           Control.Monad.IO.Class
 import           Data.String (fromString)
 import           Data.Time
+import           Data.List (intercalate)
 
 import           Text.Blaze.Html5 as H
 
@@ -61,7 +62,7 @@ submissionListContent p = do
     let info = smList p -- Submission List Info
     Bootstrap.rowColMd12 $ Bootstrap.table $ tbody $ do
       (msg $ msg_SubmissionList_CourseOrGroup "Course, group:") .|. (slGroup info)
-      (msg $ msg_SubmissionList_Admin "Teacher:") .|. (join $ slTeacher info)
+      (msg $ msg_SubmissionList_Admin "Teacher:") .|. (intercalate ", " $ slTeacher info)
       (msg $ msg_SubmissionList_Assignment "Assignment:") .|. (Assignment.name $ slAssignment info)
       (msg $ msg_SubmissionList_Deadline "Deadline:") .|. (showDate . (uTime p) . Assignment.end $ slAssignment info)
       maybe (return ()) (uncurry (.|.)) (remainingTries msg (smLimit p))
