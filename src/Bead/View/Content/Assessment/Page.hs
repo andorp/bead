@@ -45,8 +45,8 @@ data PageDataNew  = PD_NewCourseAssessment CourseKey
                   | PD_NewGroupAssessment  GroupKey
 data PageDataFill = PD_FillCourseAssessment CourseKey String String
                   | PD_FillGroupAssessment  GroupKey  String String 
-                  | PD_PreviewCourseAssessment CourseKey String String B.ByteString [Username]
-                  | PD_PreviewGroupAssessment GroupKey String String B.ByteString [Username]
+                  | PD_PreviewCourseAssessment CourseKey String String (M.Map Username Score) [Username]
+                  | PD_PreviewGroupAssessment GroupKey String String (M.Map Username Score) [Username]
 
 fillDataCata
   fillCourseAssessment
@@ -76,10 +76,15 @@ newGroupAssessmentPage = do
 postNewGroupAssessment :: POSTContentHandler
 postNewGroupAssessment = do 
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
+  scores <- read <$> getParameter scoresParam
   title <- getParameter titleParam
   description <- getParameter descriptionParam
   let a = Assessment title description binaryConfig
-  return $ CreateGroupAssessment gk a
+  if M.null scores
+   then return $ CreateGroupAssessment gk a
+   else do
+     ak <- userStory (Story.createGroupAssessment gk a)
+     return $ SaveScoresOfGroupAssessment ak gk scores
 
 newCourseAssessmentPage :: GETContentHandler
 newCourseAssessmentPage = do
@@ -89,10 +94,15 @@ newCourseAssessmentPage = do
 postNewCourseAssessment :: POSTContentHandler
 postNewCourseAssessment = do 
   ck <- getParameter $ customCourseKeyPrm courseKeyParamName
+  scores <- read <$> getParameter scoresParam
   title <- getParameter titleParam
   description <- getParameter descriptionParam
   let a = Assessment title description binaryConfig
-  return $ CreateCourseAssessment ck a
+  if (M.null scores)
+   then return $ CreateCourseAssessment ck a
+   else do
+     ak <- userStory (Story.createCourseAssessment ck a)
+     return $ SaveScoresOfCourseAssessment ak ck scores
 
 fillNewGroupAssessmentPage :: ViewPOSTContentHandler
 fillNewGroupAssessmentPage = do
@@ -103,6 +113,7 @@ fillNewGroupAssessmentPage = do
 
 titleParam = stringParameter "n1" "Title"
 descriptionParam = stringParameter "n2" "Description"
+scoresParam = stringParameter "scores" "Scores"
 
 fillNewCourseAssessmentPage :: ViewPOSTContentHandler
 fillNewCourseAssessmentPage = do
@@ -127,7 +138,7 @@ fillNewGroupAssessmentPreviewPage = do
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
   let [File _name contents] = uploadResult
   usernames <- userStory (Story.subscribedToGroup gk)
-  return $ fillAssessmentTemplate $ PD_PreviewGroupAssessment gk title description contents usernames
+  return $ fillAssessmentTemplate $ PD_PreviewGroupAssessment gk title description (readCsv contents) usernames
     where 
       handlePart (_partInfo, Left _exception) = return PolicyFailure
       handlePart (partInfo, Right filePath) =
@@ -153,7 +164,7 @@ fillAssessmentTemplate pdata = do
   _msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $ do      
-      postForm (routeOf preview) ! A.enctype "multipart/form-data" $ do
+      H.form ! A.method "post" ! A.enctype "multipart/form-data" $ do
         Bootstrap.textInputWithDefault "n1" "Title" title
         Bootstrap.textInputWithDefault "n2" "Description" description
         Bootstrap.formGroup $ fileInput "csv"
@@ -161,8 +172,11 @@ fillAssessmentTemplate pdata = do
              Bootstrap.colMd4 previewButton 
              Bootstrap.colMd4 downloadCsvButton
              Bootstrap.colMd4 commitButton
-        let csvTable _ _ _ csv usernames = Bootstrap.table (previewTable csv usernames)
-            noPreview = return ()
+        let csvTable _ _ _ scores usernames = do
+                                 previewTable usernames scores
+                                 hiddenInput "scores" (show scores)
+            noPreview = hiddenInput "scores" (show (M.empty :: M.Map Username Score))
+            
         fillDataCata
           (\_ _ _ -> noPreview)
           (\_ _ _ -> noPreview)
@@ -179,7 +193,7 @@ fillAssessmentTemplate pdata = do
                         (routeOf getCsv)
                         "Get CSV"
     commitButton = Bootstrap.submitButtonWithAttr
-                   (formAction preview)
+                   (formAction commit)
                    "Commit"
 
     (title,description) = fillDataCata
@@ -202,35 +216,42 @@ fillAssessmentTemplate pdata = do
                (\gk _ _ _ _ -> Pages.getGroupCsv gk ())
                pdata
 
-previewTable :: B.ByteString -> [Username] -> H.Html
-previewTable csv usernames = do
+    commit = fillDataCata
+               (\ck _ _ -> Pages.newCourseAssessment ck ())
+               (\gk _ _ -> Pages.newGroupAssessment gk ())
+               (\ck _ _ _ _ -> Pages.newCourseAssessment ck ())
+               (\gk _ _ _ _ -> Pages.newGroupAssessment gk ())
+               pdata
+
+previewTable :: [Username] -> M.Map Username Score -> H.Html
+previewTable usernames scores = Bootstrap.table $ do
   header
-  tableData csv usernames
+  tableData
     where 
       header = H.tr $ H.th "Username" >> H.th "Score"
              
-      tableData :: B.ByteString -> [Username] -> H.Html
-      tableData csv usernames = mapM_ (tableRow (fromBytestring csv)) usernames
+      tableData :: H.Html
+      tableData = mapM_ tableRow usernames
 
-      tableRow scores username =
+      tableRow username =
           H.tr $ do
-            H.td (H.string $ usernameCata id username)
+            H.td $ usernameCata H.string username
             H.td $ case M.lookup username scores of
-                     Just score -> H.string score
+                     Just score -> scoreCata H.string score
                      Nothing    -> warning
               where
                 warning = H.i ! A.class_ "glyphicon glyphicon-warning-sign" ! A.style "color:#AAAAAA; font-size: xx-large" $ mempty
 
-      fromBytestring :: B.ByteString -> M.Map Username String
-      fromBytestring bs = case B.lines bs of
-                            _:ls@(_:_) -> foldr f M.empty ls
-                            _ -> M.empty
-          where f line m = let (username,score) = B.break (== ',') line
-                               username' = Username . B.unpack $ username
-                           in
-                             if (not ((B.null score) || (score == ",")))
-                             then M.insert username' (B.unpack . B.tail $ score) m
-                             else m
+readCsv :: B.ByteString -> M.Map Username Score
+readCsv bs = case B.lines bs of
+               _:ls@(_:_) -> foldr f M.empty ls
+               _ -> M.empty
+    where f line m = let (username,score) = B.break (== ',') line
+                         username' = Username . B.unpack $ username
+                     in
+                       if (not ((B.null score) || (score == ",")))
+                       then M.insert username' (Score . B.unpack . B.tail $ score) m
+                       else m
 
 
 viewAssessmentPage :: GETContentHandler
@@ -244,10 +265,11 @@ newAssessmentTemplate pdata = do
       postForm (routeOf assessment) $ do
         Bootstrap.textInput "n1" "Title" ""
         Bootstrap.textInput "n2" "Description" ""
+        hiddenInput "scores" (show (M.empty :: M.Map Username Score))
         Bootstrap.row $ do
              let formAction page = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
-             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction $ fill) "Fill"
-             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction $ assessment) "Commit"
+             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction fill) "Fill"
+             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction assessment) "Commit"
 
   where
     assessment = case pdata of
