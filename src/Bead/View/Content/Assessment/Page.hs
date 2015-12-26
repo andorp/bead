@@ -57,9 +57,8 @@ fillDataCata
       case pdata of
         PD_FillCourseAssessment ck title description -> fillCourseAssessment ck title description
         PD_FillGroupAssessment gk title description -> fillGroupAssessment gk title description
-        PD_PreviewCourseAssessment ck title description csv usernames -> previewCourseAssessment ck title description csv usernames
-        PD_PreviewGroupAssessment gk title description csv usernames ->
-            previewGroupAssessment gk title description csv usernames
+        PD_PreviewCourseAssessment ck title description scores usernames -> previewCourseAssessment ck title description scores usernames
+        PD_PreviewGroupAssessment gk title description scores usernames -> previewGroupAssessment gk title description scores usernames
 
 data UploadResult
   = PolicyFailure
@@ -164,7 +163,7 @@ fillAssessmentTemplate pdata = do
   _msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $ do      
-      H.form ! A.method "post" ! A.enctype "multipart/form-data" $ do
+      H.form ! A.method "post" $ do
         Bootstrap.textInputWithDefault "n1" "Title" title
         Bootstrap.textInputWithDefault "n2" "Description" description
         Bootstrap.formGroup $ fileInput "csv"
@@ -185,15 +184,15 @@ fillAssessmentTemplate pdata = do
           pdata
 
   where
-    formAction page = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
+    formAction page encType = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "'; form.enctype='", encType, "';"])
     previewButton = Bootstrap.submitButtonWithAttr
-                    (formAction preview)
+                    (formAction preview "multipart/form-data")
                     "Preview"
     downloadCsvButton = Bootstrap.blockButtonLink
                         (routeOf getCsv)
                         "Get CSV"
     commitButton = Bootstrap.submitButtonWithAttr
-                   (formAction commit)
+                   (formAction commit "application/x-www-form-urlencoded")
                    "Commit"
 
     (title,description) = fillDataCata
