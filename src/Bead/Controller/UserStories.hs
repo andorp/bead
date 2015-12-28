@@ -390,33 +390,33 @@ modifyTestScript tsk ts = logAction INFO ("modifies the existing test script: " 
 loadTestScript :: TestScriptKey -> UserStory (TestScript, CourseKey)
 loadTestScript tsk = logAction INFO ("loads the test script: " ++ show tsk) $ do
   authorize P_Open P_TestScript
-  join $ persistence $ do
+  persistence $ do
     ck <- Persist.courseOfTestScript tsk
     ts <- Persist.loadTestScript tsk
-    return (return (ts, ck))
+    return (ts, ck)
 
 -- | Returns Just test case key and test case for the given assignment if there any, otherwise Nothing
 testCaseOfAssignment :: AssignmentKey -> UserStory (Maybe (TestCaseKey, TestCase, TestScriptKey))
 testCaseOfAssignment ak = logAction INFO (" loads the test case for assignment: " ++ show ak) $ do
-  join $ persistence $ do
+  persistence $ do
     mtk <- Persist.testCaseOfAssignment ak
     maybe
-      (return (return Nothing))
+      (return Nothing)
       (\tk -> do tc  <- Persist.loadTestCase tk
                  tsk <- Persist.testScriptOfTestCase tk
-                 return (return (Just (tk, tc, tsk))))
+                 return (Just (tk, tc, tsk)))
       mtk
 
 -- | Returns the test scrips of the given assignments, that are attached to the course of the assignment
 testScriptInfosOfAssignment :: AssignmentKey -> UserStory [(TestScriptKey, TestScriptInfo)]
 testScriptInfosOfAssignment ak = do
   authorize P_Open P_TestScript
-  join $ persistence $ do
+  persistence $ do
     keys <- Persist.courseOrGroupOfAssignment ak
     ck   <- either (return) Persist.courseOfGroup keys
     tsks <- Persist.testScriptsOfCourse ck
     tss  <- mapM loadTestScriptWithKey tsks
-    return (return tss)
+    return tss
   where
     loadTestScriptWithKey tk = do
       ti <- Persist.testScriptInfo tk
@@ -426,11 +426,11 @@ testScriptInfosOfAssignment ak = do
 testScriptInfosOfGroup :: GroupKey -> UserStory [(TestScriptKey, TestScriptInfo)]
 testScriptInfosOfGroup gk = do
   authorize P_Open P_TestScript
-  join $ persistence $ do
+  persistence $ do
     ck   <- Persist.courseOfGroup gk
     tsks <- Persist.testScriptsOfCourse ck
     tss  <- mapM loadTestScriptWithKey tsks
-    return (return tss)
+    return tss
   where
     loadTestScriptWithKey tk = do
       ti <- Persist.testScriptInfo tk
@@ -440,10 +440,10 @@ testScriptInfosOfGroup gk = do
 testScriptInfosOfCourse :: CourseKey -> UserStory [(TestScriptKey, TestScriptInfo)]
 testScriptInfosOfCourse ck = do
   authorize P_Open P_TestScript
-  join $ persistence $ do
+  persistence $ do
     tsks <- Persist.testScriptsOfCourse ck
     tss  <- mapM loadTestScriptWithKey tsks
-    return (return tss)
+    return tss
   where
     loadTestScriptWithKey tk = do
       ti <- Persist.testScriptInfo tk
