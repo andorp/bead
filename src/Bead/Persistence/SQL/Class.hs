@@ -294,13 +294,17 @@ instance DomainValue Domain.Assessment where
   type EntityValue Domain.Assessment = Assessment
 
   fromDomainValue = Domain.assessment $
-    \title desc cfg -> Assessment
-      (Text.pack $ encodeJSON (title,desc))
+    \title desc createdTime cfg -> Assessment
+      (Text.pack title)
+      (Text.pack desc)
+      createdTime
       (encodeEvalConfig cfg)
 
-  toDomainValue ent = Domain.Assessment title description evalConfig
-      where 
-        (title,description) = decodeJSON . Text.unpack $ assessmentDescription ent
+  toDomainValue ent = Domain.Assessment title description createdTime evalConfig
+      where
+        title = Text.unpack $ assessmentTitle ent
+        description = Text.unpack $ assessmentDescription ent
+        createdTime = assessmentCreated ent
         evalConfig = decodeEvalConfig $ assessmentEvalConfig ent
 
 instance DomainKey Domain.ScoreKey where

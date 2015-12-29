@@ -24,6 +24,7 @@ import           System.Directory (doesFileExist)
 
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Map as M
+import           Data.Time (getCurrentTime)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import           Text.Blaze.Html5 ((!))
@@ -78,7 +79,8 @@ postNewGroupAssessment = do
   scores <- read <$> getParameter scoresParam
   title <- getParameter titleParam
   description <- getParameter descriptionParam
-  let a = Assessment title description binaryConfig
+  now <- liftIO getCurrentTime
+  let a = Assessment title description now binaryConfig
   if M.null scores
    then return $ CreateGroupAssessment gk a
    else do
@@ -96,7 +98,8 @@ postNewCourseAssessment = do
   scores <- read <$> getParameter scoresParam
   title <- getParameter titleParam
   description <- getParameter descriptionParam
-  let a = Assessment title description binaryConfig
+  now <- liftIO getCurrentTime
+  let a = Assessment title description now binaryConfig
   if (M.null scores)
    then return $ CreateCourseAssessment ck a
    else do

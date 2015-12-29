@@ -51,7 +51,7 @@ loadAssessment key = do
 modifyAssessment :: Domain.AssessmentKey -> Domain.Assessment -> Persist ()
 modifyAssessment key assessment = do
   update (toEntityKey key) $ Domain.withAssessment assessment
-    $ \title desc cfg ->
+    $ \title desc _created cfg ->
         [ AssessmentDescription =. (Text.pack . encodeJSON $ (title,desc))
         , AssessmentEvalConfig  =. encodeEvalConfig cfg
         ]
@@ -60,7 +60,7 @@ courseOfAssessment :: Domain.AssessmentKey -> Persist (Maybe Domain.CourseKey)
 courseOfAssessment key = do
   courses <- selectList [AssessmentsOfCourseAssessment ==. toEntityKey key] []
   return $!
-    fmap (toDomainKey . assessmentsOfCourseCourse  . entityVal)
+    fmap (toDomainKey . assessmentsOfCourseCourse . entityVal)
          (listToMaybe courses)
 
 groupOfAssessment :: Domain.AssessmentKey -> Persist (Maybe Domain.GroupKey)
