@@ -16,7 +16,7 @@ import           Text.Blaze.Html5.Attributes as A hiding (id)
 import qualified Bead.Controller.Pages as Pages
 import           Bead.Domain.Entities as E (Role(..))
 import           Bead.Domain.Evaluation
-import           Bead.View.Content as Content hiding (userState, table)
+import           Bead.View.Content as Content hiding (userState, table, assessments)
 import           Bead.View.Content.SubmissionTable as ST
 import           Bead.View.Content.VisualConstants
 
@@ -55,6 +55,7 @@ homeContent d = do
                     , "then clicking on the button."
                     ]
                 i18n msg $ htmlSubmissionTables d
+                mapM_ (i18n msg . htmlAssessmentTable) (assessments d)
 
               -- HR
               Bootstrap.row $ Bootstrap.colMd12 $ hr
@@ -132,6 +133,30 @@ htmlSubmissionTables pd = do
   where
     htmlSubmissionTable pd (i,s) = do
       submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
+
+htmlAssessmentTable :: ScoreBoard -> IHtml
+htmlAssessmentTable board | (null . sbAssessments $ board) = return . Bootstrap.rowColMd12 . H.p $ "There are no assessments yet."
+                          | otherwise = return $ do
+  Bootstrap.rowColMd12 . H.p $ "Assessments"
+  Bootstrap.rowColMd12 . Bootstrap.table $ do
+    H.tr $ do
+      H.th . string $ "Username"
+      forM_ (sbAssessments board) (H.th . string . assessmentName)
+    forM_ (sbUsers board) userLine
+        
+      where
+        assessmentName :: AssessmentKey -> String
+        assessmentName ak = maybe "" Content.title (Map.lookup ak (sbAssessmentInfos board))
+
+        userLine :: Username -> Html
+        userLine username = H.tr $ do
+          usernameCata (H.td . string) username
+          forM_ (sbAssessments board) (scoreIcon username)
+
+        scoreIcon :: Username -> AssessmentKey -> Html
+        scoreIcon username ak = case Map.lookup (ak,username) (sbScores board) of
+                                  Just _ -> H.td $ H.i ! A.class_ "glyphicon glyphicon-thumbs-up" $ mempty
+                                  Nothing -> H.td mempty
 
 navigation :: [Pages.Page a b c d e] -> IHtml
 navigation links = do

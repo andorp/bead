@@ -34,6 +34,7 @@ data HomePageData = HomePageData {
   , hasGroups   :: Bool -- True if the user has administrated groups
   , assignments :: StudentAssignments -- Empty map means that the user is not registrated in any courses
   , sTables     :: [SubmissionTableInfo]
+  , assessments :: [ScoreBoard]
     -- ^ The convertes function that convert a given utc time into the users local timezone
   , timeConverter :: UserTimeConverter
   , submissionTableCtx :: SubmissionTableContext

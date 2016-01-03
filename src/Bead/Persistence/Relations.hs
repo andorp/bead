@@ -23,6 +23,7 @@ module Bead.Persistence.Relations (
   , testScriptInfo -- Calculates the test script information for the given test key
   , openedSubmissionInfo -- Calculates the opened submissions for the user from the administrated groups and courses
   , submissionLimitOfAssignment
+  , scoreBoards
 #ifdef TEST
   , persistRelationsTests
 #endif
@@ -581,6 +582,35 @@ submissionLimitOfAssignment :: Username -> AssignmentKey -> Persist SubmissionLi
 submissionLimitOfAssignment username key =
   calcSubLimit <$> (loadAssignment key) <*> (length <$> userSubmissions username key)
 
+scoreBoards :: Username -> Persist [ScoreBoard]
+scoreBoards u = do
+  groupKeys <- map fst <$> administratedGroups u
+  mapM groupScoreBoard groupKeys
+
+groupScoreBoard :: GroupKey -> Persist ScoreBoard
+groupScoreBoard gk = do
+  assessmentKeys <- assessmentsOfGroup gk
+  board <- foldM boardColumn Map.empty assessmentKeys
+  assessments <- mapM loadAssessment assessmentKeys
+  users <- subscribedToGroup gk
+  return ScoreBoard {
+            sbScores = board
+          , sbAssessments = assessmentKeys
+          , sbAssessmentInfos = Map.fromList (zip assessmentKeys assessments)
+          , sbUsers = users
+          }
+      where
+        boardColumn :: Map (AssessmentKey,Username) ScoreKey
+                    -> AssessmentKey
+                    -> Persist (Map (AssessmentKey,Username) ScoreKey)
+        boardColumn board assessment = do
+                       scores <- scoresOfAssessment assessment
+                       foldM (cell assessment) board scores
+
+        cell assessment board score = do
+                       user <- usernameOfScore score
+                       return $ Map.insert (assessment,user) score board
+               
 #ifdef TEST
 
 persistRelationsTests = do

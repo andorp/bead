@@ -771,6 +771,11 @@ saveScoresOfGroupAssessment ak gk scores = logAction INFO ("saves assessment sco
                            Just score -> void $ Persist.saveScore user ak score
                            Nothing    -> return ()
 
+scoreBoards :: UserStory [ScoreBoard]
+scoreBoards = logAction INFO "lists scoreboards" $ do
+  authPerms scoreBoardPermissions
+  withUserAndPersist Persist.scoreBoards
+
 -- Puts the given status message to the actual user state
 putStatusMessage :: Translation String -> UserStory ()
 putStatusMessage = changeUserState . setStatus . SmNormal

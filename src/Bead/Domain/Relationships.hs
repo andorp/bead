@@ -417,9 +417,18 @@ newtype NotificationKey = NotificationKey String
 notificationKey f (NotificationKey x) = f x
 
 -- | The scoreboard summarizes the information for a course or group related
--- assesments and the evaluation for the assesment.
-newtype ScoreBoard = ScoreBoard (Map (AssessmentKey, Username) EvaluationKey)
+-- assesments and the evaluation for the assessment.
+data ScoreBoard = 
+    ScoreBoard {
+      sbScores :: Map (AssessmentKey,Username) ScoreKey
+    , sbAssessments :: [AssessmentKey]
+    , sbAssessmentInfos :: Map AssessmentKey Assessment
+    , sbUsers :: [Username]
+    }
   deriving (Eq, Show)
+
+scoreBoardPermissions = ObjectPermissions
+  [ (P_Open, P_Group), (P_Open, P_Assessment) ]
 
 #ifdef TEST
 relationshipTests = group "Bead.Domain.Relationships" $ do
