@@ -142,17 +142,22 @@ htmlAssessmentTable board | (null . sbAssessments $ board) = return . Bootstrap.
     H.tr $ do
       H.th . string $ "Name"
       H.th . string $ "Username"
-      forM_ (sbAssessments board) (H.th . string . assessmentName)
+      forM_ (zip (sbAssessments board) [1..]) assessmentViewButton
     forM_ (sbUsers board) userLine
         
       where
+        assessmentViewButton :: (AssessmentKey,Int) -> Html
+        assessmentViewButton (ak,n) = H.td $ Bootstrap.customButtonLink style "" (assessmentName ak) ("A" ++ show n)
+            where 
+              style = [fst ST.groupButtonStyle]
+
         assessmentName :: AssessmentKey -> String
         assessmentName ak = maybe "" Content.title (Map.lookup ak (sbAssessmentInfos board))
 
         userLine :: UserDesc -> Html
         userLine userDesc = H.tr $ do
           H.td . string . ud_fullname $ userDesc
-          H.td . string . uid id $ ud_uid userDesc 
+          H.td . string . uid id . ud_uid $ userDesc 
           forM_ (sbAssessments board) (scoreIcon . ud_username $ userDesc)
 
         scoreIcon :: Username -> AssessmentKey -> Html

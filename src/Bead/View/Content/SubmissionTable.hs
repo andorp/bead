@@ -8,6 +8,7 @@ module Bead.View.Content.SubmissionTable (
   , submissionTableContext
   , sortUserLines
   , resultCell
+  , groupButtonStyle
   ) where
 
 import           Control.Monad
@@ -173,9 +174,6 @@ submissionTablePart tableId now ctx s = do
 
     isActiveAssignment ak =
       maybe False (flip Assignment.isActive now) . Map.lookup ak $ stiAssignmentInfos s
-
-    courseButtonStyle = ("btn-hcao", "btn-hcac")
-    groupButtonStyle  = ("btn-hgao", "btn-hgac")
 
     modifyAssignmentLink _buttonStyle@(active, passive) pfx (i,ak) =
       -- If the assignment is active we render with active assignment button style,
@@ -345,6 +343,9 @@ assignmentCreationMenu courses groups = submissionTableInfoCata courseMenu group
         elem page = Bootstrap.buttonLink (routeOf page) (fromString . msg $ linkText page)
 
 -- * CSS Section
+
+courseButtonStyle = ("btn-hcao", "btn-hcac")
+groupButtonStyle  = ("btn-hgao", "btn-hgac")
 
 openCourseAssignmentStyle = backgroundColor "#52B017"
 openGroupAssignmentStyle  = backgroundColor "#00FF00"
