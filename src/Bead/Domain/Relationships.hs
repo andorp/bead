@@ -423,7 +423,7 @@ data ScoreBoard =
       sbScores :: Map (AssessmentKey,Username) ScoreKey
     , sbAssessments :: [AssessmentKey]
     , sbAssessmentInfos :: Map AssessmentKey Assessment
-    , sbUsers :: [Username]
+    , sbUsers :: [UserDesc]
     }
   deriving (Eq, Show)
 

@@ -593,11 +593,12 @@ groupScoreBoard gk = do
   board <- foldM boardColumn Map.empty assessmentKeys
   assessments <- mapM loadAssessment assessmentKeys
   users <- subscribedToGroup gk
+  userDescriptions <- mapM userDescription users
   return ScoreBoard {
             sbScores = board
           , sbAssessments = assessmentKeys
           , sbAssessmentInfos = Map.fromList (zip assessmentKeys assessments)
-          , sbUsers = users
+          , sbUsers = userDescriptions
           }
       where
         boardColumn :: Map (AssessmentKey,Username) ScoreKey

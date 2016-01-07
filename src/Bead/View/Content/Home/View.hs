@@ -140,6 +140,7 @@ htmlAssessmentTable board | (null . sbAssessments $ board) = return . Bootstrap.
   Bootstrap.rowColMd12 . H.p $ "Assessments"
   Bootstrap.rowColMd12 . Bootstrap.table $ do
     H.tr $ do
+      H.th . string $ "Name"
       H.th . string $ "Username"
       forM_ (sbAssessments board) (H.th . string . assessmentName)
     forM_ (sbUsers board) userLine
@@ -148,10 +149,11 @@ htmlAssessmentTable board | (null . sbAssessments $ board) = return . Bootstrap.
         assessmentName :: AssessmentKey -> String
         assessmentName ak = maybe "" Content.title (Map.lookup ak (sbAssessmentInfos board))
 
-        userLine :: Username -> Html
-        userLine username = H.tr $ do
-          usernameCata (H.td . string) username
-          forM_ (sbAssessments board) (scoreIcon username)
+        userLine :: UserDesc -> Html
+        userLine userDesc = H.tr $ do
+          H.td . string . ud_fullname $ userDesc
+          H.td . string . uid id $ ud_uid userDesc 
+          forM_ (sbAssessments board) (scoreIcon . ud_username $ userDesc)
 
         scoreIcon :: Username -> AssessmentKey -> Html
         scoreIcon username ak = case Map.lookup (ak,username) (sbScores board) of
