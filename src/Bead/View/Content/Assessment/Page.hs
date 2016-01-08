@@ -81,11 +81,9 @@ postNewGroupAssessment = do
   description <- getParameter descriptionParam
   now <- liftIO getCurrentTime
   let a = Assessment title description now binaryConfig
-  if M.null scores
-   then return $ CreateGroupAssessment gk a
-   else do
-     ak <- userStory (Story.createGroupAssessment gk a)
-     return $ SaveScoresOfGroupAssessment ak gk scores
+  return $ if M.null scores
+             then CreateGroupAssessment gk a
+             else SaveScoresOfGroupAssessment gk a scores
 
 newCourseAssessmentPage :: GETContentHandler
 newCourseAssessmentPage = do
@@ -100,11 +98,9 @@ postNewCourseAssessment = do
   description <- getParameter descriptionParam
   now <- liftIO getCurrentTime
   let a = Assessment title description now binaryConfig
-  if (M.null scores)
-   then return $ CreateCourseAssessment ck a
-   else do
-     ak <- userStory (Story.createCourseAssessment ck a)
-     return $ SaveScoresOfCourseAssessment ak ck scores
+  return $ if M.null scores
+             then CreateCourseAssessment ck a
+             else SaveScoresOfCourseAssessment ck a scores
 
 fillNewGroupAssessmentPage :: ViewPOSTContentHandler
 fillNewGroupAssessmentPage = do

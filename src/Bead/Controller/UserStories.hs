@@ -748,28 +748,27 @@ createCourseAssessment ck a = logAction INFO ("creates assessment for course " +
   isAdministratedCourse ck
   persistence (Persist.saveCourseAssessment ck a)
 
-
-saveScoresOfCourseAssessment :: AssessmentKey -> CourseKey -> Map Username Score -> UserStory ()
-saveScoresOfCourseAssessment ak ck scores = logAction INFO ("saves assessment scores for course " ++ show ck) $ do
-  authorize P_Open P_Course
-  isAdministratedCourse ck
-  users <- subscribedToCourse ck
-  persistence (mapM_ saveScore users)
+saveScoresOfCourseAssessment :: CourseKey -> Assessment -> Map Username Score -> UserStory ()
+saveScoresOfCourseAssessment ck a scores = do
+  ak <- createCourseAssessment ck a
+  logAction INFO ("saves scores of assessment " ++ show ak ++ " of course " ++ show ck) $ do
+    users <- subscribedToCourse ck
+    persistence (mapM_ (saveScore ak) users)
       where
-        saveScore user = case Map.lookup user scores of
-                           Just score -> void $ Persist.saveScore user ak score
-                           Nothing    -> return ()
+        saveScore ak user = case Map.lookup user scores of
+                              Just score -> void $ Persist.saveScore user ak score
+                              Nothing    -> return ()
 
-saveScoresOfGroupAssessment :: AssessmentKey -> GroupKey -> Map Username Score -> UserStory ()
-saveScoresOfGroupAssessment ak gk scores = logAction INFO ("saves assessment scores for group " ++ show gk) $ do
-  authorize P_Open P_Group
-  isAdministratedGroup gk
-  users <- subscribedToGroup gk
-  persistence (mapM_ saveScore users)
+saveScoresOfGroupAssessment :: GroupKey -> Assessment -> Map Username Score -> UserStory ()
+saveScoresOfGroupAssessment gk a scores = do
+  ak <- createGroupAssessment gk a
+  logAction INFO ("saves scores of assessment " ++ show ak ++ " of group " ++ show gk) $ do
+    users <- subscribedToGroup gk
+    persistence (mapM_ (saveScore ak) users)
       where
-        saveScore user = case Map.lookup user scores of
-                           Just score -> void $ Persist.saveScore user ak score
-                           Nothing    -> return ()
+        saveScore ak user = case Map.lookup user scores of
+                              Just score -> void $ Persist.saveScore user ak score
+                              Nothing    -> return ()
 
 scoreBoards :: UserStory [ScoreBoard]
 scoreBoards = logAction INFO "lists scoreboards" $ do
