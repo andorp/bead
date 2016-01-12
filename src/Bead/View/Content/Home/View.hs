@@ -241,21 +241,22 @@ availableAssignments pd timeconverter studentAssignments
             [ "Submissions and their evaluations may be accessed by clicking on each assignment's link. "
             , "The table shows only the last evaluation per assignment."
             ]
-        forM_ asl $ \(key, coursename, as) -> when (not $ null as) $ Bootstrap.rowColMd12 $ do
-          h4 $ fromString coursename
-          let areIsolateds = areOpenAndIsolatedAssignments as
-          let assignments = if areIsolateds then (isolatedAssignments as) else as
-          let isLimited = isLimitedAssignments assignments
-          when areIsolateds $ p $ fromString . msg $ msg_Home_ThereIsIsolatedAssignment $ concat
-            [ "ISOLATED MODE: There is at least one assignment which hides the normal assignments for "
-            , "this course."
-            ]
-          Bootstrap.table $ do
-            thead $ headerLine msg isLimited
-            -- Sort assignments by their end date time in reverse
-            tbody $ mapM_ (assignmentLine msg isLimited)
-                  $ reverse $ sortBy (compare `on` (aEndDate . activeAsgDesc))
-                  $ assignments
+        forM_ asl $ \(key, coursename, as) -> when (not $ null as) $ do
+          Bootstrap.rowColMd12 $ do
+            h4 $ fromString coursename
+            let areIsolateds = areOpenAndIsolatedAssignments as
+            let assignments = if areIsolateds then (isolatedAssignments as) else as
+            let isLimited = isLimitedAssignments assignments
+            when areIsolateds $ p $ fromString . msg $ msg_Home_ThereIsIsolatedAssignment $ concat
+              [ "ISOLATED MODE: There is at least one assignment which hides the normal assignments for "
+              , "this course."
+              ]
+            Bootstrap.table $ do
+              thead $ headerLine msg isLimited
+              -- Sort assignments by their end date time in reverse
+              tbody $ mapM_ (assignmentLine msg isLimited)
+                    $ reverse $ sortBy (compare `on` (aEndDate . activeAsgDesc))
+                    $ assignments
           -- Assessment table
           case Map.lookup key (assessments pd) of
             Nothing  -> p $ fromString "There are no assessments registered to this course"
