@@ -94,6 +94,7 @@ homeContent d = do
               Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString $ msg $ msg_Home_StudentTasks "Student Menu"
               i18n msg $ navigation [groupRegistration]
               i18n msg $ availableAssignments (timeConverter d) (assignments d)
+              mapM_ (i18n msg . availableAssessments "Haskell") (assessments d)
   where
       administration    = Pages.administration ()
       courseAdmin       = Pages.courseAdmin ()
@@ -135,7 +136,7 @@ htmlSubmissionTables pd = do
       submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
 
 htmlAssessmentTable :: ScoreBoard -> IHtml
-htmlAssessmentTable board | (null . sbAssessments $ board) = return . Bootstrap.rowColMd12 . H.p $ "There are no assessments yet."
+htmlAssessmentTable board | (null . sbAssessments $ board) = return mempty
                           | otherwise = return $ do
   Bootstrap.rowColMd12 . H.p $ "Assessments"
   Bootstrap.rowColMd12 . Bootstrap.table $ do
@@ -286,3 +287,24 @@ availableAssignments timeconverter studentAssignments
             percent x = join [show . round $ (100 * x), "%"]
             score (Percentage (Scores [p])) = percentage $ percent p
             score _                         = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
+
+availableAssessments :: String -> ScoreBoard -> IHtml
+availableAssessments name board | (null . sbAssessments $ board) = return mempty
+                                | otherwise = return $ do
+  Bootstrap.rowColMd12 . H.p $ "Assessments"
+  Bootstrap.rowColMd12 . Bootstrap.table $ do
+    H.tr header
+    H.tr $ do
+      H.td . string $ name
+      mapM_ evaluationViewButton (zip (sbAssessments board) [1..])
+
+    where
+      header = H.th mempty >> mapM_ (H.td . assessmentButton) (take (length (sbAssessments board)) [1..])
+          where
+            assessmentButton :: Int -> Html
+            assessmentButton n = Bootstrap.buttonLink "" ("A" ++ show n)
+        
+      evaluationViewButton :: (AssessmentKey,Int) -> Html
+      evaluationViewButton (ak,n) = H.td thumbsUp 
+          where
+            thumbsUp = H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: xx-large" $ mempty
