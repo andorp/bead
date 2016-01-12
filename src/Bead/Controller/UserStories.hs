@@ -778,7 +778,7 @@ saveScoresOfGroupAssessment gk a evaluations = do
 
 -- Produces a map of assessments and information about the submissions for the
 -- described assignment, which is associated with the course or group
-userAssessments :: UserStory (Map Course [(AssessmentKey, ScoreInfo)])
+userAssessments :: UserStory (Map CourseKey (Course, [(AssessmentKey, ScoreInfo)]))
 userAssessments = logAction INFO "lists assessments" $ do
 --  authorize P_Open P_Assessment
   authorize P_Open P_Course
@@ -788,7 +788,7 @@ userAssessments = logAction INFO "lists assessments" $ do
     newMap <- forM (Map.toList asgMap) $ \(key,aks) -> do
       key' <- Persist.loadCourse key
       infos <- catMaybes <$> mapM (getInfo u) (Set.toList aks)
-      return $! (key', infos)
+      return $! (key, (key', infos))
     return $! Map.fromList newMap
 
   where
@@ -1048,7 +1048,7 @@ assignmentDesc now user key = do
 
 -- Produces a map of assignments and information about the submissions for the
 -- described assignment, which is associated with the course or group
-userAssignments :: UserStory (Map Course [(AssignmentKey, AssignmentDesc, SubmissionInfo)])
+userAssignments :: UserStory (Map CourseKey (Course,[(AssignmentKey, AssignmentDesc, SubmissionInfo)]))
 userAssignments = logAction INFO "lists assignments" $ do
   authorize P_Open P_Assignment
   authorize P_Open P_Course
@@ -1059,7 +1059,7 @@ userAssignments = logAction INFO "lists assignments" $ do
     newMap <- forM (Map.toList asgMap) $ \(key,aks) -> do
       key' <- Persist.loadCourse key
       descs <- catMaybes <$> mapM (createDesc u now) (Set.toList aks)
-      return $! (key', descs)
+      return $! (key, (key', descs))
     return $! Map.fromList newMap
 
   where

@@ -92,8 +92,7 @@ homeContent d = do
             when (not $ isAdmin r) $ do
               Bootstrap.row $ Bootstrap.colMd12 $ h3 $ fromString $ msg $ msg_Home_StudentTasks "Student Menu"
               i18n msg $ navigation [groupRegistration]
-              i18n msg $ availableAssignments (timeConverter d) (assignments d)
-              i18n msg $ availableAssessments (assessments d)
+              i18n msg $ availableAssignments d (timeConverter d) (assignments d)
   where
       administration    = Pages.administration ()
       courseAdmin       = Pages.courseAdmin ()
@@ -207,8 +206,8 @@ navigation links = do
     $ H.div ! class_ "btn-group"
     $ mapM_ (i18n msg . linkButtonToPageBS) links
 
-availableAssignments :: UserTimeConverter -> StudentAssignments -> IHtml
-availableAssignments timeconverter studentAssignments
+availableAssignments :: HomePageData -> UserTimeConverter -> StudentAssignments -> IHtml
+availableAssignments pd timeconverter studentAssignments
   | isNotRegistered studentAssignments = do
       msg <- getI18N
       return
@@ -226,11 +225,12 @@ availableAssignments timeconverter studentAssignments
         $ p
         $ fromString
         $ msg $ msg_Home_HasNoAssignments "There are no available assignments yet."
+        --TODO: Add assessment table here!!!
 
   | otherwise = do
       -- Sort course or groups by their name.
-      let asl = sortBy (compare `on` fst)
-                  $ map (courseName *** id)
+      let asl = sortBy (compare `on` snd3)
+                  $ map courseName3
                   $ toActiveAssignmentList studentAssignments
       msg <- getI18N
       return $ do
@@ -241,8 +241,8 @@ availableAssignments timeconverter studentAssignments
             [ "Submissions and their evaluations may be accessed by clicking on each assignment's link. "
             , "The table shows only the last evaluation per assignment."
             ]
-        forM_ asl $ \(key, as) -> when (not $ null as) $ Bootstrap.rowColMd12 $ do
-          h4 $ fromString key
+        forM_ asl $ \(key, coursename, as) -> when (not $ null as) $ Bootstrap.rowColMd12 $ do
+          h4 $ fromString coursename
           let areIsolateds = areOpenAndIsolatedAssignments as
           let assignments = if areIsolateds then (isolatedAssignments as) else as
           let isLimited = isLimitedAssignments assignments
@@ -256,7 +256,13 @@ availableAssignments timeconverter studentAssignments
             tbody $ mapM_ (assignmentLine msg isLimited)
                   $ reverse $ sortBy (compare `on` (aEndDate . activeAsgDesc))
                   $ assignments
+          -- Assessment table
+          case Map.lookup key (assessments pd) of
+            Nothing  -> p $ fromString "There are no assessments registered to this course"
+            Just cas -> availableAssessment msg cas
   where
+    snd3 (_,s,_) = s
+    courseName3 (ck, c, as) = (ck, courseName c, as)
     isLimitedAssignments = isJust . find limited
 
     limited = submissionLimit (const False) (\_ _ -> True) (const True) . (\(_a,ad,_si) -> aLimit ad)
@@ -320,24 +326,18 @@ availableAssignments timeconverter studentAssignments
             score (Percentage (Scores [p])) = percentage $ percent p
             score _                         = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
-availableAssessments :: Map.Map Course [(AssessmentKey,ScoreInfo)] -> IHtml
-availableAssessments infos | Map.null infos = return mempty
-                           | otherwise = do
-  msg <- getI18N
-  return $ do
-    Bootstrap.rowColMd12 . H.p $ "Assessments"
-    forM_ (Map.toList infos) $ \(c,assessments) ->
-      Bootstrap.rowColMd12 . Bootstrap.table $ do
-        H.tr (header assessments)
-        H.tr $ do
-          H.td . string $ courseName c
-          mapM_ (evaluationViewButton msg) (zip assessments [1..])
-
-    where
+availableAssessment :: I18N -> (Course, [(AssessmentKey, ScoreInfo)]) -> Html
+availableAssessment msg (c, assessments) =
+  Bootstrap.rowColMd12 . Bootstrap.table $ do
+    H.tr (header assessments)
+    H.tr $ do
+      H.td . string $ courseName c
+      mapM_ evaluationViewButton (zip assessments [1..])
+  where
       header assessments = H.th mempty >> mapM_ (H.td . assessmentButton) (take (length assessments) [1..])
           where
             assessmentButton :: Int -> Html
             assessmentButton n = Bootstrap.buttonLink "" ("A" ++ show n)
         
-      evaluationViewButton :: I18N -> ((AssessmentKey,ScoreInfo),Int) -> Html
-      evaluationViewButton msg ((ak,info),n) = H.td $ scoreInfoToIcon msg "/home" "/home" info
+      evaluationViewButton :: ((AssessmentKey,ScoreInfo),Int) -> Html
+      evaluationViewButton ((ak,info),n) = H.td $ scoreInfoToIcon msg "/home" "/home" info
