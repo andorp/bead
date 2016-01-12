@@ -161,6 +161,7 @@ module Bead.Persistence.Persist (
   , assessmentOfScore
   , usernameOfScore
   , evaluationOfScore
+  , scoreOfAssessmentAndUser
 
   , testIncomingDataDir
 #ifdef TEST
@@ -685,6 +686,9 @@ usernameOfScore = PersistImpl.usernameOfScore
 
 evaluationOfScore :: ScoreKey -> Persist (Maybe EvaluationKey)
 evaluationOfScore = PersistImpl.evaluationOfScore
+
+scoreOfAssessmentAndUser :: Username -> AssessmentKey -> Persist [ScoreKey]
+scoreOfAssessmentAndUser = PersistImpl.scoreOfAssessmentAndUser
 
 -- * Incomming dir for the test results
 

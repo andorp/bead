@@ -72,6 +72,12 @@ usernameOfScore key = do
   where
     extract = maybe (fail "Nothing") return
 
+scoreOfAssessmentAndUser :: Domain.Username -> Domain.AssessmentKey -> Persist [Domain.ScoreKey]
+scoreOfAssessmentAndUser u ak = do
+  userId <- getUserId u
+  scores <- selectList [ScoresOfUsernameAssessmentUser ==. userId, ScoresOfUsernameAssessmentAssessment ==. toEntityKey ak] []
+  return $ map (toDomainKey . scoresOfUsernameAssessmentScore . entityVal) scores
+
 evaluationOfScore :: Domain.ScoreKey -> Persist (Maybe Domain.EvaluationKey)
 evaluationOfScore key = do
   evaluations <- selectList [ScoreOfEvaluationScore ==. toEntityKey key] []

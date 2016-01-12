@@ -24,6 +24,8 @@ module Bead.Persistence.Relations (
   , openedSubmissionInfo -- Calculates the opened submissions for the user from the administrated groups and courses
   , submissionLimitOfAssignment
   , scoreBoards
+  , scoreInfo
+  , userAssessmentKeys
 #ifdef TEST
   , persistRelationsTests
 #endif
@@ -604,14 +606,16 @@ courseScoreBoard = scoreBoard . Left
 scoreBoard :: Either CourseKey GroupKey -> Persist ScoreBoard
 scoreBoard key = do
   assessmentKeys <- assessmentsOf
-  board <- foldM boardColumn Map.empty assessmentKeys
-  assessments <- mapM loadAssessment assessmentKeys
   users <- subscriptions
+  board <- foldM boardColumn (notFound users assessmentKeys) assessmentKeys
+  assessments <- mapM loadAssessment assessmentKeys
   userDescriptions <- mapM userDescription users
   name <- loadName
   let assessmentInfos = Map.fromList (zip assessmentKeys assessments)
   return $ mkScoreBoard board name assessmentKeys assessmentInfos userDescriptions
   where
+        notFound users aks = Map.fromList [((ak,u),Score_Not_Found) | u <- users, ak <- aks]
+    
         mkScoreBoard s n as ais us =
           either (\k -> CourseScoreBoard s k n as ais us)
                  (\k -> GroupScoreBoard s k n as ais us)
@@ -630,6 +634,29 @@ scoreBoard key = do
                        user <- usernameOfScore scoreKey
                        info <- scoreInfo scoreKey
                        return $ Map.insert (assessment,user) info board
+
+-- Produces a Just Assessment list, if the user is registered for some courses,
+-- otherwise Nothing.
+userAssessmentKeys :: Username -> Persist (Map CourseKey (Set AssessmentKey))
+userAssessmentKeys u = do
+  gs <- nub <$> userGroups u
+  cs <- nub <$> userCourses u
+  case (cs,gs) of
+    ([],[]) -> return Map.empty
+    _       -> do
+      gas <- foldM groupAssessment Map.empty gs
+      as  <- foldM courseAssessment gas cs
+      return $! as
+  where
+    groupAssessment m gk = do
+      ck <- courseOfGroup gk
+      (insert ck) <$> (Set.fromList <$> assessmentsOfGroup gk) <*> (pure m)
+
+    courseAssessment m ck =
+      (insert ck) <$> (Set.fromList <$> assessmentsOfCourse ck) <*> (pure m)
+
+    insert k v m =
+      maybe (Map.insert k v m) (flip (Map.insert k) m . (Set.union v)) $ Map.lookup k m
 
 #ifdef TEST
 
