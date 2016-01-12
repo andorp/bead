@@ -128,14 +128,17 @@ submissionTableInfoAssignments = submissionTableInfoCata course group where
 
 htmlSubmissionTables :: HomePageData -> IHtml
 htmlSubmissionTables pd = do
-  tables <- mapM (htmlSubmissionTable pd) $ zip [1..] (sTables pd)
-  return $ sequence_ tables
+  sbmTables <- mapM (htmlSubmissionTable pd) $ zip [1..] (sTables pd)
+  asmtTables <- mapM (assessmentTable pd) (sTables pd)
+  return $ forM_ (zip sbmTables asmtTables) $ \(s,a) -> s >> a
   where
-    htmlSubmissionTable pd (i,s) = do
-      submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
+    assessmentTable pd s = do
       case Map.lookup (submissionTableInfoToCourseGroupKey s) (assessmentTables pd) of
         Nothing -> return $ return ()
         Just sb -> htmlAssessmentTable sb
+
+    htmlSubmissionTable pd (i,s) = do
+      submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
 
 
 htmlAssessmentTable :: ScoreBoard -> IHtml
