@@ -178,7 +178,7 @@ allPercentEval = sequence . map percentEval
 data Evaluation = Evaluation {
     evaluationResult  :: EvResult
   , writtenEvaluation :: String
-  } deriving (Eq, Show)
+  } deriving (Eq, Read, Show)
 
 -- | Template function for the evaluation
 evaluationCata f (Evaluation result written) = f result written

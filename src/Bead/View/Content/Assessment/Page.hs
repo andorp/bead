@@ -14,10 +14,11 @@ import qualified Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.View.RequestParams
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
-import           Bead.Domain.Shared.Evaluation (binaryConfig)
+import           Bead.Domain.Shared.Evaluation
 import           Bead.Domain.Entities (Username(..))
 import           Data.String (fromString)
 import           Bead.Config (maxUploadSizeInKb)
+import           Bead.Domain.Types (readMaybe)
 
 import           Snap.Util.FileUploads
 import           System.Directory (doesFileExist)
@@ -46,8 +47,8 @@ data PageDataNew  = PD_NewCourseAssessment CourseKey
                   | PD_NewGroupAssessment  GroupKey
 data PageDataFill = PD_FillCourseAssessment CourseKey String String
                   | PD_FillGroupAssessment  GroupKey  String String 
-                  | PD_PreviewCourseAssessment CourseKey String String (M.Map Username Score) [Username]
-                  | PD_PreviewGroupAssessment GroupKey String String (M.Map Username Score) [Username]
+                  | PD_PreviewCourseAssessment CourseKey String String (M.Map Username Evaluation) [Username]
+                  | PD_PreviewGroupAssessment GroupKey String String (M.Map Username Evaluation) [Username]
 
 fillDataCata
   fillCourseAssessment
@@ -76,14 +77,15 @@ newGroupAssessmentPage = do
 postNewGroupAssessment :: POSTContentHandler
 postNewGroupAssessment = do 
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
-  scores <- read <$> getParameter scoresParam
+  evaluations <- read <$> getParameter evaluationsParam
   title <- getParameter titleParam
   description <- getParameter descriptionParam
   now <- liftIO getCurrentTime
-  let a = Assessment title description now binaryConfig
-  return $ if M.null scores
+  let evalConfig = binaryConfig
+      a = Assessment title description now evalConfig
+  return $ if M.null evaluations
              then CreateGroupAssessment gk a
-             else SaveScoresOfGroupAssessment gk a scores
+             else SaveScoresOfGroupAssessment gk a evaluations
 
 newCourseAssessmentPage :: GETContentHandler
 newCourseAssessmentPage = do
@@ -93,14 +95,58 @@ newCourseAssessmentPage = do
 postNewCourseAssessment :: POSTContentHandler
 postNewCourseAssessment = do 
   ck <- getParameter $ customCourseKeyPrm courseKeyParamName
-  scores <- read <$> getParameter scoresParam
+  evaluations <- read <$> getParameter evaluationsParam
   title <- getParameter titleParam
   description <- getParameter descriptionParam
   now <- liftIO getCurrentTime
-  let a = Assessment title description now binaryConfig
-  return $ if M.null scores
+  let evalConfig = binaryConfig
+      a = Assessment title description now evalConfig
+  return $ if M.null evaluations
              then CreateCourseAssessment ck a
-             else SaveScoresOfCourseAssessment ck a scores
+             else SaveScoresOfCourseAssessment ck a evaluations
+
+validEvaluations :: EvConfig -> M.Map Username Evaluation -> M.Map Username Evaluation
+validEvaluations config = M.filter valid
+    where
+      valid :: Evaluation -> Bool
+      valid = evaluationCata (\result _ -> validResult result)
+
+      validResult :: EvResult -> Bool
+      validResult = evConfigCata
+                    binResult
+                    pctResult
+                    freeResult
+                    config
+
+      binResult :: EvResult -> Bool
+      binResult = evResultCata
+                  (const True)   -- BinEval
+                  (const False)  -- PctEval
+                  (const False)  -- FreeEval
+
+      pctResult :: Double -> EvResult -> Bool
+      pctResult _ = evResultCata
+                    (const False)
+                    (const True)
+                    (const False)
+
+      freeResult :: EvResult -> Bool
+      freeResult = evResultCata
+                   (const False)
+                   (const False)
+                   (const True)
+
+parseEvaluations :: EvConfig -> M.Map Username String -> M.Map Username Evaluation
+parseEvaluations evalConfig = validEvaluations evalConfig . M.map parseEvaluation
+
+parseEvaluation :: String -> Evaluation
+parseEvaluation s = case readMaybe s of
+                      Just r -> mkEval (binaryResult r)
+                      Nothing -> case readMaybe s of
+                                   Just p -> mkEval (percentageResult p)
+                                   Nothing -> mkEval (freeFormResult s)
+    where mkEval :: EvResult -> Evaluation
+          mkEval result = Evaluation result ""
 
 fillNewGroupAssessmentPage :: ViewPOSTContentHandler
 fillNewGroupAssessmentPage = do
@@ -111,7 +157,7 @@ fillNewGroupAssessmentPage = do
 
 titleParam = stringParameter "n1" "Title"
 descriptionParam = stringParameter "n2" "Description"
-scoresParam = stringParameter "scores" "Scores"
+evaluationsParam = stringParameter "evaluations" "Evaluations"
 
 fillNewCourseAssessmentPage :: ViewPOSTContentHandler
 fillNewCourseAssessmentPage = do
@@ -135,8 +181,10 @@ fillNewGroupAssessmentPreviewPage = do
   description <- getParameter descriptionParam
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
   let [File _name contents] = uploadResult
+      evalConfig = binaryConfig
+      csvContents = readCsv contents
   usernames <- userStory (Story.subscribedToGroup gk)
-  return $ fillAssessmentTemplate $ PD_PreviewGroupAssessment gk title description (readCsv contents) usernames
+  return $ fillAssessmentTemplate $ PD_PreviewGroupAssessment gk title description (parseEvaluations evalConfig csvContents) usernames
     where 
       handlePart (_partInfo, Left _exception) = return PolicyFailure
       handlePart (partInfo, Right filePath) =
@@ -172,8 +220,8 @@ fillAssessmentTemplate pdata = do
              Bootstrap.colMd4 commitButton
         let csvTable _ _ _ scores usernames = do
                                  previewTable usernames scores
-                                 hiddenInput "scores" (show scores)
-            noPreview = hiddenInput "scores" (show (M.empty :: M.Map Username Score))
+                                 hiddenInput "evaluations" (show scores)
+            noPreview = hiddenInput "evaluations" (show (M.empty :: M.Map Username Evaluation))
             
         fillDataCata
           (\_ _ _ -> noPreview)
@@ -221,12 +269,12 @@ fillAssessmentTemplate pdata = do
                (\gk _ _ _ _ -> Pages.newGroupAssessment gk ())
                pdata
 
-previewTable :: [Username] -> M.Map Username Score -> H.Html
-previewTable usernames scores = Bootstrap.table $ do
+previewTable :: [Username] -> M.Map Username Evaluation -> H.Html
+previewTable usernames evaluations = Bootstrap.table $ do
   header
   tableData
     where 
-      header = H.tr $ H.th "Username" >> H.th "Score"
+      header = H.tr $ H.th "Username" >> H.th "Evaluation"
              
       tableData :: H.Html
       tableData = mapM_ tableRow usernames
@@ -234,13 +282,13 @@ previewTable usernames scores = Bootstrap.table $ do
       tableRow username =
           H.tr $ do
             H.td $ usernameCata H.string username
-            H.td $ case M.lookup username scores of
-                     Just score -> scoreCata H.string score
+            H.td $ case M.lookup username evaluations of
+                     Just score -> "evaluation"
                      Nothing    -> warning
               where
-                warning = H.i ! A.class_ "glyphicon glyphicon-warning-sign" ! A.style "color:#AAAAAA; font-size: xx-large" $ mempty
+                warning = H.i ! A.class_ "glyphicon glyphicon-warning-sign" ! A.style "color:#AAAAAA;" $ mempty
 
-readCsv :: B.ByteString -> M.Map Username Score
+readCsv :: B.ByteString -> M.Map Username String
 readCsv bs = case B.lines bs of
                _:ls@(_:_) -> foldr f M.empty ls
                _ -> M.empty
@@ -248,7 +296,7 @@ readCsv bs = case B.lines bs of
                          username' = Username . B.unpack $ username
                      in
                        if (not ((B.null score) || (score == ",")))
-                       then M.insert username' (Score . B.unpack . B.tail $ score) m
+                       then M.insert username' (B.unpack . B.tail $ score) m
                        else m
 
 
@@ -263,7 +311,7 @@ newAssessmentTemplate pdata = do
       postForm (routeOf assessment) $ do
         Bootstrap.textInput "n1" "Title" ""
         Bootstrap.textInput "n2" "Description" ""
-        hiddenInput "scores" (show (M.empty :: M.Map Username Score))
+        hiddenInput "evaluations" (show (M.empty :: M.Map Username Evaluation))
         Bootstrap.row $ do
              let formAction page = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
              Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction fill) "Fill"

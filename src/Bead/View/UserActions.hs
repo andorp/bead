@@ -45,8 +45,8 @@ data UserAction
   | CreateCourseAssessment CourseKey Assessment
 
   -- Scores
-  | SaveScoresOfGroupAssessment GroupKey Assessment (Map Username Score)
-  | SaveScoresOfCourseAssessment CourseKey Assessment (Map Username Score)
+  | SaveScoresOfGroupAssessment GroupKey Assessment (Map Username Evaluation)
+  | SaveScoresOfCourseAssessment CourseKey Assessment (Map Username Evaluation)
 
   -- Submission
   | NewSubmission AssignmentKey Submission
@@ -84,8 +84,8 @@ userStoryFor (CreateCourseAssignment ck a tc) = Story.createCourseAssignment ck 
 userStoryFor (CreateGroupAssessment gk a) = Story.createGroupAssessment gk a >> return ()
 userStoryFor (CreateCourseAssessment ck a) = Story.createCourseAssessment ck a >> return ()
 userStoryFor (ModifyAssignment ak a tm) = Story.modifyAssignment ak a tm
-userStoryFor (SaveScoresOfCourseAssessment ck a scores) = Story.saveScoresOfCourseAssessment ck a scores
-userStoryFor (SaveScoresOfGroupAssessment gk a scores) = Story.saveScoresOfGroupAssessment gk a scores
+userStoryFor (SaveScoresOfCourseAssessment ck a evaluations) = Story.saveScoresOfCourseAssessment ck a evaluations
+userStoryFor (SaveScoresOfGroupAssessment gk a evaluations) = Story.saveScoresOfGroupAssessment gk a evaluations
 userStoryFor (NewSubmission ak s)    = Story.submitSolution ak s >> return ()
 userStoryFor (NewEvaluation sk e)    = Story.newEvaluation sk e
 userStoryFor (ModifyEvaluation ek e) = Story.modifyEvaluation ek e
