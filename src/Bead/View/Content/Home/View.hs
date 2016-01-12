@@ -55,7 +55,6 @@ homeContent d = do
                     , "then clicking on the button."
                     ]
                 i18n msg $ htmlSubmissionTables d
-                mapM_ (i18n msg . htmlAssessmentTable) (assessmentTables d)
 
               -- HR
               Bootstrap.row $ Bootstrap.colMd12 $ hr
@@ -134,6 +133,10 @@ htmlSubmissionTables pd = do
   where
     htmlSubmissionTable pd (i,s) = do
       submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
+      case Map.lookup (submissionTableInfoToCourseGroupKey s) (assessmentTables pd) of
+        Nothing -> return $ return ()
+        Just sb -> htmlAssessmentTable sb
+
 
 htmlAssessmentTable :: ScoreBoard -> IHtml
 htmlAssessmentTable board

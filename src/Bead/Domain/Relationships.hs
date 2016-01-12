@@ -278,6 +278,10 @@ submissionTableInfoCata
     GroupSubmissionTableInfo  crs users asgs lines ainfos ckey gkey ->
                        group  crs users asgs lines ainfos ckey gkey
 
+submissionTableInfoToCourseGroupKey :: SubmissionTableInfo -> Either CourseKey GroupKey
+submissionTableInfoToCourseGroupKey t@(CourseSubmissionTableInfo {}) = Left $ stiCourseKey t
+submissionTableInfoToCourseGroupKey t@(GroupSubmissionTableInfo {}) = Right $ stiGroupKey t
+
 submissionTableInfoPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment)
   ]

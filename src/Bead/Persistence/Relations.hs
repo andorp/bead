@@ -592,16 +592,12 @@ submissionLimitOfAssignment :: Username -> AssignmentKey -> Persist SubmissionLi
 submissionLimitOfAssignment username key =
   calcSubLimit <$> (loadAssignment key) <*> (length <$> userSubmissions username key)
 
-scoreBoards :: Username -> Persist [ScoreBoard]
+scoreBoards :: Username -> Persist (Map (Either CourseKey GroupKey) ScoreBoard)
 scoreBoards u = do
-  groupKeys <- map fst <$> administratedGroups u
-  mapM groupScoreBoard groupKeys
-
-groupScoreBoard :: GroupKey -> Persist ScoreBoard
-groupScoreBoard = scoreBoard . Right
-
-courseScoreBoard :: CourseKey -> Persist ScoreBoard
-courseScoreBoard = scoreBoard . Left
+  groupKeys <- map (Right . fst) <$> administratedGroups u
+  courseKeys <- map (Left . fst) <$> administratedCourses u
+  let keys = courseKeys ++ groupKeys
+  Map.fromList . zip keys <$> mapM scoreBoard keys
 
 scoreBoard :: Either CourseKey GroupKey -> Persist ScoreBoard
 scoreBoard key = do

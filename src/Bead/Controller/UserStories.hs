@@ -802,7 +802,7 @@ userAssessments = logAction INFO "lists assessments" $ do
                    return . Just $ (ak,info)
         _    -> return Nothing
 
-scoreBoards :: UserStory [ScoreBoard]
+scoreBoards :: UserStory (Map (Either CourseKey GroupKey) ScoreBoard)
 scoreBoards = logAction INFO "lists scoreboards" $ do
   authPerms scoreBoardPermissions
   withUserAndPersist Persist.scoreBoards
