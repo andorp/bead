@@ -499,6 +499,14 @@ submissionInfo sk = do
     lastTestAgentFeedback = find isTestedFeedback . reverse . sortBy createdDate
     createdDate = compare `on` postDate
 
+-- Produces information for the given score
+scoreInfo :: ScoreKey -> Persist ScoreInfo
+scoreInfo sk = do
+  mEk <- evaluationOfScore sk
+  case mEk of
+    Nothing -> return Score_Not_Found
+    Just ek -> Score_Result ek . evaluationResult <$> loadEvaluation ek
+
 -- Produces information of the last submission for the given user and assignment
 userLastSubmissionInfo :: Username -> AssignmentKey -> Persist SubmissionInfo
 userLastSubmissionInfo u ak =
@@ -588,30 +596,41 @@ scoreBoards u = do
   mapM groupScoreBoard groupKeys
 
 groupScoreBoard :: GroupKey -> Persist ScoreBoard
-groupScoreBoard gk = do
-  assessmentKeys <- assessmentsOfGroup gk
+groupScoreBoard = scoreBoard . Right
+
+courseScoreBoard :: CourseKey -> Persist ScoreBoard
+courseScoreBoard = scoreBoard . Left
+
+scoreBoard :: Either CourseKey GroupKey -> Persist ScoreBoard
+scoreBoard key = do
+  assessmentKeys <- assessmentsOf
   board <- foldM boardColumn Map.empty assessmentKeys
   assessments <- mapM loadAssessment assessmentKeys
-  users <- subscribedToGroup gk
+  users <- subscriptions
   userDescriptions <- mapM userDescription users
-  return ScoreBoard {
-            sbScores = board
-          , sbAssessments = assessmentKeys
-          , sbAssessmentInfos = Map.fromList (zip assessmentKeys assessments)
-          , sbUsers = userDescriptions
-          }
-      where
-        boardColumn :: Map (AssessmentKey,Username) ScoreKey
+  name <- loadName
+  let assessmentInfos = Map.fromList (zip assessmentKeys assessments)
+  return $ mkScoreBoard board name assessmentKeys assessmentInfos userDescriptions
+  where
+        mkScoreBoard s n as ais us =
+          either (\k -> CourseScoreBoard s k n as ais us)
+                 (\k -> GroupScoreBoard s k n as ais us)
+                 key
+        assessmentsOf = either assessmentsOfCourse assessmentsOfGroup key
+        subscriptions = either subscribedToCourse subscribedToGroup key
+        loadName      = either (fmap courseName . loadCourse) (fmap groupName . loadGroup) key
+        boardColumn :: Map (AssessmentKey,Username) ScoreInfo
                     -> AssessmentKey
-                    -> Persist (Map (AssessmentKey,Username) ScoreKey)
+                    -> Persist (Map (AssessmentKey,Username) ScoreInfo)
         boardColumn board assessment = do
-                       scores <- scoresOfAssessment assessment
-                       foldM (cell assessment) board scores
+                       scoresKeys <- scoresOfAssessment assessment
+                       foldM (cell assessment) board scoresKeys
 
-        cell assessment board score = do
-                       user <- usernameOfScore score
-                       return $ Map.insert (assessment,user) score board
-               
+        cell assessment board scoreKey = do
+                       user <- usernameOfScore scoreKey
+                       info <- scoreInfo scoreKey
+                       return $ Map.insert (assessment,user) info board
+
 #ifdef TEST
 
 persistRelationsTests = do

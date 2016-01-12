@@ -136,16 +136,18 @@ htmlSubmissionTables pd = do
       submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
 
 htmlAssessmentTable :: ScoreBoard -> IHtml
-htmlAssessmentTable board | (null . sbAssessments $ board) = return mempty
-                          | otherwise = return $ do
-  Bootstrap.rowColMd12 . H.p $ "Assessments"
-  Bootstrap.rowColMd12 . Bootstrap.table $ do
-    H.tr $ do
-      H.th . string $ "Name"
-      H.th . string $ "Username"
-      forM_ (zip (sbAssessments board) [1..]) assessmentViewButton
-    forM_ (sbUsers board) userLine
-        
+htmlAssessmentTable board
+  | (null . sbAssessments $ board) = return . Bootstrap.rowColMd12 . H.p $ "There are no assessments yet."
+  | otherwise = do
+      msg <- getI18N
+      return $ do
+        Bootstrap.rowColMd12 . H.p $ "Assessments"
+        Bootstrap.rowColMd12 . Bootstrap.table $ do
+          H.tr $ do
+            H.th . string $ "Name"
+            H.th . string $ "Username"
+            forM_ (zip (sbAssessments board) [1..]) assessmentViewButton
+          forM_ (sbUsers board) (userLine msg)
       where
         assessmentViewButton :: (AssessmentKey,Int) -> Html
         assessmentViewButton (ak,n) = H.td $ Bootstrap.customButtonLink style "" (assessmentName ak) ("A" ++ show n)
@@ -155,16 +157,39 @@ htmlAssessmentTable board | (null . sbAssessments $ board) = return mempty
         assessmentName :: AssessmentKey -> String
         assessmentName ak = maybe "" Content.title (Map.lookup ak (sbAssessmentInfos board))
 
-        userLine :: UserDesc -> Html
-        userLine userDesc = H.tr $ do
+        userLine :: I18N -> UserDesc -> Html
+        userLine msg userDesc = H.tr $ do
           H.td . string . ud_fullname $ userDesc
           H.td . string . uid id . ud_uid $ userDesc 
-          forM_ (sbAssessments board) (scoreIcon . ud_username $ userDesc)
+          forM_ (sbAssessments board) (scoreIcon msg . ud_username $ userDesc)
 
-        scoreIcon :: Username -> AssessmentKey -> Html
-        scoreIcon username ak = case Map.lookup (ak,username) (sbScores board) of
-                                  Just _ -> H.td $ H.i ! A.class_ "glyphicon glyphicon-thumbs-up" $ mempty
-                                  Nothing -> H.td mempty
+        scoreIcon :: I18N -> Username -> AssessmentKey -> Html
+        scoreIcon msg username ak = H.td $ case Map.lookup (ak,username) (sbScores board) of
+          Just si -> scoreInfoToIcon msg ("notFoundLink") ("foundLink") si
+          Nothing -> mempty
+
+scoreInfoToIcon msg notFoundLink foundLink =
+  scoreInfoAlgebra (linkWithHtml notFoundLink notFound) $
+    \ek -> (linkWithHtml foundLink . evResultCata (binaryCata (resultCata passed failed)) percentage free)
+  where
+    tooltip m = A.title (fromString $ msg m)
+    notFound = (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: xx-large"
+                    ! tooltip (msg_Home_SubmissionCell_NonEvaluated "Non evaluated") $ mempty)
+
+    passed = (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: xx-large"
+                  ! tooltip (msg_Home_SubmissionCell_Accepted "Accepted") $ mempty) -- accepted
+
+    failed = (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: xx-large"
+                  ! tooltip (msg_Home_SubmissionCell_Rejected "Rejected") $ mempty) -- rejected
+
+    percentage (Percentage (Scores [p])) = H.span ! A.class_ "label label-primary" $ fromString $ percent p
+    percentage _ = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
+    free = freeForm $ \msg ->
+      let cell = if length msg < displayableFreeFormResultLength then msg else "..." in
+      H.span ! A.class_ "label label-primary"
+             ! A.title (fromString msg) $ (fromString cell)
+
+    percent x = join [show . round $ (100 * x), "%"]
 
 navigation :: [Pages.Page a b c d e] -> IHtml
 navigation links = do

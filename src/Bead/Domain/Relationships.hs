@@ -416,11 +416,36 @@ newtype NotificationKey = NotificationKey String
 
 notificationKey f (NotificationKey x) = f x
 
+-- | Information about a score for a given assessment
+data ScoreInfo
+  = Score_Not_Found
+    -- ^ There is no score.
+  | Score_Result EvaluationKey EvResult
+    -- ^ There is at least submission with the evaluation.
+  deriving (Eq, Show)
+
+scoreInfoAlgebra
+  notFound
+  result
+  s = case s of
+    Score_Not_Found   -> notFound
+    Score_Result ek r -> result ek r
+
 -- | The scoreboard summarizes the information for a course or group related
 -- assesments and the evaluation for the assessment.
 data ScoreBoard = 
-    ScoreBoard {
-      sbScores :: Map (AssessmentKey,Username) ScoreKey
+    CourseScoreBoard {
+      sbScores :: Map (AssessmentKey,Username) ScoreInfo
+    , sbCourseKey :: CourseKey
+    , sbCourseName :: String
+    , sbAssessments :: [AssessmentKey]
+    , sbAssessmentInfos :: Map AssessmentKey Assessment
+    , sbUsers :: [UserDesc]
+    }
+  | GroupScoreBoard {
+      sbScores :: Map (AssessmentKey,Username) ScoreInfo
+    , sbGroupKey :: GroupKey
+    , sbGroupName :: String
     , sbAssessments :: [AssessmentKey]
     , sbAssessmentInfos :: Map AssessmentKey Assessment
     , sbUsers :: [UserDesc]

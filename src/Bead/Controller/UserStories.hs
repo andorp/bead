@@ -1132,9 +1132,22 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
   now <- liftIO $ getCurrentTime
   userData <- currentUser
   join . withUserAndPersist $ \u -> do
-    sk <- Persist.submissionOfEvaluation ek
-    case sk of
-      Just sk -> do
+    sbk <- Persist.submissionOfEvaluation ek
+    sck <- Persist.scoreOfEvaluation ek
+    case (sbk, sck) of
+      (Just _, Just _) -> return . errorPage $ strMsg "Impossible, submission and score have the same evaluation"
+      (Nothing, Just _sk) -> do
+        let admined = True
+        if admined
+          then do Persist.modifyEvaluation ek e
+                  -- Persist.saveFeedback sk (evaluationToFeedback now userData e)
+                  return (return ())
+          else return $ do
+                  logMessage INFO . violation $
+                    printf "The user tries to modify an evaluation (%s) that not belongs to him."
+                           (show ek)
+                  errorPage $ userError nonAdministratedSubmission
+      (Just sk, Nothing) -> do
         admined <- Persist.isAdminedSubmission u sk
         if admined
           then do Persist.modifyEvaluation ek e
@@ -1145,7 +1158,7 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
                     printf "The user tries to modify an evaluation (%s) that not belongs to him."
                            (show ek)
                   errorPage $ userError nonAdministratedSubmission
-      Nothing -> return (return ())
+      (Nothing, Nothing) -> return (return ())
 
 createComment :: SubmissionKey -> Comment -> UserStory ()
 createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
