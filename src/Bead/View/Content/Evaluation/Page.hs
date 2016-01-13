@@ -207,28 +207,16 @@ evaluationContent pd = do
 
     Bootstrap.row $ Bootstrap.colMd12 $ Bootstrap.table $
       H.tbody $ do
-        tr $ do
-            td $ fromString $ msg $ msg_Evaluation_Course "Course: "
-            td $ fromString $ eCourse sd
-        tr $ do
-            let aName = assignmentCata (\name _ _ _ _ _ -> name)
-            td $ fromString $ msg $ msg_Evaluation_Assignment "Assignment: "
-            td $ fromString $ aName $ eAssignment $ sd
+        let aName = assignmentCata (\name _ _ _ _ _ -> name)
+        (msg $ msg_Evaluation_Course "Course: ") .|. (fromString . eCourse $ sd)
+        (msg $ msg_Evaluation_Assignment "Assignment: ") .|. (fromString . aName . eAssignment $ sd)
         maybe
           mempty
-          (\group -> tr $ do
-             td $ fromString $ msg $ msg_Evaluation_Group "Group: "
-             td $ fromString group)
+          (\group -> (msg $ msg_Evaluation_Group "Group: ") .|. (fromString group))
           (eGroup sd)
-        tr $ do
-            td $ fromString $ msg $ msg_Evaluation_Student "Student: "
-            td $ fromString $ eStudent sd
-        tr $ do
-            td $ fromString $ msg $ msg_Evaluation_Username "Username: "
-            td $ fromString $ uid Prelude.id $ eUid sd
-        tr $ do
-            td $ fromString $ msg $ msg_Evaluation_SubmissionDate "Date of submission: "
-            td $ fromString $ showDate . tc $ eSubmissionDate sd
+        (msg $ msg_Evaluation_Student "Student: ") .|. (fromString . eStudent $ sd)
+        (msg $ msg_Evaluation_Username "Username: ") .|. (fromString . uid Prelude.id $ eUid sd)
+        (msg $ msg_Evaluation_SubmissionDate "Date of submission: ") .|. (fromString . showDate . tc $ eSubmissionDate sd)
 
     Bootstrap.row $ Bootstrap.colMd12 $ do
       let downloadSubmissionButton =

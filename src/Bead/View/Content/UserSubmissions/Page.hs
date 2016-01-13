@@ -12,6 +12,7 @@ import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
 import           Bead.Domain.Shared.Evaluation
 import           Bead.View.Content
+import           Bead.View.Content.Bootstrap ((.|.))
 import qualified Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.View.Content.VisualConstants
 
@@ -44,9 +45,9 @@ userSubmissionHtml ut u = do
   msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $ Bootstrap.table $ tbody $ do
-      (msg $ msg_UserSubmissions_Course "Course:")         .|. (usCourse u)
-      (msg $ msg_UserSubmissions_Assignment "Assignment:") .|. (usAssignmentName u)
-      (msg $ msg_UserSubmissions_Student "Student:")       .|. (usStudent u)
+      (msg $ msg_UserSubmissions_Course "Course:")         .|. (fromString $ usCourse u)
+      (msg $ msg_UserSubmissions_Assignment "Assignment:") .|. (fromString $ usAssignmentName u)
+      (msg $ msg_UserSubmissions_Student "Student:")       .|. (fromString $ usStudent u)
     Bootstrap.rowColMd12 $ h3 $
       fromString $ msg $ msg_UserSubmissions_SubmittedSolutions "Submissions"
     i18n msg . submissionTable ut . sortDescendingByTime $ usSubmissions u
@@ -87,7 +88,3 @@ submissionTable userTime submissions = do
           | length resultText < displayableFreeFormResultLength = resultText
           | otherwise = msg $ msg_UserSubmissions_FreeForm "Evaluated"
 
-infixl 7 .|.
-title .|. value = tr $ do
-  td $ b $ fromString title
-  td $ fromString value
