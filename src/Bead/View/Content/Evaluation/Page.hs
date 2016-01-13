@@ -210,6 +210,10 @@ evaluationContent pd = do
         tr $ do
             td $ fromString $ msg $ msg_Evaluation_Course "Course: "
             td $ fromString $ eCourse sd
+        tr $ do
+            let aName = assignmentCata (\name _ _ _ _ _ -> name)
+            td $ fromString $ msg $ msg_Evaluation_Assignment "Assignment: "
+            td $ fromString $ aName $ eAssignment $ sd
         maybe
           mempty
           (\group -> tr $ do
