@@ -798,6 +798,7 @@ userAssessments = logAction INFO "lists assessments" $ do
     getInfo u ak = do
       scoreKeys <- Persist.scoreOfAssessmentAndUser u ak
       case scoreKeys of
+        [] -> return . Just $ (ak, Score_Not_Found)
         [sk] -> do info <- Persist.scoreInfo sk
                    return . Just $ (ak,info)
         _    -> return Nothing

@@ -142,7 +142,7 @@ htmlSubmissionTables pd = do
 
 htmlAssessmentTable :: ScoreBoard -> IHtml
 htmlAssessmentTable board
-  | (null . sbAssessments $ board) = return . Bootstrap.rowColMd12 . H.p $ "There are no assessments yet."
+  | (null . sbAssessments $ board) = return mempty
   | otherwise = do
       msg <- getI18N
       return $ do
@@ -327,15 +327,23 @@ availableAssignments pd timeconverter studentAssignments
             score (Percentage (Scores [p])) = percentage $ percent p
             score _                         = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
-availableAssessment :: I18N -> (Course, [(AssessmentKey, ScoreInfo)]) -> Html
-availableAssessment msg (c, assessments) =
-  Bootstrap.rowColMd12 . Bootstrap.table $ do
-    H.tr (header assessments)
-    H.tr $ do
-      H.td . string $ courseName c
-      mapM_ evaluationViewButton (zip assessments [1..])
-  where
-      header assessments = H.th mempty >> mapM_ (H.td . assessmentButton) (take (length assessments) [1..])
+availableAssessments :: Map.Map Course [(AssessmentKey,ScoreInfo)] -> IHtml
+availableAssessments forEveryCourse | Map.null assessments = return mempty
+                                    | otherwise = do
+  msg <- getI18N
+  return $ do
+    Bootstrap.rowColMd12 . H.p $ "Assessments"
+    forM_ (Map.toList assessments) $ \(c,infos) ->
+      Bootstrap.rowColMd12 . Bootstrap.table $ do
+        H.tr (header infos)
+        H.tr $ do
+          H.td . string $ courseName c
+          mapM_ (evaluationViewButton msg) (zip infos [1..])
+
+    where
+      assessments = Map.filter (not . null) forEveryCourse
+
+      header infos = H.th mempty >> mapM_ (H.td . assessmentButton) (take (length infos) [1..])
           where
             assessmentButton :: Int -> Html
             assessmentButton n = Bootstrap.buttonLink "" ("A" ++ show n)
