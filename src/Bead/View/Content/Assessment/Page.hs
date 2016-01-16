@@ -44,11 +44,11 @@ fillNewCourseAssessmentPreview = UserViewHandler fillNewCourseAssessmentPreviewP
 viewAssessment = ViewHandler viewAssessmentPage
 
 data PageDataNew  = PD_NewCourseAssessment CourseKey
-                  | PD_NewGroupAssessment  GroupKey
-data PageDataFill = PD_FillCourseAssessment CourseKey String String
-                  | PD_FillGroupAssessment  GroupKey  String String 
-                  | PD_PreviewCourseAssessment CourseKey String String (M.Map Username Evaluation) [Username]
-                  | PD_PreviewGroupAssessment GroupKey String String (M.Map Username Evaluation) [Username]
+                  | PD_NewGroupAssessment GroupKey
+data PageDataFill = PD_FillCourseAssessment CourseKey String String EvConfig
+                  | PD_FillGroupAssessment GroupKey String String EvConfig
+                  | PD_PreviewCourseAssessment CourseKey String String EvConfig (M.Map Username Evaluation) [Username]
+                  | PD_PreviewGroupAssessment GroupKey String String EvConfig (M.Map Username Evaluation) [Username]
 
 fillDataCata
   fillCourseAssessment
@@ -57,10 +57,10 @@ fillDataCata
   previewGroupAssessment
   pdata =
       case pdata of
-        PD_FillCourseAssessment ck title description -> fillCourseAssessment ck title description
-        PD_FillGroupAssessment gk title description -> fillGroupAssessment gk title description
-        PD_PreviewCourseAssessment ck title description scores usernames -> previewCourseAssessment ck title description scores usernames
-        PD_PreviewGroupAssessment gk title description scores usernames -> previewGroupAssessment gk title description scores usernames
+        PD_FillCourseAssessment ck title description evConfig -> fillCourseAssessment ck title description evConfig
+        PD_FillGroupAssessment gk title description evConfig -> fillGroupAssessment gk title description evConfig
+        PD_PreviewCourseAssessment ck title description evConfig scores usernames -> previewCourseAssessment ck title description evConfig scores usernames
+        PD_PreviewGroupAssessment gk title description evConfig scores usernames -> previewGroupAssessment gk title description evConfig scores usernames
 
 data UploadResult
   = PolicyFailure
@@ -80,9 +80,9 @@ postNewGroupAssessment = do
   evaluations <- read <$> getParameter evaluationsParam
   title <- getParameter titleParam
   description <- getParameter descriptionParam
+  evalConfig <- getParameter evConfigParam
   now <- liftIO getCurrentTime
-  let evalConfig = binaryConfig
-      a = Assessment title description now evalConfig
+  let a = Assessment title description now evalConfig
   return $ if M.null evaluations
              then CreateGroupAssessment gk a
              else SaveScoresOfGroupAssessment gk a evaluations
@@ -98,9 +98,9 @@ postNewCourseAssessment = do
   evaluations <- read <$> getParameter evaluationsParam
   title <- getParameter titleParam
   description <- getParameter descriptionParam
+  evalConfig <- getParameter evConfigParam
   now <- liftIO getCurrentTime
-  let evalConfig = binaryConfig
-      a = Assessment title description now evalConfig
+  let a = Assessment title description now evalConfig
   return $ if M.null evaluations
              then CreateCourseAssessment ck a
              else SaveScoresOfCourseAssessment ck a evaluations
@@ -152,19 +152,22 @@ fillNewGroupAssessmentPage :: ViewPOSTContentHandler
 fillNewGroupAssessmentPage = do
   title <- getParameter titleParam
   description <- getParameter descriptionParam
+  evConfig <- getParameter evConfigParam
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
-  return $ fillAssessmentTemplate $ PD_FillGroupAssessment gk title description
+  return $ fillAssessmentTemplate $ PD_FillGroupAssessment gk title description evConfig
 
 titleParam = stringParameter "n1" "Title"
 descriptionParam = stringParameter "n2" "Description"
 evaluationsParam = stringParameter "evaluations" "Evaluations"
+evConfigParam = evalConfigParameter "evConfig"
 
 fillNewCourseAssessmentPage :: ViewPOSTContentHandler
 fillNewCourseAssessmentPage = do
   title <- getParameter titleParam
-  description <- getParameter descriptionParam
+  description <- read <$> getParameter descriptionParam
+  evConfig <- getParameter evConfigParam
   ck <- getParameter $ customCourseKeyPrm courseKeyParamName
-  return $ fillAssessmentTemplate $ PD_FillCourseAssessment ck title description
+  return $ fillAssessmentTemplate $ PD_FillCourseAssessment ck title description evConfig
 
 fillNewGroupAssessmentPreviewPage :: ViewPOSTContentHandler
 fillNewGroupAssessmentPreviewPage = do
@@ -179,12 +182,13 @@ fillNewGroupAssessmentPreviewPage = do
       return . return $ results
   title <- getParameter titleParam
   description <- getParameter descriptionParam
+  evConfig <- getParameter evConfigParam
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
   let [File _name contents] = uploadResult
-      evalConfig = binaryConfig
       csvContents = readCsv contents
+      evaluations = parseEvaluations evConfig csvContents
   usernames <- userStory (Story.subscribedToGroup gk)
-  return $ fillAssessmentTemplate $ PD_PreviewGroupAssessment gk title description (parseEvaluations evalConfig csvContents) usernames
+  return $ fillAssessmentTemplate $ PD_PreviewGroupAssessment gk title description evConfig evaluations usernames
     where 
       handlePart (_partInfo, Left _exception) = return PolicyFailure
       handlePart (partInfo, Right filePath) =
@@ -213,22 +217,24 @@ fillAssessmentTemplate pdata = do
       H.form ! A.method "post" $ do
         Bootstrap.textInputWithDefault "n1" "Title" title
         Bootstrap.textInputWithDefault "n2" "Description" description
+        evConfigSelection selectedConfig
         Bootstrap.formGroup $ fileInput "csv"
         Bootstrap.row $ do
              Bootstrap.colMd4 previewButton 
              Bootstrap.colMd4 downloadCsvButton
              Bootstrap.colMd4 commitButton
-        let csvTable _ _ _ scores usernames = do
-                                 previewTable usernames scores
-                                 hiddenInput "evaluations" (show scores)
+        let csvTable _ _ _ _ scores usernames = do
+              previewTable usernames scores
+              hiddenInput "evaluations" (show scores)
             noPreview = hiddenInput "evaluations" (show (M.empty :: M.Map Username Evaluation))
             
         fillDataCata
-          (\_ _ _ -> noPreview)
-          (\_ _ _ -> noPreview)
+          (\_ _ _ _ -> noPreview)
+          (\_ _ _ _ -> noPreview)
           csvTable
           csvTable
           pdata
+        Bootstrap.turnSelectionsOn
 
   where
     formAction page encType = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "'; form.enctype='", encType, "';"])
@@ -243,31 +249,38 @@ fillAssessmentTemplate pdata = do
                    "Commit"
 
     (title,description) = fillDataCata
-                            (\_ title description -> (title,description))
-                            (\_ title description -> (title,description))
-                            (\_ title description _ _ -> (title,description))
-                            (\_ title description _ _ -> (title,description))
+                            (\_ title description _ -> (title,description))
+                            (\_ title description _ -> (title,description))
+                            (\_ title description _ _ _ -> (title,description))
+                            (\_ title description _ _ _ -> (title,description))
                             pdata
 
     preview = fillDataCata
-                (\ck _ _ -> Pages.fillNewCourseAssessmentPreview ck ())
-                (\gk _ _ -> Pages.fillNewGroupAssessmentPreview gk ())
-                (\ck _ _ _ _ -> Pages.fillNewCourseAssessmentPreview ck ())
-                (\gk _ _ _ _ -> Pages.fillNewGroupAssessmentPreview gk ())
+                (\ck _ _ _ -> Pages.fillNewCourseAssessmentPreview ck ())
+                (\gk _ _ _ -> Pages.fillNewGroupAssessmentPreview gk ())
+                (\ck _ _ _ _ _ -> Pages.fillNewCourseAssessmentPreview ck ())
+                (\gk _ _ _ _ _ -> Pages.fillNewGroupAssessmentPreview gk ())
                 pdata
     getCsv = fillDataCata
-               (\ck _ _ -> Pages.getCourseCsv ck ())
-               (\gk _ _ -> Pages.getGroupCsv gk ())
-               (\ck _ _ _ _ -> Pages.getCourseCsv ck ())
-               (\gk _ _ _ _ -> Pages.getGroupCsv gk ())
+               (\ck _ _ _ -> Pages.getCourseCsv ck ())
+               (\gk _ _ _ -> Pages.getGroupCsv gk ())
+               (\ck _ _ _ _ _ -> Pages.getCourseCsv ck ())
+               (\gk _ _ _ _ _ -> Pages.getGroupCsv gk ())
                pdata
 
     commit = fillDataCata
-               (\ck _ _ -> Pages.newCourseAssessment ck ())
-               (\gk _ _ -> Pages.newGroupAssessment gk ())
-               (\ck _ _ _ _ -> Pages.newCourseAssessment ck ())
-               (\gk _ _ _ _ -> Pages.newGroupAssessment gk ())
+               (\ck _ _ _ -> Pages.newCourseAssessment ck ())
+               (\gk _ _ _ -> Pages.newGroupAssessment gk ())
+               (\ck _ _ _ _ _ -> Pages.newCourseAssessment ck ())
+               (\gk _ _ _ _ _ -> Pages.newGroupAssessment gk ())
                pdata
+
+    selectedConfig = fillDataCata
+                     (\_ _ _ evConfig -> evConfig)
+                     (\_ _ _ evConfig -> evConfig)
+                     (\_ _ _ evConfig _ _ -> evConfig)
+                     (\_ _ _ evConfig _ _ -> evConfig)
+                     pdata
 
 previewTable :: [Username] -> M.Map Username Evaluation -> H.Html
 previewTable usernames evaluations = Bootstrap.table $ do
@@ -302,7 +315,13 @@ readCsv bs = case B.lines bs of
 
 viewAssessmentPage :: GETContentHandler
 viewAssessmentPage = error "viewAssessmentPage is undefined"
-                     
+
+evConfigSelection selected = Bootstrap.selectionWithLabel "evConfig" "Evaluation Type" (== selected) selection 
+    where selection = [ (binaryConfig, "Binary")
+                      , (percentageConfig 0.0, "Percentage")
+                      , (freeFormConfig, "Free form textual")
+                      ]
+
 newAssessmentTemplate :: PageDataNew -> IHtml
 newAssessmentTemplate pdata = do
   _msg <- getI18N
@@ -311,11 +330,13 @@ newAssessmentTemplate pdata = do
       postForm (routeOf assessment) $ do
         Bootstrap.textInput "n1" "Title" ""
         Bootstrap.textInput "n2" "Description" ""
+        evConfigSelection binaryConfig
         hiddenInput "evaluations" (show (M.empty :: M.Map Username Evaluation))
         Bootstrap.row $ do
              let formAction page = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
              Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction fill) "Fill"
              Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction assessment) "Commit"
+        Bootstrap.turnSelectionsOn
 
   where
     assessment = case pdata of
