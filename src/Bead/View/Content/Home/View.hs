@@ -4,7 +4,7 @@ module Bead.View.Content.Home.View where
 import           Control.Arrow ((***))
 import           Control.Monad.Identity
 import           Data.Function (on)
-import           Data.List (find, intersperse, sortBy)
+import           Data.List (find, intersperse, sortBy, sort)
 import qualified Data.Map as Map
 import           Data.Maybe (isJust)
 import           Data.String (fromString)
@@ -219,13 +219,15 @@ availableAssignments pd timeconverter studentAssignments
 
   | null (toAllActiveAssignmentList studentAssignments) = do
       msg <- getI18N
-      return
-        $ Bootstrap.row
-        $ Bootstrap.colMd12
-        $ p
-        $ fromString
-        $ msg $ msg_Home_HasNoAssignments "There are no available assignments yet."
-        --TODO: Add assessment table here!!!
+      return $ do
+        Bootstrap.row
+          $ Bootstrap.colMd12
+          $ p
+          $ fromString
+          $ msg $ msg_Home_HasNoAssignments "There are no available assignments yet."
+        let as = assessments pd
+            sortedAs = sortBy (compare `on` (courseName . fst)) . Map.elems $ as
+        mapM_ (availableAssessment msg) sortedAs
 
   | otherwise = do
       -- Sort course or groups by their name.
