@@ -631,8 +631,8 @@ scoreBoard key = do
                        info <- scoreInfo scoreKey
                        return $ Map.insert (assessment,user) info board
 
--- Produces a Just Assessment list, if the user is registered for some courses,
--- otherwise Nothing.
+-- Produces a map from the user's courses to set of every assessment of the course. The map is empty if the user is not subscribed to groups or courses.
+-- Per group assessments are included.
 userAssessmentKeys :: Username -> Persist (Map CourseKey (Set AssessmentKey))
 userAssessmentKeys u = do
   gs <- nub <$> userGroups u

@@ -776,8 +776,8 @@ saveScoresOfGroupAssessment gk a evaluations = do
 
         score = Score ()
 
--- Produces a map of assessments and information about the submissions for the
--- described assignment, which is associated with the course or group
+-- Produces a map of assessments and information about the evaluations for the
+-- assessments.
 userAssessments :: UserStory (Map CourseKey (Course, [(AssessmentKey, ScoreInfo)]))
 userAssessments = logAction INFO "lists assessments" $ do
 --  authorize P_Open P_Assessment
@@ -793,7 +793,7 @@ userAssessments = logAction INFO "lists assessments" $ do
 
   where
     -- Produces the scoreinfo for the specific user and assessment.
-    -- Returns Nothing if there are no scoreinfo or there are multiple ones.
+    -- Returns Nothing if there are multiple scoreinfos available.
     getInfo :: Username -> AssessmentKey -> Persist (Maybe (AssessmentKey, ScoreInfo))
     getInfo u ak = do
       scoreKeys <- Persist.scoreOfAssessmentAndUser u ak
