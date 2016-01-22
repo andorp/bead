@@ -90,7 +90,7 @@ abstractEvaluationPostHandler getEvKeyParameter evCommand = do
     evConfigCata
       (getJSONParam (fieldName evaluationResultField) "No evaluation can be found.")
       (\_ -> do
-        percentage  <- getParameter evaluationPercentagePrm
+        percentage  <- getParameterWithDefault 0 evaluationPercentagePrm
         commentOnly <- getParameter evaluationCommentOnlyPrm
         return $
           if commentOnly
@@ -172,7 +172,8 @@ evaluationFrame evConfig msg content = do
                ]
            Bootstrap.colMd4 $
              H.input ! A.name (fieldName evaluationPercentagePrm) ! A.type_ "number"
-                     ! A.min (fromString $ show 0) ! A.max (fromString $ show 100))
+                     ! A.min (fromString $ show 0) ! A.max (fromString $ show 100)
+                     ! A.value (fromString $ show 0))
     (do Bootstrap.optionalTextInput (fieldName freeFormEvaluationParam) (msg $ msg_Evaluation_FreeFormEvaluation "Evaluation") ""
         H.p . fromString $ printf (msg $ msg_Evaluation_FreeForm_Information $ unwords
           [ "Note that this text will be used everywhere as the evaluation itself.  Hence it is recommended to keep"
