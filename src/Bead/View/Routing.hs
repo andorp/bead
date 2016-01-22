@@ -320,6 +320,8 @@ routeToPageMap = Map.fromList [
   , (evaluationPath , \ps -> P.evaluation <$> submissionKey ps <*> unit)
   , (submissionPath , j $ P.submission ())
   , (submissionListPath   , j $ P.submissionList ())
+  , (newUserScorePath     , \ps -> P.newUserScore <$> assessmentKey ps <*> username ps <*> unit)
+  , (modifyUserScorePath  , \ps -> P.modifyUserScore <$> scoreKey ps <*> unit)
   , (userSubmissionsPath  , j $ P.userSubmissions ())
   , (newTestScriptPath    , j $ P.newTestScript ())
   , (modifyTestScriptPath , \ps -> P.modifyTestScript <$> testScriptKey ps <*> unit)
@@ -367,6 +369,8 @@ routeToPageMap = Map.fromList [
       evaluationKey = fmap (EvaluationKey . unpack) . value evaluationKeyParamName
       testScriptKey = fmap (TestScriptKey . unpack) . value testScriptKeyParamName
       assessmentKey = fmap (AssessmentKey . unpack) . value assessmentKeyParamName
+      scoreKey      = fmap (ScoreKey . unpack) . value scoreKeyParamName
+      username      = fmap (Username . unpack) . value (fieldName usernameField)
 
       -- Returns Just x if only one x corresponds to the key in the request params
       -- otherwise Nothing

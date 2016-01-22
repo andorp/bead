@@ -19,6 +19,9 @@ assessmentKeyParamName = fromString $ fieldName assessmentKeyField
 submissionKeyParamName :: IsString s => s
 submissionKeyParamName = fromString $ fieldName submissionKeyField
 
+scoreKeyParamName :: IsString s => s
+scoreKeyParamName = fromString "sk-key"
+
 evaluationKeyParamName :: IsString s => s
 evaluationKeyParamName = fromString $ fieldName evaluationKeyField
 
@@ -72,6 +75,12 @@ instance ReqParamValue SubmissionKey where
 
 instance RequestParam SubmissionKey where
   requestParam s = ReqParam (submissionKeyParamName, paramValue s)
+
+instance ReqParamValue ScoreKey where
+  paramValue (ScoreKey s) = fromString s
+
+instance RequestParam ScoreKey where
+  requestParam s = ReqParam (scoreKeyParamName, paramValue s)
 
 instance ReqParamValue GroupKey where
   paramValue (GroupKey g) = fromString g

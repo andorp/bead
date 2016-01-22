@@ -140,7 +140,7 @@ htmlSubmissionTables pd = do
     htmlSubmissionTable pd (i,s) = do
       submissionTable (concat ["st", show i]) (now pd) (submissionTableCtx pd) s
 
-
+-- assessment table for teachers
 htmlAssessmentTable :: ScoreBoard -> IHtml
 htmlAssessmentTable board
   | (null . sbAssessments $ board) = return mempty
@@ -171,8 +171,11 @@ htmlAssessmentTable board
 
         scoreIcon :: I18N -> Username -> AssessmentKey -> Html
         scoreIcon msg username ak = H.td $ case Map.lookup (ak,username) (sbScores board) of
-          Just si -> scoreInfoToIconLink msg ("notFoundLink") ("foundLink") si
+          Just si -> scoreInfoToIconLink msg (newScoreLink ak username) ("foundLink") si
           Nothing -> mempty
+
+        newScoreLink ak u = routeOf $ Pages.newUserScore ak u ()
+        modifyScoreLink sk = routeOf $ Pages.modifyUserScore sk ()
 
 navigation :: [Pages.Page a b c d e] -> IHtml
 navigation links = do
@@ -306,23 +309,17 @@ availableAssignments pd timeconverter studentAssignments
             score (Percentage (Scores [p])) = percentage $ percent p
             score _                         = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
-availableAssessments :: Map.Map Course [(AssessmentKey,ScoreInfo)] -> IHtml
-availableAssessments forEveryCourse | Map.null assessments = return mempty
-                                    | otherwise = do
-  msg <- getI18N
-  return $ do
-    Bootstrap.rowColMd12 . H.p $ "Assessments"
-    forM_ (Map.toList assessments) $ \(c,infos) ->
-      Bootstrap.rowColMd12 . Bootstrap.table $ do
-        H.tr (header infos)
-        H.tr $ do
-          H.td . string $ courseName c
-          mapM_ (evaluationViewButton msg) (zip infos [1..])
-
-    where
-      assessments = Map.filter (not . null) forEveryCourse
-
-      header infos = H.th mempty >> mapM_ (H.td . assessmentButton) (take (length infos) [1..])
+-- assessment table for students
+availableAssessment :: I18N -> (Course, [(AssessmentKey, ScoreInfo)]) -> Html
+availableAssessment msg (c, assessments) | null assessments = p $ fromString "There are no assessments registered to this course"
+                                         | otherwise =
+  Bootstrap.rowColMd12 . Bootstrap.table $ do
+    H.tr (header assessments)
+    H.tr $ do
+      H.td . string $ courseName c
+      mapM_ evaluationViewButton (zip assessments [1..])
+  where
+      header assessments = H.th mempty >> mapM_ (H.td . assessmentButton) (take (length assessments) [1..])
           where
             assessmentButton :: Int -> Html
             assessmentButton n = Bootstrap.buttonLink "" ("A" ++ show n)

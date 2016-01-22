@@ -318,6 +318,7 @@ Library
     Bead.View.Content.Public.Login
     Bead.View.Content.Public.Registration
     Bead.View.Content.Public.ResetPassword
+    Bead.View.Content.Score.Page
     Bead.View.Content.Submission.Common
     Bead.View.Content.Submission.Page
     Bead.View.Content.SubmissionDetails.Page

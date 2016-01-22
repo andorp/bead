@@ -11,6 +11,7 @@ import           Bead.Domain.Relationships as R
 import           Control.Applicative
 import           Test.Tasty.TestSet
 import           Test.QuickCheck.Gen
+import           Test.QuickCheck.Arbitrary (arbitrary)
 #endif
 
 -- View pages are rendered using the data stored in the
@@ -156,6 +157,8 @@ data ViewModifyPage a
 #endif
   | SubmissionDetails AssignmentKey SubmissionKey a
   | Submission a
+  | NewUserScore AssessmentKey E.Username a
+  | ModifyUserScore ScoreKey a
   | NewGroupAssessment GroupKey a
   | NewCourseAssessment CourseKey a
   deriving (Eq, Ord, Show, Functor)
@@ -177,6 +180,8 @@ viewModifyPageCata
 #endif
   submissionDetails
   submission
+  newUserScore
+  modifyUserScore
   newGroupAssessment
   newCourseAssessment
   p = case p of
@@ -196,6 +201,8 @@ viewModifyPageCata
 #endif
     SubmissionDetails ak sk a -> submissionDetails ak sk a
     Submission a -> submission a
+    NewUserScore assk u a -> newUserScore assk u a
+    ModifyUserScore sk a -> modifyUserScore sk a
     NewGroupAssessment gk a -> newGroupAssessment gk a
     NewCourseAssessment ck a -> newCourseAssessment ck a
 
@@ -217,6 +224,8 @@ viewModifyPageValue = viewModifyPageCata
 #endif
   c2id -- submissionDetails
   id -- submission
+  c2id -- newUserScore
+  cid -- modifyUserScore
   cid -- newGroupAssessment
   cid -- newCourseAssessment
   where
@@ -360,6 +369,8 @@ setUserPassword        = ViewModify . SetUserPassword
 #endif
 submissionDetails ak sk = ViewModify . SubmissionDetails ak sk
 submission              = ViewModify . Submission
+newUserScore assk u     = ViewModify . NewUserScore assk u
+modifyUserScore sk      = ViewModify . ModifyUserScore sk
 newCourseAssessment ck  = ViewModify . NewCourseAssessment ck
 newGroupAssessment gk   = ViewModify . NewGroupAssessment gk
 
@@ -394,6 +405,8 @@ pageCata
   submission
   submissionList
   submissionDetails
+  newUserScore
+  modifyUserScore
   groupRegistration
   userDetails
   userSubmissions
@@ -442,6 +455,8 @@ pageCata
     (ViewModify (Submission a)) -> submission a
     (View (SubmissionList a)) -> submissionList a
     (ViewModify (SubmissionDetails ak sk a)) -> submissionDetails ak sk a
+    (ViewModify (NewUserScore assk u a)) -> newUserScore assk u a
+    (ViewModify (ModifyUserScore sk a)) -> modifyUserScore sk a
     (ViewModify (GroupRegistration a)) -> groupRegistration a
     (ViewModify (UserDetails a)) -> userDetails a
     (View (UserSubmissions a)) -> userSubmissions a
@@ -492,6 +507,8 @@ constantsP
   submission_
   submissionList_
   submissionDetails_
+  newUserScore_
+  modifyUserScore_
   groupRegistration_
   userDetails_
   userSubmissions_
@@ -540,6 +557,8 @@ constantsP
       (c $ submission submission_)
       (c $ submissionList submissionList_)
       (\ak sk _ -> submissionDetails ak sk submissionDetails_)
+      (\assk u _ -> newUserScore assk u newUserScore_)
+      (\sk _ -> modifyUserScore sk modifyUserScore_)
       (c $ groupRegistration groupRegistration_)
       (c $ userDetails userDetails_)
       (c $ userSubmissions userSubmissions_)
@@ -592,6 +611,8 @@ liftsP
   submission_
   submissionList_
   submissionDetails_
+  newUserScore_
+  modifyUserScore_
   groupRegistration_
   userDetails_
   userSubmissions_
@@ -640,6 +661,8 @@ liftsP
       (submission . submission_)
       (submissionList . submissionList_)
       (\ak sk a -> submissionDetails ak sk (submissionDetails_ ak sk a))
+      (\assk u a -> newUserScore assk u (newUserScore_ assk u a))
+      (\sk a -> modifyUserScore sk (modifyUserScore_ sk a))
       (groupRegistration . groupRegistration_)
       (userDetails . userDetails_)
       (userSubmissions . userSubmissions_)
@@ -727,6 +750,12 @@ isSubmissionList _ = False
 
 isSubmissionDetails (ViewModify (SubmissionDetails _ _ _)) = True
 isSubmissionDetails _ = False
+
+isNewUserScore (ViewModify (NewUserScore _ _ _)) = True
+isNewUserScore _ = False
+
+isModifyUserScore (ViewModify (ModifyUserScore _ _)) = True
+isModifyUserScore _ = False
 
 isGroupRegistration (ViewModify (GroupRegistration _)) = True
 isGroupRegistration _ = False
@@ -837,6 +866,8 @@ groupAdminPages = [
   , isNewGroupAssignmentPreview
   , isModifyAssignmentPreview
   , isUserSubmissions
+  , isNewUserScore
+  , isModifyUserScore
 #ifndef SSO
   , isSetUserPassword
 #endif
@@ -864,6 +895,8 @@ courseAdminPages = [
   , isModifyAssignmentPreview
   , isViewAssignment
   , isUserSubmissions
+  , isNewUserScore
+  , isModifyUserScore
 #ifndef SSO
   , isSetUserPassword
 #endif
@@ -976,6 +1009,8 @@ parentPage = pageCata'
 #endif
       submissionDetails -- submissionDetails
       home           -- submission
+      (c2 home)      -- newUserScore
+      (const home)   -- modifyUserScore
       (const home)   -- newGroupAssessment
       (const home)   -- newCourseAssessment
 
@@ -1010,12 +1045,14 @@ pageGen = oneof [
       showInt = show
 
       assignmentKey = AssignmentKey . showInt <$> choose (1,5000)
+      assessmentKey = AssessmentKey . showInt <$> choose (1,5000)
       submissionKey = SubmissionKey . showInt <$> choose (1,5000)
+      scoreKey      = ScoreKey . showInt      <$> choose (1,5000)
       evaluationKey = EvaluationKey . showInt <$> choose (1,5000)
       courseKey     = CourseKey . showInt     <$> choose (1,5000)
       groupKey      = GroupKey . showInt      <$> choose (1,5000)
       testScriptKey = TestScriptKey . showInt <$> choose (1,5000)
-      assessmentKey = AssessmentKey . showInt <$> choose (1,5000)
+      username      = E.Username <$> arbitrary
 
       nonParametricPages = elements [
           login ()
@@ -1047,6 +1084,8 @@ pageGen = oneof [
         , courseOverview <$> courseKey <*> unit
         , modifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
         , submissionDetails <$> assignmentKey <*> submissionKey <*> unit
+        , newUserScore <$> assessmentKey <*> username <*> unit
+        , modifyUserScore <$> scoreKey <*> unit
         , deleteUsersFromCourse <$> courseKey <*> unit
         , deleteUsersFromGroup <$> groupKey <*> unit
         , unsubscribeFromCourse <$> groupKey <*> unit

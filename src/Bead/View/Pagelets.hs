@@ -395,6 +395,8 @@ linkText = P.pageCata
   (c $ msg_LinkText_Submission "Submission")
   (c $ msg_LinkText_SubmissionList "Submissions")
   (c3 $ msg_LinkText_SubmissionDetails "Submission Details")
+  (c3 $ msg_LinkText_NewUserScore "New Score")
+  (c2 $ msg_LinkText_ModifyUserScore "Modify Score")
   (c $ msg_LinkText_GroupRegistration "Group Registration")
   (c $ msg_LinkText_UserDetails "User Details")
   (c $ msg_LinkText_UserSubmissions "Submissions")

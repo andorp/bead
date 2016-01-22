@@ -489,6 +489,8 @@ labels =
  , "msg_LinkText_Submission"
  , "msg_LinkText_SubmissionList"
  , "msg_LinkText_UserSubmissions"
+ , "msg_LinkText_NewUserScore"
+ , "msg_LinkText_ModifyUserScore"
  , "msg_LinkText_NewTestScript"
  , "msg_LinkText_ModifyTestScript"
  , "msg_LinkText_UploadFile"

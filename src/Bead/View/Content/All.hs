@@ -33,6 +33,7 @@ import Bead.View.Content.GetSubmission
 import Bead.View.Content.GetCourseCsv
 import Bead.View.Content.GetGroupCsv
 import Bead.View.Content.Assessment.Page
+import Bead.View.Content.Score.Page
 
 #ifdef TEST
 import Test.Tasty.TestSet
@@ -60,6 +61,8 @@ pageContent = Pages.constantsP
   submission
   submissionList
   submissionDetails
+  newUserScore
+  modifyUserScore
   groupRegistration
   userDetails
   userSubmissions

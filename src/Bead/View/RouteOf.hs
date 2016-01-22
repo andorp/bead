@@ -23,6 +23,8 @@ module Bead.View.RouteOf (
   , evaluationPath
   , submissionPath
   , submissionListPath
+  , newUserScorePath
+  , modifyUserScorePath
   , userSubmissionsPath
   , newTestScriptPath
   , modifyTestScriptPath
@@ -130,6 +132,12 @@ submissionListPath = "/submission-list"
 
 userSubmissionsPath :: RoutePath
 userSubmissionsPath = "/user-submissions"
+
+newUserScorePath :: RoutePath
+newUserScorePath = "/new-user-score"
+
+modifyUserScorePath :: RoutePath
+modifyUserScorePath = "/modify-user-score"
 
 newTestScriptPath :: RoutePath
 newTestScriptPath = "/new-test-script"
@@ -263,6 +271,8 @@ pageRoutePath = pfmap id id id id id . r where
     submissionPath
     submissionListPath
     submissionDetailsPath
+    newUserScorePath
+    modifyUserScorePath
     groupRegistrationPath
     userDetailsPath
     userSubmissionsPath
@@ -316,6 +326,8 @@ pageRequestParams = liftsP
   (c []) -- submission
   (c []) -- submissionList
   (\ak sk _ -> [requestParam ak, requestParam sk]) -- submissionDetails
+  (\assk u _ -> [requestParam assk, requestParam u]) -- newUserScore
+  (\sk _ -> [requestParam sk]) -- modifyUserScore
   (c []) -- groupRegistration
   (c []) -- userDetails
   (c []) -- userSubmissions
