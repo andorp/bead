@@ -4,7 +4,7 @@ module Bead.View.Content.Home.View where
 import           Control.Arrow ((***))
 import           Control.Monad.Identity
 import           Data.Function (on)
-import           Data.List (find, intersperse, sortBy, sort)
+import           Data.List (find, intersperse, sortBy)
 import qualified Data.Map as Map
 import           Data.Maybe (isJust)
 import           Data.String (fromString)
@@ -18,6 +18,7 @@ import           Bead.Domain.Entities as E (Role(..))
 import           Bead.Domain.Evaluation
 import           Bead.View.Content as Content hiding (userState, table, assessments)
 import           Bead.View.Content.SubmissionTable as ST
+import           Bead.View.Content.ScoreInfo (scoreInfoToIconLink)
 import           Bead.View.Content.VisualConstants
 
 import qualified Bead.View.Content.Bootstrap as Bootstrap
@@ -170,32 +171,8 @@ htmlAssessmentTable board
 
         scoreIcon :: I18N -> Username -> AssessmentKey -> Html
         scoreIcon msg username ak = H.td $ case Map.lookup (ak,username) (sbScores board) of
-          Just si -> scoreInfoToIcon msg ("notFoundLink") ("foundLink") si
+          Just si -> scoreInfoToIconLink msg ("notFoundLink") ("foundLink") si
           Nothing -> mempty
-
-scoreInfoToIcon :: I18N -> String -> String -> ScoreInfo -> Html
-scoreInfoToIcon msg notFoundLink foundLink =
-  scoreInfoAlgebra (linkWithHtml notFoundLink notFound) $
-    \ek -> (linkWithHtml foundLink . evResultCata (binaryCata (resultCata passed failed)) percentage free)
-  where
-    tooltip m = A.title (fromString $ msg m)
-    notFound = (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: xx-large"
-                    ! tooltip (msg_Home_SubmissionCell_NonEvaluated "Non evaluated") $ mempty)
-
-    passed = (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: xx-large"
-                  ! tooltip (msg_Home_SubmissionCell_Accepted "Accepted") $ mempty) -- accepted
-
-    failed = (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: xx-large"
-                  ! tooltip (msg_Home_SubmissionCell_Rejected "Rejected") $ mempty) -- rejected
-
-    percentage (Percentage (Scores [p])) = H.span ! A.class_ "label label-primary" $ fromString $ percent p
-    percentage _ = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
-    free = freeForm $ \msg ->
-      let cell = if length msg < displayableFreeFormResultLength then msg else "..." in
-      H.span ! A.class_ "label label-primary"
-             ! A.title (fromString msg) $ (fromString cell)
-
-    percent x = join [show . round $ (100 * x), "%"]
 
 navigation :: [Pages.Page a b c d e] -> IHtml
 navigation links = do
@@ -351,4 +328,4 @@ availableAssessments forEveryCourse | Map.null assessments = return mempty
             assessmentButton n = Bootstrap.buttonLink "" ("A" ++ show n)
         
       evaluationViewButton :: ((AssessmentKey,ScoreInfo),Int) -> Html
-      evaluationViewButton ((ak,info),n) = H.td $ scoreInfoToIcon msg "/home" "/home" info
+      evaluationViewButton ((ak,info),n) = H.td $ scoreInfoToIconLink msg "/home" "/home" info
