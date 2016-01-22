@@ -11,6 +11,7 @@ module Bead.View.Content.Assessment.Page (
 
 import           Bead.View.Content
 import qualified Bead.View.Content.Bootstrap as Bootstrap
+import           Bead.View.Content.ScoreInfo (scoreInfoToIcon)
 import           Bead.View.RequestParams
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
@@ -25,6 +26,7 @@ import           System.Directory (doesFileExist)
 
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Map as M
+import           Data.Maybe (maybe)
 import           Data.Time (getCurrentTime)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
@@ -105,46 +107,15 @@ postNewCourseAssessment = do
              then CreateCourseAssessment ck a
              else SaveScoresOfCourseAssessment ck a evaluations
 
-validEvaluations :: EvConfig -> M.Map Username Evaluation -> M.Map Username Evaluation
-validEvaluations config = M.filter valid
-    where
-      valid :: Evaluation -> Bool
-      valid = evaluationCata (\result _ -> validResult result)
-
-      validResult :: EvResult -> Bool
-      validResult = evConfigCata
-                    binResult
-                    pctResult
-                    freeResult
-                    config
-
-      binResult :: EvResult -> Bool
-      binResult = evResultCata
-                  (const True)   -- BinEval
-                  (const False)  -- PctEval
-                  (const False)  -- FreeEval
-
-      pctResult :: Double -> EvResult -> Bool
-      pctResult _ = evResultCata
-                    (const False)
-                    (const True)
-                    (const False)
-
-      freeResult :: EvResult -> Bool
-      freeResult = evResultCata
-                   (const False)
-                   (const False)
-                   (const True)
-
 parseEvaluations :: EvConfig -> M.Map Username String -> M.Map Username Evaluation
-parseEvaluations evalConfig = validEvaluations evalConfig . M.map parseEvaluation
+parseEvaluations evalConfig = M.mapMaybe (parseEvaluation evalConfig)
 
-parseEvaluation :: String -> Evaluation
-parseEvaluation s = case readMaybe s of
-                      Just r -> mkEval (binaryResult r)
-                      Nothing -> case readMaybe s of
-                                   Just p -> mkEval (percentageResult p)
-                                   Nothing -> mkEval (freeFormResult s)
+parseEvaluation :: EvConfig -> String -> Maybe Evaluation
+parseEvaluation evalConfig s = evConfigCata 
+                               (mkEval . binaryResult <$> (readMaybe s))
+                               (\_ -> mkEval . percentageResult . (/100) <$> (readMaybe s))
+                               (Just . mkEval . freeFormResult $ s)
+                               evalConfig
     where mkEval :: EvResult -> Evaluation
           mkEval result = Evaluation result ""
 
@@ -211,7 +182,7 @@ fillNewCourseAssessmentPreviewPage = error "fillNewCourseAssessmentPreviewPage i
 
 fillAssessmentTemplate :: PageDataFill -> IHtml
 fillAssessmentTemplate pdata = do
-  _msg <- getI18N
+  msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $ do      
       H.form ! A.method "post" $ do
@@ -224,7 +195,7 @@ fillAssessmentTemplate pdata = do
              Bootstrap.colMd4 downloadCsvButton
              Bootstrap.colMd4 commitButton
         let csvTable _ _ _ _ scores usernames = do
-              previewTable usernames scores
+              previewTable msg usernames scores
               hiddenInput "evaluations" (show scores)
             noPreview = hiddenInput "evaluations" (show (M.empty :: M.Map Username Evaluation))
             
@@ -282,8 +253,8 @@ fillAssessmentTemplate pdata = do
                      (\_ _ _ evConfig _ _ -> evConfig)
                      pdata
 
-previewTable :: [Username] -> M.Map Username Evaluation -> H.Html
-previewTable usernames evaluations = Bootstrap.table $ do
+previewTable :: I18N -> [Username] -> M.Map Username Evaluation -> H.Html
+previewTable msg usernames evaluations = Bootstrap.table $ do
   header
   tableData
     where 
@@ -296,10 +267,9 @@ previewTable usernames evaluations = Bootstrap.table $ do
           H.tr $ do
             H.td $ usernameCata H.string username
             H.td $ case M.lookup username evaluations of
-                     Just score -> "evaluation"
-                     Nothing    -> warning
-              where
-                warning = H.i ! A.class_ "glyphicon glyphicon-warning-sign" ! A.style "color:#AAAAAA;" $ mempty
+                     Just evaluation -> let scoreInfo = evaluationCata (\result _comment -> (Score_Result (EvaluationKey "") result)) evaluation in
+                                        scoreInfoToIcon msg scoreInfo
+                     Nothing         -> scoreInfoToIcon msg Score_Not_Found
 
 readCsv :: B.ByteString -> M.Map Username String
 readCsv bs = case B.lines bs of
