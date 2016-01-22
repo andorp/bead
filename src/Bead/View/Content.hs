@@ -3,6 +3,7 @@
 module Bead.View.Content (
     blaze
   , getParameter
+  , getParameterWithDefault
   , getParameterValues
   , getOptionalParameter
   , getOptionalOrNonEmptyParameter
