@@ -378,6 +378,13 @@ pageHeader = H.div ! class_ "page-header"
 -- | Creates a bootstrap table
 table = H.table ! class_ "table table-bordered table-condensed table-hover table-striped"
 
+-- Creates a table line first element is a bold text and the second is a HTML snippet
+infixl 7 .|.
+(.|.) :: String -> Html -> Html
+name .|. value = H.tr $ do
+  H.td $ b $ fromString $ name
+  H.td $ value
+
 -- Alerts
 
 data Alert = Success | Info | Warning | Danger

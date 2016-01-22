@@ -163,6 +163,7 @@ dict = DictionaryFile {
     , msg_Comments_PercentageResult <| "Az eredmény: %s százalék."
     , msg_Evaluation_Title <| "Értékelés"
     , msg_Evaluation_Course <| "Tárgy: "
+    , msg_Evaluation_Assignment <| "Feladat: "
     , msg_Evaluation_Group <| "Csoport: "
     , msg_Evaluation_Student <| "Hallgató: "
     , msg_Evaluation_SaveButton <| "Beküld"

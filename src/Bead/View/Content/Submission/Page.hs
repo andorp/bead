@@ -25,6 +25,7 @@ import qualified Bead.Controller.UserStories as Story
 import qualified Bead.Domain.Entities as E
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Content
+import           Bead.View.Content.Bootstrap ((.|.))
 import qualified Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.View.Content.Submission.Common
 import           Bead.View.Markdown (markdownToHtml)
@@ -191,12 +192,6 @@ submissionContent p = do
         H.p $ fromString . msg $ msg_Submission_Info_Password
           "This assignment can only accept submissions by providing the password."
         Bootstrap.passwordInput (fieldName submissionPwdField) (msg $ msg_Submission_Password "Password for the assignment:")
-
--- Creates a table line first element is a bold text and the second is a HTML snippet
-infixl 7 .|.
-name .|. value = H.tr $ do
-  H.td $ b $ fromString $ name
-  H.td value
 
 resolveStatus :: I18N -> Maybe String -> H.Html
 resolveStatus msg Nothing     = fromString . msg $ msg_SubmissionList_NotEvaluatedYet "Not evaluated yet"

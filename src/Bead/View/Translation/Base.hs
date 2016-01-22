@@ -204,6 +204,7 @@ labels =
 
  , "msg_Evaluation_Title"
  , "msg_Evaluation_Course"
+ , "msg_Evaluation_Assignment"
  , "msg_Evaluation_Group"
  , "msg_Evaluation_Student"
  , "msg_Evaluation_SaveButton"
