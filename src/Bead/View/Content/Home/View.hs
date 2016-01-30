@@ -313,7 +313,8 @@ availableAssignments pd timeconverter studentAssignments
 -- assessment table for students
 availableAssessment :: I18N -> (Course, [(AssessmentKey, Maybe ScoreKey, ScoreInfo)]) -> Html
 availableAssessment msg (c, assessments) | null assessments = p $ fromString "There are no assessments registered to this course"
-                                         | otherwise =
+                                         | otherwise = do
+  Bootstrap.rowColMd12 . p $ "Assessments"
   Bootstrap.rowColMd12 . Bootstrap.table $ do
     H.tr (header assessments)
     H.tr $ do
