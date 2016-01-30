@@ -458,6 +458,9 @@ data ScoreBoard =
     }
   deriving (Eq, Show)
 
+scoreBoardPermissions = ObjectPermissions
+  [ (P_Open, P_Group), (P_Open, P_Assessment) ]
+
 data AssessmentDesc = AssessmentDesc {
     adCourse        :: String
   , adGroup         :: Maybe String
@@ -465,8 +468,17 @@ data AssessmentDesc = AssessmentDesc {
   , adAssessment    :: Assessment
   }
 
-scoreBoardPermissions = ObjectPermissions
-  [ (P_Open, P_Group), (P_Open, P_Assessment) ]
+data ScoreDesc = ScoreDesc {
+      scdCourse     :: String
+    , scdGroup      :: Maybe String
+    , scdTeacher    :: [String]
+    , scdScore      :: ScoreInfo
+    , scdAssessment :: String
+    }
+
+scoreDescPermissions = ObjectPermissions [
+    (P_Open, P_Group), (P_Open, P_Course)
+  ]
 
 #ifdef TEST
 relationshipTests = group "Bead.Domain.Relationships" $ do

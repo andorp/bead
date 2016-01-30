@@ -39,7 +39,7 @@ data HomePageData = HomePageData {
   , assignments :: StudentAssignments -- Empty map means that the user is not registrated in any courses
   , sTables     :: [SubmissionTableInfo]
   , assessmentTables :: Map (Either CourseKey GroupKey) ScoreBoard
-  , assessments :: Map CourseKey (Course, [(AssessmentKey, ScoreInfo)])
+  , assessments :: Map CourseKey (Course, [(AssessmentKey, Maybe ScoreKey, ScoreInfo)])
     -- ^ The convertes function that convert a given utc time into the users local timezone
   , timeConverter :: UserTimeConverter
   , submissionTableCtx :: SubmissionTableContext

@@ -161,6 +161,7 @@ menuId = P.pageCata
   (c "link-submission")
   (c "link-submission-list")
   (c3 "link-submission-details")
+  (c2 "link-view-user-score")
   (c3 "link-new-user-score")
   (c2 "link-modify-user-score")
   (c "link-group-registration")

@@ -61,6 +61,7 @@ pageContent = Pages.constantsP
   submission
   submissionList
   submissionDetails
+  viewUserScore
   newUserScore
   modifyUserScore
   groupRegistration

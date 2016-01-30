@@ -759,16 +759,28 @@ assessmentDesc ak = logAction INFO ("loads information of assessment " ++ show a
   persistence (Persist.assessmentDesc ak)
 
 usernameOfScore :: ScoreKey -> UserStory Username
-usernameOfScore sk = logAction INFO ("looks up the user of score key " ++ show sk) $ do
+usernameOfScore sk = logAction INFO ("looks up the user of score " ++ show sk) $ do
   persistence (Persist.usernameOfScore sk)
 
 assessmentOfScore :: ScoreKey -> UserStory AssessmentKey
-assessmentOfScore sk = logAction INFO ("looks up the assessment of score key " ++ show sk) $ do
+assessmentOfScore sk = logAction INFO ("looks up the assessment of score " ++ show sk) $ do
   persistence (Persist.assessmentOfScore sk)
 
 scoreInfo :: ScoreKey -> UserStory ScoreInfo
-scoreInfo sk = logAction INFO ("loads score information of score key " ++ show sk) $ do
+scoreInfo sk = logAction INFO ("loads score information of score " ++ show sk) $ do
   persistence (Persist.scoreInfo sk)
+
+scoreDesc :: ScoreKey -> UserStory ScoreDesc
+scoreDesc sk = logAction INFO ("loads score description of score " ++ show sk) $ do
+  authPerms scoreDescPermissions
+  currentUser <- username
+  scoreUser <- usernameOfScore sk
+  if (currentUser == scoreUser)
+    then persistence $ Persist.scoreDesc sk
+    else do 
+      logMessage INFO . violation $ printf "The user tries to view a score (%s) that not belongs to him."
+                                           (show sk)
+      errorPage $ userError nonAccessibleScore
 
 saveUserScore :: Username -> AssessmentKey -> Evaluation -> UserStory ScoreKey
 saveUserScore u ak evaluation = logAction INFO ("saves user score of " ++ show u ++ " for assessment " ++ show ak) $ do
@@ -813,7 +825,7 @@ saveScoresOfGroupAssessment gk a evaluations = do
 
 -- Produces a map of assessments and information about the evaluations for the
 -- assessments.
-userAssessments :: UserStory (Map CourseKey (Course, [(AssessmentKey, ScoreInfo)]))
+userAssessments :: UserStory (Map CourseKey (Course, [(AssessmentKey, Maybe ScoreKey, ScoreInfo)]))
 userAssessments = logAction INFO "lists assessments" $ do
 --  authorize P_Open P_Assessment
   authorize P_Open P_Course
@@ -829,13 +841,13 @@ userAssessments = logAction INFO "lists assessments" $ do
   where
     -- Produces the scoreinfo for the specific user and assessment.
     -- Returns Nothing if there are multiple scoreinfos available.
-    getInfo :: Username -> AssessmentKey -> Persist (Maybe (AssessmentKey, ScoreInfo))
+    getInfo :: Username -> AssessmentKey -> Persist (Maybe (AssessmentKey, Maybe ScoreKey, ScoreInfo))
     getInfo u ak = do
       scoreKeys <- Persist.scoreOfAssessmentAndUser u ak
       case scoreKeys of
-        [] -> return . Just $ (ak, Score_Not_Found)
+        [] -> return . Just $ (ak, Nothing, Score_Not_Found)
         [sk] -> do info <- Persist.scoreInfo sk
-                   return . Just $ (ak,info)
+                   return . Just $ (ak,Just sk,info)
         _    -> return Nothing
 
 scoreBoards :: UserStory (Map (Either CourseKey GroupKey) ScoreBoard)
@@ -1479,3 +1491,4 @@ nonAdministratedTestScript = msg_UserStoryError_NonAdministratedTestScript "The 
 nonRelatedAssignment = msg_UserStoryError_NonRelatedAssignment "The assignment is not belongs to you."
 nonAccessibleSubmission = msg_UserStoryError_NonAccessibleSubmission "The submission is not belongs to you."
 blockedSubmission = msg_UserStoryError_BlockedSubmission "The submission is blocked by an isolated assignment."
+nonAccessibleScore = msg_UserStoryError_NonAccessibleScore "The score does not belong to you."

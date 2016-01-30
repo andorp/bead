@@ -18,7 +18,7 @@ import           Bead.Domain.Entities as E (Role(..))
 import           Bead.Domain.Evaluation
 import           Bead.View.Content as Content hiding (userState, table, assessments)
 import           Bead.View.Content.SubmissionTable as ST
-import           Bead.View.Content.ScoreInfo (scoreInfoToIconLink)
+import           Bead.View.Content.ScoreInfo (scoreInfoToIconLink,scoreInfoToIcon)
 import           Bead.View.Content.VisualConstants
 
 import qualified Bead.View.Content.Bootstrap as Bootstrap
@@ -311,19 +311,21 @@ availableAssignments pd timeconverter studentAssignments
             score _                         = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
 -- assessment table for students
-availableAssessment :: I18N -> (Course, [(AssessmentKey, ScoreInfo)]) -> Html
+availableAssessment :: I18N -> (Course, [(AssessmentKey, Maybe ScoreKey, ScoreInfo)]) -> Html
 availableAssessment msg (c, assessments) | null assessments = p $ fromString "There are no assessments registered to this course"
                                          | otherwise =
   Bootstrap.rowColMd12 . Bootstrap.table $ do
     H.tr (header assessments)
     H.tr $ do
       H.td . string $ courseName c
-      mapM_ evaluationViewButton (zip assessments [1..])
+      mapM_ evaluationViewButton (zip [(sk,si) | (_,sk,si) <- assessments] [1..])
   where
       header assessments = H.th mempty >> mapM_ (H.td . assessmentButton) (take (length assessments) [1..])
           where
             assessmentButton :: Int -> Html
             assessmentButton n = Bootstrap.buttonLink "" ("A" ++ show n)
         
-      evaluationViewButton :: ((AssessmentKey,ScoreInfo),Int) -> Html
-      evaluationViewButton ((ak,info),n) = H.td $ scoreInfoToIconLink msg "/home" "/home" info
+      evaluationViewButton :: ((Maybe ScoreKey, ScoreInfo),Int) -> Html
+      evaluationViewButton ((Just sk,info),n) = H.td $ scoreInfoToIconLink msg "" viewScoreLink info
+          where viewScoreLink = routeOf $ Pages.viewUserScore sk ()
+      evaluationViewButton ((Nothing,info),n) = H.td $ scoreInfoToIcon msg info

@@ -476,6 +476,7 @@ labels =
  , "msg_UserStoryError_NonCommentableSubmission"
  , "msg_UserStoryError_NonAccessibleSubmission"
  , "msg_UserStoryError_BlockedSubmission"
+ , "msg_UserStoryError_NonAccessibleScore"
 
  , "msg_UserActions_ChangedUserDetails"
 
@@ -489,6 +490,7 @@ labels =
  , "msg_LinkText_Submission"
  , "msg_LinkText_SubmissionList"
  , "msg_LinkText_UserSubmissions"
+ , "msg_LinkText_ViewUserScore"
  , "msg_LinkText_NewUserScore"
  , "msg_LinkText_ModifyUserScore"
  , "msg_LinkText_NewTestScript"

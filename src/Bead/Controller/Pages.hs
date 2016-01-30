@@ -29,6 +29,7 @@ data ViewPage a
   | Administration a
   | CourseAdmin a
   | ViewAssessment AssessmentKey a
+  | ViewUserScore ScoreKey a
   deriving (Eq, Ord, Show, Functor)
 
 viewPageCata
@@ -43,6 +44,7 @@ viewPageCata
   administration
   courseAdmin
   viewAssessment
+  viewUserScore
   p = case p of
     Login a -> login a
     Logout a -> logout a
@@ -55,6 +57,7 @@ viewPageCata
     Administration a -> administration a
     CourseAdmin a -> courseAdmin a
     ViewAssessment ak a -> viewAssessment ak a
+    ViewUserScore sk a -> viewUserScore sk a
 
 viewPageValue :: ViewPage a -> a
 viewPageValue = viewPageCata
@@ -69,6 +72,7 @@ viewPageValue = viewPageCata
   id -- administration
   id -- courseAdmin
   cid -- viewAssessment
+  cid -- viewUserScore
   where
     cid = const id
 
@@ -339,6 +343,7 @@ userSubmissions         = View . UserSubmissions
 administration          = View . Administration
 courseAdmin             = View . CourseAdmin
 viewAssessment ak       = View . ViewAssessment ak
+viewUserScore sk        = View . ViewUserScore sk
 
 getSubmission sk        = Data . GetSubmission sk
 getCourseCsv ck         = Data . GetCourseCsv ck
@@ -405,6 +410,7 @@ pageCata
   submission
   submissionList
   submissionDetails
+  viewUserScore
   newUserScore
   modifyUserScore
   groupRegistration
@@ -455,6 +461,7 @@ pageCata
     (ViewModify (Submission a)) -> submission a
     (View (SubmissionList a)) -> submissionList a
     (ViewModify (SubmissionDetails ak sk a)) -> submissionDetails ak sk a
+    (View (ViewUserScore sk a)) -> viewUserScore sk a
     (ViewModify (NewUserScore assk u a)) -> newUserScore assk u a
     (ViewModify (ModifyUserScore sk a)) -> modifyUserScore sk a
     (ViewModify (GroupRegistration a)) -> groupRegistration a
@@ -507,6 +514,7 @@ constantsP
   submission_
   submissionList_
   submissionDetails_
+  viewUserScore_
   newUserScore_
   modifyUserScore_
   groupRegistration_
@@ -557,6 +565,7 @@ constantsP
       (c $ submission submission_)
       (c $ submissionList submissionList_)
       (\ak sk _ -> submissionDetails ak sk submissionDetails_)
+      (\sk _ -> viewUserScore sk viewUserScore_)
       (\assk u _ -> newUserScore assk u newUserScore_)
       (\sk _ -> modifyUserScore sk modifyUserScore_)
       (c $ groupRegistration groupRegistration_)
@@ -611,6 +620,7 @@ liftsP
   submission_
   submissionList_
   submissionDetails_
+  viewUserScore_
   newUserScore_
   modifyUserScore_
   groupRegistration_
@@ -661,6 +671,7 @@ liftsP
       (submission . submission_)
       (submissionList . submissionList_)
       (\ak sk a -> submissionDetails ak sk (submissionDetails_ ak sk a))
+      (\sk a -> viewUserScore sk (viewUserScore_ sk a))
       (\assk u a -> newUserScore assk u (newUserScore_ assk u a))
       (\sk a -> modifyUserScore sk (modifyUserScore_ sk a))
       (groupRegistration . groupRegistration_)
@@ -750,6 +761,9 @@ isSubmissionList _ = False
 
 isSubmissionDetails (ViewModify (SubmissionDetails _ _ _)) = True
 isSubmissionDetails _ = False
+
+isViewUserScore (View (ViewUserScore _ _)) = True
+isViewUserScore _ = False
 
 isNewUserScore (ViewModify (NewUserScore _ _ _)) = True
 isNewUserScore _ = False
@@ -854,6 +868,7 @@ regularPages = [
   , isSubmissionDetails
   , isGroupRegistration
   , isGetSubmission
+  , isViewUserScore
   ]
 
 groupAdminPages = [
@@ -1084,6 +1099,7 @@ pageGen = oneof [
         , courseOverview <$> courseKey <*> unit
         , modifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
         , submissionDetails <$> assignmentKey <*> submissionKey <*> unit
+        , viewUserScore <$> scoreKey <*> unit
         , newUserScore <$> assessmentKey <*> username <*> unit
         , modifyUserScore <$> scoreKey <*> unit
         , deleteUsersFromCourse <$> courseKey <*> unit

@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Content.Score.Page (
-    newUserScore
+    viewUserScore
+  , newUserScore
   , modifyUserScore
   ) where
 
@@ -19,6 +20,7 @@ import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import           Text.Printf
 import           Data.Either (either)
+import           Data.List (intercalate)
 import           Data.String (fromString)
 import           Data.Monoid ((<>))
 
@@ -50,6 +52,9 @@ newUserScore = ViewModifyHandler scorePage newScorePostHandler
 
 modifyUserScore :: ViewModifyHandler
 modifyUserScore = ViewModifyHandler modifyScorePage modifyScorePostHandler
+
+viewUserScore :: ViewHandler
+viewUserScore = ViewHandler viewScorePage
 
 scorePage :: GETContentHandler
 scorePage = do 
@@ -157,6 +162,22 @@ scoreContent pd = do
                        (freeForm id)
                        result)
 
+viewScorePage :: GETContentHandler
+viewScorePage = do
+  sk <- getParameter scoreKeyPrm
+  sDesc <- userStory $ Story.scoreDesc sk
+  return $ viewScoreContent sDesc
+
+viewScoreContent :: ScoreDesc -> IHtml
+viewScoreContent sd = do
+  msg <- getI18N
+  return $ do
+    Bootstrap.rowColMd12 . Bootstrap.table . H.tbody $ do
+      "Course:"   .|. fromString (scdCourse sd)
+      maybe mempty (\g -> "Group" .|. fromString g) (scdGroup sd)
+      "Teacher:" .|. (fromString . intercalate ", " . scdTeacher) sd
+      "Assessment:" .|. fromString (scdAssessment sd)
+
 evConfig :: Assessment -> EvConfig
 evConfig = assessment (\_title _desc _creation cfg -> cfg)
 
@@ -192,3 +213,4 @@ evaluationFrame evConfig msg content = do
              
 evalConfigParam = evalConfigParameter (fieldName evaluationConfigField)
 freeFormEvaluationParam = stringParameter (fieldName evaluationFreeFormField) "Free format evaluation"
+

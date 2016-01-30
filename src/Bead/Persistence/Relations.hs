@@ -25,6 +25,7 @@ module Bead.Persistence.Relations (
   , submissionLimitOfAssignment
   , scoreBoards
   , scoreInfo
+  , scoreDesc
   , assessmentDesc
   , userAssessmentKeys
 #ifdef TEST
@@ -629,6 +630,26 @@ scoreBoard key = do
                        user <- usernameOfScore scoreKey
                        info <- scoreInfo scoreKey
                        return (Map.insert (assessment,user) scoreKey scores,Map.insert scoreKey info infos)
+
+scoreDesc :: ScoreKey -> Persist ScoreDesc
+scoreDesc sk = do
+  ak <- assessmentOfScore sk
+  as <- loadAssessment ak
+  let asName = title as
+  info <- scoreInfo sk
+  courseOrGroup <- courseOrGroupOfAssessment ak
+  (course,group,teachers) <- case courseOrGroup of
+    Left ck -> do
+      course <- loadCourse ck
+      teachers <- courseAdmins ck
+      return (courseName course,Nothing,teachers)
+    Right gk -> do
+        group <- loadGroup gk
+        ck <- courseOfGroup gk
+        course <- loadCourse ck
+        teachers <- groupAdmins gk
+        return (courseName course,Just . groupName $ group,teachers)
+  return $ ScoreDesc course group (map (usernameCata id) teachers) info asName
 
 assessmentDesc :: AssessmentKey -> Persist AssessmentDesc
 assessmentDesc ak = do
