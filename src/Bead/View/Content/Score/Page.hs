@@ -10,6 +10,7 @@ import           Bead.View.Content.Bootstrap ((.|.))
 import qualified Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.View.RequestParams
 import           Bead.View.Content.VisualConstants
+import           Bead.View.Content.ScoreInfo (scoreInfoToText)
 import           Bead.Controller.Pages (PageDesc)
 import qualified Bead.Controller.Pages as Pages
 import qualified Bead.Controller.UserStories as Story
@@ -126,7 +127,7 @@ scoreContent pd = do
       "Student:"    .|. fromString (pdStudent pd)
       "Username:"   .|. (uid fromString $ pdUid pd)
     postForm (routeOf handler) $ do
-      view
+      view msg
       evaluationFrame (evConfig as) msg mempty
       submit
     where
@@ -147,20 +148,10 @@ scoreContent pd = do
                   (\_student _uname _uid _aDesc _score sk -> Pages.modifyUserScore sk ())
                   pd
 
-      view = pageDataAlgebra
-               (\_student _uname _uid _aDesc -> mempty)
-               (\_student _uname _uid _aDesc score _sk -> Bootstrap.rowColMd12 . H.p . fromString $ scoreText score)
-               pd
-
-      scoreText = scoreInfoAlgebra
-                  "error"
-                  (\_ek result -> 
-                       evResultCata
-                       (binaryCata (resultCata "Passed." "Failed."))
-                       (\p -> let Percentage (Scores [pp]) = p in
-                              (show . round . (* 100)) pp ++ " percent.")
-                       (freeForm id)
-                       result)
+      view msg = pageDataAlgebra
+                 (\_student _uname _uid _aDesc -> mempty)
+                 (\_student _uname _uid _aDesc score _sk -> Bootstrap.rowColMd12 . H.p . fromString $ (scoreInfoToText msg) score)
+                 pd
 
 viewScorePage :: GETContentHandler
 viewScorePage = do
@@ -174,7 +165,7 @@ viewScoreContent sd = do
   return $ do
     Bootstrap.rowColMd12 . Bootstrap.table . H.tbody $ do
       "Course:"   .|. fromString (scdCourse sd)
-      maybe mempty (\g -> "Group" .|. fromString g) (scdGroup sd)
+      maybe mempty (\g -> "Group:" .|. fromString g) (scdGroup sd)
       "Teacher:" .|. (fromString . intercalate ", " . scdTeacher) sd
       "Assessment:" .|. fromString (scdAssessment sd)
 
