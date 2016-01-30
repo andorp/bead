@@ -10,7 +10,7 @@ import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Controller.ServiceContext
 import           Bead.Controller.Logging  as L
-import           Bead.Controller.Pages    as P
+import           Bead.Controller.Pages    as P hiding (modifyEvaluation)
 import           Bead.Persistence.Persist (Persist)
 import qualified Bead.Persistence.Persist   as Persist
 import qualified Bead.Persistence.Relations as Persist
@@ -758,6 +758,18 @@ assessmentDesc ak = logAction INFO ("loads information of assessment " ++ show a
   -- todo: authorize
   persistence (Persist.assessmentDesc ak)
 
+usernameOfScore :: ScoreKey -> UserStory Username
+usernameOfScore sk = logAction INFO ("looks up the user of score key " ++ show sk) $ do
+  persistence (Persist.usernameOfScore sk)
+
+assessmentOfScore :: ScoreKey -> UserStory AssessmentKey
+assessmentOfScore sk = logAction INFO ("looks up the assessment of score key " ++ show sk) $ do
+  persistence (Persist.assessmentOfScore sk)
+
+scoreInfo :: ScoreKey -> UserStory ScoreInfo
+scoreInfo sk = logAction INFO ("loads score information of score key " ++ show sk) $ do
+  persistence (Persist.scoreInfo sk)
+
 saveUserScore :: Username -> AssessmentKey -> Evaluation -> UserStory ScoreKey
 saveUserScore u ak evaluation = logAction INFO ("saves user score of " ++ show u ++ " for assessment " ++ show ak) $ do
   authorize P_Open P_Assessment
@@ -765,6 +777,11 @@ saveUserScore u ak evaluation = logAction INFO ("saves user score of " ++ show u
     sk <- Persist.saveScore u ak (Score ())
     Persist.saveScoreEvaluation sk evaluation
     return sk
+
+modifyUserScore :: ScoreKey -> Evaluation -> UserStory ()
+modifyUserScore sk newEvaluation = logAction INFO ("modifies user score " ++ show sk) $ do
+  mEKey <- persistence (Persist.evaluationOfScore sk)
+  maybe (return ()) (\eKey -> modifyEvaluation eKey newEvaluation) mEKey
 
 saveScoresOfCourseAssessment :: CourseKey -> Assessment -> Map Username Evaluation -> UserStory ()
 saveScoresOfCourseAssessment ck a evaluations = do

@@ -604,33 +604,31 @@ scoreBoard :: Either CourseKey GroupKey -> Persist ScoreBoard
 scoreBoard key = do
   assessmentKeys <- assessmentsOf
   users <- subscriptions
-  board <- foldM boardColumn (notFound users assessmentKeys) assessmentKeys
+  board <- foldM boardColumn (Map.empty,Map.empty) assessmentKeys
   assessments <- mapM loadAssessment assessmentKeys
   userDescriptions <- mapM userDescription users
   name <- loadName
   let assessmentInfos = Map.fromList (zip assessmentKeys assessments)
   return $ mkScoreBoard board name assessmentKeys assessmentInfos userDescriptions
   where
-        notFound users aks = Map.fromList [((ak,u),Score_Not_Found) | u <- users, ak <- aks]
-    
-        mkScoreBoard s n as ais us =
-          either (\k -> CourseScoreBoard s k n as ais us)
-                 (\k -> GroupScoreBoard s k n as ais us)
+        mkScoreBoard (scores,infos) n as ais us =
+          either (\k -> CourseScoreBoard scores infos k n as ais us)
+                 (\k -> GroupScoreBoard scores infos k n as ais us)
                  key
         assessmentsOf = either assessmentsOfCourse assessmentsOfGroup key
         subscriptions = either subscribedToCourse subscribedToGroup key
         loadName      = either (fmap courseName . loadCourse) (fmap groupName . loadGroup) key
-        boardColumn :: Map (AssessmentKey,Username) ScoreInfo
+        boardColumn :: (Map (AssessmentKey,Username) ScoreKey,Map ScoreKey ScoreInfo)
                     -> AssessmentKey
-                    -> Persist (Map (AssessmentKey,Username) ScoreInfo)
+                    -> Persist (Map (AssessmentKey,Username) ScoreKey,Map ScoreKey ScoreInfo)
         boardColumn board assessment = do
                        scoresKeys <- scoresOfAssessment assessment
                        foldM (cell assessment) board scoresKeys
 
-        cell assessment board scoreKey = do
+        cell assessment (scores,infos) scoreKey = do
                        user <- usernameOfScore scoreKey
                        info <- scoreInfo scoreKey
-                       return $ Map.insert (assessment,user) info board
+                       return (Map.insert (assessment,user) scoreKey scores,Map.insert scoreKey info infos)
 
 assessmentDesc :: AssessmentKey -> Persist AssessmentDesc
 assessmentDesc ak = do

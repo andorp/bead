@@ -425,7 +425,7 @@ data ScoreInfo
   = Score_Not_Found
     -- ^ There is no score.
   | Score_Result EvaluationKey EvResult
-    -- ^ There is at least submission with the evaluation.
+    -- ^ There is a score for a given assessment and user.
   deriving (Eq, Show)
 
 scoreInfoAlgebra
@@ -439,7 +439,8 @@ scoreInfoAlgebra
 -- assesments and the evaluation for the assessment.
 data ScoreBoard = 
     CourseScoreBoard {
-      sbScores :: Map (AssessmentKey,Username) ScoreInfo
+      sbScores :: Map (AssessmentKey,Username) ScoreKey
+    , sbScoreInfos :: Map ScoreKey ScoreInfo
     , sbCourseKey :: CourseKey
     , sbCourseName :: String
     , sbAssessments :: [AssessmentKey]
@@ -447,7 +448,8 @@ data ScoreBoard =
     , sbUsers :: [UserDesc]
     }
   | GroupScoreBoard {
-      sbScores :: Map (AssessmentKey,Username) ScoreInfo
+      sbScores :: Map (AssessmentKey,Username) ScoreKey
+    , sbScoreInfos :: Map ScoreKey ScoreInfo
     , sbGroupKey :: GroupKey
     , sbGroupName :: String
     , sbAssessments :: [AssessmentKey]
@@ -457,11 +459,11 @@ data ScoreBoard =
   deriving (Eq, Show)
 
 data AssessmentDesc = AssessmentDesc {
-      adCourse        :: String
-    , adGroup         :: Maybe String
-    , adAssessmentKey :: AssessmentKey
-    , adAssessment    :: Assessment
-    }
+    adCourse        :: String
+  , adGroup         :: Maybe String
+  , adAssessmentKey :: AssessmentKey
+  , adAssessment    :: Assessment
+  }
 
 scoreBoardPermissions = ObjectPermissions
   [ (P_Open, P_Group), (P_Open, P_Assessment) ]

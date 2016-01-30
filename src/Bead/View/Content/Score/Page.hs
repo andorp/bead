@@ -16,8 +16,9 @@ import           Bead.Domain.Shared.Evaluation hiding (evConfig)
 
 import           Text.Blaze.Html5 (Html,Attribute,(!))
 import qualified Text.Blaze.Html5 as H
-import           Text.Blaze.Html5.Attributes as A
+import qualified Text.Blaze.Html5.Attributes as A
 import           Text.Printf
+import           Data.Either (either)
 import           Data.String (fromString)
 import           Data.Monoid ((<>))
 
@@ -36,6 +37,13 @@ data PageData
     , pdScore          :: ScoreInfo
     , pdScoreKey       :: ScoreKey
     }
+
+pageDataAlgebra
+  newUserScore_
+  modifyUserScore_
+  pd = case pd of
+         PD_NewUserScore student uname uid assessmentDesc -> newUserScore_ student uname uid assessmentDesc
+         PD_ModifyUserScore student uname uid assessmentDesc score sk -> modifyUserScore_ student uname uid assessmentDesc score sk
     
 newUserScore :: ViewModifyHandler
 newUserScore = ViewModifyHandler scorePage newScorePostHandler
@@ -58,27 +66,49 @@ newScorePostHandler = do
   username <- getParameter $ usernamePrm
   ak <- getParameter $ assessmentKeyPrm
   evConfig <- evConfig <$> userStory (Story.loadAssessment ak)
+  evaluation <- getEvaluation evConfig
+  return $ either id (SaveUserScore username ak) evaluation
+
+getEvaluation :: EvConfig -> ContentHandler (Either UserAction Evaluation)
+getEvaluation evConfig = do
   commentOrResult <-
     evConfigCata
-      (getJSONParam (fieldName evaluationResultField) "No evaluation can be found.")
-      (\_ -> do
-        percentage  <- getParameter evaluationPercentagePrm
-        return . EvCmtResult $ percentageResult (fromIntegral percentage / 100))
-      (do freeForm <- getParameter freeFormEvaluationParam
-          return . EvCmtResult $ freeFormResult freeForm)
-      evConfig
+    (getJSONParam (fieldName evaluationResultField) "No evaluation can be found.")
+    (\_ -> do
+      percentage  <- getParameter evaluationPercentagePrm
+      return . EvCmtResult $ percentageResult (fromIntegral percentage / 100))
+    (do freeForm <- getParameter freeFormEvaluationParam
+        return . EvCmtResult $ freeFormResult freeForm)
+    evConfig
   withEvalOrComment commentOrResult
-    (return $ ErrorMessage $ msg_Evaluation_EmptyCommentAndFreeFormResult "Comments are not supported yet.")
-    (\result -> do
-      let e = Evaluation {
-          evaluationResult = result
-        , writtenEvaluation = ""
-        }
-      return $ SaveUserScore username ak e)
+    (return . Left . ErrorMessage $ msg_Evaluation_EmptyCommentAndFreeFormResult "Comments are not supported yet.")
+    (\result -> return . Right $ Evaluation {
+        evaluationResult = result
+        , writtenEvaluation = ""       
+        })
 
-modifyScorePage = error "modifyScorePage is undefined"
+modifyScorePage :: GETContentHandler
+modifyScorePage = do
+  sk <- getParameter scoreKeyPrm
+  (user,username,assessmentDesc,score) <- userStory $ do
+     username <- Story.usernameOfScore sk
+     user <- Story.loadUser username
+     ak <- Story.assessmentOfScore sk
+     assessmentDesc <- Story.assessmentDesc ak
+     score <- Story.scoreInfo sk
+     return (user,username,assessmentDesc,score)
+  let uname = u_name user
+      uid = u_uid user
+  return . scoreContent $ PD_ModifyUserScore uname username uid assessmentDesc score sk
 
-modifyScorePostHandler = error "modifyScorePostHandler is undefined"
+modifyScorePostHandler :: POSTContentHandler
+modifyScorePostHandler = do
+  sk <- getParameter scoreKeyPrm
+  evConfig <- evConfig <$> userStory (do
+                           ak <- Story.assessmentOfScore sk
+                           Story.loadAssessment ak)
+  evaluation <- getEvaluation evConfig
+  return $ either id (ModifyUserScore sk) evaluation
 
 scoreContent :: PageData -> IHtml
 scoreContent pd = do
@@ -90,7 +120,8 @@ scoreContent pd = do
       maybe mempty (\g -> "Group:" .|. fromString g) (adGroup aDesc)
       "Student:"    .|. fromString (pdStudent pd)
       "Username:"   .|. (uid fromString $ pdUid pd)
-    postForm (routeOf newUserScore) $ do
+    postForm (routeOf handler) $ do
+      view
       evaluationFrame (evConfig as) msg mempty
       submit
     where
@@ -106,12 +137,28 @@ scoreContent pd = do
       submit :: Html
       submit = Bootstrap.submitButtonWithAttr mempty "Submit"
 
-      newUserScore = Pages.newUserScore (adAssessmentKey aDesc) (pdUsername pd) ()
+      handler = pageDataAlgebra
+                  (\_student uname _uid aDesc -> Pages.newUserScore (adAssessmentKey aDesc) uname ())
+                  (\_student _uname _uid _aDesc _score sk -> Pages.modifyUserScore sk ())
+                  pd
+
+      view = pageDataAlgebra
+               (\_student _uname _uid _aDesc -> mempty)
+               (\_student _uname _uid _aDesc score _sk -> Bootstrap.rowColMd12 . H.p . fromString $ scoreText score)
+               pd
+
+      scoreText = scoreInfoAlgebra
+                  "error"
+                  (\_ek result -> 
+                       evResultCata
+                       (binaryCata (resultCata "Passed." "Failed."))
+                       (\p -> let Percentage (Scores [pp]) = p in
+                              (show . round . (* 100)) pp ++ " percent.")
+                       (freeForm id)
+                       result)
 
 evConfig :: Assessment -> EvConfig
 evConfig = assessment (\_title _desc _creation cfg -> cfg)
-
-
 
 evaluationFrame :: EvConfig -> I18N -> Html -> Html
 evaluationFrame evConfig msg content = do

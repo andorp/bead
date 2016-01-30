@@ -170,9 +170,10 @@ htmlAssessmentTable board
           forM_ (sbAssessments board) (scoreIcon msg . ud_username $ userDesc)
 
         scoreIcon :: I18N -> Username -> AssessmentKey -> Html
-        scoreIcon msg username ak = H.td $ case Map.lookup (ak,username) (sbScores board) of
-          Just si -> scoreInfoToIconLink msg (newScoreLink ak username) ("foundLink") si
-          Nothing -> mempty
+        scoreIcon msg username ak = H.td $ scoreInfoToIconLink msg (newScoreLink ak username) modifyLink scoreInfo
+              where (scoreInfo,modifyLink) = case Map.lookup (ak,username) (sbScores board) of
+                                               Just scoreKey -> (maybe Score_Not_Found id (Map.lookup scoreKey (sbScoreInfos board)), modifyScoreLink scoreKey)
+                                               Nothing       -> (Score_Not_Found,"")
 
         newScoreLink ak u = routeOf $ Pages.newUserScore ak u ()
         modifyScoreLink sk = routeOf $ Pages.modifyUserScore sk ()
