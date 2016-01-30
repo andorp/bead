@@ -168,6 +168,7 @@ viewScoreContent sd = do
       maybe mempty (\g -> "Group:" .|. fromString g) (scdGroup sd)
       "Teacher:" .|. (fromString . intercalate ", " . scdTeacher) sd
       "Assessment:" .|. fromString (scdAssessment sd)
+    Bootstrap.rowColMd12 . H.p . fromString . (scoreInfoToText msg) $ scdScore sd
 
 evConfig :: Assessment -> EvConfig
 evConfig = assessment (\_title _desc _creation cfg -> cfg)
