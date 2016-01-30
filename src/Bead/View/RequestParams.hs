@@ -20,7 +20,7 @@ submissionKeyParamName :: IsString s => s
 submissionKeyParamName = fromString $ fieldName submissionKeyField
 
 scoreKeyParamName :: IsString s => s
-scoreKeyParamName = fromString "sk-key"
+scoreKeyParamName = fromString $ fieldName scoreKeyField
 
 evaluationKeyParamName :: IsString s => s
 evaluationKeyParamName = fromString $ fieldName evaluationKeyField

@@ -220,6 +220,13 @@ newtype AssessmentField = AssessmentField { assessFieldName :: String }
 
 assessmentKeyField = AssessmentField "assess-key"
 
+newtype ScoreField = ScoreField { scoreFieldName :: String }
+
+instance SnapFieldName ScoreField where
+    fieldName = fromString . scoreFieldName
+
+scoreKeyField = ScoreField "score-key"
+
 instance SnapFieldName AssessmentField where
   fieldName = fromString . assessFieldName
 

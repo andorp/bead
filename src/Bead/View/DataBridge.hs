@@ -122,7 +122,16 @@ assessmentKeyPrm = Parameter {
   , decode = Just . AssessmentKey
   , name   = fieldName assessmentKeyField
   , decodeError = \m -> printf "Invalid assessment key: %s." m
-  , notFound = "The give assessment key could not be found."
+  , notFound = "The given assessment key could not be found."
+  }
+
+scoreKeyPrm :: Parameter ScoreKey
+scoreKeyPrm = Parameter {
+    encode = scoreKey id
+  , decode = Just . ScoreKey
+  , name = fieldName scoreKeyField
+  , decodeError = \m -> printf "Invalid score key: %s." m
+  , notFound = "The given score key could not be found."
   }
 
 -- Represents the AssignmentKey parameter
