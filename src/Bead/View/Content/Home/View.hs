@@ -147,18 +147,19 @@ htmlAssessmentTable board
   | otherwise = do
       msg <- getI18N
       return $ do
-        Bootstrap.rowColMd12 . H.p $ "Assessments"
+        Bootstrap.rowColMd12 . H.p . fromString . msg $ msg_Home_AssessmentTable_Assessments "Assessments"
         Bootstrap.rowColMd12 . Bootstrap.table $ do
           H.tr $ do
-            H.th . string $ "Name"
-            H.th . string $ "Username"
-            forM_ (zip (sbAssessments board) [1..]) assessmentViewButton
+            H.th . fromString . msg $ msg_Home_AssessmentTable_StudentName "Name"
+            H.th . fromString . msg $ msg_Home_AssessmentTable_Username "Username"
+            forM_ (zip (sbAssessments board) [1..]) (assessmentViewButton msg)
           forM_ (sbUsers board) (userLine msg)
       where
-        assessmentViewButton :: (AssessmentKey,Int) -> Html
-        assessmentViewButton (ak,n) = H.td $ Bootstrap.customButtonLink style "" (assessmentName ak) ("A" ++ show n)
+        assessmentViewButton :: I18N -> (AssessmentKey,Int) -> Html
+        assessmentViewButton msg (ak,n) = H.td $ Bootstrap.customButtonLink style "" (assessmentName ak) (prefix ++ show n)
             where 
               style = [fst ST.groupButtonStyle]
+              prefix = msg $ msg_Home_GroupAssessmentIDPrefix "A"
 
         assessmentName :: AssessmentKey -> String
         assessmentName ak = maybe "" Content.title (Map.lookup ak (sbAssessmentInfos board))
@@ -314,7 +315,7 @@ availableAssignments pd timeconverter studentAssignments
 availableAssessment :: I18N -> (Course, [(AssessmentKey, Maybe ScoreKey, ScoreInfo)]) -> Html
 availableAssessment msg (c, assessments) | null assessments = p $ fromString "There are no assessments registered to this course"
                                          | otherwise = do
-  Bootstrap.rowColMd12 . p $ "Assessments"
+  Bootstrap.rowColMd12 . H.p . fromString . msg $ msg_Home_AssessmentTable_Assessments "Assessments"
   Bootstrap.rowColMd12 . Bootstrap.table $ do
     H.tr (header assessments)
     H.tr $ do
@@ -324,7 +325,9 @@ availableAssessment msg (c, assessments) | null assessments = p $ fromString "Th
       header assessments = H.th mempty >> mapM_ (H.td . assessmentButton) (take (length assessments) [1..])
           where
             assessmentButton :: Int -> Html
-            assessmentButton n = Bootstrap.buttonLink "" ("A" ++ show n)
+            assessmentButton n = Bootstrap.buttonLink "" (prefix ++ show n)
+
+            prefix = msg $ msg_Home_GroupAssessmentIDPrefix "A"
         
       evaluationViewButton :: ((Maybe ScoreKey, ScoreInfo),Int) -> Html
       evaluationViewButton ((Just sk,info),n) = H.td $ scoreInfoToIconLink msg "" viewScoreLink info

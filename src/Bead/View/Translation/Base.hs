@@ -154,6 +154,20 @@ labels =
  , "msg_NewAssignment_NoOfTries"
  , "msg_NewAssignment_FreeFormEvaluation"
 
+
+ , "msg_NewAssessment_Title"
+ , "msg_NewAssessment_Description"
+ , "msg_NewAssessment_UserName"
+ , "msg_NewAssessment_Score"
+ , "msg_NewAssessment_EvaluationType"
+ , "msg_NewAssessment_BinaryEvaluation"
+ , "msg_NewAssessment_PercentageEvaluation"
+ , "msg_NewAssessment_FreeFormEvaluation"
+ , "msg_NewAssessment_FillButton"
+ , "msg_NewAssessment_PreviewButton"
+ , "msg_NewAssessment_GetCsvButton"
+ , "msg_NewAssessment_SaveButton"
+
  , "msg_GroupRegistration_RegisteredCourses"
  , "msg_GroupRegistration_SelectGroup"
  , "msg_GroupRegistration_NoRegisteredCourses"
@@ -396,6 +410,12 @@ labels =
 
  , "msg_Home_SubmissionTable_Accepted"
  , "msg_Home_SubmissionTable_Rejected"
+
+ , "msg_Home_AssessmentTable_Assessments"
+ , "msg_Home_AssessmentTable_StudentName"
+ , "msg_Home_AssessmentTable_Username"
+ , "msg_Home_GroupAssessmentIDPrefix"
+
  , "msg_Home_NonBinaryEvaluation"
  , "msg_Home_HasNoSummary"
  , "msg_Home_NonPercentageEvaluation"
@@ -407,6 +427,17 @@ labels =
  , "msg_Home_CourseAssignmentIDPreffix"
  , "msg_Home_GroupAssignmentIDPreffix"
  , "msg_Home_ThereIsIsolatedAssignment"
+
+ , "msg_NewUserScore_Course"
+ , "msg_NewUserScore_Assessment"
+ , "msg_NewUserScore_Group"
+ , "msg_NewUserScore_Student"
+ , "msg_NewUserScore_UserName"
+ , "msg_NewUserScore_Submit"
+ , "msg_ViewUserScore_Course"
+ , "msg_ViewUserScore_Group"
+ , "msg_ViewUserScore_Teacher"
+ , "msg_ViewUserScore_Assessment"
 
  , "msg_NewTestScript_Name"
  , "msg_NewTestScript_Type"

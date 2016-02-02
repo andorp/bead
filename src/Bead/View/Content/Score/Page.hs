@@ -121,15 +121,15 @@ scoreContent pd = do
   msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 . Bootstrap.table . H.tbody $ do
-      "Course:"     .|. fromString (adCourse aDesc)
-      "Assessment:" .|. fromString aTitle
-      maybe mempty (\g -> "Group:" .|. fromString g) (adGroup aDesc)
-      "Student:"    .|. fromString (pdStudent pd)
-      "Username:"   .|. (uid fromString $ pdUid pd)
+      (msg . msg_NewUserScore_Course $ "Course:" )    .|. fromString (adCourse aDesc)
+      (msg . msg_NewUserScore_Assessment $ "Assessment:") .|. fromString aTitle
+      maybe mempty (\g -> (msg . msg_NewUserScore_Group $ "Group:") .|. fromString g) (adGroup aDesc)
+      (msg . msg_NewUserScore_Student $ "Student:")    .|. fromString (pdStudent pd)
+      (msg . msg_NewUserScore_UserName $ "Username:")   .|. (uid fromString $ pdUid pd)
     postForm (routeOf handler) $ do
       view msg
       evaluationFrame (evConfig as) msg mempty
-      submit
+      submit msg
     where
       aDesc :: AssessmentDesc
       aDesc = pdAssessmentDesc pd
@@ -140,8 +140,8 @@ scoreContent pd = do
       aTitle :: String
       aTitle = assessment (\title _desc _creation _cfg -> title) as
 
-      submit :: Html
-      submit = Bootstrap.submitButtonWithAttr mempty "Submit"
+      submit :: I18N -> Html
+      submit msg = Bootstrap.submitButtonWithAttr mempty (msg . msg_NewUserScore_Submit $ "Submit")
 
       handler = pageDataAlgebra
                   (\_student uname _uid aDesc -> Pages.newUserScore (adAssessmentKey aDesc) uname ())
@@ -164,10 +164,10 @@ viewScoreContent sd = do
   msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 . Bootstrap.table . H.tbody $ do
-      "Course:"   .|. fromString (scdCourse sd)
-      maybe mempty (\g -> "Group:" .|. fromString g) (scdGroup sd)
-      "Teacher:" .|. (fromString . intercalate ", " . scdTeacher) sd
-      "Assessment:" .|. fromString (scdAssessment sd)
+      (msg . msg_ViewUserScore_Course $ "Course:")   .|. fromString (scdCourse sd)
+      maybe mempty (\g -> (msg . msg_ViewUserScore_Group $ "Group:") .|. fromString g) (scdGroup sd)
+      (msg . msg_ViewUserScore_Teacher $ "Teacher:") .|. (fromString . intercalate ", " . scdTeacher) sd
+      (msg . msg_ViewUserScore_Assessment $ "Assessment:") .|. fromString (scdAssessment sd)
     Bootstrap.rowColMd12 . H.p . fromString . (scoreInfoToText msg) $ scdScore sd
 
 evConfig :: Assessment -> EvConfig

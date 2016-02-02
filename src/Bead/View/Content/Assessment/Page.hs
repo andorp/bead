@@ -188,12 +188,12 @@ fillAssessmentTemplate pdata = do
       H.form ! A.method "post" $ do
         Bootstrap.textInputWithDefault "n1" "Title" title
         Bootstrap.textInputWithDefault "n2" "Description" description
-        evConfigSelection selectedConfig
+        evConfigSelection msg selectedConfig
         Bootstrap.formGroup $ fileInput "csv"
         Bootstrap.row $ do
-             Bootstrap.colMd4 previewButton 
-             Bootstrap.colMd4 downloadCsvButton
-             Bootstrap.colMd4 commitButton
+             Bootstrap.colMd4 (previewButton msg)
+             Bootstrap.colMd4 (downloadCsvButton msg)
+             Bootstrap.colMd4 (commitButton msg)
         let csvTable _ _ _ _ scores usernames = do
               previewTable msg usernames scores
               hiddenInput "evaluations" (show scores)
@@ -209,15 +209,15 @@ fillAssessmentTemplate pdata = do
 
   where
     formAction page encType = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "'; form.enctype='", encType, "';"])
-    previewButton = Bootstrap.submitButtonWithAttr
+    previewButton msg = Bootstrap.submitButtonWithAttr
                     (formAction preview "multipart/form-data")
-                    "Preview"
-    downloadCsvButton = Bootstrap.blockButtonLink
+                    (msg . msg_NewAssessment_PreviewButton $ "Preview")
+    downloadCsvButton msg = Bootstrap.blockButtonLink
                         (routeOf getCsv)
-                        "Get CSV"
-    commitButton = Bootstrap.submitButtonWithAttr
+                        (msg . msg_NewAssessment_GetCsvButton $ "Get CSV")
+    commitButton msg = Bootstrap.submitButtonWithAttr
                    (formAction commit "application/x-www-form-urlencoded")
-                   "Commit"
+                   (msg . msg_NewAssessment_SaveButton $ "Commit")
 
     (title,description) = fillDataCata
                             (\_ title description _ -> (title,description))
@@ -258,7 +258,9 @@ previewTable msg usernames evaluations = Bootstrap.table $ do
   header
   tableData
     where 
-      header = H.tr $ H.th "Username" >> H.th "Evaluation"
+      header = H.tr $ H.th username >> H.th score
+          where username = fromString . msg . msg_NewAssessment_UserName $ "Username"
+                score = fromString . msg . msg_NewAssessment_Score $ "Score"
              
       tableData :: H.Html
       tableData = mapM_ tableRow usernames
@@ -286,33 +288,47 @@ readCsv bs = case B.lines bs of
 viewAssessmentPage :: GETContentHandler
 viewAssessmentPage = error "viewAssessmentPage is undefined"
 
-evConfigSelection selected = Bootstrap.selectionWithLabel "evConfig" "Evaluation Type" (== selected) selection 
-    where selection = [ (binaryConfig, "Binary")
-                      , (percentageConfig 0.0, "Percentage")
-                      , (freeFormConfig, "Free form textual")
+evConfigSelection msg selected = Bootstrap.selectionWithLabel "evConfig" evalType (== selected) selection 
+    where selection = [ (binaryConfig, binary)
+                      , (percentageConfig 0.0, percentage)
+                      , (freeFormConfig, freeForm)
                       ]
+          evalType = msg . msg_NewAssessment_EvaluationType $ "Evaluation Type"
+          binary = msg . msg_NewAssessment_BinaryEvaluation $ "Binary"
+          percentage = msg . msg_NewAssessment_PercentageEvaluation $ "Percentage"
+          freeForm = msg . msg_NewAssessment_FreeFormEvaluation $ "Free form textual"
 
 newAssessmentTemplate :: PageDataNew -> IHtml
 newAssessmentTemplate pdata = do
-  _msg <- getI18N
+  msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 $ do      
-      postForm (routeOf assessment) $ do
-        Bootstrap.textInput "n1" "Title" ""
-        Bootstrap.textInput "n2" "Description" ""
-        evConfigSelection binaryConfig
+      postForm (routeOf commitPage) $ do
+        Bootstrap.textInput "n1" (title msg) ""
+        Bootstrap.textInput "n2" (description msg) ""
+        evConfigSelection msg binaryConfig
         hiddenInput "evaluations" (show (M.empty :: M.Map Username Evaluation))
         Bootstrap.row $ do
-             let formAction page = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
-             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction fill) "Fill"
-             Bootstrap.colMd6 $ Bootstrap.submitButtonWithAttr (formAction assessment) "Commit"
+             Bootstrap.colMd6 (fillButton msg)
+             Bootstrap.colMd6 (saveButton msg)
         Bootstrap.turnSelectionsOn
 
   where
-    assessment = case pdata of
+    title msg = msg . msg_NewAssessment_Title $ "Title"
+    description msg = msg . msg_NewAssessment_Description $ "Description"
+
+    fillButton msg = Bootstrap.submitButtonWithAttr (formAction fillPage) fill
+        where fill = msg . msg_NewAssessment_FillButton $ "Fill"
+
+    saveButton msg = Bootstrap.submitButtonWithAttr (formAction commitPage) commit
+        where commit = msg . msg_NewAssessment_SaveButton $ "Commit"
+
+    formAction page = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
+
+    commitPage = case pdata of
                    PD_NewCourseAssessment ck -> Pages.newCourseAssessment ck ()
                    PD_NewGroupAssessment gk  -> Pages.newGroupAssessment gk ()
-    fill = case pdata of
+    fillPage = case pdata of
              PD_NewCourseAssessment ck -> Pages.fillNewCourseAssessment ck ()
              PD_NewGroupAssessment gk  -> Pages.fillNewGroupAssessment gk ()
 
