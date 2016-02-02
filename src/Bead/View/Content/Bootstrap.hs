@@ -250,11 +250,14 @@ passwordInput paramName labelText =
 
 inputForFormControl = H.input ! formControl
 
--- | Creates a text input field only with a defualt value
+-- | Creates a text input field only with a default value
 textInputFieldWithDefault paramName value =
+    optionalTextInputFieldWithDefault paramName value ! A.required ""
+
+-- | Creates an optional text input field onyl with default value
+optionalTextInputFieldWithDefault paramName value =
     H.input ! formControl
             ! type_ "text"
-            ! A.required ""
             ! A.name (fromString paramName)
             ! A.id (fromString paramName)
             ! A.value (fromString value)
@@ -279,6 +282,13 @@ optionalTextInput paramName labelText placeholderText =
             ! A.name (fromString paramName)
             ! A.id (fromString paramName)
             ! A.placeholder (fromString placeholderText)
+
+-- | Creates an optional text input with the given name as id, a given label and a default value
+optionalTextInputWithDefault paramName labelText value =
+    formGroup $ do
+      labelFor paramName labelText
+      optionalTextInputFieldWithDefault paramName value
+               
 
 -- | Creates a text input with the given name as id, a given label and a default value
 textInputWithDefault paramName labelText value =
