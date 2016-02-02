@@ -187,7 +187,7 @@ fillAssessmentTemplate pdata = do
     Bootstrap.rowColMd12 $ do      
       H.form ! A.method "post" $ do
         Bootstrap.textInputWithDefault "n1" "Title" title
-        Bootstrap.textInputWithDefault "n2" "Description" description
+        Bootstrap.optionalTextInputWithDefault "n2" "Description" description
         evConfigSelection msg selectedConfig
         Bootstrap.formGroup $ fileInput "csv"
         Bootstrap.row $ do
@@ -305,7 +305,7 @@ newAssessmentTemplate pdata = do
     Bootstrap.rowColMd12 $ do      
       postForm (routeOf commitPage) $ do
         Bootstrap.textInput "n1" (title msg) ""
-        Bootstrap.textInput "n2" (description msg) ""
+        Bootstrap.optionalTextInput "n2" (description msg) ""
         evConfigSelection msg binaryConfig
         hiddenInput "evaluations" (show (M.empty :: M.Map Username Evaluation))
         Bootstrap.row $ do
