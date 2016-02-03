@@ -194,8 +194,8 @@ fillAssessmentTemplate pdata = do
   return $ do
     Bootstrap.rowColMd12 $ do      
       H.form ! A.method "post" $ do
-        Bootstrap.textInputWithDefault "n1" "Title" title
-        Bootstrap.optionalTextInputWithDefault "n2" "Description" description
+        Bootstrap.textInputWithDefault "n1" (titleLabel msg) title
+        Bootstrap.optionalTextInputWithDefault "n2" (descriptionLabel msg) description
         evConfigSelection msg selectedConfig
         Bootstrap.formGroup $ fileInput "csv"
         Bootstrap.row $ do
@@ -216,6 +216,9 @@ fillAssessmentTemplate pdata = do
         Bootstrap.turnSelectionsOn
 
   where
+    titleLabel msg = msg . msg_NewAssessment_Title $ "Title"
+    descriptionLabel msg = msg . msg_NewAssessment_Description $ "Description"
+
     formAction page encType = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "'; form.enctype='", encType, "';"])
     previewButton msg = Bootstrap.submitButtonWithAttr
                     (formAction preview "multipart/form-data")
