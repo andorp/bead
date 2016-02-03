@@ -90,6 +90,7 @@ pageContent = Pages.constantsP
   fillNewGroupAssessmentPreview
   fillNewCourseAssessment
   fillNewCourseAssessmentPreview
+  modifyAssessment
   viewAssessment
   where
     -- Returns an empty handler that computes an empty I18N Html monadic value

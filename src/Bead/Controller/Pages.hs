@@ -151,6 +151,7 @@ data ViewModifyPage a
   | NewGroupAssignment GroupKey a
   | NewCourseAssignment CourseKey a
   | ModifyAssignment AssignmentKey a
+  | ModifyAssessment AssessmentKey a
   | GroupRegistration a
   | UserDetails a
   | NewTestScript a
@@ -174,6 +175,7 @@ viewModifyPageCata
   newGroupAssignment
   newCourseAssignment
   modifyAssignment
+  modifyAssessment
   groupRegistration
   userDetails
   newTestScript
@@ -195,6 +197,7 @@ viewModifyPageCata
     NewGroupAssignment gk a -> newGroupAssignment gk a
     NewCourseAssignment ck a -> newCourseAssignment ck a
     ModifyAssignment ak a -> modifyAssignment ak a
+    ModifyAssessment ak a -> modifyAssessment ak a
     GroupRegistration a -> groupRegistration a
     UserDetails a -> userDetails a
     NewTestScript a -> newTestScript a
@@ -218,6 +221,7 @@ viewModifyPageValue = viewModifyPageCata
   cid -- newGroupAssignment
   cid -- newCourseAssignment
   cid -- modifyAssignment
+  cid -- modifyAssessment
   id -- groupRegistration
   id -- userDetails
   id -- newTestScript
@@ -364,6 +368,7 @@ modifyEvaluation sk ek = ViewModify . ModifyEvaluation sk ek
 newGroupAssignment gk  = ViewModify . NewGroupAssignment gk
 newCourseAssignment ck = ViewModify . NewCourseAssignment ck
 modifyAssignment ak    = ViewModify . ModifyAssignment ak
+modifyAssessment ak    = ViewModify . ModifyAssessment ak
 groupRegistration      = ViewModify . GroupRegistration
 userDetails            = ViewModify . UserDetails
 newTestScript          = ViewModify . NewTestScript
@@ -439,6 +444,7 @@ pageCata
   fillNewGroupAssessmentPreview
   fillNewCourseAssessment
   fillNewCourseAssessmentPreview
+  modifyAssessment
   viewAssessment
   p = case p of
     (View (Login a)) -> login a
@@ -490,6 +496,7 @@ pageCata
     (UserView (FillNewGroupAssessmentPreview gk a)) -> fillNewGroupAssessmentPreview gk a
     (UserView (FillNewCourseAssessment ck a)) -> fillNewCourseAssessment ck a
     (UserView (FillNewCourseAssessmentPreview ck a)) -> fillNewCourseAssessmentPreview ck a
+    (ViewModify (ModifyAssessment ak a)) -> modifyAssessment ak a
     (View (ViewAssessment ak a)) -> viewAssessment ak a
 
 -- Constants that attached each of the page constructor
@@ -543,6 +550,7 @@ constantsP
   fillNewGroupAssessmentPreview_
   fillNewCourseAssessment_
   fillNewCourseAssessmentPreview_
+  modifyAssessment_
   viewAssessment_
   = pageCata
       (c $ login login_)
@@ -594,6 +602,7 @@ constantsP
       (\gk _ -> fillNewGroupAssessmentPreview gk fillNewGroupAssessmentPreview_)
       (\ck _ -> fillNewCourseAssessment ck fillNewCourseAssessment_)
       (\ck _ -> fillNewCourseAssessmentPreview ck fillNewCourseAssessmentPreview_)
+      (\ak _ -> modifyAssessment ak modifyAssessment_)
       (\ak _ -> viewAssessment ak viewAssessment_)
   where
     c = const
@@ -649,6 +658,7 @@ liftsP
   fillNewGroupAssessmentPreview_
   fillNewCourseAssessment_
   fillNewCourseAssessmentPreview_
+  modifyAssessment_
   viewAssessment_
   = pageCata
       (login . login_)
@@ -700,6 +710,7 @@ liftsP
       (\gk a -> fillNewGroupAssessmentPreview gk (fillNewGroupAssessmentPreview_ gk a))
       (\ck a -> fillNewCourseAssessment ck (fillNewCourseAssessment_ ck a))
       (\ck a -> fillNewCourseAssessmentPreview ck (fillNewCourseAssessmentPreview_ ck a))
+      (\ak a -> modifyAssessment ak (modifyAssessment_ ak a))
       (\ak a -> viewAssessment ak (viewAssessment_ ak a))
 
 isLogin (View (Login _)) = True
@@ -845,6 +856,9 @@ isFillNewCourseAssessment _ = False
 isFillNewCourseAssessmentPreview (UserView (FillNewCourseAssessmentPreview _ _)) = True
 isFillNewCourseAssessmentPreview _ = False
 
+isModifyAssessment (ViewModify (ModifyAssessment _ _)) = True
+isModifyAssessment _ = False
+
 isViewAssessment (View (ViewAssessment _ _)) = True
 isViewAssessment _ = False
 
@@ -890,6 +904,7 @@ groupAdminPages = [
   , isNewGroupAssessment
   , isFillNewGroupAssessment
   , isFillNewGroupAssessmentPreview
+  , isModifyAssessment
   , isViewAssessment
   , isGetGroupCsv
   ]
@@ -924,6 +939,7 @@ courseAdminPages = [
   , isFillNewCourseAssessmentPreview
   , isFillNewGroupAssessment
   , isFillNewGroupAssessmentPreview
+  , isModifyAssessment
   , isGetCourseCsv
   , isGetGroupCsv
   ]
@@ -1014,6 +1030,7 @@ parentPage = pageCata'
       (const home) -- newGroupAssignment
       (const home) -- newCourseAssignment
       (const home) -- modifyAssignment
+      (const home) -- modifyAssessment
       home -- groupRegistration
       administration -- userDetails
       home           -- newTestScript
@@ -1122,6 +1139,7 @@ pageGen = oneof [
         , fillNewGroupAssessmentPreview <$> groupKey <*> unit
         , fillNewCourseAssessment <$> courseKey <*> unit
         , fillNewCourseAssessmentPreview <$> courseKey <*> unit
+        , modifyAssessment <$> assessmentKey <*> unit
         , viewAssessment <$> assessmentKey <*> unit
         ]
 

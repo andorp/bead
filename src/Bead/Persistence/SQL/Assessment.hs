@@ -52,7 +52,8 @@ modifyAssessment :: Domain.AssessmentKey -> Domain.Assessment -> Persist ()
 modifyAssessment key assessment = do
   update (toEntityKey key) $ Domain.withAssessment assessment
     $ \title desc _created cfg ->
-        [ AssessmentDescription =. (Text.pack . encodeJSON $ (title,desc))
+        [ AssessmentTitle       =. Text.pack title
+        , AssessmentDescription =. Text.pack desc
         , AssessmentEvalConfig  =. encodeEvalConfig cfg
         ]
 

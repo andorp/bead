@@ -6,6 +6,7 @@ module Bead.View.Content.Assessment.Page (
   , fillNewGroupAssessmentPreview
   , fillNewCourseAssessment
   , fillNewCourseAssessmentPreview
+  , modifyAssessment
   , viewAssessment
   ) where
 
@@ -43,6 +44,7 @@ fillNewGroupAssessment = UserViewHandler fillNewGroupAssessmentPage
 fillNewGroupAssessmentPreview = UserViewHandler fillNewGroupAssessmentPreviewPage
 fillNewCourseAssessment = UserViewHandler fillNewCourseAssessmentPage
 fillNewCourseAssessmentPreview = UserViewHandler fillNewCourseAssessmentPreviewPage
+modifyAssessment = ViewModifyHandler modifyAssessmentPage postModifyAssessment
 viewAssessment = ViewHandler viewAssessmentPage
 
 data PageDataNew  = PD_NewCourseAssessment CourseKey
@@ -51,6 +53,12 @@ data PageDataFill = PD_FillCourseAssessment CourseKey String String EvConfig
                   | PD_FillGroupAssessment GroupKey String String EvConfig
                   | PD_PreviewCourseAssessment CourseKey String String EvConfig (M.Map Username Evaluation) [Username]
                   | PD_PreviewGroupAssessment GroupKey String String EvConfig (M.Map Username Evaluation) [Username]
+
+data PageDataModify = PD_PageDataModify {
+    aKey             :: AssessmentKey
+  , as               :: Assessment
+  , isScoreSubmitted :: Bool
+  }
 
 fillDataCata
   fillCourseAssessment
@@ -333,3 +341,74 @@ newAssessmentTemplate pdata = do
              PD_NewGroupAssessment gk  -> Pages.fillNewGroupAssessment gk ()
 
 
+modifyAssessmentPage :: GETContentHandler
+modifyAssessmentPage = do
+  ak <- getParameter assessmentKeyPrm
+  (as,scoreSubmitted) <- userStory $ do
+                           as <- Story.loadAssessment ak
+                           scoreSubmitted <- Story.isThereAScore ak
+                           return (as,scoreSubmitted)
+  return . modifyAssessmentTemplate $ PD_PageDataModify ak as scoreSubmitted
+
+postModifyAssessment :: POSTContentHandler
+postModifyAssessment = do
+  ak <- getParameter assessmentKeyPrm
+  newTitle <- getParameter titleParam
+  newDesc <- getParameter descriptionParam
+  (as,scoreSubmitted) <- userStory $ do
+                           as <- Story.loadAssessment ak
+                           scoreSubmitted <- Story.isThereAScore ak
+                           return (as,scoreSubmitted)
+  evConfig <- if scoreSubmitted
+              then return (evaluationCfg as)
+              else getParameter evConfigParam
+  let a = as { title         = newTitle
+             , description   = newDesc
+             , evaluationCfg = evConfig
+             }
+  return $ ModifyAssessment ak a
+
+modifyAssessmentTemplate :: PageDataModify -> IHtml
+modifyAssessmentTemplate pdata = do
+  msg <- getI18N
+  return $ do
+    Bootstrap.rowColMd12 $ do      
+      postForm (routeOf commitPage) $ do
+        Bootstrap.textInputWithDefault "n1" (title msg) aTitle
+        Bootstrap.optionalTextInputWithDefault "n2" (description msg) aDesc
+        if readOnly
+          then Bootstrap.formGroup $ do
+            showEvaluationType msg evConfig
+            fromString . msg $ msg_NewAssessment_EvalTypeWarn "The evaluation type can not be modified, there is a score for the assessment."
+          else
+            evConfigSelection msg evConfig
+        Bootstrap.rowColMd12 $ saveButton msg
+        Bootstrap.turnSelectionsOn
+    where
+      title msg = msg . msg_NewAssessment_Title $ "Title"
+      description msg = msg . msg_NewAssessment_Description $ "Description"
+
+      aTitle,aDesc :: String
+      evConfig     :: EvConfig
+      (aTitle,aDesc,evConfig) = assessment (\title desc _creation cfg -> (title,desc,cfg)) (as pdata)
+
+      readOnly :: Bool
+      readOnly = isScoreSubmitted pdata
+                                
+      showEvaluationType msg eType =
+        Bootstrap.readOnlyTextInputWithDefault ""
+          (msg $ msg_NewAssessment_EvaluationType "Evaluation Type")
+          (evConfigCata
+            (fromString . msg $ msg_NewAssessment_BinaryEvaluation "Binary")
+            (const . fromString . msg $ msg_NewAssessment_PercentageEvaluation "Percentage")
+            (fromString . msg $ msg_NewAssessment_FreeFormEvaluation "Free form textual")
+            eType)
+
+
+      saveButton msg = Bootstrap.submitButtonWithAttr mempty commit
+          where commit = msg . msg_NewAssessment_SaveButton $ "Commit"
+                     
+      commitPage = Pages.modifyAssessment (aKey pdata) ()
+
+
+      

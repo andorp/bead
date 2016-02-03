@@ -63,6 +63,7 @@ module Bead.View.RouteOf (
   , fillNewGroupAssessmentPreviewPath
   , fillNewCourseAssessmentPath
   , fillNewCourseAssessmentPreviewPath
+  , modifyAssessmentPath
   , viewAssessmentPath
   , staticPath
   , pageRequestParams
@@ -243,6 +244,9 @@ fillNewCourseAssessmentPath = "/fill-new-course-assessment"
 fillNewCourseAssessmentPreviewPath :: RoutePath
 fillNewCourseAssessmentPreviewPath = "/fill-new-course-assessment-preview"
 
+modifyAssessmentPath :: RoutePath
+modifyAssessmentPath = "/modify-assessment"
+
 viewAssessmentPath :: RoutePath
 viewAssessmentPath = "/view-assessment"
 
@@ -304,6 +308,7 @@ pageRoutePath = pfmap id id id id id . r where
     fillNewGroupAssessmentPreviewPath
     fillNewCourseAssessmentPath
     fillNewCourseAssessmentPreviewPath
+    modifyAssessmentPath
     viewAssessmentPath
 
 type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam] [ReqParam]
@@ -360,6 +365,7 @@ pageRequestParams = liftsP
   (\gk _ -> [requestParam gk]) -- fillNewGroupAssessmentPreview
   (\ck _ -> [requestParam ck]) -- fillNewCourseAssessment
   (\ck _ -> [requestParam ck]) -- fillNewCourseAssessmentPreview
+  (\ak _ -> [requestParam ak]) -- modifyAssessment
   (\ak _ -> [requestParam ak]) -- viewAssessment  
     where
       c = const

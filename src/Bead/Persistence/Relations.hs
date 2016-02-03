@@ -13,11 +13,12 @@ module Bead.Persistence.Relations (
   , userSubmissionDesc
   , userLastSubmissionInfo
   , courseOrGroupOfAssignment
+  , courseOrGroupOfAssessment
   , courseNameAndAdmins
   , administratedGroupsWithCourseName
   , groupsOfUsersCourse
   , removeOpenedSubmission
-  , deleteUserFromCourse -- Deletes a user from a course, searching the group id for the unsubscription
+  , deleteUserFromCourse -- Deletes a user from a course, searching the roup id for the unsubscription
   , isThereASubmissionForGroup -- Checks if the user submitted any solutions for the group
   , isThereASubmissionForCourse -- Checks if the user submitted any solutions for the course
   , testScriptInfo -- Calculates the test script information for the given test key

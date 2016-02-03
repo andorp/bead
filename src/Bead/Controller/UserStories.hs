@@ -6,6 +6,7 @@ module Bead.Controller.UserStories where
 import           Bead.Domain.Entities hiding (name, uid)
 import qualified Bead.Domain.Entities as Entity (name, uid)
 import qualified Bead.Domain.Entity.Assignment as Assignment
+import qualified Bead.Domain.Entity.Assessment as Assessment
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Controller.ServiceContext
@@ -748,6 +749,27 @@ createCourseAssessment ck a = logAction INFO ("creates assessment for course " +
   isAdministratedCourse ck
   persistence (Persist.saveCourseAssessment ck a)
 
+modifyAssessment :: AssessmentKey -> Assessment -> UserStory ()
+modifyAssessment ak a = logAction INFO ("modifies assessment " ++ show ak) $ do
+  authorize P_Open P_Assessment
+  authorize P_Modify P_Assessment
+  isAdministratedAssessment ak
+  persistence $ do
+    hasScore <- isThereAScorePersist ak
+    new <- if hasScore
+             then do
+               -- Overwrite the assignment type with the old one
+               -- if there is a score for the given assessment
+               evConfig <- Assessment.evaluationCfg <$> Persist.loadAssessment ak
+               return (a { Assessment.evaluationCfg = evConfig})
+             else return a
+    Persist.modifyAssessment ak new
+    when (hasScore && Assessment.evaluationCfg a /= Assessment.evaluationCfg new) $
+      void . return . putStatusMessage . msg_UserStory_AssessmentEvalTypeWarning $ concat
+        [ "The evaluation type of the assessment is not modified. "
+        , "A score is already submitted."
+        ]
+
 loadAssessment :: AssessmentKey -> UserStory Assessment
 loadAssessment ak = logAction INFO ("loads assessment " ++ show ak) $ do
   authorize P_Open P_Assessment
@@ -765,6 +787,13 @@ usernameOfScore sk = logAction INFO ("looks up the user of score " ++ show sk) $
 assessmentOfScore :: ScoreKey -> UserStory AssessmentKey
 assessmentOfScore sk = logAction INFO ("looks up the assessment of score " ++ show sk) $ do
   persistence (Persist.assessmentOfScore sk)
+
+isThereAScorePersist :: AssessmentKey -> Persist Bool
+isThereAScorePersist ak = not . null <$> Persist.scoresOfAssessment ak
+
+isThereAScore :: AssessmentKey -> UserStory Bool
+isThereAScore ak = logAction INFO ("checks whether there is a score for the assessment " ++ show ak) $
+  persistence (isThereAScorePersist ak)
 
 scoreInfo :: ScoreKey -> UserStory ScoreInfo
 scoreInfo sk = logAction INFO ("loads score information of score " ++ show sk) $ do
@@ -1373,6 +1402,14 @@ isAdministratedAssignment = guard
   "The user tries to access an assignment (%s) which is not administrated by him."
   (userError nonAdministratedAssignment)
 
+-- Checks if the given assessment is administrated by the actual user and
+-- throws redirects to the error page if not, otherwise do nothing
+isAdministratedAssessment :: AssessmentKey -> UserStory ()
+isAdministratedAssessment = guard 
+  Persist.isAdministratedAssessment
+  "User tries to modify the assessment (%s) which is not administrated by him."
+  (userError nonAdministratedAssessment)
+
 -- Checks if the given assignment is an assignment of a course or group that
 -- the users attend otherwise, renders the error page
 isUsersAssignment :: AssignmentKey -> UserStory ()
@@ -1486,6 +1523,7 @@ persistence m = do
 nonAdministratedCourse = msg_UserStoryError_NonAdministratedCourse "The course is not administrated by you"
 nonAdministratedGroup  = msg_UserStoryError_NonAdministratedGroup "This group is not administrated by you."
 nonAdministratedAssignment = msg_UserStoryError_NonAdministratedAssignment "This assignment is not administrated by you."
+nonAdministratedAssessment = msg_UserStoryError_NonAdministratedAssessment "This assessment is not administrated by you."
 nonAdministratedSubmission = msg_UserStoryError_NonAdministratedSubmission "The submission is not administrated by you."
 nonAdministratedTestScript = msg_UserStoryError_NonAdministratedTestScript "The test script is not administrated by you."
 nonRelatedAssignment = msg_UserStoryError_NonRelatedAssignment "The assignment is not belongs to you."

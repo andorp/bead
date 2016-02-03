@@ -167,6 +167,7 @@ labels =
  , "msg_NewAssessment_PreviewButton"
  , "msg_NewAssessment_GetCsvButton"
  , "msg_NewAssessment_SaveButton"
+ , "msg_NewAssessment_EvalTypeWarn"
 
  , "msg_GroupRegistration_RegisteredCourses"
  , "msg_GroupRegistration_SelectGroup"
@@ -480,6 +481,7 @@ labels =
  , "msg_UserStory_ModifyTestScriptIsDone"
  , "msg_UserStory_AlreadyEvaluated"
  , "msg_UserStory_EvalTypeWarning"
+ , "msg_UserStory_AssessmentEvalTypeWarning"
 
  , "msg_UserStoryError_UnknownError"
  , "msg_UserStoryError_Message"
@@ -501,6 +503,7 @@ labels =
  , "msg_UserStoryError_NonAdministratedCourse"
  , "msg_UserStoryError_NonAdministratedGroup"
  , "msg_UserStoryError_NonAdministratedAssignment"
+ , "msg_UserStoryError_NonAdministratedAssessment"
  , "msg_UserStoryError_NonRelatedAssignment"
  , "msg_UserStoryError_NonAdministratedSubmission"
  , "msg_UserStoryError_NonAdministratedTestScript"
@@ -557,6 +560,7 @@ labels =
  , "msg_LinkText_NewCourseAssessment"
  , "msg_LinkText_GroupAssessmentPreview"
  , "msg_LinkText_CourseAssessmentPreview"
+ , "msg_LinkText_ModifyAssessment"
  , "msg_LinkText_ViewAssessment"
 
  , "msg_TestScriptTypeSimple"

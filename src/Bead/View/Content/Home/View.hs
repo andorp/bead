@@ -156,10 +156,11 @@ htmlAssessmentTable board
           forM_ (sbUsers board) (userLine msg)
       where
         assessmentViewButton :: I18N -> (AssessmentKey,Int) -> Html
-        assessmentViewButton msg (ak,n) = H.td $ Bootstrap.customButtonLink style "" (assessmentName ak) (prefix ++ show n)
+        assessmentViewButton msg (ak,n) = H.td $ Bootstrap.customButtonLink style modifyLink (assessmentName ak) (prefix ++ show n)
             where 
               style = [fst ST.groupButtonStyle]
               prefix = msg $ msg_Home_GroupAssessmentIDPrefix "A"
+              modifyLink = routeOf $ Pages.modifyAssessment ak ()
 
         assessmentName :: AssessmentKey -> String
         assessmentName ak = maybe "" Content.title (Map.lookup ak (sbAssessmentInfos board))
