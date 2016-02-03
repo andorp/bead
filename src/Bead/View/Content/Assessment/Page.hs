@@ -199,7 +199,7 @@ fillAssessmentTemplate pdata = do
         evConfigSelection msg selectedConfig
         Bootstrap.formGroup $ fileInput "csv"
         Bootstrap.row $ do
-             Bootstrap.colMd4 (previewButton msg)
+             Bootstrap.colMd4 (previewButton msg ! A.disabled "")
              Bootstrap.colMd4 (downloadCsvButton msg)
              Bootstrap.colMd4 (commitButton msg)
         let csvTable _ _ _ _ scores usernames = do
@@ -213,15 +213,18 @@ fillAssessmentTemplate pdata = do
           csvTable
           csvTable
           pdata
+        enablePreviewButton
         Bootstrap.turnSelectionsOn
 
   where
     titleLabel msg = msg . msg_NewAssessment_Title $ "Title"
     descriptionLabel msg = msg . msg_NewAssessment_Description $ "Description"
 
+    formAction :: Pages.PageDesc -> String -> H.Attribute
     formAction page encType = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "'; form.enctype='", encType, "';"])
+                              
     previewButton msg = Bootstrap.submitButtonWithAttr
-                    (formAction preview "multipart/form-data")
+                    (formAction preview "multipart/form-data" <> A.id "preview")
                     (msg . msg_NewAssessment_PreviewButton $ "Preview")
     downloadCsvButton msg = Bootstrap.blockButtonLink
                         (routeOf getCsv)
@@ -229,6 +232,12 @@ fillAssessmentTemplate pdata = do
     commitButton msg = Bootstrap.submitButtonWithAttr
                    (formAction commit "application/x-www-form-urlencoded")
                    (msg . msg_NewAssessment_SaveButton $ "Commit")
+
+    enablePreviewButton = H.script . fromString $ unwords
+                            [ "document.getElementById('csv').onchange = function() {"
+                            , "  document.getElementById('preview').disabled = false;"
+                            , "};"
+                            ]
 
     (title,description) = fillDataCata
                             (\_ title description _ -> (title,description))
