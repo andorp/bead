@@ -431,6 +431,7 @@ labels =
 
  , "msg_NewUserScore_Course"
  , "msg_NewUserScore_Assessment"
+ , "msg_NewUserScore_Description"
  , "msg_NewUserScore_Group"
  , "msg_NewUserScore_Student"
  , "msg_NewUserScore_UserName"
@@ -439,6 +440,7 @@ labels =
  , "msg_ViewUserScore_Group"
  , "msg_ViewUserScore_Teacher"
  , "msg_ViewUserScore_Assessment"
+ , "msg_ViewUserScore_Description"
 
  , "msg_NewTestScript_Name"
  , "msg_NewTestScript_Type"

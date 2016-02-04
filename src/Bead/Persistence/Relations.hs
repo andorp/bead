@@ -636,7 +636,6 @@ scoreDesc :: ScoreKey -> Persist ScoreDesc
 scoreDesc sk = do
   ak <- assessmentOfScore sk
   as <- loadAssessment ak
-  let asName = title as
   info <- scoreInfo sk
   courseOrGroup <- courseOrGroupOfAssessment ak
   (course,group,teachers) <- case courseOrGroup of
@@ -650,7 +649,7 @@ scoreDesc sk = do
         course <- loadCourse ck
         teachers <- groupAdmins gk
         return (courseName course,Just . groupName $ group,teachers)
-  return $ ScoreDesc course group (map (usernameCata id) teachers) info asName
+  return $ ScoreDesc course group (map (usernameCata id) teachers) info as
 
 assessmentDesc :: AssessmentKey -> Persist AssessmentDesc
 assessmentDesc ak = do

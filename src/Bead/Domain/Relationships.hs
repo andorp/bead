@@ -473,7 +473,7 @@ data ScoreDesc = ScoreDesc {
     , scdGroup      :: Maybe String
     , scdTeacher    :: [String]
     , scdScore      :: ScoreInfo
-    , scdAssessment :: String
+    , scdAssessment :: Assessment
     }
 
 scoreDescPermissions = ObjectPermissions [

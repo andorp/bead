@@ -20,6 +20,7 @@ import           Text.Blaze.Html5 (Html,Attribute,(!))
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import           Text.Printf
+import           Control.Monad (when)
 import           Data.Either (either)
 import           Data.List (intercalate)
 import           Data.String (fromString)
@@ -121,9 +122,10 @@ scoreContent pd = do
   msg <- getI18N
   return $ do
     Bootstrap.rowColMd12 . Bootstrap.table . H.tbody $ do
-      (msg . msg_NewUserScore_Course $ "Course:" )    .|. fromString (adCourse aDesc)
+      (msg . msg_NewUserScore_Course $ "Course:" )    .|. fromString aCourse
       (msg . msg_NewUserScore_Assessment $ "Assessment:") .|. fromString aTitle
-      maybe mempty (\g -> (msg . msg_NewUserScore_Group $ "Group:") .|. fromString g) (adGroup aDesc)
+      when (not . null $ aDesc) $ (msg . msg_NewUserScore_Description $ "Description:") .|. fromString aDesc
+      maybe mempty (\g -> (msg . msg_NewUserScore_Group $ "Group:") .|. fromString g) aGroup
       (msg . msg_NewUserScore_Student $ "Student:")    .|. fromString (pdStudent pd)
       (msg . msg_NewUserScore_UserName $ "Username:")   .|. (uid fromString $ pdUid pd)
     postForm (routeOf handler) $ do
@@ -131,14 +133,17 @@ scoreContent pd = do
       evaluationFrame (evConfig as) msg mempty
       submit msg
     where
-      aDesc :: AssessmentDesc
-      aDesc = pdAssessmentDesc pd
+      aCourse :: String
+      aCourse = adCourse . pdAssessmentDesc $ pd
+
+      aGroup :: Maybe String
+      aGroup = adGroup . pdAssessmentDesc $ pd
+
+      aTitle,aDesc :: String
+      (aTitle,aDesc) = assessment (\title desc _creation _cfg -> (title,desc)) as
 
       as :: Assessment
-      as = adAssessment aDesc
-
-      aTitle :: String
-      aTitle = assessment (\title _desc _creation _cfg -> title) as
+      as = adAssessment . pdAssessmentDesc $ pd
 
       submit :: I18N -> Html
       submit msg = Bootstrap.submitButtonWithAttr mempty (msg . msg_NewUserScore_Submit $ "Submit")
@@ -167,8 +172,13 @@ viewScoreContent sd = do
       (msg . msg_ViewUserScore_Course $ "Course:")   .|. fromString (scdCourse sd)
       maybe mempty (\g -> (msg . msg_ViewUserScore_Group $ "Group:") .|. fromString g) (scdGroup sd)
       (msg . msg_ViewUserScore_Teacher $ "Teacher:") .|. (fromString . intercalate ", " . scdTeacher) sd
-      (msg . msg_ViewUserScore_Assessment $ "Assessment:") .|. fromString (scdAssessment sd)
+      (msg . msg_ViewUserScore_Assessment $ "Assessment:") .|. fromString aTitle
+      when (not . null $ aDesc) $
+        (msg . msg_ViewUserScore_Description $ "Description:") .|. fromString aDesc
     Bootstrap.rowColMd12 . H.p . fromString . (scoreInfoToText msg) $ scdScore sd
+  where 
+    aTitle,aDesc :: String
+    (aTitle,aDesc) = assessment (\title desc _creation _cfg -> (title,desc)) (scdAssessment sd)
 
 evConfig :: Assessment -> EvConfig
 evConfig = assessment (\_title _desc _creation cfg -> cfg)
