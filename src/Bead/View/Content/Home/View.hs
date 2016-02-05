@@ -311,7 +311,7 @@ availableAssignments pd timeconverter studentAssignments
 
 -- assessment table for students
 availableAssessment :: I18N -> (Course, [(AssessmentKey, Assessment, Maybe ScoreKey, ScoreInfo)]) -> Html
-availableAssessment msg (c, assessments) | null assessments = p $ fromString "There are no assessments registered to this course"
+availableAssessment msg (c, assessments) | null assessments = mempty
                                          | otherwise = do
   Bootstrap.rowColMd12 . H.p . fromString . msg $ msg_Home_AssessmentTable_Assessments "Assessments"
   Bootstrap.rowColMd12 . Bootstrap.table $ do
