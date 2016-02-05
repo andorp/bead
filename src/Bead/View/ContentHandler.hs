@@ -6,6 +6,7 @@ module Bead.View.ContentHandler (
   , userStory
   , registrationStory
   , getParameter
+  , getParameterWithDefault
   , getParameterValues -- Calculates a list of values for the given parameter
   , getParameterOrError
   , getOptionalParameter -- Calculates the value of the given parameter if it is defined
@@ -232,6 +233,16 @@ getParameter param = do
   maybe
     (throwError . strMsg $ notFound param) -- TODO: I18N
     (decodeParamValue param)
+    reqParam
+
+getParameterWithDefault :: a -> Parameter a -> ContentHandler' b a
+getParameterWithDefault defValue param = do
+  reqParam <- getParam . B.pack . name $ param
+  maybe
+    (throwError . strMsg $ notFound param) -- TODO: I18N
+    (\bs -> if (B.null bs)
+              then return defValue
+              else (decodeParamValue param bs))
     reqParam
 
 -- Calculates a list of values named and decoded by the given parameter
