@@ -25,6 +25,7 @@ module Bead.Persistence.Relations (
   , submissionLimitOfAssignment
   , scoreBoards
   , scoreInfo
+  , assessmentDesc
   , userAssessmentKeys
 #ifdef TEST
   , persistRelationsTests
@@ -630,6 +631,32 @@ scoreBoard key = do
                        user <- usernameOfScore scoreKey
                        info <- scoreInfo scoreKey
                        return $ Map.insert (assessment,user) info board
+
+assessmentDesc :: AssessmentKey -> Persist AssessmentDesc
+assessmentDesc ak = do
+  courseOrGroup <- courseOrGroupOfAssessment ak
+  (course,group) <- case courseOrGroup of
+    Left ck -> do
+      course <- loadCourse ck
+      return (courseName course,Nothing)
+    Right gk -> do
+      group <- loadGroup gk
+      ck <- courseOfGroup gk
+      course <- loadCourse ck      
+      return (courseName course,Just . groupName $ group)
+  assessment <- loadAssessment ak
+  return $ AssessmentDesc course group ak assessment
+
+courseOrGroupOfAssessment :: AssessmentKey -> Persist (Either CourseKey GroupKey)
+courseOrGroupOfAssessment ak = do
+  maybeGk <- groupOfAssessment ak
+  case maybeGk of
+    Just gk -> return . Right $ gk
+    Nothing -> do
+      maybeCk <- courseOfAssessment ak
+      case maybeCk of
+        Just ck -> return . Left $ ck
+        Nothing -> error $ "Impossible: No course or groupkey was found for the assessment:" ++ show ak
 
 -- Produces a map from the user's courses to set of every assessment of the course. The map is empty if the user is not subscribed to groups or courses.
 -- Per group assessments are included.

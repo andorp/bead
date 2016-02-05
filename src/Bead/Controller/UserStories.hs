@@ -748,6 +748,24 @@ createCourseAssessment ck a = logAction INFO ("creates assessment for course " +
   isAdministratedCourse ck
   persistence (Persist.saveCourseAssessment ck a)
 
+loadAssessment :: AssessmentKey -> UserStory Assessment
+loadAssessment ak = logAction INFO ("loads assessment " ++ show ak) $ do
+  authorize P_Open P_Assessment
+  persistence (Persist.loadAssessment ak)
+
+assessmentDesc :: AssessmentKey -> UserStory AssessmentDesc
+assessmentDesc ak = logAction INFO ("loads information of assessment " ++ show ak) $ do
+  -- todo: authorize
+  persistence (Persist.assessmentDesc ak)
+
+saveUserScore :: Username -> AssessmentKey -> Evaluation -> UserStory ScoreKey
+saveUserScore u ak evaluation = logAction INFO ("saves user score of " ++ show u ++ " for assessment " ++ show ak) $ do
+  authorize P_Open P_Assessment
+  persistence $ do
+    sk <- Persist.saveScore u ak (Score ())
+    Persist.saveScoreEvaluation sk evaluation
+    return sk
+
 saveScoresOfCourseAssessment :: CourseKey -> Assessment -> Map Username Evaluation -> UserStory ()
 saveScoresOfCourseAssessment ck a evaluations = do
   ak <- createCourseAssessment ck a

@@ -456,6 +456,13 @@ data ScoreBoard =
     }
   deriving (Eq, Show)
 
+data AssessmentDesc = AssessmentDesc {
+      adCourse        :: String
+    , adGroup         :: Maybe String
+    , adAssessmentKey :: AssessmentKey
+    , adAssessment    :: Assessment
+    }
+
 scoreBoardPermissions = ObjectPermissions
   [ (P_Open, P_Group), (P_Open, P_Assessment) ]
 

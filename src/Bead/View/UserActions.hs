@@ -7,6 +7,7 @@ import           Bead.Domain.Relationships
 import           Bead.View.Translation
 
 import           Data.Map (Map)
+import           Control.Monad (void)
 
 -- | The user can preform the following actions on the user interface
 data UserAction
@@ -45,6 +46,7 @@ data UserAction
   | CreateCourseAssessment CourseKey Assessment
 
   -- Scores
+  | SaveUserScore Username AssessmentKey Evaluation
   | SaveScoresOfGroupAssessment GroupKey Assessment (Map Username Evaluation)
   | SaveScoresOfCourseAssessment CourseKey Assessment (Map Username Evaluation)
 
@@ -84,6 +86,7 @@ userStoryFor (CreateCourseAssignment ck a tc) = Story.createCourseAssignment ck 
 userStoryFor (CreateGroupAssessment gk a) = Story.createGroupAssessment gk a >> return ()
 userStoryFor (CreateCourseAssessment ck a) = Story.createCourseAssessment ck a >> return ()
 userStoryFor (ModifyAssignment ak a tm) = Story.modifyAssignment ak a tm
+userStoryFor (SaveUserScore u ak evaluation) = void $ Story.saveUserScore u ak evaluation
 userStoryFor (SaveScoresOfCourseAssessment ck a evaluations) = Story.saveScoresOfCourseAssessment ck a evaluations
 userStoryFor (SaveScoresOfGroupAssessment gk a evaluations) = Story.saveScoresOfGroupAssessment gk a evaluations
 userStoryFor (NewSubmission ak s)    = Story.submitSolution ak s >> return ()
