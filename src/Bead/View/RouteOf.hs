@@ -59,9 +59,7 @@ module Bead.View.RouteOf (
   , getGroupCsvPath
   , newGroupAssessmentPath
   , newCourseAssessmentPath
-  , fillNewGroupAssessmentPath
   , fillNewGroupAssessmentPreviewPath
-  , fillNewCourseAssessmentPath
   , fillNewCourseAssessmentPreviewPath
   , modifyAssessmentPath
   , viewAssessmentPath
@@ -233,13 +231,8 @@ newGroupAssessmentPath = "/new-group-assessment"
 newCourseAssessmentPath :: RoutePath
 newCourseAssessmentPath = "/new-course-assessment"
 
-fillNewGroupAssessmentPath :: RoutePath
-fillNewGroupAssessmentPath = "/fill-new-group-assessment"
-
 fillNewGroupAssessmentPreviewPath :: RoutePath
 fillNewGroupAssessmentPreviewPath = "/fill-new-group-assessment-preview"
-fillNewCourseAssessmentPath :: RoutePath
-fillNewCourseAssessmentPath = "/fill-new-course-assessment"
 
 fillNewCourseAssessmentPreviewPath :: RoutePath
 fillNewCourseAssessmentPreviewPath = "/fill-new-course-assessment-preview"
@@ -304,9 +297,7 @@ pageRoutePath = pfmap id id id id id . r where
     getGroupCsvPath
     newGroupAssessmentPath
     newCourseAssessmentPath
-    fillNewGroupAssessmentPath
     fillNewGroupAssessmentPreviewPath
-    fillNewCourseAssessmentPath
     fillNewCourseAssessmentPreviewPath
     modifyAssessmentPath
     viewAssessmentPath
@@ -361,9 +352,7 @@ pageRequestParams = liftsP
   (\gk _ -> [requestParam gk]) -- getGroupCsv
   (\gk _ -> [requestParam gk]) -- newGroupAssessment
   (\ck _ -> [requestParam ck]) -- newCourseAssessment
-  (\gk _ -> [requestParam gk]) -- fillNewGroupAssessment
   (\gk _ -> [requestParam gk]) -- fillNewGroupAssessmentPreview
-  (\ck _ -> [requestParam ck]) -- fillNewCourseAssessment
   (\ck _ -> [requestParam ck]) -- fillNewCourseAssessmentPreview
   (\ak _ -> [requestParam ak]) -- modifyAssessment
   (\ak _ -> [requestParam ak]) -- viewAssessment  

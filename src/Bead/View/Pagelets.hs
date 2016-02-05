@@ -421,8 +421,6 @@ linkText = P.pageCata
   (c2 $ msg_LinkText_NewGroupAssessment "New Group Assessment")
   (c2 $ msg_LinkText_NewCourseAssessment "New Course Assessment")
   (c2 $ msg_LinkText_GroupAssessmentPreview "New Group Assessment")
-  (c2 $ msg_LinkText_GroupAssessmentPreview "New Group Assessment")
-  (c2 $ msg_LinkText_CourseAssessmentPreview "New Course Assessment")
   (c2 $ msg_LinkText_CourseAssessmentPreview "New Course Assessment")
   (c2 $ msg_LinkText_ModifyAssessment "Modify Assessment")
   (c2 $ msg_LinkText_ViewAssessment "View Assessment")

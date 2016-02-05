@@ -2,9 +2,7 @@
 module Bead.View.Content.Assessment.Page (
     newGroupAssessment
   , newCourseAssessment
-  , fillNewGroupAssessment
   , fillNewGroupAssessmentPreview
-  , fillNewCourseAssessment
   , fillNewCourseAssessmentPreview
   , modifyAssessment
   , viewAssessment
@@ -40,17 +38,13 @@ import           Control.Monad.IO.Class (liftIO)
 
 newGroupAssessment = ViewModifyHandler newGroupAssessmentPage postNewGroupAssessment
 newCourseAssessment = ViewModifyHandler newCourseAssessmentPage postNewCourseAssessment
-fillNewGroupAssessment = UserViewHandler fillNewGroupAssessmentPage
 fillNewGroupAssessmentPreview = UserViewHandler fillNewGroupAssessmentPreviewPage
-fillNewCourseAssessment = UserViewHandler fillNewCourseAssessmentPage
 fillNewCourseAssessmentPreview = UserViewHandler fillNewCourseAssessmentPreviewPage
 modifyAssessment = ViewModifyHandler modifyAssessmentPage postModifyAssessment
 viewAssessment = ViewHandler viewAssessmentPage
 
 data PageDataNew  = PD_NewCourseAssessment CourseKey
                   | PD_NewGroupAssessment GroupKey
-data PageDataFill = PD_FillCourseAssessment CourseKey String String EvConfig
-                  | PD_FillGroupAssessment GroupKey String String EvConfig
                   | PD_PreviewCourseAssessment CourseKey String String EvConfig (M.Map Username Evaluation) [Username]
                   | PD_PreviewGroupAssessment GroupKey String String EvConfig (M.Map Username Evaluation) [Username]
 
@@ -60,15 +54,15 @@ data PageDataModify = PD_PageDataModify {
   , isScoreSubmitted :: Bool
   }
 
-fillDataCata
-  fillCourseAssessment
-  fillGroupAssessment
+newDataAlgebra
+  newCourseAssessment
+  newGroupAssessment
   previewCourseAssessment
   previewGroupAssessment
   pdata =
       case pdata of
-        PD_FillCourseAssessment ck title description evConfig -> fillCourseAssessment ck title description evConfig
-        PD_FillGroupAssessment gk title description evConfig -> fillGroupAssessment gk title description evConfig
+        PD_NewCourseAssessment ck -> newCourseAssessment ck
+        PD_NewGroupAssessment gk -> newGroupAssessment gk
         PD_PreviewCourseAssessment ck title description evConfig scores usernames -> previewCourseAssessment ck title description evConfig scores usernames
         PD_PreviewGroupAssessment gk title description evConfig scores usernames -> previewGroupAssessment gk title description evConfig scores usernames
 
@@ -82,7 +76,7 @@ data UploadResult
 newGroupAssessmentPage :: GETContentHandler
 newGroupAssessmentPage = do
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
-  return $ newAssessmentTemplate $ PD_NewGroupAssessment gk
+  return $ fillAssessmentTemplate $ PD_NewGroupAssessment gk
 
 postNewGroupAssessment :: POSTContentHandler
 postNewGroupAssessment = do 
@@ -100,7 +94,7 @@ postNewGroupAssessment = do
 newCourseAssessmentPage :: GETContentHandler
 newCourseAssessmentPage = do
   ck <- getParameter $ customCourseKeyPrm courseKeyParamName
-  return $ newAssessmentTemplate $ PD_NewCourseAssessment ck
+  return $ fillAssessmentTemplate $ PD_NewCourseAssessment ck
 
 postNewCourseAssessment :: POSTContentHandler
 postNewCourseAssessment = do 
@@ -127,26 +121,10 @@ parseEvaluation evalConfig s = evConfigCata
     where mkEval :: EvResult -> Evaluation
           mkEval result = Evaluation result ""
 
-fillNewGroupAssessmentPage :: ViewPOSTContentHandler
-fillNewGroupAssessmentPage = do
-  title <- getParameter titleParam
-  description <- getParameter descriptionParam
-  evConfig <- getParameter evConfigParam
-  gk <- getParameter $ customGroupKeyPrm groupKeyParamName
-  return $ fillAssessmentTemplate $ PD_FillGroupAssessment gk title description evConfig
-
 titleParam = stringParameter "n1" "Title"
 descriptionParam = stringParameter "n2" "Description"
 evaluationsParam = stringParameter "evaluations" "Evaluations"
 evConfigParam = evalConfigParameter "evConfig"
-
-fillNewCourseAssessmentPage :: ViewPOSTContentHandler
-fillNewCourseAssessmentPage = do
-  title <- getParameter titleParam
-  description <- read <$> getParameter descriptionParam
-  evConfig <- getParameter evConfigParam
-  ck <- getParameter $ customCourseKeyPrm courseKeyParamName
-  return $ fillAssessmentTemplate $ PD_FillCourseAssessment ck title description evConfig
 
 fillNewGroupAssessmentPreviewPage :: ViewPOSTContentHandler
 fillNewGroupAssessmentPreviewPage = do
@@ -188,28 +166,28 @@ fillNewGroupAssessmentPreviewPage = do
 fillNewCourseAssessmentPreviewPage :: ViewPOSTContentHandler
 fillNewCourseAssessmentPreviewPage = error "fillNewCourseAssessmentPreviewPage is undefined"
 
-fillAssessmentTemplate :: PageDataFill -> IHtml
+fillAssessmentTemplate :: PageDataNew -> IHtml
 fillAssessmentTemplate pdata = do
   msg <- getI18N
   return $ do
-    Bootstrap.rowColMd12 $ do      
+    Bootstrap.rowColMd12 $ do
       H.form ! A.method "post" $ do
         Bootstrap.textInputWithDefault "n1" (titleLabel msg) title
         Bootstrap.optionalTextInputWithDefault "n2" (descriptionLabel msg) description
-        evConfigSelection msg selectedConfig
+        evTypeSelection msg selectedEvType
         Bootstrap.formGroup $ fileInput "csv"
         Bootstrap.row $ do
-             Bootstrap.colMd4 (previewButton msg ! A.disabled "")
-             Bootstrap.colMd4 (downloadCsvButton msg)
-             Bootstrap.colMd4 (commitButton msg)
+          Bootstrap.colMd4 (previewButton msg ! A.disabled "")
+          Bootstrap.colMd4 (downloadCsvButton msg)
+          Bootstrap.colMd4 (commitButton msg)
         let csvTable _ _ _ _ scores usernames = do
               previewTable msg usernames scores
               hiddenInput "evaluations" (show scores)
             noPreview = hiddenInput "evaluations" (show (M.empty :: M.Map Username Evaluation))
             
-        fillDataCata
-          (\_ _ _ _ -> noPreview)
-          (\_ _ _ _ -> noPreview)
+        newDataAlgebra
+          (\_ -> noPreview)
+          (\_ -> noPreview)
           csvTable
           csvTable
           pdata
@@ -239,39 +217,40 @@ fillAssessmentTemplate pdata = do
                             , "};"
                             ]
 
-    (title,description) = fillDataCata
-                            (\_ title description _ -> (title,description))
-                            (\_ title description _ -> (title,description))
+    (title,description) = newDataAlgebra
+                            (\_ -> ("",""))
+                            (\_ -> ("",""))
                             (\_ title description _ _ _ -> (title,description))
                             (\_ title description _ _ _ -> (title,description))
                             pdata
 
-    preview = fillDataCata
-                (\ck _ _ _ -> Pages.fillNewCourseAssessmentPreview ck ())
-                (\gk _ _ _ -> Pages.fillNewGroupAssessmentPreview gk ())
+    preview = newDataAlgebra
+                (\ck -> Pages.fillNewCourseAssessmentPreview ck ())
+                (\gk -> Pages.fillNewGroupAssessmentPreview gk ())
                 (\ck _ _ _ _ _ -> Pages.fillNewCourseAssessmentPreview ck ())
                 (\gk _ _ _ _ _ -> Pages.fillNewGroupAssessmentPreview gk ())
                 pdata
-    getCsv = fillDataCata
-               (\ck _ _ _ -> Pages.getCourseCsv ck ())
-               (\gk _ _ _ -> Pages.getGroupCsv gk ())
+    getCsv = newDataAlgebra
+               (\ck -> Pages.getCourseCsv ck ())
+               (\gk -> Pages.getGroupCsv gk ())
                (\ck _ _ _ _ _ -> Pages.getCourseCsv ck ())
                (\gk _ _ _ _ _ -> Pages.getGroupCsv gk ())
                pdata
 
-    commit = fillDataCata
-               (\ck _ _ _ -> Pages.newCourseAssessment ck ())
-               (\gk _ _ _ -> Pages.newGroupAssessment gk ())
+    commit = newDataAlgebra
+               (\ck -> Pages.newCourseAssessment ck ())
+               (\gk -> Pages.newGroupAssessment gk ())
                (\ck _ _ _ _ _ -> Pages.newCourseAssessment ck ())
                (\gk _ _ _ _ _ -> Pages.newGroupAssessment gk ())
                pdata
 
-    selectedConfig = fillDataCata
-                     (\_ _ _ evConfig -> evConfig)
-                     (\_ _ _ evConfig -> evConfig)
-                     (\_ _ _ evConfig _ _ -> evConfig)
-                     (\_ _ _ evConfig _ _ -> evConfig)
-                     pdata
+    selectedEvType = newDataAlgebra
+                       (\_ -> defaultEvType)
+                       (\_ -> defaultEvType)
+                       (\_ _ _ evConfig _ _ -> evConfig)
+                       (\_ _ _ evConfig _ _ -> evConfig)
+                       pdata
+                           where defaultEvType = binaryConfig
 
 previewTable :: I18N -> [Username] -> M.Map Username Evaluation -> H.Html
 previewTable msg usernames evaluations = Bootstrap.table $ do
@@ -308,7 +287,7 @@ readCsv bs = case B.lines bs of
 viewAssessmentPage :: GETContentHandler
 viewAssessmentPage = error "viewAssessmentPage is undefined"
 
-evConfigSelection msg selected = Bootstrap.selectionWithLabel "evConfig" evalType (== selected) selection 
+evTypeSelection msg selected = Bootstrap.selectionWithLabel "evConfig" evalType (== selected) selection 
     where selection = [ (binaryConfig, binary)
                       , (percentageConfig 0.0, percentage)
                       , (freeFormConfig, freeForm)
@@ -317,41 +296,6 @@ evConfigSelection msg selected = Bootstrap.selectionWithLabel "evConfig" evalTyp
           binary = msg . msg_NewAssessment_BinaryEvaluation $ "Binary"
           percentage = msg . msg_NewAssessment_PercentageEvaluation $ "Percentage"
           freeForm = msg . msg_NewAssessment_FreeFormEvaluation $ "Free form textual"
-
-newAssessmentTemplate :: PageDataNew -> IHtml
-newAssessmentTemplate pdata = do
-  msg <- getI18N
-  return $ do
-    Bootstrap.rowColMd12 $ do      
-      postForm (routeOf commitPage) $ do
-        Bootstrap.textInput "n1" (title msg) ""
-        Bootstrap.optionalTextInput "n2" (description msg) ""
-        evConfigSelection msg binaryConfig
-        hiddenInput "evaluations" (show (M.empty :: M.Map Username Evaluation))
-        Bootstrap.row $ do
-             Bootstrap.colMd6 (fillButton msg)
-             Bootstrap.colMd6 (saveButton msg)
-        Bootstrap.turnSelectionsOn
-
-  where
-    title msg = msg . msg_NewAssessment_Title $ "Title"
-    description msg = msg . msg_NewAssessment_Description $ "Description"
-
-    fillButton msg = Bootstrap.submitButtonWithAttr (formAction fillPage) fill
-        where fill = msg . msg_NewAssessment_FillButton $ "Fill"
-
-    saveButton msg = Bootstrap.submitButtonWithAttr (formAction commitPage) commit
-        where commit = msg . msg_NewAssessment_SaveButton $ "Commit"
-
-    formAction page = A.onclick (fromString $ concat ["javascript: form.action='", routeOf page, "';"])
-
-    commitPage = case pdata of
-                   PD_NewCourseAssessment ck -> Pages.newCourseAssessment ck ()
-                   PD_NewGroupAssessment gk  -> Pages.newGroupAssessment gk ()
-    fillPage = case pdata of
-             PD_NewCourseAssessment ck -> Pages.fillNewCourseAssessment ck ()
-             PD_NewGroupAssessment gk  -> Pages.fillNewGroupAssessment gk ()
-
 
 modifyAssessmentPage :: GETContentHandler
 modifyAssessmentPage = do
@@ -390,7 +334,7 @@ modifyAssessmentTemplate pdata = do
             showEvaluationType msg evConfig
             fromString . msg $ msg_NewAssessment_EvalTypeWarn "The evaluation type can not be modified, there is a score for the assessment."
           else
-            evConfigSelection msg evConfig
+            evTypeSelection msg evConfig
         Bootstrap.rowColMd12 $ saveButton msg
         Bootstrap.turnSelectionsOn
     where

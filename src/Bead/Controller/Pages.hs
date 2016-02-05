@@ -106,9 +106,7 @@ data UserViewPage a
   = NewGroupAssignmentPreview GroupKey a
   | NewCourseAssignmentPreview CourseKey a
   | ModifyAssignmentPreview AssignmentKey a
-  | FillNewGroupAssessment GroupKey a
   | FillNewGroupAssessmentPreview GroupKey a
-  | FillNewCourseAssessment CourseKey a
   | FillNewCourseAssessmentPreview CourseKey a
   deriving (Eq, Ord, Show, Functor)
 
@@ -116,17 +114,13 @@ userViewPageCata
   newGroupAssignmentPreview
   newCourseAssignmentPreview
   modifyAssignmentPreview
-  fillNewGroupAssessment
   fillNewGroupAssessmentPreview
-  fillNewCourseAssessment
   fillNewCourseAssessmentPreview
   p = case p of
     NewGroupAssignmentPreview gk a -> newGroupAssignmentPreview gk a
     NewCourseAssignmentPreview ck a -> newCourseAssignmentPreview ck a
     ModifyAssignmentPreview ak a -> modifyAssignmentPreview ak a
-    FillNewGroupAssessment gk a -> fillNewGroupAssessment gk a
     FillNewGroupAssessmentPreview gk a -> fillNewGroupAssessmentPreview gk a
-    FillNewCourseAssessment ck a -> fillNewCourseAssessment ck a
     FillNewCourseAssessmentPreview ck a -> fillNewCourseAssessmentPreview ck a
 
 userViewPageValue :: UserViewPage a -> a
@@ -134,9 +128,7 @@ userViewPageValue = userViewPageCata
   cid -- newGroupAssignmentPreview
   cid -- newCourseAssignmentPreview
   cid -- modifyAssignmentPreview
-  cid -- fillNewGroupAssessment
   cid -- fillNewGroupAssessmentPreview
-  cid -- fillNewCourseAssessment
   cid -- fillNewCourseAssessmentPreview
   where
     cid = const id
@@ -357,9 +349,7 @@ newGroupAssignmentPreview gk  = UserView . NewGroupAssignmentPreview gk
 newCourseAssignmentPreview ck = UserView . NewCourseAssignmentPreview ck
 modifyAssignmentPreview ak    = UserView . ModifyAssignmentPreview ak
 
-fillNewCourseAssessment ck        = UserView . FillNewCourseAssessment ck
 fillNewCourseAssessmentPreview ck = UserView . FillNewCourseAssessmentPreview ck
-fillNewGroupAssessment        gk  = UserView . FillNewGroupAssessment gk
 fillNewGroupAssessmentPreview gk  = UserView . FillNewGroupAssessmentPreview gk
 
 profile                = ViewModify . Profile
@@ -440,9 +430,7 @@ pageCata
   getGroupCsv
   newGroupAssessment
   newCourseAssessment
-  fillNewGroupAssessment
   fillNewGroupAssessmentPreview
-  fillNewCourseAssessment
   fillNewCourseAssessmentPreview
   modifyAssessment
   viewAssessment
@@ -492,9 +480,7 @@ pageCata
     (Data (GetGroupCsv gk a)) -> getGroupCsv gk a
     (ViewModify (NewGroupAssessment gk a)) -> newGroupAssessment gk a
     (ViewModify (NewCourseAssessment ck a)) -> newCourseAssessment ck a
-    (UserView (FillNewGroupAssessment gk a)) -> fillNewGroupAssessment gk a
     (UserView (FillNewGroupAssessmentPreview gk a)) -> fillNewGroupAssessmentPreview gk a
-    (UserView (FillNewCourseAssessment ck a)) -> fillNewCourseAssessment ck a
     (UserView (FillNewCourseAssessmentPreview ck a)) -> fillNewCourseAssessmentPreview ck a
     (ViewModify (ModifyAssessment ak a)) -> modifyAssessment ak a
     (View (ViewAssessment ak a)) -> viewAssessment ak a
@@ -546,9 +532,7 @@ constantsP
   getGroupCsv_
   newGroupAssessment_
   newCourseAssessment_
-  fillNewGroupAssessment_
   fillNewGroupAssessmentPreview_
-  fillNewCourseAssessment_
   fillNewCourseAssessmentPreview_
   modifyAssessment_
   viewAssessment_
@@ -598,9 +582,7 @@ constantsP
       (\gk _ -> getGroupCsv gk getGroupCsv_)
       (\gk _ -> newGroupAssessment gk newGroupAssessment_)
       (\ck _ -> newCourseAssessment ck newCourseAssessment_)
-      (\gk _ -> fillNewGroupAssessment gk fillNewGroupAssessment_)
       (\gk _ -> fillNewGroupAssessmentPreview gk fillNewGroupAssessmentPreview_)
-      (\ck _ -> fillNewCourseAssessment ck fillNewCourseAssessment_)
       (\ck _ -> fillNewCourseAssessmentPreview ck fillNewCourseAssessmentPreview_)
       (\ak _ -> modifyAssessment ak modifyAssessment_)
       (\ak _ -> viewAssessment ak viewAssessment_)
@@ -654,9 +636,7 @@ liftsP
   getGroupCsv_
   newGroupAssessment_
   newCourseAssessment_
-  fillNewGroupAssessment_
   fillNewGroupAssessmentPreview_
-  fillNewCourseAssessment_
   fillNewCourseAssessmentPreview_
   modifyAssessment_
   viewAssessment_
@@ -706,9 +686,7 @@ liftsP
       (\gk a -> getGroupCsv gk (getGroupCsv_ gk a))
       (\gk a -> newGroupAssessment gk (newGroupAssessment_ gk a))
       (\ck a -> newCourseAssessment ck (newCourseAssessment_ ck a))
-      (\gk a -> fillNewGroupAssessment gk (fillNewGroupAssessment_ gk a))
       (\gk a -> fillNewGroupAssessmentPreview gk (fillNewGroupAssessmentPreview_ gk a))
-      (\ck a -> fillNewCourseAssessment ck (fillNewCourseAssessment_ ck a))
       (\ck a -> fillNewCourseAssessmentPreview ck (fillNewCourseAssessmentPreview_ ck a))
       (\ak a -> modifyAssessment ak (modifyAssessment_ ak a))
       (\ak a -> viewAssessment ak (viewAssessment_ ak a))
@@ -844,14 +822,8 @@ isNewGroupAssessment _ = False
 isNewCourseAssessment (ViewModify (NewCourseAssessment _ _)) = True
 isNewCourseAssessment _ = False
 
-isFillNewGroupAssessment (UserView (FillNewGroupAssessment _ _)) = True
-isFillNewGroupAssessment _ = False
-
 isFillNewGroupAssessmentPreview (UserView (FillNewGroupAssessmentPreview _ _)) = True
 isFillNewGroupAssessmentPreview _ = False
-
-isFillNewCourseAssessment (UserView (FillNewCourseAssessment _ _)) = True
-isFillNewCourseAssessment _ = False
 
 isFillNewCourseAssessmentPreview (UserView (FillNewCourseAssessmentPreview _ _)) = True
 isFillNewCourseAssessmentPreview _ = False
@@ -902,7 +874,6 @@ groupAdminPages = [
 #endif
   , isUploadFile
   , isNewGroupAssessment
-  , isFillNewGroupAssessment
   , isFillNewGroupAssessmentPreview
   , isModifyAssessment
   , isViewAssessment
@@ -935,9 +906,7 @@ courseAdminPages = [
   , isUploadFile
   , isNewCourseAssessment
   , isNewGroupAssessment
-  , isFillNewCourseAssessment
   , isFillNewCourseAssessmentPreview
-  , isFillNewGroupAssessment
   , isFillNewGroupAssessmentPreview
   , isModifyAssessment
   , isGetCourseCsv
@@ -1135,9 +1104,7 @@ pageGen = oneof [
         , getGroupCsv <$> groupKey <*> unit
         , newGroupAssessment <$> groupKey <*> unit
         , newCourseAssessment <$> courseKey <*> unit
-        , fillNewGroupAssessment <$> groupKey <*> unit
         , fillNewGroupAssessmentPreview <$> groupKey <*> unit
-        , fillNewCourseAssessment <$> courseKey <*> unit
         , fillNewCourseAssessmentPreview <$> courseKey <*> unit
         , modifyAssessment <$> assessmentKey <*> unit
         , viewAssessment <$> assessmentKey <*> unit

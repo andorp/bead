@@ -86,9 +86,7 @@ pageContent = Pages.constantsP
   getGroupCsv
   newGroupAssessment
   newCourseAssessment
-  fillNewGroupAssessment
   fillNewGroupAssessmentPreview
-  fillNewCourseAssessment
   fillNewCourseAssessmentPreview
   modifyAssessment
   viewAssessment
