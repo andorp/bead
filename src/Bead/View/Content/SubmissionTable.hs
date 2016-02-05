@@ -326,7 +326,7 @@ assignmentCreationMenu courses groups = submissionTableInfoCata courseMenu group
         return . navigationWithRoute msg $
           case Map.lookup ck courses of
             Nothing -> [Pages.newGroupAssignment gk (), Pages.newGroupAssessment gk ()]
-            Just _  -> [Pages.newGroupAssignment gk (), Pages.newCourseAssignment ck (), Pages.newGroupAssessment gk (), Pages.newCourseAssessment ck ()] )
+            Just _  -> [Pages.newGroupAssignment gk (), Pages.newCourseAssignment ck (), Pages.newGroupAssessment gk ()] )
       (Map.lookup gk groups)
 
     courseMenu _n _us _as _uls _ans ck = maybe
