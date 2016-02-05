@@ -367,17 +367,14 @@ postModifyAssessment = do
   ak <- getParameter assessmentKeyPrm
   newTitle <- getParameter titleParam
   newDesc <- getParameter descriptionParam
-  (as,scoreSubmitted) <- userStory $ do
-                           as <- Story.loadAssessment ak
-                           scoreSubmitted <- Story.isThereAScore ak
-                           return (as,scoreSubmitted)
-  evConfig <- if scoreSubmitted
-              then return (evaluationCfg as)
-              else getParameter evConfigParam
-  let a = as { title         = newTitle
-             , description   = newDesc
-             , evaluationCfg = evConfig
-             }
+  evConfig <- getParameter evConfigParam
+  now <- liftIO getCurrentTime
+  let a = Assessment {
+            title         = newTitle
+          , description   = newDesc
+          , evaluationCfg = evConfig
+          , created       = now
+          }
   return $ ModifyAssessment ak a
 
 modifyAssessmentTemplate :: PageDataModify -> IHtml
@@ -407,7 +404,7 @@ modifyAssessmentTemplate pdata = do
       readOnly :: Bool
       readOnly = isScoreSubmitted pdata
                                 
-      showEvaluationType msg eType =
+      showEvaluationType msg eType = do
         Bootstrap.readOnlyTextInputWithDefault ""
           (msg $ msg_NewAssessment_EvaluationType "Evaluation Type")
           (evConfigCata
@@ -415,7 +412,7 @@ modifyAssessmentTemplate pdata = do
             (const . fromString . msg $ msg_NewAssessment_PercentageEvaluation "Percentage")
             (fromString . msg $ msg_NewAssessment_FreeFormEvaluation "Free form textual")
             eType)
-
+        hiddenInput "evConfig" (Bootstrap.encode "Evaluation type" eType)
 
       saveButton msg = Bootstrap.submitButtonWithAttr mempty commit
           where commit = msg . msg_NewAssessment_SaveButton $ "Commit"
