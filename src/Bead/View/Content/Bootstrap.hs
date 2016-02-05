@@ -311,6 +311,20 @@ labeledText name value =
     H.label $ fromString $ name
     H.span ! formControl $ value
 
+
+
+grayLabel :: String -> Html
+grayLabel text  = H.span ! class_ "label label-default" $ fromString text
+
+greenLabel :: String -> Html
+greenLabel text = H.span ! class_ "label label-success" $ fromString text
+
+redLabel :: String -> Html
+redLabel text = H.span ! class_ "label label-danger"  $ fromString text
+
+blueLabel :: String -> Html
+blueLabel text = H.span ! class_ "label label-primary" $ fromString text
+
 -- | Creates a text area input field with the given name as id, a given id
 textAreaField paramName =
     H.textarea ! formControl

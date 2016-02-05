@@ -280,12 +280,11 @@ resultCell contentWrapper notFound unevaluated tested passed failed s =
             percentage
             (freeForm $ \msg ->
               let cell = if length msg < displayableFreeFormResultLength then msg else "..." in
-              H.span ! A.class_ "label label-primary"
-                     ! A.title (fromString msg) $ (fromString cell))
+              Bootstrap.blueLabel cell ! A.title (fromString msg))
           where
             percent x = join [show . round $ (100 * x), "%"]
 
-            percentage (Percentage (Scores [p])) = H.span ! A.class_ "label label-primary" $ fromString $ percent p
+            percentage (Percentage (Scores [p])) = Bootstrap.blueLabel $ percent p
             percentage _ = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
 courseTestScriptTable :: CourseTestScriptInfos -> SubmissionTableInfo -> IHtml

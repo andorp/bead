@@ -279,23 +279,20 @@ availableAssignments pd timeconverter studentAssignments
       td $ linkWithText (routeWithParams (Pages.submissionList ()) [requestParam k]) (fromString (aTitle a))
       when isLimited $ td (fromString . limit $ aLimit a)
       td (fromString . showDate . timeconverter $ aEndDate a)
-      let grayLabel  tag = H.span ! class_ "label label-default" $ tag
-      let greenLabel tag = H.span ! class_ "label label-success" $ tag
-      let redLabel   tag = H.span ! class_ "label label-danger"  $ tag
-      let blueLabel  tooltip tag = H.span ! class_ "label label-primary" ! A.title (fromString tooltip) $ tag
+      let tooltip tag text = tag ! A.title (fromString text)
       H.td $ withSubmissionInfo s
-               (grayLabel $ fromString $ msg $ msg_Home_SubmissionCell_NoSubmission "No submission")
-               (grayLabel $ fromString $ msg $ msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
-               (bool (grayLabel $ fromString $ msg $ msg_Home_SubmissionCell_Tests_Passed "Tests are passed")
-                     (grayLabel $ fromString $ msg $ msg_Home_SubmissionCell_Tests_Failed "Tests are failed"))
+               (Bootstrap.grayLabel $ msg $ msg_Home_SubmissionCell_NoSubmission "No submission")
+               (Bootstrap.grayLabel $ msg $ msg_Home_SubmissionCell_NonEvaluated "Non-evaluated")
+               (bool (Bootstrap.grayLabel $ msg $ msg_Home_SubmissionCell_Tests_Passed "Tests are passed")
+                     (Bootstrap.grayLabel $ msg $ msg_Home_SubmissionCell_Tests_Failed "Tests are failed"))
                (\_key result -> evResult
-                                  (greenLabel $ fromString $ msg $ msg_Home_SubmissionCell_Accepted "Accepted")
-                                  (redLabel   $ fromString $ msg $ msg_Home_SubmissionCell_Rejected "Rejected")
-                                  (blueLabel "" . fromString)
+                                  (Bootstrap.greenLabel $ msg $ msg_Home_SubmissionCell_Accepted "Accepted")
+                                  (Bootstrap.redLabel $ msg $ msg_Home_SubmissionCell_Rejected "Rejected")
+                                  Bootstrap.blueLabel
                                   (\resultText -> let cell = if length resultText < displayableFreeFormResultLength
                                                         then resultText
                                                         else msg $ msg_Home_SubmissionCell_FreeFormEvaluated "Evaluated"
-                                                  in blueLabel resultText $ fromString cell)
+                                                  in tooltip (Bootstrap.blueLabel cell) resultText)
                                   result)
       where
         noLimitIsReached = submissionLimit (const True) (\n _ -> n > 0) (const False) . aLimit
