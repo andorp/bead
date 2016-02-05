@@ -854,7 +854,7 @@ saveScoresOfGroupAssessment gk a evaluations = do
 
 -- Produces a map of assessments and information about the evaluations for the
 -- assessments.
-userAssessments :: UserStory (Map CourseKey (Course, [(AssessmentKey, Maybe ScoreKey, ScoreInfo)]))
+userAssessments :: UserStory (Map CourseKey (Course, [(AssessmentKey, Assessment, Maybe ScoreKey, ScoreInfo)]))
 userAssessments = logAction INFO "lists assessments" $ do
 --  authorize P_Open P_Assessment
   authorize P_Open P_Course
@@ -862,21 +862,22 @@ userAssessments = logAction INFO "lists assessments" $ do
   withUserAndPersist $ \u -> do
     asgMap <- Persist.userAssessmentKeys u
     newMap <- forM (Map.toList asgMap) $ \(key,aks) -> do
-      key' <- Persist.loadCourse key
+      course <- Persist.loadCourse key
       infos <- catMaybes <$> mapM (getInfo u) (Set.toList aks)
-      return $! (key, (key', infos))
+      return $! (key, (course, infos))
     return $! Map.fromList newMap
 
   where
     -- Produces the scoreinfo for the specific user and assessment.
     -- Returns Nothing if there are multiple scoreinfos available.
-    getInfo :: Username -> AssessmentKey -> Persist (Maybe (AssessmentKey, Maybe ScoreKey, ScoreInfo))
+    getInfo :: Username -> AssessmentKey -> Persist (Maybe (AssessmentKey, Assessment, Maybe ScoreKey, ScoreInfo))
     getInfo u ak = do
       scoreKeys <- Persist.scoreOfAssessmentAndUser u ak
+      assessment <- Persist.loadAssessment ak
       case scoreKeys of
-        [] -> return . Just $ (ak, Nothing, Score_Not_Found)
+        [] -> return . Just $ (ak, assessment, Nothing, Score_Not_Found)
         [sk] -> do info <- Persist.scoreInfo sk
-                   return . Just $ (ak,Just sk,info)
+                   return . Just $ (ak, assessment, Just sk,info)
         _    -> return Nothing
 
 scoreBoards :: UserStory (Map (Either CourseKey GroupKey) ScoreBoard)

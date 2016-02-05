@@ -310,7 +310,7 @@ availableAssignments pd timeconverter studentAssignments
             score _                         = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
 -- assessment table for students
-availableAssessment :: I18N -> (Course, [(AssessmentKey, Maybe ScoreKey, ScoreInfo)]) -> Html
+availableAssessment :: I18N -> (Course, [(AssessmentKey, Assessment, Maybe ScoreKey, ScoreInfo)]) -> Html
 availableAssessment msg (c, assessments) | null assessments = p $ fromString "There are no assessments registered to this course"
                                          | otherwise = do
   Bootstrap.rowColMd12 . H.p . fromString . msg $ msg_Home_AssessmentTable_Assessments "Assessments"
@@ -318,12 +318,14 @@ availableAssessment msg (c, assessments) | null assessments = p $ fromString "Th
     H.tr (header assessments)
     H.tr $ do
       H.td . string $ courseName c
-      mapM_ evaluationViewButton (zip [(sk,si) | (_,sk,si) <- assessments] [1..])
+      mapM_ evaluationViewButton (zip [(sk,si) | (_,_,sk,si) <- assessments] [1..])
   where
-      header assessments = H.th mempty >> mapM_ (H.td . assessmentButton) (take (length assessments) [1..])
+      header assessments = H.th mempty >> mapM_ (H.td . assessmentLabel) (zip [assessment | (_ak,assessment,_sk,_si) <- assessments] [1..])
           where
-            assessmentButton :: Int -> Html
-            assessmentButton n = Bootstrap.buttonLink "" (prefix ++ show n)
+            assessmentLabel :: (Assessment, Int) -> Html
+            assessmentLabel (as,n) = Bootstrap.grayLabel (prefix ++ show n) ! tooltip
+                where aTitle = assessment (\title _desc _creation _cfg -> title) as
+                      tooltip = A.title . fromString $ aTitle
 
             prefix = msg $ msg_Home_GroupAssessmentIDPrefix "A"
         

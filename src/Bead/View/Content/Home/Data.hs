@@ -32,6 +32,8 @@ toAllActiveAssignmentList = foldl (++) [] . map trd . toActiveAssignmentList
   where
     trd (_,_,t) = t
 
+type StudentAssessments = Map CourseKey (Course, [(AssessmentKey, Assessment, Maybe ScoreKey, ScoreInfo)])
+
 data HomePageData = HomePageData {
     userState   :: UserState
   , hasCourses  :: Bool -- True if the user has administrated courses
@@ -39,7 +41,7 @@ data HomePageData = HomePageData {
   , assignments :: StudentAssignments -- Empty map means that the user is not registrated in any courses
   , sTables     :: [SubmissionTableInfo]
   , assessmentTables :: Map (Either CourseKey GroupKey) ScoreBoard
-  , assessments :: Map CourseKey (Course, [(AssessmentKey, Maybe ScoreKey, ScoreInfo)])
+  , assessments :: StudentAssessments
     -- ^ The convertes function that convert a given utc time into the users local timezone
   , timeConverter :: UserTimeConverter
   , submissionTableCtx :: SubmissionTableContext
