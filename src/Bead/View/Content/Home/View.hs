@@ -227,7 +227,11 @@ availableAssignments pd timeconverter studentAssignments
             , "The table shows only the last evaluation per assignment."
             ]
         forM_ asl $ \(key, coursename, as) -> do
-          when (not (null as) || Map.member key (assessments pd)) (h4 $ fromString coursename)
+          let asm = Map.lookup key (assessments pd)
+          let hasAssessments = case asm of
+                                 Just (_,(_:_)) -> True
+                                 _              -> False
+          when (not (null as) || hasAssessments) (h4 $ fromString coursename)
           when (not $ null as) $ do
             Bootstrap.rowColMd12 $ do
               let areIsolateds = areOpenAndIsolatedAssignments as
@@ -244,9 +248,9 @@ availableAssignments pd timeconverter studentAssignments
                       $ reverse $ sortBy (compare `on` (aEndDate . activeAsgDesc))
                       $ assignments
           -- Assessment table
-          case Map.lookup key (assessments pd) of
-            Nothing  -> mempty
-            Just cas -> availableAssessment msg cas
+          case asm of
+            Just cas@(_,(_:_)) -> availableAssessment msg cas
+            _                  -> mempty
   where
     snd3 (_,s,_) = s
     courseName3 (ck, c, as) = (ck, courseName c, as)
