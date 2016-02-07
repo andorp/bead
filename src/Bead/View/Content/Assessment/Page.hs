@@ -101,6 +101,8 @@ newGroupAssessmentPage = do
 
 postNewGroupAssessment :: POSTContentHandler
 postNewGroupAssessment = do 
+  msg <- lift i18nH
+  uploadResult <- uploadFile
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
   evaluations <- read <$> getParameter evaluationsParam
   title <- getParameter titleParam
@@ -108,9 +110,13 @@ postNewGroupAssessment = do
   evalConfig <- getParameter evConfigParam
   now <- liftIO getCurrentTime
   let a = Assessment title description now evalConfig
-  return $ if M.null evaluations
-             then CreateGroupAssessment gk a
-             else SaveScoresOfGroupAssessment gk a evaluations
+  case uploadResult of
+    [File _name contents] -> do
+      let scores = parseEvaluations msg evalConfig (readCsv contents)
+      return $ SaveScoresOfGroupAssessment gk a scores
+    _ -> return $ if M.null evaluations
+                  then CreateGroupAssessment gk a
+                  else SaveScoresOfGroupAssessment gk a evaluations
 
 newCourseAssessmentPage :: GETContentHandler
 newCourseAssessmentPage = do
@@ -119,6 +125,8 @@ newCourseAssessmentPage = do
 
 postNewCourseAssessment :: POSTContentHandler
 postNewCourseAssessment = do 
+  msg <- lift i18nH
+  uploadResult <- uploadFile
   ck <- getParameter $ customCourseKeyPrm courseKeyParamName
   evaluations <- read <$> getParameter evaluationsParam
   title <- getParameter titleParam
@@ -126,9 +134,13 @@ postNewCourseAssessment = do
   evalConfig <- getParameter evConfigParam
   now <- liftIO getCurrentTime
   let a = Assessment title description now evalConfig
-  return $ if M.null evaluations
-             then CreateCourseAssessment ck a
-             else SaveScoresOfCourseAssessment ck a evaluations
+  case uploadResult of
+    [File _name contents] -> do
+      let scores = parseEvaluations msg evalConfig (readCsv contents)
+      return $ SaveScoresOfCourseAssessment ck a evaluations
+    _ -> return $ if M.null evaluations
+                  then CreateCourseAssessment ck a
+                  else SaveScoresOfCourseAssessment ck a evaluations
 
 parseEvaluations :: I18N -> EvConfig -> M.Map Username String -> M.Map Username Evaluation
 parseEvaluations msg evalConfig = M.mapMaybe (parseEvaluation msg evalConfig)
