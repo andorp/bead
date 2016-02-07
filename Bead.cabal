@@ -1,5 +1,5 @@
 Name:                Bead
-Version:             2015.2.1
+Version:             3000
 License:             BSD3
 synopsis:            Online assignment management system
 Description:         E-learning snap based server for special teaching purposes
@@ -388,7 +388,7 @@ Executable BeadAdmin
 executable BeadTest
   Build-Depends:
     base == 4.7.0.1,
-    Bead == 2015.2.1,
+    Bead == 3000,
     bytestring >=0.10 && <0.11,
     containers == 0.5.5.1,
     directory == 1.2.1.0,
