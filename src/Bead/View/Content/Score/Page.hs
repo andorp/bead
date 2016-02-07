@@ -155,7 +155,7 @@ scoreContent pd = do
 
       view msg = pageDataAlgebra
                  (\_student _uname _uid _aDesc -> mempty)
-                 (\_student _uname _uid _aDesc score _sk -> Bootstrap.rowColMd12 . H.p . fromString $ (scoreInfoToText msg) score)
+                 (\_student _uname _uid _aDesc score _sk -> Bootstrap.rowColMd12 . H.p . fromString $ (scoreInfoToText "error" msg) score)
                  pd
 
 viewScorePage :: GETContentHandler
@@ -175,7 +175,7 @@ viewScoreContent sd = do
       (msg . msg_ViewUserScore_Assessment $ "Assessment:") .|. fromString aTitle
       when (not . null $ aDesc) $
         (msg . msg_ViewUserScore_Description $ "Description:") .|. fromString aDesc
-    Bootstrap.rowColMd12 . H.p . fromString . (scoreInfoToText msg) $ scdScore sd
+    Bootstrap.rowColMd12 . H.p . fromString . (scoreInfoToText "error" msg) $ scdScore sd
   where 
     aTitle,aDesc :: String
     (aTitle,aDesc) = assessment (\title desc _creation _cfg -> (title,desc)) (scdAssessment sd)

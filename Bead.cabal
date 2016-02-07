@@ -331,8 +331,7 @@ Library
     Bead.View.Content.Bootstrap
     Bead.View.Content.Comments
     Bead.View.Content.GetSubmission
-    Bead.View.Content.GetCourseCsv
-    Bead.View.Content.GetGroupCsv
+    Bead.View.Content.GetCsv
     Bead.View.Content.ScoreInfo
     Bead.View.Content.SeeMore
     Bead.View.Content.SubmissionTable

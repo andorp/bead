@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.View.Content.ScoreInfo (
     scoreInfoToText
+  , scoreInfoToRawText
   , scoreInfoToIcon
   , scoreInfoToIconLink
   ) where
@@ -12,25 +13,33 @@ import           Data.String (fromString)
 
 import           Bead.View.Content hiding (notFound)
 import           Bead.View.Content.VisualConstants
-import qualified Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.Domain.Shared.Evaluation
 
-scoreInfoToText :: I18N -> ScoreInfo -> String
-scoreInfoToText msg = scoreInfoAlgebra
-                      "error"
-                      (\_ek result -> 
-                         evResultCata
-                         (binaryCata (resultCata (msg accepted) (msg rejected)))
-                         (\p -> let Percentage (Scores [d]) = p in percent d)
-                         (freeForm id)
-                         result)
+scoreInfoToText :: String -> I18N -> ScoreInfo -> String
+scoreInfoToText notFound msg = scoreInfoAlgebra
+                               notFound
+                               (\_ek result -> 
+                                  evResultCata
+                                  (binaryCata (resultCata (msg accepted) (msg rejected)))
+                                  (\p -> let Percentage (Scores [d]) = p in percent d)
+                                  (freeForm id)
+                                  result)
+
+scoreInfoToRawText :: String -> I18N -> ScoreInfo -> String
+scoreInfoToRawText notFound msg = scoreInfoAlgebra
+                                  notFound
+                                  (\_ek result -> 
+                                   evResultCata
+                                   (binaryCata (resultCata (msg accepted) (msg rejected)))
+                                   (\p -> let Percentage (Scores [d]) = p in show . round $ (d * 100))
+                                   (freeForm id)
+                                   result)
 
 evResultToIcon :: I18N -> EvResult -> Html
-evResultToIcon msg = evResultCata (binaryCata (resultCata passed' failed')) percentage free'
+evResultToIcon msg = evResultCata (binaryCata (resultCata passed' failed')) percentage free
   where 
     passed' = passed msg
     failed' = failed msg
-    free' = free msg 
 
 scoreInfoToIcon :: I18N -> ScoreInfo -> Html
 scoreInfoToIcon msg = scoreInfoAlgebra notFound' $ \_ek -> evResultToIcon msg
@@ -67,8 +76,8 @@ percentage :: Percentage -> Html
 percentage (Percentage (Scores [p])) = H.span ! A.class_ "label label-primary" $ fromString $ percent p
 percentage _ = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
-free :: I18N -> FreeForm -> Html
-free msg = freeForm $ \msg ->
+free :: FreeForm -> Html
+free = freeForm $ \msg ->
   let cell = if length msg < displayableFreeFormResultLength then msg else "..." in
   H.span ! A.class_ "label label-primary"
          ! A.title (fromString msg) $ (fromString cell)

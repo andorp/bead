@@ -45,6 +45,7 @@ data UserAction
   | CreateGroupAssessment GroupKey Assessment
   | CreateCourseAssessment CourseKey Assessment
   | ModifyAssessment AssessmentKey Assessment
+  | ModifyAssessmentAndScores AssessmentKey Assessment (Map Username Evaluation)
 
   -- Scores
   | SaveUserScore Username AssessmentKey Evaluation
@@ -89,6 +90,7 @@ userStoryFor (ModifyAssignment ak a tm) = Story.modifyAssignment ak a tm
 userStoryFor (CreateGroupAssessment gk a) = Story.createGroupAssessment gk a >> return ()
 userStoryFor (CreateCourseAssessment ck a) = Story.createCourseAssessment ck a >> return ()
 userStoryFor (ModifyAssessment ak a) = Story.modifyAssessment ak a
+userStoryFor (ModifyAssessmentAndScores ak a scores) = Story.modifyAssessmentAndScores ak a scores
 userStoryFor (SaveUserScore u ak evaluation) = void $ Story.saveUserScore u ak evaluation
 userStoryFor (ModifyUserScore sk evaluation) = void $ Story.modifyUserScore sk evaluation
 userStoryFor (SaveScoresOfCourseAssessment ck a evaluations) = Story.saveScoresOfCourseAssessment ck a evaluations

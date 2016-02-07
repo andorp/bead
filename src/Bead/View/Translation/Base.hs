@@ -157,6 +157,7 @@ labels =
 
  , "msg_NewAssessment_Title"
  , "msg_NewAssessment_Description"
+ , "msg_NewAssessment_StudentName"
  , "msg_NewAssessment_UserName"
  , "msg_NewAssessment_Score"
  , "msg_NewAssessment_EvaluationType"
@@ -168,6 +169,8 @@ labels =
  , "msg_NewAssessment_GetCsvButton"
  , "msg_NewAssessment_SaveButton"
  , "msg_NewAssessment_EvalTypeWarn"
+ , "msg_NewAssessment_Accepted"
+ , "msg_NewAssessment_Rejected"
 
  , "msg_GroupRegistration_RegisteredCourses"
  , "msg_GroupRegistration_SelectGroup"
@@ -179,6 +182,11 @@ labels =
  , "msg_GroupRegistration_Unsubscribe"
  , "msg_GroupRegistration_NoUnsubscriptionAvailable"
  , "msg_GroupRegistration_Warning"
+
+ , "msg_GetCsv_StudentName"
+ , "msg_GetCsv_Username"
+ , "msg_GetCsv_Score"
+ , "msg_GetCsv_Information"
 
  , "msg_UserDetails_SaveButton"
  , "msg_UserDetails_NonExistingUser"
@@ -563,6 +571,7 @@ labels =
  , "msg_LinkText_GroupAssessmentPreview"
  , "msg_LinkText_CourseAssessmentPreview"
  , "msg_LinkText_ModifyAssessment"
+ , "msg_LinkText_ModifyAssessmentPreview"
  , "msg_LinkText_ViewAssessment"
 
  , "msg_TestScriptTypeSimple"

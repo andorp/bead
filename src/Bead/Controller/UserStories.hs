@@ -11,7 +11,7 @@ import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Controller.ServiceContext
 import           Bead.Controller.Logging  as L
-import           Bead.Controller.Pages    as P hiding (modifyEvaluation)
+import           Bead.Controller.Pages    as P hiding (modifyEvaluation,modifyAssessment)
 import           Bead.Persistence.Persist (Persist)
 import qualified Bead.Persistence.Persist   as Persist
 import qualified Bead.Persistence.Relations as Persist
@@ -183,6 +183,9 @@ loadUser :: Username -> UserStory User
 loadUser u = logAction INFO "Loading user information" $ do
   authorize P_Open P_User
   persistence $ Persist.loadUser u
+
+loadUserDesc :: Username -> UserStory UserDesc
+loadUserDesc u = mkUserDescription <$> loadUser u
 
 -- Returns the username who is active in the current userstory
 username :: UserStory Username
@@ -770,14 +773,46 @@ modifyAssessment ak a = logAction INFO ("modifies assessment " ++ show ak) $ do
         , "A score is already submitted."
         ]
 
+modifyAssessmentAndScores :: AssessmentKey -> Assessment -> Map Username Evaluation -> UserStory ()
+modifyAssessmentAndScores ak a scores = logAction INFO ("modifies assessment and scores of " ++ show ak) $ do
+  modifyAssessment ak a
+  cGKey <- courseOrGroupOfAssessment ak
+  case cGKey of
+    Left ck -> do
+      usernames <- subscribedToCourse ck
+      modifyScoresOfUsers usernames
+    Right gk -> do
+      usernames <- subscribedToGroup gk
+      modifyScoresOfUsers usernames
+    where
+      modifyScoresOfUsers :: [Username] -> UserStory ()
+      modifyScoresOfUsers usernames = do
+          forM_ usernames $ \u -> do
+            case Map.lookup u scores of
+              Nothing -> return ()
+              Just newEv -> do
+                maybeSk <- scoreInfoOfUser u ak
+                case maybeSk of
+                  Just (Just sk, _) -> persistence $ do
+                    mEvKey <- Persist.evaluationOfScore sk
+                    case mEvKey of
+                      Just evKey -> Persist.modifyEvaluation evKey newEv
+                      Nothing    -> return ()
+                  Just (_,_) -> void $ saveUserScore u ak newEv
+                  _          -> return ()
+
 loadAssessment :: AssessmentKey -> UserStory Assessment
 loadAssessment ak = logAction INFO ("loads assessment " ++ show ak) $ do
   authorize P_Open P_Assessment
   persistence (Persist.loadAssessment ak)
 
+courseOrGroupOfAssessment :: AssessmentKey -> UserStory (Either CourseKey GroupKey)
+courseOrGroupOfAssessment ak = logAction INFO ("gets course key or group key of assessment " ++ show ak) $
+  persistence (Persist.courseOrGroupOfAssessment ak)
+
 assessmentDesc :: AssessmentKey -> UserStory AssessmentDesc
 assessmentDesc ak = logAction INFO ("loads information of assessment " ++ show ak) $ do
-  -- todo: authorize
+  authorize P_Open P_Assessment
   persistence (Persist.assessmentDesc ak)
 
 usernameOfScore :: ScoreKey -> UserStory Username
@@ -859,26 +894,59 @@ userAssessments = logAction INFO "lists assessments" $ do
 --  authorize P_Open P_Assessment
   authorize P_Open P_Course
   authorize P_Open P_Group
-  withUserAndPersist $ \u -> do
-    asgMap <- Persist.userAssessmentKeys u
-    newMap <- forM (Map.toList asgMap) $ \(key,aks) -> do
-      course <- Persist.loadCourse key
-      infos <- catMaybes <$> mapM (getInfo u) (Set.toList aks)
-      return $! (key, (course, infos))
-    return $! Map.fromList newMap
+  u <- username
+  userAssessments <- persistence $ Persist.userAssessmentKeys u
+  newMap <- forM (Map.toList userAssessments) $ \(ckey,asks) -> do
+    (course,_groups) <- loadCourse ckey
+    infos <- catMaybes <$> mapM (getInfo u) (Set.toList asks)
+    return $! (ckey, (course, infos))
+  return $! Map.fromList newMap
+      where
+        getInfo :: Username
+                -> AssessmentKey
+                -> UserStory (Maybe (AssessmentKey, Assessment, Maybe ScoreKey, ScoreInfo))
+        getInfo u ak = do
+          assessment <- loadAssessment ak
+          mScoreInfo <- scoreInfoOfUser u ak
+          case mScoreInfo of
+            Nothing         -> return Nothing
+            Just (sk,sInfo) -> return $ Just (ak, assessment, sk, sInfo)
 
-  where
-    -- Produces the scoreinfo for the specific user and assessment.
-    -- Returns Nothing if there are multiple scoreinfos available.
-    getInfo :: Username -> AssessmentKey -> Persist (Maybe (AssessmentKey, Assessment, Maybe ScoreKey, ScoreInfo))
-    getInfo u ak = do
-      scoreKeys <- Persist.scoreOfAssessmentAndUser u ak
-      assessment <- Persist.loadAssessment ak
-      case scoreKeys of
-        [] -> return . Just $ (ak, assessment, Nothing, Score_Not_Found)
-        [sk] -> do info <- Persist.scoreInfo sk
-                   return . Just $ (ak, assessment, Just sk,info)
-        _    -> return Nothing
+-- Produces the score key, score info for the specific user and assessment.
+-- Returns Nothing if there are multiple scoreinfos available.
+scoreInfoOfUser :: Username -> AssessmentKey -> UserStory (Maybe (Maybe ScoreKey, ScoreInfo))
+scoreInfoOfUser u ak = logAction INFO ("loads score info of user " ++ show u ++ " and assessment " ++ show ak) $
+  persistence $ do
+    scoreKeys <- Persist.scoreOfAssessmentAndUser u ak
+    case scoreKeys of
+      []   -> return . Just $ (Nothing, Score_Not_Found)
+      [sk] -> do info <- Persist.scoreInfo sk
+                 return . Just $ (Just sk,info)
+      _    -> return Nothing
+
+scoresOfGroup :: GroupKey -> AssessmentKey -> UserStory [(UserDesc, Maybe ScoreInfo)]
+scoresOfGroup gk ak = logAction INFO ("lists scores of group " ++ show gk ++ " and assessment " ++ show ak) $ do
+  authorize P_Open P_Group
+  isAdministratedGroup gk
+  usernames <- subscribedToGroup gk
+  forM usernames $ \u -> do
+    mScoreInfo <- scoreInfoOfUser u ak
+    userDesc <- loadUserDesc u
+    case mScoreInfo of
+      Nothing               -> return (userDesc, Nothing)
+      Just (_sk, scoreInfo) -> return (userDesc, Just scoreInfo)
+
+scoresOfCourse :: CourseKey -> AssessmentKey -> UserStory [(UserDesc, Maybe ScoreInfo)]
+scoresOfCourse ck ak = logAction INFO ("lists scores of course " ++ show ck ++ " and assessment " ++ show ak) $ do
+  authorize P_Open P_Course
+  isAdministratedCourse ck
+  usernames <- subscribedToCourse ck
+  forM usernames $ \u -> do
+    userDesc <- loadUserDesc u
+    mScoreInfo <- scoreInfoOfUser u ak
+    case mScoreInfo of
+      Nothing               -> return (userDesc, Nothing)
+      Just (_sk, scoreInfo) -> return (userDesc, Just scoreInfo)
 
 scoreBoards :: UserStory (Map (Either CourseKey GroupKey) ScoreBoard)
 scoreBoards = logAction INFO "lists scoreboards" $ do

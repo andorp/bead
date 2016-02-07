@@ -30,8 +30,7 @@ import Bead.View.Content.SetUserPassword.Page
 import Bead.View.Content.NewTestScript.Page
 import Bead.View.Content.UploadFile.Page
 import Bead.View.Content.GetSubmission
-import Bead.View.Content.GetCourseCsv
-import Bead.View.Content.GetGroupCsv
+import Bead.View.Content.GetCsv
 import Bead.View.Content.Assessment.Page
 import Bead.View.Content.Score.Page
 
@@ -89,6 +88,7 @@ pageContent = Pages.constantsP
   fillNewGroupAssessmentPreview
   fillNewCourseAssessmentPreview
   modifyAssessment
+  modifyAssessmentPreview
   viewAssessment
   where
     -- Returns an empty handler that computes an empty I18N Html monadic value

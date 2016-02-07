@@ -6,6 +6,7 @@ module Bead.View.RouteOf (
   , ReqParamValue(..)
   , routeOf
   , routeWithParams
+  , routeWithOptionalParams
   , requestRoute
   , queryString -- Creates a well-formed query string from base path and parameters
   , RoutePath
@@ -62,6 +63,7 @@ module Bead.View.RouteOf (
   , fillNewGroupAssessmentPreviewPath
   , fillNewCourseAssessmentPreviewPath
   , modifyAssessmentPath
+  , modifyAssessmentPreviewPath
   , viewAssessmentPath
   , staticPath
   , pageRequestParams
@@ -240,6 +242,9 @@ fillNewCourseAssessmentPreviewPath = "/fill-new-course-assessment-preview"
 modifyAssessmentPath :: RoutePath
 modifyAssessmentPath = "/modify-assessment"
 
+modifyAssessmentPreviewPath :: RoutePath
+modifyAssessmentPreviewPath = "/modify-assessment-preview"
+
 viewAssessmentPath :: RoutePath
 viewAssessmentPath = "/view-assessment"
 
@@ -300,6 +305,7 @@ pageRoutePath = pfmap id id id id id . r where
     fillNewGroupAssessmentPreviewPath
     fillNewCourseAssessmentPreviewPath
     modifyAssessmentPath
+    modifyAssessmentPreviewPath
     viewAssessmentPath
 
 type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam] [ReqParam]
@@ -355,6 +361,7 @@ pageRequestParams = liftsP
   (\gk _ -> [requestParam gk]) -- fillNewGroupAssessmentPreview
   (\ck _ -> [requestParam ck]) -- fillNewCourseAssessmentPreview
   (\ak _ -> [requestParam ak]) -- modifyAssessment
+  (\ak _ -> [requestParam ak]) -- modifyAssessmentPreview
   (\ak _ -> [requestParam ak]) -- viewAssessment  
     where
       c = const
@@ -373,6 +380,10 @@ queryString base params = fromString . join $ [Char8.unpack base, "?"] ++ (inter
 routeWithParams :: (IsString s) => Page a b c d e -> [ReqParam] -> s
 routeWithParams p rs = fromString . join $
   [routeOf p, "?"] ++ (intersperse "&" (map queryStringParam rs))
+
+routeWithOptionalParams :: (IsString s) => Page a b c d e -> [ReqParam] -> s
+routeWithOptionalParams p rs = fromString . join $
+  [routeOf p, "&"] ++ (intersperse "&" (map queryStringParam rs))
 
 -- Creates a request route from the given route and the given request parameters
 requestRoute :: (IsString s) => String -> [ReqParam] -> s

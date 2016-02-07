@@ -189,6 +189,7 @@ menuId = P.pageCata
   (c2 "link-fill-group-assessment-preview")
   (c2 "link-fill-course-assessment-preview")
   (c2 "link-modify-assessment")
+  (c2 "link-modify-assessment-preview")
   (c2 "link-view-asssessment")
     where
       c = const
