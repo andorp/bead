@@ -333,7 +333,7 @@ assignmentCreationMenu courses groups = submissionTableInfoCata courseMenu group
       (return (return ()))
       (const $ do
         msg <- getI18N
-        return (navigationWithRoute msg [Pages.newCourseAssignment ck (), Pages.newCourseAssessment ck ()]))
+        return (navigationWithRoute msg [Pages.newCourseAssignment ck ()]))
       (Map.lookup ck courses)
 
     navigationWithRoute msg links =
