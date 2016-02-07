@@ -183,7 +183,7 @@ feedbacks date = Feedback <$> testFeedbackInfo <*> (return date)
 scores :: Gen Score
 scores = arbitrary
 
-date = read "2016-01-22 14:41:26.715362 UTC"
+date = read "2016-01-22 14:41:26 UTC"
 
 assessments = Assessment <$> manyWords <*> manyWords <*> pure date <*> evalConfigs
 
