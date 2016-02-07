@@ -416,4 +416,7 @@ executable BeadTest
     CPP-Options: -DTEST
   HS-Source-Dirs: test
   Main-is: TestMain.hs
-
+  if flag(Tests)
+    Buildable:      True
+  else
+    Buildable:      False
