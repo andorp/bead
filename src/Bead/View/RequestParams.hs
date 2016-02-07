@@ -13,8 +13,14 @@ import Bead.View.TemplateAndComponentNames
 assignmentKeyParamName :: IsString s => s
 assignmentKeyParamName = fromString $ fieldName assignmentKeyField
 
+assessmentKeyParamName :: IsString s => s
+assessmentKeyParamName = fromString $ fieldName assessmentKeyField
+
 submissionKeyParamName :: IsString s => s
 submissionKeyParamName = fromString $ fieldName submissionKeyField
+
+scoreKeyParamName :: IsString s => s
+scoreKeyParamName = fromString $ fieldName scoreKeyField
 
 evaluationKeyParamName :: IsString s => s
 evaluationKeyParamName = fromString $ fieldName evaluationKeyField
@@ -58,11 +64,23 @@ instance ReqParamValue AssignmentKey where
 instance RequestParam AssignmentKey where
   requestParam a = ReqParam (assignmentKeyParamName, paramValue a)
 
+instance ReqParamValue AssessmentKey where
+  paramValue (AssessmentKey a) = fromString a
+
+instance RequestParam AssessmentKey where
+  requestParam a = ReqParam (assessmentKeyParamName, paramValue a)
+
 instance ReqParamValue SubmissionKey where
   paramValue (SubmissionKey s) = fromString s
 
 instance RequestParam SubmissionKey where
   requestParam s = ReqParam (submissionKeyParamName, paramValue s)
+
+instance ReqParamValue ScoreKey where
+  paramValue (ScoreKey s) = fromString s
+
+instance RequestParam ScoreKey where
+  requestParam s = ReqParam (scoreKeyParamName, paramValue s)
 
 instance ReqParamValue GroupKey where
   paramValue (GroupKey g) = fromString g

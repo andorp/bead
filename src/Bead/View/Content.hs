@@ -13,6 +13,7 @@ module Bead.View.Content (
   , setReqParamInSession
   , routeOf
   , routeWithParams
+  , routeWithOptionalParams
   , runStory
   , userStory
   , userState

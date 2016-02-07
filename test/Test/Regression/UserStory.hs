@@ -67,7 +67,7 @@ submissionTestInfoChanges = testCase "Submission test information changes correc
     
     si <- userStory studentUsername $ do
       ua <- userAssignments
-      return . trd . head . value . head $ Map.toList ua
+      return . trd . head . value . head . Map.toList $ Map.map snd ua
 
     -- TODO: Write assert typeclass
     lift $ assertBool "Submission test information is not changed" (si == Submission_Tested True)

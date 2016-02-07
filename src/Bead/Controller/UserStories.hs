@@ -6,11 +6,12 @@ module Bead.Controller.UserStories where
 import           Bead.Domain.Entities hiding (name, uid)
 import qualified Bead.Domain.Entities as Entity (name, uid)
 import qualified Bead.Domain.Entity.Assignment as Assignment
+import qualified Bead.Domain.Entity.Assessment as Assessment
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Controller.ServiceContext
 import           Bead.Controller.Logging  as L
-import           Bead.Controller.Pages    as P
+import           Bead.Controller.Pages    as P hiding (modifyEvaluation,modifyAssessment)
 import           Bead.Persistence.Persist (Persist)
 import qualified Bead.Persistence.Persist   as Persist
 import qualified Bead.Persistence.Relations as Persist
@@ -182,6 +183,9 @@ loadUser :: Username -> UserStory User
 loadUser u = logAction INFO "Loading user information" $ do
   authorize P_Open P_User
   persistence $ Persist.loadUser u
+
+loadUserDesc :: Username -> UserStory UserDesc
+loadUserDesc u = mkUserDescription <$> loadUser u
 
 -- Returns the username who is active in the current userstory
 username :: UserStory Username
@@ -535,6 +539,21 @@ isUserInCourse ck = logAction INFO ("checks if user is in the course " ++ show c
   state <- userState
   persistence $ Persist.isUserInCourse (user state) ck
 
+-- | Lists all users subscribed for the given course
+subscribedToCourse :: CourseKey -> UserStory [Username]
+subscribedToCourse ck = logAction INFO ("lists all users in course " ++ show ck) $ do
+  authorize P_Open P_Course
+  isAdministratedCourse ck
+  persistence $ Persist.subscribedToCourse ck
+
+-- | Lists all users subscribed for the given group
+subscribedToGroup :: GroupKey -> UserStory [Username]
+subscribedToGroup gk = logAction INFO ("lists all users in group " ++ show gk) $ do
+  authorize P_Open P_Group
+  isAdministratedGroup gk
+  persistence $ Persist.subscribedToGroup gk
+                       
+
 -- | Regsiter the user in the group, if the user does not submitted
 -- any solutions for the other groups of the actual course, otherwise
 -- puts a message on the UI, indicating that the course change is
@@ -718,6 +737,221 @@ loadAssignment :: AssignmentKey -> UserStory Assignment
 loadAssignment k = logAction INFO ("loads assignment " ++ show k) $ do
   authorize P_Open P_Assignment
   persistence $ Persist.loadAssignment k
+
+createGroupAssessment :: GroupKey -> Assessment -> UserStory AssessmentKey
+createGroupAssessment gk a = logAction INFO ("creates assessment for group " ++ show gk) $ do
+  authorize P_Open P_Group
+  authorize P_Create P_Assessment
+  isAdministratedGroup gk
+  persistence (Persist.saveGroupAssessment gk a)
+
+createCourseAssessment :: CourseKey -> Assessment -> UserStory AssessmentKey
+createCourseAssessment ck a = logAction INFO ("creates assessment for course " ++ show ck) $ do
+  authorize P_Open P_Course
+  authorize P_Create P_Assessment
+  isAdministratedCourse ck
+  persistence (Persist.saveCourseAssessment ck a)
+
+modifyAssessment :: AssessmentKey -> Assessment -> UserStory ()
+modifyAssessment ak a = logAction INFO ("modifies assessment " ++ show ak) $ do
+  authorize P_Open P_Assessment
+  authorize P_Modify P_Assessment
+  isAdministratedAssessment ak
+  persistence $ do
+    hasScore <- isThereAScorePersist ak
+    new <- if hasScore
+             then do
+               -- Overwrite the assignment type with the old one
+               -- if there is a score for the given assessment
+               evConfig <- Assessment.evaluationCfg <$> Persist.loadAssessment ak
+               return (a { Assessment.evaluationCfg = evConfig})
+             else return a
+    Persist.modifyAssessment ak new
+    when (hasScore && Assessment.evaluationCfg a /= Assessment.evaluationCfg new) $
+      void . return . putStatusMessage . msg_UserStory_AssessmentEvalTypeWarning $ concat
+        [ "The evaluation type of the assessment is not modified. "
+        , "A score is already submitted."
+        ]
+
+modifyAssessmentAndScores :: AssessmentKey -> Assessment -> Map Username Evaluation -> UserStory ()
+modifyAssessmentAndScores ak a scores = logAction INFO ("modifies assessment and scores of " ++ show ak) $ do
+  modifyAssessment ak a
+  cGKey <- courseOrGroupOfAssessment ak
+  case cGKey of
+    Left ck -> do
+      usernames <- subscribedToCourse ck
+      modifyScoresOfUsers usernames
+    Right gk -> do
+      usernames <- subscribedToGroup gk
+      modifyScoresOfUsers usernames
+    where
+      modifyScoresOfUsers :: [Username] -> UserStory ()
+      modifyScoresOfUsers usernames = do
+          forM_ usernames $ \u -> do
+            case Map.lookup u scores of
+              Nothing -> return ()
+              Just newEv -> do
+                maybeSk <- scoreInfoOfUser u ak
+                case maybeSk of
+                  Just (Just sk, _) -> persistence $ do
+                    mEvKey <- Persist.evaluationOfScore sk
+                    case mEvKey of
+                      Just evKey -> Persist.modifyEvaluation evKey newEv
+                      Nothing    -> return ()
+                  Just (_,_) -> void $ saveUserScore u ak newEv
+                  _          -> return ()
+
+loadAssessment :: AssessmentKey -> UserStory Assessment
+loadAssessment ak = logAction INFO ("loads assessment " ++ show ak) $ do
+  authorize P_Open P_Assessment
+  persistence (Persist.loadAssessment ak)
+
+courseOrGroupOfAssessment :: AssessmentKey -> UserStory (Either CourseKey GroupKey)
+courseOrGroupOfAssessment ak = logAction INFO ("gets course key or group key of assessment " ++ show ak) $
+  persistence (Persist.courseOrGroupOfAssessment ak)
+
+assessmentDesc :: AssessmentKey -> UserStory AssessmentDesc
+assessmentDesc ak = logAction INFO ("loads information of assessment " ++ show ak) $ do
+  authorize P_Open P_Assessment
+  persistence (Persist.assessmentDesc ak)
+
+usernameOfScore :: ScoreKey -> UserStory Username
+usernameOfScore sk = logAction INFO ("looks up the user of score " ++ show sk) $ do
+  persistence (Persist.usernameOfScore sk)
+
+assessmentOfScore :: ScoreKey -> UserStory AssessmentKey
+assessmentOfScore sk = logAction INFO ("looks up the assessment of score " ++ show sk) $ do
+  persistence (Persist.assessmentOfScore sk)
+
+isThereAScorePersist :: AssessmentKey -> Persist Bool
+isThereAScorePersist ak = not . null <$> Persist.scoresOfAssessment ak
+
+isThereAScore :: AssessmentKey -> UserStory Bool
+isThereAScore ak = logAction INFO ("checks whether there is a score for the assessment " ++ show ak) $
+  persistence (isThereAScorePersist ak)
+
+scoreInfo :: ScoreKey -> UserStory ScoreInfo
+scoreInfo sk = logAction INFO ("loads score information of score " ++ show sk) $ do
+  persistence (Persist.scoreInfo sk)
+
+scoreDesc :: ScoreKey -> UserStory ScoreDesc
+scoreDesc sk = logAction INFO ("loads score description of score " ++ show sk) $ do
+  authPerms scoreDescPermissions
+  currentUser <- username
+  scoreUser <- usernameOfScore sk
+  if (currentUser == scoreUser)
+    then persistence $ Persist.scoreDesc sk
+    else do 
+      logMessage INFO . violation $ printf "The user tries to view a score (%s) that not belongs to him."
+                                           (show sk)
+      errorPage $ userError nonAccessibleScore
+
+saveUserScore :: Username -> AssessmentKey -> Evaluation -> UserStory ScoreKey
+saveUserScore u ak evaluation = logAction INFO ("saves user score of " ++ show u ++ " for assessment " ++ show ak) $ do
+  authorize P_Open P_Assessment
+  persistence $ do
+    sk <- Persist.saveScore u ak (Score ())
+    Persist.saveScoreEvaluation sk evaluation
+    return sk
+
+modifyUserScore :: ScoreKey -> Evaluation -> UserStory ()
+modifyUserScore sk newEvaluation = logAction INFO ("modifies user score " ++ show sk) $ do
+  mEKey <- persistence (Persist.evaluationOfScore sk)
+  maybe (return ()) (\eKey -> modifyEvaluation eKey newEvaluation) mEKey
+
+saveScoresOfCourseAssessment :: CourseKey -> Assessment -> Map Username Evaluation -> UserStory ()
+saveScoresOfCourseAssessment ck a evaluations = do
+  ak <- createCourseAssessment ck a
+  logAction INFO ("saves scores of assessment " ++ show ak ++ " of course " ++ show ck) $ do
+    users <- subscribedToCourse ck
+    persistence (mapM_ (saveEvaluation ak) users)
+      where
+        saveEvaluation ak user = case Map.lookup user evaluations of
+                                   Just eval -> do sk <- Persist.saveScore user ak score
+                                                   void $ Persist.saveScoreEvaluation sk eval
+                                   Nothing   -> return ()
+
+        score = Score ()
+
+saveScoresOfGroupAssessment :: GroupKey -> Assessment -> Map Username Evaluation -> UserStory ()
+saveScoresOfGroupAssessment gk a evaluations = do
+  ak <- createGroupAssessment gk a
+  logAction INFO ("saves scores of assessment " ++ show ak ++ " of group " ++ show gk) $ do
+    users <- subscribedToGroup gk
+    persistence (mapM_ (saveEvaluation ak) users)
+      where
+        saveEvaluation ak user = case Map.lookup user evaluations of
+                                   Just eval -> do sk <- Persist.saveScore user ak score
+                                                   void $ Persist.saveScoreEvaluation sk eval
+                                   Nothing   -> return ()
+
+        score = Score ()
+
+-- Produces a map of assessments and information about the evaluations for the
+-- assessments.
+userAssessments :: UserStory (Map CourseKey (Course, [(AssessmentKey, Assessment, Maybe ScoreKey, ScoreInfo)]))
+userAssessments = logAction INFO "lists assessments" $ do
+--  authorize P_Open P_Assessment
+  authorize P_Open P_Course
+  authorize P_Open P_Group
+  u <- username
+  userAssessments <- persistence $ Persist.userAssessmentKeys u
+  newMap <- forM (Map.toList userAssessments) $ \(ckey,asks) -> do
+    (course,_groups) <- loadCourse ckey
+    infos <- catMaybes <$> mapM (getInfo u) (Set.toList asks)
+    return $! (ckey, (course, infos))
+  return $! Map.fromList newMap
+      where
+        getInfo :: Username
+                -> AssessmentKey
+                -> UserStory (Maybe (AssessmentKey, Assessment, Maybe ScoreKey, ScoreInfo))
+        getInfo u ak = do
+          assessment <- loadAssessment ak
+          mScoreInfo <- scoreInfoOfUser u ak
+          case mScoreInfo of
+            Nothing         -> return Nothing
+            Just (sk,sInfo) -> return $ Just (ak, assessment, sk, sInfo)
+
+-- Produces the score key, score info for the specific user and assessment.
+-- Returns Nothing if there are multiple scoreinfos available.
+scoreInfoOfUser :: Username -> AssessmentKey -> UserStory (Maybe (Maybe ScoreKey, ScoreInfo))
+scoreInfoOfUser u ak = logAction INFO ("loads score info of user " ++ show u ++ " and assessment " ++ show ak) $
+  persistence $ do
+    scoreKeys <- Persist.scoreOfAssessmentAndUser u ak
+    case scoreKeys of
+      []   -> return . Just $ (Nothing, Score_Not_Found)
+      [sk] -> do info <- Persist.scoreInfo sk
+                 return . Just $ (Just sk,info)
+      _    -> return Nothing
+
+scoresOfGroup :: GroupKey -> AssessmentKey -> UserStory [(UserDesc, Maybe ScoreInfo)]
+scoresOfGroup gk ak = logAction INFO ("lists scores of group " ++ show gk ++ " and assessment " ++ show ak) $ do
+  authorize P_Open P_Group
+  isAdministratedGroup gk
+  usernames <- subscribedToGroup gk
+  forM usernames $ \u -> do
+    mScoreInfo <- scoreInfoOfUser u ak
+    userDesc <- loadUserDesc u
+    case mScoreInfo of
+      Nothing               -> return (userDesc, Nothing)
+      Just (_sk, scoreInfo) -> return (userDesc, Just scoreInfo)
+
+scoresOfCourse :: CourseKey -> AssessmentKey -> UserStory [(UserDesc, Maybe ScoreInfo)]
+scoresOfCourse ck ak = logAction INFO ("lists scores of course " ++ show ck ++ " and assessment " ++ show ak) $ do
+  authorize P_Open P_Course
+  isAdministratedCourse ck
+  usernames <- subscribedToCourse ck
+  forM usernames $ \u -> do
+    userDesc <- loadUserDesc u
+    mScoreInfo <- scoreInfoOfUser u ak
+    case mScoreInfo of
+      Nothing               -> return (userDesc, Nothing)
+      Just (_sk, scoreInfo) -> return (userDesc, Just scoreInfo)
+
+scoreBoards :: UserStory (Map (Either CourseKey GroupKey) ScoreBoard)
+scoreBoards = logAction INFO "lists scoreboards" $ do
+  authPerms scoreBoardPermissions
+  withUserAndPersist Persist.scoreBoards
 
 -- Puts the given status message to the actual user state
 putStatusMessage :: Translation String -> UserStory ()
@@ -960,7 +1194,7 @@ assignmentDesc now user key = do
 
 -- Produces a map of assignments and information about the submissions for the
 -- described assignment, which is associated with the course or group
-userAssignments :: UserStory (Map Course [(AssignmentKey, AssignmentDesc, SubmissionInfo)])
+userAssignments :: UserStory (Map CourseKey (Course,[(AssignmentKey, AssignmentDesc, SubmissionInfo)]))
 userAssignments = logAction INFO "lists assignments" $ do
   authorize P_Open P_Assignment
   authorize P_Open P_Course
@@ -971,7 +1205,7 @@ userAssignments = logAction INFO "lists assignments" $ do
     newMap <- forM (Map.toList asgMap) $ \(key,aks) -> do
       key' <- Persist.loadCourse key
       descs <- catMaybes <$> mapM (createDesc u now) (Set.toList aks)
-      return $! (key', descs)
+      return $! (key, (key', descs))
     return $! Map.fromList newMap
 
   where
@@ -1070,9 +1304,22 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
   now <- liftIO $ getCurrentTime
   userData <- currentUser
   join . withUserAndPersist $ \u -> do
-    sk <- Persist.submissionOfEvaluation ek
-    case sk of
-      Just sk -> do
+    sbk <- Persist.submissionOfEvaluation ek
+    sck <- Persist.scoreOfEvaluation ek
+    case (sbk, sck) of
+      (Just _, Just _) -> return . errorPage $ strMsg "Impossible, submission and score have the same evaluation"
+      (Nothing, Just _sk) -> do
+        let admined = True
+        if admined
+          then do Persist.modifyEvaluation ek e
+                  -- Persist.saveFeedback sk (evaluationToFeedback now userData e)
+                  return (return ())
+          else return $ do
+                  logMessage INFO . violation $
+                    printf "The user tries to modify an evaluation (%s) that not belongs to him."
+                           (show ek)
+                  errorPage $ userError nonAdministratedSubmission
+      (Just sk, Nothing) -> do
         admined <- Persist.isAdminedSubmission u sk
         if admined
           then do Persist.modifyEvaluation ek e
@@ -1083,7 +1330,7 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
                     printf "The user tries to modify an evaluation (%s) that not belongs to him."
                            (show ek)
                   errorPage $ userError nonAdministratedSubmission
-      Nothing -> return (return ())
+      (Nothing, Nothing) -> return (return ())
 
 createComment :: SubmissionKey -> Comment -> UserStory ()
 createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
@@ -1224,6 +1471,14 @@ isAdministratedAssignment = guard
   "The user tries to access an assignment (%s) which is not administrated by him."
   (userError nonAdministratedAssignment)
 
+-- Checks if the given assessment is administrated by the actual user and
+-- throws redirects to the error page if not, otherwise do nothing
+isAdministratedAssessment :: AssessmentKey -> UserStory ()
+isAdministratedAssessment = guard 
+  Persist.isAdministratedAssessment
+  "User tries to modify the assessment (%s) which is not administrated by him."
+  (userError nonAdministratedAssessment)
+
 -- Checks if the given assignment is an assignment of a course or group that
 -- the users attend otherwise, renders the error page
 isUsersAssignment :: AssignmentKey -> UserStory ()
@@ -1337,8 +1592,10 @@ persistence m = do
 nonAdministratedCourse = msg_UserStoryError_NonAdministratedCourse "The course is not administrated by you"
 nonAdministratedGroup  = msg_UserStoryError_NonAdministratedGroup "This group is not administrated by you."
 nonAdministratedAssignment = msg_UserStoryError_NonAdministratedAssignment "This assignment is not administrated by you."
+nonAdministratedAssessment = msg_UserStoryError_NonAdministratedAssessment "This assessment is not administrated by you."
 nonAdministratedSubmission = msg_UserStoryError_NonAdministratedSubmission "The submission is not administrated by you."
 nonAdministratedTestScript = msg_UserStoryError_NonAdministratedTestScript "The test script is not administrated by you."
 nonRelatedAssignment = msg_UserStoryError_NonRelatedAssignment "The assignment is not belongs to you."
 nonAccessibleSubmission = msg_UserStoryError_NonAccessibleSubmission "The submission is not belongs to you."
 blockedSubmission = msg_UserStoryError_BlockedSubmission "The submission is blocked by an isolated assignment."
+nonAccessibleScore = msg_UserStoryError_NonAccessibleScore "The score does not belong to you."

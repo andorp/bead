@@ -14,19 +14,25 @@ activeAsgKey  (key,_desc,_info) = key
 activeAsgDesc (_key,desc,_info) = desc
 activeAsgInfo (_key,_desc,info) = info
 
-type StudentAssignments = Map Course [ActiveAssignment]
+type StudentAssignments = Map CourseKey (Course, [ActiveAssignment])
 
 -- Returns True if the student is not registered in any courses otherwise False
 isNotRegistered :: StudentAssignments -> Bool
 isNotRegistered = Map.null
 
 -- Returns all the AcitveAssignment list grouped with its courses or groups
-toActiveAssignmentList :: StudentAssignments -> [ (Course, [ActiveAssignment]) ]
-toActiveAssignmentList = Map.toList
+toActiveAssignmentList :: StudentAssignments -> [ (CourseKey, Course, [ActiveAssignment]) ]
+toActiveAssignmentList = map joinTuple . Map.toList
+  where
+    joinTuple (f,(s,t)) = (f,s,t)
 
 -- Returns a list of all the ActiveAssignments
 toAllActiveAssignmentList :: StudentAssignments -> [ActiveAssignment]
-toAllActiveAssignmentList = foldl (++) [] . map snd . toActiveAssignmentList
+toAllActiveAssignmentList = foldl (++) [] . map trd . toActiveAssignmentList
+  where
+    trd (_,_,t) = t
+
+type StudentAssessments = Map CourseKey (Course, [(AssessmentKey, Assessment, Maybe ScoreKey, ScoreInfo)])
 
 data HomePageData = HomePageData {
     userState   :: UserState
@@ -34,6 +40,8 @@ data HomePageData = HomePageData {
   , hasGroups   :: Bool -- True if the user has administrated groups
   , assignments :: StudentAssignments -- Empty map means that the user is not registrated in any courses
   , sTables     :: [SubmissionTableInfo]
+  , assessmentTables :: Map (Either CourseKey GroupKey) ScoreBoard
+  , assessments :: StudentAssessments
     -- ^ The convertes function that convert a given utc time into the users local timezone
   , timeConverter :: UserTimeConverter
   , submissionTableCtx :: SubmissionTableContext

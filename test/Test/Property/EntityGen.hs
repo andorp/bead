@@ -8,7 +8,7 @@ import           Bead.Domain.Shared.Evaluation
 import           Test.Tasty.Arbitrary
 
 import           Control.Monad (join, liftM)
-import           Control.Applicative ((<$>),(<*>))
+import           Control.Applicative ((<$>),(<*>),pure)
 import           Data.String (fromString)
 
 import qualified Data.ByteString.Char8 as BS (pack)
@@ -183,7 +183,9 @@ feedbacks date = Feedback <$> testFeedbackInfo <*> (return date)
 scores :: Gen Score
 scores = arbitrary
 
-assessments = Assessment <$> manyWords <*> evalConfigs
+date = read "2016-01-22 14:41:26 UTC"
+
+assessments = Assessment <$> manyWords <*> manyWords <*> pure date <*> evalConfigs
 
 notifTypes = elements [Notification.Comment, Notification.Feedback, Notification.System]
 

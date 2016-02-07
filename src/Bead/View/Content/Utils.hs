@@ -34,7 +34,7 @@ userAssignmentForSubmission
   -> ContentHandler b
 userAssignmentForSubmission key found notFound = do
   action <- userStory $ do
-    ks <- toList <$> userAssignments
+    ks <- (concatMap (snd . snd) . Map.toList) <$> userAssignments
     maybe
       (return notFound)
       foundAssignment

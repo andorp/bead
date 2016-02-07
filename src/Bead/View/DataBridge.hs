@@ -115,6 +115,25 @@ jsonCourseKeyPrm field = jsonParameter field "course key"
 courseKeyPrm :: Parameter CourseKey
 courseKeyPrm = customCourseKeyPrm (fieldName courseKeyInfo)
 
+-- Represents the AssessmentKey parameter
+assessmentKeyPrm :: Parameter AssessmentKey
+assessmentKeyPrm = Parameter {
+    encode = assessmentKey id
+  , decode = Just . AssessmentKey
+  , name   = fieldName assessmentKeyField
+  , decodeError = \m -> printf "Invalid assessment key: %s." m
+  , notFound = "The given assessment key could not be found."
+  }
+
+scoreKeyPrm :: Parameter ScoreKey
+scoreKeyPrm = Parameter {
+    encode = scoreKey id
+  , decode = Just . ScoreKey
+  , name = fieldName scoreKeyField
+  , decodeError = \m -> printf "Invalid score key: %s." m
+  , notFound = "The given score key could not be found."
+  }
+
 -- Represents the AssignmentKey parameter
 assignmentKeyPrm :: Parameter AssignmentKey
 assignmentKeyPrm = Parameter {

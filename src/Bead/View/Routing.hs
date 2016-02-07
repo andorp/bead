@@ -320,6 +320,9 @@ routeToPageMap = Map.fromList [
   , (evaluationPath , \ps -> P.evaluation <$> submissionKey ps <*> unit)
   , (submissionPath , j $ P.submission ())
   , (submissionListPath   , j $ P.submissionList ())
+  , (viewUserScorePath    , \ps -> P.viewUserScore <$> scoreKey ps <*> unit)
+  , (newUserScorePath     , \ps -> P.newUserScore <$> assessmentKey ps <*> username ps <*> unit)
+  , (modifyUserScorePath  , \ps -> P.modifyUserScore <$> scoreKey ps <*> unit)
   , (userSubmissionsPath  , j $ P.userSubmissions ())
   , (newTestScriptPath    , j $ P.newTestScript ())
   , (modifyTestScriptPath , \ps -> P.modifyTestScript <$> testScriptKey ps <*> unit)
@@ -347,6 +350,15 @@ routeToPageMap = Map.fromList [
   , (deleteUsersFromGroupPath , \ps -> P.deleteUsersFromGroup <$> groupKey ps <*> unit)
   , (unsubscribeFromCoursePath , \ps -> P.unsubscribeFromCourse <$> groupKey ps <*> unit)
   , (getSubmissionPath, \ps -> P.getSubmission <$> submissionKey ps <*> unit)
+  , (getCourseCsvPath, \ps -> P.getCourseCsv <$> courseKey ps <*> unit)
+  , (getGroupCsvPath, \ps -> P.getGroupCsv <$> groupKey ps <*> unit)
+  , (newGroupAssessmentPath, \ps -> P.newGroupAssessment <$> groupKey ps <*> unit)
+  , (newCourseAssessmentPath, \ps -> P.newCourseAssessment <$> courseKey ps <*> unit)
+  , (fillNewGroupAssessmentPreviewPath, \ps -> P.fillNewGroupAssessmentPreview <$> groupKey ps <*> unit)
+  , (fillNewCourseAssessmentPreviewPath, \ps -> P.fillNewCourseAssessmentPreview <$> courseKey ps <*> unit)
+  , (modifyAssessmentPath, \ps -> P.modifyAssessment <$> assessmentKey ps <*> unit)
+  , (modifyAssessmentPreviewPath, \ps -> P.modifyAssessmentPreview <$> assessmentKey ps <*> unit)
+  , (viewAssessmentPath, \ps -> P.viewAssessment <$> assessmentKey ps <*> unit)
   ] where
       j = const . Just
       unit = return ()
@@ -357,6 +369,9 @@ routeToPageMap = Map.fromList [
       submissionKey = fmap (SubmissionKey . unpack) . value submissionKeyParamName
       evaluationKey = fmap (EvaluationKey . unpack) . value evaluationKeyParamName
       testScriptKey = fmap (TestScriptKey . unpack) . value testScriptKeyParamName
+      assessmentKey = fmap (AssessmentKey . unpack) . value assessmentKeyParamName
+      scoreKey      = fmap (ScoreKey . unpack) . value scoreKeyParamName
+      username      = fmap (Username . unpack) . value (fieldName usernameField)
 
       -- Returns Just x if only one x corresponds to the key in the request params
       -- otherwise Nothing

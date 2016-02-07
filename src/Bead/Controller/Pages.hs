@@ -11,6 +11,7 @@ import           Bead.Domain.Relationships as R
 import           Control.Applicative
 import           Test.Tasty.TestSet
 import           Test.QuickCheck.Gen
+import           Test.QuickCheck.Arbitrary (arbitrary)
 #endif
 
 -- View pages are rendered using the data stored in the
@@ -27,6 +28,8 @@ data ViewPage a
   | UserSubmissions a
   | Administration a
   | CourseAdmin a
+  | ViewAssessment AssessmentKey a
+  | ViewUserScore ScoreKey a
   deriving (Eq, Ord, Show, Functor)
 
 viewPageCata
@@ -40,6 +43,8 @@ viewPageCata
   userSubmissions
   administration
   courseAdmin
+  viewAssessment
+  viewUserScore
   p = case p of
     Login a -> login a
     Logout a -> logout a
@@ -51,6 +56,8 @@ viewPageCata
     UserSubmissions a -> userSubmissions a
     Administration a -> administration a
     CourseAdmin a -> courseAdmin a
+    ViewAssessment ak a -> viewAssessment ak a
+    ViewUserScore sk a -> viewUserScore sk a
 
 viewPageValue :: ViewPage a -> a
 viewPageValue = viewPageCata
@@ -64,6 +71,8 @@ viewPageValue = viewPageCata
   id -- userSubmissions
   id -- administration
   id -- courseAdmin
+  cid -- viewAssessment
+  cid -- viewUserScore
   where
     cid = const id
 
@@ -71,16 +80,24 @@ viewPageValue = viewPageCata
 -- and all the data will be rendered in the response
 data DataPage a
   = GetSubmission SubmissionKey a
+  | GetCourseCsv CourseKey a
+  | GetGroupCsv GroupKey a
   deriving (Eq, Ord, Show, Functor)
 
 dataPageCata
   getSubmission
+  getCourseCsv
+  getGroupCsv
   p = case p of
     GetSubmission sk a -> getSubmission sk a
+    GetCourseCsv ck a -> getCourseCsv ck a
+    GetGroupCsv gk a -> getGroupCsv gk a
 
 dataPageValue :: DataPage a -> a
 dataPageValue = dataPageCata
   (const id) -- getSubmission
+  (const id)
+  (const id)
 
 -- User View pages are rendered using the data stored in the
 -- persistence and some temporary data given by the user. Mainly
@@ -89,22 +106,34 @@ data UserViewPage a
   = NewGroupAssignmentPreview GroupKey a
   | NewCourseAssignmentPreview CourseKey a
   | ModifyAssignmentPreview AssignmentKey a
+  | FillNewGroupAssessmentPreview GroupKey a
+  | FillNewCourseAssessmentPreview CourseKey a
+  | ModifyAssessmentPreview AssessmentKey a
   deriving (Eq, Ord, Show, Functor)
 
 userViewPageCata
   newGroupAssignmentPreview
   newCourseAssignmentPreview
   modifyAssignmentPreview
+  fillNewGroupAssessmentPreview
+  fillNewCourseAssessmentPreview
+  modifyAssessmentPreview
   p = case p of
     NewGroupAssignmentPreview gk a -> newGroupAssignmentPreview gk a
     NewCourseAssignmentPreview ck a -> newCourseAssignmentPreview ck a
     ModifyAssignmentPreview ak a -> modifyAssignmentPreview ak a
+    FillNewGroupAssessmentPreview gk a -> fillNewGroupAssessmentPreview gk a
+    FillNewCourseAssessmentPreview ck a -> fillNewCourseAssessmentPreview ck a
+    ModifyAssessmentPreview ak a -> modifyAssessmentPreview ak a
 
 userViewPageValue :: UserViewPage a -> a
 userViewPageValue = userViewPageCata
   cid -- newGroupAssignmentPreview
   cid -- newCourseAssignmentPreview
   cid -- modifyAssignmentPreview
+  cid -- fillNewGroupAssessmentPreview
+  cid -- fillNewCourseAssessmentPreview
+  cid -- modifyAssessmentPreview
   where
     cid = const id
 
@@ -118,6 +147,7 @@ data ViewModifyPage a
   | NewGroupAssignment GroupKey a
   | NewCourseAssignment CourseKey a
   | ModifyAssignment AssignmentKey a
+  | ModifyAssessment AssessmentKey a
   | GroupRegistration a
   | UserDetails a
   | NewTestScript a
@@ -128,6 +158,10 @@ data ViewModifyPage a
 #endif
   | SubmissionDetails AssignmentKey SubmissionKey a
   | Submission a
+  | NewUserScore AssessmentKey E.Username a
+  | ModifyUserScore ScoreKey a
+  | NewGroupAssessment GroupKey a
+  | NewCourseAssessment CourseKey a
   deriving (Eq, Ord, Show, Functor)
 
 viewModifyPageCata
@@ -137,6 +171,7 @@ viewModifyPageCata
   newGroupAssignment
   newCourseAssignment
   modifyAssignment
+  modifyAssessment
   groupRegistration
   userDetails
   newTestScript
@@ -147,6 +182,10 @@ viewModifyPageCata
 #endif
   submissionDetails
   submission
+  newUserScore
+  modifyUserScore
+  newGroupAssessment
+  newCourseAssessment
   p = case p of
     Profile a -> profile a
     Evaluation sk a -> evaluation sk a
@@ -154,6 +193,7 @@ viewModifyPageCata
     NewGroupAssignment gk a -> newGroupAssignment gk a
     NewCourseAssignment ck a -> newCourseAssignment ck a
     ModifyAssignment ak a -> modifyAssignment ak a
+    ModifyAssessment ak a -> modifyAssessment ak a
     GroupRegistration a -> groupRegistration a
     UserDetails a -> userDetails a
     NewTestScript a -> newTestScript a
@@ -164,6 +204,10 @@ viewModifyPageCata
 #endif
     SubmissionDetails ak sk a -> submissionDetails ak sk a
     Submission a -> submission a
+    NewUserScore assk u a -> newUserScore assk u a
+    ModifyUserScore sk a -> modifyUserScore sk a
+    NewGroupAssessment gk a -> newGroupAssessment gk a
+    NewCourseAssessment ck a -> newCourseAssessment ck a
 
 viewModifyPageValue :: ViewModifyPage a -> a
 viewModifyPageValue = viewModifyPageCata
@@ -173,6 +217,7 @@ viewModifyPageValue = viewModifyPageCata
   cid -- newGroupAssignment
   cid -- newCourseAssignment
   cid -- modifyAssignment
+  cid -- modifyAssessment
   id -- groupRegistration
   id -- userDetails
   id -- newTestScript
@@ -183,6 +228,10 @@ viewModifyPageValue = viewModifyPageCata
 #endif
   c2id -- submissionDetails
   id -- submission
+  c2id -- newUserScore
+  cid -- modifyUserScore
+  cid -- newGroupAssessment
+  cid -- newCourseAssessment
   where
     cid = const id
     c2id = const . cid
@@ -293,11 +342,20 @@ submissionList          = View . SubmissionList
 userSubmissions         = View . UserSubmissions
 administration          = View . Administration
 courseAdmin             = View . CourseAdmin
+viewAssessment ak       = View . ViewAssessment ak
+viewUserScore sk        = View . ViewUserScore sk
+
 getSubmission sk        = Data . GetSubmission sk
+getCourseCsv ck         = Data . GetCourseCsv ck
+getGroupCsv gk          = Data . GetGroupCsv gk
 
 newGroupAssignmentPreview gk  = UserView . NewGroupAssignmentPreview gk
 newCourseAssignmentPreview ck = UserView . NewCourseAssignmentPreview ck
 modifyAssignmentPreview ak    = UserView . ModifyAssignmentPreview ak
+
+fillNewCourseAssessmentPreview ck = UserView . FillNewCourseAssessmentPreview ck
+fillNewGroupAssessmentPreview gk  = UserView . FillNewGroupAssessmentPreview gk
+modifyAssessmentPreview ak = UserView . ModifyAssessmentPreview ak
 
 profile                = ViewModify . Profile
 evaluation sk          = ViewModify . Evaluation sk
@@ -305,6 +363,7 @@ modifyEvaluation sk ek = ViewModify . ModifyEvaluation sk ek
 newGroupAssignment gk  = ViewModify . NewGroupAssignment gk
 newCourseAssignment ck = ViewModify . NewCourseAssignment ck
 modifyAssignment ak    = ViewModify . ModifyAssignment ak
+modifyAssessment ak    = ViewModify . ModifyAssessment ak
 groupRegistration      = ViewModify . GroupRegistration
 userDetails            = ViewModify . UserDetails
 newTestScript          = ViewModify . NewTestScript
@@ -315,6 +374,10 @@ setUserPassword        = ViewModify . SetUserPassword
 #endif
 submissionDetails ak sk = ViewModify . SubmissionDetails ak sk
 submission              = ViewModify . Submission
+newUserScore assk u     = ViewModify . NewUserScore assk u
+modifyUserScore sk      = ViewModify . ModifyUserScore sk
+newCourseAssessment ck  = ViewModify . NewCourseAssessment ck
+newGroupAssessment gk   = ViewModify . NewGroupAssessment gk
 
 createCourse      = Modify . CreateCourse
 createGroup       = Modify . CreateGroup
@@ -347,6 +410,9 @@ pageCata
   submission
   submissionList
   submissionDetails
+  viewUserScore
+  newUserScore
+  modifyUserScore
   groupRegistration
   userDetails
   userSubmissions
@@ -365,6 +431,15 @@ pageCata
   deleteUsersFromGroup
   unsubscribeFromCourse
   getSubmission
+  getCourseCsv
+  getGroupCsv
+  newGroupAssessment
+  newCourseAssessment
+  fillNewGroupAssessmentPreview
+  fillNewCourseAssessmentPreview
+  modifyAssessment
+  modifyAssessmentPreview
+  viewAssessment
   p = case p of
     (View (Login a)) -> login a
     (View (Logout a)) -> logout a
@@ -386,6 +461,9 @@ pageCata
     (ViewModify (Submission a)) -> submission a
     (View (SubmissionList a)) -> submissionList a
     (ViewModify (SubmissionDetails ak sk a)) -> submissionDetails ak sk a
+    (View (ViewUserScore sk a)) -> viewUserScore sk a
+    (ViewModify (NewUserScore assk u a)) -> newUserScore assk u a
+    (ViewModify (ModifyUserScore sk a)) -> modifyUserScore sk a
     (ViewModify (GroupRegistration a)) -> groupRegistration a
     (ViewModify (UserDetails a)) -> userDetails a
     (View (UserSubmissions a)) -> userSubmissions a
@@ -404,6 +482,15 @@ pageCata
     (Modify (DeleteUsersFromGroup gk a)) -> deleteUsersFromGroup gk a
     (Modify (UnsubscribeFromCourse gk a)) -> unsubscribeFromCourse gk a
     (Data (GetSubmission sk a)) -> getSubmission sk a
+    (Data (GetCourseCsv ck a)) -> getCourseCsv ck a
+    (Data (GetGroupCsv gk a)) -> getGroupCsv gk a
+    (ViewModify (NewGroupAssessment gk a)) -> newGroupAssessment gk a
+    (ViewModify (NewCourseAssessment ck a)) -> newCourseAssessment ck a
+    (UserView (FillNewGroupAssessmentPreview gk a)) -> fillNewGroupAssessmentPreview gk a
+    (UserView (FillNewCourseAssessmentPreview ck a)) -> fillNewCourseAssessmentPreview ck a
+    (ViewModify (ModifyAssessment ak a)) -> modifyAssessment ak a
+    (UserView (ModifyAssessmentPreview ak a)) -> modifyAssessmentPreview ak a
+    (View (ViewAssessment ak a)) -> viewAssessment ak a
 
 -- Constants that attached each of the page constructor
 constantsP
@@ -427,6 +514,9 @@ constantsP
   submission_
   submissionList_
   submissionDetails_
+  viewUserScore_
+  newUserScore_
+  modifyUserScore_
   groupRegistration_
   userDetails_
   userSubmissions_
@@ -445,6 +535,15 @@ constantsP
   deleteUsersFromGroup_
   unsubscribeFromCourse_
   getSubmission_
+  getCourseCsv_
+  getGroupCsv_
+  newGroupAssessment_
+  newCourseAssessment_
+  fillNewGroupAssessmentPreview_
+  fillNewCourseAssessmentPreview_
+  modifyAssessment_
+  modifyAssessmentPreview_
+  viewAssessment_
   = pageCata
       (c $ login login_)
       (c $ logout logout_)
@@ -466,6 +565,9 @@ constantsP
       (c $ submission submission_)
       (c $ submissionList submissionList_)
       (\ak sk _ -> submissionDetails ak sk submissionDetails_)
+      (\sk _ -> viewUserScore sk viewUserScore_)
+      (\assk u _ -> newUserScore assk u newUserScore_)
+      (\sk _ -> modifyUserScore sk modifyUserScore_)
       (c $ groupRegistration groupRegistration_)
       (c $ userDetails userDetails_)
       (c $ userSubmissions userSubmissions_)
@@ -484,6 +586,15 @@ constantsP
       (\gk _ -> deleteUsersFromGroup gk deleteUsersFromGroup_)
       (\gk _ -> unsubscribeFromCourse gk unsubscribeFromCourse_)
       (\sk _ -> getSubmission sk getSubmission_)
+      (\ck _ -> getCourseCsv ck getCourseCsv_)
+      (\gk _ -> getGroupCsv gk getGroupCsv_)
+      (\gk _ -> newGroupAssessment gk newGroupAssessment_)
+      (\ck _ -> newCourseAssessment ck newCourseAssessment_)
+      (\gk _ -> fillNewGroupAssessmentPreview gk fillNewGroupAssessmentPreview_)
+      (\ck _ -> fillNewCourseAssessmentPreview ck fillNewCourseAssessmentPreview_)
+      (\ak _ -> modifyAssessment ak modifyAssessment_)
+      (\ak _ -> modifyAssessmentPreview ak modifyAssessmentPreview_)
+      (\ak _ -> viewAssessment ak viewAssessment_)
   where
     c = const
 
@@ -509,6 +620,9 @@ liftsP
   submission_
   submissionList_
   submissionDetails_
+  viewUserScore_
+  newUserScore_
+  modifyUserScore_
   groupRegistration_
   userDetails_
   userSubmissions_
@@ -527,6 +641,15 @@ liftsP
   deleteUsersFromGroup_
   unsubscribeFromCourse_
   getSubmission_
+  getCourseCsv_
+  getGroupCsv_
+  newGroupAssessment_
+  newCourseAssessment_
+  fillNewGroupAssessmentPreview_
+  fillNewCourseAssessmentPreview_
+  modifyAssessment_
+  modifyAssessmentPreview_
+  viewAssessment_
   = pageCata
       (login . login_)
       (logout . logout_)
@@ -548,6 +671,9 @@ liftsP
       (submission . submission_)
       (submissionList . submissionList_)
       (\ak sk a -> submissionDetails ak sk (submissionDetails_ ak sk a))
+      (\sk a -> viewUserScore sk (viewUserScore_ sk a))
+      (\assk u a -> newUserScore assk u (newUserScore_ assk u a))
+      (\sk a -> modifyUserScore sk (modifyUserScore_ sk a))
       (groupRegistration . groupRegistration_)
       (userDetails . userDetails_)
       (userSubmissions . userSubmissions_)
@@ -566,6 +692,15 @@ liftsP
       (\gk a -> deleteUsersFromGroup gk (deleteUsersFromGroup_ gk a))
       (\gk a -> unsubscribeFromCourse gk (unsubscribeFromCourse_ gk a))
       (\sk a -> getSubmission sk (getSubmission_ sk a))
+      (\ck a -> getCourseCsv ck (getCourseCsv_ ck a))
+      (\gk a -> getGroupCsv gk (getGroupCsv_ gk a))
+      (\gk a -> newGroupAssessment gk (newGroupAssessment_ gk a))
+      (\ck a -> newCourseAssessment ck (newCourseAssessment_ ck a))
+      (\gk a -> fillNewGroupAssessmentPreview gk (fillNewGroupAssessmentPreview_ gk a))
+      (\ck a -> fillNewCourseAssessmentPreview ck (fillNewCourseAssessmentPreview_ ck a))
+      (\ak a -> modifyAssessment ak (modifyAssessment_ ak a))
+      (\ak a -> modifyAssessmentPreview ak (modifyAssessmentPreview_ ak a))
+      (\ak a -> viewAssessment ak (viewAssessment_ ak a))
 
 isLogin (View (Login _)) = True
 isLogin _ = False
@@ -627,6 +762,15 @@ isSubmissionList _ = False
 isSubmissionDetails (ViewModify (SubmissionDetails _ _ _)) = True
 isSubmissionDetails _ = False
 
+isViewUserScore (View (ViewUserScore _ _)) = True
+isViewUserScore _ = False
+
+isNewUserScore (ViewModify (NewUserScore _ _ _)) = True
+isNewUserScore _ = False
+
+isModifyUserScore (ViewModify (ModifyUserScore _ _)) = True
+isModifyUserScore _ = False
+
 isGroupRegistration (ViewModify (GroupRegistration _)) = True
 isGroupRegistration _ = False
 
@@ -677,6 +821,33 @@ isUnsubscribeFromCourse _ = False
 isGetSubmission (Data (GetSubmission _ _)) = True
 isGetSubmission _ = False
 
+isGetCourseCsv (Data (GetCourseCsv _ _)) = True
+isGetCourseCsv _ = False
+
+isGetGroupCsv (Data (GetGroupCsv _ _)) = True
+isGetGroupCsv _ = False
+
+isNewGroupAssessment (ViewModify (NewGroupAssessment _ _)) = True
+isNewGroupAssessment _ = False
+
+isNewCourseAssessment (ViewModify (NewCourseAssessment _ _)) = True
+isNewCourseAssessment _ = False
+
+isFillNewGroupAssessmentPreview (UserView (FillNewGroupAssessmentPreview _ _)) = True
+isFillNewGroupAssessmentPreview _ = False
+
+isFillNewCourseAssessmentPreview (UserView (FillNewCourseAssessmentPreview _ _)) = True
+isFillNewCourseAssessmentPreview _ = False
+
+isModifyAssessment (ViewModify (ModifyAssessment _ _)) = True
+isModifyAssessment _ = False
+
+isModifyAssessmentPreview (UserView (ModifyAssessmentPreview _ _)) = True
+isModifyAssessmentPreview _ = False
+
+isViewAssessment (View (ViewAssessment _ _)) = True
+isViewAssessment _ = False
+
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
 isPage :: [Page a b c d e -> Bool] -> Page a b c d e -> Bool
@@ -697,6 +868,7 @@ regularPages = [
   , isSubmissionDetails
   , isGroupRegistration
   , isGetSubmission
+  , isViewUserScore
   ]
 
 groupAdminPages = [
@@ -709,10 +881,18 @@ groupAdminPages = [
   , isNewGroupAssignmentPreview
   , isModifyAssignmentPreview
   , isUserSubmissions
+  , isNewUserScore
+  , isModifyUserScore
 #ifndef SSO
   , isSetUserPassword
 #endif
   , isUploadFile
+  , isNewGroupAssessment
+  , isFillNewGroupAssessmentPreview
+  , isModifyAssessment
+  , isModifyAssessmentPreview
+  , isViewAssessment
+  , isGetGroupCsv
   ]
 
 courseAdminPages = [
@@ -731,12 +911,22 @@ courseAdminPages = [
   , isModifyAssignmentPreview
   , isViewAssignment
   , isUserSubmissions
+  , isNewUserScore
+  , isModifyUserScore
 #ifndef SSO
   , isSetUserPassword
 #endif
   , isNewTestScript
   , isModifyTestScript
   , isUploadFile
+  , isNewCourseAssessment
+  , isNewGroupAssessment
+  , isFillNewCourseAssessmentPreview
+  , isFillNewGroupAssessmentPreview
+  , isModifyAssessment
+  , isModifyAssessmentPreview
+  , isGetCourseCsv
+  , isGetGroupCsv
   ]
 
 adminPages = [
@@ -825,6 +1015,7 @@ parentPage = pageCata'
       (const home) -- newGroupAssignment
       (const home) -- newCourseAssignment
       (const home) -- modifyAssignment
+      (const home) -- modifyAssessment
       home -- groupRegistration
       administration -- userDetails
       home           -- newTestScript
@@ -835,6 +1026,10 @@ parentPage = pageCata'
 #endif
       submissionDetails -- submissionDetails
       home           -- submission
+      (c2 home)      -- newUserScore
+      (const home)   -- modifyUserScore
+      (const home)   -- newGroupAssessment
+      (const home)   -- newCourseAssessment
 
     modifyParent = Just . modifyPageCata
       administration -- createCourse
@@ -842,9 +1037,9 @@ parentPage = pageCata'
       administration -- assignCourseAdmin
       courseAdmin    -- assignGroupAdmin
       profile        -- changePassword
-      (const home)     -- deleteUsersFromCourse
-      (const home)     -- deleteUsersFromGroup
-      (const home)     -- unsubscribeFromCourse
+      (const home)   -- deleteUsersFromCourse
+      (const home)   -- deleteUsersFromGroup
+      (const home)   -- unsubscribeFromCourse
 
 #ifdef TEST
 
@@ -867,11 +1062,14 @@ pageGen = oneof [
       showInt = show
 
       assignmentKey = AssignmentKey . showInt <$> choose (1,5000)
+      assessmentKey = AssessmentKey . showInt <$> choose (1,5000)
       submissionKey = SubmissionKey . showInt <$> choose (1,5000)
+      scoreKey      = ScoreKey . showInt      <$> choose (1,5000)
       evaluationKey = EvaluationKey . showInt <$> choose (1,5000)
       courseKey     = CourseKey . showInt     <$> choose (1,5000)
       groupKey      = GroupKey . showInt      <$> choose (1,5000)
       testScriptKey = TestScriptKey . showInt <$> choose (1,5000)
+      username      = E.Username <$> arbitrary
 
       nonParametricPages = elements [
           login ()
@@ -903,6 +1101,9 @@ pageGen = oneof [
         , courseOverview <$> courseKey <*> unit
         , modifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
         , submissionDetails <$> assignmentKey <*> submissionKey <*> unit
+        , viewUserScore <$> scoreKey <*> unit
+        , newUserScore <$> assessmentKey <*> username <*> unit
+        , modifyUserScore <$> scoreKey <*> unit
         , deleteUsersFromCourse <$> courseKey <*> unit
         , deleteUsersFromGroup <$> groupKey <*> unit
         , unsubscribeFromCourse <$> groupKey <*> unit
@@ -915,6 +1116,15 @@ pageGen = oneof [
         , newGroupAssignmentPreview <$> groupKey <*> unit
         , modifyAssignmentPreview <$> assignmentKey <*> unit
         , getSubmission <$> submissionKey <*> unit
+        , getCourseCsv <$> courseKey <*> unit
+        , getGroupCsv <$> groupKey <*> unit
+        , newGroupAssessment <$> groupKey <*> unit
+        , newCourseAssessment <$> courseKey <*> unit
+        , fillNewGroupAssessmentPreview <$> groupKey <*> unit
+        , fillNewCourseAssessmentPreview <$> courseKey <*> unit
+        , modifyAssessment <$> assessmentKey <*> unit
+        , modifyAssessmentPreview <$> assessmentKey <*> unit
+        , viewAssessment <$> assessmentKey <*> unit
         ]
 
       unit = return ()

@@ -35,7 +35,7 @@ saveSubmissionEvaluation submissionKey ev = do
   insert (SubmissionOfEvaluation (toEntityKey submissionKey) key)
   return $! toDomainKey key
 
--- Save the evaluation for the given submission
+-- Save the evaluation for the given score
 saveScoreEvaluation :: Domain.ScoreKey -> Domain.Evaluation -> Persist Domain.EvaluationKey
 saveScoreEvaluation scoreKey ev = do
   key <- insert (fromDomainValue ev)

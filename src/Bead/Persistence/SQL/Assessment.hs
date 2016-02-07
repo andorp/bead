@@ -6,6 +6,7 @@ import           Data.Maybe
 import qualified Data.Text as Text
 
 import           Database.Persist.Sql
+import           Text.JSON.Generic (encodeJSON)
 
 import qualified Bead.Domain.Entities          as Domain
 import qualified Bead.Domain.Relationships     as Domain
@@ -50,8 +51,9 @@ loadAssessment key = do
 modifyAssessment :: Domain.AssessmentKey -> Domain.Assessment -> Persist ()
 modifyAssessment key assessment = do
   update (toEntityKey key) $ Domain.withAssessment assessment
-    $ \desc cfg ->
-        [ AssessmentDescription =. Text.pack desc
+    $ \title desc _created cfg ->
+        [ AssessmentTitle       =. Text.pack title
+        , AssessmentDescription =. Text.pack desc
         , AssessmentEvalConfig  =. encodeEvalConfig cfg
         ]
 
@@ -59,7 +61,7 @@ courseOfAssessment :: Domain.AssessmentKey -> Persist (Maybe Domain.CourseKey)
 courseOfAssessment key = do
   courses <- selectList [AssessmentsOfCourseAssessment ==. toEntityKey key] []
   return $!
-    fmap (toDomainKey . assessmentsOfCourseCourse  . entityVal)
+    fmap (toDomainKey . assessmentsOfCourseCourse . entityVal)
          (listToMaybe courses)
 
 groupOfAssessment :: Domain.AssessmentKey -> Persist (Maybe Domain.GroupKey)

@@ -43,7 +43,7 @@ newAssignmentContent pd = do
             (== currentEvaluationType)
             [ (binaryConfig, fromString . msg $ msg_NewAssignment_BinEval "Binary")
             , (percentageConfig 0.0, fromString . msg $ msg_NewAssignment_PctEval "Percentage")
-            , (freeFormConfig, fromString . msg $ msg_NewAssignment_FftEval "Free from textual")
+            , (freeFormConfig, fromString . msg $ msg_NewAssignment_FftEval "Free form textual")
             ]
     let hiddencfg asg = return $ do
           let e = Assignment.evType asg

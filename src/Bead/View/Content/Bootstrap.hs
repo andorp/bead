@@ -250,11 +250,14 @@ passwordInput paramName labelText =
 
 inputForFormControl = H.input ! formControl
 
--- | Creates a text input field only with a defualt value
+-- | Creates a text input field only with a default value
 textInputFieldWithDefault paramName value =
+    optionalTextInputFieldWithDefault paramName value ! A.required ""
+
+-- | Creates an optional text input field onyl with default value
+optionalTextInputFieldWithDefault paramName value =
     H.input ! formControl
             ! type_ "text"
-            ! A.required ""
             ! A.name (fromString paramName)
             ! A.id (fromString paramName)
             ! A.value (fromString value)
@@ -280,6 +283,13 @@ optionalTextInput paramName labelText placeholderText =
             ! A.id (fromString paramName)
             ! A.placeholder (fromString placeholderText)
 
+-- | Creates an optional text input with the given name as id, a given label and a default value
+optionalTextInputWithDefault paramName labelText value =
+    formGroup $ do
+      labelFor paramName labelText
+      optionalTextInputFieldWithDefault paramName value
+               
+
 -- | Creates a text input with the given name as id, a given label and a default value
 textInputWithDefault paramName labelText value =
   formGroup $ do
@@ -300,6 +310,20 @@ labeledText name value =
   formGroup $ do
     H.label $ fromString $ name
     H.span ! formControl $ value
+
+
+
+grayLabel :: String -> Html
+grayLabel text  = H.span ! class_ "label label-default" $ fromString text
+
+greenLabel :: String -> Html
+greenLabel text = H.span ! class_ "label label-success" $ fromString text
+
+redLabel :: String -> Html
+redLabel text = H.span ! class_ "label label-danger"  $ fromString text
+
+blueLabel :: String -> Html
+blueLabel text = H.span ! class_ "label label-primary" $ fromString text
 
 -- | Creates a text area input field with the given name as id, a given id
 textAreaField paramName =

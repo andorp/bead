@@ -20,8 +20,8 @@ normal  = aspectsFromList []
 asg     = Assignment "name" "desc" ballot time time binaryConfig
 asg2    = Assignment "name2" "desc2" normal time time (percentageConfig 0.1)
 
-ast     = Assessment "this is an assessment" binaryConfig
-ast2    = Assessment "this is an assessment 2" (percentageConfig 0.1)
+ast     = Assessment "title" "this is an assessment" time binaryConfig
+ast2    = Assessment "title2" "this is an assessment 2" time (percentageConfig 0.1)
 
 user1name = Username "USER1"
 user2name = Username "USER2"

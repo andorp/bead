@@ -112,6 +112,7 @@ isExceptionalMigration cmd = elem cmd migrationCommandExceptions
 migrationCommandExceptions =
   [ "ALTER TABLE `assessment` CHANGE `description` `description` text character set utf8mb4 collate utf8mb4_unicode_ci NOT NULL"
   , "ALTER TABLE `assessment` CHANGE `eval_config` `eval_config` text character set utf8mb4 collate utf8mb4_unicode_ci NOT NULL"
+  , "ALTER TABLE `assessment` CHANGE `title` `title` text character set utf8mb4 collate utf8mb4_unicode_ci NOT NULL"
   , "ALTER TABLE `assignment` CHANGE `name` `name` text character set utf8mb4 collate utf8mb4_unicode_ci NOT NULL"
   , "ALTER TABLE `assignment` CHANGE `description` `description` longtext character set utf8mb4 collate utf8mb4_unicode_ci NOT NULL"
   , "ALTER TABLE `assignment` CHANGE `type` `type` text character set utf8mb4 collate utf8mb4_unicode_ci NOT NULL"

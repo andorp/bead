@@ -395,6 +395,9 @@ linkText = P.pageCata
   (c $ msg_LinkText_Submission "Submission")
   (c $ msg_LinkText_SubmissionList "Submissions")
   (c3 $ msg_LinkText_SubmissionDetails "Submission Details")
+  (c2 $ msg_LinkText_ViewUserScore "Score")
+  (c3 $ msg_LinkText_NewUserScore "New Score")
+  (c2 $ msg_LinkText_ModifyUserScore "Modify Score")
   (c $ msg_LinkText_GroupRegistration "Group Registration")
   (c $ msg_LinkText_UserDetails "User Details")
   (c $ msg_LinkText_UserSubmissions "Submissions")
@@ -413,6 +416,15 @@ linkText = P.pageCata
   (c2 $ msg_LinkText_DeleteUsersFromGroup "Remove Students")
   (c2 $ msg_LinkText_UnsubscribeFromCourse "Unregister")
   (c2 $ msg_LinkText_GetSubmission "Download Submission")
+  (c2 $ msg_LinkText_GetCourseCsv "Download Course Csv")
+  (c2 $ msg_LinkText_GetGroupCsv "Download Group Csv")
+  (c2 $ msg_LinkText_NewGroupAssessment "New Group Assessment")
+  (c2 $ msg_LinkText_NewCourseAssessment "New Course Assessment")
+  (c2 $ msg_LinkText_GroupAssessmentPreview "New Group Assessment")
+  (c2 $ msg_LinkText_CourseAssessmentPreview "New Course Assessment")
+  (c2 $ msg_LinkText_ModifyAssessment "Modify Assessment")
+  (c2 $ msg_LinkText_ModifyAssessmentPreview "Modify Assessment")
+  (c2 $ msg_LinkText_ViewAssessment "View Assessment")
   where
     c = const
     c2 = c . const

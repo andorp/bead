@@ -6,6 +6,7 @@ module Bead.View.RouteOf (
   , ReqParamValue(..)
   , routeOf
   , routeWithParams
+  , routeWithOptionalParams
   , requestRoute
   , queryString -- Creates a well-formed query string from base path and parameters
   , RoutePath
@@ -23,6 +24,9 @@ module Bead.View.RouteOf (
   , evaluationPath
   , submissionPath
   , submissionListPath
+  , viewUserScorePath
+  , newUserScorePath
+  , modifyUserScorePath
   , userSubmissionsPath
   , newTestScriptPath
   , modifyTestScriptPath
@@ -52,6 +56,15 @@ module Bead.View.RouteOf (
   , unsubscribeFromCoursePath
   , pageRoutePath
   , getSubmissionPath
+  , getCourseCsvPath
+  , getGroupCsvPath
+  , newGroupAssessmentPath
+  , newCourseAssessmentPath
+  , fillNewGroupAssessmentPreviewPath
+  , fillNewCourseAssessmentPreviewPath
+  , modifyAssessmentPath
+  , modifyAssessmentPreviewPath
+  , viewAssessmentPath
   , staticPath
   , pageRequestParams
 #ifdef TEST
@@ -121,6 +134,15 @@ submissionListPath = "/submission-list"
 
 userSubmissionsPath :: RoutePath
 userSubmissionsPath = "/user-submissions"
+
+viewUserScorePath :: RoutePath
+viewUserScorePath = "/view-user-score"
+
+newUserScorePath :: RoutePath
+newUserScorePath = "/new-user-score"
+
+modifyUserScorePath :: RoutePath
+modifyUserScorePath = "/modify-user-score"
 
 newTestScriptPath :: RoutePath
 newTestScriptPath = "/new-test-script"
@@ -199,6 +221,33 @@ unsubscribeFromCoursePath = "/unsubscribe-from-course"
 getSubmissionPath :: RoutePath
 getSubmissionPath = "/get-submission"
 
+getCourseCsvPath :: RoutePath
+getCourseCsvPath = "/get-course-csv"
+
+getGroupCsvPath :: RoutePath
+getGroupCsvPath = "/get-group-csv"
+
+newGroupAssessmentPath :: RoutePath
+newGroupAssessmentPath = "/new-group-assessment"
+
+newCourseAssessmentPath :: RoutePath
+newCourseAssessmentPath = "/new-course-assessment"
+
+fillNewGroupAssessmentPreviewPath :: RoutePath
+fillNewGroupAssessmentPreviewPath = "/fill-new-group-assessment-preview"
+
+fillNewCourseAssessmentPreviewPath :: RoutePath
+fillNewCourseAssessmentPreviewPath = "/fill-new-course-assessment-preview"
+
+modifyAssessmentPath :: RoutePath
+modifyAssessmentPath = "/modify-assessment"
+
+modifyAssessmentPreviewPath :: RoutePath
+modifyAssessmentPreviewPath = "/modify-assessment-preview"
+
+viewAssessmentPath :: RoutePath
+viewAssessmentPath = "/view-assessment"
+
 staticPath :: RoutePath
 staticPath = ""
 
@@ -228,6 +277,9 @@ pageRoutePath = pfmap id id id id id . r where
     submissionPath
     submissionListPath
     submissionDetailsPath
+    viewUserScorePath
+    newUserScorePath
+    modifyUserScorePath
     groupRegistrationPath
     userDetailsPath
     userSubmissionsPath
@@ -246,6 +298,15 @@ pageRoutePath = pfmap id id id id id . r where
     deleteUsersFromGroupPath
     unsubscribeFromCoursePath
     getSubmissionPath
+    getCourseCsvPath
+    getGroupCsvPath
+    newGroupAssessmentPath
+    newCourseAssessmentPath
+    fillNewGroupAssessmentPreviewPath
+    fillNewCourseAssessmentPreviewPath
+    modifyAssessmentPath
+    modifyAssessmentPreviewPath
+    viewAssessmentPath
 
 type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam] [ReqParam]
 
@@ -272,6 +333,9 @@ pageRequestParams = liftsP
   (c []) -- submission
   (c []) -- submissionList
   (\ak sk _ -> [requestParam ak, requestParam sk]) -- submissionDetails
+  (\sk _ -> [requestParam sk]) -- viewUserScore
+  (\assk u _ -> [requestParam assk, requestParam u]) -- newUserScore
+  (\sk _ -> [requestParam sk]) -- modifyUserScore
   (c []) -- groupRegistration
   (c []) -- userDetails
   (c []) -- userSubmissions
@@ -290,6 +354,15 @@ pageRequestParams = liftsP
   (\gk _ -> [requestParam gk]) -- deleteUsersFromGroup
   (\gk _ -> [requestParam gk]) -- unsubscribeFromCourse
   (\sk _ -> [requestParam sk]) -- getSubmission
+  (\ck _ -> [requestParam ck]) -- getCourseCsv
+  (\gk _ -> [requestParam gk]) -- getGroupCsv
+  (\gk _ -> [requestParam gk]) -- newGroupAssessment
+  (\ck _ -> [requestParam ck]) -- newCourseAssessment
+  (\gk _ -> [requestParam gk]) -- fillNewGroupAssessmentPreview
+  (\ck _ -> [requestParam ck]) -- fillNewCourseAssessmentPreview
+  (\ak _ -> [requestParam ak]) -- modifyAssessment
+  (\ak _ -> [requestParam ak]) -- modifyAssessmentPreview
+  (\ak _ -> [requestParam ak]) -- viewAssessment  
     where
       c = const
 
@@ -307,6 +380,10 @@ queryString base params = fromString . join $ [Char8.unpack base, "?"] ++ (inter
 routeWithParams :: (IsString s) => Page a b c d e -> [ReqParam] -> s
 routeWithParams p rs = fromString . join $
   [routeOf p, "?"] ++ (intersperse "&" (map queryStringParam rs))
+
+routeWithOptionalParams :: (IsString s) => Page a b c d e -> [ReqParam] -> s
+routeWithOptionalParams p rs = fromString . join $
+  [routeOf p, "&"] ++ (intersperse "&" (map queryStringParam rs))
 
 -- Creates a request route from the given route and the given request parameters
 requestRoute :: (IsString s) => String -> [ReqParam] -> s

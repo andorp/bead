@@ -8,6 +8,7 @@ module Bead.View.Content.SubmissionTable (
   , submissionTableContext
   , sortUserLines
   , resultCell
+  , groupButtonStyle
   ) where
 
 import           Control.Monad
@@ -174,9 +175,6 @@ submissionTablePart tableId now ctx s = do
     isActiveAssignment ak =
       maybe False (flip Assignment.isActive now) . Map.lookup ak $ stiAssignmentInfos s
 
-    courseButtonStyle = ("btn-hcao", "btn-hcac")
-    groupButtonStyle  = ("btn-hgao", "btn-hgac")
-
     modifyAssignmentLink _buttonStyle@(active, passive) pfx (i,ak) =
       -- If the assignment is active we render with active assignment button style,
       -- if not active the closed button style
@@ -282,12 +280,11 @@ resultCell contentWrapper notFound unevaluated tested passed failed s =
             percentage
             (freeForm $ \msg ->
               let cell = if length msg < displayableFreeFormResultLength then msg else "..." in
-              H.span ! A.class_ "label label-primary"
-                     ! A.title (fromString msg) $ (fromString cell))
+              Bootstrap.blueLabel cell ! A.title (fromString msg))
           where
             percent x = join [show . round $ (100 * x), "%"]
 
-            percentage (Percentage (Scores [p])) = H.span ! A.class_ "label label-primary" $ fromString $ percent p
+            percentage (Percentage (Scores [p])) = Bootstrap.blueLabel $ percent p
             percentage _ = error "SubmissionTable.coloredSubmissionCell percentage is not defined"
 
 courseTestScriptTable :: CourseTestScriptInfos -> SubmissionTableInfo -> IHtml
@@ -328,23 +325,26 @@ assignmentCreationMenu courses groups = submissionTableInfoCata courseMenu group
         msg <- getI18N
         return . navigationWithRoute msg $
           case Map.lookup ck courses of
-            Nothing -> [Pages.newGroupAssignment gk ()]
-            Just _  -> [Pages.newGroupAssignment gk (), Pages.newCourseAssignment ck ()] )
+            Nothing -> [Pages.newGroupAssignment gk (), Pages.newGroupAssessment gk ()]
+            Just _  -> [Pages.newGroupAssignment gk (), Pages.newCourseAssignment ck (), Pages.newGroupAssessment gk ()] )
       (Map.lookup gk groups)
 
     courseMenu _n _us _as _uls _ans ck = maybe
       (return (return ()))
       (const $ do
         msg <- getI18N
-        return (navigationWithRoute msg [Pages.newCourseAssignment ck ()]))
+        return (navigationWithRoute msg [Pages.newCourseAssignment ck (), Pages.newCourseAssessment ck ()]))
       (Map.lookup ck courses)
 
     navigationWithRoute msg links =
-      H.div ! A.class_ "row" $ H.div ! A.class_ "col-md-6" $ H.div ! A.class_ "btn-group" $ mapM_ elem links
+      Bootstrap.rowColMd12 . Bootstrap.buttonGroup $ mapM_ elem links
       where
-        elem page = H.a ! A.href (routeOf page) ! A.class_ "btn btn-default" $ (fromString . msg $ linkText page)
+        elem page = Bootstrap.buttonLink (routeOf page) (fromString . msg $ linkText page)
 
 -- * CSS Section
+
+courseButtonStyle = ("btn-hcao", "btn-hcac")
+groupButtonStyle  = ("btn-hgao", "btn-hgac")
 
 openCourseAssignmentStyle = backgroundColor "#52B017"
 openGroupAssignmentStyle  = backgroundColor "#00FF00"

@@ -178,7 +178,7 @@ allPercentEval = sequence . map percentEval
 data Evaluation = Evaluation {
     evaluationResult  :: EvResult
   , writtenEvaluation :: String
-  } deriving (Eq, Show)
+  } deriving (Eq, Read, Show)
 
 -- | Template function for the evaluation
 evaluationCata f (Evaluation result written) = f result written
@@ -344,6 +344,7 @@ canDelete = flip elem [P_Delete]
 -- | Permissions are allowed on the following objects
 data PermissionObject
   = P_Assignment
+  | P_Assessment
   | P_UserReg
   | P_Submission
   | P_Evaluation

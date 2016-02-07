@@ -299,6 +299,7 @@ Library
     Bead.View.Common
     Bead.View.Content
     Bead.View.Content.Administration.Page
+    Bead.View.Content.Assessment.Page
     Bead.View.Content.Assignment.Data
     Bead.View.Content.Assignment.Page
     Bead.View.Content.Assignment.View
@@ -317,6 +318,7 @@ Library
     Bead.View.Content.Public.Login
     Bead.View.Content.Public.Registration
     Bead.View.Content.Public.ResetPassword
+    Bead.View.Content.Score.Page
     Bead.View.Content.Submission.Common
     Bead.View.Content.Submission.Page
     Bead.View.Content.SubmissionDetails.Page
@@ -329,6 +331,8 @@ Library
     Bead.View.Content.Bootstrap
     Bead.View.Content.Comments
     Bead.View.Content.GetSubmission
+    Bead.View.Content.GetCsv
+    Bead.View.Content.ScoreInfo
     Bead.View.Content.SeeMore
     Bead.View.Content.SubmissionTable
     Bead.View.Content.Utils

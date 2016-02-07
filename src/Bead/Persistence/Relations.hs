@@ -13,16 +13,22 @@ module Bead.Persistence.Relations (
   , userSubmissionDesc
   , userLastSubmissionInfo
   , courseOrGroupOfAssignment
+  , courseOrGroupOfAssessment
   , courseNameAndAdmins
   , administratedGroupsWithCourseName
   , groupsOfUsersCourse
   , removeOpenedSubmission
-  , deleteUserFromCourse -- Deletes a user from a course, searching the group id for the unsubscription
+  , deleteUserFromCourse -- Deletes a user from a course, searching the roup id for the unsubscription
   , isThereASubmissionForGroup -- Checks if the user submitted any solutions for the group
   , isThereASubmissionForCourse -- Checks if the user submitted any solutions for the course
   , testScriptInfo -- Calculates the test script information for the given test key
   , openedSubmissionInfo -- Calculates the opened submissions for the user from the administrated groups and courses
   , submissionLimitOfAssignment
+  , scoreBoards
+  , scoreInfo
+  , scoreDesc
+  , assessmentDesc
+  , userAssessmentKeys
 #ifdef TEST
   , persistRelationsTests
 #endif
@@ -498,6 +504,14 @@ submissionInfo sk = do
     lastTestAgentFeedback = find isTestedFeedback . reverse . sortBy createdDate
     createdDate = compare `on` postDate
 
+-- Produces information for the given score
+scoreInfo :: ScoreKey -> Persist ScoreInfo
+scoreInfo sk = do
+  mEk <- evaluationOfScore sk
+  case mEk of
+    Nothing -> return Score_Not_Found
+    Just ek -> Score_Result ek . evaluationResult <$> loadEvaluation ek
+
 -- Produces information of the last submission for the given user and assignment
 userLastSubmissionInfo :: Username -> AssignmentKey -> Persist SubmissionInfo
 userLastSubmissionInfo u ak =
@@ -580,6 +594,111 @@ isThereASubmissionForCourse u ck = do
 submissionLimitOfAssignment :: Username -> AssignmentKey -> Persist SubmissionLimit
 submissionLimitOfAssignment username key =
   calcSubLimit <$> (loadAssignment key) <*> (length <$> userSubmissions username key)
+
+scoreBoards :: Username -> Persist (Map (Either CourseKey GroupKey) ScoreBoard)
+scoreBoards u = do
+  groupKeys <- map (Right . fst) <$> administratedGroups u
+  courseKeys <- map (Left . fst) <$> administratedCourses u
+  let keys = courseKeys ++ groupKeys
+  Map.fromList . zip keys <$> mapM scoreBoard keys
+
+scoreBoard :: Either CourseKey GroupKey -> Persist ScoreBoard
+scoreBoard key = do
+  assessmentKeys <- assessmentsOf
+  users <- subscriptions
+  board <- foldM boardColumn (Map.empty,Map.empty) assessmentKeys
+  assessments <- mapM loadAssessment assessmentKeys
+  userDescriptions <- mapM userDescription users
+  name <- loadName
+  let assessmentInfos = Map.fromList (zip assessmentKeys assessments)
+  return $ mkScoreBoard board name assessmentKeys assessmentInfos userDescriptions
+  where
+        mkScoreBoard (scores,infos) n as ais us =
+          either (\k -> CourseScoreBoard scores infos k n as ais us)
+                 (\k -> GroupScoreBoard scores infos k n as ais us)
+                 key
+        assessmentsOf = either assessmentsOfCourse assessmentsOfGroup key
+        subscriptions = either subscribedToCourse subscribedToGroup key
+        loadName      = either (fmap courseName . loadCourse) (fmap groupName . loadGroup) key
+        boardColumn :: (Map (AssessmentKey,Username) ScoreKey,Map ScoreKey ScoreInfo)
+                    -> AssessmentKey
+                    -> Persist (Map (AssessmentKey,Username) ScoreKey,Map ScoreKey ScoreInfo)
+        boardColumn board assessment = do
+                       scoresKeys <- scoresOfAssessment assessment
+                       foldM (cell assessment) board scoresKeys
+
+        cell assessment (scores,infos) scoreKey = do
+                       user <- usernameOfScore scoreKey
+                       info <- scoreInfo scoreKey
+                       return (Map.insert (assessment,user) scoreKey scores,Map.insert scoreKey info infos)
+
+scoreDesc :: ScoreKey -> Persist ScoreDesc
+scoreDesc sk = do
+  ak <- assessmentOfScore sk
+  as <- loadAssessment ak
+  info <- scoreInfo sk
+  courseOrGroup <- courseOrGroupOfAssessment ak
+  (course,group,teachers) <- case courseOrGroup of
+    Left ck -> do
+      course <- loadCourse ck
+      teachers <- courseAdmins ck
+      return (courseName course,Nothing,teachers)
+    Right gk -> do
+        group <- loadGroup gk
+        ck <- courseOfGroup gk
+        course <- loadCourse ck
+        teachers <- groupAdmins gk
+        return (courseName course,Just . groupName $ group,teachers)
+  return $ ScoreDesc course group (map (usernameCata id) teachers) info as
+
+assessmentDesc :: AssessmentKey -> Persist AssessmentDesc
+assessmentDesc ak = do
+  courseOrGroup <- courseOrGroupOfAssessment ak
+  (course,group) <- case courseOrGroup of
+    Left ck -> do
+      course <- loadCourse ck
+      return (courseName course,Nothing)
+    Right gk -> do
+      group <- loadGroup gk
+      ck <- courseOfGroup gk
+      course <- loadCourse ck      
+      return (courseName course,Just . groupName $ group)
+  assessment <- loadAssessment ak
+  return $ AssessmentDesc course group ak assessment
+
+courseOrGroupOfAssessment :: AssessmentKey -> Persist (Either CourseKey GroupKey)
+courseOrGroupOfAssessment ak = do
+  maybeGk <- groupOfAssessment ak
+  case maybeGk of
+    Just gk -> return . Right $ gk
+    Nothing -> do
+      maybeCk <- courseOfAssessment ak
+      case maybeCk of
+        Just ck -> return . Left $ ck
+        Nothing -> error $ "Impossible: No course or groupkey was found for the assessment:" ++ show ak
+
+-- Produces a map from the user's courses to set of every assessment of the course. The map is empty if the user is not subscribed to groups or courses.
+-- Per group assessments are included.
+userAssessmentKeys :: Username -> Persist (Map CourseKey (Set AssessmentKey))
+userAssessmentKeys u = do
+  gs <- nub <$> userGroups u
+  cs <- nub <$> userCourses u
+  case (cs,gs) of
+    ([],[]) -> return Map.empty
+    _       -> do
+      gas <- foldM groupAssessment Map.empty gs
+      as  <- foldM courseAssessment gas cs
+      return $! as
+  where
+    groupAssessment m gk = do
+      ck <- courseOfGroup gk
+      (insert ck) <$> (Set.fromList <$> assessmentsOfGroup gk) <*> (pure m)
+
+    courseAssessment m ck =
+      (insert ck) <$> (Set.fromList <$> assessmentsOfCourse ck) <*> (pure m)
+
+    insert k v m =
+      maybe (Map.insert k v m) (flip (Map.insert k) m . (Set.union v)) $ Map.lookup k m
 
 #ifdef TEST
 

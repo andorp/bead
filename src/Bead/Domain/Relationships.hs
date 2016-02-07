@@ -278,6 +278,10 @@ submissionTableInfoCata
     GroupSubmissionTableInfo  crs users asgs lines ainfos ckey gkey ->
                        group  crs users asgs lines ainfos ckey gkey
 
+submissionTableInfoToCourseGroupKey :: SubmissionTableInfo -> Either CourseKey GroupKey
+submissionTableInfoToCourseGroupKey t@(CourseSubmissionTableInfo {}) = Left $ stiCourseKey t
+submissionTableInfoToCourseGroupKey t@(GroupSubmissionTableInfo {}) = Right $ stiGroupKey t
+
 submissionTableInfoPermissions = ObjectPermissions [
     (P_Open, P_Course), (P_Open, P_Assignment)
   ]
@@ -416,10 +420,65 @@ newtype NotificationKey = NotificationKey String
 
 notificationKey f (NotificationKey x) = f x
 
--- | The scoreboard summarizes the information for a course or group related
--- assesments and the evaluation for the assesment.
-newtype ScoreBoard = ScoreBoard (Map (AssessmentKey, Username) EvaluationKey)
+-- | Information about a score for a given assessment
+data ScoreInfo
+  = Score_Not_Found
+    -- ^ There is no score.
+  | Score_Result EvaluationKey EvResult
+    -- ^ There is a score for a given assessment and user.
   deriving (Eq, Show)
+
+scoreInfoAlgebra
+  notFound
+  result
+  s = case s of
+    Score_Not_Found   -> notFound
+    Score_Result ek r -> result ek r
+
+-- | The scoreboard summarizes the information for a course or group related
+-- assesments and the evaluation for the assessment.
+data ScoreBoard = 
+    CourseScoreBoard {
+      sbScores :: Map (AssessmentKey,Username) ScoreKey
+    , sbScoreInfos :: Map ScoreKey ScoreInfo
+    , sbCourseKey :: CourseKey
+    , sbCourseName :: String
+    , sbAssessments :: [AssessmentKey]
+    , sbAssessmentInfos :: Map AssessmentKey Assessment
+    , sbUsers :: [UserDesc]
+    }
+  | GroupScoreBoard {
+      sbScores :: Map (AssessmentKey,Username) ScoreKey
+    , sbScoreInfos :: Map ScoreKey ScoreInfo
+    , sbGroupKey :: GroupKey
+    , sbGroupName :: String
+    , sbAssessments :: [AssessmentKey]
+    , sbAssessmentInfos :: Map AssessmentKey Assessment
+    , sbUsers :: [UserDesc]
+    }
+  deriving (Eq, Show)
+
+scoreBoardPermissions = ObjectPermissions
+  [ (P_Open, P_Group), (P_Open, P_Assessment) ]
+
+data AssessmentDesc = AssessmentDesc {
+    adCourse        :: String
+  , adGroup         :: Maybe String
+  , adAssessmentKey :: AssessmentKey
+  , adAssessment    :: Assessment
+  }
+
+data ScoreDesc = ScoreDesc {
+      scdCourse     :: String
+    , scdGroup      :: Maybe String
+    , scdTeacher    :: [String]
+    , scdScore      :: ScoreInfo
+    , scdAssessment :: Assessment
+    }
+
+scoreDescPermissions = ObjectPermissions [
+    (P_Open, P_Group), (P_Open, P_Course)
+  ]
 
 #ifdef TEST
 relationshipTests = group "Bead.Domain.Relationships" $ do

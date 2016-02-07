@@ -161,6 +161,9 @@ menuId = P.pageCata
   (c "link-submission")
   (c "link-submission-list")
   (c3 "link-submission-details")
+  (c2 "link-view-user-score")
+  (c3 "link-new-user-score")
+  (c2 "link-modify-user-score")
   (c "link-group-registration")
   (c "link-user-details")
   (c "link-user-submissions")
@@ -179,6 +182,15 @@ menuId = P.pageCata
   (c2 "link-delete-users-from-group")
   (c2 "link-unsubscribe-from-course")
   (c2 "link-get-submission")
+  (c2 "link-get-course-csv")
+  (c2 "link-get-group-csv")
+  (c2 "link-new-group-assessment")
+  (c2 "link-new-course-assessment")
+  (c2 "link-fill-group-assessment-preview")
+  (c2 "link-fill-course-assessment-preview")
+  (c2 "link-modify-assessment")
+  (c2 "link-modify-assessment-preview")
+  (c2 "link-view-asssessment")
     where
       c = const
       c2 = c . const
@@ -204,6 +216,20 @@ assignmentNoOfTriesField = AssignmentField "asg-no-of-tries"
 
 instance SnapFieldName AssignmentField where
   fieldName = fromString . aFieldName
+
+newtype AssessmentField = AssessmentField { assessFieldName :: String }
+
+assessmentKeyField = AssessmentField "assess-key"
+
+newtype ScoreField = ScoreField { scoreFieldName :: String }
+
+instance SnapFieldName ScoreField where
+    fieldName = fromString . scoreFieldName
+
+scoreKeyField = ScoreField "score-key"
+
+instance SnapFieldName AssessmentField where
+  fieldName = fromString . assessFieldName
 
 data AssignCourseAdminField
   = SelectedCourse { acFieldName :: String }
@@ -413,6 +439,7 @@ fieldList = map fieldName $ join [
   , SFN fileUploadField, SFN fileUploadSubmit, SFN usersFileTableName
   , SFN assignmentTestScriptField, SFN assignmentUsersFileField, SFN assignmentPwdField
   , SFN assignmentSubmissionTypeField, SFN assignmentNoOfTriesField
+  , SFN assessmentKeyField
 
   , SFN evaluationValueField, SFN evaluationKeyField, SFN evaluationConfigField
   , SFN evaluationPercentageField, SFN evaluationCommentOnlyField, SFN evaluationFreeFormField

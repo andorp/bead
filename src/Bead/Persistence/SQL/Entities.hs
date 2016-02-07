@@ -29,7 +29,9 @@ type JSONText = String
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 
 Assessment
+  title       Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   description Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  created     UTCTime
   evalConfig  JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 

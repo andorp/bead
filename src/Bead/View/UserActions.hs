@@ -6,6 +6,9 @@ import           Bead.Domain.Entities
 import           Bead.Domain.Relationships
 import           Bead.View.Translation
 
+import           Data.Map (Map)
+import           Control.Monad (void)
+
 -- | The user can preform the following actions on the user interface
 data UserAction
   -- Navigation
@@ -37,6 +40,18 @@ data UserAction
   | CreateGroupAssignment GroupKey Assignment TCCreation
   | CreateCourseAssignment CourseKey Assignment TCCreation
   | ModifyAssignment AssignmentKey Assignment TCModification
+
+  -- Assessment
+  | CreateGroupAssessment GroupKey Assessment
+  | CreateCourseAssessment CourseKey Assessment
+  | ModifyAssessment AssessmentKey Assessment
+  | ModifyAssessmentAndScores AssessmentKey Assessment (Map Username Evaluation)
+
+  -- Scores
+  | SaveUserScore Username AssessmentKey Evaluation
+  | ModifyUserScore ScoreKey Evaluation
+  | SaveScoresOfGroupAssessment GroupKey Assessment (Map Username Evaluation)
+  | SaveScoresOfCourseAssessment CourseKey Assessment (Map Username Evaluation)
 
   -- Submission
   | NewSubmission AssignmentKey Submission
@@ -72,6 +87,14 @@ userStoryFor (SubscribeToGroup g)    = Story.subscribeToGroup g
 userStoryFor (CreateGroupAssignment gk a tc)  = Story.createGroupAssignment gk a tc >> return ()
 userStoryFor (CreateCourseAssignment ck a tc) = Story.createCourseAssignment ck a tc >> return ()
 userStoryFor (ModifyAssignment ak a tm) = Story.modifyAssignment ak a tm
+userStoryFor (CreateGroupAssessment gk a) = Story.createGroupAssessment gk a >> return ()
+userStoryFor (CreateCourseAssessment ck a) = Story.createCourseAssessment ck a >> return ()
+userStoryFor (ModifyAssessment ak a) = Story.modifyAssessment ak a
+userStoryFor (ModifyAssessmentAndScores ak a scores) = Story.modifyAssessmentAndScores ak a scores
+userStoryFor (SaveUserScore u ak evaluation) = void $ Story.saveUserScore u ak evaluation
+userStoryFor (ModifyUserScore sk evaluation) = void $ Story.modifyUserScore sk evaluation
+userStoryFor (SaveScoresOfCourseAssessment ck a evaluations) = Story.saveScoresOfCourseAssessment ck a evaluations
+userStoryFor (SaveScoresOfGroupAssessment gk a evaluations) = Story.saveScoresOfGroupAssessment gk a evaluations
 userStoryFor (NewSubmission ak s)    = Story.submitSolution ak s >> return ()
 userStoryFor (NewEvaluation sk e)    = Story.newEvaluation sk e
 userStoryFor (ModifyEvaluation ek e) = Story.modifyEvaluation ek e

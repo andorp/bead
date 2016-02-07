@@ -64,6 +64,23 @@ isAdministratedAssignment u ak = do
       ac' <- adminCourseOfGroup u
       return (or [ac ck, ac' ck])
 
+-- Returns True if the given user administrates the given assessment, otherwise False
+isAdministratedAssessment :: Username -> AssessmentKey -> Persist Bool
+isAdministratedAssessment u ak = do
+  key <- courseOrGroupOfAssessment ak
+  either course group key
+  where
+    group gk = do
+      ag <- adminGroup u
+      ck <- courseOfGroup gk
+      as <- adminCourse u
+      return (or [ag gk, as ck])
+
+    course ck = do
+      ac <- adminCourse u
+      ac' <- adminCourseOfGroup u
+      return (or [ac ck, ac' ck])
+
 -- Returns True if the given user is a student in a course or group that the given
 -- assignment belongs to, otherwise False
 isUsersAssignment :: Username -> AssignmentKey -> Persist Bool

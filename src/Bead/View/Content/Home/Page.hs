@@ -50,6 +50,8 @@ homePage = withUserState $ \s -> do
     (userStory $ do
        ua <- S.userAssignments
        sbmTables <- (map sortUserLines <$> S.submissionTables)
+       scoreBoards <- S.scoreBoards
+       assessments <- S.userAssessments
        stc <- ST.submissionTableContext
        return $
          HomePageData
@@ -58,6 +60,8 @@ homePage = withUserState $ \s -> do
            (not . Map.null $ stcAdminGroups stc)
            ua
            sbmTables
+           scoreBoards
+           assessments
            converter
            stc
            now)
