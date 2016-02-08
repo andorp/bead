@@ -156,10 +156,12 @@ parseEvaluation msg evalConfig s   = evConfigCata
           mkEval result = Evaluation result ""
 
           readBinary :: Maybe EvResult
-          readBinary | normalized == accepted = Just . binaryResult $ Passed
-                     | normalized == rejected = Just . binaryResult $ Failed
-                     | otherwise              = Nothing
+          readBinary | isAccepted = Just . binaryResult $ Passed
+                     | isRejected = Just . binaryResult $ Failed
+                     | otherwise  = Nothing
               where
+                isAccepted = normalized `elem` [accepted,"+","1"]
+                isRejected = normalized `elem` [rejected,"-","0"]
                 normalized = map toUpper (strip s)
                 accepted   = map toUpper (msg . msg_NewAssessment_Accepted $ "Accepted")
                 rejected   = map toUpper (msg . msg_NewAssessment_Rejected $ "Rejected")

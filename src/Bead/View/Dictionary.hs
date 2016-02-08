@@ -80,6 +80,8 @@ dictionaryFileCata f (DictionaryFile iconFile langCode langName entries) =
 (<|) :: (String -> Translation String) -> String -> Translation String
 (<|) = ($)
 
+infixr 0 <|
+
 defaultLanguage = "en"
 
 defaultDictionaryInfo = DictionaryInfo {

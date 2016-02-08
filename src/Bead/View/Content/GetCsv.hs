@@ -99,7 +99,10 @@ information :: I18N -> String
 information msg = msg . msg_GetCsv_Information $ unlines
               [ "# Lines starting with '#' will be ignored."
               , "# The following scores are valid:"
-              , "#  - In case of binary evaluation: either 'Accepted' or 'Rejected'"
+              , "#  - In case of binary evaluation:"
+              , "#      Accepted may be written as '+', '1' or 'Accepted'."
+              , "#      Rejected may be written as '-', '0' or 'Rejected'."
+              , "#      Interpretation is case in-sensitive."
               , "#  - In case of percentage evaluation: an integer from 0 to 100, inclusive"
               , "#  - In case of free form evaluation: text ending with newline character."
               ]
