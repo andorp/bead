@@ -421,7 +421,6 @@ evTypeSelection msg selected = Bootstrap.selectionWithLabel "evConfig" evalType 
           percentage = msg . msg_NewAssessment_PercentageEvaluation $ "Percentage"
           freeForm = msg . msg_NewAssessment_FreeFormEvaluation $ "Free form textual"
 
---előnézet: össze kell dolgozni az eredményeket a meglévőekkel, hogy az előnézet jó legyen
 modifyAssessmentPage :: GETContentHandler
 modifyAssessmentPage = do
   ak <- getParameter assessmentKeyPrm
@@ -440,6 +439,7 @@ postModifyAssessment = do
   newTitle <- getParameter titleParam
   newDesc <- getParameter descriptionParam
   selectedEvType <- getParameter evConfigParam
+  evaluations <- read <$> getParameter evaluationsParam
   now <- liftIO getCurrentTime
   let a = Assessment {
             title         = newTitle
@@ -451,7 +451,9 @@ postModifyAssessment = do
     [File _name contents] -> do
       let scores = parseEvaluations msg selectedEvType (readCsv contents)
       return $ ModifyAssessmentAndScores ak a scores
-    _ -> return $ ModifyAssessment ak a
+    _ -> return $ if M.null evaluations
+                  then ModifyAssessment ak a
+                  else ModifyAssessmentAndScores ak a evaluations
   
 modifyAssessmentPreviewPage :: ViewPOSTContentHandler
 modifyAssessmentPreviewPage = do
