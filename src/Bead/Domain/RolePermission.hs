@@ -35,7 +35,7 @@ student P_Delete _ = False
 
 -- * Group Admin
 
-groupAdmin P_Open   o = elem o [P_Assignment, P_Assessment, P_Submission, P_Statistics, P_Group, P_PlainPage, P_GroupAdmin, P_TestScript, P_File]
+groupAdmin P_Open   o = elem o [P_Assignment, P_Assessment, P_Submission, P_Statistics, P_Group, P_PlainPage, P_User, P_GroupAdmin, P_TestScript, P_File]
 groupAdmin P_Create o = elem o [P_Assignment, P_Assessment, P_Evaluation, P_File]
 groupAdmin P_Modify o = elem o [P_Assignment, P_Assessment, P_Password, P_Evaluation, P_Group, P_StudentPassword]
 groupAdmin P_Delete o = elem o [P_Assignment, P_Assessment]
