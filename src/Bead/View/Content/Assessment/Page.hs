@@ -50,12 +50,11 @@ viewAssessment = ViewHandler viewAssessmentPage
 
 type Title = String
 type Description = String
-type CsvContent = B.ByteString
 
 data PageData = PD_NewCourseAssessment CourseKey
               | PD_NewGroupAssessment GroupKey
-              | PD_PreviewCourseAssessment CourseKey Title Description EvConfig CsvContent [UserDesc]
-              | PD_PreviewGroupAssessment GroupKey Title Description EvConfig CsvContent [UserDesc]
+              | PD_PreviewCourseAssessment CourseKey Title Description EvConfig [UserDesc] (M.Map UserDesc Evaluation)
+              | PD_PreviewGroupAssessment GroupKey Title Description EvConfig [UserDesc] (M.Map UserDesc Evaluation)
               | PD_ModifyAssessment {
                   pdAKey             :: AssessmentKey
                 , pdAs               :: Assessment
@@ -67,8 +66,8 @@ data PageData = PD_NewCourseAssessment CourseKey
                 , pdAs               :: Assessment
                 , courseOrGroupKey   :: Either CourseKey GroupKey
                 , pdIsScoreSubmitted :: Bool
-                , pdCsv              :: CsvContent
-                , pdUsernames        :: [UserDesc]
+                , users              :: [UserDesc]
+                , pdEvaluations      :: M.Map UserDesc Evaluation
                 } 
 
 pageDataAlgebra
@@ -82,10 +81,10 @@ pageDataAlgebra
       case pdata of
         PD_NewCourseAssessment ck -> newCourseAssessment ck
         PD_NewGroupAssessment gk -> newGroupAssessment gk
-        PD_PreviewCourseAssessment ck title description evConfig scores usernames -> previewCourseAssessment ck title description evConfig scores usernames
-        PD_PreviewGroupAssessment gk title description evConfig scores usernames -> previewGroupAssessment gk title description evConfig scores usernames
+        PD_PreviewCourseAssessment ck title description evConfig users evaluations -> previewCourseAssessment ck title description evConfig users evaluations
+        PD_PreviewGroupAssessment gk title description evConfig users evaluations -> previewGroupAssessment gk title description evConfig users evaluations
         PD_ModifyAssessment ak as cGKey isScoreSubmitted -> modifyAssessment ak as cGKey isScoreSubmitted
-        PD_ModifyAssessmentPreview ak as cGKey isScoreSubmitted csv usernames -> modifyAssessmentPreview ak as cGKey isScoreSubmitted csv usernames
+        PD_ModifyAssessmentPreview ak as cGKey isScoreSubmitted users evaluations -> modifyAssessmentPreview ak as cGKey isScoreSubmitted users evaluations
 
 data UploadResult
   = PolicyFailure
@@ -104,7 +103,6 @@ postNewGroupAssessment = do
   msg <- lift i18nH
   uploadResult <- uploadFile
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
-  evaluations <- read <$> getParameter evaluationsParam
   title <- getParameter titleParam
   description <- getParameter descriptionParam
   evalConfig <- getParameter evConfigParam
@@ -112,11 +110,16 @@ postNewGroupAssessment = do
   let a = Assessment title description now evalConfig
   case uploadResult of
     [File _name contents] -> do
-      let scores = parseEvaluations msg evalConfig (readCsv contents)
-      return $ SaveScoresOfGroupAssessment gk a scores
-    _ -> return $ if M.null evaluations
-                  then CreateGroupAssessment gk a
-                  else SaveScoresOfGroupAssessment gk a evaluations
+      users <- userStory $ do
+        usernames <- Story.subscribedToGroup gk
+        mapM Story.loadUserDesc usernames
+      let evaluations = fromUserDescKey (toUserDescKey ud_uid users (parseEvaluations msg evalConfig (readCsv contents)))
+      return $ SaveScoresOfGroupAssessment gk a evaluations
+    _ -> do
+      evaluations <- read <$> getParameter evaluationsParam
+      return $ if M.null evaluations
+                 then CreateGroupAssessment gk a
+                 else SaveScoresOfGroupAssessment gk a evaluations
 
 newCourseAssessmentPage :: GETContentHandler
 newCourseAssessmentPage = do
@@ -127,22 +130,34 @@ postNewCourseAssessment :: POSTContentHandler
 postNewCourseAssessment = do 
   msg <- lift i18nH
   uploadResult <- uploadFile
-  ck <- getParameter $ customCourseKeyPrm courseKeyParamName
-  evaluations <- read <$> getParameter evaluationsParam
   title <- getParameter titleParam
+  ck <- getParameter $ customCourseKeyPrm courseKeyParamName
   description <- getParameter descriptionParam
   evalConfig <- getParameter evConfigParam
   now <- liftIO getCurrentTime
   let a = Assessment title description now evalConfig
   case uploadResult of
     [File _name contents] -> do
-      let scores = parseEvaluations msg evalConfig (readCsv contents)
+      users <- userStory $ do
+        usernames <- Story.subscribedToCourse ck
+        mapM Story.loadUserDesc usernames
+      let evaluations = fromUserDescKey (toUserDescKey ud_uid users (parseEvaluations msg evalConfig (readCsv contents)))
       return $ SaveScoresOfCourseAssessment ck a evaluations
-    _ -> return $ if M.null evaluations
-                  then CreateCourseAssessment ck a
-                  else SaveScoresOfCourseAssessment ck a evaluations
+    _ -> do
+      evaluations <- read <$> getParameter evaluationsParam
+      return $ if M.null evaluations
+                 then CreateCourseAssessment ck a
+                 else SaveScoresOfCourseAssessment ck a evaluations
 
-parseEvaluations :: I18N -> EvConfig -> M.Map Username String -> M.Map Username Evaluation
+toUserDescKey :: Ord k => (UserDesc -> k) -> [UserDesc] -> M.Map k a -> M.Map UserDesc a
+toUserDescKey select users m = foldr f M.empty users
+    where 
+      f user acc = maybe acc (\a -> M.insert user a acc) (M.lookup (select user) m)
+
+fromUserDescKey :: M.Map UserDesc a -> M.Map Username a
+fromUserDescKey = M.mapKeys ud_username
+
+parseEvaluations :: I18N -> EvConfig -> M.Map Uid String -> M.Map Uid Evaluation
 parseEvaluations msg evalConfig = M.mapMaybe (parseEvaluation msg evalConfig)
 
 parseEvaluation :: I18N -> EvConfig -> String -> Maybe Evaluation
@@ -180,16 +195,18 @@ evConfigParam = evalConfigParameter "evConfig"
 
 fillNewGroupAssessmentPreviewPage :: ViewPOSTContentHandler
 fillNewGroupAssessmentPreviewPage = do
+  msg <- lift i18nH
   uploadResult <- uploadFile
   title <- getParameter titleParam
   description <- getParameter descriptionParam
   evConfig <- getParameter evConfigParam
   gk <- getParameter $ customGroupKeyPrm groupKeyParamName
-  let [File _name csvContents] = uploadResult
+  let [File _name contents] = uploadResult
   users <- userStory $ do
     usernames <- Story.subscribedToGroup gk
     mapM Story.loadUserDesc usernames
-  return $ fillAssessmentTemplate $ PD_PreviewGroupAssessment gk title description evConfig csvContents users
+  let evaluations = toUserDescKey ud_uid users (parseEvaluations msg evConfig (readCsv contents))
+  return $ fillAssessmentTemplate $ PD_PreviewGroupAssessment gk title description evConfig users evaluations
 
 uploadFile :: ContentHandler [UploadResult]
 uploadFile = do
@@ -243,19 +260,18 @@ fillAssessmentTemplate pdata = do
           Bootstrap.colMd4 (previewButton msg ! A.disabled "")
           Bootstrap.colMd4 (downloadCsvButton msg)
           Bootstrap.colMd4 (commitButton msg)
-        let csvTable csvContents usernames = do
-              let scores = parseEvaluations msg selectedEvType (readCsv csvContents)
-              previewTable msg usernames scores
-              hiddenInput "evaluations" (show scores)
+        let csvTable users evaluations = do
+              previewTable msg users evaluations
+              hiddenInput "evaluations" (show (fromUserDescKey evaluations))
             noPreview = hiddenInput "evaluations" (show (M.empty :: M.Map Username Evaluation))
             
         pageDataAlgebra
           (\_ -> noPreview)
           (\_ -> noPreview)
-          (\_ _ _ _ csv usernames -> csvTable csv usernames)
-          (\_ _ _ _ csv usernames -> csvTable csv usernames)
+          (\_ _ _ _ users evaluations -> csvTable users evaluations)
+          (\_ _ _ _ users evaluations -> csvTable users evaluations)
           (\_ _ _ _ -> noPreview)
-          (\_ _ _ _ csv usernames -> csvTable csv usernames)
+          (\_ _ _ _ users evaluations -> csvTable users evaluations)
           pdata
         enablePreviewButton
         Bootstrap.turnSelectionsOn
@@ -357,7 +373,7 @@ fillAssessmentTemplate pdata = do
                        pdata
                            where defaultEvType = binaryConfig
 
-previewTable :: I18N -> [UserDesc] -> M.Map Username Evaluation -> H.Html
+previewTable :: I18N -> [UserDesc] -> M.Map UserDesc Evaluation -> H.Html
 previewTable msg users evaluations = Bootstrap.table $ do
   header
   tableData
@@ -375,16 +391,15 @@ previewTable msg users evaluations = Bootstrap.table $ do
       tableRow user = H.tr $ do
         H.td $ fromString fullname
         H.td $ fromString user_uid
-        H.td $ case M.lookup username evaluations of
+        H.td $ case M.lookup user evaluations of
                  Just evaluation -> let scoreInfo = evaluationCata (\result _comment -> (Score_Result (EvaluationKey "") result)) evaluation in
                                     scoreInfoToIcon msg scoreInfo
                  Nothing         -> scoreInfoToIcon msg Score_Not_Found
 
           where fullname = ud_fullname user
                 user_uid = uid id . ud_uid $ user
-                username = ud_username user
 
-readCsv :: B.ByteString -> M.Map Username String
+readCsv :: B.ByteString -> M.Map Uid String
 readCsv bs = foldr (f . dropSpaces) M.empty (B.lines bs)
     where
       f line m | B.null line        = m
@@ -403,7 +418,7 @@ readCsv bs = foldr (f . dropSpaces) M.empty (B.lines bs)
                        Just (',',cs) -> BsUTF8.toString cs
                        _             -> ""
  
-            username' = Username . B.unpack . stripSpaces $ username
+            username' = Uid . B.unpack . stripSpaces $ username
 
       dropSpaces = B.dropWhile isSpace
       stripSpaces = B.reverse . dropSpaces . B.reverse . dropSpaces
@@ -411,6 +426,7 @@ readCsv bs = foldr (f . dropSpaces) M.empty (B.lines bs)
 viewAssessmentPage :: GETContentHandler
 viewAssessmentPage = error "viewAssessmentPage is undefined"
 
+evTypeSelection :: I18N -> EvConfig -> H.Html
 evTypeSelection msg selected = Bootstrap.selectionWithLabel "evConfig" evalType (== selected) selection 
     where selection = [ (binaryConfig, binary)
                       , (percentageConfig 0.0, percentage)
@@ -439,7 +455,6 @@ postModifyAssessment = do
   newTitle <- getParameter titleParam
   newDesc <- getParameter descriptionParam
   selectedEvType <- getParameter evConfigParam
-  evaluations <- read <$> getParameter evaluationsParam
   now <- liftIO getCurrentTime
   let a = Assessment {
             title         = newTitle
@@ -449,16 +464,24 @@ postModifyAssessment = do
           }
   case uploadResult of
     [File _name contents] -> do
-      let scores = parseEvaluations msg selectedEvType (readCsv contents)
-      return $ ModifyAssessmentAndScores ak a scores
-    _ -> return $ if M.null evaluations
-                  then ModifyAssessment ak a
-                  else ModifyAssessmentAndScores ak a evaluations
+      users <- userStory $ do
+        cGKey <- Story.courseOrGroupOfAssessment ak
+        usernames <- either Story.subscribedToCourse Story.subscribedToGroup cGKey
+        mapM Story.loadUserDesc usernames
+      let evaluations = fromUserDescKey (toUserDescKey ud_uid users (parseEvaluations msg selectedEvType (readCsv contents)))
+      return $ ModifyAssessmentAndScores ak a evaluations
+    _ -> do
+      evaluations <- read <$> getParameter evaluationsParam
+      return $ if M.null evaluations
+                 then ModifyAssessment ak a
+                 else ModifyAssessmentAndScores ak a evaluations
   
 modifyAssessmentPreviewPage :: ViewPOSTContentHandler
 modifyAssessmentPreviewPage = do
+  msg <- lift i18nH
   uploadResult <- uploadFile
   ak <- getParameter assessmentKeyPrm
+  selectedEvType <- getParameter evConfigParam
   (as,cGKey,scoreSubmitted,users) <- userStory $ do
     as <- Story.loadAssessment ak
     scoreSubmitted <- Story.isThereAScore ak
@@ -466,6 +489,7 @@ modifyAssessmentPreviewPage = do
     usernames <- either Story.subscribedToCourse Story.subscribedToGroup cGKey
     users <- mapM Story.loadUserDesc usernames
     return (as,cGKey,scoreSubmitted,users)
-  let [File _name csvContents] = uploadResult
-  return . fillAssessmentTemplate $ PD_ModifyAssessmentPreview ak as cGKey scoreSubmitted csvContents users
+  let [File _name contents] = uploadResult
+      evaluations = toUserDescKey ud_uid users (parseEvaluations msg selectedEvType (readCsv contents))
+  return . fillAssessmentTemplate $ PD_ModifyAssessmentPreview ak as cGKey scoreSubmitted users evaluations
 
