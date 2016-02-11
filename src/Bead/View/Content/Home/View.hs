@@ -152,33 +152,36 @@ htmlAssessmentTable board
           H.tr $ do
             H.th . fromString . msg $ msg_Home_AssessmentTable_StudentName "Name"
             H.th . fromString . msg $ msg_Home_AssessmentTable_Username "Username"
-            forM_ (zip (sbAssessments board) [1..]) (assessmentViewButton msg)
-          forM_ (sbUsers board) (userLine msg)
+            forM_ (zip sortedAssessments [1..]) (assessmentViewButton msg)
+          forM_ (sortBy (compare `on` ud_fullname) (sbUsers board)) (userLine msg)
       where
-        assessmentViewButton :: I18N -> (AssessmentKey,Int) -> Html
-        assessmentViewButton msg (ak,n) = H.td $ Bootstrap.customButtonLink style modifyLink (assessmentName ak) (prefix ++ show n)
+        assessmentViewButton :: I18N -> ((AssessmentKey,Assessment),Int) -> Html
+        assessmentViewButton msg ((ak,as),n) = H.td $ Bootstrap.customButtonLink style modifyLink assessmentName (prefix ++ show n)
             where 
               style = [fst ST.groupButtonStyle]
               prefix = msg $ msg_Home_GroupAssessmentIDPrefix "A"
               modifyLink = routeOf $ Pages.modifyAssessment ak ()
-
-        assessmentName :: AssessmentKey -> String
-        assessmentName ak = maybe "" Content.title (Map.lookup ak (sbAssessmentInfos board))
+              assessmentName = assessment (\title _desc _creation _cfg -> title) as
 
         userLine :: I18N -> UserDesc -> Html
         userLine msg userDesc = H.tr $ do
           H.td . string . ud_fullname $ userDesc
           H.td . string . uid id . ud_uid $ userDesc 
-          forM_ (sbAssessments board) (scoreIcon msg . ud_username $ userDesc)
+          forM_ sortedAssessments (scoreIcon msg . ud_username $ userDesc)
 
-        scoreIcon :: I18N -> Username -> AssessmentKey -> Html
-        scoreIcon msg username ak = H.td $ scoreInfoToIconLink msg (newScoreLink ak username) modifyLink scoreInfo
+        scoreIcon :: I18N -> Username -> (AssessmentKey,Assessment) -> Html
+        scoreIcon msg username (ak,_as) = H.td $ scoreInfoToIconLink msg (newScoreLink ak username) modifyLink scoreInfo
               where (scoreInfo,modifyLink) = case Map.lookup (ak,username) (sbScores board) of
                                                Just scoreKey -> (maybe Score_Not_Found id (Map.lookup scoreKey (sbScoreInfos board)), modifyScoreLink scoreKey)
                                                Nothing       -> (Score_Not_Found,"")
 
         newScoreLink ak u = routeOf $ Pages.newUserScore ak u ()
         modifyScoreLink sk = routeOf $ Pages.modifyUserScore sk ()
+
+        sortByCreationTime :: [(AssessmentKey,Assessment)] -> [(AssessmentKey,Assessment)]
+        sortByCreationTime = sortBy (compare `on` (created . snd))
+
+        sortedAssessments = sortByCreationTime (sbAssessments board)
 
 navigation :: [Pages.Page a b c d e] -> IHtml
 navigation links = do
@@ -320,10 +323,10 @@ availableAssessment msg (c, assessments) | null assessments = mempty
                                          | otherwise = do
   Bootstrap.rowColMd12 . H.p . fromString . msg $ msg_Home_AssessmentTable_Assessments "Assessments"
   Bootstrap.rowColMd12 . Bootstrap.table $ do
-    H.tr (header assessments)
+    H.tr (header sortedAssessments)
     H.tr $ do
       H.td . string $ courseName c
-      mapM_ evaluationViewButton (zip [(sk,si) | (_,_,sk,si) <- assessments] [1..])
+      mapM_ evaluationViewButton (zip [(sk,si) | (_,_,sk,si) <- sortedAssessments] [1..])
   where
       header assessments = H.th mempty >> mapM_ (H.td . assessmentLabel) (zip [assessment | (_ak,assessment,_sk,_si) <- assessments] [1..])
           where
@@ -338,3 +341,6 @@ availableAssessment msg (c, assessments) | null assessments = mempty
       evaluationViewButton ((Just sk,info),n) = H.td $ scoreInfoToIconLink msg "" viewScoreLink info
           where viewScoreLink = routeOf $ Pages.viewUserScore sk ()
       evaluationViewButton ((Nothing,info),n) = H.td $ scoreInfoToIcon msg info
+
+      sortedAssessments = sortByCreationTime assessments
+      sortByCreationTime = sortBy (compare `on` (\(_ak,as,_sk,_si) -> created as))

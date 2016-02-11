@@ -443,8 +443,7 @@ data ScoreBoard =
     , sbScoreInfos :: Map ScoreKey ScoreInfo
     , sbCourseKey :: CourseKey
     , sbCourseName :: String
-    , sbAssessments :: [AssessmentKey]
-    , sbAssessmentInfos :: Map AssessmentKey Assessment
+    , sbAssessments :: [(AssessmentKey,Assessment)]
     , sbUsers :: [UserDesc]
     }
   | GroupScoreBoard {
@@ -452,8 +451,7 @@ data ScoreBoard =
     , sbScoreInfos :: Map ScoreKey ScoreInfo
     , sbGroupKey :: GroupKey
     , sbGroupName :: String
-    , sbAssessments :: [AssessmentKey]
-    , sbAssessmentInfos :: Map AssessmentKey Assessment
+    , sbAssessments :: [(AssessmentKey,Assessment)]
     , sbUsers :: [UserDesc]
     }
   deriving (Eq, Show)
