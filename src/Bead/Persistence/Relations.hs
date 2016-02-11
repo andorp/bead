@@ -610,12 +610,11 @@ scoreBoard key = do
   assessments <- mapM loadAssessment assessmentKeys
   userDescriptions <- mapM userDescription users
   name <- loadName
-  let assessmentInfos = Map.fromList (zip assessmentKeys assessments)
-  return $ mkScoreBoard board name assessmentKeys assessmentInfos userDescriptions
+  return $ mkScoreBoard board name (zip assessmentKeys assessments) userDescriptions
   where
-        mkScoreBoard (scores,infos) n as ais us =
-          either (\k -> CourseScoreBoard scores infos k n as ais us)
-                 (\k -> GroupScoreBoard scores infos k n as ais us)
+        mkScoreBoard (scores,infos) n as us =
+          either (\k -> CourseScoreBoard scores infos k n as us)
+                 (\k -> GroupScoreBoard scores infos k n as us)
                  key
         assessmentsOf = either assessmentsOfCourse assessmentsOfGroup key
         subscriptions = either subscribedToCourse subscribedToGroup key
