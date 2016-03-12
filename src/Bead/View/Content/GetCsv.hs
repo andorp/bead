@@ -71,7 +71,7 @@ csvEmpty msg users = (information msg) ++ unlines (header : body)
             username = msg . msg_GetCsv_Username $ "Username"
             score = msg . msg_GetCsv_Score $ "Score"
 
-      body = map line (sortBy (compare `on` fullName) users)
+      body = map line (sortBy (compareHun `on` fullName) users)
 
       line user = intercalate "," [fullName user, userid user, ""]
       userid = uid id . ud_uid 
@@ -86,7 +86,7 @@ csvFilled msg users = (information msg) ++ unlines (header : body)
             username = msg . msg_GetCsv_Username $ "Username"
             score = msg . msg_GetCsv_Score $ "Score"
 
-      body = map line (sortBy (compare `on` (fullName . fst)) users)
+      body = map line (sortBy (compareHun `on` (fullName . fst)) users)
 
       line (user,mScoreInfo) = intercalate "," [fullName user, userid user, score]
           where score = case mScoreInfo of

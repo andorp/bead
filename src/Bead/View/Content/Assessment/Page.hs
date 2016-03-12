@@ -385,7 +385,7 @@ previewTable msg users evaluations = Bootstrap.table $ do
             score = fromString . msg . msg_NewAssessment_Score $ "Score"
              
       tableData :: H.Html
-      tableData = mapM_ tableRow (sortBy (compare `on` ud_fullname) users)
+      tableData = mapM_ tableRow (sortBy (compareHun `on` ud_fullname) users)
 
       tableRow :: UserDesc -> H.Html
       tableRow user = H.tr $ do
