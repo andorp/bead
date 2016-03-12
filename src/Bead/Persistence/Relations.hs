@@ -648,7 +648,8 @@ scoreDesc sk = do
         course <- loadCourse ck
         teachers <- groupAdmins gk
         return (courseName course,Just . groupName $ group,teachers)
-  return $ ScoreDesc course group (map (usernameCata id) teachers) info as
+  teachersName <- mapM ((ud_fullname <$>) . userDescription) teachers
+  return $ ScoreDesc course group teachersName info as
 
 assessmentDesc :: AssessmentKey -> Persist AssessmentDesc
 assessmentDesc ak = do
