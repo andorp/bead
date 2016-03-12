@@ -338,7 +338,7 @@ dict = DictionaryFile {
     , msg_Home_CourseAdministration <| "Tárgyi adminisztráció"
     , msg_Home_CourseAdministration_Info <| "A tárgyhoz új csoportokat a Tárgyi beállítások almenüben lehet létrehozni.  Ugyanitt lehet egyúttal az egyes csoportokhoz oktatókat rendelni."
     , msg_Home_NoCoursesYet <| "Még nincsenek tárgyak!  Meg kell kérni az adminisztrátort, hogy rendeljen hozzánk tárgyat!"
-    , msg_Home_SubmissionTable_Info <| "A feladat sorszámára kattintva módosítható már kiírt feladat, ha van jogosultságunk a feladat módosításához (a nevét ld. tooltipben).  Hallgatókat törölhetőek kurzusról vagy csoportból a Törlés oszlopban bejelölve, majd a gombra kattintva."
+    , msg_Home_SubmissionTable_Info <| "A feladat sorszámára kattintva módosítható már kiírt feladat, ha van jogosultságunk a feladat módosításához (a nevét ld. tooltipben).  Hallgatók törölhetőek kurzusról vagy csoportból a Törlés oszlopban bejelölve, majd a gombra kattintva."
     , msg_Home_CourseSubmissionTableList_Info <| "A kurzusokhoz tartozó összesítő táblázatok külön oldalon találhatóak. Kattintsunk a kurzus nevére az alábbi listában."
     , msg_Home_GroupAdminTasks <| "Oktatói feladatok"
     , msg_Home_NoGroupsYet <| "Még nincsenek csoportok!"
