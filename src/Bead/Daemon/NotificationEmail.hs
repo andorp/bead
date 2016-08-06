@@ -7,13 +7,14 @@ import           Control.Concurrent
 
 import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
-import           Bead.Controller.UserStories (runUserStory, notificationEmails)
+import           Bead.Controller.UserStories (runUserStory, notificationEmails, UserStory)
 import           Bead.View.Translation (trans)
 
-startNotificationEmailAgent :: L.Logger -> Int -> Int -> ServiceContext -> IO ()
-startNotificationEmailAgent logger initWait wait context = do
+startNotificationEmailDaemon :: L.Logger -> Int -> Int -> ServiceContext -> IO ()
+startNotificationEmailDaemon logger initWait wait context = do
   let agent = do threadDelay (secToMicroSec wait)
                  ((runUserStory context trans NotificationAgent placeHolder) >> return ()) `catch` someException
+                 putStrLn "Running Notification Email Daemon"
                  agent
   forkIO $ do
     threadDelay (secToMicroSec initWait)

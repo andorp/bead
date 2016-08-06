@@ -272,6 +272,7 @@ Library
     Bead.Controller.Pages
     Bead.Controller.ServiceContext
     Bead.Controller.UserStories
+    Bead.Daemon.NotificationEmail              
     Bead.Daemon.Logout
     Bead.Daemon.TestAgent
     Bead.Domain.Entity.Assessment

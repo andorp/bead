@@ -1371,8 +1371,10 @@ testAgentFeedbacks = do
   where
     submission = fst
 
-{--
+
 notificationEmails :: UserStory ()
+notificationEmails = undefined
+{--
 notificationEmails = do
   persistence $ do
     notifications <- unprocessedNotifications
