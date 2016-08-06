@@ -1,6 +1,7 @@
 module Bead.Domain.Entity.Notification where
 
 import Data.Text
+import Data.Time.Clock (UTCTime)
 
 -- The notifications can come from different sources
 data NotifType
@@ -18,11 +19,14 @@ notifType
     Feedback -> feedback
     System   -> system
 
+data NotificationState = New | Seen
+  deriving (Eq, Show)
+
 -- The notification is rendered for the user on some informational
 -- page or send via email.
 data Notification = Notification {
     notifMessage :: Text
+  , notifDate    :: UTCTime
   } deriving (Eq, Show)
 
-notification f (Notification msg) = f msg
-
+notification f (Notification msg date) = f msg date

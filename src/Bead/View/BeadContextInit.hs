@@ -60,6 +60,7 @@ type InitTasks = Maybe UserRegInfo
 
 -- The collection of the daemons that are neccesary to create the
 -- application
+-- TODO: Use lenses for optional fields.
 data Daemons = Daemons {
     logoutDaemon :: LogoutDaemon
 #ifdef EmailEnabled

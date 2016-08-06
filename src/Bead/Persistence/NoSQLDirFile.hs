@@ -440,9 +440,10 @@ instance Save Uid where
   save d = fileSave d "uid" . show
 
 instance Save Notification where
-  save d = Notif.notification $ \msg -> do
+  save d = Notif.notification $ \msg date -> do
     createStructureDirs d notificationDirStructure
     fileSave d "message" (Text.unpack msg)
+    fileSave d "date"    (show date)
 
 instance Save Assignment where
   save d = assignmentCata $ \name desc type_ start end evtype -> do
@@ -581,6 +582,7 @@ instance Load Uid where
 
 instance Load Notification where
   load d = Notification <$> (fileLoad d "message" (Just . fromString))
+                        <*> (fileLoad d "date" readMaybe)
 
 instance Load Assignment where
   load d = assignmentAna
@@ -761,7 +763,7 @@ instance Update TestCase where
 
 instance Update Assessment where
   update d = assessment $ \title desc _created cfg -> do
-    fileUpdate d "title" title                             
+    fileUpdate d "title" title
     fileUpdate d "desc" desc
     fileUpdate d "cfg" $ encodeJSON cfg
 

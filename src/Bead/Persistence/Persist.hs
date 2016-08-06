@@ -125,12 +125,8 @@ module Bead.Persistence.Persist (
   , submissionOfFeedback
 
   -- Notification
-  , saveCommentNotification
-  , saveFeedbackNotification
-  , saveSystemNotification
+  , saveNotification
   , loadNotification
-  , commentOfNotification
-  , feedbackOfNotification
   , usersOfNotification
 
   -- Evaluation
@@ -586,23 +582,11 @@ submissionOfFeedback = PersistImpl.submissionOfFeedback
 
 -- * Notification
 
-saveCommentNotification :: CommentKey -> Notification -> Persist NotificationKey
-saveCommentNotification = PersistImpl.saveCommentNotification
-
-saveFeedbackNotification :: FeedbackKey -> Notification -> Persist NotificationKey
-saveFeedbackNotification = PersistImpl.saveFeedbackNotification
-
-saveSystemNotification :: Notification -> Persist NotificationKey
-saveSystemNotification = PersistImpl.saveSystemNotification
+saveNotification :: Notification -> Persist NotificationKey
+saveNotification = PersistImpl.saveNotification
 
 loadNotification :: NotificationKey -> Persist Notification
 loadNotification = PersistImpl.loadNotification
-
-commentOfNotification :: NotificationKey -> Persist (Maybe CommentKey)
-commentOfNotification = PersistImpl.commentOfNotification
-
-feedbackOfNotification :: NotificationKey -> Persist (Maybe FeedbackKey)
-feedbackOfNotification = PersistImpl.feedbackOfNotification
 
 usersOfNotification :: NotificationKey -> Persist [Username]
 usersOfNotification = PersistImpl.usersOfNotification

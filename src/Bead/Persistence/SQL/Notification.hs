@@ -1,42 +1,30 @@
 module Bead.Persistence.SQL.Notification where
 
 import Control.Applicative ((<$>))
+import Control.Monad (forM)
 import Database.Persist.Sql
-import Data.Maybe (listToMaybe)
+import Data.Maybe (catMaybes)
 
-import qualified Bead.Domain.Entities as Domain (Username)
+import qualified Bead.Domain.Entities as Domain (Username, User)
 import qualified Bead.Domain.Relationships as Domain
 import qualified Bead.Domain.Entity.Notification as Domain
 import Bead.Persistence.SQL.Class
 import Bead.Persistence.SQL.Entities
 import Bead.Persistence.SQL.User (usernames)
 
+saveNotification :: Domain.Notification -> Persist Domain.NotificationKey
+saveNotification n = toDomainKey <$> insert (fromDomainValue n)
+
 attachNotificationToUser :: Domain.Username -> Domain.NotificationKey -> Persist ()
 attachNotificationToUser username nk = withUser username
   (persistError "attachNotificationToUser" $ "User is not found:" ++ show username) $ \user ->
-    void $ insertUnique (UserNotification (entityKey user) (fromDomainKey nk))
+    -- Insert not seen
+    void $ insertUnique (UserNotification (entityKey user) (fromDomainKey nk) False False)
 
 notificationsOfUser :: Domain.Username -> Persist [Domain.NotificationKey]
 notificationsOfUser username = withUser username (return []) $ \user ->
   map (toDomainKey . userNotificationNotification . entityVal) <$>
     selectList [UserNotificationUser ==. (entityKey user)] []
-
-saveCommentNotification :: Domain.CommentKey -> Domain.Notification -> Persist Domain.NotificationKey
-saveCommentNotification ck n = do
-  key <- insert (fromDomainValue n)
-  insertUnique (CommentNotification (fromDomainKey ck) key)
-  return (toDomainKey key)
-
-saveFeedbackNotification :: Domain.FeedbackKey -> Domain.Notification -> Persist Domain.NotificationKey
-saveFeedbackNotification fk n = do
-  key <- insert (fromDomainValue n)
-  insertUnique (FeedbackNotification (fromDomainKey fk) key)
-  return (toDomainKey key)
-
-saveSystemNotification :: Domain.Notification -> Persist Domain.NotificationKey
-saveSystemNotification n = do
-  key <- insert (fromDomainValue n)
-  return (toDomainKey key)
 
 loadNotification :: Domain.NotificationKey -> Persist Domain.Notification
 loadNotification nk = do
@@ -47,17 +35,18 @@ loadNotification nk = do
       toDomainValue
       mNot
 
-commentOfNotification :: Domain.NotificationKey -> Persist (Maybe Domain.CommentKey)
-commentOfNotification nk = do
-  keys <- map (toDomainKey . commentNotificationComment . entityVal) <$>
-            selectList [CommentNotificationNotification ==. (fromDomainKey nk)] []
-  return $! listToMaybe keys
+unprocessedNotifications :: Persist [(Domain.User, Domain.NotificationKey, Domain.NotificationState)]
+unprocessedNotifications = do
+  userNotifs <- selectList [UserNotificationProcessed ==. False] []
+  catMaybes <$> (forM userNotifs $ \ent' -> do
+    let ent = entityVal ent'
+    let userId  = userNotificationUser ent
+    let notifId = userNotificationNotification ent
+    mUser <- get userId
+    return $ case mUser of
+      Nothing -> Nothing
+      Just un -> Just (toDomainValue un, toDomainKey notifId, undefined))
 
-feedbackOfNotification :: Domain.NotificationKey -> Persist (Maybe Domain.FeedbackKey)
-feedbackOfNotification nk = do
-  keys <- map (toDomainKey . feedbackNotificationFeedback . entityVal) <$>
-            selectList [FeedbackNotificationNotification ==. (fromDomainKey nk)] []
-  return $! listToMaybe keys
 
 usersOfNotification :: Domain.NotificationKey -> Persist [Domain.Username]
 usersOfNotification nk = do
