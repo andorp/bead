@@ -18,18 +18,14 @@ import Bead.Persistence.Relations (persistRelationsTests)
 import Bead.View.Content.All (pageContentTest)
 import Bead.View.DataBridge (dataBridgeTests)
 import Bead.View.DictionaryLoader (patchDictionariesTests)
-#ifdef EmailEnabled
 import Bead.View.EmailTemplate (runEmailTemplateTests)
-#endif
 import Bead.View.Headers.AcceptLanguage (acceptLanguageTests)
 import Bead.View.Pagelets (linkTextTest)
 import Bead.View.RouteOf (routeOfTest)
 import Bead.View.Routing (routingTest)
 import Bead.View.Session (uniqueSessionKeysTest)
 import Bead.View.TemplateAndComponentNames (fieldNameTest)
-#ifdef EmailEnabled
 import Bead.View.Validators (emailAddressTests)
-#endif
 
 tests = do
   group "Page description" pageDescTest
@@ -47,10 +43,8 @@ tests = do
   group "Assignment" asgTests
   group "Command line and configuration" initTaskAssertions
   group "Persist" persistTests
-#ifdef EmailEnabled
   group "Email address" emailAddressTests
   group "Run email template" runEmailTemplateTests
-#endif
   group "Persist relations" persistRelationsTests
   group "Data bridge" dataBridgeTests
   group "Feedback" feedbackTests

@@ -30,9 +30,7 @@ import           Snap.Snaplet.Session
 import           Bead.Config
 import           Bead.Controller.Logging
 import           Bead.Controller.ServiceContext hiding (serviceContext)
-#ifdef EmailEnabled
 import           Bead.Daemon.Email as EmailDaemon
-#endif
 #ifdef SSO
 import           Bead.Daemon.LDAP as LDAPDaemon
 #endif
@@ -40,9 +38,7 @@ import           Bead.Daemon.Logout
 import           Bead.Domain.Entities
 import           Bead.Domain.TimeZone
 import           Bead.View.Dictionary
-#ifdef EmailEnabled
 import           Bead.View.EmailTemplate
-#endif
 import           Bead.View.Logger (SnapLogger)
 import qualified Bead.View.Logger as SnapLogger
 
@@ -106,7 +102,6 @@ type DictionaryInfos = [(Language, DictionaryInfo)]
 
 dictionaryInfosCata list item d = list $ map item d
 
-#ifdef EmailEnabled
 -- * Email sending snaplet
 
 type Subject = String -- The subject of an email message
@@ -148,7 +143,6 @@ emailSenderSnaplet config daemon = makeSnapContext
           plain   = fromString msg
       mail <- verySimpleMail to from subject plain
       EmailDaemon.sendEmail daemon mail
-#endif
 
 -- * Bead's temp directory
 
@@ -276,9 +270,7 @@ data BeadContext = BeadContext {
   , _auth           :: Snaplet (AuthManager BeadContext)
   , _serviceContext :: Snaplet SnapletServiceContext
   , _dictionaryContext :: Snaplet DictionaryContext
-#ifdef EmailEnabled
   , _sendEmailContext   :: Snaplet SendEmailContext
-#endif
   , _randomPasswordContext :: Snaplet PasswordGeneratorContext
   , _fayContext     :: Snaplet Fay
   , _tempDirContext :: Snaplet TempDirectoryContext
@@ -346,7 +338,6 @@ getDictionary l = withTop dictionaryContext $ snapContextCata (fmap fst . Map.lo
 dcGetDictionaryInfos :: BeadHandler' b DictionaryInfos
 dcGetDictionaryInfos = withTop dictionaryContext $ snapContextCata (Map.toList . Map.map snd . fst)
 
-#ifdef EmailEnabled
 -- Send email with a subject to the given address, using the right
 -- template to the given values
 -- E.g: Registration or ForgottenPassword
@@ -355,7 +346,6 @@ sendEmail :: (Template t)
 sendEmail address sub body value = withTop sendEmailContext . snapContextHandlerCata $ \send -> do
   msg <- liftIO . runEmailTemplate (emailTemplate body) $ value
   liftIO $ send address sub msg
-#endif
 
 -- Returns the bead temp directory
 getTempDirectory :: BeadHandler' b FilePath

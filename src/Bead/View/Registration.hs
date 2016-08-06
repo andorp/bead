@@ -39,9 +39,7 @@ import           Bead.View.Content
 import qualified Bead.View.Content.Public.Registration as View
 import           Bead.View.ContentHandler
 import           Bead.View.DataBridge as DataBridge
-#ifdef EmailEnabled
 import           Bead.View.EmailTemplate
-#endif
 import           Bead.View.ErrorPage
 import           Bead.View.RouteOf (requestRoute)
 import           Bead.View.Session

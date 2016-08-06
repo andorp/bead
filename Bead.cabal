@@ -187,8 +187,6 @@ Library
       Bead.Daemon.LDAP
       Bead.Daemon.LDAP.Query
       Bead.Daemon.LDAP.Result
-  else
-    CPP-Options: -DEmailEnabled
 
     Exposed-Modules:
       Bead.Daemon.Email
@@ -405,7 +403,7 @@ executable BeadTest
   if flag(SSO)
     CPP-Options: -DSSO -DTEST
   else
-    CPP-Options: -DEmailEnabled -DTEST
+    CPP-Options: -DTEST
   if flag(MySQL)
     CPP-Options: -DTEST -DMYSQL
     Build-Depends:
