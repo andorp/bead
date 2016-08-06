@@ -15,6 +15,7 @@ import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
 #ifdef EmailEnabled
 import           Bead.Daemon.Email
+import           Bead.Daemon.NotificationEmail
 #endif
 #ifdef SSO
 import           Bead.Daemon.LDAP
@@ -144,6 +145,8 @@ startService config = do
 #ifdef EmailEnabled
   emailDaemon <- creating "email daemon" $
     startEmailDaemon userActionLogger
+
+  notificationEmailDaemon <- creating "notification email daemon" $ startNotificationEmailDaemon userActionLogger 120 5 {-s-} context 
 #endif
 
 #ifdef SSO

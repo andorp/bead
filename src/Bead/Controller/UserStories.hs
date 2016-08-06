@@ -1371,6 +1371,14 @@ testAgentFeedbacks = do
   where
     submission = fst
 
+{--
+notificationEmails :: UserStory ()
+notificationEmails = do
+  persistence $ do
+    notifications <- unprocessedNotifications
+    forM_ notifications (processNotification)
+--}
+
 userSubmissions :: Username -> AssignmentKey -> UserStory (Maybe UserSubmissionDesc)
 userSubmissions s ak = logAction INFO msg $ do
   authPerms userSubmissionDescPermissions

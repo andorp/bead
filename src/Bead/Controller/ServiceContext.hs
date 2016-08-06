@@ -44,6 +44,7 @@ data UserState
   = UserNotLoggedIn
   | Registration
   | TestAgent
+  | NotificationAgent
   | UserState {
     user :: Username -- Username
   , uid  :: Uid
