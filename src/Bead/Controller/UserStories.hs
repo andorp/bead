@@ -3,6 +3,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.Controller.UserStories where
 
+import Debug.Trace
 import           Bead.Domain.Entities hiding (name, uid)
 import qualified Bead.Domain.Entities as Entity (name, uid)
 import qualified Bead.Domain.Entity.Assignment as Assignment
@@ -37,6 +38,7 @@ import qualified Data.Set as Set
 import           Data.Time (UTCTime(..), getCurrentTime)
 import           Numeric (showHex)
 import           Text.Printf (printf)
+import           Data.List -- Delete after developing notificationEmails
 
 -- User error can be a message that need to be displayed, or
 -- a parametrized message with a string parameter that needs
@@ -1373,13 +1375,18 @@ testAgentFeedbacks = do
 
 
 notificationEmails :: UserStory ()
-notificationEmails = undefined
-{--
+-- notificationEmails = trace "NotificationEmailDaemon" (return ())
+-- unprocessedNotifications :: Persist [(Domain.User, Domain.NotificationKey, Domain.NotificationState)]
+-- want one user, all of their notifications in one email. create a map from User to Notifications
 notificationEmails = do
   persistence $ do
-    notifications <- unprocessedNotifications
-    forM_ notifications (processNotification)
---}
+    notifications <- return ([(1, "a"), (1, "b"), (3, "c")]) -- unprocessedNotifications
+    trace (show $ bundledNotifications notifications) (return ())
+    -- forM_ notifications (processNotification)
+    where bundledNotifications :: [(Int, String)] -> Map Int [String]
+          bundledNotifications notifications = Data.List.foldl addNotification Map.empty notifications
+          addNotification notificationMap (user, notificationKey) = Map.insertWith (++) user [notificationKey] notificationMap
+
 
 userSubmissions :: Username -> AssignmentKey -> UserStory (Maybe UserSubmissionDesc)
 userSubmissions s ak = logAction INFO msg $ do

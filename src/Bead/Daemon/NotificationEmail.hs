@@ -1,19 +1,18 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Bead.Daemon.NotificationEmail where
 
-import           Debug.Trace
 import           Control.Exception
 import           Control.Concurrent
 
 import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
-import           Bead.Controller.UserStories (runUserStory, notificationEmails, UserStory)
+import           Bead.Controller.UserStories (runUserStory, notificationEmails)
 import           Bead.View.Translation (trans)
 
 startNotificationEmailDaemon :: L.Logger -> Int -> Int -> ServiceContext -> IO ()
 startNotificationEmailDaemon logger initWait wait context = do
   let agent = do threadDelay (secToMicroSec wait)
-                 ((runUserStory context trans NotificationAgent placeHolder) >> return ()) `catch` someException
+                 ((runUserStory context trans NotificationAgent notificationEmails) >> return ()) `catch` someException
                  putStrLn "Running Notification Email Daemon"
                  agent
   forkIO $ do
@@ -32,6 +31,3 @@ startNotificationEmailDaemon logger initWait wait context = do
         loggerException original e = do
           print original
           print e
-
-placeHolder :: UserStory ()
-placeHolder = trace "NotificationEmailDaemon" (return ())
