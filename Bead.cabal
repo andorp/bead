@@ -190,7 +190,6 @@ Library
 
     Exposed-Modules:
       Bead.Daemon.Email
-      Bead.View.Content.SetUserPassword.Page
       Bead.View.EmailTemplate
       Bead.View.ResetPassword
 
