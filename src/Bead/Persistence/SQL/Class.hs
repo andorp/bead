@@ -325,4 +325,4 @@ instance DomainKey Domain.NotificationKey where
 instance DomainValue Domain.Notification where
   type EntityValue Domain.Notification = Notification
   fromDomainValue = Domain.notification Notification
-  toDomainValue ent = Domain.Notification (notificationMessage ent)
+  toDomainValue ent = Domain.Notification (notificationMessage ent) (notificationDate ent)

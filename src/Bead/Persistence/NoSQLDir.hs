@@ -104,9 +104,7 @@ module Bead.Persistence.NoSQLDir (
   , commentsOfSubmission
   , feedbacksOfSubmission
 
-  , saveCommentNotification
-  , saveFeedbackNotification
-  , saveSystemNotification
+  , saveNotification
   , loadNotification
   , commentOfNotification
   , feedbackOfNotification
@@ -139,6 +137,7 @@ module Bead.Persistence.NoSQLDir (
   , courseOfAssessment
   , groupOfAssessment
   , scoresOfAssessment
+  , scoreOfAssessmentAndUser
   , assessmentsOfGroup
   , assessmentsOfCourse
 
@@ -1279,6 +1278,9 @@ groupOfAssessment = objectIn "group" GroupKey isGroupDir
 
 scoresOfAssessment :: AssessmentKey -> Persist [ScoreKey]
 scoresOfAssessment = objectsIn "score" ScoreKey isScoreDir
+
+scoreOfAssessmentAndUser :: Username -> AssessmentKey -> Persist [ScoreKey]
+scoreOfAssessmentAndUser = error "scoreOfAssessmentAndUser"
 
 assessmentsOfGroup :: GroupKey -> Persist [AssessmentKey]
 assessmentsOfGroup = objectsIn "assessments" AssessmentKey isAssessmentDir
