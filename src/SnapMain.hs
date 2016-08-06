@@ -21,6 +21,7 @@ import           Text.Regex.TDFA
 #endif
 import           Bead.Daemon.Logout
 import           Bead.Daemon.TestAgent
+import           Bead.Domain.Types (MailSender)
 import           Bead.Persistence.Initialization
 import qualified Bead.Persistence.Persist as Persist (Config(..), configToPersistConfig, createPersistInit, createPersistInterpreter)
 import           Bead.View.BeadContextInit
@@ -28,8 +29,8 @@ import           Bead.View.Logger
 
 
 -- Creates a service context that includes the given logger
-createContext :: L.Logger -> Persist.Config -> IO ServiceContext
-createContext logger cfg = do
+createContext :: L.Logger -> Persist.Config -> MailSender -> IO ServiceContext
+createContext logger cfg mailSender = do
   userContainer <- ioUserContainer
   init <- Persist.createPersistInit cfg
   isPersistSetUp <- isSetUp init
@@ -37,7 +38,7 @@ createContext logger cfg = do
     True -> return ()
     False -> initPersist init
   interpreter <- Persist.createPersistInterpreter cfg
-  S.serviceContext userContainer logger interpreter
+  S.serviceContext userContainer logger interpreter mailSender
 
 -- Reads the command line arguments, interprets the init tasks and start
 -- the service with the given config
@@ -124,7 +125,14 @@ startService config = do
   userActionLogs <- creating "logger" $ createSnapLogger . userActionLogFile $ config
   let userActionLogger = snapLogger userActionLogs
 
-  context <- creating "service context" $ createContext userActionLogger (Persist.configToPersistConfig config)
+  emailDaemon <- creating "email daemon" $
+    startEmailDaemon userActionLogger
+
+  context <- creating "service context" $
+                createContext
+                  userActionLogger
+                  (Persist.configToPersistConfig config)
+                  (sendEmail emailDaemon)
 
   tempDir <- creating "temporary directory" createBeadTempDir
 
@@ -133,8 +141,6 @@ startService config = do
   logoutDaemon <- creating "logout daemon" $
     startLogoutDaemon userActionLogger (sessionTimeout config) 30 {-s-} (userContainer context)
 
-  emailDaemon <- creating "email daemon" $
-    startEmailDaemon userActionLogger
 
 #ifdef SSO
   ldapDaemon <- creating "ldap daemon" $

@@ -1,6 +1,16 @@
-module Bead.Domain.Types where
+module Bead.Domain.Types
+  ( Mail
+  , MailSender
+  , Erroneous
+  , readMaybe
+  , FileName
+  , fileName
+  ) where
 
 import Data.Char (isSpace)
+import Network.Mail.Mime
+
+type MailSender = Mail -> IO ()
 
 type Erroneous a = Either String a
 
