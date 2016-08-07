@@ -1,7 +1,7 @@
 module Bead.Domain.Entity.Notification where
 
 import Data.Text
-import Data.Time.Clock (UTCTime)
+import Data.Time (UTCTime)
 
 -- The notifications can come from different sources
 data NotifType
