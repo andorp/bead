@@ -3,22 +3,6 @@ module Bead.Domain.Entity.Notification where
 import Data.Text
 import Data.Time (UTCTime)
 
--- The notifications can come from different sources
-data NotifType
-  = Comment
-  | Feedback
-  | System
-  deriving (Eq, Show)
-
-notifType
-  comment
-  feedback
-  system
-  n = case n of
-    Comment  -> comment
-    Feedback -> feedback
-    System   -> system
-
 data NotificationState = New | Seen
   deriving (Eq, Show)
 
