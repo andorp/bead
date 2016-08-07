@@ -1,7 +1,7 @@
 module Bead.Persistence.SQL.Notification where
 
 import Control.Applicative ((<$>))
-import Control.Monad (forM)
+import Control.Monad (forM, forM_)
 import Database.Persist.Sql
 import Data.Maybe (catMaybes)
 
@@ -47,6 +47,16 @@ unprocessedNotifications = do
       Nothing -> Nothing
       Just un -> Just (toDomainValue un, toDomainKey notifId, undefined))
 
+mark :: EntityField UserNotification Bool -> Domain.Username -> Domain.NotificationKey -> Persist ()
+mark f username nk = withUser username (return ()) $ \user -> do
+  uns <- selectList
+    [ UserNotificationUser ==. (entityKey user)
+    , UserNotificationNotification ==. (fromDomainKey nk)
+    ] []
+  forM_ uns $ \n -> update (entityKey n) [ f =. True ]
+
+markRead      = mark UserNotificationSeen
+markProcessed = mark UserNotificationProcessed
 
 usersOfNotification :: Domain.NotificationKey -> Persist [Domain.Username]
 usersOfNotification nk = do

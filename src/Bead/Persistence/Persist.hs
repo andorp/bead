@@ -128,6 +128,7 @@ module Bead.Persistence.Persist (
   , saveNotification
   , loadNotification
   , usersOfNotification
+  , notifyUsers
 
   -- Evaluation
   , saveSubmissionEvaluation
@@ -165,6 +166,7 @@ module Bead.Persistence.Persist (
 #endif
   ) where
 
+import           Control.Monad
 import           Data.Time (UTCTime)
 import           Data.Set (Set)
 
@@ -590,6 +592,12 @@ loadNotification = PersistImpl.loadNotification
 
 usersOfNotification :: NotificationKey -> Persist [Username]
 usersOfNotification = PersistImpl.usersOfNotification
+
+notifyUsers :: Notification -> [Username] -> Persist ()
+notifyUsers n us = do
+  nk <- PersistImpl.saveNotification n
+  forM_ us $ \u -> do
+    PersistImpl.attachNotificationToUser u nk
 
 -- * Evaluation
 
