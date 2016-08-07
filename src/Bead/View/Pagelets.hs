@@ -425,6 +425,7 @@ linkText = P.pageCata
   (c2 $ msg_LinkText_ModifyAssessment "Modify Assessment")
   (c2 $ msg_LinkText_ModifyAssessmentPreview "Modify Assessment")
   (c2 $ msg_LinkText_ViewAssessment "View Assessment")
+  (c $ msg_LinkText_Notifications "Notifications")
   where
     c = const
     c2 = c . const
@@ -497,6 +498,7 @@ bootStrapHeader s secs = do
                         H.span ! class_ "icon-bar" $ mempty
                 H.div ! class_ "collapse navbar-collapse navbar-ex1-collapse" $ do
                     ul ! class_ "nav navbar-nav navbar-right" $ do
+                        li $ (I18N.i18n msg $ linkToPage notifications)
                         li $ minSecCountdown "hdctd" "--:--" secs
                         li $ H.a userId
                         li $ (I18N.i18n msg $ linkToPage profile)
@@ -508,6 +510,7 @@ bootStrapHeader s secs = do
     profile = P.profile ()
     home = P.home ()
     userId = fromString $ concat [usernameCata id . user $ s, " / ", Entity.uid id . ServiceContext.uid $ s]
+    notifications = P.notifications ()
 
 bootStrapStatus :: UserState -> IHtml
 bootStrapStatus = maybe noMessage message . status
