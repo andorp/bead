@@ -129,6 +129,8 @@ module Bead.Persistence.Persist (
   , loadNotification
   , usersOfNotification
   , notifyUsers
+  , unprocessedNotifications
+
 
   -- Evaluation
   , saveSubmissionEvaluation
@@ -239,7 +241,7 @@ administratedGroups = PersistImpl.administratedGroups
 attachNotificationToUser :: Username -> NotificationKey -> Persist ()
 attachNotificationToUser = PersistImpl.attachNotificationToUser
 
-notificationsOfUser :: Username -> Persist [NotificationKey]
+notificationsOfUser :: Username -> Persist [(NotificationKey, Notif.NotificationState, Notif.NotificationProcessed)]
 notificationsOfUser = PersistImpl.notificationsOfUser
 
 -- Lists all the scores submitted for the user
@@ -598,6 +600,9 @@ notifyUsers n us = do
   nk <- PersistImpl.saveNotification n
   forM_ us $ \u -> do
     PersistImpl.attachNotificationToUser u nk
+
+unprocessedNotifications :: Persist [(User, NotificationKey, Notif.NotificationState)]
+unprocessedNotifications = PersistImpl.unprocessedNotifications
 
 -- * Evaluation
 

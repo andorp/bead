@@ -21,10 +21,16 @@ attachNotificationToUser username nk = withUser username
     -- Insert not seen
     void $ insertUnique (UserNotification (entityKey user) (fromDomainKey nk) False False)
 
-notificationsOfUser :: Domain.Username -> Persist [Domain.NotificationKey]
+notificationsOfUser :: Domain.Username -> Persist [(Domain.NotificationKey, Domain.NotificationState, Domain.NotificationProcessed)]
 notificationsOfUser username = withUser username (return []) $ \user ->
-  map (toDomainKey . userNotificationNotification . entityVal) <$>
+  map (transformEntity . entityVal) <$>
     selectList [UserNotificationUser ==. (entityKey user)] []
+  where
+    transformEntity e =
+        ( toDomainKey $ userNotificationNotification e
+        , if userNotificationSeen e      then Domain.Seen      else Domain.New
+        , if userNotificationProcessed e then Domain.Processed else Domain.Unprocessed
+        )
 
 loadNotification :: Domain.NotificationKey -> Persist Domain.Notification
 loadNotification nk = do

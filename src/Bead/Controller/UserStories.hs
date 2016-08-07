@@ -7,6 +7,7 @@ import           Bead.Domain.Entities hiding (name, uid)
 import qualified Bead.Domain.Entities as Entity (name, uid)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import qualified Bead.Domain.Entity.Assessment as Assessment
+import qualified Bead.Domain.Entity.Notification as Notification
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Controller.ServiceContext
@@ -552,7 +553,7 @@ subscribedToGroup gk = logAction INFO ("lists all users in group " ++ show gk) $
   authorize P_Open P_Group
   isAdministratedGroup gk
   persistence $ Persist.subscribedToGroup gk
-                       
+
 
 -- | Regsiter the user in the group, if the user does not submitted
 -- any solutions for the other groups of the actual course, otherwise
@@ -841,7 +842,7 @@ scoreDesc sk = logAction INFO ("loads score description of score " ++ show sk) $
   scoreUser <- usernameOfScore sk
   if (currentUser == scoreUser)
     then persistence $ Persist.scoreDesc sk
-    else do 
+    else do
       logMessage INFO . violation $ printf "The user tries to view a score (%s) that not belongs to him."
                                            (show sk)
       errorPage $ userError nonAccessibleScore
@@ -1387,6 +1388,19 @@ userSubmissions s ak = logAction INFO msg $ do
   where
     msg = join ["lists ",show s,"'s submissions for assignment ", show ak]
 
+-- List all the related notifications for the active user.
+-- TODO
+notifications :: UserStory [(Notification.Notification, Notification.NotificationState)]
+notifications = do
+  now <- liftIO $ getCurrentTime
+  notifs <- withUserAndPersist $ \u -> do
+              notifs <- Persist.notificationsOfUser u
+              forM notifs (\(k,s,p) -> (,) <$> Persist.loadNotification k <*> pure s)
+  return $ [
+      (Notification.Notification "Blah1" now Notification.System, Notification.New)
+    , (Notification.Notification "Blah2" now Notification.System, Notification.Seen)
+    ] ++ notifs
+
 -- Helper function: checks if there at least one submission for the given
 isThereSubmissionPersist = fmap (not . null) . Persist.submissionsForAssignment
 
@@ -1474,7 +1488,7 @@ isAdministratedAssignment = guard
 -- Checks if the given assessment is administrated by the actual user and
 -- throws redirects to the error page if not, otherwise do nothing
 isAdministratedAssessment :: AssessmentKey -> UserStory ()
-isAdministratedAssessment = guard 
+isAdministratedAssessment = guard
   Persist.isAdministratedAssessment
   "User tries to modify the assessment (%s) which is not administrated by him."
   (userError nonAdministratedAssessment)
