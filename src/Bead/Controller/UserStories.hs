@@ -29,12 +29,13 @@ import qualified Control.Monad.Reader as CMR
 import           Control.Monad.Trans
 import           Prelude hiding (log, userError)
 import           Data.Hashable
-import           Data.List (nub)
+import           Data.List (nub, (\\))
 import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
 import           Data.Set (Set)
 import qualified Data.Set as Set
+import           Data.String
 import           Data.Time (UTCTime(..), getCurrentTime)
 import           Numeric (showHex)
 import           Text.Printf (printf)
@@ -306,7 +307,20 @@ createCourseAdmin :: Username -> CourseKey -> UserStory ()
 createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
   authorize P_Create P_CourseAdmin
   authorize P_Open   P_User
-  persistence $ Persist.createCourseAdmin u ck
+  persistence $ do
+    cas <- Persist.courseAdmins ck
+    Persist.createCourseAdmin u ck
+    c <- Persist.loadCourse ck
+    now <- liftIO getCurrentTime
+    -- XXX: I18N
+    let msg = fromString $ printf "A course has been assigned: %s" (courseName c)
+    let affected = [u]
+    Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
+    -- XXX: I18N
+    let msg = fromString $ printf "An administrator has been added to course \"%s\": %s"
+                (courseName c) (show u)
+    let affected = cas
+    Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
   putStatusMessage $ msg_UserStory_SetCourseAdmin "The user has become a course administrator."
   where
     user = usernameCata id
@@ -364,13 +378,22 @@ deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ 
 saveTestScript :: CourseKey -> TestScript -> UserStory ()
 saveTestScript ck ts = logAction INFO ("creates new test script for course: " ++ show ck) $ do
   authorize P_Create P_TestScript
-  user <- username
-  join $ persistence $ do
+  join $ withUserAndPersist $ \user -> do
     cs <- map fst <$> Persist.administratedCourses user
     case ck `elem` cs of
       False -> return . errorPage . userError $ msg_UserStoryError_NoCourseAdminOfCourse "The user is not course admin for the course."
       True -> do
         Persist.saveTestScript ck ts
+        now <- liftIO getCurrentTime
+        c   <- Persist.loadCourse ck
+        -- XXX: I18N
+        let msg = fromString $ printf "%s created a new test script for course \"%s\""
+                    (show user) (courseName c)
+        cas <- Persist.courseAdmins ck
+        gks <- Persist.groupKeysOfCourse ck
+        gas <- concat <$> mapM Persist.groupAdmins gks
+        let affected = nub (cas ++ gas) \\ [user]
+        Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
         return . putStatusMessage $
           msg_UserStory_NewTestScriptIsCreated "The test script has been created."
 
@@ -379,14 +402,23 @@ saveTestScript ck ts = logAction INFO ("creates new test script for course: " ++
 modifyTestScript :: TestScriptKey -> TestScript -> UserStory ()
 modifyTestScript tsk ts = logAction INFO ("modifies the existing test script: " ++ show tsk) $ do
   authorize P_Modify P_TestScript
-  user <- username
-  join $ persistence $ do
+  join $ withUserAndPersist $ \user -> do
     cs <- map fst <$> Persist.administratedCourses user
     ck <- Persist.courseOfTestScript tsk
     case ck `elem` cs of
       False -> return . errorPage . userError $ msg_UserStoryError_NoAssociatedTestScript "You are trying to modify someone else's test script."
       True -> do
         Persist.modifyTestScript tsk ts
+        now <- liftIO getCurrentTime
+        c   <- Persist.loadCourse ck
+        -- XXX: I18N
+        let msg = fromString $ printf "%s modified test script \"%s\" for course \"%s\""
+                    (show user) (tsName ts) (courseName c)
+        cas <- Persist.courseAdmins ck
+        gks <- Persist.groupKeysOfCourse ck
+        gas <- concat <$> mapM Persist.groupAdmins gks
+        let affected = nub (cas ++ gas) \\ [user]
+        Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
         return . putStatusMessage $
           msg_UserStory_ModifyTestScriptIsDone "The test script has been updated."
 
@@ -459,12 +491,18 @@ testScriptInfosOfCourse ck = do
 deleteUsersFromGroup :: GroupKey -> [Username] -> UserStory ()
 deleteUsersFromGroup gk sts = logAction INFO ("delets users form group: " ++ show gk) $ do
   authorize P_Modify P_Group
-  u <- username
-  join $ persistence $ do
+  join $ withUserAndPersist $ \u -> do
     admined <- Persist.isAdministratedGroup u gk
     if admined
       then do ck <- Persist.courseOfGroup gk
               mapM_ (\student -> Persist.unsubscribe student ck gk) sts
+              now <- liftIO getCurrentTime
+              g   <- Persist.loadGroup gk
+              -- XXX: I18N
+              let msg = fromString $ printf "Removed from group \"%s\" by %s"
+                    (groupName g) (show u)
+              let affected = sts
+              Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
               return . putStatusMessage $
                 msg_UserStory_UsersAreDeletedFromGroup "The students have been removed from the group."
       else return $ do
@@ -482,6 +520,20 @@ createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $
       admined <- Persist.isAdministratedCourseOfGroup admin gk
       if (and [groupAdmin role, admined])
         then do Persist.createGroupAdmin u gk
+                now <- liftIO getCurrentTime
+                g   <- Persist.loadGroup gk
+                ck  <- Persist.courseOfGroup gk
+                c   <- Persist.loadCourse ck
+                -- XXX: I18N
+                let msg = fromString $ printf "A group of course \"%s\" has been assigned by %s: %s"
+                            (courseName c) (show admin) (groupName g)
+                let affected = [u]
+                Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
+                let msg = fromString $ printf "Group \"%s\" of course \"%s\" has been assigned to %s by %s"
+                            (groupName g) (courseName c) (show admin) (show u)
+                cas <- Persist.courseAdmins ck
+                let affected = cas \\ [admin]
+                Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
                 return $ putStatusMessage $ msg_UserStory_SetGroupAdmin "The user has become a teacher."
         else return . CME.throwError $ userParamError (msg_UserStoryError_NoGroupAdmin "%s is not a group admin!") (user u)
   where
@@ -511,11 +563,18 @@ unsubscribeFromCourse gk = logAction INFO ("unsubscribes from group: " ++ show g
 createGroup :: CourseKey -> Group -> UserStory GroupKey
 createGroup ck g = logAction INFO ("creats group " ++ show (groupName g)) $ do
   authorize P_Create P_Group
-  u <- username
-  join $ persistence $ do
+  join $ withUserAndPersist $ \u -> do
     admined <- Persist.isAdministratedCourse u ck
     if admined
       then do key <- Persist.saveGroup ck g
+              now <- liftIO getCurrentTime
+              c   <- Persist.loadCourse ck
+              -- XXX: I18N
+              let msg = fromString $ printf "A group has been created for course \"%s\" by %s: %s"
+                          (courseName c) (show u) (groupName g)
+              cas <- Persist.courseAdmins ck
+              let affected = cas \\ [u]
+              Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
               return $ do
                 putStatusMessage $ msg_UserStory_CreateGroup "The group has been created."
                 return key
@@ -684,12 +743,22 @@ createGroupAssignment gk a tc = logAction INFO msg $ do
     errorPage . userError $ msg_UserStoryError_EmptyAssignmentDescription
       "Assignment description is empty."
 
-  u <- username
-  join . persistence $ do
+  join . withUserAndPersist $ \u -> do
     admined <- Persist.isAdministratedGroup u gk
     if admined
       then do ak <- Persist.saveGroupAssignment gk a
               testCaseCreationForAssignment u ak tc
+              now <- liftIO getCurrentTime
+              g  <- Persist.loadGroup gk
+              ck <- Persist.courseOfGroup gk
+              c  <- Persist.loadCourse ck
+              -- XXX: I18N
+              let msg = fromString $ printf "%s created a new assignment for group \"%s\" (\"%s\"): %s"
+                          (show u) (groupName g) (courseName c) (Assignment.name a)
+              gas <- Persist.groupAdmins gk
+              sbs <- Persist.subscribedToGroup gk
+              let affected = nub (gas ++ sbs) \\ [u]
+              Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
               return $ do
                 statusMsg a
                 logMessage INFO $ descriptor ak
@@ -714,12 +783,22 @@ createCourseAssignment ck a tc = logAction INFO msg $ do
     errorPage . userError $ msg_UserStoryError_EmptyAssignmentDescription
       "Assignment description is empty."
 
-  u <- username
-  join . persistence $ do
+  join . withUserAndPersist $ \u -> do
     admined <- Persist.isAdministratedCourse u ck
     if admined
       then do ak <- Persist.saveCourseAssignment ck a
               testCaseCreationForAssignment u ak tc
+              now <- liftIO getCurrentTime
+              c <- Persist.loadCourse ck
+              -- XXX: I18N
+              let msg = fromString $ printf "%s created a new assignment for course \"%s\": %s"
+                          (show u) (courseName c) (Assignment.name a)
+              cas <- Persist.courseAdmins ck
+              gks <- Persist.groupKeysOfCourse ck
+              gas <- concat <$> mapM Persist.groupAdmins gks
+              sbs <- Persist.subscribedToCourse ck
+              let affected = nub (gas ++ cas ++ sbs) \\ [u]
+              Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
               return $ do
                 statusMsg a
                 logMessage INFO $ descriptor ak
@@ -744,21 +823,45 @@ createGroupAssessment gk a = logAction INFO ("creates assessment for group " ++ 
   authorize P_Open P_Group
   authorize P_Create P_Assessment
   isAdministratedGroup gk
-  persistence (Persist.saveGroupAssessment gk a)
+  ak <- persistence (Persist.saveGroupAssessment gk a)
+  withUserAndPersist $ \u -> do
+    now <- liftIO getCurrentTime
+    ck <- Persist.courseOfGroup gk
+    g  <- Persist.loadGroup gk
+    c  <- Persist.loadCourse ck
+    -- XXX: I18N
+    let msg = fromString $ printf "%s created a new assessment for group \"%s\" (\"%s\"): %s"
+                (show u) (groupName g) (courseName c) (Assessment.title a)
+    gas <- Persist.groupAdmins gk
+    sbs <- Persist.subscribedToGroup gk
+    let affected = nub (gas ++ sbs) \\ [u]
+    Persist.notifyUsers (Notification.Notification msg now $ Notification.Assessment ak) affected
+  return ak
 
 createCourseAssessment :: CourseKey -> Assessment -> UserStory AssessmentKey
 createCourseAssessment ck a = logAction INFO ("creates assessment for course " ++ show ck) $ do
   authorize P_Open P_Course
   authorize P_Create P_Assessment
   isAdministratedCourse ck
-  persistence (Persist.saveCourseAssessment ck a)
+  ak <- persistence (Persist.saveCourseAssessment ck a)
+  withUserAndPersist $ \u -> do
+    now <- liftIO getCurrentTime
+    c <- Persist.loadCourse ck
+    -- XXX: I18N
+    let msg = fromString $ printf "%s created a new assessment for course \"%s\": %s"
+                (show u) (courseName c) (Assessment.title a)
+    cas <- Persist.courseAdmins ck
+    sbs <- Persist.subscribedToCourse ck
+    let affected = nub (cas ++ sbs) \\ [u]
+    Persist.notifyUsers (Notification.Notification msg now $ Notification.Assessment ak) affected
+  return ak
 
 modifyAssessment :: AssessmentKey -> Assessment -> UserStory ()
 modifyAssessment ak a = logAction INFO ("modifies assessment " ++ show ak) $ do
   authorize P_Open P_Assessment
   authorize P_Modify P_Assessment
   isAdministratedAssessment ak
-  persistence $ do
+  withUserAndPersist $ \u -> do
     hasScore <- isThereAScorePersist ak
     new <- if hasScore
              then do
@@ -768,6 +871,23 @@ modifyAssessment ak a = logAction INFO ("modifies assessment " ++ show ak) $ do
                return (a { Assessment.evaluationCfg = evConfig})
              else return a
     Persist.modifyAssessment ak new
+    now <- liftIO getCurrentTime
+    -- XXX: I18N
+    let msg = fromString $ printf "%s modified assessment: %s"
+                (show u) (Assessment.title a)
+    mck <- Persist.courseOfAssessment ak
+    mgk <- Persist.groupOfAssessment ak
+    affected <- case (mck, mgk) of
+                  (Just ck, _) -> do
+                    cas <- Persist.courseAdmins ck
+                    sbs <- Persist.subscribedToCourse ck
+                    return $ nub (cas ++ sbs) \\ [u]
+                  (_, Just gk) -> do
+                    gas <- Persist.groupAdmins gk
+                    sbs <- Persist.subscribedToGroup gk
+                    return $ nub (gas ++ sbs) \\ [u]
+                  _            -> return []
+    Persist.notifyUsers (Notification.Notification msg now $ Notification.Assessment ak) affected
     when (hasScore && Assessment.evaluationCfg a /= Assessment.evaluationCfg new) $
       void . return . putStatusMessage . msg_UserStory_AssessmentEvalTypeWarning $ concat
         [ "The evaluation type of the assessment is not modified. "
@@ -1287,9 +1407,25 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
       then do mek <- Persist.evaluationOfSubmission sk
               case mek of
                 Nothing -> do
-                  Persist.saveSubmissionEvaluation sk e
+                  ek <- Persist.saveSubmissionEvaluation sk e
                   Persist.removeOpenedSubmission sk
                   Persist.saveFeedback sk (evaluationToFeedback now userData e)
+                  -- XXX: I18N
+                  let msg = fromString $ printf "%s evaluated submission: %s"
+                              (show u) (show sk)
+                  ak  <- Persist.assignmentOfSubmission sk
+                  mck <- Persist.courseOfAssignment ak
+                  mgk <- Persist.groupOfAssignment ak
+                  submitter <- Persist.usernameOfSubmission sk
+                  affected <- case (mck, mgk) of
+                                (Just ck, _) -> do
+                                  cas <- Persist.courseAdmins ck
+                                  return $ nub ([submitter] ++ cas) \\ [u]
+                                (_, Just gk) -> do
+                                  gas <- Persist.groupAdmins gk
+                                  return $ nub ([submitter] ++ gas) \\ [u]
+                                _            -> return []
+                  Persist.notifyUsers (Notification.Notification msg now $ Notification.Evaluation ek) affected
                   return (return ())
                 Just _ -> return $ do
                             logMessage INFO "Other admin just evaluated this submission"
@@ -1309,11 +1445,28 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
     sck <- Persist.scoreOfEvaluation ek
     case (sbk, sck) of
       (Just _, Just _) -> return . errorPage $ strMsg "Impossible, submission and score have the same evaluation"
-      (Nothing, Just _sk) -> do
+      (Nothing, Just sk) -> do
         let admined = True
         if admined
           then do Persist.modifyEvaluation ek e
                   -- Persist.saveFeedback sk (evaluationToFeedback now userData e)
+                  -- XXX: I18N
+                  let msg = fromString $ printf "%s modified evaluation of score: %s" (show u) (show sk)
+                  affected <- do
+                    ak <- Persist.assessmentOfScore sk
+                    mck <- Persist.courseOfAssessment ak
+                    mgk <- Persist.groupOfAssessment ak
+                    case (mck, mgk) of
+                      (Just ck, _) -> do
+                        cas <- Persist.courseAdmins ck
+                        sbs <- Persist.subscribedToCourse ck
+                        return $ nub (sbs ++ cas) \\ [u]
+                      (_, Just gk) -> do
+                        gas <- Persist.groupAdmins gk
+                        sbs <- Persist.subscribedToGroup gk
+                        return $ nub (sbs ++ gas) \\ [u]
+                      _            -> return []
+                  Persist.notifyUsers (Notification.Notification msg now $ Notification.Evaluation ek) affected
                   return (return ())
           else return $ do
                   logMessage INFO . violation $
@@ -1325,6 +1478,22 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
         if admined
           then do Persist.modifyEvaluation ek e
                   Persist.saveFeedback sk (evaluationToFeedback now userData e)
+                  -- XXX: I18N
+                  let msg = fromString $ printf "%s modified evaluation of submission: %s" (show u) (show sk)
+                  affected <- do
+                    ak  <- Persist.assignmentOfSubmission sk
+                    mck <- Persist.courseOfAssignment ak
+                    mgk <- Persist.groupOfAssignment ak
+                    submitter <- Persist.usernameOfSubmission sk
+                    case (mck, mgk) of
+                      (Just ck, _) -> do
+                        cas <- Persist.courseAdmins ck
+                        return $ nub ([submitter] ++ cas) \\ [u]
+                      (_, Just gk) -> do
+                        gas <- Persist.groupAdmins gk
+                        return $ nub ([submitter] ++ gas) \\ [u]
+                      _            -> return []
+                  Persist.notifyUsers (Notification.Notification msg now $ Notification.Evaluation ek) affected
                   return (return ())
           else return $ do
                   logMessage INFO . violation $
@@ -1342,7 +1511,24 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
     admined  <- Persist.isAdministratedSubmission u sk
     attended <- Persist.isUserSubmission u sk
     if (canComment && (admined || attended))
-      then do Persist.saveComment sk c
+      then do ck <- Persist.saveComment sk c
+              let Comment { commentAuthor = author, commentDate = now, comment = body } = c
+              -- XXX: I18N
+              let msg = fromString $ printf "%s commented on submission %s: %s"
+                          (show author) (show sk) body
+              ak <- Persist.assignmentOfSubmission sk
+              mck <- Persist.courseOfAssignment ak
+              mgk <- Persist.groupOfAssignment ak
+              submitter <- Persist.usernameOfSubmission sk
+              affected <- case (mck, mgk) of
+                (Just ck, _) -> do
+                  cas <- Persist.courseAdmins ck
+                  return $ nub ([submitter] ++ cas) \\ [u]
+                (_, Just gk) -> do
+                  gas <- Persist.groupAdmins gk
+                  return $ nub ([submitter] ++ gas) \\ [u]
+                _            -> return []
+              Persist.notifyUsers (Notification.Notification msg now $ Notification.Comment ck) affected
               return (return ())
       else return $ do
               logMessage INFO . violation $ printf "The user tries to comment on a submission (%s) that not belongs to him" (show sk)
@@ -1429,6 +1615,23 @@ modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ 
                        else return a
               Persist.modifyAssignment ak new
               testCaseModificationForAssignment u ak tc
+              now <- liftIO getCurrentTime
+              -- XXX: I18N
+              let msg = fromString $ printf "%s modifies assignment: %s"
+                          (show u) (Assignment.name a)
+              mck <- Persist.courseOfAssignment ak
+              mgk <- Persist.groupOfAssignment ak
+              affected <- case (mck, mgk) of
+                            (Just ck, _) -> do
+                              cas <- Persist.courseAdmins ck
+                              sbs <- Persist.subscribedToCourse ck
+                              return $ nub (cas ++ sbs) \\ [u]
+                            (_, Just gk) -> do
+                              gas <- Persist.groupAdmins gk
+                              sbs <- Persist.subscribedToGroup gk
+                              return $ nub (gas ++ sbs) \\ [u]
+                            _            -> return []
+              Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
               if and [hasSubmission, Assignment.evType a /= Assignment.evType new]
                 then return . putStatusMessage . msg_UserStory_EvalTypeWarning $ concat
                   [ "The evaluation type of the assignment is not modified. "
