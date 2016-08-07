@@ -334,7 +334,7 @@ tcModificationCata
 -- * Entity keys
 
 newtype AssignmentKey = AssignmentKey String
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read, Data, Typeable)
 
 assignmentKeyMap :: (String -> a) -> AssignmentKey -> a
 assignmentKeyMap f (AssignmentKey x) = f x
@@ -346,7 +346,7 @@ userRegKeyFold :: (String -> a) -> UserRegKey -> a
 userRegKeyFold f (UserRegKey x) = f x
 
 newtype CommentKey = CommentKey String
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read, Data, Typeable)
 
 newtype SubmissionKey = SubmissionKey String
   deriving (Eq, Ord, Show)
@@ -396,7 +396,7 @@ groupKeyMap :: (String -> a) -> GroupKey -> a
 groupKeyMap f (GroupKey g) = f g
 
 newtype EvaluationKey = EvaluationKey String
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read, Data, Typeable)
 
 evaluationKeyMap :: (String -> a) -> EvaluationKey -> a
 evaluationKeyMap f (EvaluationKey e) = f e
@@ -412,7 +412,7 @@ newtype ScoreKey = ScoreKey String
 scoreKey f (ScoreKey x) = f x
 
 newtype AssessmentKey = AssessmentKey String
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read, Data, Typeable)
 
 assessmentKey f (AssessmentKey x) = f x
 
