@@ -28,6 +28,7 @@ import Bead.View.Content.UserSubmissions.Page
 import Bead.View.Content.SetUserPassword.Page
 #endif
 import Bead.View.Content.NewTestScript.Page
+import Bead.View.Content.Notifications.Page
 import Bead.View.Content.UploadFile.Page
 import Bead.View.Content.GetSubmission
 import Bead.View.Content.GetCsv
@@ -90,6 +91,7 @@ pageContent = Pages.constantsP
   modifyAssessment
   modifyAssessmentPreview
   viewAssessment
+  notifications
   where
     -- Returns an empty handler that computes an empty I18N Html monadic value
     nullViewHandler = ViewHandler (return (return (return ())))

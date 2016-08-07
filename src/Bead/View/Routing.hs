@@ -359,6 +359,7 @@ routeToPageMap = Map.fromList [
   , (modifyAssessmentPath, \ps -> P.modifyAssessment <$> assessmentKey ps <*> unit)
   , (modifyAssessmentPreviewPath, \ps -> P.modifyAssessmentPreview <$> assessmentKey ps <*> unit)
   , (viewAssessmentPath, \ps -> P.viewAssessment <$> assessmentKey ps <*> unit)
+  , (notificationsPath, j $ P.notifications ())
   ] where
       j = const . Just
       unit = return ()

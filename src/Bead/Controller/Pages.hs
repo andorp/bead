@@ -30,6 +30,7 @@ data ViewPage a
   | CourseAdmin a
   | ViewAssessment AssessmentKey a
   | ViewUserScore ScoreKey a
+  | Notifications a
   deriving (Eq, Ord, Show, Functor)
 
 viewPageCata
@@ -45,6 +46,7 @@ viewPageCata
   courseAdmin
   viewAssessment
   viewUserScore
+  notifications
   p = case p of
     Login a -> login a
     Logout a -> logout a
@@ -58,6 +60,7 @@ viewPageCata
     CourseAdmin a -> courseAdmin a
     ViewAssessment ak a -> viewAssessment ak a
     ViewUserScore sk a -> viewUserScore sk a
+    Notifications a -> notifications a
 
 viewPageValue :: ViewPage a -> a
 viewPageValue = viewPageCata
@@ -73,6 +76,7 @@ viewPageValue = viewPageCata
   id -- courseAdmin
   cid -- viewAssessment
   cid -- viewUserScore
+  id -- notifications
   where
     cid = const id
 
@@ -344,6 +348,7 @@ administration          = View . Administration
 courseAdmin             = View . CourseAdmin
 viewAssessment ak       = View . ViewAssessment ak
 viewUserScore sk        = View . ViewUserScore sk
+notifications           = View . Notifications
 
 getSubmission sk        = Data . GetSubmission sk
 getCourseCsv ck         = Data . GetCourseCsv ck
@@ -440,6 +445,7 @@ pageCata
   modifyAssessment
   modifyAssessmentPreview
   viewAssessment
+  notifications
   p = case p of
     (View (Login a)) -> login a
     (View (Logout a)) -> logout a
@@ -491,6 +497,7 @@ pageCata
     (ViewModify (ModifyAssessment ak a)) -> modifyAssessment ak a
     (UserView (ModifyAssessmentPreview ak a)) -> modifyAssessmentPreview ak a
     (View (ViewAssessment ak a)) -> viewAssessment ak a
+    (View (Notifications a)) -> notifications a
 
 -- Constants that attached each of the page constructor
 constantsP
@@ -544,6 +551,7 @@ constantsP
   modifyAssessment_
   modifyAssessmentPreview_
   viewAssessment_
+  notifications_
   = pageCata
       (c $ login login_)
       (c $ logout logout_)
@@ -595,6 +603,7 @@ constantsP
       (\ak _ -> modifyAssessment ak modifyAssessment_)
       (\ak _ -> modifyAssessmentPreview ak modifyAssessmentPreview_)
       (\ak _ -> viewAssessment ak viewAssessment_)
+      (c $ notifications notifications_)
   where
     c = const
 
@@ -650,6 +659,7 @@ liftsP
   modifyAssessment_
   modifyAssessmentPreview_
   viewAssessment_
+  notifications_
   = pageCata
       (login . login_)
       (logout . logout_)
@@ -701,6 +711,7 @@ liftsP
       (\ak a -> modifyAssessment ak (modifyAssessment_ ak a))
       (\ak a -> modifyAssessmentPreview ak (modifyAssessmentPreview_ ak a))
       (\ak a -> viewAssessment ak (viewAssessment_ ak a))
+      (notifications . notifications_)
 
 isLogin (View (Login _)) = True
 isLogin _ = False
@@ -848,6 +859,9 @@ isModifyAssessmentPreview _ = False
 isViewAssessment (View (ViewAssessment _ _)) = True
 isViewAssessment _ = False
 
+isNotifications (View (Notifications _)) = True
+isNotifications _ = False
+
 -- Returns the if the given page satisfies one of the given predicates in the page predicate
 -- list
 isPage :: [Page a b c d e -> Bool] -> Page a b c d e -> Bool
@@ -869,6 +883,7 @@ regularPages = [
   , isGroupRegistration
   , isGetSubmission
   , isViewUserScore
+  , isNotifications
   ]
 
 groupAdminPages = [
@@ -1094,6 +1109,7 @@ pageGen = oneof [
         , setUserPassword ()
 #endif
         , newTestScript ()
+        , notifications ()
         ]
 
       parametricPages = oneof [
