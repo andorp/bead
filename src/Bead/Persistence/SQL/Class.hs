@@ -8,7 +8,7 @@ import           Database.Persist.Sql hiding (update, updateField)
 import           Text.JSON.Generic (encodeJSON,decodeJSON)
 
 import qualified Bead.Domain.Entities as Domain
-import qualified Bead.Domain.Entity.Notification as Domain hiding (NotifType(..))
+import qualified Bead.Domain.Entity.Notification as Domain hiding (NotificationType(..))
 import qualified Bead.Domain.Relationships as Domain
 import           Bead.Persistence.SQL.Entities
 import           Bead.Persistence.SQL.JSON
@@ -324,5 +324,5 @@ instance DomainKey Domain.NotificationKey where
 
 instance DomainValue Domain.Notification where
   type EntityValue Domain.Notification = Notification
-  fromDomainValue = Domain.notification Notification
-  toDomainValue ent = Domain.Notification (notificationMessage ent) (notificationDate ent)
+  fromDomainValue = Domain.notification $ \msg date typ -> Notification msg date (encodeJSON typ)
+  toDomainValue ent = Domain.Notification (notificationMessage ent) (notificationDate ent) (decodeJSON $ notificationType ent)

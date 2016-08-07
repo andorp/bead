@@ -76,6 +76,7 @@ Group
 Notification
   message     Text sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
   date        UTCTime
+  type        JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 Score
