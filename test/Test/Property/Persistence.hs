@@ -331,36 +331,14 @@ feedbacks n ss = do
     run $ insertListRef list (fk, sk)
   listInRef list
 
--- Generates and stores the given number of system notifications.
--- Returns all the creates notification key.
-systemNotifications :: Int -> IO [NotificationKey]
-systemNotifications n = do
-  list <- createListRef
-  quick n $ do
-    nk <- saveAndLoadIdenpotent "Notification" saveSystemNotification loadNotification Gen.notifications
-    run $ insertListRef list nk
-  listInRef list
-
--- Generates and stores the given number of comment notifications for randomly selected comments
--- Returns the list of the associated notification and comment keys.
-commentNotifications :: Int -> [CommentKey] -> IO [(NotificationKey, CommentKey)]
-commentNotifications n cs = do
-  list <- createListRef
-  quick n $ do
-    ck <- pick $ elements cs
-    nk <- saveAndLoadIdenpotent "Notification" (saveCommentNotification ck) loadNotification Gen.notifications
-    run $ insertListRef list (nk,ck)
-  listInRef list
-
 -- Generates and stores the given number of feedback notifications for randomly selected comments
 -- Returns the list of the associated notification and feedback keys.
-feedbackNotifications :: Int -> [FeedbackKey] -> IO [(NotificationKey, FeedbackKey)]
-feedbackNotifications n fs = do
+notifications :: Int -> IO [NotificationKey]
+notifications n = do
   list <- createListRef
   quick n $ do
-    fk <- pick $ elements fs
-    nk <- saveAndLoadIdenpotent "Notification" (saveFeedbackNotification fk) loadNotification Gen.notifications
-    run $ insertListRef list (nk,fk)
+    nk <- saveAndLoadIdenpotent "Notification" saveNotification loadNotification Gen.notifications
+    run $ insertListRef list nk
   listInRef list
 
 -- Generate and store the given number of submissions, for the randomly selected
@@ -1346,72 +1324,6 @@ deleteIncomingFeedbackTest = test $ testCase "Delete incoming feedbacks" $ do
         return $ do
           assertTrue (sk `elem` cks) "There was no feedback"
 
--- All the notifications for comments returns the given comment key, and no feedback key
-saveCommentNotificationTest = test $ testCase "Comment notifications" $ do
-  reinitPersistence
-  us <- users 400
-  cs <- courses 50
-  gs <- groups 200 cs
-  as <- courseAndGroupAssignments 300 300 cs gs
-  ss <- submissions 500 us as
-  cks <- comments 1500 (map snd ss)
-  let now = utcTimeConstant
-  quick 1000 $ do
-    (ck,sk) <- pick $ elements cks
-    notif <- pick $ Gen.notifications
-    nk <- runPersistCmd $ saveCommentNotification ck notif
-    (mck,mfk,users) <- runPersistCmd $ do
-      mck <- commentOfNotification nk
-      mfk <- feedbackOfNotification nk
-      users <- usersOfNotification nk
-      return (mck,mfk,users)
-    assertEquals (Just ck) mck   "Commented notification has no comment key."
-    assertEquals Nothing   mfk   "Commented notification has a notification key."
-    assertEquals []        users "Commented notification had a non-empty users list."
-
--- All the notifications for feedback returns the given feedback key, and no comment key
-saveFeedbackNotificationTest = test $ testCase "Feedback notifications" $ do
-  reinitPersistence
-  us <- users 400
-  cs <- courses 50
-  gs <- groups 200 cs
-  as <- courseAndGroupAssignments 300 300 cs gs
-  ss <- submissions 500 us as
-  fs <- feedbacks 1500 (map snd ss)
-  quick 1000 $ do
-    (fk,sk) <- pick $ elements fs
-    notif <- pick $ Gen.notifications
-    nk <- runPersistCmd $ saveFeedbackNotification fk notif
-    (mck,mfk,users) <- runPersistCmd $ do
-      mck <- commentOfNotification nk
-      mfk <- feedbackOfNotification nk
-      users <- usersOfNotification nk
-      return (mck,mfk,users)
-    assertEquals Nothing   mck   "Feedback notification has a comment key."
-    assertEquals (Just fk) mfk   "Feedback notification has no notification key."
-    assertEquals []        users "Feedback notification had a non-empty users list."
-
--- All the system notification does not returns an feedback or comment key, and they are
--- associated to the users
-attachedSystemNotificationTest = test $ testCase "System notifications with attached users" $ do
-  reinitPersistence
-  us <- users 400
-  ns <- systemNotifications 1500
-  quick 1000 $ do
-    user <- pick $ elements us
-    nk <- pick $ elements ns
-    (mck,mfk,users,nks) <- runPersistCmd $ do
-      attachNotificationToUser user nk
-      mck <- commentOfNotification nk
-      mfk <- feedbackOfNotification nk
-      users <- usersOfNotification nk
-      nks   <- notificationsOfUser user
-      return (mck,mfk,users,nks)
-    assertEquals Nothing   mck     "System notification has no comment key."
-    assertEquals Nothing   mfk     "System notification has no notification key."
-    assertTrue   (elem user users) "System notification is not associated with the selected user on the notification side."
-    assertTrue   (elem nk   nks)   "System notification is not associated with the selected user on the user side."
-
 attachedNotificationTest = test $ testCase "Notifications with attached users" $ do
   reinitPersistence
   us <- users 400
@@ -1421,30 +1333,16 @@ attachedNotificationTest = test $ testCase "Notifications with attached users" $
   ss <- submissions 500 us as
   cks <- comments 200 (map snd ss)
   fs <- feedbacks 200 (map snd ss)
-  cns <- map fst <$> commentNotifications 600 (map fst cks)
-  fns <- map fst <$> feedbackNotifications 600 (map fst fs)
-  sns <- systemNotifications 600
-  let ns = cns ++ fns ++ sns
-  let sfns = sns ++ fns
-  let scns = sns ++ cns
+  ns <- notifications 600
   quick 1000 $ do
     user <- pick $ elements us
     nk   <- pick $ elements ns
-    (mck,mfk,users,nks) <- runPersistCmd $ do
+    (users,nks) <- runPersistCmd $ do
       attachNotificationToUser user nk
-      mck <- commentOfNotification nk
-      mfk <- feedbackOfNotification nk
       users <- usersOfNotification nk
       nks   <- notificationsOfUser user
-      return (mck,mfk,users,nks)
-    assertTrue   (elem user users) "System notification is not associated with the selected user on the notification side."
-    assertTrue   (elem nk   nks)   "System notification is not associated with the selected user on the user side."
-    case mck of
-      Nothing -> assertTrue (elem nk sfns) "A non commented notification had a comment."
-      Just ck -> assertTrue (elem nk cns) "A commented notification lost its comment key."
-    case mfk of
-      Nothing -> assertTrue (elem nk scns) ("A non feedback notification had a feedback." ++ show nk)
-      Just fk -> assertTrue (elem nk fns) "A feedback notification lost its feedback key."
+      return (users,nks)
+    assertTrue (elem user users) "User is not attached to the user."
 
 -- * Run persistent command
 
@@ -1545,9 +1443,6 @@ complexTests = group "Persistence Layer Complex tests" $ do
   assessmentTests
   unevaluatedScoresTests
   scoreEvaluationTests
-  saveCommentNotificationTest
-  saveFeedbackNotificationTest
-  attachedSystemNotificationTest
   attachedNotificationTest
   test cleanUpPersistence
 
