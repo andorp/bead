@@ -14,9 +14,7 @@ import           Bead.Config
 import qualified Bead.Controller.Logging as L
 import           Bead.Controller.ServiceContext as S
 import           Bead.Daemon.NotificationEmail
-#ifdef EmailEnabled
 import           Bead.Daemon.Email
-#endif
 #ifdef SSO
 import           Bead.Daemon.LDAP
 #else
@@ -24,6 +22,7 @@ import           Text.Regex.TDFA
 #endif
 import           Bead.Daemon.Logout
 import           Bead.Daemon.TestAgent
+import           Bead.Domain.Types (MailSender)
 import           Bead.Persistence.Initialization
 import qualified Bead.Persistence.Persist as Persist (Config(..), configToPersistConfig, createPersistInit, createPersistInterpreter)
 import           Bead.View.BeadContextInit
@@ -31,8 +30,8 @@ import           Bead.View.Logger
 
 
 -- Creates a service context that includes the given logger
-createContext :: L.Logger -> Persist.Config -> IO ServiceContext
-createContext logger cfg = do
+createContext :: L.Logger -> Persist.Config -> MailSender -> IO ServiceContext
+createContext logger cfg mailSender = do
   userContainer <- ioUserContainer
   init <- Persist.createPersistInit cfg
   isPersistSetUp <- isSetUp init
@@ -40,7 +39,7 @@ createContext logger cfg = do
     True -> return ()
     False -> initPersist init
   interpreter <- Persist.createPersistInterpreter cfg
-  S.serviceContext userContainer logger interpreter
+  S.serviceContext userContainer logger interpreter mailSender
 
 -- Reads the command line arguments, interprets the init tasks and start
 -- the service with the given config
@@ -54,17 +53,11 @@ main = do
 
 -- Prints out the actual server configuration
 printConfigInfo :: Config -> IO ()
-#ifdef EmailEnabled
 printConfigInfo = configCata loginConfigPart $ \logfile timeout hostname fromEmail dll dtz zoneInfoDir up lcfg _pcfg -> do
-#else
-printConfigInfo = configCata loginConfigPart $ \logfile timeout dll dtz zoneInfoDir up lcfg _pcfg -> do
-#endif
   configLn $ "Log file: " ++ logfile
   configLn $ concat ["Session timeout: ", show timeout, " seconds"]
-#ifdef EmailEnabled
   configLn $ "Hostname included in emails: " ++ hostname
   configLn $ "FROM Address included in emails: " ++ fromEmail
-#endif
   configLn $ "Default login language: " ++ dll
   configLn $ "Default time zone: " ++ dtz
   configLn $ "TimeZone informational dir: " ++ zoneInfoDir
@@ -133,7 +126,14 @@ startService config = do
   userActionLogs <- creating "logger" $ createSnapLogger . userActionLogFile $ config
   let userActionLogger = snapLogger userActionLogs
 
-  context <- creating "service context" $ createContext userActionLogger (Persist.configToPersistConfig config)
+  emailDaemon <- creating "email daemon" $
+    startEmailDaemon userActionLogger
+
+  context <- creating "service context" $
+                createContext
+                  userActionLogger
+                  (Persist.configToPersistConfig config)
+                  (sendEmail emailDaemon)
 
   tempDir <- creating "temporary directory" createBeadTempDir
 
@@ -142,12 +142,7 @@ startService config = do
   logoutDaemon <- creating "logout daemon" $
     startLogoutDaemon userActionLogger (sessionTimeout config) 30 {-s-} (userContainer context)
 
-#ifdef EmailEnabled
-  emailDaemon <- creating "email daemon" $
-    startEmailDaemon userActionLogger
-#endif
   notificationEmailDaemon <- creating "notification email daemon" $ startNotificationEmailDaemon userActionLogger 20 5 {-s-} context 
-
 
 #ifdef SSO
   ldapDaemon <- creating "ldap daemon" $
@@ -155,17 +150,9 @@ startService config = do
 #endif
 
 #ifdef SSO
-#ifdef EmailEnabled
   let daemons = Daemons logoutDaemon emailDaemon ldapDaemon
 #else
-  let daemons = Daemons logoutDaemon ldapDaemon
-#endif
-#else
-#ifdef EmailEnabled
   let daemons = Daemons logoutDaemon emailDaemon
-#else
-  let daemons = Daemons logoutDaemon
-#endif
 #endif
 
   serveSnaplet defaultConfig (beadContextInit config context daemons tempDir)

@@ -125,13 +125,10 @@ module Bead.Persistence.Persist (
   , submissionOfFeedback
 
   -- Notification
-  , saveCommentNotification
-  , saveFeedbackNotification
-  , saveSystemNotification
+  , saveNotification
   , loadNotification
-  , commentOfNotification
-  , feedbackOfNotification
   , usersOfNotification
+  , notifyUsers
 
   -- Evaluation
   , saveSubmissionEvaluation
@@ -169,6 +166,7 @@ module Bead.Persistence.Persist (
 #endif
   ) where
 
+import           Control.Monad
 import           Data.Time (UTCTime)
 import           Data.Set (Set)
 
@@ -586,26 +584,20 @@ submissionOfFeedback = PersistImpl.submissionOfFeedback
 
 -- * Notification
 
-saveCommentNotification :: CommentKey -> Notification -> Persist NotificationKey
-saveCommentNotification = PersistImpl.saveCommentNotification
-
-saveFeedbackNotification :: FeedbackKey -> Notification -> Persist NotificationKey
-saveFeedbackNotification = PersistImpl.saveFeedbackNotification
-
-saveSystemNotification :: Notification -> Persist NotificationKey
-saveSystemNotification = PersistImpl.saveSystemNotification
+saveNotification :: Notification -> Persist NotificationKey
+saveNotification = PersistImpl.saveNotification
 
 loadNotification :: NotificationKey -> Persist Notification
 loadNotification = PersistImpl.loadNotification
 
-commentOfNotification :: NotificationKey -> Persist (Maybe CommentKey)
-commentOfNotification = PersistImpl.commentOfNotification
-
-feedbackOfNotification :: NotificationKey -> Persist (Maybe FeedbackKey)
-feedbackOfNotification = PersistImpl.feedbackOfNotification
-
 usersOfNotification :: NotificationKey -> Persist [Username]
 usersOfNotification = PersistImpl.usersOfNotification
+
+notifyUsers :: Notification -> [Username] -> Persist ()
+notifyUsers n us = do
+  nk <- PersistImpl.saveNotification n
+  forM_ us $ \u -> do
+    PersistImpl.attachNotificationToUser u nk
 
 -- * Evaluation
 

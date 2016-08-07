@@ -191,6 +191,7 @@ menuId = P.pageCata
   (c2 "link-modify-assessment")
   (c2 "link-modify-assessment-preview")
   (c2 "link-view-asssessment")
+  (c "link-notifications")
     where
       c = const
       c2 = c . const

@@ -28,6 +28,7 @@ import           Control.Concurrent.STM
 import           Bead.Controller.Pages as Pages
 import           Bead.Controller.Logging
 import           Bead.Domain.Entities as Entities
+import           Bead.Domain.Types (Mail, MailSender)
 import           Bead.View.Translation
 import qualified Bead.Persistence.Persist as Persist
 
@@ -130,11 +131,12 @@ data ServiceContext = ServiceContext {
     userContainer :: UserContainer UserState
   , logger        :: Logger
   , persistInterpreter :: Persist.Interpreter
+  , emailSender   :: MailSender
   }
 
-serviceContext :: UserContainer UserState -> Logger -> Persist.Interpreter -> IO ServiceContext
-serviceContext u l i = do
-  return $ ServiceContext u l i
+serviceContext :: UserContainer UserState -> Logger -> Persist.Interpreter -> MailSender -> IO ServiceContext
+serviceContext u l i m = do
+  return $ ServiceContext u l i m
 
 ioUserContainer :: IO (UserContainer a)
 ioUserContainer = do

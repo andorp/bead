@@ -22,7 +22,7 @@ context :: IO ServiceContext
 context = do
   container <- ioUserContainer
   interp <- createPersistInterpreter defaultConfig
-  serviceContext container errorLogger interp
+  serviceContext container errorLogger interp (const $ return ())
   where
     errorLogger = Logger {
         log = \e msg -> case e of

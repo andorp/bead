@@ -26,9 +26,7 @@ import           System.Directory
 
 import           Bead.Config
 import           Bead.Controller.ServiceContext as S hiding (serviceContext)
-#ifdef EmailEnabled
 import           Bead.Daemon.Email
-#endif
 #ifdef SSO
 import           Bead.Daemon.LDAP
 #endif
@@ -60,11 +58,10 @@ type InitTasks = Maybe UserRegInfo
 
 -- The collection of the daemons that are neccesary to create the
 -- application
+-- TODO: Use lenses for optional fields.
 data Daemons = Daemons {
     logoutDaemon :: LogoutDaemon
-#ifdef EmailEnabled
   , emailDaemon  :: EmailDaemon
-#endif
 #ifdef SSO
   , ldapDaemon   :: LDAPDaemon
 #endif
@@ -97,9 +94,7 @@ beadContextInit config s daemons tempDir = makeSnaplet "bead" description dataDi
       nestSnaplet "dictionary" dictionaryContext $
           dictionarySnaplet dictionaries (Language $ defaultLoginLanguage config)
 
-#ifdef EmailEnabled
   se <- nestSnaplet "sendemail" sendEmailContext (emailSenderSnaplet config (emailDaemon daemons))
-#endif
 
   rp <- nestSnaplet "randompassword" randomPasswordContext passwordGeneratorSnaplet
 
@@ -131,17 +126,9 @@ beadContextInit config s daemons tempDir = makeSnaplet "bead" description dataDi
 
   return $
 #ifdef SSO
-#ifdef EmailEnabled
     BeadContext sm as ss ds se rp fs ts cs tz dl ldap
 #else
-    BeadContext sm as ss ds rp fs ts cs tz dl ldap
-#endif
-#else
-#ifdef EmailEnabled
     BeadContext sm as ss ds se rp fs ts cs un tz dl
-#else
-    BeadContext sm as ss ds rp fs ts cs un tz dl
-#endif
 #endif
   where
     description = "The BEAD website"

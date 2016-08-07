@@ -573,6 +573,7 @@ labels =
  , "msg_LinkText_ModifyAssessment"
  , "msg_LinkText_ModifyAssessmentPreview"
  , "msg_LinkText_ViewAssessment"
+ , "msg_LinkText_Notifications"
 
  , "msg_TestScriptTypeSimple"
  , "msg_TestScriptTypeZipped"

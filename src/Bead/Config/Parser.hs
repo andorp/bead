@@ -21,10 +21,8 @@ instance FromJSON Config where
   parseJSON (Object v) = Config
     <$> v.: "user-actions-log"
     <*> v.: "session-timeout"
-#ifdef EmailEnabled
     <*> v.: "hostname-for-emails"
     <*> v.: "from-email-address"
-#endif
     <*> v.: "default-login-language"
     <*> v.: "default-timezone"
     <*> v.: "timezone-info-directory"
@@ -112,10 +110,8 @@ parseTests = group "parserTests" $ do
   let configStr loginCfg persistCfg = unlines [
           "user-actions-log: 'actions'",
           "session-timeout: 10",
-#ifdef EmailEnabled
           "hostname-for-emails: 'www.google.com'",
           "from-email-address: 'mail@google.com'",
-#endif
           "default-login-language: 'en'",
           "default-timezone: 'Europe/Budapest'",
           "timezone-info-directory: '/opt/some'",
@@ -132,10 +128,8 @@ parseTests = group "parserTests" $ do
   let config lcf pcfg = Config {
          userActionLogFile = "actions"
        , sessionTimeout = 10
-#ifdef EmailEnabled
        , emailHostname = "www.google.com"
        , emailFromAddress = "mail@google.com"
-#endif
        , defaultLoginLanguage = "en"
        , defaultRegistrationTimezone = "Europe/Budapest"
        , timeZoneInfoDirectory = "/opt/some"

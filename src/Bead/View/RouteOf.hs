@@ -65,6 +65,7 @@ module Bead.View.RouteOf (
   , modifyAssessmentPath
   , modifyAssessmentPreviewPath
   , viewAssessmentPath
+  , notificationsPath
   , staticPath
   , pageRequestParams
 #ifdef TEST
@@ -248,6 +249,9 @@ modifyAssessmentPreviewPath = "/modify-assessment-preview"
 viewAssessmentPath :: RoutePath
 viewAssessmentPath = "/view-assessment"
 
+notificationsPath :: RoutePath
+notificationsPath = "/notifications"
+
 staticPath :: RoutePath
 staticPath = ""
 
@@ -307,6 +311,7 @@ pageRoutePath = pfmap id id id id id . r where
     modifyAssessmentPath
     modifyAssessmentPreviewPath
     viewAssessmentPath
+    notificationsPath
 
 type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam] [ReqParam]
 
@@ -363,6 +368,7 @@ pageRequestParams = liftsP
   (\ak _ -> [requestParam ak]) -- modifyAssessment
   (\ak _ -> [requestParam ak]) -- modifyAssessmentPreview
   (\ak _ -> [requestParam ak]) -- viewAssessment  
+  (c []) -- notifications
     where
       c = const
 

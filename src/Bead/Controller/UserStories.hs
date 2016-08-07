@@ -10,6 +10,7 @@ import qualified Bead.Domain.Entity.Assignment as Assignment
 import qualified Bead.Domain.Entity.Assessment as Assessment
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
+import           Bead.Domain.Types (Mail)
 import           Bead.Controller.ServiceContext
 import           Bead.Controller.Logging  as L
 import           Bead.Controller.Pages    as P hiding (modifyEvaluation,modifyAssessment)
@@ -554,7 +555,7 @@ subscribedToGroup gk = logAction INFO ("lists all users in group " ++ show gk) $
   authorize P_Open P_Group
   isAdministratedGroup gk
   persistence $ Persist.subscribedToGroup gk
-                       
+
 
 -- | Regsiter the user in the group, if the user does not submitted
 -- any solutions for the other groups of the actual course, otherwise
@@ -843,7 +844,7 @@ scoreDesc sk = logAction INFO ("loads score description of score " ++ show sk) $
   scoreUser <- usernameOfScore sk
   if (currentUser == scoreUser)
     then persistence $ Persist.scoreDesc sk
-    else do 
+    else do
       logMessage INFO . violation $ printf "The user tries to view a score (%s) that not belongs to him."
                                            (show sk)
       errorPage $ userError nonAccessibleScore
@@ -1491,7 +1492,7 @@ isAdministratedAssignment = guard
 -- Checks if the given assessment is administrated by the actual user and
 -- throws redirects to the error page if not, otherwise do nothing
 isAdministratedAssessment :: AssessmentKey -> UserStory ()
-isAdministratedAssessment = guard 
+isAdministratedAssessment = guard
   Persist.isAdministratedAssessment
   "User tries to modify the assessment (%s) which is not administrated by him."
   (userError nonAdministratedAssessment)
@@ -1562,6 +1563,12 @@ withUserAndPersist :: (Username -> Persist a) -> UserStory a
 withUserAndPersist f = do
   u <- username
   persistence (f u)
+
+sendEmail :: Mail -> UserStory ()
+sendEmail mail = do
+  -- FIXME: Authorize email sending.
+  sender <- CMR.asks (emailSender . fst)
+  liftIO $ sender mail
 
 -- | Lifting a persistence action, if some error happens
 -- during the action we create a unique hash ticket and we display

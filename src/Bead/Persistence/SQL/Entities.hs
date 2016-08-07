@@ -75,6 +75,7 @@ Group
 
 Notification
   message     Text sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
+  date        UTCTime
   deriving Show
 
 Score
@@ -299,19 +300,11 @@ ScoreOfEvaluation
   UniqueScoreOfEvaluationPair score evaluation
   UniqueScoreOfEvaluation evaluation
 
-CommentNotification
-  comment      CommentId
-  notification NotificationId
-  UniqueCommentNotification comment notification
-
-FeedbackNotification
-  feedback     FeedbackId
-  notification NotificationId
-  UniqueFeedbackNotification feedback notification
-
 UserNotification
   user         UserId
   notification NotificationId
+  seen         Bool
+  processed    Bool
   UniqueUserNotification user notification
 
 |]
