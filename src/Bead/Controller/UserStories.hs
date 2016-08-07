@@ -1381,30 +1381,30 @@ testAgentFeedbacks = do
   where
     submission = fst
 
---
+-- Send notification emails
 notificationEmails :: UserStory ()
 notificationEmails = do
-  join $ persistence $ do
+  join $ persistence $ do -- TODO: Mark Notifications as processed
     notifications <- unprocessedNotifications
     notifications' <- forM notifications (\(user, notificationKey, notificationState) -> do
                                              n <- loadNotification notificationKey
                                              return (user, n, notificationState))
-    trace ("Emails") (return ())
     return $ mapM_ (\(user, notifications) ->
-                     liftIO $ do mail <- generateNotificationEmail user notifications
-                                 return (sendEmail mail)) (bundledNotifications notifications') 
+                     do mail <- generateNotificationEmail user notifications
+                        (sendEmail mail))
+                   (bundledNotifications notifications') 
   where bundledNotifications :: [(User, Notification.Notification, Notification.NotificationState)] -> [(User, [Notification.Notification])]
         bundledNotifications notifications = Map.toList $ Data.List.foldl (addNotification) Map.empty notifications
         addNotification :: Map.Map User [Notification.Notification] -> (User, Notification.Notification, Notification.NotificationState) -> Map User [Notification.Notification] 
         addNotification notificationMap (user, notification, _) = Map.insertWith (++) user [notification] notificationMap
 
-generateNotificationEmail :: User -> [Notification.Notification] -> IO Mail
+generateNotificationEmail :: User -> [Notification.Notification] -> UserStory Mail
 generateNotificationEmail user notifications =
-  let mailFrom = undefined
+  let mailFrom = Address Nothing (Text.pack "clample@crimson.ua.edu")
       mailTo = Address Nothing (emailFold fromString (u_email user))
       subject = "Bead Notifications"
       body = notificationEmailTemplate user notifications
-  in verySimpleMail mailFrom mailTo subject body
+  in liftIO $ verySimpleMail mailFrom mailTo subject body
 
 notificationEmailTemplate :: User -> [Notification.Notification] -> LT.Text
 notificationEmailTemplate user notifications =
