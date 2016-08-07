@@ -8,6 +8,7 @@ import           Bead.Domain.Entities hiding (name, uid)
 import qualified Bead.Domain.Entities as Entity (name, uid)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import qualified Bead.Domain.Entity.Assessment as Assessment
+import qualified Bead.Domain.Entity.Notification as Notification
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Domain.Types (Mail)
@@ -18,6 +19,7 @@ import           Bead.Persistence.Persist (Persist)
 import qualified Bead.Persistence.Persist   as Persist
 import qualified Bead.Persistence.Relations as Persist
 import qualified Bead.Persistence.Guards    as Persist
+import           Bead.Persistence.SQL.Notification (unprocessedNotifications, loadNotification)
 import           Bead.View.Translation
 
 import           Control.Applicative
@@ -39,7 +41,12 @@ import qualified Data.Set as Set
 import           Data.Time (UTCTime(..), getCurrentTime)
 import           Numeric (showHex)
 import           Text.Printf (printf)
-import           Data.List -- Delete after developing notificationEmails
+import           Data.List
+import qualified Data.Text as Text
+import           Bead.View.BeadContext hiding (sendEmail)
+import           Network.Mail.Mime
+import           Data.String (fromString)
+import qualified Data.Text.Lazy as LT
 
 -- User error can be a message that need to be displayed, or
 -- a parametrized message with a string parameter that needs
@@ -1374,21 +1381,38 @@ testAgentFeedbacks = do
   where
     submission = fst
 
-
+--
 notificationEmails :: UserStory ()
--- notificationEmails = trace "NotificationEmailDaemon" (return ())
--- unprocessedNotifications :: Persist [(Domain.User, Domain.NotificationKey, Domain.NotificationState)]
--- want one user, all of their notifications in one email. create a map from User to Notifications
 notificationEmails = do
-  persistence $ do
-    notifications <- return ([(1, "a"), (1, "b"), (3, "c")]) -- unprocessedNotifications
-    trace (show $ bundledNotifications notifications) (return ())
-    -- forM_ notifications (processNotification)
-    where bundledNotifications :: [(Int, String)] -> Map Int [String]
-          bundledNotifications notifications = Data.List.foldl addNotification Map.empty notifications
-          addNotification notificationMap (user, notificationKey) = Map.insertWith (++) user [notificationKey] notificationMap
+  join $ persistence $ do
+    notifications <- unprocessedNotifications
+    notifications' <- forM notifications (\(user, notificationKey, notificationState) -> do
+                                             n <- loadNotification notificationKey
+                                             return (user, n, notificationState))
+    trace ("Emails") (return ())
+    return $ mapM_ (\(user, notifications) ->
+                     liftIO $ do mail <- generateNotificationEmail user notifications
+                                 return (sendEmail mail)) (bundledNotifications notifications') 
+  where bundledNotifications :: [(User, Notification.Notification, Notification.NotificationState)] -> [(User, [Notification.Notification])]
+        bundledNotifications notifications = Map.toList $ Data.List.foldl (addNotification) Map.empty notifications
+        addNotification :: Map.Map User [Notification.Notification] -> (User, Notification.Notification, Notification.NotificationState) -> Map User [Notification.Notification] 
+        addNotification notificationMap (user, notification, _) = Map.insertWith (++) user [notification] notificationMap
 
+generateNotificationEmail :: User -> [Notification.Notification] -> IO Mail
+generateNotificationEmail user notifications =
+  let mailFrom = undefined
+      mailTo = Address Nothing (emailFold fromString (u_email user))
+      subject = "Bead Notifications"
+      body = notificationEmailTemplate user notifications
+  in verySimpleMail mailFrom mailTo subject body
 
+notificationEmailTemplate :: User -> [Notification.Notification] -> LT.Text
+notificationEmailTemplate user notifications =
+  LT.pack (u_name user) `LT.append` LT.pack "\nYou Have the following notifications" `LT.append` renderNotifications
+  where renderNotifications :: LT.Text
+        renderNotifications = LT.unlines $ map (\message -> (LT.pack $ show (Notification.notifMessage message)) `LT.append` LT.pack " at " `LT.append` (LT.pack $ show (Notification.notifDate message)))  notifications
+--
+        
 userSubmissions :: Username -> AssignmentKey -> UserStory (Maybe UserSubmissionDesc)
 userSubmissions s ak = logAction INFO msg $ do
   authPerms userSubmissionDescPermissions
