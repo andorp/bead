@@ -109,6 +109,8 @@ module Bead.Persistence.NoSQLDir (
   , commentOfNotification
   , feedbackOfNotification
   , usersOfNotification
+  , unprocessedNotifications
+
 
   , removeFromOpened
   , openedSubmissions
@@ -373,9 +375,8 @@ attachNotificationToUser u nk = do
   link u nk "user"
   link nk u "notification"
 
-notificationsOfUser :: Username -> Persist [NotificationKey]
-notificationsOfUser =
-  objectsIn "notification" NotificationKey isNotificationDir
+notificationsOfUser :: Username -> Persist [(NotificationKey, NotificationState, NotificationProcessed)]
+notificationsOfUser = error "NoSQLDir.notificationsOfUser"
 
 courseDirPath :: CourseKey -> FilePath
 courseDirPath (CourseKey c) = joinPath [courseDataDir, c]
@@ -782,6 +783,9 @@ feedbackOfNotification = objectIn "feedback" FeedbackKey isFeedbackDir
 
 usersOfNotification :: NotificationKey -> Persist [Username]
 usersOfNotification = objectsIn "user" Username isUserDir
+
+unprocessedNotifications :: Persist [(User, NotificationKey, NotificationState)]
+unprocessedNotifications = error "NoSQLDir.unprocessedNotifications"
 
 -- * Submission
 

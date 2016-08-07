@@ -33,6 +33,9 @@ notificationType
 data NotificationState = New | Seen
   deriving (Eq, Show)
 
+data NotificationProcessed = Unprocessed | Processed
+  deriving (Eq, Show)
+
 -- The notification is rendered for the user on some informational
 -- page or send via email.
 data Notification = Notification {
