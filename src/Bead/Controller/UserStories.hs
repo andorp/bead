@@ -19,6 +19,7 @@ import qualified Bead.Persistence.Relations as Persist
 import qualified Bead.Persistence.Guards    as Persist
 import           Bead.View.Translation
 
+import           Control.Lens (_2, to, view)
 import           Control.Applicative
 import           Control.Exception
 import           Control.Monad hiding (guard)
@@ -1586,6 +1587,14 @@ notifications = do
       (Notification.Notification "Blah1" now Notification.System, Notification.New)
     , (Notification.Notification "Blah2" now Notification.System, Notification.Seen)
     ] ++ notifs
+
+-- FIXME: Implement this in the persistent layer.
+noOfNewNotifications :: UserStory Int
+noOfNewNotifications =
+    length . filter (view (_2 . isNew))
+    <$> Bead.Controller.UserStories.notifications
+  where
+    isNew = to (Notification.New ==)
 
 -- Helper function: checks if there at least one submission for the given
 isThereSubmissionPersist = fmap (not . null) . Persist.submissionsForAssignment

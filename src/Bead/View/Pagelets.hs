@@ -103,11 +103,11 @@ titleAndHead doc title content = doc
           H.div ! A.id "title" $ fromString $ msg title
         H.div ! A.id "content" $ content)
 
-bootstrapUserFrame :: UserState -> IHtml -> Int -> IHtml
-bootstrapUserFrame s content secs = withUserFrame' content
+bootstrapUserFrame :: UserState -> IHtml -> Int -> Int -> IHtml
+bootstrapUserFrame s content secs newNotifs = withUserFrame' content
   where
     withUserFrame' content = do
-      header <- bootStrapHeader s secs
+      header <- bootStrapHeader s secs newNotifs
       content <- content
       status <- bootStrapStatus s
       msg <- getI18N
@@ -482,8 +482,8 @@ publicHeader = do
         H.div ! class_ "navbar-header" $ do
          span ! class_ "navbar-brand" $ "BE-AD"
 
-bootStrapHeader :: UserState -> Int -> IHtml
-bootStrapHeader s secs = do
+bootStrapHeader :: UserState -> Int -> Int -> IHtml
+bootStrapHeader s secs newNotifs = do
   msg <- getI18N
   return $ do
         H.div ! class_ "navbar navbar-default navbar-fixed-top" $ do
@@ -498,7 +498,11 @@ bootStrapHeader s secs = do
                         H.span ! class_ "icon-bar" $ mempty
                 H.div ! class_ "collapse navbar-collapse navbar-ex1-collapse" $ do
                     ul ! class_ "nav navbar-nav navbar-right" $ do
-                        li $ (I18N.i18n msg $ linkToPage notifications)
+                        li $ do (I18N.i18n msg $ linkToPage notifications)
+                                when (newNotifs > 0) $ do
+                                  fromString "("
+                                  fromString (show newNotifs)
+                                  fromString ")"
                         li $ minSecCountdown "hdctd" "--:--" secs
                         li $ H.a userId
                         li $ (I18N.i18n msg $ linkToPage profile)
