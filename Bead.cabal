@@ -195,7 +195,7 @@ Library
       Bead.View.Content.SetUserPassword.Page
       Bead.View.EmailTemplate
       Bead.View.ResetPassword
-
+                    
   Build-Depends:
     aeson >=0.8 && <0.9,
     async >=2.0,
