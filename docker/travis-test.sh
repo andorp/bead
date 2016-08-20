@@ -2,5 +2,5 @@
 
 /development/init/dev-env-setup.sh
 cd /development/bead
-cabal configure -v2 -f "Tests MySQL LDAP"
-cabal run BeadTest
+stack build --flag Bead:Tests --flag Bead:MySQL --flag Bead:LDAP
+stack exec BeadTest
