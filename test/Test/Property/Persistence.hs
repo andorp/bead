@@ -331,6 +331,7 @@ feedbacks n ss = do
     run $ insertListRef list (fk, sk)
   listInRef list
 
+{- XXX
 -- Generates and stores the given number of system notifications.
 -- Returns all the creates notification key.
 systemNotifications :: Int -> IO [NotificationKey]
@@ -362,6 +363,7 @@ feedbackNotifications n fs = do
     nk <- saveAndLoadIdenpotent "Notification" (saveFeedbackNotification fk) loadNotification Gen.notifications
     run $ insertListRef list (nk,fk)
   listInRef list
+-}
 
 -- Generate and store the given number of submissions, for the randomly selected
 -- user and assignment. Returns all the created submission keys with the associated
@@ -1345,7 +1347,7 @@ deleteIncomingFeedbackTest = test $ testCase "Delete incoming feedbacks" $ do
         cks <- map fst <$> testFeedbacks
         return $ do
           assertTrue (sk `elem` cks) "There was no feedback"
-
+{-
 -- All the notifications for comments returns the given comment key, and no feedback key
 saveCommentNotificationTest = test $ testCase "Comment notifications" $ do
   reinitPersistence
@@ -1445,6 +1447,7 @@ attachedNotificationTest = test $ testCase "Notifications with attached users" $
     case mfk of
       Nothing -> assertTrue (elem nk scns) ("A non feedback notification had a feedback." ++ show nk)
       Just fk -> assertTrue (elem nk fns) "A feedback notification lost its feedback key."
+-}
 
 -- * Run persistent command
 
@@ -1545,10 +1548,12 @@ complexTests = group "Persistence Layer Complex tests" $ do
   assessmentTests
   unevaluatedScoresTests
   scoreEvaluationTests
+{- XXX
   saveCommentNotificationTest
   saveFeedbackNotificationTest
   attachedSystemNotificationTest
   attachedNotificationTest
+-}
   test cleanUpPersistence
 
 monadicProperty gen prop = monadicIO (forAllM gen prop)

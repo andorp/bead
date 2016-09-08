@@ -187,7 +187,7 @@ date = read "2016-01-22 14:41:26 UTC"
 
 assessments = Assessment <$> manyWords <*> manyWords <*> pure date <*> evalConfigs
 
-notifTypes = elements [Notification.Comment, Notification.Feedback, Notification.System]
+-- notifTypes = elements [Notification.Comment, Notification.System]
 
 notifications = Notification.Notification . fromString <$> manyWords
 
