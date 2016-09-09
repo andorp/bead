@@ -207,6 +207,7 @@ dict = DictionaryFile {
     , msg_Evaluation_Info <| "Nem kötelező egyből értékelni a hallgató munkáját, lehet csak hozzászólást is írni.  A hozzászólásokra a hallgató szintén hozzászólásokkal tud válaszolni.  A feladat többször is értékelhető."
     , msg_Evaluation_Username <| "Neptun-kód:"
     , msg_Evaluation_SubmissionDate <| "Beadás dátuma:"
+    , msg_Evaluation_SubmissionInfo <| "Állapot:"
     , msg_Evaluation_FreeFormEvaluation <| "Értékelés"
     , msg_Evaluation_FreeFormComment <| "Hozzászólás"
     , msg_Evaluation_EmptyCommentAndFreeFormResult <| "Sem hozzászólás, sem értékelés nem volt megadva!"

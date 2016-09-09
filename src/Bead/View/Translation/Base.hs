@@ -243,6 +243,7 @@ labels =
  , "msg_Evaluation_Info"
  , "msg_Evaluation_Username"
  , "msg_Evaluation_SubmissionDate"
+ , "msg_Evaluation_SubmissionInfo"
  , "msg_Evaluation_FreeFormEvaluation"
  , "msg_Evaluation_FreeFormComment"
  , "msg_Evaluation_EmptyCommentAndFreeFormResult"

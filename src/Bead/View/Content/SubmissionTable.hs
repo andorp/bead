@@ -7,7 +7,7 @@ module Bead.View.Content.SubmissionTable (
   , submissionTable
   , submissionTableContext
   , sortUserLines
-  , resultCell
+  , formatSubmissionInfo
   , groupButtonStyle
   ) where
 
@@ -225,8 +225,8 @@ submissionTablePart tableId now ctx s = do
           Just si -> submissionCell msg u (ak,si)
 
     submissionCell msg u (ak,si) =
-      resultCell
-        (linkWithHtml (routeWithParams (Pages.userSubmissions ()) [requestParam u, requestParam ak]))
+      formatSubmissionInfo
+        (H.td . linkWithHtml (routeWithParams (Pages.userSubmissions ()) [requestParam u, requestParam ak]))
         mempty -- not found
         (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: xx-large"
              ! tooltip (msg_Home_SubmissionCell_NonEvaluated "Non evaluated") $ mempty) -- non-evaluated
@@ -266,8 +266,8 @@ submissionTablePart tableId now ctx s = do
             (encode delUserFromGroupPrm $ ud_username u)
             False ! A.onclick (fromString (onClick ++ "(this)"))
 
-resultCell contentWrapper notFound unevaluated tested passed failed s =
-  H.td $ contentWrapper (sc s)
+formatSubmissionInfo contentWrapper notFound unevaluated tested passed failed s =
+  contentWrapper (sc s)
   where
     sc = submissionInfoCata
            notFound

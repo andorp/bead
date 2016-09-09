@@ -186,6 +186,7 @@ submissionDesc sk = do
   user <- loadUser un
   let u = u_name user
   let uid = u_uid user
+  info <- submissionInfo sk
   ak <- assignmentOfSubmission sk
   asg <- loadAssignment ak
   created <- assignmentCreatedTime ak
@@ -202,6 +203,7 @@ submissionDesc sk = do
         , eUsername = un
         , eUid      = uid
         , eSolution = submissionValue id (const "zipped") (solution submission)
+        , eSubmissionInfo = info
         , eAssignment     = asg
         , eAssignmentKey  = ak
         , eAssignmentDate = created
@@ -221,6 +223,7 @@ submissionDesc sk = do
         , eUsername = un
         , eUid      = uid
         , eSolution = submissionValue id (const "zipped") (solution submission)
+        , eSubmissionInfo = info
         , eAssignment     = asg
         , eAssignmentKey  = ak
         , eAssignmentDate = created
