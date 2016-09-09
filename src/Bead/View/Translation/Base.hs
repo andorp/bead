@@ -312,6 +312,7 @@ labels =
  , "msg_EvaluationTable_MiscCourseAssignmentInfo"
  , "msg_EvaluationTable_Username"
  , "msg_EvaluationTable_DateOfSubmission"
+ , "msg_EvaluationTable_SubmissionInfo"
 
  , "msg_UserSubmissions_NonAccessibleSubmissions"
  , "msg_UserSubmissions_Course"

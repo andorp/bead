@@ -272,6 +272,7 @@ dict = DictionaryFile {
     , msg_EvaluationTable_MiscCourseAssignmentInfo <| "Tárgyszintű feladatokra beküldött megoldások a tárgy többi hallgatójától (más oktatók is láthatják)."
     , msg_EvaluationTable_Username <| "Neptun"
     , msg_EvaluationTable_DateOfSubmission <| "Beadás dátuma"
+    , msg_EvaluationTable_SubmissionInfo <| "Állapot"
     , msg_UserSubmissions_NonAccessibleSubmissions <| "Ezzel a felhasználóval ezt a megoldást nem lehet elérni!"
     , msg_UserSubmissions_Course <| "Tárgy:"
     , msg_UserSubmissions_Assignment <| "Feladat:"
