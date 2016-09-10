@@ -4,7 +4,7 @@
 module Bead.Controller.UserStories where
 
 import           Bead.Domain.Entities hiding (name, uid)
-import qualified Bead.Domain.Entities as Entity (name, uid)
+import qualified Bead.Domain.Entities as Entity (uid)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import qualified Bead.Domain.Entity.Assessment as Assessment
 import qualified Bead.Domain.Entity.Notification as Notification
@@ -19,7 +19,7 @@ import qualified Bead.Persistence.Relations as Persist
 import qualified Bead.Persistence.Guards    as Persist
 import           Bead.View.Translation
 
-import           Control.Lens (_2, to, view)
+import           Control.Lens (_1, view)
 import           Control.Applicative
 import           Control.Exception
 import           Control.Monad hiding (guard)
@@ -30,7 +30,8 @@ import qualified Control.Monad.Reader as CMR
 import           Control.Monad.Trans
 import           Prelude hiding (log, userError)
 import           Data.Hashable
-import           Data.List (nub, (\\))
+import           Data.Function (on)
+import           Data.List (nub, sortBy, (\\))
 import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
@@ -1577,20 +1578,22 @@ userSubmissions s ak = logAction INFO msg $ do
 
 -- List all the related notifications for the active user and marks them
 -- as seen if their state is new.
+-- TODO: Remove test values.
 notifications :: UserStory [(Notification.Notification, Notification.NotificationState, Notification.NotificationReference)]
 notifications = do
   now <- liftIO $ getCurrentTime
   notifs <- withUserAndPersist $ \u -> do
               notifs <- Persist.notificationsOfUser u
-              forM notifs (\(k,s,p) -> do
+              forM notifs (\(k,s,_p) -> do
                 notif <- Persist.loadNotification k
                 notifRef <- Persist.notificationReference (Notification.notifType notif)
                 when (s == Notification.New) $ Persist.markSeen u k
                 return (notif, s, notifRef))
+  let orderedNotifs = sortBy (flip compare `on` (Notification.notifDate . view _1)) $ notifs
   return $ [
       (Notification.Notification "Blah1" now Notification.System, Notification.New, Notification.NRefComment (AssignmentKey "1") (SubmissionKey "1") (CommentKey "1"))
     , (Notification.Notification "Blah2" now Notification.System, Notification.Seen, Notification.NRefSystem)
-    ] ++ notifs
+    ] ++ orderedNotifs
 
 noOfUnseenNotifications :: UserStory Int
 noOfUnseenNotifications = do
