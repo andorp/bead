@@ -47,7 +47,7 @@ linkFromNotif = notificationReference
   (\ak sk ck  -> routeWithAnchor (Pages.submissionDetails ak sk ()) ck)
   (\ak sk _ek -> routeWithAnchor (Pages.submissionDetails ak sk ()) SubmissionDetailsEvaluationDiv)
   (\sk _ek   -> routeOf $ Pages.viewUserScore sk ())
-  (\ak -> routeOf $ Pages.viewAssignment ak ())
+  (\ak -> routeOf $ Pages.submissionList ak ())
   (\ak -> routeOf $ Pages.viewAssessment ak ())
   (routeOf $ Pages.notifications ()) -- System notifications are one liners
 
