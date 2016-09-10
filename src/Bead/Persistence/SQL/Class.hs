@@ -324,5 +324,5 @@ instance DomainKey Domain.NotificationKey where
 
 instance DomainValue Domain.Notification where
   type EntityValue Domain.Notification = Notification
-  fromDomainValue = Domain.notification $ \msg date typ -> Notification msg date (encodeJSON typ)
-  toDomainValue ent = Domain.Notification (notificationMessage ent) (notificationDate ent) (decodeJSON $ notificationType ent)
+  fromDomainValue = Domain.notification $ \event date typ -> Notification (encodeJSON event) date (encodeJSON typ)
+  toDomainValue ent = Domain.Notification (decodeJSON $ notificationEvent ent) (notificationDate ent) (decodeJSON $ notificationType ent)
