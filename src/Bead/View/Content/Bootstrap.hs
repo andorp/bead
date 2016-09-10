@@ -100,6 +100,12 @@ unorderedListGroup = H.ul ! class_ "list-group"
 -- display
 listGroupLinkItem route text = H.a ! href (fromString route) ! class_ "list-group-item" $ text
 
+-- | Creates a linked list group item with a route to point at, and a text to
+-- display, renderd with the given color.
+listGroupAlertLinkItem alert route text = H.a ! href (fromString route) ! class_ (fromString itemColor) $ text
+  where
+    itemColor = "list-group-item list-group-item-" ++ (alertAlgebra "success" "info" "warning" "danger" alert)
+
 -- | Creates a texted list group item
 listGroupTextItem text = H.a ! href "#" ! class_ "list-group-item" $ fromString text
 
@@ -288,7 +294,7 @@ optionalTextInputWithDefault paramName labelText value =
     formGroup $ do
       labelFor paramName labelText
       optionalTextInputFieldWithDefault paramName value
-               
+
 
 -- | Creates a text input with the given name as id, a given label and a default value
 textInputWithDefault paramName labelText value =

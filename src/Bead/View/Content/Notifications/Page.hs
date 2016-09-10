@@ -33,12 +33,14 @@ notificationsContent p = do
     Bootstrap.row $ Bootstrap.colMd12 $ do
       Bootstrap.listGroup $
         forM_ (pdNotifications p) $ \(notif, state) ->
-          Bootstrap.listGroupLinkItem (linkFromNotif notif) . fromString $
-            unwords
-              [ show (notifDate notif)
-              , show (notifMessage notif)
-              , if state == Seen then "" else "NEW!"
-              ]
+          (if state == Seen
+            then Bootstrap.listGroupLinkItem
+            else Bootstrap.listGroupAlertLinkItem Bootstrap.Info
+          ) (linkFromNotif notif) . fromString $
+              unwords
+                [ show (notifDate notif)
+                , show (notifMessage notif)
+                ]
 
 -- TODO: Redirect for a page which marks a notification as seen.
 linkFromNotif :: Notification -> String
