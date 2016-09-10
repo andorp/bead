@@ -306,6 +306,7 @@ UserNotification
   notification NotificationId
   seen         Bool
   processed    Bool
+  created      UTCTime
   UniqueUserNotification user notification
 
 |]

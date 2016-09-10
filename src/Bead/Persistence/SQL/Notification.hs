@@ -2,8 +2,10 @@ module Bead.Persistence.SQL.Notification where
 
 import Control.Applicative ((<$>))
 import Control.Monad (forM, forM_)
+import Control.Monad.IO.Class (liftIO)
 import Database.Persist.Sql
-import Data.Maybe (catMaybes)
+import Data.Maybe (catMaybes, maybeToList)
+import Data.Time (getCurrentTime)
 
 import qualified Bead.Domain.Entities as Domain (Username, User)
 import qualified Bead.Domain.Relationships as Domain
@@ -17,14 +19,22 @@ saveNotification n = toDomainKey <$> insert (fromDomainValue n)
 
 attachNotificationToUser :: Domain.Username -> Domain.NotificationKey -> Persist ()
 attachNotificationToUser username nk = withUser username
-  (persistError "attachNotificationToUser" $ "User is not found:" ++ show username) $ \user ->
+  (persistError "attachNotificationToUser" $ "User is not found:" ++ show username) $ \user -> do
+    now <- liftIO $ getCurrentTime
     -- Insert not seen
-    void $ insertUnique (UserNotification (entityKey user) (fromDomainKey nk) False False)
+    void $ insertUnique (UserNotification (entityKey user) (fromDomainKey nk) False False now)
 
-notificationsOfUser :: Domain.Username -> Persist [(Domain.NotificationKey, Domain.NotificationState, Domain.NotificationProcessed)]
-notificationsOfUser username = withUser username (return []) $ \user ->
-  map (transformEntity . entityVal) <$>
-    selectList [UserNotificationUser ==. (entityKey user)] []
+-- | Returns all the new notification on top and the limited seen notifications
+notificationsOfUser :: Domain.Username -> Maybe Int -> Persist [(Domain.NotificationKey, Domain.NotificationState, Domain.NotificationProcessed)]
+notificationsOfUser username seenLimit = withUser username (return []) $ \user -> do
+  unseen <- selectList [ UserNotificationUser ==. (entityKey user)
+                       , UserNotificationSeen ==. False ]
+                       [ Desc UserNotificationCreated ]
+  seen <- selectList [ UserNotificationUser ==. (entityKey user)
+                     , UserNotificationSeen ==. True ]
+                     ([ Desc UserNotificationCreated] ++ maybeToList (LimitTo <$> seenLimit))
+
+  return . map (transformEntity . entityVal) $ unseen ++ seen
   where
     transformEntity e =
         ( toDomainKey $ userNotificationNotification e

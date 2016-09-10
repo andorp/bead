@@ -1575,15 +1575,14 @@ userSubmissions s ak = logAction INFO msg $ do
 notifications :: UserStory [(Notification.Notification, Notification.NotificationState, Notification.NotificationReference)]
 notifications = do
   now <- liftIO $ getCurrentTime
-  notifs <- withUserAndPersist $ \u -> do
+  orderedNotifs <- withUserAndPersist $ \u -> do
               let user = u_username u
-              notifs <- Persist.notificationsOfUser user
+              notifs <- Persist.notificationsOfUser user (Just notificationLimit)
               forM notifs (\(k,s,_p) -> do
                 notif <- Persist.loadNotification k
                 notifRef <- Persist.notificationReference (Notification.notifType notif)
                 when (s == Notification.New) $ Persist.markSeen user k
                 return (notif, s, notifRef))
-  let orderedNotifs = sortBy (flip compare `on` (Notification.notifDate . view _1)) $ notifs
   return $ [
       (Notification.Notification (Notification.NE_CommentCreated "Dummy" "1" "Blah...") now Notification.System, Notification.New, Notification.NRefComment (AssignmentKey "1") (SubmissionKey "1") (CommentKey "1"))
     , (Notification.Notification (Notification.NE_CourseAdminCreated "Haskell") now Notification.System, Notification.Seen, Notification.NRefSystem)
@@ -1821,3 +1820,8 @@ nonRelatedAssignment = msg_UserStoryError_NonRelatedAssignment "The assignment i
 nonAccessibleSubmission = msg_UserStoryError_NonAccessibleSubmission "The submission is not belongs to you."
 blockedSubmission = msg_UserStoryError_BlockedSubmission "The submission is blocked by an isolated assignment."
 nonAccessibleScore = msg_UserStoryError_NonAccessibleScore "The score does not belong to you."
+
+-- * constants
+
+notificationLimit :: Int
+notificationLimit = 100

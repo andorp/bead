@@ -243,7 +243,7 @@ administratedGroups = PersistImpl.administratedGroups
 attachNotificationToUser :: Username -> NotificationKey -> Persist ()
 attachNotificationToUser = PersistImpl.attachNotificationToUser
 
-notificationsOfUser :: Username -> Persist [(NotificationKey, Notif.NotificationState, Notif.NotificationProcessed)]
+notificationsOfUser :: Username -> Maybe Int -> Persist [(NotificationKey, Notif.NotificationState, Notif.NotificationProcessed)]
 notificationsOfUser = PersistImpl.notificationsOfUser
 
 -- Lists all the scores submitted for the user
