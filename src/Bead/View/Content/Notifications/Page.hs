@@ -17,6 +17,7 @@ import qualified Bead.Controller.UserStories as Story (notifications)
 
 data PageData = PageData {
       pdNotifications :: [(Notification, NotificationState, NotificationReference)]
+    , pdUserTime      :: UserTimeConverter
     }
 
 notifications :: ViewHandler
@@ -24,8 +25,8 @@ notifications = ViewHandler notificationsPage
 
 notificationsPage :: GETContentHandler
 notificationsPage = do
-  pageData <- PageData <$> userStory Story.notifications
-  return $ notificationsContent pageData
+  pd <- PageData <$> (userStory Story.notifications) <*> userTimeZoneToLocalTimeConverter
+  return $ notificationsContent pd
 
 notificationsContent :: PageData -> IHtml
 notificationsContent p = do
@@ -39,7 +40,7 @@ notificationsContent p = do
             else Bootstrap.listGroupAlertLinkItem Bootstrap.Info
           ) (linkFromNotif ref) . fromString $
               unwords
-                [ show (notifDate notif)
+                [ "[" ++ (showDate . pdUserTime p $ notifDate notif) ++ "]"
                 , translateEvent msg $ notifEvent notif
                 ]
 
