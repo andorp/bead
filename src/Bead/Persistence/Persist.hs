@@ -130,6 +130,7 @@ module Bead.Persistence.Persist (
   , usersOfNotification
   , notifyUsers
   , unprocessedNotifications
+  , noOfUnseenNotifications
 
 
   -- Evaluation
@@ -603,6 +604,9 @@ notifyUsers n us = do
 
 unprocessedNotifications :: Persist [(User, NotificationKey, Notif.NotificationState)]
 unprocessedNotifications = PersistImpl.unprocessedNotifications
+
+noOfUnseenNotifications :: Username -> Persist Int
+noOfUnseenNotifications = PersistImpl.noOfUnseenNotifications
 
 -- * Evaluation
 

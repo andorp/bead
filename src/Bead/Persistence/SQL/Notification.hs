@@ -53,6 +53,10 @@ unprocessedNotifications = do
       Nothing -> Nothing
       Just un -> Just (toDomainValue un, toDomainKey notifId, undefined))
 
+noOfUnseenNotifications :: Domain.Username -> Persist Int
+noOfUnseenNotifications username = withUser username (return 0) $ \user ->
+  count [UserNotificationUser ==. (entityKey user), UserNotificationSeen ==. False]
+
 mark :: EntityField UserNotification Bool -> Domain.Username -> Domain.NotificationKey -> Persist ()
 mark f username nk = withUser username (return ()) $ \user -> do
   uns <- selectList

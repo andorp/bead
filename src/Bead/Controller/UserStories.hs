@@ -1576,7 +1576,7 @@ userSubmissions s ak = logAction INFO msg $ do
     msg = join ["lists ",show s,"'s submissions for assignment ", show ak]
 
 -- List all the related notifications for the active user.
--- TODO
+-- TODO: Remove the test ones.
 notifications :: UserStory [(Notification.Notification, Notification.NotificationState)]
 notifications = do
   now <- liftIO $ getCurrentTime
@@ -1588,13 +1588,9 @@ notifications = do
     , (Notification.Notification "Blah2" now Notification.System, Notification.Seen)
     ] ++ notifs
 
--- FIXME: Implement this in the persistent layer.
-noOfNewNotifications :: UserStory Int
-noOfNewNotifications =
-    length . filter (view (_2 . isNew))
-    <$> Bead.Controller.UserStories.notifications
-  where
-    isNew = to (Notification.New ==)
+noOfUnseenNotifications :: UserStory Int
+noOfUnseenNotifications = do
+  withUserAndPersist Persist.noOfUnseenNotifications
 
 -- Helper function: checks if there at least one submission for the given
 isThereSubmissionPersist = fmap (not . null) . Persist.submissionsForAssignment
