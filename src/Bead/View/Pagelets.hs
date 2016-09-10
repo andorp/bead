@@ -436,6 +436,11 @@ linkToPage g = do
   msg <- getI18N
   return $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString $ msg $ linkText g
 
+linkToPageWithPostfix :: P.Page a b c d e -> String -> IHtml
+linkToPageWithPostfix g p = do
+  msg <- getI18N
+  return $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString (msg (linkText g) ++ p)
+
 linkButtonToPageBS :: P.Page a b c d e -> IHtml
 linkButtonToPageBS g = do
   msg <- getI18N
@@ -498,11 +503,10 @@ bootStrapHeader s secs newNotifs = do
                         H.span ! class_ "icon-bar" $ mempty
                 H.div ! class_ "collapse navbar-collapse navbar-ex1-collapse" $ do
                     ul ! class_ "nav navbar-nav navbar-right" $ do
-                        li $ do (I18N.i18n msg $ linkToPage notifications)
-                                when (newNotifs > 0) $ do
-                                  fromString "("
-                                  fromString (show newNotifs)
-                                  fromString ")"
+                        li $ do (I18N.i18n msg $
+                                    if newNotifs > 0
+                                        then linkToPageWithPostfix notifications (" (" ++ show newNotifs ++ ")")
+                                        else linkToPage notifications)
                         li $ minSecCountdown "hdctd" "--:--" secs
                         li $ H.a userId
                         li $ (I18N.i18n msg $ linkToPage profile)
