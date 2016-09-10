@@ -9,8 +9,6 @@ import           Text.Printf (printf)
 
 import qualified Bead.Controller.Pages as Pages
 import           Bead.View.Content
-import           Bead.View.I18N
-import           Bead.View.RouteOf
 import           Bead.Domain.Entity.Notification
 import qualified Bead.View.Content.Bootstrap as Bootstrap
 import qualified Bead.Controller.UserStories as Story (notifications)
@@ -44,16 +42,14 @@ notificationsContent p = do
                 , translateEvent msg $ notifEvent notif
                 ]
 
--- TODO: Redirect for a page which marks a notification as seen.
 linkFromNotif :: NotificationReference -> String
-linkFromNotif =
-  routeOf . notificationReference
-              (\ak sk _ck -> Pages.submissionDetails ak sk ()) -- TODO: Anchor the commenr
-              (\ak sk _ek -> Pages.submissionDetails ak sk ()) -- TODO: Get the submissionkey of the evaluation
-              (\sk _ek    -> Pages.viewUserScore sk ()) -- TODO: Get the submissionkey of the evaluation
-              (\ak -> Pages.viewAssignment ak ())
-              (\ak -> Pages.viewAssessment ak ())
-              (Pages.notifications ()) -- System notifications are one liners
+linkFromNotif = notificationReference
+  (\ak sk ck  -> routeWithAnchor (Pages.submissionDetails ak sk ()) ck)
+  (\ak sk _ek -> routeWithAnchor (Pages.submissionDetails ak sk ()) SubmissionDetailsEvaluationDiv)
+  (\sk _ek   -> routeOf $ Pages.viewUserScore sk ())
+  (\ak -> routeOf $ Pages.viewAssignment ak ())
+  (\ak -> routeOf $ Pages.viewAssessment ak ())
+  (routeOf $ Pages.notifications ()) -- System notifications are one liners
 
 -- Resolve a notification event to an actual message through the I18N layer.
 translateEvent :: I18N -> NotificationEvent -> String

@@ -193,7 +193,8 @@ submissionDesc sk = do
   asg <- loadAssignment ak
   created <- assignmentCreatedTime ak
   cgk <- courseOrGroupOfAssignment ak
-  cs  <- mapM loadComment =<< (commentsOfSubmission sk)
+  cs  <- commentsOfSubmission sk >>= \cks -> forM cks $ \ck ->
+            (,) ck <$> loadComment ck
   fs  <- mapM loadFeedback =<< (feedbacksOfSubmission sk)
   case cgk of
     Left ck  -> do
@@ -210,7 +211,7 @@ submissionDesc sk = do
         , eAssignmentKey  = ak
         , eAssignmentDate = created
         , eSubmissionDate = solutionPostDate submission
-        , eComments = cs
+        , eComments = Map.fromList cs
         , eFeedbacks = fs
         }
     Right gk -> do
@@ -230,7 +231,7 @@ submissionDesc sk = do
         , eAssignmentKey  = ak
         , eAssignmentDate = created
         , eSubmissionDate = solutionPostDate submission
-        , eComments = cs
+        , eComments = Map.fromList cs
         , eFeedbacks = fs
         }
 
@@ -348,7 +349,8 @@ submissionDetailsDesc sk = do
   (name, adminNames) <- courseNameAndAdmins ak
   asg <- loadAssignment ak
   sol <- solution       <$> loadSubmission sk
-  cs  <- mapM loadComment =<< (commentsOfSubmission sk)
+  cs  <- commentsOfSubmission sk >>= \cks -> forM cks $ \ck ->
+            (,) ck <$> loadComment ck
   fs  <- mapM loadFeedback =<< (feedbacksOfSubmission sk)
   s   <- submissionEvalStr sk
   return SubmissionDetailsDesc {
@@ -357,7 +359,7 @@ submissionDetailsDesc sk = do
   , sdAssignment = asg
   , sdStatus     = s
   , sdSubmission = submissionValue id (const "zipped") sol
-  , sdComments   = cs
+  , sdComments   = Map.fromList cs
   , sdFeedbacks  = fs
   }
 

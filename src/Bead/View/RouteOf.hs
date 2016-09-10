@@ -7,6 +7,7 @@ module Bead.View.RouteOf (
   , routeOf
   , routeWithParams
   , routeWithOptionalParams
+  , routeWithAnchor
   , requestRoute
   , queryString -- Creates a well-formed query string from base path and parameters
   , RoutePath
@@ -80,6 +81,7 @@ import           Data.List (intersperse)
 import           Data.String
 
 import           Bead.Controller.Pages
+import           Bead.View.Anchor
 import           Bead.View.RequestParams
 
 #ifdef TEST
@@ -367,7 +369,7 @@ pageRequestParams = liftsP
   (\ck _ -> [requestParam ck]) -- fillNewCourseAssessmentPreview
   (\ak _ -> [requestParam ak]) -- modifyAssessment
   (\ak _ -> [requestParam ak]) -- modifyAssessmentPreview
-  (\ak _ -> [requestParam ak]) -- viewAssessment  
+  (\ak _ -> [requestParam ak]) -- viewAssessment
   (c []) -- notifications
     where
       c = const
@@ -395,6 +397,9 @@ routeWithOptionalParams p rs = fromString . join $
 requestRoute :: (IsString s) => String -> [ReqParam] -> s
 requestRoute route rs = fromString . join $
   [route, "?"] ++ (intersperse "&" (map queryStringParam rs))
+
+routeWithAnchor :: (IsString s, Anchor a) => Page a b c d e -> a -> s
+routeWithAnchor p a = fromString $ routeOf p ++ "#" ++ anchor a
 
 #ifdef TEST
 

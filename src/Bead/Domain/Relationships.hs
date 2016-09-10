@@ -119,7 +119,7 @@ data SubmissionDesc = SubmissionDesc {
   , eAssignment      :: Assignment
   , eAssignmentDate  :: UTCTime
   , eSubmissionDate  :: UTCTime
-  , eComments :: [Comment]
+  , eComments :: Map CommentKey Comment
   , eFeedbacks :: [Feedback]
   }
 
@@ -198,7 +198,7 @@ data SubmissionDetailsDesc = SubmissionDetailsDesc {
   , sdAssignment :: Assignment
   , sdStatus :: Maybe String
   , sdSubmission :: String
-  , sdComments :: [Comment]
+  , sdComments :: Map CommentKey Comment
   , sdFeedbacks :: [Feedback]
   }
 
