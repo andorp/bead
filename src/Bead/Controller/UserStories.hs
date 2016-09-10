@@ -1575,14 +1575,17 @@ userSubmissions s ak = logAction INFO msg $ do
   where
     msg = join ["lists ",show s,"'s submissions for assignment ", show ak]
 
--- List all the related notifications for the active user.
--- TODO: Remove the test ones.
+-- List all the related notifications for the active user and marks them
+-- as seen if their state is new.
 notifications :: UserStory [(Notification.Notification, Notification.NotificationState)]
 notifications = do
   now <- liftIO $ getCurrentTime
   notifs <- withUserAndPersist $ \u -> do
               notifs <- Persist.notificationsOfUser u
-              forM notifs (\(k,s,p) -> (,) <$> Persist.loadNotification k <*> pure s)
+              forM notifs (\(k,s,p) -> do
+                notif <- Persist.loadNotification k
+                when (s == Notification.New) $ Persist.markSeen u k
+                return (notif, s))
   return $ [
       (Notification.Notification "Blah1" now Notification.System, Notification.New)
     , (Notification.Notification "Blah2" now Notification.System, Notification.Seen)

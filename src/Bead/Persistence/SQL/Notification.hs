@@ -65,7 +65,7 @@ mark f username nk = withUser username (return ()) $ \user -> do
     ] []
   forM_ uns $ \n -> update (entityKey n) [ f =. True ]
 
-markRead      = mark UserNotificationSeen
+markSeen      = mark UserNotificationSeen
 markProcessed = mark UserNotificationProcessed
 
 usersOfNotification :: Domain.NotificationKey -> Persist [Domain.Username]

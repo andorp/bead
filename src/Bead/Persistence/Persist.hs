@@ -131,6 +131,7 @@ module Bead.Persistence.Persist (
   , notifyUsers
   , unprocessedNotifications
   , noOfUnseenNotifications
+  , markSeen
 
 
   -- Evaluation
@@ -607,6 +608,9 @@ unprocessedNotifications = PersistImpl.unprocessedNotifications
 
 noOfUnseenNotifications :: Username -> Persist Int
 noOfUnseenNotifications = PersistImpl.noOfUnseenNotifications
+
+markSeen :: Username -> NotificationKey -> Persist ()
+markSeen = PersistImpl.markSeen
 
 -- * Evaluation
 
