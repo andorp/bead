@@ -349,7 +349,7 @@ newtype CommentKey = CommentKey String
   deriving (Eq, Ord, Show, Read, Data, Typeable)
 
 newtype SubmissionKey = SubmissionKey String
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read, Data, Typeable)
 
 submissionKeyMap :: (String -> a) -> SubmissionKey -> a
 submissionKeyMap f (SubmissionKey s) = f s
@@ -407,7 +407,7 @@ newtype FeedbackKey = FeedbackKey String
 feedbackKey f (FeedbackKey x) = f x
 
 newtype ScoreKey = ScoreKey String
-  deriving (Eq, Ord, Show)
+  deriving (Eq, Ord, Show, Read, Data, Typeable)
 
 scoreKey f (ScoreKey x) = f x
 
@@ -438,7 +438,7 @@ scoreInfoAlgebra
 
 -- | The scoreboard summarizes the information for a course or group related
 -- assesments and the evaluation for the assessment.
-data ScoreBoard = 
+data ScoreBoard =
     CourseScoreBoard {
       sbScores :: Map (AssessmentKey,Username) ScoreKey
     , sbScoreInfos :: Map ScoreKey ScoreInfo

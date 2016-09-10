@@ -15,7 +15,7 @@ import qualified Bead.View.Content.Bootstrap as Bootstrap
 import qualified Bead.Controller.UserStories as Story (notifications)
 
 data PageData = PageData {
-      pdNotifications :: [(Notification, NotificationState)]
+      pdNotifications :: [(Notification, NotificationState, NotificationReference)]
     }
 
 notifications :: ViewHandler
@@ -32,23 +32,23 @@ notificationsContent p = do
   return $ do
     Bootstrap.row $ Bootstrap.colMd12 $ do
       Bootstrap.listGroup $
-        forM_ (pdNotifications p) $ \(notif, state) ->
+        forM_ (pdNotifications p) $ \(notif, state, ref) ->
           (if state == Seen
             then Bootstrap.listGroupLinkItem
             else Bootstrap.listGroupAlertLinkItem Bootstrap.Info
-          ) (linkFromNotif notif) . fromString $
+          ) (linkFromNotif ref) . fromString $
               unwords
                 [ show (notifDate notif)
                 , show (notifMessage notif)
                 ]
 
 -- TODO: Redirect for a page which marks a notification as seen.
-linkFromNotif :: Notification -> String
+linkFromNotif :: NotificationReference -> String
 linkFromNotif =
-  routeOf . notificationType
-              (\commentKey -> Pages.home ()) -- TODO: Anchor the comment
-              (\evaluationKey -> Pages.home ()) -- TODO: Get the submissionkey of the evaluation
-              (\assignmentKey -> Pages.viewAssignment assignmentKey ())
-              (\assessmentKey -> Pages.viewAssessment assessmentKey ())
-              (Pages.home ()) -- TODO: How system notification is shown?
-              . notifType
+  routeOf . notificationReference
+              (\ak sk _ck -> Pages.submissionDetails ak sk ()) -- TODO: Anchor the commenr
+              (\ak sk _ek -> Pages.submissionDetails ak sk ()) -- TODO: Get the submissionkey of the evaluation
+              (\sk _ek    -> Pages.viewUserScore sk ()) -- TODO: Get the submissionkey of the evaluation
+              (\ak -> Pages.viewAssignment ak ())
+              (\ak -> Pages.viewAssessment ak ())
+              (Pages.notifications ()) -- System notifications are one liners

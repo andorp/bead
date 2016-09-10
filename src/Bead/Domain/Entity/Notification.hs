@@ -10,7 +10,7 @@ import Bead.Domain.Relationships
 
 -- The notifications can come from different sources
 data NotificationType
-  = Comment CommentKey
+  = Comment    CommentKey
   | Evaluation EvaluationKey
   | Assignment AssignmentKey
   | Assessment AssessmentKey
@@ -35,6 +35,30 @@ data NotificationState = New | Seen
 
 data NotificationProcessed = Unprocessed | Processed
   deriving (Eq, Show)
+
+data NotificationReference
+  = NRefComment AssignmentKey SubmissionKey CommentKey
+  | NRefSubmissionEvaluation AssignmentKey SubmissionKey EvaluationKey
+  | NRefScoreEvaluation ScoreKey EvaluationKey
+  | NRefAssignment AssignmentKey
+  | NRefAssessment AssessmentKey
+  | NRefSystem
+  deriving (Eq, Show)
+
+notificationReference
+  comment
+  submission
+  score
+  assignment
+  assessment
+  system
+  r = case r of
+    NRefComment ak sk ck -> comment ak sk ck
+    NRefSubmissionEvaluation ak sk ek -> submission ak sk ek
+    NRefScoreEvaluation sk ek -> score sk ek
+    NRefAssignment ak -> assignment ak
+    NRefAssessment ak -> assessment ak
+    NRefSystem -> system
 
 -- The notification is rendered for the user on some informational
 -- page or send via email.
