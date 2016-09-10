@@ -9,6 +9,7 @@ import           Text.JSON.Generic (encodeJSON,decodeJSON)
 
 import qualified Bead.Domain.Entities as Domain
 import qualified Bead.Domain.Entity.Notification as Domain hiding (NotificationType(..))
+import           Bead.Domain.Types (readMaybe)
 import qualified Bead.Domain.Relationships as Domain
 import           Bead.Persistence.SQL.Entities
 import           Bead.Persistence.SQL.JSON
@@ -30,10 +31,11 @@ entityToDomainKey domainKey name key = persistInt $ keyToValues key where
   persistInt [(PersistInt64 k)] = domainKey $ show k
   persistInt k = persistError name $ concat ["invalid entity key ", show k]
 
-domainKeyToEntityKey :: (DomainKey k, PersistEntity record, record ~ EntityForKey k)
+domainKeyToEntityKey :: (Show k, DomainKey k, PersistEntity record, record ~ EntityForKey k)
                      => (k -> String) -> k -> Key record
-domainKeyToEntityKey fromDomain key = check . keyFromValues . list . PersistInt64 . read $ fromDomain key
+domainKeyToEntityKey fromDomain key = check . keyFromValues . list . PersistInt64 . readError $ fromDomain key
   where
+    readError = maybe (error $ "domainKeyToEntityKey: " ++ show key ++ " ") id . readMaybe
     check = either (persistError "Invalid key" . show) id
     list x = [x]
 

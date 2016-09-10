@@ -24,7 +24,7 @@ data ViewPage a
   | CourseOverview CourseKey a
   | EvaluationTable a
   | ViewAssignment AssignmentKey a
-  | SubmissionList a
+  | SubmissionList AssignmentKey a
   | UserSubmissions a
   | Administration a
   | CourseAdmin a
@@ -54,7 +54,7 @@ viewPageCata
     CourseOverview ck a -> courseOverview ck a
     EvaluationTable a -> evaluationTable a
     ViewAssignment ak a -> viewAssignment ak a
-    SubmissionList a -> submissionList a
+    SubmissionList ak a -> submissionList ak a
     UserSubmissions a -> userSubmissions a
     Administration a -> administration a
     CourseAdmin a -> courseAdmin a
@@ -70,7 +70,7 @@ viewPageValue = viewPageCata
   cid -- courseOverview
   id -- evaluationTable
   cid -- viewAssignment
-  id -- submissionList
+  cid -- submissionList
   id -- userSubmissions
   id -- administration
   id -- courseAdmin
@@ -161,7 +161,7 @@ data ViewModifyPage a
   | SetUserPassword a
 #endif
   | SubmissionDetails AssignmentKey SubmissionKey a
-  | Submission a
+  | Submission AssignmentKey a
   | NewUserScore AssessmentKey E.Username a
   | ModifyUserScore ScoreKey a
   | NewGroupAssessment GroupKey a
@@ -207,7 +207,7 @@ viewModifyPageCata
     SetUserPassword a -> setUserPassword a
 #endif
     SubmissionDetails ak sk a -> submissionDetails ak sk a
-    Submission a -> submission a
+    Submission ak a -> submission ak a
     NewUserScore assk u a -> newUserScore assk u a
     ModifyUserScore sk a -> modifyUserScore sk a
     NewGroupAssessment gk a -> newGroupAssessment gk a
@@ -231,7 +231,7 @@ viewModifyPageValue = viewModifyPageCata
   id -- setUserPassword
 #endif
   c2id -- submissionDetails
-  id -- submission
+  cid -- submission
   c2id -- newUserScore
   cid -- modifyUserScore
   cid -- newGroupAssessment
@@ -342,7 +342,7 @@ home                    = View . Home
 courseOverview ck       = View . CourseOverview ck
 evaluationTable         = View . EvaluationTable
 viewAssignment ak       = View . ViewAssignment ak
-submissionList          = View . SubmissionList
+submissionList ak       = View . SubmissionList ak
 userSubmissions         = View . UserSubmissions
 administration          = View . Administration
 courseAdmin             = View . CourseAdmin
@@ -378,7 +378,7 @@ uploadFile             = ViewModify . UploadFile
 setUserPassword        = ViewModify . SetUserPassword
 #endif
 submissionDetails ak sk = ViewModify . SubmissionDetails ak sk
-submission              = ViewModify . Submission
+submission ak           = ViewModify . Submission ak
 newUserScore assk u     = ViewModify . NewUserScore assk u
 modifyUserScore sk      = ViewModify . ModifyUserScore sk
 newCourseAssessment ck  = ViewModify . NewCourseAssessment ck
@@ -464,8 +464,8 @@ pageCata
     (UserView (NewGroupAssignmentPreview gk a)) -> newGroupAssignmentPreview gk a
     (UserView (NewCourseAssignmentPreview ck a)) -> newCourseAssignmentPreview ck a
     (UserView (ModifyAssignmentPreview ak a)) -> modifyAssignmentPreview ak a
-    (ViewModify (Submission a)) -> submission a
-    (View (SubmissionList a)) -> submissionList a
+    (ViewModify (Submission ak a)) -> submission ak a
+    (View (SubmissionList ak a)) -> submissionList ak a
     (ViewModify (SubmissionDetails ak sk a)) -> submissionDetails ak sk a
     (View (ViewUserScore sk a)) -> viewUserScore sk a
     (ViewModify (NewUserScore assk u a)) -> newUserScore assk u a
@@ -570,8 +570,8 @@ constantsP
       (\gk _ -> newGroupAssignmentPreview gk newGroupAssignmentPreview_)
       (\ck _ -> newCourseAssignmentPreview ck newCourseAssignmentPreview_)
       (\ak _ -> modifyAssignmentPreview ak modifyAssignmentPreview_)
-      (c $ submission submission_)
-      (c $ submissionList submissionList_)
+      (\ak _ -> submission ak submission_)
+      (\ak _ -> submissionList ak submissionList_)
       (\ak sk _ -> submissionDetails ak sk submissionDetails_)
       (\sk _ -> viewUserScore sk viewUserScore_)
       (\assk u _ -> newUserScore assk u newUserScore_)
@@ -678,8 +678,8 @@ liftsP
       (\gk a -> newGroupAssignmentPreview gk (newGroupAssignmentPreview_ gk a))
       (\ck a -> newCourseAssignmentPreview ck (newCourseAssignmentPreview_ ck a))
       (\ak a -> modifyAssignmentPreview ak (modifyAssignmentPreview_ ak a))
-      (submission . submission_)
-      (submissionList . submissionList_)
+      (\ak a -> submission ak (submission_ ak a))
+      (\ak a -> submissionList ak (submissionList_ ak a))
       (\ak sk a -> submissionDetails ak sk (submissionDetails_ ak sk a))
       (\sk a -> viewUserScore sk (viewUserScore_ sk a))
       (\assk u a -> newUserScore assk u (newUserScore_ assk u a))
@@ -764,10 +764,10 @@ isNewCourseAssignmentPreview _ = False
 isModifyAssignmentPreview (UserView (ModifyAssignmentPreview _ _)) = True
 isModifyAssignmentPreview _ = False
 
-isSubmission (ViewModify (Submission _)) = True
+isSubmission (ViewModify (Submission _ _)) = True
 isSubmission _ = False
 
-isSubmissionList (View (SubmissionList _)) = True
+isSubmissionList (View (SubmissionList _ _)) = True
 isSubmissionList _ = False
 
 isSubmissionDetails (ViewModify (SubmissionDetails _ _ _)) = True
@@ -1040,7 +1040,7 @@ parentPage = pageCata'
       home           -- setUserPassword
 #endif
       submissionDetails -- submissionDetails
-      home           -- submission
+      (const home)   -- submission
       (c2 home)      -- newUserScore
       (const home)   -- modifyUserScore
       (const home)   -- newGroupAssessment
@@ -1094,8 +1094,6 @@ pageGen = oneof [
         , administration ()
         , courseAdmin ()
         , evaluationTable ()
-        , submission ()
-        , submissionList ()
         , groupRegistration ()
         , userDetails ()
         , userSubmissions ()
@@ -1116,7 +1114,9 @@ pageGen = oneof [
           evaluation <$> submissionKey <*> unit
         , courseOverview <$> courseKey <*> unit
         , modifyEvaluation <$> submissionKey <*> evaluationKey <*> unit
+        , submission <$> assignmentKey <*> unit
         , submissionDetails <$> assignmentKey <*> submissionKey <*> unit
+        , submissionList <$> assignmentKey <*> unit
         , viewUserScore <$> scoreKey <*> unit
         , newUserScore <$> assessmentKey <*> username <*> unit
         , modifyUserScore <$> scoreKey <*> unit

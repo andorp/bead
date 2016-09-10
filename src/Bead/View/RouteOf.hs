@@ -337,8 +337,8 @@ pageRequestParams = liftsP
   (\gk _ -> [requestParam gk]) -- newGroupAssignmentPreview
   (\ck _ -> [requestParam ck]) -- newCourseAssignmentPreview
   (\ak _ -> [requestParam ak]) -- modifyAssignmentPreview
-  (c []) -- submission
-  (c []) -- submissionList
+  (\ak _ -> [requestParam ak]) -- submission
+  (\ak _ -> [requestParam ak]) -- submissionList
   (\ak sk _ -> [requestParam ak, requestParam sk]) -- submissionDetails
   (\sk _ -> [requestParam sk]) -- viewUserScore
   (\assk u _ -> [requestParam assk, requestParam u]) -- newUserScore
