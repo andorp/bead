@@ -106,13 +106,14 @@ TestScript
   deriving Show
 
 User
-  role     JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
-  username Text
-  email    Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
-  name     Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
-  timeZone JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
-  language Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
-  uid      Text
+  role               JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  username           Text
+  email              Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  name               Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  timeZone           JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  language           Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  uid                Text
+  emailNotifications JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   UniqueUsername username
   deriving Show
 

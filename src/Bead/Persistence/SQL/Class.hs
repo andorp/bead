@@ -84,6 +84,7 @@ instance DomainValue Domain.User where
     (encodeTimeZone timezone)
     (Domain.languageCata Text.pack language)
     (Domain.uid Text.pack uid)
+    ""
 
 
 instance DomainKey Domain.UserRegKey where
