@@ -37,14 +37,15 @@ seeMoreSubmission id_ i18n maxLength maxLines content = do
     collapsed = isLargeContent
 
 
-seeMoreComment :: String -> I18N -> Int -> Int -> (String, Maybe Bootstrap.Alert) -> String -> Html
-seeMoreComment id_ i18n maxLength maxLines (badgeText, alert) content =
+seeMoreComment :: String -> I18N -> Int -> Int -> (String, Maybe Bootstrap.Alert) -> Maybe CommentKey -> String -> Html
+seeMoreComment id_ i18n maxLength maxLines (badgeText, alert) anchorVal content =
   let headingId = "heading" ++ id_
       collapseClass = if collapsed then "panel-collapse collapse"
                                    else "panel-collapse collapse in"
   in
   H.div ! A.class_ "panel panel-default" $ do
     H.div ! A.class_ "panel-heading" ! Bootstrap.role "tab" ! A.id (fromString headingId) $ do
+      maybe mempty (\ac -> H.a ! A.name (anchor ac) $ mempty) anchorVal
       H.p $ badge badgeText
       H.pre # commentTextPre $ fromString preview
       when isLargeContent $ do

@@ -103,11 +103,11 @@ titleAndHead doc title content = doc
           H.div ! A.id "title" $ fromString $ msg title
         H.div ! A.id "content" $ content)
 
-bootstrapUserFrame :: UserState -> IHtml -> Int -> IHtml
-bootstrapUserFrame s content secs = withUserFrame' content
+bootstrapUserFrame :: UserState -> IHtml -> Int -> Int -> IHtml
+bootstrapUserFrame s content secs newNotifs = withUserFrame' content
   where
     withUserFrame' content = do
-      header <- bootStrapHeader s secs
+      header <- bootStrapHeader s secs newNotifs
       content <- content
       status <- bootStrapStatus s
       msg <- getI18N
@@ -392,8 +392,8 @@ linkText = P.pageCata
   (c2 $ msg_LinkText_NewGroupAssignmentPreview "New Group Assignment")
   (c2 $ msg_LinkText_NewCourseAssignmentPreview "New Course Assignment")
   (c2 $ msg_LinkText_ModifyAssignmentPreview "Modify Assignment")
-  (c $ msg_LinkText_Submission "Submission")
-  (c $ msg_LinkText_SubmissionList "Submissions")
+  (c2 $ msg_LinkText_Submission "Submission")
+  (c2 $ msg_LinkText_SubmissionList "Submissions")
   (c3 $ msg_LinkText_SubmissionDetails "Submission Details")
   (c2 $ msg_LinkText_ViewUserScore "Score")
   (c3 $ msg_LinkText_NewUserScore "New Score")
@@ -425,6 +425,7 @@ linkText = P.pageCata
   (c2 $ msg_LinkText_ModifyAssessment "Modify Assessment")
   (c2 $ msg_LinkText_ModifyAssessmentPreview "Modify Assessment")
   (c2 $ msg_LinkText_ViewAssessment "View Assessment")
+  (c $ msg_LinkText_Notifications "Notifications")
   where
     c = const
     c2 = c . const
@@ -434,6 +435,11 @@ linkToPage :: P.Page a b c d e -> IHtml
 linkToPage g = do
   msg <- getI18N
   return $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString $ msg $ linkText g
+
+linkToPageWithPostfix :: P.Page a b c d e -> String -> IHtml
+linkToPageWithPostfix g p = do
+  msg <- getI18N
+  return $ H.a ! A.href (routeOf g) ! A.id (fieldName g) $ fromString (msg (linkText g) ++ p)
 
 linkButtonToPageBS :: P.Page a b c d e -> IHtml
 linkButtonToPageBS g = do
@@ -481,8 +487,8 @@ publicHeader = do
         H.div ! class_ "navbar-header" $ do
          span ! class_ "navbar-brand" $ "BE-AD"
 
-bootStrapHeader :: UserState -> Int -> IHtml
-bootStrapHeader s secs = do
+bootStrapHeader :: UserState -> Int -> Int -> IHtml
+bootStrapHeader s secs newNotifs = do
   msg <- getI18N
   return $ do
         H.div ! class_ "navbar navbar-default navbar-fixed-top" $ do
@@ -497,6 +503,10 @@ bootStrapHeader s secs = do
                         H.span ! class_ "icon-bar" $ mempty
                 H.div ! class_ "collapse navbar-collapse navbar-ex1-collapse" $ do
                     ul ! class_ "nav navbar-nav navbar-right" $ do
+                        li $ do (I18N.i18n msg $
+                                    if newNotifs > 0
+                                        then linkToPageWithPostfix notifications (" (" ++ show newNotifs ++ ")")
+                                        else linkToPage notifications)
                         li $ minSecCountdown "hdctd" "--:--" secs
                         li $ H.a userId
                         li $ (I18N.i18n msg $ linkToPage profile)
@@ -508,6 +518,7 @@ bootStrapHeader s secs = do
     profile = P.profile ()
     home = P.home ()
     userId = fromString $ concat [usernameCata id . user $ s, " / ", Entity.uid id . ServiceContext.uid $ s]
+    notifications = P.notifications ()
 
 bootStrapStatus :: UserState -> IHtml
 bootStrapStatus = maybe noMessage message . status

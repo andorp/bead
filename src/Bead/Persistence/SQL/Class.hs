@@ -8,7 +8,8 @@ import           Database.Persist.Sql hiding (update, updateField)
 import           Text.JSON.Generic (encodeJSON,decodeJSON)
 
 import qualified Bead.Domain.Entities as Domain
-import qualified Bead.Domain.Entity.Notification as Domain hiding (NotifType(..))
+import qualified Bead.Domain.Entity.Notification as Domain hiding (NotificationType(..))
+import           Bead.Domain.Types (readMaybe)
 import qualified Bead.Domain.Relationships as Domain
 import           Bead.Persistence.SQL.Entities
 import           Bead.Persistence.SQL.JSON
@@ -30,10 +31,11 @@ entityToDomainKey domainKey name key = persistInt $ keyToValues key where
   persistInt [(PersistInt64 k)] = domainKey $ show k
   persistInt k = persistError name $ concat ["invalid entity key ", show k]
 
-domainKeyToEntityKey :: (DomainKey k, PersistEntity record, record ~ EntityForKey k)
+domainKeyToEntityKey :: (Show k, DomainKey k, PersistEntity record, record ~ EntityForKey k)
                      => (k -> String) -> k -> Key record
-domainKeyToEntityKey fromDomain key = check . keyFromValues . list . PersistInt64 . read $ fromDomain key
+domainKeyToEntityKey fromDomain key = check . keyFromValues . list . PersistInt64 . readError $ fromDomain key
   where
+    readError = maybe (error $ "domainKeyToEntityKey: " ++ show key ++ " ") id . readMaybe
     check = either (persistError "Invalid key" . show) id
     list x = [x]
 
@@ -82,6 +84,7 @@ instance DomainValue Domain.User where
     (encodeTimeZone timezone)
     (Domain.languageCata Text.pack language)
     (Domain.uid Text.pack uid)
+    ""
 
 
 instance DomainKey Domain.UserRegKey where
@@ -324,5 +327,5 @@ instance DomainKey Domain.NotificationKey where
 
 instance DomainValue Domain.Notification where
   type EntityValue Domain.Notification = Notification
-  fromDomainValue = Domain.notification Notification
-  toDomainValue ent = Domain.Notification (notificationMessage ent)
+  fromDomainValue = Domain.notification $ \event date typ -> Notification (encodeJSON event) date (encodeJSON typ)
+  toDomainValue ent = Domain.Notification (decodeJSON $ notificationEvent ent) (notificationDate ent) (decodeJSON $ notificationType ent)

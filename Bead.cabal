@@ -292,6 +292,7 @@ Library
     Bead.Persistence.Persist
     Bead.Persistence.Relations
     Bead.Shared.Command
+    Bead.View.Anchor
     Bead.View.BeadContext
     Bead.View.BeadContextInit
     Bead.View.Command.Fayax
@@ -311,6 +312,7 @@ Library
     Bead.View.Content.Home.Page
     Bead.View.Content.Home.View
     Bead.View.Content.NewTestScript.Page
+    Bead.View.Content.Notifications.Page
     Bead.View.Content.Profile.Page
     Bead.View.Content.Public.ErrorPage
     Bead.View.Content.Public.Index

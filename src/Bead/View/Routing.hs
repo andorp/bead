@@ -318,8 +318,8 @@ routeToPageMap = Map.fromList [
   , (modifyEvaluationPath , \ps -> P.modifyEvaluation <$> submissionKey ps <*> evaluationKey ps <*> unit)
   , (evaluationTablePath  , j $ P.evaluationTable ())
   , (evaluationPath , \ps -> P.evaluation <$> submissionKey ps <*> unit)
-  , (submissionPath , j $ P.submission ())
-  , (submissionListPath   , j $ P.submissionList ())
+  , (submissionPath , \ps -> P.submission <$> assignmentKey ps <*> unit)
+  , (submissionListPath   , \ps -> P.submissionList <$> assignmentKey ps <*> unit)
   , (viewUserScorePath    , \ps -> P.viewUserScore <$> scoreKey ps <*> unit)
   , (newUserScorePath     , \ps -> P.newUserScore <$> assessmentKey ps <*> username ps <*> unit)
   , (modifyUserScorePath  , \ps -> P.modifyUserScore <$> scoreKey ps <*> unit)
@@ -359,6 +359,7 @@ routeToPageMap = Map.fromList [
   , (modifyAssessmentPath, \ps -> P.modifyAssessment <$> assessmentKey ps <*> unit)
   , (modifyAssessmentPreviewPath, \ps -> P.modifyAssessmentPreview <$> assessmentKey ps <*> unit)
   , (viewAssessmentPath, \ps -> P.viewAssessment <$> assessmentKey ps <*> unit)
+  , (notificationsPath, j $ P.notifications ())
   ] where
       j = const . Just
       unit = return ()

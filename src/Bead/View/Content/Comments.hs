@@ -12,6 +12,7 @@ module Bead.View.Content.Comments (
 
 import           Data.List (sortBy)
 import           Data.String
+import           Data.Map as Map (toList)
 import           Control.Monad
 
 import           Text.Blaze.Html5 (Html, (!))
@@ -25,7 +26,7 @@ import qualified Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.View.Content.SeeMore
 import           Bead.Domain.Shared.Evaluation
 
-type CommentOrFeedback = Either Comment Feedback
+type CommentOrFeedback = Either (CommentKey, Comment) Feedback
 
 commentOrFeedback
   comment
@@ -34,9 +35,9 @@ commentOrFeedback
     Left  c -> comment  c
     Right f -> feedback f
 
-commentOrFeedbackTime = commentOrFeedback commentDate postDate
+commentOrFeedbackTime = commentOrFeedback (commentDate . snd) postDate
 
-commentsToCFs :: [Comment] -> [CommentOrFeedback]
+commentsToCFs :: [(CommentKey, Comment)] -> [CommentOrFeedback]
 commentsToCFs = map Left
 
 feedbacksToCFs :: [Feedback] -> [CommentOrFeedback]
@@ -44,11 +45,11 @@ feedbacksToCFs = map Right
 
 -- Converts a given submission description into a list of comments and feedbacks
 submissionDescToCFs :: SubmissionDesc -> [CommentOrFeedback]
-submissionDescToCFs s = (commentsToCFs $ eComments s) ++ (feedbacksToCFs $ eFeedbacks s)
+submissionDescToCFs s = (commentsToCFs . Map.toList $ eComments s) ++ (feedbacksToCFs $ eFeedbacks s)
 
 -- Converts a given submission detailed description into a list of comments and feedbacks
 submissionDetailsDescToCFs :: SubmissionDetailsDesc -> [CommentOrFeedback]
-submissionDetailsDescToCFs s = (commentsToCFs $ sdComments s) ++ (feedbacksToCFs $ sdFeedbacks s)
+submissionDetailsDescToCFs s = (commentsToCFs . Map.toList $ sdComments s) ++ (feedbacksToCFs $ sdFeedbacks s)
 
 -- Sort the items by increasing by the creation time
 sortIncreasingTime :: [CommentOrFeedback] -> [CommentOrFeedback]
@@ -64,7 +65,7 @@ forStudentCFs :: [CommentOrFeedback] -> [CommentOrFeedback]
 forStudentCFs = filter forStudent where
   forStudent =
     commentOrFeedback
-      isStudentComment
+      (isStudentComment . snd)
       (feedback
          (feedbackInfo
            (const True) -- result
@@ -84,11 +85,16 @@ commentPar i18n id_ t (n, c) = do
   let comment = commentText c
   let badge = concat [showDate . t $ commentOrFeedbackTime c, " ", commentAuthor c]
   let commentId = fromString $ id_ ++ show n
-  seeMoreComment commentId i18n maxLength maxLines (badge, style) (commentText c)
+  seeMoreComment commentId i18n maxLength maxLines (badge, style) (anchorValue c) (commentText c)
   where
+    anchorValue =
+      commentOrFeedback
+        (Just . fst)
+        (const Nothing)
+
     commentText =
       commentOrFeedback
-        (commentCata $ \comment _author _date _type -> comment)
+        ((commentCata $ \comment _author _date _type -> comment) . snd)
         (feedback
            (feedbackInfo
              (bool testsPassed testsFailed) -- result
@@ -122,12 +128,12 @@ commentPar i18n id_ t (n, c) = do
 
     commentAuthor =
       commentOrFeedback
-        (commentCata $ \_comment author _date ->
+        ((commentCata $ \_comment author _date ->
            commentTypeCata
              author -- student
              author -- groupAdmin
              author -- courseAdmin
-             author) -- admin
+             author) . snd)-- admin
         (feedback
           (feedbackInfo
             (const result) -- result
@@ -143,7 +149,7 @@ commentPar i18n id_ t (n, c) = do
 
     style =
       commentOrFeedback
-        (commentCata (const4 Nothing))
+        ((commentCata (const4 Nothing)) . snd)
         (feedback
           (feedbackInfo
             (const Nothing) -- result

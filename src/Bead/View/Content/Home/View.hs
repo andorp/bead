@@ -104,8 +104,6 @@ homeContent d = do
 #ifndef SSO
       setUserPassword   = Pages.setUserPassword ()
 #endif
-      submission     = Pages.submission ()
-      submissionList = Pages.submissionList ()
       uploadFile     = Pages.uploadFile ()
 
       courseAdminUser = (==E.CourseAdmin)
@@ -157,7 +155,7 @@ htmlAssessmentTable board
       where
         assessmentViewButton :: I18N -> ((AssessmentKey,Assessment),Int) -> Html
         assessmentViewButton msg ((ak,as),n) = H.td $ Bootstrap.customButtonLink style modifyLink assessmentName (prefix ++ show n)
-            where 
+            where
               style = [fst ST.groupButtonStyle]
               prefix = msg $ msg_Home_GroupAssessmentIDPrefix "A"
               modifyLink = routeOf $ Pages.modifyAssessment ak ()
@@ -166,7 +164,7 @@ htmlAssessmentTable board
         userLine :: I18N -> UserDesc -> Html
         userLine msg userDesc = H.tr $ do
           H.td . string . ud_fullname $ userDesc
-          H.td . string . uid id . ud_uid $ userDesc 
+          H.td . string . uid id . ud_uid $ userDesc
           forM_ sortedAssessments (scoreIcon msg . ud_username $ userDesc)
 
         scoreIcon :: I18N -> Username -> (AssessmentKey,Assessment) -> Html
@@ -280,11 +278,11 @@ availableAssignments pd timeconverter studentAssignments
 
     assignmentLine msg isLimited (k,a,s) = H.tr $ do
       case and [aActive a, noLimitIsReached a] of
-        True -> td $ Content.link (routeWithParams (Pages.submission ()) [requestParam k]) (msg $ msg_Home_NewSolution "New submission")
+        True -> td $ Content.link (routeOf (Pages.submission k ())) (msg $ msg_Home_NewSolution "New submission")
         False -> td (fromString . msg $ msg_Home_ClosedSubmission "Closed")
       td (fromString . aGroup $ a)
       td (fromString . join . intersperse ", " . aTeachers $ a)
-      td $ linkWithText (routeWithParams (Pages.submissionList ()) [requestParam k]) (fromString (aTitle a))
+      td $ linkWithText (routeOf (Pages.submissionList k ())) (fromString (aTitle a))
       when isLimited $ td (fromString . limit $ aLimit a)
       td (fromString . showDate . timeconverter $ aEndDate a)
       let tooltip tag text = tag ! A.title (fromString text)
@@ -336,7 +334,7 @@ availableAssessment msg (c, assessments) | null assessments = mempty
                       tooltip = A.title . fromString $ aTitle
 
             prefix = msg $ msg_Home_GroupAssessmentIDPrefix "A"
-        
+
       evaluationViewButton :: ((Maybe ScoreKey, ScoreInfo),Int) -> Html
       evaluationViewButton ((Just sk,info),n) = H.td $ scoreInfoToIconLink msg "" viewScoreLink info
           where viewScoreLink = routeOf $ Pages.viewUserScore sk ()

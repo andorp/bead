@@ -14,6 +14,7 @@ module Bead.View.Content (
   , routeOf
   , routeWithParams
   , routeWithOptionalParams
+  , routeWithAnchor
   , runStory
   , userStory
   , userState
@@ -59,6 +60,7 @@ module Bead.View.Content (
   , module Bead.Domain.Entity.Comment
   , module Bead.Domain.Func
   , module Bead.Domain.Relationships
+  , module Bead.View.Anchor
   , module Bead.View.UserActions
   , module Bead.View.I18N
   , module Bead.View.Translation
@@ -84,6 +86,7 @@ import Bead.Domain.Entities hiding (name)
 import Bead.Domain.Entity.Comment
 import Bead.Domain.Func
 import Bead.Domain.Relationships
+import Bead.View.Anchor
 import Bead.View.UserActions
 import Bead.View.BeadContext
 import Bead.View.ContentHandler

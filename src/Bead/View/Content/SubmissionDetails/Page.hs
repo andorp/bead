@@ -24,6 +24,7 @@ import           Bead.View.Content.Submission.Page (resolveStatus)
 import           Bead.View.Markdown
 
 import           Text.Blaze.Html5 as H
+import           Text.Blaze.Html5.Attributes as A
 
 submissionDetails = ViewModifyHandler submissionDetailsPage submissionDetailsPostHandler
 
@@ -123,6 +124,7 @@ submissionDetailsContent p = do
           div # submissionTextDiv $ seeMoreSubmission "submission-details-" msg maxLength maxLines $ sdSubmission info
     Bootstrap.rowColMd12 $ do
       h2 $ fromString $ msg $ msg_SubmissionDetails_Evaluation "Evaluation"
+      H.a ! A.name (anchor SubmissionDetailsEvaluationDiv) $ mempty
       resolveStatus msg $ sdStatus info
     Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ msg_Comments_Title "Comments"
     postForm (routeOf $ submissionDetails (aKey p) (smKey p)) $ do

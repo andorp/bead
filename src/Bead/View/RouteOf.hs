@@ -7,6 +7,7 @@ module Bead.View.RouteOf (
   , routeOf
   , routeWithParams
   , routeWithOptionalParams
+  , routeWithAnchor
   , requestRoute
   , queryString -- Creates a well-formed query string from base path and parameters
   , RoutePath
@@ -65,6 +66,7 @@ module Bead.View.RouteOf (
   , modifyAssessmentPath
   , modifyAssessmentPreviewPath
   , viewAssessmentPath
+  , notificationsPath
   , staticPath
   , pageRequestParams
 #ifdef TEST
@@ -79,6 +81,7 @@ import           Data.List (intersperse)
 import           Data.String
 
 import           Bead.Controller.Pages
+import           Bead.View.Anchor
 import           Bead.View.RequestParams
 
 #ifdef TEST
@@ -248,6 +251,9 @@ modifyAssessmentPreviewPath = "/modify-assessment-preview"
 viewAssessmentPath :: RoutePath
 viewAssessmentPath = "/view-assessment"
 
+notificationsPath :: RoutePath
+notificationsPath = "/notifications"
+
 staticPath :: RoutePath
 staticPath = ""
 
@@ -307,6 +313,7 @@ pageRoutePath = pfmap id id id id id . r where
     modifyAssessmentPath
     modifyAssessmentPreviewPath
     viewAssessmentPath
+    notificationsPath
 
 type PageReqParams = Page [ReqParam] [ReqParam] [ReqParam] [ReqParam] [ReqParam]
 
@@ -330,8 +337,8 @@ pageRequestParams = liftsP
   (\gk _ -> [requestParam gk]) -- newGroupAssignmentPreview
   (\ck _ -> [requestParam ck]) -- newCourseAssignmentPreview
   (\ak _ -> [requestParam ak]) -- modifyAssignmentPreview
-  (c []) -- submission
-  (c []) -- submissionList
+  (\ak _ -> [requestParam ak]) -- submission
+  (\ak _ -> [requestParam ak]) -- submissionList
   (\ak sk _ -> [requestParam ak, requestParam sk]) -- submissionDetails
   (\sk _ -> [requestParam sk]) -- viewUserScore
   (\assk u _ -> [requestParam assk, requestParam u]) -- newUserScore
@@ -362,7 +369,8 @@ pageRequestParams = liftsP
   (\ck _ -> [requestParam ck]) -- fillNewCourseAssessmentPreview
   (\ak _ -> [requestParam ak]) -- modifyAssessment
   (\ak _ -> [requestParam ak]) -- modifyAssessmentPreview
-  (\ak _ -> [requestParam ak]) -- viewAssessment  
+  (\ak _ -> [requestParam ak]) -- viewAssessment
+  (c []) -- notifications
     where
       c = const
 
@@ -389,6 +397,9 @@ routeWithOptionalParams p rs = fromString . join $
 requestRoute :: (IsString s) => String -> [ReqParam] -> s
 requestRoute route rs = fromString . join $
   [route, "?"] ++ (intersperse "&" (map queryStringParam rs))
+
+routeWithAnchor :: (IsString s, Anchor a) => Page a b c d e -> a -> s
+routeWithAnchor p a = fromString $ routeOf p ++ "#" ++ anchor a
 
 #ifdef TEST
 

@@ -186,7 +186,8 @@ renderBootstrapPage :: IHtml -> ContentHandler ()
 renderBootstrapPage page = do
   state <- userState
   secs <- fmap sessionTimeout $ lift getConfiguration
-  i18nE >>= blaze . (runBootstrapPage state (bootstrapUserFrame state page secs))
+  notifs <- userStory S.noOfUnseenNotifications
+  i18nE >>= blaze . (runBootstrapPage state (bootstrapUserFrame state page secs notifs))
 
 -- Renders the public page selecting the I18N translation based on the
 -- language stored in the session, if there is no such value, the

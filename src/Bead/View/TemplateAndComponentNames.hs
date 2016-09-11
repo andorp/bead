@@ -158,8 +158,8 @@ menuId = P.pageCata
   (c2 "link-new-group-assignment-preview")
   (c2 "link-new-course-assignment-preview")
   (c2 "link-modify-assignment-preview")
-  (c "link-submission")
-  (c "link-submission-list")
+  (c2 "link-submission")
+  (c2 "link-submission-list")
   (c3 "link-submission-details")
   (c2 "link-view-user-score")
   (c3 "link-new-user-score")
@@ -191,6 +191,7 @@ menuId = P.pageCata
   (c2 "link-modify-assessment")
   (c2 "link-modify-assessment-preview")
   (c2 "link-view-asssessment")
+  (c "link-notifications")
     where
       c = const
       c2 = c . const

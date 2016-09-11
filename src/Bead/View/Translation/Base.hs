@@ -575,6 +575,7 @@ labels =
  , "msg_LinkText_ModifyAssessment"
  , "msg_LinkText_ModifyAssessmentPreview"
  , "msg_LinkText_ViewAssessment"
+ , "msg_LinkText_Notifications"
 
  , "msg_TestScriptTypeSimple"
  , "msg_TestScriptTypeZipped"
@@ -589,4 +590,23 @@ labels =
  , "msg_SeeMore_SeeLess"
 
  , "msg_Markdown_NotFound"
+
+ , "msg_NE_CourseAdminCreated"
+ , "msg_NE_CourseAdminAssigned"
+ , "msg_NE_TestScriptCreated"
+ , "msg_NE_TestScriptUpdated"
+ , "msg_NE_RemovedFromGroup"
+ , "msg_NE_GroupAdminCreated"
+ , "msg_NE_GroupAssigned"
+ , "msg_NE_GroupCreated"
+ , "msg_NE_GroupAssignmentCreated"
+ , "msg_NE_CourseAssignmentCreated"
+ , "msg_NE_GroupAssessmentCreated"
+ , "msg_NE_CourseAssessmentCreated"
+ , "msg_NE_AssessmentUpdated"
+ , "msg_NE_AssignmentUpdated"
+ , "msg_NE_EvaluationCreated"
+ , "msg_NE_AssessmentEvaluationUpdated"
+ , "msg_NE_AssignmentEvaluationUpdated"
+ , "msg_NE_CommentCreated"
  ]

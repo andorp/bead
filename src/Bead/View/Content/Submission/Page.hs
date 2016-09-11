@@ -167,7 +167,6 @@ submissionContent p = do
       H.h2 $ fromString $ msg $ msg_Submission_Description "Description"
       H.div # assignmentTextDiv $ markdownToHtml $ Assignment.desc $ asValue p
     postForm (routeOf submission) `withId` (rFormId submissionForm) ! A.enctype "multipart/form-data" $ do
-      hiddenInput (fieldName assignmentKeyField) (paramValue (asKey p))
       assignmentPassword msg
       Bootstrap.rowColMd12 $ h2 $
         fromString $ msg $ msg_Submission_Solution "Submission"
@@ -184,7 +183,7 @@ submissionContent p = do
       Bootstrap.submitButton (fieldName submitSolutionBtn) (fromString $ msg $ msg_Submission_Submit "Submit")
 
   where
-    submission = Pages.submission ()
+    submission = Pages.submission (asKey p) ()
     aspects = Assignment.aspects $ asValue p
 
     assignmentPassword msg =

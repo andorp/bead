@@ -4,9 +4,10 @@
 module Bead.Controller.UserStories where
 
 import           Bead.Domain.Entities hiding (name, uid)
-import qualified Bead.Domain.Entities as Entity (name, uid)
+import qualified Bead.Domain.Entities as Entity (uid)
 import qualified Bead.Domain.Entity.Assignment as Assignment
 import qualified Bead.Domain.Entity.Assessment as Assessment
+import qualified Bead.Domain.Entity.Notification as Notification
 import           Bead.Domain.Relationships
 import           Bead.Domain.RolePermission (permission)
 import           Bead.Controller.ServiceContext
@@ -18,6 +19,7 @@ import qualified Bead.Persistence.Relations as Persist
 import qualified Bead.Persistence.Guards    as Persist
 import           Bead.View.Translation
 
+import           Control.Lens (_1, view)
 import           Control.Applicative
 import           Control.Exception
 import           Control.Monad hiding (guard)
@@ -28,12 +30,14 @@ import qualified Control.Monad.Reader as CMR
 import           Control.Monad.Trans
 import           Prelude hiding (log, userError)
 import           Data.Hashable
-import           Data.List (nub)
+import           Data.Function (on)
+import           Data.List (nub, sortBy, (\\))
 import           Data.Map (Map)
 import qualified Data.Map as Map
 import           Data.Maybe (catMaybes)
 import           Data.Set (Set)
 import qualified Data.Set as Set
+import           Data.String
 import           Data.Time (UTCTime(..), getCurrentTime)
 import           Numeric (showHex)
 import           Text.Printf (printf)
@@ -302,13 +306,22 @@ loadCourse k = logAction INFO ("loads course: " ++ show k) $ do
     return (c,ks)
 
 createCourseAdmin :: Username -> CourseKey -> UserStory ()
-createCourseAdmin u ck = logAction INFO "sets user to course admin" $ do
+createCourseAdmin user ck = logAction INFO "sets user to course admin" $ do
   authorize P_Create P_CourseAdmin
   authorize P_Open   P_User
-  persistence $ Persist.createCourseAdmin u ck
+  persistence $ do
+    cas <- Persist.courseAdmins ck
+    Persist.createCourseAdmin user ck
+    c <- Persist.loadCourse ck
+    now <- liftIO getCurrentTime
+    let msg = Notification.NE_CourseAdminCreated (courseName c)
+    let affected = [user]
+    Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
+    userUser <- Persist.loadUser user
+    let msg = Notification.NE_CourseAdminAssigned (courseName c) (u_name userUser)
+    let affected = cas
+    Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
   putStatusMessage $ msg_UserStory_SetCourseAdmin "The user has become a course administrator."
-  where
-    user = usernameCata id
 
 -- Produces a list of courses and users who administrators for the courses
 courseAdministrators :: UserStory [(Course, [User])]
@@ -363,13 +376,21 @@ deleteUsersFromCourse ck sts = logAction INFO ("deletes users from course: " ++ 
 saveTestScript :: CourseKey -> TestScript -> UserStory ()
 saveTestScript ck ts = logAction INFO ("creates new test script for course: " ++ show ck) $ do
   authorize P_Create P_TestScript
-  user <- username
-  join $ persistence $ do
+  join $ withUserAndPersist $ \u -> do
+    let user = u_username u
     cs <- map fst <$> Persist.administratedCourses user
     case ck `elem` cs of
       False -> return . errorPage . userError $ msg_UserStoryError_NoCourseAdminOfCourse "The user is not course admin for the course."
       True -> do
         Persist.saveTestScript ck ts
+        now <- liftIO getCurrentTime
+        c   <- Persist.loadCourse ck
+        let msg = Notification.NE_TestScriptCreated (u_name u) (courseName c)
+        cas <- Persist.courseAdmins ck
+        gks <- Persist.groupKeysOfCourse ck
+        gas <- concat <$> mapM Persist.groupAdmins gks
+        let affected = nub (cas ++ gas) \\ [user]
+        Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
         return . putStatusMessage $
           msg_UserStory_NewTestScriptIsCreated "The test script has been created."
 
@@ -378,14 +399,22 @@ saveTestScript ck ts = logAction INFO ("creates new test script for course: " ++
 modifyTestScript :: TestScriptKey -> TestScript -> UserStory ()
 modifyTestScript tsk ts = logAction INFO ("modifies the existing test script: " ++ show tsk) $ do
   authorize P_Modify P_TestScript
-  user <- username
-  join $ persistence $ do
+  join $ withUserAndPersist $ \u -> do
+    let user = u_username u
     cs <- map fst <$> Persist.administratedCourses user
     ck <- Persist.courseOfTestScript tsk
     case ck `elem` cs of
       False -> return . errorPage . userError $ msg_UserStoryError_NoAssociatedTestScript "You are trying to modify someone else's test script."
       True -> do
         Persist.modifyTestScript tsk ts
+        now <- liftIO getCurrentTime
+        c   <- Persist.loadCourse ck
+        let msg = Notification.NE_TestScriptUpdated (u_name u) (tsName ts) (courseName c)
+        cas <- Persist.courseAdmins ck
+        gks <- Persist.groupKeysOfCourse ck
+        gas <- concat <$> mapM Persist.groupAdmins gks
+        let affected = nub (cas ++ gas) \\ [user]
+        Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
         return . putStatusMessage $
           msg_UserStory_ModifyTestScriptIsDone "The test script has been updated."
 
@@ -458,12 +487,17 @@ testScriptInfosOfCourse ck = do
 deleteUsersFromGroup :: GroupKey -> [Username] -> UserStory ()
 deleteUsersFromGroup gk sts = logAction INFO ("delets users form group: " ++ show gk) $ do
   authorize P_Modify P_Group
-  u <- username
-  join $ persistence $ do
-    admined <- Persist.isAdministratedGroup u gk
+  join $ withUserAndPersist $ \u -> do
+    let user = u_username u
+    admined <- Persist.isAdministratedGroup user gk
     if admined
       then do ck <- Persist.courseOfGroup gk
               mapM_ (\student -> Persist.unsubscribe student ck gk) sts
+              now <- liftIO getCurrentTime
+              g   <- Persist.loadGroup gk
+              let msg = Notification.NE_RemovedFromGroup (groupName g) (u_name u)
+              let affected = sts
+              Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
               return . putStatusMessage $
                 msg_UserStory_UsersAreDeletedFromGroup "The students have been removed from the group."
       else return $ do
@@ -471,20 +505,36 @@ deleteUsersFromGroup gk sts = logAction INFO ("delets users form group: " ++ sho
              errorPage . userError $ msg_UserStoryError_NoGroupAdminOfGroup "You are not a group admin for the group."
 
 createGroupAdmin :: Username -> GroupKey -> UserStory ()
-createGroupAdmin u gk = logAction INFO "sets user as a group admin of a group" $ do
+createGroupAdmin user gk = logAction INFO "sets user as a group admin of a group" $ do
   authorize P_Create P_GroupAdmin
   authorize P_Open   P_User
+  let uname = usernameCata id user
   admin <- username
   join . persistence $ do
-    info <- Persist.personalInfo u
+    info <- Persist.personalInfo user
     withPersonalInfo info $ \role _name _tz _ui -> do
       admined <- Persist.isAdministratedCourseOfGroup admin gk
       if (and [groupAdmin role, admined])
-        then do Persist.createGroupAdmin u gk
+        then do Persist.createGroupAdmin user gk
+                now <- liftIO getCurrentTime
+                g   <- Persist.loadGroup gk
+                ck  <- Persist.courseOfGroup gk
+                c   <- Persist.loadCourse ck
+                adminUser <- Persist.loadUser admin
+                userUser  <- Persist.loadUser user
+                let userName  = u_name userUser
+                let adminName = u_name adminUser
+                let msg = Notification.NE_GroupAdminCreated
+                            (courseName c) adminName (groupName g)
+                let affected = [user]
+                Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
+                let username = usernameCata id user
+                let msg = Notification.NE_GroupAssigned (groupName g) (courseName c) adminName userName
+                cas <- Persist.courseAdmins ck
+                let affected = cas \\ [admin]
+                Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
                 return $ putStatusMessage $ msg_UserStory_SetGroupAdmin "The user has become a teacher."
-        else return . CME.throwError $ userParamError (msg_UserStoryError_NoGroupAdmin "%s is not a group admin!") (user u)
-  where
-    user = usernameCata id
+        else return . CME.throwError $ userParamError (msg_UserStoryError_NoGroupAdmin "%s is not a group admin!") $ uname
 
 -- Unsubscribes the student from the given group (and course) if the group is one of the student's group
 -- and the sutdent did not submit any solutions for the assignments of the group. In that
@@ -510,11 +560,17 @@ unsubscribeFromCourse gk = logAction INFO ("unsubscribes from group: " ++ show g
 createGroup :: CourseKey -> Group -> UserStory GroupKey
 createGroup ck g = logAction INFO ("creats group " ++ show (groupName g)) $ do
   authorize P_Create P_Group
-  u <- username
-  join $ persistence $ do
-    admined <- Persist.isAdministratedCourse u ck
+  join $ withUserAndPersist $ \u -> do
+    let user = u_username u
+    admined <- Persist.isAdministratedCourse user ck
     if admined
       then do key <- Persist.saveGroup ck g
+              now <- liftIO getCurrentTime
+              c   <- Persist.loadCourse ck
+              let msg = Notification.NE_GroupCreated (courseName c) (u_name u) (groupName g)
+              cas <- Persist.courseAdmins ck
+              let affected = cas \\ [user]
+              Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
               return $ do
                 putStatusMessage $ msg_UserStory_CreateGroup "The group has been created."
                 return key
@@ -552,7 +608,7 @@ subscribedToGroup gk = logAction INFO ("lists all users in group " ++ show gk) $
   authorize P_Open P_Group
   isAdministratedGroup gk
   persistence $ Persist.subscribedToGroup gk
-                       
+
 
 -- | Regsiter the user in the group, if the user does not submitted
 -- any solutions for the other groups of the actual course, otherwise
@@ -683,12 +739,22 @@ createGroupAssignment gk a tc = logAction INFO msg $ do
     errorPage . userError $ msg_UserStoryError_EmptyAssignmentDescription
       "Assignment description is empty."
 
-  u <- username
-  join . persistence $ do
-    admined <- Persist.isAdministratedGroup u gk
+  join . withUserAndPersist $ \u -> do
+    let user = u_username u
+    admined <- Persist.isAdministratedGroup user gk
     if admined
       then do ak <- Persist.saveGroupAssignment gk a
-              testCaseCreationForAssignment u ak tc
+              testCaseCreationForAssignment user ak tc
+              now <- liftIO getCurrentTime
+              g  <- Persist.loadGroup gk
+              ck <- Persist.courseOfGroup gk
+              c  <- Persist.loadCourse ck
+              let msg = Notification.NE_GroupAssignmentCreated
+                          (u_name u) (groupName g) (courseName c) (Assignment.name a)
+              gas <- Persist.groupAdmins gk
+              sbs <- Persist.subscribedToGroup gk
+              let affected = nub (gas ++ sbs) \\ [user]
+              Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
               return $ do
                 statusMsg a
                 logMessage INFO $ descriptor ak
@@ -713,12 +779,22 @@ createCourseAssignment ck a tc = logAction INFO msg $ do
     errorPage . userError $ msg_UserStoryError_EmptyAssignmentDescription
       "Assignment description is empty."
 
-  u <- username
-  join . persistence $ do
-    admined <- Persist.isAdministratedCourse u ck
+  join . withUserAndPersist $ \u -> do
+    let user = u_username u
+    admined <- Persist.isAdministratedCourse user ck
     if admined
       then do ak <- Persist.saveCourseAssignment ck a
-              testCaseCreationForAssignment u ak tc
+              testCaseCreationForAssignment user ak tc
+              now <- liftIO getCurrentTime
+              c <- Persist.loadCourse ck
+              let msg = Notification.NE_CourseAssignmentCreated
+                          (u_name u) (courseName c) (Assignment.name a)
+              cas <- Persist.courseAdmins ck
+              gks <- Persist.groupKeysOfCourse ck
+              gas <- concat <$> mapM Persist.groupAdmins gks
+              sbs <- Persist.subscribedToCourse ck
+              let affected = nub (gas ++ cas ++ sbs) \\ [user]
+              Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
               return $ do
                 statusMsg a
                 logMessage INFO $ descriptor ak
@@ -743,21 +819,46 @@ createGroupAssessment gk a = logAction INFO ("creates assessment for group " ++ 
   authorize P_Open P_Group
   authorize P_Create P_Assessment
   isAdministratedGroup gk
-  persistence (Persist.saveGroupAssessment gk a)
+  ak <- persistence (Persist.saveGroupAssessment gk a)
+  withUserAndPersist $ \u -> do
+    let user = u_username u
+    now <- liftIO getCurrentTime
+    ck <- Persist.courseOfGroup gk
+    g  <- Persist.loadGroup gk
+    c  <- Persist.loadCourse ck
+    let msg = Notification.NE_GroupAssessmentCreated
+                (u_name u) (groupName g) (courseName c) (Assessment.title a)
+    gas <- Persist.groupAdmins gk
+    sbs <- Persist.subscribedToGroup gk
+    let affected = nub (gas ++ sbs) \\ [user]
+    Persist.notifyUsers (Notification.Notification msg now $ Notification.Assessment ak) affected
+  return ak
 
 createCourseAssessment :: CourseKey -> Assessment -> UserStory AssessmentKey
 createCourseAssessment ck a = logAction INFO ("creates assessment for course " ++ show ck) $ do
   authorize P_Open P_Course
   authorize P_Create P_Assessment
   isAdministratedCourse ck
-  persistence (Persist.saveCourseAssessment ck a)
+  ak <- persistence (Persist.saveCourseAssessment ck a)
+  withUserAndPersist $ \u -> do
+    let user = u_username u
+    now <- liftIO getCurrentTime
+    c <- Persist.loadCourse ck
+    let msg = Notification.NE_CourseAssessmentCreated
+                (u_name u) (courseName c) (Assessment.title a)
+    cas <- Persist.courseAdmins ck
+    sbs <- Persist.subscribedToCourse ck
+    let affected = nub (cas ++ sbs) \\ [user]
+    Persist.notifyUsers (Notification.Notification msg now $ Notification.Assessment ak) affected
+  return ak
 
 modifyAssessment :: AssessmentKey -> Assessment -> UserStory ()
 modifyAssessment ak a = logAction INFO ("modifies assessment " ++ show ak) $ do
   authorize P_Open P_Assessment
   authorize P_Modify P_Assessment
   isAdministratedAssessment ak
-  persistence $ do
+  withUserAndPersist $ \u -> do
+    let user = u_username u
     hasScore <- isThereAScorePersist ak
     new <- if hasScore
              then do
@@ -767,6 +868,21 @@ modifyAssessment ak a = logAction INFO ("modifies assessment " ++ show ak) $ do
                return (a { Assessment.evaluationCfg = evConfig})
              else return a
     Persist.modifyAssessment ak new
+    now <- liftIO getCurrentTime
+    let msg = Notification.NE_AssessmentUpdated (u_name u) (Assessment.title a)
+    mck <- Persist.courseOfAssessment ak
+    mgk <- Persist.groupOfAssessment ak
+    affected <- case (mck, mgk) of
+                  (Just ck, _) -> do
+                    cas <- Persist.courseAdmins ck
+                    sbs <- Persist.subscribedToCourse ck
+                    return $ nub (cas ++ sbs) \\ [user]
+                  (_, Just gk) -> do
+                    gas <- Persist.groupAdmins gk
+                    sbs <- Persist.subscribedToGroup gk
+                    return $ nub (gas ++ sbs) \\ [user]
+                  _            -> return []
+    Persist.notifyUsers (Notification.Notification msg now $ Notification.Assessment ak) affected
     when (hasScore && Assessment.evaluationCfg a /= Assessment.evaluationCfg new) $
       void . return . putStatusMessage . msg_UserStory_AssessmentEvalTypeWarning $ concat
         [ "The evaluation type of the assessment is not modified. "
@@ -841,7 +957,7 @@ scoreDesc sk = logAction INFO ("loads score description of score " ++ show sk) $
   scoreUser <- usernameOfScore sk
   if (currentUser == scoreUser)
     then persistence $ Persist.scoreDesc sk
-    else do 
+    else do
       logMessage INFO . violation $ printf "The user tries to view a score (%s) that not belongs to him."
                                            (show sk)
       errorPage $ userError nonAccessibleScore
@@ -951,7 +1067,7 @@ scoresOfCourse ck ak = logAction INFO ("lists scores of course " ++ show ck ++ "
 scoreBoards :: UserStory (Map (Either CourseKey GroupKey) ScoreBoard)
 scoreBoards = logAction INFO "lists scoreboards" $ do
   authPerms scoreBoardPermissions
-  withUserAndPersist Persist.scoreBoards
+  withUserAndPersist $ Persist.scoreBoards . u_username
 
 -- Puts the given status message to the actual user state
 putStatusMessage :: Translation String -> UserStory ()
@@ -1078,10 +1194,11 @@ submitSolution ak s = logAction INFO ("submits solution for assignment " ++ show
   authorize P_Create P_Submission
   checkActiveAssignment
   join $ withUserAndPersist $ \u -> do
-    attended <- Persist.isUsersAssignment u ak
+    let user = u_username u
+    attended <- Persist.isUsersAssignment user ak
     if attended
-      then do removeUserOpenedSubmissions u ak
-              sk <- Persist.saveSubmission ak u s
+      then do removeUserOpenedSubmissions user ak
+              sk <- Persist.saveSubmission ak user s
               Persist.saveTestJob sk
               return (return sk)
       else return $ do
@@ -1128,7 +1245,7 @@ userSubmissionKeys :: AssignmentKey -> UserStory [SubmissionKey]
 userSubmissionKeys ak = logAction INFO msg $ do
   authorize P_Open P_Assignment
   authorize P_Open P_Submission
-  withUserAndPersist $ \u -> Persist.userSubmissions u ak
+  withUserAndPersist $ \u -> Persist.userSubmissions (u_username u) ak
   where
     msg = "lists the submissions for assignment " ++ show ak
 
@@ -1160,7 +1277,7 @@ assignmentSubmissionLimit :: AssignmentKey -> UserStory SubmissionLimit
 assignmentSubmissionLimit key = logAction INFO msg $ do
   authorize P_Open P_Assignment
   authorize P_Open P_Submission
-  withUserAndPersist $ \user -> Persist.submissionLimitOfAssignment user key
+  withUserAndPersist $ \u -> Persist.submissionLimitOfAssignment (u_username u) key
   where
     msg = "user assignments submission Limit"
 
@@ -1172,8 +1289,8 @@ userAssignmentForSubmission key = logAction INFO "check user assignment for subm
   authorize P_Open P_Submission
   isUsersAssignment key
   now <- liftIO getCurrentTime
-  withUserAndPersist $ \user ->
-    (,) <$> (assignmentDesc now user key) <*> (Persist.loadAssignment key)
+  withUserAndPersist $ \u ->
+    (,) <$> (assignmentDesc now (u_username u) key) <*> (Persist.loadAssignment key)
 
 -- Helper function which computes the assignment description
 assignmentDesc :: UTCTime -> Username -> AssignmentKey -> Persist AssignmentDesc
@@ -1201,10 +1318,11 @@ userAssignments = logAction INFO "lists assignments" $ do
   authorize P_Open P_Group
   now <- liftIO getCurrentTime
   withUserAndPersist $ \u -> do
-    asgMap <- Persist.userAssignmentKeys u
+    let user = u_username u
+    asgMap <- Persist.userAssignmentKeys user
     newMap <- forM (Map.toList asgMap) $ \(key,aks) -> do
       key' <- Persist.loadCourse key
-      descs <- catMaybes <$> mapM (createDesc u now) (Set.toList aks)
+      descs <- catMaybes <$> mapM (createDesc user now) (Set.toList aks)
       return $! (key, (key', descs))
     return $! Map.fromList newMap
 
@@ -1245,7 +1363,7 @@ openSubmissions = logAction INFO ("lists unevaluated submissions") $ do
 submissionListDesc :: AssignmentKey -> UserStory SubmissionListDesc
 submissionListDesc ak = logAction INFO ("lists submissions for assignment " ++ show ak) $ do
   authPerms submissionListDescPermissions
-  withUserAndPersist $ \uname -> Persist.submissionListDesc uname ak
+  withUserAndPersist $ \u -> Persist.submissionListDesc (u_username u) ak
 
 courseSubmissionTable :: CourseKey -> UserStory SubmissionTableInfo
 courseSubmissionTable ck = logAction INFO ("gets submission table for course " ++ show ck) $ do
@@ -1263,7 +1381,7 @@ courseSubmissionTable ck = logAction INFO ("gets submission table for course " +
 submissionTables :: UserStory [SubmissionTableInfo]
 submissionTables = logAction INFO "lists submission tables" $ do
   authPerms submissionTableInfoPermissions
-  withUserAndPersist $ Persist.submissionTables
+  withUserAndPersist $ Persist.submissionTables . u_username
 
 -- Calculates the test script infos for the given course
 testScriptInfos :: CourseKey -> UserStory [(TestScriptKey, TestScriptInfo)]
@@ -1281,14 +1399,29 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
   now <- liftIO $ getCurrentTime
   userData <- currentUser
   join . withUserAndPersist $ \u -> do
-    admined <- Persist.isAdminedSubmission u sk
+    let user = u_username u
+    admined <- Persist.isAdminedSubmission user sk
     if admined
       then do mek <- Persist.evaluationOfSubmission sk
               case mek of
                 Nothing -> do
-                  Persist.saveSubmissionEvaluation sk e
+                  ek <- Persist.saveSubmissionEvaluation sk e
                   Persist.removeOpenedSubmission sk
                   Persist.saveFeedback sk (evaluationToFeedback now userData e)
+                  let msg = Notification.NE_EvaluationCreated (u_name u) (show sk)
+                  ak  <- Persist.assignmentOfSubmission sk
+                  mck <- Persist.courseOfAssignment ak
+                  mgk <- Persist.groupOfAssignment ak
+                  submitter <- Persist.usernameOfSubmission sk
+                  affected <- case (mck, mgk) of
+                                (Just ck, _) -> do
+                                  cas <- Persist.courseAdmins ck
+                                  return $ nub ([submitter] ++ cas) \\ [user]
+                                (_, Just gk) -> do
+                                  gas <- Persist.groupAdmins gk
+                                  return $ nub ([submitter] ++ gas) \\ [user]
+                                _            -> return []
+                  Persist.notifyUsers (Notification.Notification msg now $ Notification.Evaluation ek) affected
                   return (return ())
                 Just _ -> return $ do
                             logMessage INFO "Other admin just evaluated this submission"
@@ -1304,15 +1437,32 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
   now <- liftIO $ getCurrentTime
   userData <- currentUser
   join . withUserAndPersist $ \u -> do
+    let user = u_username u
     sbk <- Persist.submissionOfEvaluation ek
     sck <- Persist.scoreOfEvaluation ek
     case (sbk, sck) of
       (Just _, Just _) -> return . errorPage $ strMsg "Impossible, submission and score have the same evaluation"
-      (Nothing, Just _sk) -> do
+      (Nothing, Just sk) -> do
         let admined = True
         if admined
           then do Persist.modifyEvaluation ek e
                   -- Persist.saveFeedback sk (evaluationToFeedback now userData e)
+                  let msg = Notification.NE_AssignmentEvaluationUpdated (u_name u) (show sk)
+                  affected <- do
+                    ak <- Persist.assessmentOfScore sk
+                    mck <- Persist.courseOfAssessment ak
+                    mgk <- Persist.groupOfAssessment ak
+                    case (mck, mgk) of
+                      (Just ck, _) -> do
+                        cas <- Persist.courseAdmins ck
+                        sbs <- Persist.subscribedToCourse ck
+                        return $ nub (sbs ++ cas) \\ [user]
+                      (_, Just gk) -> do
+                        gas <- Persist.groupAdmins gk
+                        sbs <- Persist.subscribedToGroup gk
+                        return $ nub (sbs ++ gas) \\ [user]
+                      _            -> return []
+                  Persist.notifyUsers (Notification.Notification msg now $ Notification.Evaluation ek) affected
                   return (return ())
           else return $ do
                   logMessage INFO . violation $
@@ -1320,10 +1470,25 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
                            (show ek)
                   errorPage $ userError nonAdministratedSubmission
       (Just sk, Nothing) -> do
-        admined <- Persist.isAdminedSubmission u sk
+        admined <- Persist.isAdminedSubmission user sk
         if admined
           then do Persist.modifyEvaluation ek e
                   Persist.saveFeedback sk (evaluationToFeedback now userData e)
+                  let msg = Notification.NE_AssessmentEvaluationUpdated (u_name u) (show sk)
+                  affected <- do
+                    ak  <- Persist.assignmentOfSubmission sk
+                    mck <- Persist.courseOfAssignment ak
+                    mgk <- Persist.groupOfAssignment ak
+                    submitter <- Persist.usernameOfSubmission sk
+                    case (mck, mgk) of
+                      (Just ck, _) -> do
+                        cas <- Persist.courseAdmins ck
+                        return $ nub ([submitter] ++ cas) \\ [user]
+                      (_, Just gk) -> do
+                        gas <- Persist.groupAdmins gk
+                        return $ nub ([submitter] ++ gas) \\ [user]
+                      _            -> return []
+                  Persist.notifyUsers (Notification.Notification msg now $ Notification.Evaluation ek) affected
                   return (return ())
           else return $ do
                   logMessage INFO . violation $
@@ -1337,11 +1502,27 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
   authorize P_Open   P_Submission
   authorize P_Create P_Comment
   join $ withUserAndPersist $ \u -> do
-    canComment <- Persist.canUserCommentOn u sk
-    admined  <- Persist.isAdministratedSubmission u sk
-    attended <- Persist.isUserSubmission u sk
+    let user = u_username u
+    canComment <- Persist.canUserCommentOn user sk
+    admined  <- Persist.isAdministratedSubmission user sk
+    attended <- Persist.isUserSubmission user sk
     if (canComment && (admined || attended))
-      then do Persist.saveComment sk c
+      then do ck <- Persist.saveComment sk c
+              let Comment { commentAuthor = author, commentDate = now, comment = body } = c
+              let msg = Notification.NE_CommentCreated author (show sk) body
+              ak <- Persist.assignmentOfSubmission sk
+              mck <- Persist.courseOfAssignment ak
+              mgk <- Persist.groupOfAssignment ak
+              submitter <- Persist.usernameOfSubmission sk
+              affected <- case (mck, mgk) of
+                (Just ck, _) -> do
+                  cas <- Persist.courseAdmins ck
+                  return $ nub ([submitter] ++ cas) \\ [user]
+                (_, Just gk) -> do
+                  gas <- Persist.groupAdmins gk
+                  return $ nub ([submitter] ++ gas) \\ [user]
+                _            -> return []
+              Persist.notifyUsers (Notification.Notification msg now $ Notification.Comment ck) affected
               return (return ())
       else return $ do
               logMessage INFO . violation $ printf "The user tries to comment on a submission (%s) that not belongs to him" (show sk)
@@ -1375,9 +1556,10 @@ userSubmissions :: Username -> AssignmentKey -> UserStory (Maybe UserSubmissionD
 userSubmissions s ak = logAction INFO msg $ do
   authPerms userSubmissionDescPermissions
   withUserAndPersist $ \u -> do
+    let user = u_username u
     -- The admin can see the submission of students who are belonging to him
-    courses <- (map fst) <$> Persist.administratedCourses u
-    groups  <- (map fst) <$> Persist.administratedGroups  u
+    courses <- (map fst) <$> Persist.administratedCourses user
+    groups  <- (map fst) <$> Persist.administratedGroups  user
     courseStudents <- concat <$> mapM Persist.subscribedToCourse courses
     groupStudents  <- concat <$> mapM Persist.subscribedToGroup  groups
     let students = nub (courseStudents ++ groupStudents)
@@ -1386,6 +1568,29 @@ userSubmissions s ak = logAction INFO msg $ do
       True  -> Just <$> Persist.userSubmissionDesc s ak
   where
     msg = join ["lists ",show s,"'s submissions for assignment ", show ak]
+
+-- List all the related notifications for the active user and marks them
+-- as seen if their state is new.
+-- TODO: Remove test values.
+notifications :: UserStory [(Notification.Notification, Notification.NotificationState, Notification.NotificationReference)]
+notifications = do
+  now <- liftIO $ getCurrentTime
+  orderedNotifs <- withUserAndPersist $ \u -> do
+              let user = u_username u
+              notifs <- Persist.notificationsOfUser user (Just notificationLimit)
+              forM notifs (\(k,s,_p) -> do
+                notif <- Persist.loadNotification k
+                notifRef <- Persist.notificationReference (Notification.notifType notif)
+                when (s == Notification.New) $ Persist.markSeen user k
+                return (notif, s, notifRef))
+  return $ [
+      (Notification.Notification (Notification.NE_CommentCreated "Dummy" "1" "Blah...") now Notification.System, Notification.New, Notification.NRefComment (AssignmentKey "1") (SubmissionKey "1") (CommentKey "1"))
+    , (Notification.Notification (Notification.NE_CourseAdminCreated "Haskell") now Notification.System, Notification.Seen, Notification.NRefSystem)
+    ] ++ orderedNotifs
+
+noOfUnseenNotifications :: UserStory Int
+noOfUnseenNotifications = do
+  withUserAndPersist $ Persist.noOfUnseenNotifications . u_username
 
 -- Helper function: checks if there at least one submission for the given
 isThereSubmissionPersist = fmap (not . null) . Persist.submissionsForAssignment
@@ -1404,7 +1609,8 @@ modifyAssignment :: AssignmentKey -> Assignment -> TCModification -> UserStory (
 modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ do
   authorize P_Modify P_Assignment
   join . withUserAndPersist $ \u -> do
-    admined <- Persist.isAdministratedAssignment u ak
+    let user = u_username u
+    admined <- Persist.isAdministratedAssignment user ak
     if admined
       then do hasSubmission <- isThereSubmissionPersist ak
               new <- if hasSubmission
@@ -1414,7 +1620,22 @@ modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ 
                                return (a { Assignment.evType = ev })
                        else return a
               Persist.modifyAssignment ak new
-              testCaseModificationForAssignment u ak tc
+              testCaseModificationForAssignment user ak tc
+              now <- liftIO getCurrentTime
+              let msg = Notification.NE_AssignmentUpdated (u_name u) (Assignment.name a)
+              mck <- Persist.courseOfAssignment ak
+              mgk <- Persist.groupOfAssignment ak
+              affected <- case (mck, mgk) of
+                            (Just ck, _) -> do
+                              cas <- Persist.courseAdmins ck
+                              sbs <- Persist.subscribedToCourse ck
+                              return $ nub (cas ++ sbs) \\ [user]
+                            (_, Just gk) -> do
+                              gas <- Persist.groupAdmins gk
+                              sbs <- Persist.subscribedToGroup gk
+                              return $ nub (gas ++ sbs) \\ [user]
+                            _            -> return []
+              Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
               if and [hasSubmission, Assignment.evType a /= Assignment.evType new]
                 then return . putStatusMessage . msg_UserStory_EvalTypeWarning $ concat
                   [ "The evaluation type of the assignment is not modified. "
@@ -1474,7 +1695,7 @@ isAdministratedAssignment = guard
 -- Checks if the given assessment is administrated by the actual user and
 -- throws redirects to the error page if not, otherwise do nothing
 isAdministratedAssessment :: AssessmentKey -> UserStory ()
-isAdministratedAssessment = guard 
+isAdministratedAssessment = guard
   Persist.isAdministratedAssessment
   "User tries to modify the assessment (%s) which is not administrated by him."
   (userError nonAdministratedAssessment)
@@ -1541,9 +1762,9 @@ logAction level msg s = do
   logMessage level (concat [msg, " ... DONE"])
   return x
 
-withUserAndPersist :: (Username -> Persist a) -> UserStory a
+withUserAndPersist :: (User -> Persist a) -> UserStory a
 withUserAndPersist f = do
-  u <- username
+  u <- currentUser
   persistence (f u)
 
 -- | Lifting a persistence action, if some error happens
@@ -1599,3 +1820,8 @@ nonRelatedAssignment = msg_UserStoryError_NonRelatedAssignment "The assignment i
 nonAccessibleSubmission = msg_UserStoryError_NonAccessibleSubmission "The submission is not belongs to you."
 blockedSubmission = msg_UserStoryError_BlockedSubmission "The submission is blocked by an isolated assignment."
 nonAccessibleScore = msg_UserStoryError_NonAccessibleScore "The score does not belong to you."
+
+-- * constants
+
+notificationLimit :: Int
+notificationLimit = 100

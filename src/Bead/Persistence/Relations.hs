@@ -29,6 +29,7 @@ module Bead.Persistence.Relations (
   , scoreDesc
   , assessmentDesc
   , userAssessmentKeys
+  , notificationReference
 #ifdef TEST
   , persistRelationsTests
 #endif
@@ -55,6 +56,7 @@ import           Data.Time (UTCTime, getCurrentTime)
 
 import           Bead.Domain.Entities
 import qualified Bead.Domain.Entity.Assignment as Assignment
+import qualified Bead.Domain.Entity.Notification as Notification
 import           Bead.Domain.Relationships
 import           Bead.Domain.Shared.Evaluation
 import           Bead.Persistence.Persist
@@ -191,7 +193,8 @@ submissionDesc sk = do
   asg <- loadAssignment ak
   created <- assignmentCreatedTime ak
   cgk <- courseOrGroupOfAssignment ak
-  cs  <- mapM loadComment =<< (commentsOfSubmission sk)
+  cs  <- commentsOfSubmission sk >>= \cks -> forM cks $ \ck ->
+            (,) ck <$> loadComment ck
   fs  <- mapM loadFeedback =<< (feedbacksOfSubmission sk)
   case cgk of
     Left ck  -> do
@@ -208,7 +211,7 @@ submissionDesc sk = do
         , eAssignmentKey  = ak
         , eAssignmentDate = created
         , eSubmissionDate = solutionPostDate submission
-        , eComments = cs
+        , eComments = Map.fromList cs
         , eFeedbacks = fs
         }
     Right gk -> do
@@ -228,7 +231,7 @@ submissionDesc sk = do
         , eAssignmentKey  = ak
         , eAssignmentDate = created
         , eSubmissionDate = solutionPostDate submission
-        , eComments = cs
+        , eComments = Map.fromList cs
         , eFeedbacks = fs
         }
 
@@ -346,7 +349,8 @@ submissionDetailsDesc sk = do
   (name, adminNames) <- courseNameAndAdmins ak
   asg <- loadAssignment ak
   sol <- solution       <$> loadSubmission sk
-  cs  <- mapM loadComment =<< (commentsOfSubmission sk)
+  cs  <- commentsOfSubmission sk >>= \cks -> forM cks $ \ck ->
+            (,) ck <$> loadComment ck
   fs  <- mapM loadFeedback =<< (feedbacksOfSubmission sk)
   s   <- submissionEvalStr sk
   return SubmissionDetailsDesc {
@@ -355,7 +359,7 @@ submissionDetailsDesc sk = do
   , sdAssignment = asg
   , sdStatus     = s
   , sdSubmission = submissionValue id (const "zipped") sol
-  , sdComments   = cs
+  , sdComments   = Map.fromList cs
   , sdFeedbacks  = fs
   }
 
@@ -664,7 +668,7 @@ assessmentDesc ak = do
     Right gk -> do
       group <- loadGroup gk
       ck <- courseOfGroup gk
-      course <- loadCourse ck      
+      course <- loadCourse ck
       return (courseName course,Just . groupName $ group)
   assessment <- loadAssessment ak
   return $ AssessmentDesc course group ak assessment
@@ -702,6 +706,32 @@ userAssessmentKeys u = do
 
     insert k v m =
       maybe (Map.insert k v m) (flip (Map.insert k) m . (Set.union v)) $ Map.lookup k m
+
+notificationReference :: Notification.NotificationType -> Persist Notification.NotificationReference
+notificationReference = Notification.notificationType comment evaluation assignment assessment system
+  where
+    comment ck = do
+      sk <- submissionOfComment ck
+      ak <- assignmentOfSubmission sk
+      return $ Notification.NRefComment ak sk ck
+
+    evaluation ek = do
+      msubk <- submissionOfEvaluation ek
+      mscrk <- scoreOfEvaluation ek
+      case (msubk, mscrk) of
+        (Nothing, Nothing) -> error "No submission or score are found for evaluation."
+        (Just _, Just _)   -> error "Both submission and score are found for evaluation."
+        (Just sk, Nothing) -> do
+          ak <- assignmentOfSubmission sk
+          return $ Notification.NRefSubmissionEvaluation ak sk ek
+        (Nothing, Just sk) ->
+          return $ Notification.NRefScoreEvaluation sk ek
+
+    assignment ak = return $ Notification.NRefAssignment ak
+
+    assessment ak = return $ Notification.NRefAssessment ak
+
+    system = return Notification.NRefSystem
 
 #ifdef TEST
 

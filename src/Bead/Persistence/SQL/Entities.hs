@@ -74,7 +74,9 @@ Group
   deriving Show
 
 Notification
-  message     Text sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
+  event       JSONText sqltype="longtext character set utf8mb4 collate utf8mb4_unicode_ci"
+  date        UTCTime
+  type        JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   deriving Show
 
 Score
@@ -104,13 +106,14 @@ TestScript
   deriving Show
 
 User
-  role     JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
-  username Text
-  email    Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
-  name     Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
-  timeZone JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
-  language Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
-  uid      Text
+  role               JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  username           Text
+  email              Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  name               Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  timeZone           JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  language           Text sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
+  uid                Text
+  emailNotifications JSONText sqltype="text character set utf8mb4 collate utf8mb4_unicode_ci"
   UniqueUsername username
   deriving Show
 
@@ -299,19 +302,12 @@ ScoreOfEvaluation
   UniqueScoreOfEvaluationPair score evaluation
   UniqueScoreOfEvaluation evaluation
 
-CommentNotification
-  comment      CommentId
-  notification NotificationId
-  UniqueCommentNotification comment notification
-
-FeedbackNotification
-  feedback     FeedbackId
-  notification NotificationId
-  UniqueFeedbackNotification feedback notification
-
 UserNotification
   user         UserId
   notification NotificationId
+  seen         Bool
+  processed    Bool
+  created      UTCTime
   UniqueUserNotification user notification
 
 |]

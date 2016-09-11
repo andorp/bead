@@ -125,13 +125,14 @@ module Bead.Persistence.Persist (
   , submissionOfFeedback
 
   -- Notification
-  , saveCommentNotification
-  , saveFeedbackNotification
-  , saveSystemNotification
+  , saveNotification
   , loadNotification
-  , commentOfNotification
-  , feedbackOfNotification
   , usersOfNotification
+  , notifyUsers
+  , unprocessedNotifications
+  , noOfUnseenNotifications
+  , markSeen
+
 
   -- Evaluation
   , saveSubmissionEvaluation
@@ -169,6 +170,7 @@ module Bead.Persistence.Persist (
 #endif
   ) where
 
+import           Control.Monad
 import           Data.Time (UTCTime)
 import           Data.Set (Set)
 
@@ -241,7 +243,7 @@ administratedGroups = PersistImpl.administratedGroups
 attachNotificationToUser :: Username -> NotificationKey -> Persist ()
 attachNotificationToUser = PersistImpl.attachNotificationToUser
 
-notificationsOfUser :: Username -> Persist [NotificationKey]
+notificationsOfUser :: Username -> Maybe Int -> Persist [(NotificationKey, Notif.NotificationState, Notif.NotificationProcessed)]
 notificationsOfUser = PersistImpl.notificationsOfUser
 
 -- Lists all the scores submitted for the user
@@ -586,26 +588,29 @@ submissionOfFeedback = PersistImpl.submissionOfFeedback
 
 -- * Notification
 
-saveCommentNotification :: CommentKey -> Notification -> Persist NotificationKey
-saveCommentNotification = PersistImpl.saveCommentNotification
-
-saveFeedbackNotification :: FeedbackKey -> Notification -> Persist NotificationKey
-saveFeedbackNotification = PersistImpl.saveFeedbackNotification
-
-saveSystemNotification :: Notification -> Persist NotificationKey
-saveSystemNotification = PersistImpl.saveSystemNotification
+saveNotification :: Notification -> Persist NotificationKey
+saveNotification = PersistImpl.saveNotification
 
 loadNotification :: NotificationKey -> Persist Notification
 loadNotification = PersistImpl.loadNotification
 
-commentOfNotification :: NotificationKey -> Persist (Maybe CommentKey)
-commentOfNotification = PersistImpl.commentOfNotification
-
-feedbackOfNotification :: NotificationKey -> Persist (Maybe FeedbackKey)
-feedbackOfNotification = PersistImpl.feedbackOfNotification
-
 usersOfNotification :: NotificationKey -> Persist [Username]
 usersOfNotification = PersistImpl.usersOfNotification
+
+notifyUsers :: Notification -> [Username] -> Persist ()
+notifyUsers n us = do
+  nk <- PersistImpl.saveNotification n
+  forM_ us $ \u -> do
+    PersistImpl.attachNotificationToUser u nk
+
+unprocessedNotifications :: Persist [(User, NotificationKey, Notif.NotificationState)]
+unprocessedNotifications = PersistImpl.unprocessedNotifications
+
+noOfUnseenNotifications :: Username -> Persist Int
+noOfUnseenNotifications = PersistImpl.noOfUnseenNotifications
+
+markSeen :: Username -> NotificationKey -> Persist ()
+markSeen = PersistImpl.markSeen
 
 -- * Evaluation
 

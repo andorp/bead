@@ -1,42 +1,46 @@
 module Bead.Persistence.SQL.Notification where
 
 import Control.Applicative ((<$>))
+import Control.Monad (forM, forM_)
+import Control.Monad.IO.Class (liftIO)
 import Database.Persist.Sql
-import Data.Maybe (listToMaybe)
+import Data.Maybe (catMaybes, maybeToList)
+import Data.Time (getCurrentTime)
 
-import qualified Bead.Domain.Entities as Domain (Username)
+import qualified Bead.Domain.Entities as Domain (Username, User)
 import qualified Bead.Domain.Relationships as Domain
 import qualified Bead.Domain.Entity.Notification as Domain
 import Bead.Persistence.SQL.Class
 import Bead.Persistence.SQL.Entities
 import Bead.Persistence.SQL.User (usernames)
 
+saveNotification :: Domain.Notification -> Persist Domain.NotificationKey
+saveNotification n = toDomainKey <$> insert (fromDomainValue n)
+
 attachNotificationToUser :: Domain.Username -> Domain.NotificationKey -> Persist ()
 attachNotificationToUser username nk = withUser username
-  (persistError "attachNotificationToUser" $ "User is not found:" ++ show username) $ \user ->
-    void $ insertUnique (UserNotification (entityKey user) (fromDomainKey nk))
+  (persistError "attachNotificationToUser" $ "User is not found:" ++ show username) $ \user -> do
+    now <- liftIO $ getCurrentTime
+    -- Insert not seen
+    void $ insertUnique (UserNotification (entityKey user) (fromDomainKey nk) False False now)
 
-notificationsOfUser :: Domain.Username -> Persist [Domain.NotificationKey]
-notificationsOfUser username = withUser username (return []) $ \user ->
-  map (toDomainKey . userNotificationNotification . entityVal) <$>
-    selectList [UserNotificationUser ==. (entityKey user)] []
+-- | Returns all the new notification on top and the limited seen notifications
+notificationsOfUser :: Domain.Username -> Maybe Int -> Persist [(Domain.NotificationKey, Domain.NotificationState, Domain.NotificationProcessed)]
+notificationsOfUser username seenLimit = withUser username (return []) $ \user -> do
+  unseen <- selectList [ UserNotificationUser ==. (entityKey user)
+                       , UserNotificationSeen ==. False ]
+                       [ Desc UserNotificationCreated ]
+  seen <- selectList [ UserNotificationUser ==. (entityKey user)
+                     , UserNotificationSeen ==. True ]
+                     ([ Desc UserNotificationCreated] ++ maybeToList (LimitTo <$> seenLimit))
 
-saveCommentNotification :: Domain.CommentKey -> Domain.Notification -> Persist Domain.NotificationKey
-saveCommentNotification ck n = do
-  key <- insert (fromDomainValue n)
-  insertUnique (CommentNotification (fromDomainKey ck) key)
-  return (toDomainKey key)
-
-saveFeedbackNotification :: Domain.FeedbackKey -> Domain.Notification -> Persist Domain.NotificationKey
-saveFeedbackNotification fk n = do
-  key <- insert (fromDomainValue n)
-  insertUnique (FeedbackNotification (fromDomainKey fk) key)
-  return (toDomainKey key)
-
-saveSystemNotification :: Domain.Notification -> Persist Domain.NotificationKey
-saveSystemNotification n = do
-  key <- insert (fromDomainValue n)
-  return (toDomainKey key)
+  return . map (transformEntity . entityVal) $ unseen ++ seen
+  where
+    transformEntity e =
+        ( toDomainKey $ userNotificationNotification e
+        , if userNotificationSeen e      then Domain.Seen      else Domain.New
+        , if userNotificationProcessed e then Domain.Processed else Domain.Unprocessed
+        )
 
 loadNotification :: Domain.NotificationKey -> Persist Domain.Notification
 loadNotification nk = do
@@ -47,17 +51,32 @@ loadNotification nk = do
       toDomainValue
       mNot
 
-commentOfNotification :: Domain.NotificationKey -> Persist (Maybe Domain.CommentKey)
-commentOfNotification nk = do
-  keys <- map (toDomainKey . commentNotificationComment . entityVal) <$>
-            selectList [CommentNotificationNotification ==. (fromDomainKey nk)] []
-  return $! listToMaybe keys
+unprocessedNotifications :: Persist [(Domain.User, Domain.NotificationKey, Domain.NotificationState)]
+unprocessedNotifications = do
+  userNotifs <- selectList [UserNotificationProcessed ==. False] []
+  catMaybes <$> (forM userNotifs $ \ent' -> do
+    let ent = entityVal ent'
+    let userId  = userNotificationUser ent
+    let notifId = userNotificationNotification ent
+    mUser <- get userId
+    return $ case mUser of
+      Nothing -> Nothing
+      Just un -> Just (toDomainValue un, toDomainKey notifId, undefined))
 
-feedbackOfNotification :: Domain.NotificationKey -> Persist (Maybe Domain.FeedbackKey)
-feedbackOfNotification nk = do
-  keys <- map (toDomainKey . feedbackNotificationFeedback . entityVal) <$>
-            selectList [FeedbackNotificationNotification ==. (fromDomainKey nk)] []
-  return $! listToMaybe keys
+noOfUnseenNotifications :: Domain.Username -> Persist Int
+noOfUnseenNotifications username = withUser username (return 0) $ \user ->
+  count [UserNotificationUser ==. (entityKey user), UserNotificationSeen ==. False]
+
+mark :: EntityField UserNotification Bool -> Domain.Username -> Domain.NotificationKey -> Persist ()
+mark f username nk = withUser username (return ()) $ \user -> do
+  uns <- selectList
+    [ UserNotificationUser ==. (entityKey user)
+    , UserNotificationNotification ==. (fromDomainKey nk)
+    ] []
+  forM_ uns $ \n -> update (entityKey n) [ f =. True ]
+
+markSeen      = mark UserNotificationSeen
+markProcessed = mark UserNotificationProcessed
 
 usersOfNotification :: Domain.NotificationKey -> Persist [Domain.Username]
 usersOfNotification nk = do
