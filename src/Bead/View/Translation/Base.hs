@@ -243,6 +243,7 @@ labels =
  , "msg_Evaluation_Info"
  , "msg_Evaluation_Username"
  , "msg_Evaluation_SubmissionDate"
+ , "msg_Evaluation_SubmissionInfo"
  , "msg_Evaluation_FreeFormEvaluation"
  , "msg_Evaluation_FreeFormComment"
  , "msg_Evaluation_EmptyCommentAndFreeFormResult"
@@ -311,6 +312,7 @@ labels =
  , "msg_EvaluationTable_MiscCourseAssignmentInfo"
  , "msg_EvaluationTable_Username"
  , "msg_EvaluationTable_DateOfSubmission"
+ , "msg_EvaluationTable_SubmissionInfo"
 
  , "msg_UserSubmissions_NonAccessibleSubmissions"
  , "msg_UserSubmissions_Course"

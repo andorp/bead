@@ -21,10 +21,11 @@ import           Bead.View.Content as C
 import           Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.View.Content.Comments
 import           Bead.View.Content.SeeMore
+import           Bead.View.Content.SubmissionTable (formatSubmissionInfo)
 import           Bead.View.Content.VisualConstants
 
 import           Text.Blaze.Html5 as H
-import           Text.Blaze.Html5.Attributes as A
+import qualified Text.Blaze.Html5.Attributes as A
 
 evaluation :: ViewModifyHandler
 evaluation = ViewModifyHandler evaluationPage evaluationPostHandler
@@ -218,6 +219,7 @@ evaluationContent pd = do
         (msg $ msg_Evaluation_Student "Student: ") .|. (fromString . eStudent $ sd)
         (msg $ msg_Evaluation_Username "Username: ") .|. (fromString . uid Prelude.id $ eUid sd)
         (msg $ msg_Evaluation_SubmissionDate "Date of submission: ") .|. (fromString . showDate . tc $ eSubmissionDate sd)
+        (msg $ msg_Evaluation_SubmissionInfo "State: ") .|. submissionIcon msg (eSubmissionInfo sd)
 
     Bootstrap.row $ Bootstrap.colMd12 $ do
       let downloadSubmissionButton =
@@ -267,3 +269,21 @@ evaluationContent pd = do
 
     maxLength = 2048
     maxLines  = 100
+
+    submissionIcon :: I18N -> SubmissionInfo -> H.Html
+    submissionIcon msg =
+      formatSubmissionInfo
+        id
+        mempty -- not found
+        (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: large"
+             ! tooltip (msg_Home_SubmissionCell_NonEvaluated "Non evaluated") $ mempty) -- non-evaluated
+        (bool (H.i ! A.class_ "glyphicon glyphicon-ok-circle" ! A.style "color:#AAAAAA; font-size: large"
+                   ! tooltip (msg_Home_SubmissionCell_Tests_Passed "Tests are passed") $ mempty)  -- tested accepted
+              (H.i ! A.class_ "glyphicon glyphicon-remove-circle" ! A.style "color:#AAAAAA; font-size: large"
+                   ! tooltip (msg_Home_SubmissionCell_Tests_Failed "Tests are failed") $ mempty)) -- tested rejected
+        (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: large"
+             ! tooltip (msg_Home_SubmissionCell_Accepted "Accepted") $ mempty) -- accepted
+        (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: large"
+             ! tooltip (msg_Home_SubmissionCell_Rejected "Rejected") $ mempty) -- rejected
+      where
+        tooltip m = A.title (fromString $ msg m)

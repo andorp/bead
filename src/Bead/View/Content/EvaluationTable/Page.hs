@@ -17,9 +17,11 @@ import           Bead.Controller.UserStories (openSubmissions)
 import           Bead.Domain.Entity.Assignment as Assignment
 import           Bead.View.Pagelets
 import           Bead.View.Content
+import           Bead.View.Content.SubmissionTable (formatSubmissionInfo)
 import qualified Bead.View.Content.Bootstrap as Bootstrap
 
 import           Text.Blaze.Html5 as H hiding (link, map)
+import qualified Text.Blaze.Html5.Attributes as A
 
 evaluationTable :: ViewHandler
 evaluationTable = ViewHandler evaluationTablePage
@@ -80,6 +82,7 @@ evaluationTableContent tc = openedSubmissionsCata $ \admincourse admingroup rela
             H.th (fromString . msg $ msg_EvaluationTable_Course "Course")
             when isGroup $ H.th (fromString . msg $ msg_EvaluationTable_Group "Group")
             H.th (fromString . msg $ msg_EvaluationTable_DateOfSubmission "Date")
+            H.th (fromString. msg $ msg_EvaluationTable_SubmissionInfo "State")
           tbody $ forM_ ks (submissionInfo tc msg isGroup)
 
 submissionInfo tc msg isGroup (key, desc) = H.tr $ do
@@ -90,8 +93,27 @@ submissionInfo tc msg isGroup (key, desc) = H.tr $ do
   H.td . fromString . eCourse $ desc
   when isGroup $ H.td . fromString . fromMaybe "" . eGroup $ desc
   H.td . fromString . showDate . tc $ eSubmissionDate desc
+  H.td . submissionIcon msg . eSubmissionInfo $ desc
   where
     evaluation k = Pages.evaluation k ()
+
+submissionIcon :: I18N -> SubmissionInfo -> H.Html
+submissionIcon msg =
+  formatSubmissionInfo
+    id
+    mempty -- not found
+    (H.i ! A.class_ "glyphicon glyphicon-stop"  ! A.style "color:#AAAAAA; font-size: large"
+         ! tooltip (msg_Home_SubmissionCell_NonEvaluated "Non evaluated") $ mempty) -- non-evaluated
+    (bool (H.i ! A.class_ "glyphicon glyphicon-ok-circle" ! A.style "color:#AAAAAA; font-size: large"
+               ! tooltip (msg_Home_SubmissionCell_Tests_Passed "Tests are passed") $ mempty)  -- tested accepted
+    (H.i ! A.class_ "glyphicon glyphicon-remove-circle" ! A.style "color:#AAAAAA; font-size: large"
+         ! tooltip (msg_Home_SubmissionCell_Tests_Failed "Tests are failed") $ mempty)) -- tested rejected
+    (H.i ! A.class_ "glyphicon glyphicon-thumbs-up" ! A.style "color:#00FF00; font-size: large"
+         ! tooltip (msg_Home_SubmissionCell_Accepted "Accepted") $ mempty) -- accepted
+    (H.i ! A.class_ "glyphicon glyphicon-thumbs-down" ! A.style "color:#FF0000; font-size: large"
+         ! tooltip (msg_Home_SubmissionCell_Rejected "Rejected") $ mempty) -- rejected
+      where
+        tooltip m = A.title (fromString $ msg m)
 
 -- * Sorting submissions
 

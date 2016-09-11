@@ -114,6 +114,7 @@ data SubmissionDesc = SubmissionDesc {
   , eUsername :: Username
   , eUid      :: Uid
   , eSolution :: String
+  , eSubmissionInfo :: SubmissionInfo
   , eAssignmentKey   :: AssignmentKey
   , eAssignment      :: Assignment
   , eAssignmentDate  :: UTCTime
