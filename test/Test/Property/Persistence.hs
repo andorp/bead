@@ -559,7 +559,7 @@ submissionDescTest = test $ testCase "Every submission has some kind of descript
     assertNonEmpty (eStudent desc) "Student name was empty"
     assertNonEmpty (eSolution desc) "Solution was empty"
     assertNonEmpty (Assignment.name . eAssignment $ desc) "Assignment title was empty"
-    assertEmpty (eComments desc) "The comment list was not empty"
+    assertEmpty (Map.toList $ eComments desc) "The comment list was not empty"
 
 -- Every assignment must have a course name and the
 -- dedicated users must be returned as admins
@@ -649,7 +649,7 @@ submissionDetailsDescTest = test $ testCase "Every submission has a description"
     assertNonEmpty (Assignment.desc $ sdAssignment desc) "Description was empty"
     when (isJust (sdStatus desc)) $ assertNonEmpty (fromJust $ sdStatus desc) "Status was empty"
     assertNonEmpty (sdSubmission desc) "Submission text was empty"
-    forM (sdComments desc) $ \c -> assertNonEmpty (comment c) "Comment was empty"
+    forM (Map.toList $ sdComments desc) $ \(_,c) -> assertNonEmpty (comment c) "Comment was empty"
 
 -- If the user administrates courses or groups, submission information about the
 -- submission of the group or course attendees. The number of the tables are same as

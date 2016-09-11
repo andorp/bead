@@ -187,7 +187,27 @@ date = read "2016-01-22 14:41:26 UTC"
 
 assessments = Assessment <$> manyWords <*> manyWords <*> pure date <*> evalConfigs
 
--- notifTypes = elements [Notification.Comment, Notification.System]
+notifEvents = oneof
+  [ Notification.NE_CourseAdminCreated <$> manyWords
+  , Notification.NE_CourseAdminAssigned <$> manyWords <*> manyWords
+  , Notification.NE_TestScriptCreated <$> manyWords <*> manyWords
+  , Notification.NE_TestScriptUpdated <$> manyWords <*> manyWords <*> manyWords
+  , Notification.NE_RemovedFromGroup <$> manyWords <*> manyWords
+  , Notification.NE_GroupAdminCreated <$> manyWords <*> manyWords <*> manyWords
+  , Notification.NE_GroupAssigned <$> manyWords <*> manyWords <*> manyWords <*> manyWords
+  , Notification.NE_GroupCreated <$> manyWords <*> manyWords <*> manyWords
+  , Notification.NE_GroupAssignmentCreated <$> manyWords <*> manyWords <*> manyWords <*> manyWords
+  , Notification.NE_CourseAssignmentCreated <$> manyWords <*> manyWords <*> manyWords
+  , Notification.NE_GroupAssessmentCreated <$> manyWords <*> manyWords <*> manyWords <*> manyWords
+  , Notification.NE_CourseAssessmentCreated <$> manyWords <*> manyWords <*> manyWords
+  , Notification.NE_AssessmentUpdated <$> manyWords <*> manyWords
+  , Notification.NE_AssignmentUpdated <$> manyWords <*> manyWords
+  , Notification.NE_EvaluationCreated <$> manyWords <*> manyWords
+  , Notification.NE_AssessmentEvaluationUpdated <$> manyWords <*> manyWords
+  , Notification.NE_AssignmentEvaluationUpdated <$> manyWords <*> manyWords
+  , Notification.NE_CommentCreated <$> manyWords <*> manyWords <*> manyWords
+  ]
 
-notifications = Notification.Notification . fromString <$> manyWords
+notifications =
+  Notification.Notification <$> notifEvents <*> pure date <*> pure Notification.System
 
