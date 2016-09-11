@@ -153,7 +153,7 @@ htmlAssessmentTable board
             H.th . fromString . msg $ msg_Home_AssessmentTable_StudentName "Name"
             H.th . fromString . msg $ msg_Home_AssessmentTable_Username "Username"
             forM_ (zip sortedAssessments [1..]) (assessmentViewButton msg)
-          forM_ (sortBy (compare `on` ud_fullname) (sbUsers board)) (userLine msg)
+          forM_ (sortBy (compareHun `on` ud_fullname) (sbUsers board)) (userLine msg)
       where
         assessmentViewButton :: I18N -> ((AssessmentKey,Assessment),Int) -> Html
         assessmentViewButton msg ((ak,as),n) = H.td $ Bootstrap.customButtonLink style modifyLink assessmentName (prefix ++ show n)
