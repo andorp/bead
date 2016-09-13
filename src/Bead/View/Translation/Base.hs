@@ -591,6 +591,8 @@ labels =
 
  , "msg_Markdown_NotFound"
 
+ , "msg_Notifications_NoNotifications"
+
  , "msg_NE_CourseAdminCreated"
  , "msg_NE_CourseAdminAssigned"
  , "msg_NE_TestScriptCreated"
