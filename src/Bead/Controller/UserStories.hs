@@ -1571,7 +1571,6 @@ userSubmissions s ak = logAction INFO msg $ do
 
 -- List all the related notifications for the active user and marks them
 -- as seen if their state is new.
--- TODO: Remove test values.
 notifications :: UserStory [(Notification.Notification, Notification.NotificationState, Notification.NotificationReference)]
 notifications = do
   now <- liftIO $ getCurrentTime
@@ -1583,10 +1582,7 @@ notifications = do
                 notifRef <- Persist.notificationReference (Notification.notifType notif)
                 when (s == Notification.New) $ Persist.markSeen user k
                 return (notif, s, notifRef))
-  return $ [
-      (Notification.Notification (Notification.NE_CommentCreated "Dummy" "1" "Blah...") now Notification.System, Notification.New, Notification.NRefComment (AssignmentKey "1") (SubmissionKey "1") (CommentKey "1"))
-    , (Notification.Notification (Notification.NE_CourseAdminCreated "Haskell") now Notification.System, Notification.Seen, Notification.NRefSystem)
-    ] ++ orderedNotifs
+  return orderedNotifs
 
 noOfUnseenNotifications :: UserStory Int
 noOfUnseenNotifications = do

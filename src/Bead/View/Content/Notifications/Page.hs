@@ -13,6 +13,8 @@ import           Bead.Domain.Entity.Notification
 import qualified Bead.View.Content.Bootstrap as Bootstrap
 import qualified Bead.Controller.UserStories as Story (notifications)
 
+import           Text.Blaze.Html5 as H hiding (link, map)
+
 data PageData = PageData {
       pdNotifications :: [(Notification, NotificationState, NotificationReference)]
     , pdUserTime      :: UserTimeConverter
@@ -30,17 +32,23 @@ notificationsContent :: PageData -> IHtml
 notificationsContent p = do
   msg <- getI18N
   return $ do
-    Bootstrap.row $ Bootstrap.colMd12 $ do
-      Bootstrap.listGroup $
-        forM_ (pdNotifications p) $ \(notif, state, ref) ->
-          (if state == Seen
-            then Bootstrap.listGroupLinkItem
-            else Bootstrap.listGroupAlertLinkItem Bootstrap.Info
-          ) (linkFromNotif ref) . fromString $
-              unwords
-                [ "[" ++ (showDate . pdUserTime p $ notifDate notif) ++ "]"
-                , translateEvent msg $ notifEvent notif
-                ]
+    let notifs = pdNotifications p
+    if (null notifs)
+      then do
+         H.p $ fromString $ msg $
+           msg_Notifications_NoNotifications "There are no notifications."
+      else do
+        Bootstrap.row $ Bootstrap.colMd12 $ do
+          Bootstrap.listGroup $
+            forM_ notifs $ \(notif, state, ref) ->
+              (if state == Seen
+                then Bootstrap.listGroupLinkItem
+                else Bootstrap.listGroupAlertLinkItem Bootstrap.Info
+              ) (linkFromNotif ref) . fromString $
+                  unwords
+                    [ "[" ++ (showDate . pdUserTime p $ notifDate notif) ++ "]"
+                    , translateEvent msg $ notifEvent notif
+                    ]
 
 linkFromNotif :: NotificationReference -> String
 linkFromNotif = notificationReference

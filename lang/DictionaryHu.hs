@@ -525,6 +525,7 @@ dict = DictionaryFile {
     , msg_SeeMore_SeeMore <| "Kinyit"
     , msg_SeeMore_SeeLess <| "Becsuk"
     , msg_Markdown_NotFound <| "Sajnos a kért oldal nem található!"
+    , msg_Notifications_NoNotifications <| "Nincsenek értesítések."
     , msg_NE_CourseAdminCreated <| "A \"%s\" tárgy hozzárendelésre került."
     , msg_NE_CourseAdminAssigned <| "Egy új tárgyfelelőst rendeltek a \"%s\" tárgyhoz: %s"
     , msg_NE_TestScriptCreated <| "%s létrehozott egy új tesztelőt a \"%s\" tárgyhoz"
