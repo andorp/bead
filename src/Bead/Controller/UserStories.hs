@@ -1510,7 +1510,10 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
     if (canComment && (admined || attended))
       then do ck <- Persist.saveComment sk c
               let Comment { commentAuthor = author, commentDate = now, comment = body } = c
-              let msg = Notification.NE_CommentCreated author (withSubmissionKey sk id) body
+              let maxLength   = 100
+              let maxLines    = 5
+              let trimmedBody = (init $ unlines $ take maxLines $ lines $ take maxLength body) ++ "..."
+              let msg = Notification.NE_CommentCreated author (withSubmissionKey sk id) trimmedBody
               ak <- Persist.assignmentOfSubmission sk
               mck <- Persist.courseOfAssignment ak
               mgk <- Persist.groupOfAssignment ak
