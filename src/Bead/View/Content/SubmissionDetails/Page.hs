@@ -123,8 +123,8 @@ submissionDetailsContent p = do
           H.br
           div # submissionTextDiv $ seeMoreSubmission "submission-details-" msg maxLength maxLines $ sdSubmission info
     Bootstrap.rowColMd12 $ do
-      h2 $ fromString $ msg $ msg_SubmissionDetails_Evaluation "Evaluation"
       H.a ! A.name (anchor SubmissionDetailsEvaluationDiv) $ mempty
+      h2 $ fromString $ msg $ msg_SubmissionDetails_Evaluation "Evaluation"
       resolveStatus msg $ sdStatus info
     Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ msg_Comments_Title "Comments"
     postForm (routeOf $ submissionDetails (aKey p) (smKey p)) $ do
