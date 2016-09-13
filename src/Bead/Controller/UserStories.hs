@@ -526,7 +526,7 @@ createGroupAdmin user gk = logAction INFO "sets user as a group admin of a group
                 let adminName = u_name adminUser
                 let msg = Notification.NE_GroupAdminCreated
                             (courseName c) adminName (groupName g)
-                let affected = [user]
+                let affected = [user] \\ [admin]
                 Persist.notifyUsers (Notification.Notification msg now Notification.System) affected
                 let username = usernameCata id user
                 let msg = Notification.NE_GroupAssigned (groupName g) (courseName c) adminName userName
@@ -1408,7 +1408,7 @@ newEvaluation sk e = logAction INFO ("saves new evaluation for " ++ show sk) $ d
                   ek <- Persist.saveSubmissionEvaluation sk e
                   Persist.removeOpenedSubmission sk
                   Persist.saveFeedback sk (evaluationToFeedback now userData e)
-                  let msg = Notification.NE_EvaluationCreated (u_name u) (show sk)
+                  let msg = Notification.NE_EvaluationCreated (u_name u) (withSubmissionKey sk id)
                   ak  <- Persist.assignmentOfSubmission sk
                   mck <- Persist.courseOfAssignment ak
                   mgk <- Persist.groupOfAssignment ak
@@ -1447,20 +1447,21 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
         if admined
           then do Persist.modifyEvaluation ek e
                   -- Persist.saveFeedback sk (evaluationToFeedback now userData e)
-                  let msg = Notification.NE_AssignmentEvaluationUpdated (u_name u) (show sk)
+                  let msg = Notification.NE_AssessmentEvaluationUpdated (u_name u) (scoreKey id sk)
                   affected <- do
                     ak <- Persist.assessmentOfScore sk
                     mck <- Persist.courseOfAssessment ak
                     mgk <- Persist.groupOfAssessment ak
+                    recipient <- Persist.usernameOfScore sk
                     case (mck, mgk) of
                       (Just ck, _) -> do
                         cas <- Persist.courseAdmins ck
                         sbs <- Persist.subscribedToCourse ck
-                        return $ nub (sbs ++ cas) \\ [user]
+                        return $ nub ([recipient] ++ cas) \\ [user]
                       (_, Just gk) -> do
                         gas <- Persist.groupAdmins gk
                         sbs <- Persist.subscribedToGroup gk
-                        return $ nub (sbs ++ gas) \\ [user]
+                        return $ nub ([recipient] ++ gas) \\ [user]
                       _            -> return []
                   Persist.notifyUsers (Notification.Notification msg now $ Notification.Evaluation ek) affected
                   return (return ())
@@ -1474,7 +1475,7 @@ modifyEvaluation ek e = logAction INFO ("modifies evaluation " ++ show ek) $ do
         if admined
           then do Persist.modifyEvaluation ek e
                   Persist.saveFeedback sk (evaluationToFeedback now userData e)
-                  let msg = Notification.NE_AssessmentEvaluationUpdated (u_name u) (show sk)
+                  let msg = Notification.NE_AssignmentEvaluationUpdated (u_name u) (withSubmissionKey sk id)
                   affected <- do
                     ak  <- Persist.assignmentOfSubmission sk
                     mck <- Persist.courseOfAssignment ak
@@ -1509,7 +1510,7 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
     if (canComment && (admined || attended))
       then do ck <- Persist.saveComment sk c
               let Comment { commentAuthor = author, commentDate = now, comment = body } = c
-              let msg = Notification.NE_CommentCreated author (show sk) body
+              let msg = Notification.NE_CommentCreated author (withSubmissionKey sk id) body
               ak <- Persist.assignmentOfSubmission sk
               mck <- Persist.courseOfAssignment ak
               mgk <- Persist.groupOfAssignment ak
