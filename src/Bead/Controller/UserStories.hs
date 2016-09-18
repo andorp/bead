@@ -752,9 +752,12 @@ createGroupAssignment gk a tc = logAction INFO msg $ do
               let msg = Notification.NE_GroupAssignmentCreated
                           (u_name u) (groupName g) (courseName c) (Assignment.name a)
               gas <- Persist.groupAdmins gk
-              sbs <- Persist.subscribedToGroup gk
-              let affected = nub (gas ++ sbs) \\ [user]
+              let affected = nub gas \\ [user]
               Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
+              sbs <- Persist.subscribedToGroup gk
+              let affected = nub (sbs \\ (gas ++ [user]))
+              let time = Assignment.start a
+              Persist.notifyUsers (Notification.Notification msg time $ Notification.Assignment ak) affected
               return $ do
                 statusMsg a
                 logMessage INFO $ descriptor ak
@@ -793,8 +796,11 @@ createCourseAssignment ck a tc = logAction INFO msg $ do
               gks <- Persist.groupKeysOfCourse ck
               gas <- concat <$> mapM Persist.groupAdmins gks
               sbs <- Persist.subscribedToCourse ck
-              let affected = nub (gas ++ cas ++ sbs) \\ [user]
+              let affected = nub (gas ++ cas) \\ [user]
               Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
+              let affected = nub (sbs \\ (gas ++ cas ++ [user]))
+              let time = Assignment.start a
+              Persist.notifyUsers (Notification.Notification msg time $ Notification.Assignment ak) affected
               return $ do
                 statusMsg a
                 logMessage INFO $ descriptor ak
@@ -1628,14 +1634,28 @@ modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ 
               affected <- case (mck, mgk) of
                             (Just ck, _) -> do
                               cas <- Persist.courseAdmins ck
-                              sbs <- Persist.subscribedToCourse ck
-                              return $ nub (cas ++ sbs) \\ [user]
+                              gks <- Persist.groupKeysOfCourse ck
+                              gas <- concat <$> mapM Persist.groupAdmins gks
+                              return $ nub (cas ++ gas) \\ [user]
                             (_, Just gk) -> do
                               gas <- Persist.groupAdmins gk
-                              sbs <- Persist.subscribedToGroup gk
-                              return $ nub (gas ++ sbs) \\ [user]
+                              return $ nub gas \\ [user]
                             _            -> return []
               Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
+              when (Assignment.start a <= now) $ do
+                affected <- case (mck, mgk) of
+                              (Just ck, _) -> do
+                                cas <- Persist.courseAdmins ck
+                                gks <- Persist.groupKeysOfCourse ck
+                                gas <- concat <$> mapM Persist.groupAdmins gks
+                                sbs <- Persist.subscribedToCourse ck
+                                return $ nub (sbs \\ (cas ++ gas ++ [user]))
+                              (_, Just gk) -> do
+                                gas <- Persist.groupAdmins gk
+                                sbs <- Persist.subscribedToGroup gk
+                                return $ nub (sbs \\ (gas ++ [user]))
+                              _            -> return []
+                Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
               if and [hasSubmission, Assignment.evType a /= Assignment.evType new]
                 then return . putStatusMessage . msg_UserStory_EvalTypeWarning $ concat
                   [ "The evaluation type of the assignment is not modified. "
