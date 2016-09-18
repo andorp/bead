@@ -132,6 +132,7 @@ module Bead.Persistence.Persist (
   , unprocessedNotifications
   , noOfUnseenNotifications
   , markSeen
+  , updateUserNotification
 
 
   -- Evaluation
@@ -240,7 +241,7 @@ administratedCourses = PersistImpl.administratedCourses
 administratedGroups :: Username -> Persist [(GroupKey, Group)]
 administratedGroups = PersistImpl.administratedGroups
 
-attachNotificationToUser :: Username -> NotificationKey -> Persist ()
+attachNotificationToUser :: Username -> NotificationKey -> UTCTime -> Persist ()
 attachNotificationToUser = PersistImpl.attachNotificationToUser
 
 notificationsOfUser :: Username -> Maybe Int -> Persist [(NotificationKey, Notif.NotificationState, Notif.NotificationProcessed)]
@@ -601,7 +602,7 @@ notifyUsers :: Notification -> [Username] -> Persist ()
 notifyUsers n us = do
   nk <- PersistImpl.saveNotification n
   forM_ us $ \u -> do
-    PersistImpl.attachNotificationToUser u nk
+    PersistImpl.attachNotificationToUser u nk (Notif.notifDate n)
 
 unprocessedNotifications :: Persist [(User, NotificationKey, Notif.NotificationState)]
 unprocessedNotifications = PersistImpl.unprocessedNotifications
@@ -611,6 +612,9 @@ noOfUnseenNotifications = PersistImpl.noOfUnseenNotifications
 
 markSeen :: Username -> NotificationKey -> Persist ()
 markSeen = PersistImpl.markSeen
+
+updateUserNotification :: NotificationKey -> UTCTime -> Persist ()
+updateUserNotification = PersistImpl.updateUserNotification
 
 -- * Evaluation
 

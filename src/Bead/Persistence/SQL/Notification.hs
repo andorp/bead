@@ -5,7 +5,7 @@ import Control.Monad (forM, forM_)
 import Control.Monad.IO.Class (liftIO)
 import Database.Persist.Sql
 import Data.Maybe (catMaybes, maybeToList)
-import Data.Time (getCurrentTime)
+import Data.Time (getCurrentTime, UTCTime)
 
 import qualified Bead.Domain.Entities as Domain (Username, User)
 import qualified Bead.Domain.Relationships as Domain
@@ -17,21 +17,23 @@ import Bead.Persistence.SQL.User (usernames)
 saveNotification :: Domain.Notification -> Persist Domain.NotificationKey
 saveNotification n = toDomainKey <$> insert (fromDomainValue n)
 
-attachNotificationToUser :: Domain.Username -> Domain.NotificationKey -> Persist ()
-attachNotificationToUser username nk = withUser username
+attachNotificationToUser :: Domain.Username -> Domain.NotificationKey -> UTCTime -> Persist ()
+attachNotificationToUser username nk t = withUser username
   (persistError "attachNotificationToUser" $ "User is not found:" ++ show username) $ \user -> do
-    now <- liftIO $ getCurrentTime
     -- Insert not seen
-    void $ insertUnique (UserNotification (entityKey user) (fromDomainKey nk) False False now)
+    void $ insertUnique (UserNotification (entityKey user) (fromDomainKey nk) False False t)
 
 -- | Returns all the new notification on top and the limited seen notifications
 notificationsOfUser :: Domain.Username -> Maybe Int -> Persist [(Domain.NotificationKey, Domain.NotificationState, Domain.NotificationProcessed)]
 notificationsOfUser username seenLimit = withUser username (return []) $ \user -> do
+  now <- liftIO getCurrentTime
   unseen <- selectList [ UserNotificationUser ==. (entityKey user)
-                       , UserNotificationSeen ==. False ]
+                       , UserNotificationSeen ==. False
+                       , UserNotificationCreated <=. now ]
                        [ Desc UserNotificationCreated ]
   seen <- selectList [ UserNotificationUser ==. (entityKey user)
-                     , UserNotificationSeen ==. True ]
+                     , UserNotificationSeen ==. True
+                     , UserNotificationCreated <=. now ]
                      ([ Desc UserNotificationCreated] ++ maybeToList (LimitTo <$> seenLimit))
 
   return . map (transformEntity . entityVal) $ unseen ++ seen
@@ -64,8 +66,9 @@ unprocessedNotifications = do
       Just un -> Just (toDomainValue un, toDomainKey notifId, undefined))
 
 noOfUnseenNotifications :: Domain.Username -> Persist Int
-noOfUnseenNotifications username = withUser username (return 0) $ \user ->
-  count [UserNotificationUser ==. (entityKey user), UserNotificationSeen ==. False]
+noOfUnseenNotifications username = withUser username (return 0) $ \user -> do
+  now <- liftIO getCurrentTime
+  count [UserNotificationUser ==. (entityKey user), UserNotificationSeen ==. False, UserNotificationCreated <=. now]
 
 mark :: EntityField UserNotification Bool -> Domain.Username -> Domain.NotificationKey -> Persist ()
 mark f username nk = withUser username (return ()) $ \user -> do
@@ -83,3 +86,8 @@ usersOfNotification nk = do
   userIds <- map (userNotificationUser . entityVal) <$>
                selectList [UserNotificationNotification ==. (fromDomainKey nk)] []
   usernames userIds
+
+updateUserNotification :: Domain.NotificationKey -> UTCTime -> Persist ()
+updateUserNotification nk t = do
+  uns <- selectList [ UserNotificationNotification ==. (fromDomainKey nk) ] []
+  forM_ uns $ \n -> update (entityKey n) [ UserNotificationCreated =. t ]
