@@ -1642,20 +1642,37 @@ modifyAssignment ak a tc = logAction INFO ("modifies assignment " ++ show ak) $ 
                               return $ nub gas \\ [user]
                             _            -> return []
               Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
-              when (Assignment.start a <= now) $ do
-                affected <- case (mck, mgk) of
-                              (Just ck, _) -> do
-                                cas <- Persist.courseAdmins ck
-                                gks <- Persist.groupKeysOfCourse ck
-                                gas <- concat <$> mapM Persist.groupAdmins gks
-                                sbs <- Persist.subscribedToCourse ck
-                                return $ nub (sbs \\ (cas ++ gas ++ [user]))
-                              (_, Just gk) -> do
-                                gas <- Persist.groupAdmins gk
-                                sbs <- Persist.subscribedToGroup gk
-                                return $ nub (sbs \\ (gas ++ [user]))
-                              _            -> return []
-                Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
+              if (Assignment.start a <= now)
+                then do
+                  affected <- case (mck, mgk) of
+                                (Just ck, _) -> do
+                                  cas <- Persist.courseAdmins ck
+                                  gks <- Persist.groupKeysOfCourse ck
+                                  gas <- concat <$> mapM Persist.groupAdmins gks
+                                  sbs <- Persist.subscribedToCourse ck
+                                  return $ nub (sbs \\ (cas ++ gas ++ [user]))
+                                (_, Just gk) -> do
+                                  gas <- Persist.groupAdmins gk
+                                  sbs <- Persist.subscribedToGroup gk
+                                  return $ nub (sbs \\ (gas ++ [user]))
+                                _            -> return []
+                  Persist.notifyUsers (Notification.Notification msg now $ Notification.Assignment ak) affected
+                else do
+                  nks <- Persist.notificationsOfAssignment ak
+                  forM_ nks $ \nk -> do
+                    mNot <- do
+                      nt <- Persist.loadNotification nk
+                      case (mck, mgk, Notification.notifEvent nt) of
+                        (Just ck, _, Notification.NE_CourseAssignmentCreated _ _ _)  -> return $ Just nt
+                        (_, Just gk, Notification.NE_GroupAssignmentCreated _ _ _ _) -> return $ Just nt
+                        _ -> return Nothing
+                    case mNot of
+                      Just n -> do
+                        let newDate = Assignment.start a
+                        let n' = n { Notification.notifDate = newDate }
+                        Persist.updateNotification nk n'
+                        Persist.updateUserNotification nk newDate
+                      _ -> return ()
               if and [hasSubmission, Assignment.evType a /= Assignment.evType new]
                 then return . putStatusMessage . msg_UserStory_EvalTypeWarning $ concat
                   [ "The evaluation type of the assignment is not modified. "

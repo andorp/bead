@@ -127,6 +127,8 @@ module Bead.Persistence.Persist (
   -- Notification
   , saveNotification
   , loadNotification
+  , notificationsOfAssignment
+  , updateNotification
   , usersOfNotification
   , notifyUsers
   , unprocessedNotifications
@@ -594,6 +596,12 @@ saveNotification = PersistImpl.saveNotification
 
 loadNotification :: NotificationKey -> Persist Notification
 loadNotification = PersistImpl.loadNotification
+
+notificationsOfAssignment :: AssignmentKey -> Persist [NotificationKey]
+notificationsOfAssignment = PersistImpl.notificationsOfAssignment
+
+updateNotification :: NotificationKey -> Notification -> Persist ()
+updateNotification = PersistImpl.updateNotification
 
 usersOfNotification :: NotificationKey -> Persist [Username]
 usersOfNotification = PersistImpl.usersOfNotification
