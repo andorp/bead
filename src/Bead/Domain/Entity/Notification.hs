@@ -112,3 +112,5 @@ data Notification = Notification {
   } deriving (Eq, Show)
 
 notification f (Notification event date typ) = f event date typ
+
+withNotification = flip notification

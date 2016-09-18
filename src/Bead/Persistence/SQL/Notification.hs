@@ -6,10 +6,12 @@ import Control.Monad.IO.Class (liftIO)
 import Database.Persist.Sql
 import Data.Maybe (catMaybes, maybeToList)
 import Data.Time (getCurrentTime, UTCTime)
+import Text.JSON.Generic (encodeJSON)
 
 import qualified Bead.Domain.Entities as Domain (Username, User)
 import qualified Bead.Domain.Relationships as Domain
 import qualified Bead.Domain.Entity.Notification as Domain
+import qualified Bead.Domain.Entity.Notification as Notification
 import Bead.Persistence.SQL.Class
 import Bead.Persistence.SQL.Entities
 import Bead.Persistence.SQL.User (usernames)
@@ -52,6 +54,22 @@ loadNotification nk = do
       (persistError "loadNotification" $ "Notification is not found: " ++ show nk)
       toDomainValue
       mNot
+
+notificationsOfAssignment :: Domain.AssignmentKey -> Persist [Domain.NotificationKey]
+notificationsOfAssignment ak = do
+  notifications <- selectList
+    [ NotificationType ==. (encodeJSON $ Notification.Assignment ak) ]
+    []
+  return $! fmap (toDomainKey . entityKey) notifications
+
+updateNotification :: Domain.NotificationKey -> Domain.Notification -> Persist ()
+updateNotification nk n = do
+  update (toEntityKey nk) $ Domain.withNotification n
+    $ \event date typ ->
+        [ NotificationEvent =. encodeJSON event
+        , NotificationDate  =. date
+        , NotificationType  =. encodeJSON typ
+        ]
 
 unprocessedNotifications :: Persist [(Domain.User, Domain.NotificationKey, Domain.NotificationState)]
 unprocessedNotifications = do
