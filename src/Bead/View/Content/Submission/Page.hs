@@ -152,7 +152,7 @@ submissionContent p = do
     Bootstrap.rowColMd12 $ Bootstrap.table $
       H.tbody $ do
         (msg $ msg_Submission_Course "Course: ")         .|. (fromString . aGroup $ asDesc p)
-        (msg $ msg_Submission_Admin "Teacher: ")         .|. (fromString . concat . intersperse ", " . aTeachers $ asDesc p)
+        (msg $ msg_Submission_Admin "Teacher: ")         .|. (fromString . concat . intersperse ", " . sortHun . aTeachers $ asDesc p)
         (msg $ msg_Submission_Assignment "Assignment: ") .|. (fromString . Assignment.name $ asValue p)
         (msg $ msg_Submission_Deadline "Deadline: ")     .|.
           (fromString . showDate . (asTimeConv p) . Assignment.end $ asValue p)

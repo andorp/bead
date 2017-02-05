@@ -281,7 +281,7 @@ availableAssignments pd timeconverter studentAssignments
         True -> td $ Content.link (routeOf (Pages.submission k ())) (msg $ msg_Home_NewSolution "New submission")
         False -> td (fromString . msg $ msg_Home_ClosedSubmission "Closed")
       td (fromString . aGroup $ a)
-      td (fromString . join . intersperse ", " . aTeachers $ a)
+      td (fromString . join . intersperse ", " . sortHun . aTeachers $ a)
       td $ linkWithText (routeOf (Pages.submissionList k ())) (fromString (aTitle a))
       when isLimited $ td (fromString . limit $ aLimit a)
       td (fromString . showDate . timeconverter $ aEndDate a)

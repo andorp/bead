@@ -182,7 +182,7 @@ viewScoreContent sd = do
     Bootstrap.rowColMd12 . Bootstrap.table . H.tbody $ do
       (msg . msg_ViewUserScore_Course $ "Course:")   .|. fromString (scdCourse sd)
       maybe mempty (\g -> (msg . msg_ViewUserScore_Group $ "Group:") .|. fromString g) (scdGroup sd)
-      (msg . msg_ViewUserScore_Teacher $ "Teacher:") .|. (fromString . intercalate ", " . scdTeacher) sd
+      (msg . msg_ViewUserScore_Teacher $ "Teacher:") .|. (fromString . intercalate ", " . sortHun . scdTeacher) sd
       (msg . msg_ViewUserScore_Assessment $ "Assessment:") .|. fromString aTitle
       when (not . null $ aDesc) $
         (msg . msg_ViewUserScore_Description $ "Description:") .|. fromString aDesc
