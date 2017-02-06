@@ -418,6 +418,8 @@ labels =
  , "msg_Home_SubmissionTable_StudentName"
  , "msg_Home_SubmissionTable_Username"
  , "msg_Home_SubmissionTable_Summary"
+ , "msg_Home_SubmissionTable_Students"
+ , "msg_Home_SubmissionTable_Student"
 
  , "msg_Home_SubmissionTable_Accepted"
  , "msg_Home_SubmissionTable_Rejected"

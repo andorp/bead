@@ -367,6 +367,8 @@ dict = DictionaryFile {
     , msg_Home_SubmissionTable_StudentName <| "Név"
     , msg_Home_SubmissionTable_Username <| "Neptun"
     , msg_Home_SubmissionTable_Summary <| "Összesítés"
+    , msg_Home_SubmissionTable_Students <| "hallgató"
+    , msg_Home_SubmissionTable_Student <| "hallgató"
     , msg_Home_SubmissionTable_Accepted <| "Elfogadott"
     , msg_Home_SubmissionTable_Rejected <| "Elutasított"
     , msg_Home_AssessmentTable_Assessments <| "Értékelések"
