@@ -130,7 +130,7 @@ scoreContent pd = do
       (msg . msg_NewUserScore_UserName $ "Username:")   .|. (uid fromString $ pdUid pd)
     postForm (routeOf handler) $ do
       view msg
-      evaluationFrame (evConfig as) msg mempty
+      evaluationInput msg
       submit msg
     where
       aCourse :: String
@@ -153,10 +153,21 @@ scoreContent pd = do
                   (\_student _uname _uid _aDesc _score sk -> Pages.modifyUserScore sk ())
                   pd
 
+      view :: I18N -> Html
       view msg = pageDataAlgebra
                  (\_student _uname _uid _aDesc -> mempty)
                  (\_student _uname _uid _aDesc score _sk -> Bootstrap.rowColMd12 . H.p . fromString $ (scoreInfoToText "error" msg) score)
                  pd
+
+      evaluationInput :: I18N -> Html
+      evaluationInput msg = pageDataAlgebra
+                        (\_student _uname _uid _aDesc -> evaluationFrame (evConfig as) msg mempty)
+                        (\_student _uname _uid _aDesc score _sk ->
+                             scoreInfoAlgebra
+                             (evaluationFrame (evConfig as) msg mempty)
+                             (\_ evResult -> evaluationFrameWithDefault msg (evConfig as) evResult empty)
+                             score)
+                        pd
 
 viewScorePage :: GETContentHandler
 viewScorePage = do
@@ -171,7 +182,7 @@ viewScoreContent sd = do
     Bootstrap.rowColMd12 . Bootstrap.table . H.tbody $ do
       (msg . msg_ViewUserScore_Course $ "Course:")   .|. fromString (scdCourse sd)
       maybe mempty (\g -> (msg . msg_ViewUserScore_Group $ "Group:") .|. fromString g) (scdGroup sd)
-      (msg . msg_ViewUserScore_Teacher $ "Teacher:") .|. (fromString . intercalate ", " . scdTeacher) sd
+      (msg . msg_ViewUserScore_Teacher $ "Teacher:") .|. (fromString . intercalate ", " . sortHun . scdTeacher) sd
       (msg . msg_ViewUserScore_Assessment $ "Assessment:") .|. fromString aTitle
       when (not . null $ aDesc) $
         (msg . msg_ViewUserScore_Description $ "Description:") .|. fromString aDesc
@@ -188,30 +199,66 @@ evaluationFrame evConfig msg content = do
   hiddenInput (fieldName evalConfigParam) (encodeToFay' "inputEvalType" evConfig)
   withEvConfig evConfig
     (do content
-        Bootstrap.formGroup $ evaluationDiv $
-          Bootstrap.radioButtonGroup (fieldName evaluationResultField) $
-            [ (True, encodeToFay' "inputEvalResult" $ binary Passed, msg $ msg_Evaluation_Accepted "Accepted")
-            , (False, encodeToFay' "inputEvalResult" $ binary Failed, msg $ msg_Evaluation_Rejected "Rejected")
-            ])
-    -- When the page is dynamic the percentage spinner is hooked on the field
+        binaryInput msg Passed        
+    )
     (\_ ->
       do content
-         Bootstrap.formGroup . evaluationDiv . Bootstrap.rowColMd12 $ do           
-           fromString . msg $ msg_Evaluation_Percentage "Percentage: "
-           H.input ! A.name (fieldName evaluationPercentagePrm) ! A.type_ "number"
-                   ! A.min "0" ! A.max "100")
-    (do Bootstrap.optionalTextInput (fieldName freeFormEvaluationParam) (msg $ msg_Evaluation_FreeFormEvaluation "Evaluation") ""
-        H.p . fromString $ printf (msg $ msg_Evaluation_FreeForm_Information $ unwords
-          [ "Note that this text will be used everywhere as the evaluation itself.  Hence it is recommended to keep"
-          , "the length of the text under size %d, otherwise it may not be directly shown." ]) displayableFreeFormResultLength
-        content)
+         percentageInput msg ""
+    )
+    (do content
+        freeFormInput msg ""
+    )
   where
     binary = EvCmtResult . binaryResult
-    evaluationDiv = withEvConfig
-      evConfig
-      (H.div)
-      (const $ H.div ! A.id (fieldName evaluationPercentageDiv))
-      (H.div)
+
+evaluationFrameWithDefault :: I18N -> EvConfig -> EvResult -> Html -> Html
+evaluationFrameWithDefault msg evConfig evResult content = do
+  hiddenInput (fieldName evalConfigParam) (encodeToFay' "inputEvalType" evConfig)
+  withEvResult evResult
+    (\binRes ->
+        binaryCata (\b -> do
+          content
+          binaryInput msg b)
+        binRes
+    )
+    (\pctRes -> do
+       content
+       let Percentage (Scores [p]) = pctRes
+       percentageInput msg (show . round $ (100 * p))
+    )
+    (\freeFormRes -> do
+       content
+       freeForm (freeFormInput msg) freeFormRes
+    )
+
+binaryInput :: I18N -> Result -> Html
+binaryInput msg res = do
+  Bootstrap.formGroup $ H.div $ Bootstrap.radioButtonGroup (fieldName evaluationResultField) $
+            [ (res == Passed, encodeToFay' "inputEvalResult" $ binary Passed, msg $ msg_Evaluation_Accepted "Accepted")
+            , (res == Failed, encodeToFay' "inputEvalResult" $ binary Failed, msg $ msg_Evaluation_Rejected "Rejected")
+            ]
+  where
+    binary = EvCmtResult . binaryResult
+
+ -- When the page is dynamic the percentage spinner is hooked on the field
+percentageInput :: I18N -> String -> Html
+percentageInput msg defaultText = do
+  Bootstrap.formGroup . evaluationDiv . Bootstrap.rowColMd12 $ do 
+           fromString . msg $ msg_Evaluation_Percentage "Percentage: "
+           H.input ! A.name (fieldName evaluationPercentagePrm) ! A.type_ "number"
+                   ! A.min "0" ! A.max "100"
+                   ! A.required ""
+                   ! A.value (fromString defaultText)
+      where
+        evaluationDiv :: Html -> Html
+        evaluationDiv = H.div ! A.id (fieldName evaluationPercentageDiv)
+
+freeFormInput :: I18N -> String -> Html
+freeFormInput msg defaultText = do
+  Bootstrap.textInputWithDefault (fieldName freeFormEvaluationParam) (msg $ msg_Evaluation_FreeFormEvaluation "Evaluation") defaultText
+  H.p . fromString $ printf (msg $ msg_Evaluation_FreeForm_Information $ unwords
+    [ "Note that this text will be used everywhere as the evaluation itself.  Hence it is recommended to keep"
+    , "the length of the text under size %d, otherwise it may not be directly shown." ]) displayableFreeFormResultLength
              
 evalConfigParam = evalConfigParameter (fieldName evaluationConfigField)
 freeFormEvaluationParam = stringParameter (fieldName evaluationFreeFormField) "Free format evaluation"

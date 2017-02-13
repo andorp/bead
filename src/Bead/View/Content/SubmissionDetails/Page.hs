@@ -96,7 +96,7 @@ submissionDetailsContent p = do
     let tc   = uTime p
     Bootstrap.rowColMd12 $ Bootstrap.table $ tbody $ do
       (msg $ msg_SubmissionDetails_Course "Course, group:")  .|. (fromString . sdGroup $ info)
-      (msg $ msg_SubmissionDetails_Admins "Teacher:")        .|. (fromString . join . intersperse ", " $ sdTeacher info)
+      (msg $ msg_SubmissionDetails_Admins "Teacher:")        .|. (fromString . join . intersperse ", " . sortHun $ sdTeacher info)
       (msg $ msg_SubmissionDetails_Assignment "Assignment:") .|. (fromString . Assignment.name $ sdAssignment info)
       (msg $ msg_SubmissionDetails_Deadline "Deadline:")     .|. (fromString . showDate . tc . Assignment.end $ sdAssignment info)
       maybe (return ()) (uncurry (.|.)) (remainingTries msg (smLimit p))

@@ -94,6 +94,7 @@ module Bead.Domain.Entities (
   , Score(..)
   , score
   , CompareHun(..)
+  , sortHun
   , StatusMessage(..)
   , statusMessage
 
@@ -111,7 +112,7 @@ module Bead.Domain.Entities (
 import           Control.Applicative
 import           Data.ByteString.Char8 (ByteString)
 import           Data.Data
-import           Data.List (findIndex)
+import           Data.List (findIndex, sortBy)
 import           Data.Time (UTCTime(..), LocalTime)
 import           Data.Time.Format (formatTime)
 import           System.Locale (defaultTimeLocale)
@@ -642,6 +643,9 @@ instance CompareHun UserDesc where
     case compareHun fullname fullname' of
       EQ -> compareHun username username'
       other -> other
+
+sortHun :: [String] -> [String]
+sortHun = sortBy compareHun
 
 -- Status message is shown for the user on the UI
 data StatusMessage a
