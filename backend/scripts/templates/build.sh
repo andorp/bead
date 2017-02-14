@@ -13,7 +13,8 @@ say() {
 export PATH=$PATH:/usr/local/bin
 SANDBOX_PATH="$1"
 BUILD_PATH="$2"
-ulimit -t 10
+ULIMIT="$3"
+ulimit -t ${ULIMIT}
 cd ${BUILD_PATH}
 . ./script
 build

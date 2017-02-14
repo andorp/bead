@@ -93,6 +93,8 @@ fi
 : ${WATCHDOG_TIMEOUT:=15}
 : ${SLEEP_TIME:=5}
 : ${BEAD_HOME:=/usr/home/bead}
+: ${ULIMIT_BUILD:=10}
+: ${ULIMIT_RUN:=5}
 
 msg_debug "Watchdog timeout = ${WATCHDOG_TIMEOUT}"
 msg_debug "Sleep time = ${SLEEP_TIME}"
