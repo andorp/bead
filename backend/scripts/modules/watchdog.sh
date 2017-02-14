@@ -27,11 +27,11 @@ if kill -9 $PID > /dev/null 2>&1; then
     else
         msg "[watchdog] Had to kill nobody's all processes."
         mkdir -p ${OUTPUT_DIR_TMP}
-        chmod g+rw,o+rw ${OUTPUT_DIR_TMP}
+        chmod g+w,o+w ${OUTPUT_DIR_TMP}
         watchdog_output=$(mktemp)
         watchdog_message=$(mktemp)
         watchdog_result=$(mktemp)
-        echo "Testing of this process has exceeded the time limit of ${WATCHDOG_TIMEOUT} seconds." > ${watchdog_output} 2>&1
+        echo "Testing of this process has exceeded the time limit of ${TIMEOUT} seconds." > ${watchdog_output} 2>&1
         echo "Sorry, but automated testing of the solution was given up due to resource limits." > ${watchdog_message} 2>&1
         echo "False" > ${watchdog_result} 2>&1
         force_publish ${watchdog_output} ${OUTPUT}
