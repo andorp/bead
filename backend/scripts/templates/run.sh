@@ -8,7 +8,8 @@ say() {
 
 export PATH=$PATH:/usr/local/bin
 SANDBOX_PATH="$1"
-ulimit -t 5
+ULIMIT="$2"
+ulimit -t ${ULIMIT}
 cd ${SANDBOX_PATH}
 . ./script
 run

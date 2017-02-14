@@ -67,7 +67,7 @@ test_build() {
     cp ${INPUT}/submission ${INPUT}/tests ${INPUT}/script ${TEMPLATES}/build.sh ${JAIL_PATH}${BUILD_PATH}
     chown -R nobody:nogroup ${JAIL_PATH}${BUILD_PATH}
     chown -R nobody:nogroup ${JAIL_PATH}${SANDBOX_PATH}
-    chroot -u nobody -g nogroup ${JAIL_PATH} ${BUILD_PATH}/build.sh ${SANDBOX_PATH} ${BUILD_PATH} > ${build_log} 2>&1
+    chroot -u nobody -g nogroup ${JAIL_PATH} ${BUILD_PATH}/build.sh ${SANDBOX_PATH} ${BUILD_PATH} ${ULIMIT_BUILD} > ${build_log} 2>&1
     build_result="$?"
     mkdir -p ${OUTPUT_DIR_TMP}
     chmod g+w,o+w ${OUTPUT_DIR_TMP}
@@ -100,7 +100,7 @@ test_run() {
     cp ${INPUT}/script ${INPUT}/tests ${TEMPLATES}/run.sh ${JAIL_PATH}${SANDBOX_PATH}
     cd ${JAIL_PATH}${SANDBOX_PATH}
     chown -R nobody:nogroup ${JAIL_PATH}${SANDBOX_PATH}
-    chroot -u nobody -g nogroup ${JAIL_PATH} ${SANDBOX_PATH}/run.sh ${SANDBOX_PATH} > ${run_log} 2>&1
+    chroot -u nobody -g nogroup ${JAIL_PATH} ${SANDBOX_PATH}/run.sh ${SANDBOX_PATH} ${ULIMIT_RUN} > ${run_log} 2>&1
     run_result="$?"
 
     if [ "${run_result}" -ne "0" ]; then echo "False" > ${run_rst}
