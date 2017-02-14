@@ -42,6 +42,7 @@ check_encoding() {
     g=$(mktemp)
     (echo "This is a workaround for file(1), you should not see it."; cat $f) > $g
     case $(file -b $g) in
+      *extended-ASCII\ text*) r=1;;
       *ASCII\ text*) r=0;;
       *UTF-8\ Unicode\ text*) r=0;;
       *) r=1;;
