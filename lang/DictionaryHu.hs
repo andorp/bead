@@ -471,6 +471,7 @@ dict = DictionaryFile {
     , msg_UserActions_ChangedUserDetails <| "A felhasználói beállításai megváltoztak!"
     , msg_UserStoryError_NonAccessibleSubmission <| "A megoldás nem hozzád tartozik!"
     , msg_UserStoryError_NonAccessibleScore <| "Az eredmény nem hozzád tartozik!"
+    , msg_UserStoryError_ScoreAlreadyExists <| "Ennek felhasználónak már van eredménye erre az értékelésre!"
     , msg_LinkText_Login <| "Bejelentkezés"
     , msg_LinkText_Logout <| "Kijelentkezés"
     , msg_LinkText_Home <| "Főoldal"

@@ -525,6 +525,7 @@ labels =
  , "msg_UserStoryError_NonAccessibleSubmission"
  , "msg_UserStoryError_BlockedSubmission"
  , "msg_UserStoryError_NonAccessibleScore"
+ , "msg_UserStoryError_ScoreAlreadyExists"
 
  , "msg_UserActions_ChangedUserDetails"
 

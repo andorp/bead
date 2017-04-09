@@ -968,13 +968,19 @@ scoreDesc sk = logAction INFO ("loads score description of score " ++ show sk) $
                                            (show sk)
       errorPage $ userError nonAccessibleScore
 
-saveUserScore :: Username -> AssessmentKey -> Evaluation -> UserStory ScoreKey
+saveUserScore :: Username -> AssessmentKey -> Evaluation -> UserStory ()
 saveUserScore u ak evaluation = logAction INFO ("saves user score of " ++ show u ++ " for assessment " ++ show ak) $ do
   authorize P_Open P_Assessment
-  persistence $ do
-    sk <- Persist.saveScore u ak (Score ())
-    Persist.saveScoreEvaluation sk evaluation
-    return sk
+  scoreInfo <- scoreInfoOfUser u ak
+  case scoreInfo of
+    Just (Nothing, Score_Not_Found) ->
+        persistence $ do
+          sk <- Persist.saveScore u ak (Score ())
+          void $ Persist.saveScoreEvaluation sk evaluation
+    _ -> do
+        logMessage INFO "Other admin just gave a score for this user's assessment"
+        putStatusMessage $ msg_UserStoryError_ScoreAlreadyExists
+          "This user already has a score for this assessment"
 
 modifyUserScore :: ScoreKey -> Evaluation -> UserStory ()
 modifyUserScore sk newEvaluation = logAction INFO ("modifies user score " ++ show sk) $ do
