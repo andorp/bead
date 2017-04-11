@@ -439,7 +439,7 @@ dict = DictionaryFile {
     , msg_UserStory_SuccessfulCourseUnsubscription <| "A tárgyról sikerült leiratkozni!"
     , msg_UserStory_NewTestScriptIsCreated <| "A tesztelő létrejött!"
     , msg_UserStory_ModifyTestScriptIsDone <| "A tesztelő módosítva lett!"
-    , msg_UserStory_AlreadyEvaluated <| "Ezt a megoldást egy másik admin éppont értekelte!"
+    , msg_UserStory_AlreadyEvaluated <| "Ezt a megoldást egy másik oktató éppen értekelte!"
     , msg_UserStory_EvalTypeWarning <| "A feladat kiértékelésének típusa nem változott meg."
     , msg_UserStory_AssessmentEvalTypeWarning <| "Az értékelés típusa nem változott meg."
     , msg_UserStoryError_XID <| "Belső hiba történt, XID: %s"
