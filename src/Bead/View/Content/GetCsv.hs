@@ -103,6 +103,6 @@ information msg = msg . msg_GetCsv_Information $ unlines
               , "#      Accepted may be written as '+', '1' or 'Accepted'."
               , "#      Rejected may be written as '-', '0' or 'Rejected'."
               , "#      Interpretation is case in-sensitive."
-              , "#  - In case of percentage evaluation: an integer from 0 to 100, inclusive"
+              , "#  - In case of percentage evaluation: an integer from 0 to 100, inclusive."
               , "#  - In case of free form evaluation: text ending with newline character."
               ]
