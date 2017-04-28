@@ -266,7 +266,7 @@ dict = DictionaryFile {
     , msg_EvaluationTable_Info <| "A táblázatban hallgatónként csak a legutolsó, nem értékelt beadott megoldás látszik.  A többi megoldást a főoldalon levő összefoglaló értékelő táblázaton keresztül érhetjük el."
     , msg_EvaluationTable_CourseAssignment <| "Tárgyszintű feladatok"
     , msg_EvaluationTable_GroupAssignment <| "Csoportszintű feladatok"
-    , msg_EvaluationTable_MiscCourseAssignment <| "Egyéb csoportszintű feladatok"
+    , msg_EvaluationTable_MiscCourseAssignment <| "Egyéb tárgyszintű feladatok"
     , msg_EvaluationTable_CourseAssignmentInfo <| "Tárgyszintű feladatokra beküldött megoldások olyan hallgatóktól, akik valamilyen általunk regisztrált csoportba járnak."
     , msg_EvaluationTable_GroupAssignmentInfo <| "Csoportszintű feladatokra beküldött megoldások olyan hallgatóktól, akik valamilyen általunk regisztrált csoportba járnak."
     , msg_EvaluationTable_MiscCourseAssignmentInfo <| "Tárgyszintű feladatokra beküldött megoldások a tárgy többi hallgatójától (más oktatók is láthatják)."
