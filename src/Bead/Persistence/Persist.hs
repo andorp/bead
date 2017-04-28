@@ -55,6 +55,7 @@ module Bead.Persistence.Persist (
   , courseOfGroup
   , filterGroups
   , isUserInGroup
+  , groupOfUserForCourse
   , userGroups
   , subscribe
   , unsubscribe
@@ -173,6 +174,7 @@ module Bead.Persistence.Persist (
 #endif
   ) where
 
+import           Control.Applicative
 import           Control.Monad
 import           Data.Time (UTCTime)
 import           Data.Set (Set)
@@ -353,6 +355,12 @@ filterGroups = PersistImpl.filterGroups
 -- Returns True if the user is registered in the group, otherwise False
 isUserInGroup :: Username -> GroupKey -> Persist Bool
 isUserInGroup = PersistImpl.isUserInGroup
+
+-- Returns the group where user is registered for the given course
+groupOfUserForCourse :: Username -> CourseKey -> Persist GroupKey
+groupOfUserForCourse user ck = head <$> (filterM c =<< userGroups user)
+  where
+    c gk = (==) <$> courseOfGroup gk <*> pure ck
 
 -- Lists all the groups that the user is attended in
 userGroups :: Username -> Persist [GroupKey]
