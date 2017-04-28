@@ -136,7 +136,7 @@ courseAdministratorsTable i18n courses = Bootstrap.row $ Bootstrap.colMd12 $ do
     H.tbody $ forM_ courses' $ \(course, admins) -> do
       H.tr $ do
         H.td . fromString $ courseName course
-        let admins' = sort $ map (uid id . u_uid) admins
+        let admins' = sort $ map u_name admins
         H.td . fromString . concat $ intersperse ", " admins'
 
 -- Add Course Admin

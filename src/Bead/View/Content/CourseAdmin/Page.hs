@@ -89,7 +89,7 @@ groupAdministratorsTable i18n cgroups = do
       H.tbody $ forM_ groups' $ \(group, admins) -> do
         H.tr $ do
           H.td (fromString $ groupName group)
-          H.td (fromString . concat . intersperse ", " $ Prelude.map (uid Prelude.id . u_uid) admins)
+          H.td (fromString . concat . intersperse ", " $ Prelude.map u_name admins)
 
 courseAdminContent :: PageData -> IHtml
 courseAdminContent info = do
