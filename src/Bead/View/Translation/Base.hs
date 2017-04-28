@@ -261,6 +261,8 @@ labels =
  , "msg_SubmissionDetails_NewComment"
  , "msg_SubmissionDetails_SubmitComment"
  , "msg_SubmissionDetails_InvalidSubmission"
+ , "msg_SubmissionDetails_BallotBox_Info"
+ , "msg_SubmissionDetails_BallotBox_Comment_Info"
 
  , "msg_Registration_Title"
  , "msg_Registration_Username"

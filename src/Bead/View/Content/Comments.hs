@@ -61,11 +61,11 @@ sortIncreasingTime = sortBy compareTimes where
 sortDecreasingTime = reverse . sortIncreasingTime
 
 -- Filters out the comments and feedback not visible for the students
-forStudentCFs :: [CommentOrFeedback] -> [CommentOrFeedback]
-forStudentCFs = filter forStudent where
+forStudentCFs :: Bool -> [CommentOrFeedback] -> [CommentOrFeedback]
+forStudentCFs ballotBox = filter forStudent where
   forStudent =
     commentOrFeedback
-      (isStudentComment . snd)
+      ((&&) (not ballotBox) . isStudentComment . snd)
       (feedback
          (feedbackInfo
            (const True) -- result
