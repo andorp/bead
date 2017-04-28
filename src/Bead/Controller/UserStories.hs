@@ -1533,7 +1533,9 @@ createComment sk c = logAction INFO ("comments on " ++ show sk) $ do
               affected <- case (mck, mgk) of
                 (Just ck, _) -> do
                   cas <- Persist.courseAdmins ck
-                  return $ nub ([submitter] ++ cas) \\ [user]
+                  gk  <- Persist.groupOfUserForCourse submitter ck
+                  gas <- Persist.groupAdmins gk
+                  return $ nub ([submitter] ++ cas ++ gas) \\ [user]
                 (_, Just gk) -> do
                   gas <- Persist.groupAdmins gk
                   return $ nub ([submitter] ++ gas) \\ [user]
