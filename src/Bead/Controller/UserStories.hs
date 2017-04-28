@@ -1278,7 +1278,7 @@ loadSubmission sk = logAction INFO ("loads submission " ++ show sk) $ do
 getSubmission :: SubmissionKey -> UserStory (Submission, SubmissionDesc)
 getSubmission sk = logAction INFO ("downloads submission " ++ show sk) $ do
   authorize P_Open P_Submission
-  isAccessibleSubmission sk
+  isAccessibleBallotBoxSubmission sk
   persistence $ do
     s <- Persist.loadSubmission sk
     d <- Persist.submissionDesc sk
@@ -1764,6 +1764,14 @@ isAdministratedTestScript = guard
 isAccessibleSubmission :: SubmissionKey -> UserStory ()
 isAccessibleSubmission = guard
   Persist.isAccessibleSubmission
+  "The user tries to download a submission (%s) which is not accessible for him."
+  (userError nonAccessibleSubmission)
+
+-- This action implements a check similar that of `isAccessibleSubmission` but
+-- it also considers if the assignment of the submission is in ballot box mode.
+isAccessibleBallotBoxSubmission :: SubmissionKey -> UserStory ()
+isAccessibleBallotBoxSubmission = guard
+  Persist.isAccessibleBallotBoxSubmission
   "The user tries to download a submission (%s) which is not accessible for him."
   (userError nonAccessibleSubmission)
 

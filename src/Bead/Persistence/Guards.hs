@@ -110,6 +110,15 @@ isUserSubmission u sk = do
   ak <- assignmentOfSubmission sk
   isUsersAssignment u ak
 
+-- Returns true if the assignment of submission is in ballot box mode at the
+-- moment of the query, otherwise false.
+isInBallotBox :: SubmissionKey -> Persist Bool
+isInBallotBox sk = do
+  ak  <- assignmentOfSubmission sk
+  asg <- loadAssignment ak
+  now <- liftIO getCurrentTime
+  return $ (isBallotBox $ aspects asg) && (start asg <= now && now <= end asg)
+
 -- Returns True if the given user submitted the given submission or
 -- administrates a course or group that the submission is submitted
 isAccessibleSubmission :: Username -> SubmissionKey -> Persist Bool
@@ -117,6 +126,16 @@ isAccessibleSubmission u sk = do
   owns <- isUserSubmission u sk
   admined <- isAdministratedSubmission u sk
   return $ or [owns, admined]
+
+-- This action is similar to `isAccessibleSubmission` but it also
+-- considers if the assignment of the submission is in ballot box
+-- mode at the moment of the query.
+isAccessibleBallotBoxSubmission :: Username -> SubmissionKey -> Persist Bool
+isAccessibleBallotBoxSubmission u sk = do
+  owns    <- isUserSubmission u sk
+  admined <- isAdministratedSubmission u sk
+  boxed   <- isInBallotBox sk
+  return $ (owns && not boxed) || admined
 
 -- * Helpers
 
