@@ -66,12 +66,11 @@ submissionListContent p = do
       (msg $ msg_SubmissionList_Assignment "Assignment:") .|. (Assignment.name $ slAssignment info)
       (msg $ msg_SubmissionList_Deadline "Deadline:") .|. (showDate . (uTime p) . Assignment.end $ slAssignment info)
       maybe (return ()) (uncurry (.|.)) (remainingTries msg (smLimit p))
-    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ msg_SubmissionList_Description "Description"
+    let submissions = slSubmissions info
+    userSubmissionInfo msg submissions
+    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ msg_SubmissionList_Description "Assignment Description"
     H.div # assignmentTextDiv $
       (markdownToHtml . Assignment.desc . slAssignment . smList $ p)
-    let submissions = slSubmissions info
-    Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ msg_SubmissionList_SubmittedSolutions "Submissions"
-    either (userSubmissionTimes msg) (userSubmissionInfo msg) submissions
   where
     submissionDetails ak sk = Pages.submissionDetails ak sk ()
 
@@ -101,7 +100,8 @@ submissionListContent p = do
     submissionTimeLine time = Bootstrap.listGroupTextItem $ showDate $ (uTime p) time
 
     userSubmissionInfo  msg submissions = do
-      Bootstrap.rowColMd12 $ H.p $ fromString $ msg $ msg_SubmissionList_Info "Comments may be added for submissions."
+      when (length submissions > 0) $
+        Bootstrap.rowColMd12 $ H.p $ fromString $ msg $ msg_SubmissionList_Info "Comments may be added for submissions."
       userSubmission msg (submissionLine msg) submissions
 
     userSubmissionTimes msg = userSubmission msg submissionTimeLine

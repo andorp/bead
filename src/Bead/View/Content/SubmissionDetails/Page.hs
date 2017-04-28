@@ -101,14 +101,10 @@ submissionDetailsContent p = do
       (msg $ msg_SubmissionDetails_Deadline "Deadline:")     .|. (fromString . showDate . tc . Assignment.end $ sdAssignment info)
       maybe (return ()) (uncurry (.|.)) (remainingTries msg (smLimit p))
     Bootstrap.rowColMd12 $ do
-      h2 $ fromString $ msg $ msg_SubmissionDetails_Description "Assignment"
-      div # assignmentTextDiv $ markdownToHtml . Assignment.desc $ sdAssignment info
-    Bootstrap.rowColMd12 $ do
       let downloadSubmissionButton =
             Bootstrap.buttonLink
               (routeOf $ Pages.getSubmission (smKey p) ())
               (msg $ msg_SubmissionDetails_Solution_Zip_Link "Download")
-      h2 $ fromString $ msg $ msg_SubmissionDetails_Solution "Submission"
       if (Assignment.isZippedSubmissions . Assignment.aspects $ sdAssignment info)
         then do
           Bootstrap.helpBlock $ fromString . msg $ msg_SubmissionDetails_Solution_Zip_Info $ mconcat
