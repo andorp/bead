@@ -224,6 +224,8 @@ dict = DictionaryFile {
     , msg_SubmissionDetails_NewComment <| "Új hozzászólás"
     , msg_SubmissionDetails_SubmitComment <| "Beküld"
     , msg_SubmissionDetails_InvalidSubmission <| "Ez a megoldás nem érhető el ezzel a felhasználóval!"
+    , msg_SubmissionDetails_BallotBox_Info <| "Az urna mód aktív, ezért a határidő lejártáig nem érhető el a beadott megoldás."
+    , msg_SubmissionDetails_BallotBox_Comment_Info <| "Urna mód esetén a határidő lejártáig a hallgatói hozzászólások nem láthatóak."
     , msg_Submission_Large_Submission <| "A megoldás túl nagy, megtekinthető erre a linkre kattintva."
     , msg_Submission_Collapse_Submission <| "A beadott feladat elrejtése"
     , msg_Registration_Title <| "Regisztráció"

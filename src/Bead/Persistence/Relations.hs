@@ -309,16 +309,9 @@ submissionListDesc u ak = do
   asg <- loadAssignment ak
   now <- liftIO getCurrentTime
 
-  -- User submissions should not shown for urn typed assignments, only after the end
-  -- period
   submissions <- do
     us <- userSubmissions u ak
-    let aspects = Assignment.aspects asg
-    if Assignment.isBallotBox aspects
-      then if Assignment.end asg < now
-             then Right <$> (mapM submissionStatus us)
-             else Left  <$> (mapM submissionTime   us)
-      else Right <$> (mapM submissionStatus us)
+    mapM submissionStatus us
 
   return SubmissionListDesc {
     slGroup = name

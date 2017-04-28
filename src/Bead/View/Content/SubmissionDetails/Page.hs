@@ -9,7 +9,7 @@ import           Control.Monad
 import           Control.Monad.IO.Class
 import           Data.List (intersperse)
 import           Data.Monoid
-import           Data.Time (getCurrentTime)
+import           Data.Time (getCurrentTime, UTCTime)
 import           Data.String (fromString)
 
 import qualified Bead.Controller.Pages as Pages
@@ -33,6 +33,7 @@ data PageData = PageData {
   , aKey  :: AssignmentKey
   , smDetails :: SubmissionDetailsDesc
   , uTime :: UserTimeConverter
+  , now   :: UTCTime
   , smLimit :: SubmissionLimit
   }
 
@@ -51,12 +52,14 @@ submissionDetailsPage = do
   -- TODO: Refactor use guards
   -- getSubmission ak sk $ \submission -> do
   tc <- userTimeZoneToLocalTimeConverter
+  currentTime <- liftIO getCurrentTime
   return $
     submissionDetailsContent PageData {
         smKey = sk
       , aKey  = ak
       , smDetails = sd
       , uTime = tc
+      , now = currentTime
       , smLimit = limit
       }
 
@@ -100,35 +103,46 @@ submissionDetailsContent p = do
       (msg $ msg_SubmissionDetails_Assignment "Assignment:") .|. (fromString . Assignment.name $ sdAssignment info)
       (msg $ msg_SubmissionDetails_Deadline "Deadline:")     .|. (fromString . showDate . tc . Assignment.end $ sdAssignment info)
       maybe (return ()) (uncurry (.|.)) (remainingTries msg (smLimit p))
+    let asg = sdAssignment info
+    let aspects = Assignment.aspects asg
+    let isProtected = Assignment.isBallotBox aspects && (now p < Assignment.end asg)
     Bootstrap.rowColMd12 $ do
-      let downloadSubmissionButton =
-            Bootstrap.buttonLink
-              (routeOf $ Pages.getSubmission (smKey p) ())
-              (msg $ msg_SubmissionDetails_Solution_Zip_Link "Download")
-      if (Assignment.isZippedSubmissions . Assignment.aspects $ sdAssignment info)
+      if isProtected
         then do
-          Bootstrap.helpBlock $ fromString . msg $ msg_SubmissionDetails_Solution_Zip_Info $ mconcat
-            [ "The submission was uploaded as a compressed file so it could not be displayed verbatim.  "
-            , "But it may be downloaded as a file by clicking on the link."
-            ]
-          downloadSubmissionButton
+          H.p $ fromString . msg $ msg_SubmissionDetails_BallotBox_Info $
+            "The ballot box mode is active so no solutions can be accessed until the deadline."
         else do
-          H.p $ fromString . msg $ msg_SubmissionDetails_Solution_Text_Info $
-            "The submission may be downloaded as a plain text file by clicking on the link."
-          downloadSubmissionButton
-          H.br
-          div # submissionTextDiv $ seeMoreSubmission "submission-details-" msg maxLength maxLines $ sdSubmission info
+          let downloadSubmissionButton =
+                Bootstrap.buttonLink
+                  (routeOf $ Pages.getSubmission (smKey p) ())
+                  (msg $ msg_SubmissionDetails_Solution_Zip_Link "Download")
+          if (Assignment.isZippedSubmissions aspects)
+            then do
+              Bootstrap.helpBlock $ fromString . msg $ msg_SubmissionDetails_Solution_Zip_Info $ mconcat
+                [ "The submission was uploaded as a compressed file so it could not be displayed verbatim.  "
+                , "But it may be downloaded as a file by clicking on the link."
+                ]
+              downloadSubmissionButton
+            else do
+              H.p $ fromString . msg $ msg_SubmissionDetails_Solution_Text_Info $
+                "The submission may be downloaded as a plain text file by clicking on the link."
+              downloadSubmissionButton
+              H.br
+              div # submissionTextDiv $ seeMoreSubmission "submission-details-" msg maxLength maxLines $ sdSubmission info
     Bootstrap.rowColMd12 $ do
       H.a ! A.name (anchor SubmissionDetailsEvaluationDiv) $ mempty
       h2 $ fromString $ msg $ msg_SubmissionDetails_Evaluation "Evaluation"
       resolveStatus msg $ sdStatus info
     Bootstrap.rowColMd12 $ h2 $ fromString $ msg $ msg_Comments_Title "Comments"
+    when isProtected $ do
+      H.p $ fromString . msg $ msg_SubmissionDetails_BallotBox_Comment_Info $
+        "When ballot box mode is active, no student comments are shown until the deadline."
     postForm (routeOf $ submissionDetails (aKey p) (smKey p)) $ do
       Bootstrap.textArea (fieldName commentValueField)
                          (fromString $ msg $ msg_SubmissionDetails_NewComment "New comment")
                          mempty
       Bootstrap.submitButton "" (fromString $ msg $ msg_SubmissionDetails_SubmitComment "Submit")
-    let studentComments = forStudentCFs $ submissionDetailsDescToCFs info
+    let studentComments = forStudentCFs isProtected $ submissionDetailsDescToCFs info
     when (not $ null studentComments) $ do
       Bootstrap.rowColMd12 hr
       i18n msg $ commentsDiv "submission-details-comments-" tc studentComments

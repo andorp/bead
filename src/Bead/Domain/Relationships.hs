@@ -171,7 +171,7 @@ userSubmissionTimesCata list time s = list $ map time s
 data SubmissionListDesc = SubmissionListDesc {
     slGroup   :: String
   , slTeacher :: [String]
-  , slSubmissions :: Either UserSubmissionTimes UserSubmissionInfo
+  , slSubmissions :: UserSubmissionInfo
   , slAssignment :: Assignment
   }
 
@@ -181,11 +181,8 @@ sortSbmListDescendingByTime :: SubmissionListDesc -> SubmissionListDesc
 sortSbmListDescendingByTime s = s { slSubmissions = slSubmissions' }
   where
     userSubmissionTime (_submissionKey,time,_status,_evalatedBy) = time
-    sortSubmissionTime = reverse . List.sort
     sortUserSubmissionInfo = reverse . List.sortBy (compare `on` userSubmissionTime)
-    slSubmissions' = either (Left . sortSubmissionTime)
-                            (Right . sortUserSubmissionInfo)
-                            (slSubmissions s)
+    slSubmissions' = sortUserSubmissionInfo $ slSubmissions s
 
 submissionListDescPermissions = ObjectPermissions [
     (P_Open, P_Group), (P_Open, P_Course)
