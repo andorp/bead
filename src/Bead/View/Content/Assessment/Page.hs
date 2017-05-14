@@ -10,6 +10,7 @@ module Bead.View.Content.Assessment.Page (
   ) where
 
 import           Bead.View.Content
+import           Bead.View.Content.Bootstrap ((.|.))
 import qualified Bead.View.Content.Bootstrap as Bootstrap
 import           Bead.View.Content.ScoreInfo (scoreInfoToIcon)
 import           Bead.View.RequestParams
@@ -28,13 +29,13 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.UTF8 as BsUTF8 (toString)
 import           Data.Function (on)
 import qualified Data.Map as M
-import           Data.List (sortBy)
+import           Data.List (sortBy,intercalate)
 import           Data.String.Utils (strip)
 import           Data.Time (getCurrentTime)
 import qualified Text.Blaze.Html5 as H
 import qualified Text.Blaze.Html5.Attributes as A
 import           Text.Blaze.Html5 ((!))
-import           Control.Monad (join)
+import           Control.Monad (join,when)
 import           Control.Monad.Trans (lift)
 import           Control.Monad.IO.Class (liftIO)
 
@@ -424,7 +425,26 @@ readCsv bs = foldr (f . dropSpaces) M.empty (B.lines bs)
       stripSpaces = B.reverse . dropSpaces . B.reverse . dropSpaces
 
 viewAssessmentPage :: GETContentHandler
-viewAssessmentPage = error "viewAssessmentPage is undefined"
+viewAssessmentPage = do
+  ak <- getParameter assessmentKeyPrm
+  aDesc <- userStory $ Story.assessmentDesc ak
+  return $ viewAssessmentContent aDesc
+
+viewAssessmentContent :: AssessmentDesc -> IHtml
+viewAssessmentContent aDesc = do
+  msg <- getI18N
+  return $ do
+    Bootstrap.rowColMd12 . Bootstrap.table . H.tbody $ do
+      (msg . msg_ViewAssessment_Course $ "Course:")   .|. fromString (adCourse aDesc)
+      maybe mempty (\g -> (msg . msg_ViewAssessment_Group $ "Group:") .|. fromString g) (adGroup aDesc)
+      (msg . msg_ViewAssessment_Teacher $ "Teacher:") .|. (fromString . intercalate ", " . sortHun . adTeacher) aDesc
+      (msg . msg_ViewAssessment_Assessment $ "Assessment:") .|. fromString title
+      when (not . null $ description) $
+        (msg . msg_ViewAssessment_Description $ "Description:") .|. fromString description
+    where
+      title, description :: String
+      (title, description) = let assessment = adAssessment aDesc
+                             in withAssessment assessment (\title description _ _ -> (title, description))
 
 evTypeSelection :: I18N -> EvConfig -> H.Html
 evTypeSelection msg selected = Bootstrap.selectionWithLabel "evConfig" evalType (== selected) selection 

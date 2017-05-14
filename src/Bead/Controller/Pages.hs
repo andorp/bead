@@ -882,6 +882,7 @@ regularPages = [
   , isSubmissionDetails
   , isGroupRegistration
   , isGetSubmission
+  , isViewAssessment
   , isViewUserScore
   , isNotifications
   ]
@@ -906,7 +907,6 @@ groupAdminPages = [
   , isFillNewGroupAssessmentPreview
   , isModifyAssessment
   , isModifyAssessmentPreview
-  , isViewAssessment
   , isGetGroupCsv
   ]
 

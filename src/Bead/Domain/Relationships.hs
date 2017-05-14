@@ -460,6 +460,7 @@ scoreBoardPermissions = ObjectPermissions
 data AssessmentDesc = AssessmentDesc {
     adCourse        :: String
   , adGroup         :: Maybe String
+  , adTeacher       :: [String]
   , adAssessmentKey :: AssessmentKey
   , adAssessment    :: Assessment
   }
