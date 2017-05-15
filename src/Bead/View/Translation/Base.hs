@@ -171,6 +171,11 @@ labels =
  , "msg_NewAssessment_EvalTypeWarn"
  , "msg_NewAssessment_Accepted"
  , "msg_NewAssessment_Rejected"
+ , "msg_ViewAssessment_Course"
+ , "msg_ViewAssessment_Group"
+ , "msg_ViewAssessment_Teacher"
+ , "msg_ViewAssessment_Assessment"
+ , "msg_ViewAssessment_Description"
 
  , "msg_GroupRegistration_RegisteredCourses"
  , "msg_GroupRegistration_SelectGroup"

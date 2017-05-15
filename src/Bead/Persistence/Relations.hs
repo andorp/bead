@@ -641,30 +641,33 @@ scoreDesc sk = do
     Left ck -> do
       course <- loadCourse ck
       teachers <- courseAdmins ck
-      return (courseName course,Nothing,teachers)
+      return (courseName course, Nothing, teachers)
     Right gk -> do
         group <- loadGroup gk
         ck <- courseOfGroup gk
         course <- loadCourse ck
         teachers <- groupAdmins gk
-        return (courseName course,Just . groupName $ group,teachers)
+        return (courseName course, Just . groupName $ group, teachers)
   teachersName <- mapM ((ud_fullname <$>) . userDescription) teachers
   return $ ScoreDesc course group teachersName info as
 
 assessmentDesc :: AssessmentKey -> Persist AssessmentDesc
 assessmentDesc ak = do
   courseOrGroup <- courseOrGroupOfAssessment ak
-  (course,group) <- case courseOrGroup of
+  (course,group,teachers) <- case courseOrGroup of
     Left ck -> do
       course <- loadCourse ck
-      return (courseName course,Nothing)
+      teachers <- courseAdmins ck
+      return (courseName course, Nothing, teachers)
     Right gk -> do
       group <- loadGroup gk
       ck <- courseOfGroup gk
       course <- loadCourse ck
-      return (courseName course,Just . groupName $ group)
+      teachers <- groupAdmins gk
+      return (courseName course, Just . groupName $ group, teachers)
   assessment <- loadAssessment ak
-  return $ AssessmentDesc course group ak assessment
+  teachersName <- mapM ((ud_fullname <$>) . userDescription) teachers
+  return $ AssessmentDesc course group teachersName ak assessment
 
 courseOrGroupOfAssessment :: AssessmentKey -> Persist (Either CourseKey GroupKey)
 courseOrGroupOfAssessment ak = do
